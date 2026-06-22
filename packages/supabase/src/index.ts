@@ -1,5 +1,5 @@
 // Typed browser/client factory (anon key — pass app env into it)
-export { createSupabaseClient } from './client'
+export { createSupabaseClient } from './client.adapter'
 
 // Database types (regenerate with: pnpm --filter @app/supabase gen:types)
 export type { Database } from './types'

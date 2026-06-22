@@ -23,6 +23,7 @@ export const selectAddToast = (s: IToastState) => s.add
 export const selectRemoveToast = (s: IToastState) => s.remove
 
 let nextId = 1
+const AUTO_DISMISS_MS = 4_000
 
 export const useToastStore = create<IToastState>((set) => ({
   add(payload) {
@@ -30,7 +31,7 @@ export const useToastStore = create<IToastState>((set) => ({
     set((s) => ({ toasts: [...s.toasts, { ...payload, id }] }))
     setTimeout(
       () => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
-      4_000
+      AUTO_DISMISS_MS
     )
   },
   clear() {

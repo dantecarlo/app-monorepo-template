@@ -1,4 +1,11 @@
 import type { IItemDto } from '@/screens/ItemsDashboard/models/Item.type'
+import {
+  DEFAULT_ITEMS_LIMIT,
+  ITEM_FETCH_DELAY_MS,
+  LIST_FETCH_DELAY_MS,
+  MOCK_HOURS_AGO,
+  MS_PER_HOUR
+} from '@/services/items.constant'
 
 // ---------------------------------------------------------------------------
 // Mock data — replace with your API / Supabase calls when ready.
@@ -9,66 +16,66 @@ import type { IItemDto } from '@/screens/ItemsDashboard/models/Item.type'
 
 const NOW = new Date()
 const t = (hoursAgo: number) =>
-  new Date(NOW.getTime() - hoursAgo * 3_600_000).toISOString()
+  new Date(NOW.getTime() - hoursAgo * MS_PER_HOUR).toISOString()
 
 const MOCK_ITEMS: IItemDto[] = [
   {
     author_id: 'usr_1',
     author_name: 'Alice Brown',
     category: 'UX',
-    created_at: t(1),
+    created_at: t(MOCK_HOURS_AGO.ONE),
     description:
       'Streamline the first-run experience with a step-by-step wizard.',
     id: 'item_001',
     status: 'active',
     title: 'Improve onboarding flow',
-    updated_at: t(0.5)
+    updated_at: t(MOCK_HOURS_AGO.HALF)
   },
   {
     author_id: 'usr_2',
     author_name: 'Bob Carter',
     category: 'Frontend',
-    created_at: t(3),
+    created_at: t(MOCK_HOURS_AGO.THREE),
     description:
       'Implement a system-aware theme toggle using CSS variables.',
     id: 'item_002',
     status: 'active',
     title: 'Add dark mode support',
-    updated_at: t(2)
+    updated_at: t(MOCK_HOURS_AGO.TWO)
   },
   {
     author_id: 'usr_1',
     author_name: 'Alice Brown',
     category: 'DevOps',
-    created_at: t(8),
+    created_at: t(MOCK_HOURS_AGO.EIGHT),
     description:
       'GitHub Actions workflow for automated tests and deploys.',
     id: 'item_003',
     status: 'active',
     title: 'Set up CI/CD pipeline',
-    updated_at: t(6)
+    updated_at: t(MOCK_HOURS_AGO.SIX)
   },
   {
     author_id: null,
     author_name: null,
     category: 'Architecture',
-    created_at: t(48),
+    created_at: t(MOCK_HOURS_AGO.TWO_DAYS),
     description: 'Move from Pages Router to Next.js App Router with RSC.',
     id: 'item_004',
     status: 'archived',
     title: 'Migrate to App Router',
-    updated_at: t(24)
+    updated_at: t(MOCK_HOURS_AGO.ONE_DAY)
   },
   {
     author_id: 'usr_3',
     author_name: 'Carol Davis',
     category: 'Docs',
-    created_at: t(72),
+    created_at: t(MOCK_HOURS_AGO.THREE_DAYS),
     description: 'Document all public endpoints with OpenAPI 3.1 spec.',
     id: 'item_005',
     status: 'draft',
     title: 'Write API documentation',
-    updated_at: t(72)
+    updated_at: t(MOCK_HOURS_AGO.THREE_DAYS)
   }
 ]
 
@@ -86,10 +93,11 @@ export interface IGetItemsParams {
  * Replace with a real fetch / Supabase query.
  */
 export const getItems = async ({
-  limit = 50,
+  limit = DEFAULT_ITEMS_LIMIT,
   search
 }: IGetItemsParams): Promise<IItemDto[]> => {
-  await new Promise((resolve) => setTimeout(resolve, 250))
+  // Simulate async network call
+  await new Promise((resolve) => setTimeout(resolve, LIST_FETCH_DELAY_MS))
 
   let results = MOCK_ITEMS
 
@@ -113,6 +121,6 @@ export interface IGetItemParams {
 export const getItem = async ({
   itemId
 }: IGetItemParams): Promise<IItemDto | null> => {
-  await new Promise((resolve) => setTimeout(resolve, 100))
+  await new Promise((resolve) => setTimeout(resolve, ITEM_FETCH_DELAY_MS))
   return MOCK_ITEMS.find((item) => item.id === itemId) ?? null
 }

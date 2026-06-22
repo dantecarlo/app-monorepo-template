@@ -2,6 +2,11 @@ import type {
   IItemDto,
   IItemViewModel
 } from '@/screens/ItemsDashboard/models/Item.type'
+import {
+  HOURS_PER_DAY,
+  MINUTES_PER_HOUR,
+  MS_PER_MINUTE
+} from '@/services/items.constant'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -17,15 +22,15 @@ const toInitials = (name: string): string =>
 
 const toRelativeTime = (isoString: string): string => {
   const diffMs = Date.now() - new Date(isoString).getTime()
-  const diffMins = Math.floor(diffMs / 60_000)
+  const diffMins = Math.floor(diffMs / MS_PER_MINUTE)
 
   if (diffMins < 1) return 'just now'
-  if (diffMins < 60) return `${diffMins}m ago`
+  if (diffMins < MINUTES_PER_HOUR) return `${diffMins}m ago`
 
-  const diffHours = Math.floor(diffMins / 60)
-  if (diffHours < 24) return `${diffHours}h ago`
+  const diffHours = Math.floor(diffMins / MINUTES_PER_HOUR)
+  if (diffHours < HOURS_PER_DAY) return `${diffHours}h ago`
 
-  const diffDays = Math.floor(diffHours / 24)
+  const diffDays = Math.floor(diffHours / HOURS_PER_DAY)
   return `${diffDays}d ago`
 }
 
