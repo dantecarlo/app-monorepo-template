@@ -3,23 +3,23 @@ name: product-discovery
 description: >
   Turn a raw product/app idea into a buildable plan BEFORE architecture or code:
   product thinking, locked decisions, scope/MVP, monetization, screens, and the
-  full screens↔services↔components decomposition into one general map.
+  full screens↔services↔data↔components decomposition into one general map.
   USE WHEN: "structure a product idea", "PRD", "MVP scope", "user flows",
   "monetization/economy", "screen inventory", "components map", "services map",
-  "decompose the product into software", "general map".
+  "data model", "db schema", "decompose the product into software", "general map".
   DO NOT USE: a single feature, pure architecture/code tasks, or trivial changes
   (use feature/component/service skills for those).
 license: Apache-2.0
 metadata:
   author: gentleman-programming
-  version: "2.0"
+  version: "2.1"
 ---
 
 ## Activation Contract
 
 Use to take a raw product/app idea and structure it into a buildable plan, BEFORE
 architecture or code. Covers product definition, locked decisions, scope,
-monetization, screens, and the full views↔services↔components map.
+monetization, screens, and the full views↔services↔data↔components map.
 
 Skip for: a single feature, pure technical/architecture tasks, or trivial changes.
 
@@ -38,6 +38,9 @@ Skip for: a single feature, pure technical/architecture tasks, or trivial change
   cross-references cleanly. Screens use their catalog IDs.
 - **Fractal cut rule (components)**: a part shared by ≥2 views is transversal (root
   `components/`); a part used by ONE view is screen-local (`screens/<S>/components/`).
+- **Data model**: derive the schema from the domain (PRD §10) + the owned services;
+  split conceptual (entities/relations/access) from physical (tables/keys/indexes/RLS).
+  Every owned service maps to the tables it owns/reads/writes (service↔DB map).
 - **Status column**: services and components carry `✓ exists · ○ to build` so the map
   doubles as a build checklist.
 - **Doc language**: prose/headers follow the project's doc language; screen names stay
@@ -58,12 +61,13 @@ Skip for: a single feature, pure technical/architecture tasks, or trivial change
 | Economy/pricing set | Coherence check — no path cannibalizes another |
 | A part appears in ≥2 views | Promote to transversal; give it a code |
 | A view needs a bespoke part | Keep it screen-local; list under that view |
+| An owned service persists data | Define its table(s) + access/RLS; add it to the service↔DB map |
 
 ## Execution Steps
 
 Run in order; each phase = ask gating questions → recommend → write the artifact →
-confirm → advance. Use `assets/templates.md` skeletons. The earlier phases (1–6)
-define WHAT the product is; phases 7–8 decompose it into WHAT TO BUILD.
+confirm → advance. Use `assets/templates.md` skeletons. Phases 1–5 define WHAT the
+product is; phases 6–9 decompose it into WHAT TO BUILD (services → data → components → map).
 
 1. **PRD** — vision, problem, users, **locked product decisions**, MVP scope + no-goals,
    business rules, monetization, risks, phased roadmap.
@@ -75,22 +79,29 @@ define WHAT the product is; phases 7–8 decompose it into WHAT TO BUILD.
    **scope + free/paid gating**. Assign each view a stable ID.
 6. **Views↔services map** — owned modules (to build) vs managed/SaaS (to integrate) with
    3–4 letter codes + status; map each view → services.
-7. **Views↔components map** — apply the fractal cut rule. List **transversal** components
+7. **Data model & DB schema** — derive from the domain (PRD §10) + the owned services.
+   Conceptual first (`DATA-MODEL.md`: entities + relations + value objects + access/
+   multi-tenancy/RLS intent + retention), then physical (`DB-SCHEMA.md`: enums, tables,
+   columns, keys, indexes, constraints, RLS helpers/policies, RPCs/triggers, seed/reference
+   catalogs, migrations plan). Include the **service↔DB map**: each owned service code →
+   the tables it owns/reads/writes + any RPCs. This is "the services taken to a database".
+8. **Views↔components map** — apply the fractal cut rule. List **transversal** components
    (grouped: Base · State/resilience · Data & lists · Nav & layout · Overlays · domain-shared)
    with code + status, then **screen-specific** components per view (bespoke only). Note
    what already exists (✓) vs to build (○) so the transversal set is built first.
-8. **General map** — one consolidated `MAP.md`: a single row per view crossing
+9. **General map** — one consolidated `MAP.md`: a single row per view crossing
    area · scope/gating · services (own/managed) · components · status. This is the
-   hand-off to architecture.
+   hand-off to architecture (the data model is its sibling backend artifact).
 
-Close the product layer (1–8) before proposing architecture.
+Close the product layer (1–9) before proposing architecture.
 
 ## Output Contract
 
 A coherent docs set, one file per phase, cross-linked, each updated as decisions land:
 `PRD.md` · `USER-FLOWS.md` · `ECONOMY.md` (if monetized) · `SCREENS.md` · `SERVICES.md` ·
-`COMPONENTS.md` · `MAP.md`. Report decided vs still-open items. Final state: product
-defined and decomposed (screens↔services↔components), ready for architecture.
+`DATA-MODEL.md` · `DB-SCHEMA.md` · `COMPONENTS.md` · `MAP.md`. Report decided vs still-open
+items. Final state: product defined and decomposed (screens↔services↔data↔components),
+ready for architecture.
 
 ## DO vs DON'T
 
@@ -99,6 +110,7 @@ defined and decomposed (screens↔services↔components), ready for architecture
 | Ask one question, wait, then write the artifact | Dump a questionnaire or option menu |
 | Lock decisions in PRD §4 and move on | Re-litigate settled decisions every phase |
 | Give every service/component a stable 3–4 letter code | Invent ad-hoc names that differ between maps |
+| Derive tables from the domain + services; map each service to its tables | Invent tables with no owning service or leave persistence implicit |
 | Promote a part to transversal once a 2nd view needs it | Duplicate the same part per screen |
 | Mark ✓ exists / ○ to build on every part | Leave the reader guessing what already exists |
 | Keep screen names in the real UI locale | Translate UI labels in the catalog |

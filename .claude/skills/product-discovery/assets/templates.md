@@ -78,6 +78,53 @@ Lo transversal (DB backbone, i18n, edge, observabilidad) se omite por fila y se
 lista una sola vez como "cross-cutting".
 ```
 
+## DATA-MODEL.md
+
+```markdown
+# {Product} — Data Model (conceptual)
+Derived from PRD §10 (domain) + owned services. Conceptual only; physical → DB-SCHEMA.md.
+
+## Entities + relationships
+| Entity | Key attributes | Relations | Owned by service (code) |
+
+## Value objects / enums (conceptual)
+| Name | Values / shape | Used by |
+
+## Access model (if multi-tenant / RBAC)
+Roles + scoping rule (who sees what) + tenancy boundary. RLS intent per entity.
+
+## Retention / lifecycle
+Per entity: created by · updated by · retention/TTL · soft vs hard delete.
+```
+
+## DB-SCHEMA.md
+
+```markdown
+# {Product} — DB Schema (physical)
+Implements DATA-MODEL.md. Codes match SERVICES.md so the service↔DB map cross-references.
+
+## Enums
+| Enum | Values |
+
+## Tables
+| Table | Columns (type) | Keys / FKs | Indexes | Constraints |
+
+## Access / RLS (if applicable)
+Helper functions (security-definer) + per-table policies (default deny). Triggers.
+
+## RPCs / functions
+| Name | Signature | Purpose | Security |
+
+## Service ↔ DB map   ← the "services taken to a database" map
+| Service (code) | Owns (tables) | Reads | Writes / RPCs |
+
+## Reference / seed catalogs
+Tables seeded with fixed rows (e.g. plans/entitlements, categories, statuses).
+
+## Migrations plan
+Ordered migration files (one concern each): schema → RLS/policies → seed.
+```
+
 ## COMPONENTS.md
 
 ```markdown
@@ -144,7 +191,14 @@ Ask 1 question at a time, recommend a default, let the user redirect.
 - New-user activation (welcome / first-action bonus).
 - Platform (app-first / web / both), build-now vs later.
 
-### Component-cut round (with phase 7)
+### Data-modeling round (with phase 7)
+- The core entities and which owned service owns each.
+- Tenancy/access boundary (multi-tenant? per-user? roles) → RLS intent.
+- Idempotency / dedup needs (natural keys, hashes) for event-like data.
+- Retention/lifecycle (TTL, soft delete) per entity.
+- Reference/seed catalogs that ship with the schema (plans, categories, statuses).
+
+### Component-cut round (with phase 8)
 - Per view: what is bespoke vs reused from another view.
 - Which parts appear in ≥2 views → promote to transversal (assign a code).
 - Which already exist (✓) vs must be built (○); pick the highest-reuse to build first.
