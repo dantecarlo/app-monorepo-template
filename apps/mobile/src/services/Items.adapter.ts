@@ -1,7 +1,7 @@
 import type {
   IItemDto,
   IItemViewModel
-} from '@/features/items/models/Item.type'
+} from '@/screens/ItemsDashboard/models/Item.type'
 
 // ---------------------------------------------------------------------------
 // Helpers

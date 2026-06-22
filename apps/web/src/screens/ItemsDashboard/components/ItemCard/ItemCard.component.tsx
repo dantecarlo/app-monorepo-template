@@ -1,5 +1,5 @@
-import { ITEM_CARD } from '@/features/items/components/ItemCard.styles'
-import type { IItemViewModel } from '@/features/items/models/Item.type'
+import { ITEM_CARD } from '@/screens/ItemsDashboard/components/ItemCard/ItemCard.styles'
+import type { IItemViewModel } from '@/screens/ItemsDashboard/models/Item.type'
 
 // ---------------------------------------------------------------------------
 // Constants

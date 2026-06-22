@@ -1,4 +1,4 @@
-import type { IItemDto } from '@/features/items/models/Item.type'
+import type { IItemDto } from '@/screens/ItemsDashboard/models/Item.type'
 
 // ---------------------------------------------------------------------------
 // Mock data — replace with your API / Supabase calls when ready.
@@ -89,7 +89,6 @@ export const getItems = async ({
   limit = 50,
   search
 }: IGetItemsParams): Promise<IItemDto[]> => {
-  // Simulate async network call
   await new Promise((resolve) => setTimeout(resolve, 250))
 
   let results = MOCK_ITEMS

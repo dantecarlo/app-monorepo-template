@@ -1,9 +1,9 @@
-import { ItemsDashboard } from '@/features/items/screens/ItemsDashboard.screen'
+import { ItemsDashboardScreen } from '@/screens/ItemsDashboard'
 
 /**
  * Root route — renders the Items dashboard.
  * Mirrors apps/web/src/app/page.tsx.
  */
-const HomePage = () => <ItemsDashboard />
+const HomePage = () => <ItemsDashboardScreen />
 
 export default HomePage

@@ -1,7 +1,7 @@
 import { colors, spacing } from '@app/tokens'
 import { BlurView } from 'expo-blur'
 import { LinearGradient } from 'expo-linear-gradient'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import {
   ActivityIndicator,
   SafeAreaView,
@@ -12,9 +12,10 @@ import {
   View
 } from 'react-native'
 
-import { ItemCard } from '@/features/items/components/ItemCard.component'
-import { useItems } from '@/features/items/hooks/useItems.hook'
 import { GLASS, LAYOUT, TEXT } from '@/helpers/style.constant'
+import { ItemCard } from '@/screens/ItemsDashboard/components/ItemCard'
+import { useItems } from '@/screens/ItemsDashboard/hooks/useItems.hook'
+import type { IItemViewModel } from '@/screens/ItemsDashboard/models/Item.type'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -225,7 +226,7 @@ const SearchBar = ({ onChange, value }: ISearchBarProps) => {
 
 interface IItemsListCardProps {
   isLoading: boolean
-  items: ReturnType<typeof useItems>['data']
+  items: IItemViewModel[]
   onSearchChange: (v: string) => void
   search: string
 }
@@ -360,16 +361,17 @@ const FloatingNav = ({ activeTab, onTabChange }: IFloatingNavProps) => {
 // Main screen
 // ---------------------------------------------------------------------------
 
-export const ItemsDashboard = () => {
-  const [search, setSearch] = useState('')
+export const ItemsDashboardScreen = () => {
   const [activeTab, setActiveTab] = useState<NavTabType>('home')
 
-  const { data: items = [], isLoading } = useItems({ search })
-
-  const summary = useMemo(() => {
-    const activeCount = items.filter((i) => i.status === 'active').length
-    return { activeCount, totalCount: items.length }
-  }, [items])
+  const {
+    activeCount,
+    isLoading,
+    items,
+    onSearchChange,
+    search,
+    totalCount
+  } = useItems()
 
   return (
     <SafeAreaView style={LAYOUT.screen}>
@@ -385,15 +387,15 @@ export const ItemsDashboard = () => {
         <DashboardHeader />
 
         <StatsCard
-          activeCount={summary.activeCount}
+          activeCount={activeCount}
           isLoading={isLoading}
-          totalCount={summary.totalCount}
+          totalCount={totalCount}
         />
 
         <ItemsListCard
           isLoading={isLoading}
           items={items}
-          onSearchChange={setSearch}
+          onSearchChange={onSearchChange}
           search={search}
         />
 
