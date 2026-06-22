@@ -1,22 +1,28 @@
-import { createClient } from '@supabase/supabase-js'
+import { createSupabaseServerClient } from '@app/supabase/server'
+import { cookies } from 'next/headers'
 
 /**
- * Server-side Supabase client factory.
+ * Server-side Supabase client — thin wrapper over the single typed source
+ * (@app/supabase/server).
  *
- * Call createServerClient() from Server Components and Route Handlers.
- * Returns a new instance per call — no shared singleton on the server.
- *
- * NOTE: for auth-aware SSR with cookie-based sessions, swap to
- * @supabase/ssr and createServerClient() with a cookie store.
+ * Call this from Server Components and Route Handlers. It wires the
+ * Next.js cookie store into the auth-aware @supabase/ssr factory so the
+ * user's session is propagated to RLS. Returns a new instance per call.
  */
-export const createServerClient = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
+export const createServerClient = async () => {
+  const cookieStore = await cookies()
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
 
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
+  return createSupabaseServerClient({
+    anonKey,
+    cookies: {
+      getAll: () => cookieStore.getAll(),
+      setAll: (cookiesToSet) =>
+        cookiesToSet.forEach(({ name, options, value }) =>
+          cookieStore.set(name, value, options)
+        )
+    },
+    url
   })
 }

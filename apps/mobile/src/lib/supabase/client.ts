@@ -1,27 +1,26 @@
-// NOTE: Requires EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY
-// in a .env file at the project root (apps/mobile/.env — not committed).
-// Expo surfaces EXPO_PUBLIC_* vars at build time via process.env.
-//
-// For session persistence on device, install @react-native-async-storage/async-storage
-// and pass it to createClient({ auth: { storage: AsyncStorage } }).
-// Currently using in-memory auth (fine for the base template).
+import { createSupabaseClient } from '@app/supabase'
 
-import { createClient } from '@supabase/supabase-js'
+// Valid-format placeholders so the client never throws when env is absent
+// (UI preview / dev without a backend). Real values come from apps/mobile/.env.
+const PLACEHOLDER_URL = 'https://placeholder.supabase.co'
+const PLACEHOLDER_ANON_KEY = 'public-anon-placeholder'
 
-const supabaseUrl = process.env['EXPO_PUBLIC_SUPABASE_URL'] as string
-const supabaseAnonKey = process.env[
-  'EXPO_PUBLIC_SUPABASE_ANON_KEY'
-] as string
+const url = process.env['EXPO_PUBLIC_SUPABASE_URL'] ?? PLACEHOLDER_URL
+const anonKey =
+  process.env['EXPO_PUBLIC_SUPABASE_ANON_KEY'] ?? PLACEHOLDER_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  // Warn at runtime — do not throw, so the app boots in dev without .env
+if (url === PLACEHOLDER_URL || anonKey === PLACEHOLDER_ANON_KEY) {
   console.warn(
-    '[supabase] Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY. ' +
-      'Create apps/mobile/.env with these values before connecting to the backend.'
+    '[supabase] Missing EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY — ' +
+      'using placeholders. Auth and data calls fail until you add apps/mobile/.env.'
   )
 }
 
-export const supabase = createClient(
-  supabaseUrl ?? '',
-  supabaseAnonKey ?? ''
-)
+/**
+ * Thin app wrapper over the single typed source (@app/supabase).
+ *
+ * To persist sessions on device, install
+ * @react-native-async-storage/async-storage and extend the @app/supabase
+ * client factory to accept an `auth.storage` option.
+ */
+export const supabase = createSupabaseClient({ anonKey, url })
