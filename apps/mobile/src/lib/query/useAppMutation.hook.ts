@@ -23,16 +23,16 @@ export function useAppMutation<TData, TVariables, TError extends Error = Error>(
 
   return useMutation<TData, TError, TVariables>({
     ...mutationOptions,
-    onError(error, variables, context) {
+    onError(error, variables, onMutateResult, context) {
       const message =
         errorMessage ??
         (error instanceof Error ? error.message : 'An error occurred');
       addToast({ variant: 'error', message });
-      mutationOptions.onError?.(error, variables, context);
+      mutationOptions.onError?.(error, variables, onMutateResult, context);
     },
-    onSuccess(data, variables, context) {
+    onSuccess(data, variables, onMutateResult, context) {
       if (successMessage) addToast({ variant: 'success', message: successMessage });
-      mutationOptions.onSuccess?.(data, variables, context);
+      mutationOptions.onSuccess?.(data, variables, onMutateResult, context);
     },
   });
 }
