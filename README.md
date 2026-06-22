@@ -258,6 +258,14 @@ The same structure applies to both `apps/web` and `apps/mobile`.
 
 ---
 
+## Infrastructure
+
+Default hosting and edge-security standard: **Next.js on Vercel** behind **Cloudflare** (DNS proxy, WAF, DDoS, CDN, Turnstile, rate limiting). Cloudflare protects only the web surface — native mobile traffic and the Supabase API are out of scope.
+
+See **[docs/infrastructure.md](docs/infrastructure.md)** for the full standard: origin-lock setup, security checklist, Vercel-behind-Cloudflare gotchas, cache rules, and the public/private static-asset split.
+
+---
+
 ## License
 
 Proprietary — All Rights Reserved. This repository is published for viewing and evaluation only.
