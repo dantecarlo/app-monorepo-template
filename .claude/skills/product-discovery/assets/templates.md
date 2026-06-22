@@ -171,6 +171,37 @@ observability) is omitted per-row and listed once below.
 {dependency-ordered blocks of views; foundation + transversal components first}
 ```
 
+## LAUNCH.md
+
+```markdown
+# {Product} — Launch Readiness
+Forward checklist surfaced in discovery, tracked to go-live. Status: ☐ todo · ◐ wip · ☑ done.
+
+## Legal & compliance
+ToS · Privacy Policy · consent/cookies · data-protection law ({region}) · refunds · business/invoicing.
+## Payments & billing (live)
+Prod gateway keys · taxes/invoicing · receipts · refunds/chargebacks · dunning · plan change/proration.
+## Analytics & instrumentation
+North-star + funnel events wired · dashboards · conversion/attribution.
+## Observability & reliability
+Error monitoring live · alerting/on-call · uptime · logging · perf budgets · backups/DR.
+## Security & privacy
+Security review/pentest · secrets mgmt · access/RLS verified · rate limit · WAF/DDoS · PII handling.
+## Release & delivery
+CI/CD · staging+prod envs · feature flags · rollback · store submission (Play / App Store / PWA) · versioning/OTA.
+## Support & ops
+Support channel · help/FAQ · runbooks/incident response · status page · cancellation flow.
+## Growth & GTM
+Landing/pricing page · store listing assets · SEO · launch comms · waitlist/referral.
+## Onboarding & activation
+First-run · activation metric · demo/sample data · time-to-value · empty states.
+## Quality gates
+a11y · i18n complete · device/browser matrix · load/perf test · beta/QA sign-off.
+
+## Owners & dates
+| Item | Owner | Target | Status |
+```
+
 ---
 
 ## Question-round guide (per phase)
@@ -203,3 +234,11 @@ Ask 1 question at a time, recommend a default, let the user redirect.
 - Which parts appear in ≥2 views → promote to transversal (assign a code).
 - Which already exist (✓) vs must be built (○); pick the highest-reuse to build first.
 - Cross-cutting overlays/chrome (toast, modal, paywall, offline, nav) → transversal.
+
+### Launch-readiness round (with phase 10)
+- Legal posture: which docs are mandatory in {region} (ToS, privacy, data law, invoicing)?
+- Payments go-live: prod keys, taxes/receipts, refunds, dunning — who owns each?
+- The one activation + the one north-star metric to instrument before launch.
+- Observability + on-call: who gets paged when it breaks, and how is it monitored?
+- Distribution: app store(s) / PWA / web — submission assets and timeline.
+- The minimum GTM surface (landing/pricing/store listing) needed on day one.

@@ -2,24 +2,27 @@
 name: product-discovery
 description: >
   Turn a raw product/app idea into a buildable plan BEFORE architecture or code:
-  product thinking, locked decisions, scope/MVP, monetization, screens, and the
-  full screens↔services↔data↔components decomposition into one general map.
+  product thinking, locked decisions, scope/MVP, monetization, screens, the full
+  screens↔services↔data↔components decomposition into one general map, plus a
+  launch-readiness checklist (what it takes to ship).
   USE WHEN: "structure a product idea", "PRD", "MVP scope", "user flows",
   "monetization/economy", "screen inventory", "components map", "services map",
-  "data model", "db schema", "decompose the product into software", "general map".
+  "data model", "db schema", "decompose the product into software", "general map",
+  "launch readiness", "what do we need to launch", "go-to-market checklist".
   DO NOT USE: a single feature, pure architecture/code tasks, or trivial changes
   (use feature/component/service skills for those).
 license: Apache-2.0
 metadata:
   author: gentleman-programming
-  version: "2.1"
+  version: "2.2"
 ---
 
 ## Activation Contract
 
 Use to take a raw product/app idea and structure it into a buildable plan, BEFORE
 architecture or code. Covers product definition, locked decisions, scope,
-monetization, screens, and the full views↔services↔data↔components map.
+monetization, screens, the full views↔services↔data↔components map, and the
+launch-readiness checklist (what it takes to ship).
 
 Skip for: a single feature, pure technical/architecture tasks, or trivial changes.
 
@@ -43,6 +46,9 @@ Skip for: a single feature, pure technical/architecture tasks, or trivial change
   Every owned service maps to the tables it owns/reads/writes (service↔DB map).
 - **Status column**: services and components carry `✓ exists · ○ to build` so the map
   doubles as a build checklist.
+- **Launch readiness**: surface go-live requirements during discovery (legal,
+  payments-live, analytics, observability, security, release, support, GTM) so none
+  of them block launch as a late surprise.
 - **Doc language**: prose/headers follow the project's doc language; screen names stay
   in the product's real UI locale (they are the literal labels). Default English prose.
 - Discovery only — do NOT write code or design architecture here.
@@ -62,19 +68,21 @@ Skip for: a single feature, pure technical/architecture tasks, or trivial change
 | A part appears in ≥2 views | Promote to transversal; give it a code |
 | A view needs a bespoke part | Keep it screen-local; list under that view |
 | An owned service persists data | Define its table(s) + access/RLS; add it to the service↔DB map |
+| A go-live requirement appears (legal/billing/analytics/ops) | Log it in LAUNCH.md with owner + status |
 
 ## Execution Steps
 
 Run in order; each phase = ask gating questions → recommend → write the artifact →
 confirm → advance. Use `assets/templates.md` skeletons. Phases 1–5 define WHAT the
-product is; phases 6–9 decompose it into WHAT TO BUILD (services → data → components → map).
+product is; phases 6–9 decompose it into WHAT TO BUILD (services → data → components →
+map); phase 10 captures WHAT IT TAKES TO SHIP.
 
 1. **PRD** — vision, problem, users, **locked product decisions**, MVP scope + no-goals,
    business rules, monetization, risks, phased roadmap.
 2. **User flows** — key journeys step by step (onboarding → core loop → contribution → …).
 3. **Economy** (if monetized) — currency, prices, earn/spend, plans; verify coherence.
 4. **Considerations sweep** — gap analysis: legal/ToS, fraud, privacy, content modeling,
-   ops/admin, analytics, cost; resolve each.
+   ops/admin, analytics, cost; resolve each. Feeds the launch-readiness checklist (phase 10).
 5. **Screen inventory** — all views grouped by area/surface; each with purpose, one-line
    **scope + free/paid gating**. Assign each view a stable ID.
 6. **Views↔services map** — owned modules (to build) vs managed/SaaS (to integrate) with
@@ -92,16 +100,22 @@ product is; phases 6–9 decompose it into WHAT TO BUILD (services → data → 
 9. **General map** — one consolidated `MAP.md`: a single row per view crossing
    area · scope/gating · services (own/managed) · components · status. This is the
    hand-off to architecture (the data model is its sibling backend artifact).
+10. **Launch readiness** — surface what it takes to SHIP beyond the build, grouped:
+    legal/compliance · payments-live · analytics/instrumentation · observability/reliability ·
+    security/privacy · release/CI-CD + store/deploy · support/ops · growth/GTM ·
+    onboarding/activation · quality gates. Capture as `LAUNCH.md` with owner + status per
+    item; populated during discovery and tracked through build to go-live.
 
-Close the product layer (1–9) before proposing architecture.
+Close phases 1–9 before proposing architecture; phase 10 (`LAUNCH.md`) is the forward
+checklist tracked through build to launch.
 
 ## Output Contract
 
 A coherent docs set, one file per phase, cross-linked, each updated as decisions land:
 `PRD.md` · `USER-FLOWS.md` · `ECONOMY.md` (if monetized) · `SCREENS.md` · `SERVICES.md` ·
-`DATA-MODEL.md` · `DB-SCHEMA.md` · `COMPONENTS.md` · `MAP.md`. Report decided vs still-open
-items. Final state: product defined and decomposed (screens↔services↔data↔components),
-ready for architecture.
+`DATA-MODEL.md` · `DB-SCHEMA.md` · `COMPONENTS.md` · `MAP.md` · `LAUNCH.md`. Report decided
+vs still-open items. Final state: product defined, decomposed
+(screens↔services↔data↔components), and with a tracked path to launch.
 
 ## DO vs DON'T
 
@@ -113,8 +127,9 @@ ready for architecture.
 | Derive tables from the domain + services; map each service to its tables | Invent tables with no owning service or leave persistence implicit |
 | Promote a part to transversal once a 2nd view needs it | Duplicate the same part per screen |
 | Mark ✓ exists / ○ to build on every part | Leave the reader guessing what already exists |
+| Surface launch requirements (legal, payments-live, analytics, support) up front | Discover at launch you have no ToS, live billing, or analytics |
 | Keep screen names in the real UI locale | Translate UI labels in the catalog |
-| Stay in discovery; stop at the general map | Start architecture or write code here |
+| Stay in discovery; stop at the launch-readiness checklist | Start architecture or write code here |
 
 ## References
 
