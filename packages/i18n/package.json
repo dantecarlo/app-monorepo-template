@@ -10,7 +10,9 @@
     "src"
   ],
   "scripts": {
-    "test": "vitest run"
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "typescript": "*",
