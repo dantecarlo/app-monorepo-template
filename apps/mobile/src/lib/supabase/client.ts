@@ -6,17 +6,22 @@
 // and pass it to createClient({ auth: { storage: AsyncStorage } }).
 // Currently using in-memory auth (fine for the base template).
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env['EXPO_PUBLIC_SUPABASE_URL'] as string;
-const supabaseAnonKey = process.env['EXPO_PUBLIC_SUPABASE_ANON_KEY'] as string;
+const supabaseUrl = process.env['EXPO_PUBLIC_SUPABASE_URL'] as string
+const supabaseAnonKey = process.env[
+  'EXPO_PUBLIC_SUPABASE_ANON_KEY'
+] as string
 
 if (!supabaseUrl || !supabaseAnonKey) {
   // Warn at runtime — do not throw, so the app boots in dev without .env
   console.warn(
     '[supabase] Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY. ' +
-      'Create apps/mobile/.env with these values before connecting to the backend.',
-  );
+      'Create apps/mobile/.env with these values before connecting to the backend.'
+  )
 }
 
-export const supabase = createClient(supabaseUrl ?? '', supabaseAnonKey ?? '');
+export const supabase = createClient(
+  supabaseUrl ?? '',
+  supabaseAnonKey ?? ''
+)

@@ -3,37 +3,40 @@
 // 'use client' directive removed — not applicable in RN.
 
 import {
+  type QueryKey,
   useQuery,
   type UseQueryOptions,
-  type UseQueryResult,
-  type QueryKey,
-} from '@tanstack/react-query';
-import { useToastStore } from '@/stores/toast.store';
+  type UseQueryResult
+} from '@tanstack/react-query'
 
-export interface AppQueryOptions<TData, TError = Error> {
-  queryOptions: UseQueryOptions<TData, TError>;
-  adapter?: (raw: TData) => TData;
-  errorMessage?: string;
+import { useToastStore } from '@/stores/toast.store'
+
+export interface IAppQueryOptions<TData, TError = Error> {
+  adapter?: (raw: TData) => TData
+  errorMessage?: string
+  queryOptions: UseQueryOptions<TData, TError>
 }
 
-export function useAppQuery<TData, TError extends Error = Error>({
-  queryOptions,
+export const useAppQuery = <TData, TError extends Error = Error>({
   adapter,
   errorMessage,
-}: AppQueryOptions<TData, TError>): UseQueryResult<TData, TError> {
-  const addToast = useToastStore((s) => s.add);
+  queryOptions
+}: IAppQueryOptions<TData, TError>): UseQueryResult<TData, TError> => {
+  const addToast = useToastStore((s) => s.add)
 
   const result = useQuery<TData, TError>({
     ...queryOptions,
-    ...(adapter ? { select: (raw: TData) => adapter(raw) } : {}),
-  } as UseQueryOptions<TData, TError, TData, QueryKey>);
+    ...(adapter ? { select: (raw: TData) => adapter(raw) } : {})
+  } as UseQueryOptions<TData, TError, TData, QueryKey>)
 
   if (result.isError && result.error) {
     const message =
       errorMessage ??
-      (result.error instanceof Error ? result.error.message : 'An error occurred');
-    setTimeout(() => addToast({ variant: 'error', message }), 0);
+      (result.error instanceof Error
+        ? result.error.message
+        : 'An error occurred')
+    setTimeout(() => addToast({ message, variant: 'error' }), 0)
   }
 
-  return result;
+  return result
 }

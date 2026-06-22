@@ -1,55 +1,59 @@
-import { View, Text } from 'react-native';
-import type { ItemViewModel } from '@/features/items/models/Item.type';
-import { TEXT, GLASS } from '@/helpers/style.constant';
-import { colors } from '@app/ui';
+import { colors } from '@app/ui'
+import { Text, View } from 'react-native'
+
+import type { IItemViewModel } from '@/features/items/models/Item.type'
+import { GLASS, TEXT } from '@/helpers/style.constant'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export interface ItemCardProps {
-  item: ItemViewModel;
-  isLast?: boolean;
+export interface IItemCardProps {
+  isLast?: boolean
+  item: IItemViewModel
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function ItemCard({ item, isLast = false }: ItemCardProps) {
+export const ItemCard = ({ isLast = false, item }: IItemCardProps) => {
   const statusColor =
     item.status === 'active'
       ? colors.success
       : item.status === 'draft'
-      ? colors.warning
-      : colors.text.tertiary;
+        ? colors.warning
+        : colors.text.tertiary
 
   return (
     <View
       style={[
         {
-          flexDirection: 'row',
           alignItems: 'flex-start',
+          flexDirection: 'row',
           gap: 12,
-          paddingVertical: 12,
+          paddingVertical: 12
         },
-        !isLast && GLASS.divider,
+        !isLast && GLASS.divider
       ]}
     >
       {/* Author avatar */}
       <View
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: 18,
-          backgroundColor: '#241A12',
           alignItems: 'center',
-          justifyContent: 'center',
+          backgroundColor: '#241A12',
+          borderRadius: 18,
           flexShrink: 0,
+          height: 36,
+          justifyContent: 'center',
+          width: 36
         }}
       >
         <Text
-          style={[TEXT.label, { color: colors.accent, fontSize: 12, fontWeight: '700' }]}
+          style={[
+            TEXT.label,
+            { color: colors.accent, fontSize: 12, fontWeight: '700' }
+          ]}
         >
           {item.authorInitials}
         </Text>
@@ -57,19 +61,26 @@ export function ItemCard({ item, isLast = false }: ItemCardProps) {
 
       {/* Main content */}
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={TEXT.body} numberOfLines={1}>
+        <Text numberOfLines={1} style={TEXT.body}>
           {item.title}
         </Text>
-        <Text style={[TEXT.caption, { marginTop: 2 }]} numberOfLines={1}>
+        <Text numberOfLines={1} style={[TEXT.caption, { marginTop: 2 }]}>
           {item.description}
         </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+        <View
+          style={{
+            alignItems: 'center',
+            flexDirection: 'row',
+            gap: 8,
+            marginTop: 4
+          }}
+        >
           <View
             style={{
               backgroundColor: 'rgba(255,255,255,0.06)',
               borderRadius: 9999,
               paddingHorizontal: 8,
-              paddingVertical: 2,
+              paddingVertical: 2
             }}
           >
             <Text style={TEXT.caption}>{item.category}</Text>
@@ -81,10 +92,19 @@ export function ItemCard({ item, isLast = false }: ItemCardProps) {
       </View>
 
       {/* Time + status */}
-      <View style={{ alignItems: 'flex-end', gap: 4, flexShrink: 0, paddingTop: 2 }}>
+      <View
+        style={{
+          alignItems: 'flex-end',
+          flexShrink: 0,
+          gap: 4,
+          paddingTop: 2
+        }}
+      >
         <Text style={TEXT.caption}>{item.timeDisplay}</Text>
-        <Text style={[TEXT.caption, { color: statusColor }]}>{item.status}</Text>
+        <Text style={[TEXT.caption, { color: statusColor }]}>
+          {item.status}
+        </Text>
       </View>
     </View>
-  );
+  )
 }

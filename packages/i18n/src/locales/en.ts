@@ -1,0 +1,17 @@
+const en = {
+  common: {
+    cancel: 'Cancel',
+    confirm: 'Confirm',
+    error: 'Error',
+    loading: 'Loading…',
+    retry: 'Retry',
+    save: 'Save'
+  },
+  items: {
+    emptyState: 'No items found',
+    errorState: 'Failed to load items',
+    title: 'Items'
+  }
+} as const
+
+export default en

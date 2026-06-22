@@ -1,15 +1,15 @@
 /** @type {import('@babel/core').TransformOptions} */
 module.exports = function (api) {
-  api.cache(true);
+  api.cache(true)
   return {
     presets: [
       [
         'babel-preset-expo',
         {
-          jsxImportSource: 'nativewind',
-        },
+          jsxImportSource: 'nativewind'
+        }
       ],
-      'nativewind/babel',
+      'nativewind/babel'
     ],
     plugins: [
       [
@@ -17,13 +17,21 @@ module.exports = function (api) {
         {
           root: ['./src'],
           alias: {
-            '@': './src',
+            '@': './src'
           },
-          extensions: ['.ios.js', '.android.js', '.js', '.jsx', '.ts', '.tsx', '.json'],
-        },
+          extensions: [
+            '.ios.js',
+            '.android.js',
+            '.js',
+            '.jsx',
+            '.ts',
+            '.tsx',
+            '.json'
+          ]
+        }
       ],
       // react-native-reanimated/plugin MUST be last
-      'react-native-reanimated/plugin',
-    ],
-  };
-};
+      'react-native-reanimated/plugin'
+    ]
+  }
+}

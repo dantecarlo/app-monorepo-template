@@ -1,22 +1,22 @@
-import { create } from 'zustand';
+import { create } from 'zustand'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type ToastVariant = 'success' | 'error' | 'info' | 'warning';
+export type ToastVariantType = 'success' | 'error' | 'info' | 'warning'
 
-export interface Toast {
-  id: string;
-  variant: ToastVariant;
-  message: string;
+export interface IToast {
+  id: string
+  message: string
+  variant: ToastVariantType
 }
 
-interface ToastState {
-  toasts: Toast[];
-  add: (payload: Omit<Toast, 'id'>) => void;
-  remove: (id: string) => void;
-  clear: () => void;
+interface IToastState {
+  add: (payload: Omit<IToast, 'id'>) => void
+  clear: () => void
+  remove: (id: string) => void
+  toasts: IToast[]
 }
 
 // ---------------------------------------------------------------------------
@@ -24,36 +24,36 @@ interface ToastState {
 // to avoid unnecessary re-renders.
 // ---------------------------------------------------------------------------
 
-export const selectToasts = (s: ToastState): Toast[] => s.toasts;
-export const selectAddToast = (s: ToastState) => s.add;
-export const selectRemoveToast = (s: ToastState) => s.remove;
+export const selectToasts = (s: IToastState): IToast[] => s.toasts
+export const selectAddToast = (s: IToastState) => s.add
+export const selectRemoveToast = (s: IToastState) => s.remove
 
 // ---------------------------------------------------------------------------
 // Store
 // ---------------------------------------------------------------------------
 
-let nextId = 1;
-const AUTO_DISMISS_MS = 4_000;
+let nextId = 1
+const AUTO_DISMISS_MS = 4_000
 
-export const useToastStore = create<ToastState>((set) => ({
-  toasts: [],
-
+export const useToastStore = create<IToastState>((set) => ({
   add(payload) {
-    const id = String(nextId++);
-    const toast: Toast = { ...payload, id };
-    set((s) => ({ toasts: [...s.toasts, toast] }));
+    const id = String(nextId++)
+    const toast: IToast = { ...payload, id }
+    set((s) => ({ toasts: [...s.toasts, toast] }))
 
     // Auto-dismiss after 4 seconds
     setTimeout(() => {
-      set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
-    }, AUTO_DISMISS_MS);
-  },
-
-  remove(id) {
-    set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
+      set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }))
+    }, AUTO_DISMISS_MS)
   },
 
   clear() {
-    set({ toasts: [] });
+    set({ toasts: [] })
   },
-}));
+
+  remove(id) {
+    set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }))
+  },
+
+  toasts: []
+}))

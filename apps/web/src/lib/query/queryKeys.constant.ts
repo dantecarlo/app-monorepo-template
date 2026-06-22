@@ -12,8 +12,10 @@
 export const QueryKeys = {
   items: {
     all: ['items'] as const,
-    list: (filter?: string) =>
-      filter ? (['items', 'list', filter] as const) : (['items', 'list'] as const),
     detail: (id: string) => ['items', id] as const,
-  },
-} as const;
+    list: (filter?: string) =>
+      filter
+        ? (['items', 'list', filter] as const)
+        : (['items', 'list'] as const)
+  }
+} as const

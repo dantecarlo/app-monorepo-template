@@ -1,39 +1,39 @@
-import type { ItemViewModel } from '@/features/items/models/Item.type';
-import { ITEM_CARD } from '@/features/items/components/ItemCard.styles';
+import { ITEM_CARD } from '@/features/items/components/ItemCard.styles'
+import type { IItemViewModel } from '@/features/items/models/Item.type'
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const STATUS_LABEL: Record<ItemViewModel['status'], string> = {
+const STATUS_LABEL: Record<IItemViewModel['status'], string> = {
   active: 'active',
   archived: 'archived',
-  draft: 'draft',
-};
+  draft: 'draft'
+}
 
-const STATUS_CLASS: Record<ItemViewModel['status'], string> = {
+const STATUS_CLASS: Record<IItemViewModel['status'], string> = {
   active: ITEM_CARD.STATUS_ACTIVE,
   archived: ITEM_CARD.STATUS_ARCHIVED,
-  draft: ITEM_CARD.STATUS_DRAFT,
-};
+  draft: ITEM_CARD.STATUS_DRAFT
+}
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export interface ItemCardProps {
-  item: ItemViewModel;
+export interface IItemCardProps {
+  item: IItemViewModel
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function ItemCard({ item }: ItemCardProps) {
+export const ItemCard = ({ item }: IItemCardProps) => {
   return (
     <div className={`${ITEM_CARD.ROW} ${ITEM_CARD.DIVIDER}`}>
       {/* Author avatar */}
-      <div className={ITEM_CARD.AVATAR} aria-hidden="true">
+      <div aria-hidden="true" className={ITEM_CARD.AVATAR}>
         {item.authorInitials}
       </div>
 
@@ -54,8 +54,10 @@ export function ItemCard({ item }: ItemCardProps) {
       {/* Time + status */}
       <div className={ITEM_CARD.RIGHT}>
         <span className={ITEM_CARD.TIME}>{item.timeDisplay}</span>
-        <span className={STATUS_CLASS[item.status]}>{STATUS_LABEL[item.status]}</span>
+        <span className={STATUS_CLASS[item.status]}>
+          {STATUS_LABEL[item.status]}
+        </span>
       </div>
     </div>
-  );
+  )
 }

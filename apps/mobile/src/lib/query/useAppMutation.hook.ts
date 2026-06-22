@@ -4,35 +4,45 @@
 import {
   useMutation,
   type UseMutationOptions,
-  type UseMutationResult,
-} from '@tanstack/react-query';
-import { useToastStore } from '@/stores/toast.store';
+  type UseMutationResult
+} from '@tanstack/react-query'
 
-export interface AppMutationOptions<TData, TVariables, TError = Error> {
-  mutationOptions: UseMutationOptions<TData, TError, TVariables>;
-  errorMessage?: string;
-  successMessage?: string;
+import { useToastStore } from '@/stores/toast.store'
+
+export interface IAppMutationOptions<TData, TVariables, TError = Error> {
+  errorMessage?: string
+  mutationOptions: UseMutationOptions<TData, TError, TVariables>
+  successMessage?: string
 }
 
-export function useAppMutation<TData, TVariables, TError extends Error = Error>({
-  mutationOptions,
+export const useAppMutation = <
+  TData,
+  TVariables,
+  TError extends Error = Error
+>({
   errorMessage,
-  successMessage,
-}: AppMutationOptions<TData, TVariables, TError>): UseMutationResult<TData, TError, TVariables> {
-  const addToast = useToastStore((s) => s.add);
+  mutationOptions,
+  successMessage
+}: IAppMutationOptions<TData, TVariables, TError>): UseMutationResult<
+  TData,
+  TError,
+  TVariables
+> => {
+  const addToast = useToastStore((s) => s.add)
 
   return useMutation<TData, TError, TVariables>({
     ...mutationOptions,
     onError(error, variables, onMutateResult, context) {
       const message =
         errorMessage ??
-        (error instanceof Error ? error.message : 'An error occurred');
-      addToast({ variant: 'error', message });
-      mutationOptions.onError?.(error, variables, onMutateResult, context);
+        (error instanceof Error ? error.message : 'An error occurred')
+      addToast({ message, variant: 'error' })
+      mutationOptions.onError?.(error, variables, onMutateResult, context)
     },
     onSuccess(data, variables, onMutateResult, context) {
-      if (successMessage) addToast({ variant: 'success', message: successMessage });
-      mutationOptions.onSuccess?.(data, variables, onMutateResult, context);
-    },
-  });
+      if (successMessage)
+        addToast({ message: successMessage, variant: 'success' })
+      mutationOptions.onSuccess?.(data, variables, onMutateResult, context)
+    }
+  })
 }

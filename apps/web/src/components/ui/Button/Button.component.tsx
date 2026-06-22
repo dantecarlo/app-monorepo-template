@@ -1,36 +1,43 @@
-import type { ButtonHTMLAttributes } from 'react';
-import type { VariantProps } from 'tailwind-variants';
-import { buttonVariants } from '@/components/ui/Button/Button.styles';
+import type { ButtonHTMLAttributes } from 'react'
+import type { VariantProps } from 'tailwind-variants'
+
+import { buttonVariants } from '@/components/ui/Button/Button.styles'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export interface ButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement>,
+export interface IButtonProps
+  extends
+    ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
-  isLoading?: boolean;
+  isLoading?: boolean
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function Button({
-  variant,
-  size,
+export const Button = ({
+  children,
+  className,
+  disabled,
   fullWidth,
   isLoading,
-  disabled,
-  className,
-  children,
+  size,
+  variant,
   ...props
-}: ButtonProps) {
+}: IButtonProps) => {
   return (
     <button
-      className={buttonVariants({ variant, size, fullWidth, class: className })}
-      disabled={disabled ?? isLoading}
       aria-busy={isLoading}
+      className={buttonVariants({
+        class: className,
+        fullWidth,
+        size,
+        variant
+      })}
+      disabled={disabled ?? isLoading}
       {...props}
     >
       {isLoading ? (
@@ -45,5 +52,5 @@ export function Button({
         children
       )}
     </button>
-  );
+  )
 }

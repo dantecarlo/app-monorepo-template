@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js'
 
 /**
  * Server-side Supabase client factory.
@@ -9,14 +9,14 @@ import { createClient } from '@supabase/supabase-js';
  * NOTE: for auth-aware SSR with cookie-based sessions, swap to
  * @supabase/ssr and createServerClient() with a cookie store.
  */
-export function createServerClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+export const createServerClient = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
 
   return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-      persistSession: false,
       autoRefreshToken: false,
-    },
-  });
+      persistSession: false
+    }
+  })
 }

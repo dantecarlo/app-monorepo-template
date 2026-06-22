@@ -1,25 +1,36 @@
-import type { HTMLAttributes } from 'react';
-import type { VariantProps } from 'tailwind-variants';
-import { chipVariants } from '@/components/ui/Chip/Chip.styles';
+import type { HTMLAttributes } from 'react'
+import type { VariantProps } from 'tailwind-variants'
+
+import { chipVariants } from '@/components/ui/Chip/Chip.styles'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export interface ChipProps
-  extends HTMLAttributes<HTMLSpanElement>,
+export interface IChipProps
+  extends
+    HTMLAttributes<HTMLSpanElement>,
     VariantProps<typeof chipVariants> {
   /** Renders a 7px status dot before the label (use with variant="success") */
-  withDot?: boolean;
+  withDot?: boolean
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function Chip({ variant, withDot, className, children, ...props }: ChipProps) {
+export const Chip = ({
+  children,
+  className,
+  variant,
+  withDot,
+  ...props
+}: IChipProps) => {
   return (
-    <span className={chipVariants({ variant, class: className })} {...props}>
+    <span
+      className={chipVariants({ class: className, variant })}
+      {...props}
+    >
       {withDot && (
         <span
           aria-hidden="true"
@@ -28,5 +39,5 @@ export function Chip({ variant, withDot, className, children, ...props }: ChipPr
       )}
       {children}
     </span>
-  );
+  )
 }

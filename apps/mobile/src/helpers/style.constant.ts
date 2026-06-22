@@ -3,33 +3,40 @@
 // or spread directly into style props.
 // Token values imported from @app/ui/src/tokens.ts.
 
-import { StyleSheet } from 'react-native';
-import { colors, spacing, radius, fontSize, fontFamily, rnShadows } from '@app/ui';
+import {
+  colors,
+  fontFamily,
+  fontSize,
+  radius,
+  rnShadows,
+  spacing
+} from '@app/ui'
+import { StyleSheet } from 'react-native'
 
 // ---------------------------------------------------------------------------
 // Layout
 // ---------------------------------------------------------------------------
 
 export const LAYOUT = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.bg.base,
-  },
   contentArea: {
-    flex: 1,
-  },
-  screenPadding: {
-    paddingHorizontal: spacing.lg,
+    flex: 1
   },
   maxWidth: {
-    maxWidth: 428,
     alignSelf: 'center' as const,
-    width: '100%',
+    maxWidth: 428,
+    width: '100%'
+  },
+  screen: {
+    backgroundColor: colors.bg.base,
+    flex: 1
+  },
+  screenPadding: {
+    paddingHorizontal: spacing.lg
   },
   sectionGap: {
-    gap: spacing.lg,
-  },
-});
+    gap: spacing.lg
+  }
+})
 
 // ---------------------------------------------------------------------------
 // Glass
@@ -38,95 +45,96 @@ export const LAYOUT = StyleSheet.create({
 export const GLASS = StyleSheet.create({
   card: {
     backgroundColor: colors.glass.fill,
+    borderColor: colors.glass.stroke,
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.glass.stroke,
-    ...rnShadows.card,
+    ...rnShadows.card
   },
   cardLg: {
     backgroundColor: colors.glass.fill,
+    borderColor: colors.glass.stroke,
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.glass.stroke,
-    ...rnShadows.card,
+    ...rnShadows.card
   },
   cardPadding: {
-    padding: spacing.xl,
+    padding: spacing.xl
   },
   divider: {
-    borderTopWidth: 1,
     borderTopColor: colors.divider,
-  },
-});
+    borderTopWidth: 1
+  }
+})
 
 // ---------------------------------------------------------------------------
 // Typography
 // ---------------------------------------------------------------------------
 
 export const TEXT = StyleSheet.create({
-  amountHero: {
-    fontFamily: `${fontFamily.display}_800ExtraBold`,
-    fontSize: fontSize.amountHero.size,
-    lineHeight: fontSize.amountHero.lineHeight,
-    color: colors.text.primary,
+  accent: {
+    color: colors.accent
   },
   amount: {
+    color: colors.text.primary,
     fontFamily: `${fontFamily.display}_700Bold`,
     fontSize: fontSize.amount.size,
-    lineHeight: fontSize.amount.lineHeight,
-    color: colors.text.primary,
+    lineHeight: fontSize.amount.lineHeight
   },
-  heading: {
-    fontFamily: `${fontFamily.display}_700Bold`,
-    fontSize: fontSize.heading.size,
-    lineHeight: fontSize.heading.lineHeight,
+  amountHero: {
     color: colors.text.primary,
-  },
-  title: {
-    fontFamily: `${fontFamily.display}_600SemiBold`,
-    fontSize: fontSize.title.size,
-    lineHeight: fontSize.title.lineHeight,
-    color: colors.text.primary,
+    fontFamily: `${fontFamily.display}_800ExtraBold`,
+    fontSize: fontSize.amountHero.size,
+    lineHeight: fontSize.amountHero.lineHeight
   },
   body: {
+    color: colors.text.primary,
     fontFamily: `${fontFamily.body}_400Regular`,
     fontSize: fontSize.body.size,
-    lineHeight: fontSize.body.lineHeight,
-    color: colors.text.primary,
-  },
-  label: {
-    fontFamily: `${fontFamily.body}_500Medium`,
-    fontSize: fontSize.label.size,
-    lineHeight: fontSize.label.lineHeight,
-    color: colors.text.secondary,
+    lineHeight: fontSize.body.lineHeight
   },
   caption: {
+    color: colors.text.tertiary,
     fontFamily: `${fontFamily.body}_400Regular`,
     fontSize: fontSize.caption.size,
-    lineHeight: fontSize.caption.lineHeight,
-    color: colors.text.tertiary,
-  },
-  accent: {
-    color: colors.accent,
-  },
-  success: {
-    color: colors.success,
-  },
-  warning: {
-    color: colors.warning,
+    lineHeight: fontSize.caption.lineHeight
   },
   danger: {
-    color: colors.danger,
+    color: colors.danger
   },
-});
+  heading: {
+    color: colors.text.primary,
+    fontFamily: `${fontFamily.display}_700Bold`,
+    fontSize: fontSize.heading.size,
+    lineHeight: fontSize.heading.lineHeight
+  },
+  label: {
+    color: colors.text.secondary,
+    fontFamily: `${fontFamily.body}_500Medium`,
+    fontSize: fontSize.label.size,
+    lineHeight: fontSize.label.lineHeight
+  },
+  success: {
+    color: colors.success
+  },
+  title: {
+    color: colors.text.primary,
+    fontFamily: `${fontFamily.display}_600SemiBold`,
+    fontSize: fontSize.title.size,
+    lineHeight: fontSize.title.lineHeight
+  },
+  warning: {
+    color: colors.warning
+  }
+})
 
 // ---------------------------------------------------------------------------
 // Interaction
 // ---------------------------------------------------------------------------
 
 export const INTERACTION = {
-  // Used with Animated/Reanimated — not StyleSheet
-  pressScale: 0.97,
-  pressDuration: 120,
   disabledOpacity: 0.4,
-} as const;
+
+  pressDuration: 120,
+  // Used with Animated/Reanimated — not StyleSheet
+  pressScale: 0.97
+} as const

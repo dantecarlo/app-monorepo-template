@@ -1,18 +1,19 @@
-'use client';
+'use client'
 
 import {
   useMutation,
   type UseMutationOptions,
-  type UseMutationResult,
-} from '@tanstack/react-query';
-import { useToastStore } from '@/stores/toast.store';
+  type UseMutationResult
+} from '@tanstack/react-query'
 
-export interface AppMutationOptions<TData, TVariables, TError = Error> {
-  mutationOptions: UseMutationOptions<TData, TError, TVariables>;
+import { useToastStore } from '@/stores/toast.store'
+
+export interface IAppMutationOptions<TData, TVariables, TError = Error> {
   /** Override the default error toast message */
-  errorMessage?: string;
+  errorMessage?: string
+  mutationOptions: UseMutationOptions<TData, TError, TVariables>
   /** Optional success toast message */
-  successMessage?: string;
+  successMessage?: string
 }
 
 /**
@@ -22,30 +23,35 @@ export interface AppMutationOptions<TData, TVariables, TError = Error> {
  * - Merges caller-provided onError/onSuccess with the toast side-effect.
  * - Single-object param convention for future extensibility.
  */
-export function useAppMutation<TData, TVariables, TError extends Error = Error>({
-  mutationOptions,
+export const useAppMutation = <
+  TData,
+  TVariables,
+  TError extends Error = Error
+>({
   errorMessage,
-  successMessage,
-}: AppMutationOptions<TData, TVariables, TError>): UseMutationResult<
+  mutationOptions,
+  successMessage
+}: IAppMutationOptions<TData, TVariables, TError>): UseMutationResult<
   TData,
   TError,
   TVariables
-> {
-  const addToast = useToastStore((s) => s.add);
+> => {
+  const addToast = useToastStore((s) => s.add)
 
   return useMutation<TData, TError, TVariables>({
     ...mutationOptions,
     onError(error, variables, onMutateResult, context) {
       const message =
-        errorMessage ?? (error instanceof Error ? error.message : 'An error occurred');
-      addToast({ variant: 'error', message });
-      mutationOptions.onError?.(error, variables, onMutateResult, context);
+        errorMessage ??
+        (error instanceof Error ? error.message : 'An error occurred')
+      addToast({ message, variant: 'error' })
+      mutationOptions.onError?.(error, variables, onMutateResult, context)
     },
     onSuccess(data, variables, onMutateResult, context) {
       if (successMessage) {
-        addToast({ variant: 'success', message: successMessage });
+        addToast({ message: successMessage, variant: 'success' })
       }
-      mutationOptions.onSuccess?.(data, variables, onMutateResult, context);
-    },
-  });
+      mutationOptions.onSuccess?.(data, variables, onMutateResult, context)
+    }
+  })
 }

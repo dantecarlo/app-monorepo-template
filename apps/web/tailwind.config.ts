@@ -1,21 +1,25 @@
-import type { Config } from 'tailwindcss';
+import type { Config } from 'tailwindcss'
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const uiPreset = require('@app/ui/tailwind-preset.cjs') as object
 
 const config: Config = {
-  darkMode: 'class',
   content: ['./src/**/*.{ts,tsx}'],
+  darkMode: 'class',
+
+  plugins: [],
   // Consume the shared design system from @app/ui.
   // All tokens (colors, spacing, radius, typography, shadows) are defined there.
-  presets: [require('@app/ui/tailwind-preset.cjs')],
+  presets: [uiPreset],
   theme: {
     extend: {
       // Override font families to use Next.js CSS variable injection
       fontFamily: {
-        display: ['var(--font-montserrat)', 'Montserrat', 'sans-serif'],
         body: ['var(--font-inter)', 'Inter', 'sans-serif'],
-      },
-    },
-  },
-  plugins: [],
-};
+        display: ['var(--font-montserrat)', 'Montserrat', 'sans-serif']
+      }
+    }
+  }
+}
 
-export default config;
+export default config

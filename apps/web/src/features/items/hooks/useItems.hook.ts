@@ -1,18 +1,18 @@
-'use client';
+'use client'
 
-import { useAppQuery } from '@/lib/query/useAppQuery.hook';
-import { QueryKeys } from '@/lib/query/queryKeys.constant';
-import { getItems } from '@/features/items/services/items.service';
-import { adaptItems } from '@/features/items/services/Items.adapter';
-import type { ItemViewModel } from '@/features/items/models/Item.type';
+import type { IItemViewModel } from '@/features/items/models/Item.type'
+import { adaptItems } from '@/features/items/services/Items.adapter'
+import { getItems } from '@/features/items/services/items.service'
+import { QueryKeys } from '@/lib/query/queryKeys.constant'
+import { useAppQuery } from '@/lib/query/useAppQuery.hook'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export interface UseItemsParams {
-  limit?: number;
-  search?: string;
+export interface IUseItemsParams {
+  limit?: number
+  search?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -23,17 +23,17 @@ export interface UseItemsParams {
  * Fetches and adapts the item list.
  *
  * Data-call chain:
- *   useItems → useAppQuery → items.service → Items.adapter → ItemViewModel[]
+ *   useItems → useAppQuery → items.service → Items.adapter → IItemViewModel[]
  */
-export function useItems({ limit = 50, search }: UseItemsParams = {}) {
-  return useAppQuery<ItemViewModel[]>({
-    queryOptions: {
-      queryKey: QueryKeys.items.list(search),
-      queryFn: async () => {
-        const dtos = await getItems({ limit, search });
-        return adaptItems(dtos);
-      },
-    },
+export const useItems = ({ limit = 50, search }: IUseItemsParams = {}) => {
+  return useAppQuery<IItemViewModel[]>({
     errorMessage: 'Failed to load items. Please try again.',
-  });
+    queryOptions: {
+      queryFn: async () => {
+        const dtos = await getItems({ limit, search })
+        return adaptItems(dtos)
+      },
+      queryKey: QueryKeys.items.list(search)
+    }
+  })
 }

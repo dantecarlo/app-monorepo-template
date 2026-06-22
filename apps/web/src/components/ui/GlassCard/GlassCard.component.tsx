@@ -1,23 +1,34 @@
-import type { HTMLAttributes } from 'react';
-import type { VariantProps } from 'tailwind-variants';
-import { glassCardVariants } from '@/components/ui/GlassCard/GlassCard.styles';
+import type { HTMLAttributes } from 'react'
+import type { VariantProps } from 'tailwind-variants'
+
+import { glassCardVariants } from '@/components/ui/GlassCard/GlassCard.styles'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export interface GlassCardProps
-  extends HTMLAttributes<HTMLDivElement>,
+export interface IGlassCardProps
+  extends
+    HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof glassCardVariants> {}
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function GlassCard({ radius, padding, className, children, ...props }: GlassCardProps) {
+export const GlassCard = ({
+  children,
+  className,
+  padding,
+  radius,
+  ...props
+}: IGlassCardProps) => {
   return (
-    <div className={glassCardVariants({ radius, padding, class: className })} {...props}>
+    <div
+      className={glassCardVariants({ class: className, padding, radius })}
+      {...props}
+    >
       {children}
     </div>
-  );
+  )
 }

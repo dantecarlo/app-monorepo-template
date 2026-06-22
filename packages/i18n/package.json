@@ -1,0 +1,19 @@
+{
+  "name": "@app/i18n",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "*",
+    "vitest": "^2.1.8"
+  }
+}
