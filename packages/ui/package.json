@@ -1,0 +1,20 @@
+{
+  "name": "@app/ui",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tailwind-preset": "./tailwind-preset.cjs"
+  },
+  "files": [
+    "src",
+    "tailwind-preset.cjs"
+  ],
+  "devDependencies": {
+    "typescript": "*"
+  },
+  "peerDependencies": {
+    "tailwindcss": ">=3.4.0"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "App",
+    "slug": "app-monorepo-template",
+    "version": "0.0.1",
+    "scheme": "app",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0B0D"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A0B0D"
+      },
+      "package": "com.app.template"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.app.template"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-font",
+        {
+          "fonts": []
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
