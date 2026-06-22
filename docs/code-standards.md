@@ -39,7 +39,7 @@ import { Button } from '@/*' // apps/mobile
 Available aliases:
 
 - `@/*` → `src/*` inside each app
-- `@app/*` → workspace packages (`@app/core`, `@app/ui`, etc.)
+- `@app/*` → workspace packages (`@app/core`, `@app/tokens`, etc.)
 
 ---
 

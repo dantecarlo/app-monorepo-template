@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@app/ui": "workspace:*",
+    "@app/tokens": "workspace:*",
     "@expo-google-fonts/inter": "^0.2.3",
     "@expo-google-fonts/montserrat": "^0.2.3",
     "@supabase/supabase-js": "^2.47.10",

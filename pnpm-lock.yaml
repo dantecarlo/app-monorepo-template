@@ -83,9 +83,9 @@ importers:
 
   apps/mobile:
     dependencies:
-      '@app/ui':
+      '@app/tokens':
         specifier: workspace:*
-        version: link:../../packages/ui
+        version: link:../../packages/tokens
       '@expo-google-fonts/inter':
         specifier: ^0.2.3
         version: 0.2.3
@@ -159,9 +159,9 @@ importers:
 
   apps/web:
     dependencies:
-      '@app/ui':
+      '@app/tokens':
         specifier: workspace:*
-        version: link:../../packages/ui
+        version: link:../../packages/tokens
       '@supabase/supabase-js':
         specifier: ^2.47.10
         version: 2.108.2
@@ -230,7 +230,7 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.0)(lightningcss@1.27.0)(terser@5.48.0)
 
-  packages/ui:
+  packages/tokens:
     dependencies:
       tailwindcss:
         specifier: '>=3.4.0'

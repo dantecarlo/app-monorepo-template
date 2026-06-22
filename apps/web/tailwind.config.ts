@@ -1,14 +1,14 @@
 import type { Config } from 'tailwindcss'
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const uiPreset = require('@app/ui/tailwind-preset.cjs') as object
+const uiPreset = require('@app/tokens/tailwind-preset.cjs') as object
 
 const config: Config = {
   content: ['./src/**/*.{ts,tsx}'],
   darkMode: 'class',
 
   plugins: [],
-  // Consume the shared design system from @app/ui.
+  // Consume the shared design system from @app/tokens.
   // All tokens (colors, spacing, radius, typography, shadows) are defined there.
   presets: [uiPreset],
   theme: {

@@ -1,4 +1,4 @@
-import { colors } from '@app/ui'
+import { colors } from '@app/tokens'
 import { Text, View } from 'react-native'
 
 import type { IItemViewModel } from '@/features/items/models/Item.type'

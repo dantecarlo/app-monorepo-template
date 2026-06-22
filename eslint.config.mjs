@@ -104,10 +104,10 @@ export default defineConfig([
     plugins: { '@typescript-eslint': tseslint.plugin, import: importPlugin, 'no-relative-import-paths': noRelativeImportPaths, prettier, 'simple-import-sort': simpleImportSort, 'sort-destructure-keys': sortDestructureKeys, 'sort-keys-fix': sortKeysFix, 'typescript-sort-keys': typescriptSortKeys },
     rules: { ...BASE_RULES }
   },
-  // packages/ui
+  // packages/tokens
   // @ts-expect-error - Plugin type incompatibility
   {
-    files: ['packages/ui/**/*.{ts,tsx}'],
+    files: ['packages/tokens/**/*.{ts,tsx}'],
     languageOptions: { ecmaVersion: 'latest', globals: { ...globals.browser, ...globals.es2021 }, parser: tseslint.parser, parserOptions: { ecmaFeatures: { jsx: true } }, sourceType: 'module' },
     plugins: { import: importPlugin, 'jsx-a11y': jsxA11y, 'no-relative-import-paths': noRelativeImportPaths, prettier, react, 'react-hooks': reactHooks, 'simple-import-sort': simpleImportSort, 'sort-destructure-keys': sortDestructureKeys, 'sort-keys-fix': sortKeysFix, 'typescript-sort-keys': typescriptSortKeys },
     rules: { ...BASE_RULES, ...REACT_RULES },

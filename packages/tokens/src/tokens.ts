@@ -25,8 +25,8 @@ export const colors = {
   success: '#34C759',
   successTint: 'rgba(52,199,89,0.16)',
   text: {
-    primary: '#F7F8FA',
     disabled: 'rgba(255,255,255,0.25)',
+    primary: '#F7F8FA',
     secondary: 'rgba(255,255,255,0.55)',
     tertiary: '#7E808A'
   },

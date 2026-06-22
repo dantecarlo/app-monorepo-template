@@ -4,7 +4,7 @@
 // Keep this file in sync with src/tokens.ts.
 //
 // Usage in tailwind.config.js / tailwind.config.ts:
-//   presets: [require('@app/ui/tailwind-preset.cjs')]
+//   presets: [require('@app/tokens/tailwind-preset.cjs')]
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {

@@ -1,4 +1,4 @@
-import { colors, spacing } from '@app/ui'
+import { colors, spacing } from '@app/tokens'
 import { BlurView } from 'expo-blur'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useMemo, useState } from 'react'

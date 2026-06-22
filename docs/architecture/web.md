@@ -54,7 +54,7 @@ export default DashboardPage
 
 ## 4. UI & i18n stack
 
-- **shadcn/ui + Tailwind**, tokens from `@app/ui` (the shared preset). Dark-glass token set for
+- **shadcn/ui + Tailwind**, tokens from `@app/tokens` (the shared preset). Dark-glass token set for
   the default visual language.
 - **i18n: `next-intl`** (App-Router-native, RSC + middleware) reading the shared `@app/i18n`
   ICU catalogs — same keys as mobile, different adapter.

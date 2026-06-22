@@ -1,7 +1,7 @@
 // RN-safe style constants — mirrors apps/web/src/helpers/style.constant.ts.
 // Instead of Tailwind class strings, these are plain objects used with StyleSheet.create()
 // or spread directly into style props.
-// Token values imported from @app/ui/src/tokens.ts.
+// Token values imported from @app/tokens/src/tokens.ts.
 
 import {
   colors,
@@ -10,7 +10,7 @@ import {
   radius,
   rnShadows,
   spacing
-} from '@app/ui'
+} from '@app/tokens'
 import { StyleSheet } from 'react-native'
 
 // ---------------------------------------------------------------------------

@@ -12,7 +12,7 @@ and a **mobile (Expo)** app that share one design system, architecture, and stan
 | Monorepo         | pnpm workspaces + Turborepo                 |
 | Web              | Next.js 15 (App Router) + Tailwind CSS v3   |
 | Mobile           | Expo (React Native) + NativeWind v4         |
-| Design system    | `@app/ui` — shared tokens + Tailwind preset |
+| Design system    | `@app/tokens` — shared tokens + Tailwind preset |
 | State            | Zustand                                     |
 | Data fetching    | TanStack Query v5                           |
 | Language         | TypeScript (strict)                         |
@@ -55,7 +55,7 @@ app-monorepo-template/
 │   └── skills/validate-all/SKILL.md  # validation harness recipe
 │
 ├── packages/
-│   ├── ui/                 # @app/ui — design tokens + Tailwind preset
+│   ├── ui/                 # @app/tokens — design tokens + Tailwind preset
 │   │   ├── src/tokens.ts   # colors, spacing, radius, typography, shadows
 │   │   └── tailwind-preset.cjs
 │   ├── core/               # @app/core — AppError, scrubPII, shared contracts (no React/RN/DOM)
@@ -88,12 +88,12 @@ app-monorepo-template/
 
 ## Shared design system
 
-`packages/ui` is the **single source of truth** for visual design.
+`packages/tokens` is the **single source of truth** for visual design.
 
 - `src/tokens.ts` — plain TypeScript: colors, spacing, radius, typography, shadows, gradients.
   No framework dependencies. Both apps import these directly.
 - `tailwind-preset.cjs` — CommonJS Tailwind preset that maps the same values into Tailwind's
-  `theme.extend`. Used by both apps via `require('@app/ui/tailwind-preset.cjs')`.
+  `theme.extend`. Used by both apps via `require('@app/tokens/tailwind-preset.cjs')`.
 
 **Web** consumes design tokens through Tailwind class names (e.g. `bg-bg-base`, `text-accent`).
 **Mobile** uses NativeWind class names + direct token imports for RN `StyleSheet.create()`.
