@@ -9,6 +9,10 @@
   "files": [
     "src"
   ],
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
   "devDependencies": {
     "typescript": "*"
   }

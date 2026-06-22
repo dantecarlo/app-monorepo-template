@@ -12,6 +12,9 @@
     "src",
     "tailwind-preset.cjs"
   ],
+  "scripts": {
+    "lint": "eslint ."
+  },
   "devDependencies": {
     "typescript": "*"
   },
