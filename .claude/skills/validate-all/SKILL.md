@@ -52,7 +52,8 @@ pnpm validate
 ```
 
 `pnpm validate` runs `turbo run lint typecheck test build format:check` across all
-packages, then runs `pnpm verify:tests` (the tests-per-unit presence check).
+packages, then runs `pnpm verify:tests` (the tests-per-unit presence check)
+and `pnpm verify:maps` (the architecture-map + magic-literal check).
 Turbo runs lint and typecheck in the order defined by `dependsOn`;
 build depends on typecheck; test depends on ^build (package deps must build
 first). Only `apps/web` defines a `build` task (Next.js build); packages
@@ -62,6 +63,16 @@ that do not define `build` are skipped by Turbo automatically.
 `*.component.tsx` / `*.hook.ts` / `*.helper.ts` / `*.service.ts` /
 `*.adapter.ts` unit lacks a sibling `*.test.*` file. A missing test is a
 **BLOCKER** — add the sibling test before proceeding.
+
+`pnpm verify:maps` (`scripts/verify-maps.mjs`) runs two checks: (A) every
+repo path referenced in `docs/maps/global-map.md` must still resolve — a dead
+reference is a **BLOCKER** (update the map when you move things); and (B) a
+whole-tree magic-number audit (TS AST, faithful to the ESLint
+`no-magic-numbers` contract) — any stray magic number outside
+`*.constant.ts` / `*.styles.ts` is a **BLOCKER** (extract it to a constant).
+The architecture maps live under `docs/maps/`: `global-map.md` (the shared /
+global index) and `screen-map.template.md` (the per-screen internal map,
+copied once per screen).
 
 **If this step fails:**
 
@@ -105,12 +116,12 @@ subagent:
 
 ### Groups
 
-| Group ID          | Focus                                                                                                                                                                                            | Vendored skills to load                                                  |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
-| G-standards       | Code-standards compliance: arrow-only, alias imports, file suffixes, naming, single-object params, service+adapter pairing, no magic values, no inline component defs, English-only, Prettier    | `.claude/skills/quality/SKILL.md` + `.claude/skills/pre-commit/SKILL.md` |
-| G-tests           | New/changed logic has tests; `test()` not `it()`; semantic queries only; MSW for HTTP; error + loading paths tested; i18n catalog parity if new keys added                                       | `.claude/skills/test/SKILL.md` + `.claude/skills/fix-test/SKILL.md`      |
-| G-security        | PII scrubbing on all monitoring sinks; no raw sensitive data in logs/toasts; security headers present; origin-lock on API routes; Turnstile on abuse-prone forms; cache-safety on user responses | `.claude/skills/security/SKILL.md`                                       |
-| G-a11y-design-dod | Accessibility (interactive labels, semantic HTML, keyboard nav); design-system token adherence (dark-glass tokens, no inline colors); error-handling DoD (loading/empty/error states + boundary) | `.claude/skills/a11y/SKILL.md`                                           |
+| Group ID          | Focus                                                                                                                                                                                                                                                                                | Vendored skills to load                                                  |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| G-standards       | Code-standards compliance: arrow-only, alias imports, file suffixes, naming, single-object params, service+adapter pairing, no magic values, no inline component defs, English-only, Prettier                                                                                        | `.claude/skills/quality/SKILL.md` + `.claude/skills/pre-commit/SKILL.md` |
+| G-tests           | New/changed logic has tests; `test()` not `it()`; semantic queries only; MSW for HTTP; error + loading paths tested; i18n catalog parity if new keys added                                                                                                                           | `.claude/skills/test/SKILL.md` + `.claude/skills/fix-test/SKILL.md`      |
+| G-security        | PII scrubbing on all monitoring sinks; no raw sensitive data in logs/toasts; security headers present; origin-lock on API routes; Turnstile on abuse-prone forms; cache-safety on user responses                                                                                     | `.claude/skills/security/SKILL.md`                                       |
+| G-a11y-design-dod | Accessibility (interactive labels, semantic HTML, keyboard nav); design-system token adherence (dark-glass tokens, no inline colors); error-handling DoD (loading/empty/error states + boundary)                                                                                     | `.claude/skills/a11y/SKILL.md`                                           |
 | G-fractal         | Fractal architecture per built block: folder structure (screen/component members + barrel), constants-not-inline, logic-in-hook (no business logic/useEffect/useMemo in views), service+adapter pairing, no fetch in views, tests-per-unit, suffix/naming conventions, alias imports | `.claude/skills/fractal-verify/SKILL.md`                                 |
 
 Each validator subagent must:
