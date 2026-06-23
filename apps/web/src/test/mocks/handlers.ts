@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw'
 
-import { ITEMS_API_URL } from '@/services/items.constant'
+import { ITEMS_API_URL } from '@/services/Items/items.constant'
 import { MOCK_ITEM_DTOS } from '@/test/mocks/items.mock'
 
 // Default happy-path handlers. Override per-test with server.use(...) to

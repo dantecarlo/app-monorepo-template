@@ -3,8 +3,7 @@ import { useMemo, useState } from 'react'
 import { QueryKeys } from '@/lib/query/queryKeys.constant'
 import { useAppQuery } from '@/lib/query/useAppQuery.hook'
 import type { IItemViewModel } from '@/screens/ItemsDashboard/models/Item.type'
-import { adaptItems } from '@/services/Items.adapter'
-import { getItems } from '@/services/items.service'
+import { adaptItems, getItems } from '@/services/Items'
 
 // ---------------------------------------------------------------------------
 // Constants

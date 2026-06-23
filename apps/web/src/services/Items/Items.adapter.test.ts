@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 
 import type { IItemDto } from '@/screens/ItemsDashboard/models/Item.type'
-import { adaptItem, adaptItems } from '@/services/Items.adapter'
+import { adaptItem, adaptItems } from '@/services/Items/Items.adapter'
 
 // ---------------------------------------------------------------------------
 // Fixtures

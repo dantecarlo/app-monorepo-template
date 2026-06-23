@@ -10,15 +10,20 @@ import { act, renderHook, waitFor } from '@/test/test.helper'
 //
 // The hook's queryFn calls the in-memory getItems collaborator directly, so we
 // mock that module (not HTTP — MSW would not intercept an in-memory function).
+// We mock only getItems; adaptItems is kept real so adapter logic runs.
 // ---------------------------------------------------------------------------
 
 const { mockGetItems } = vi.hoisted(() => ({
   mockGetItems: vi.fn()
 }))
 
-vi.mock('@/services/items.service', () => ({
-  getItems: mockGetItems
-}))
+vi.mock('@/services/Items', async (importActual) => {
+  const actual = await importActual<typeof import('@/services/Items')>()
+  return {
+    ...actual,
+    getItems: mockGetItems
+  }
+})
 
 // ---------------------------------------------------------------------------
 // Module under test (imported after the mock is registered).

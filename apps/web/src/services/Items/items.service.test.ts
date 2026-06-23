@@ -1,8 +1,8 @@
 import { http, HttpResponse } from 'msw'
 import { describe, expect, test } from 'vitest'
 
-import { ITEMS_API_URL } from '@/services/items.constant'
-import { fetchItems } from '@/services/items.service'
+import { ITEMS_API_URL } from '@/services/Items/items.constant'
+import { fetchItems } from '@/services/Items/items.service'
 import { MOCK_ITEM_DTOS } from '@/test/mocks/items.mock'
 import { server } from '@/test/mocks/server'
 

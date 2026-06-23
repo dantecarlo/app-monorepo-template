@@ -110,6 +110,32 @@ features/items/services/
 
 ---
 
+#### Services are folder-grouped per domain
+
+Each domain's service files live in a dedicated subfolder under `src/services/`:
+
+```
+src/services/
+└── <Domain>/               # PascalCase domain folder
+    ├── <domain>.service.ts
+    ├── <Domain>.adapter.ts
+    ├── <domain>.constant.ts    # optional
+    ├── index.ts                # barrel: re-exports public API only
+    ├── <domain>.service.test.ts
+    └── <Domain>.adapter.test.ts
+```
+
+- Folder name: PascalCase matching the domain (e.g. `Items/`, `Payments/`).
+- Barrel (`index.ts`): exports service functions + adapter functions.
+  Never exports constants or test utilities.
+- External consumers import from the barrel:
+  `import { ... } from '@/services/Items'`.
+- Internal files (service, adapter, tests) import siblings via the full
+  alias path: `@/services/Items/<file>` (no `../`).
+- Mirrors the same per-domain grouping used by screens and components.
+
+---
+
 ## 7. No Magic Numbers or Strings
 
 Every literal must live in a constant or enum.

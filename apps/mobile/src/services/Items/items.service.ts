@@ -2,11 +2,10 @@ import type { IItemDto } from '@/screens/ItemsDashboard/models/Item.type'
 import {
   DEFAULT_ITEMS_LIMIT,
   ITEM_FETCH_DELAY_MS,
-  ITEMS_API_URL,
   LIST_FETCH_DELAY_MS,
   MOCK_HOURS_AGO,
   MS_PER_HOUR
-} from '@/services/items.constant'
+} from '@/services/Items/items.constant'
 
 // ---------------------------------------------------------------------------
 // Mock data — replace with your API / Supabase calls when ready.
@@ -124,32 +123,4 @@ export const getItem = async ({
 }: IGetItemParams): Promise<IItemDto | null> => {
   await new Promise((resolve) => setTimeout(resolve, ITEM_FETCH_DELAY_MS))
   return MOCK_ITEMS.find((item) => item.id === itemId) ?? null
-}
-
-// ---------------------------------------------------------------------------
-// HTTP variant — real fetch against a backend endpoint.
-//
-// This is the shape to keep once you wire a real API: a thin service that
-// performs the request and hands raw DTOs to the adapter. Tests intercept the
-// request with MSW (see src/test/mocks/handlers.ts) instead of mocking fetch.
-// ---------------------------------------------------------------------------
-
-/**
- * Fetches items over HTTP. Throws on a non-OK response so the query layer can
- * surface an error toast.
- */
-export const fetchItems = async ({
-  limit = DEFAULT_ITEMS_LIMIT,
-  search
-}: IGetItemsParams): Promise<IItemDto[]> => {
-  const params = new URLSearchParams({ limit: String(limit) })
-  if (search) params.set('search', search)
-
-  const response = await fetch(`${ITEMS_API_URL}?${params.toString()}`)
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch items: ${response.status}`)
-  }
-
-  return (await response.json()) as IItemDto[]
 }

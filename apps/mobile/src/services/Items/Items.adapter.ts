@@ -6,7 +6,7 @@ import {
   HOURS_PER_DAY,
   MINUTES_PER_HOUR,
   MS_PER_MINUTE
-} from '@/services/items.constant'
+} from '@/services/Items/items.constant'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -50,9 +50,5 @@ export const adaptItem = (dto: IItemDto): IItemViewModel => ({
   title: dto.title
 })
 
-/**
- * Adapts an array of DTOs.
- * Curried form is useful as a TanStack Query `select` function.
- */
 export const adaptItems = (dtos: IItemDto[]): IItemViewModel[] =>
   dtos.map(adaptItem)

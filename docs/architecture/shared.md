@@ -24,8 +24,11 @@ Same shape at every level: **shared lives at the root of `src/`** (`components`,
 screen**, not by feature: take a view, build its screen, and for each thing it needs apply:
 
 > **"Used by more than this screen?"** → yes = shared (`src/…`), no = screen-local
-> (`src/screens/<S>/…`). **Services are transversal by default** (`src/services/`, each with its
-> **adapter**). **Never `fetch` in a component.** Data flows `screen → hook → service → adapter`.
+> (`src/screens/<S>/…`). **Services are transversal by default** — each domain lives in
+> `src/services/<Domain>/` (PascalCase), with its **adapter**, a barrel `index.ts`, and
+> optional constants. External consumers import from the barrel; internal files use the
+> full alias path. **Never `fetch` in a component.** Data flows
+> `screen → hook → service → adapter`.
 
 ## 3. Shared vs per-app — the sharing model ("intermediate")
 

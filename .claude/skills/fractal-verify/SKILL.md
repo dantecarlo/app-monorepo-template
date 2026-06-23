@@ -148,6 +148,28 @@ props.
 rg -n 'fetch\(' <BLOCK_ROOT> --glob '*.screen.tsx' --glob '*.component.tsx' --glob '*.hook.ts*'
 ```
 
+### Services folder-grouping audit (global `src/services/`)
+
+When auditing shared services (not screen-local ones), also check:
+
+- Any `.service.ts` or `.adapter.ts` found directly under `src/services/`
+  (i.e. **not** inside a `src/services/<Domain>/` subfolder) →
+  **BLOCKER**: services must be grouped in a PascalCase domain folder.
+- Each `src/services/<Domain>/` folder must contain an `index.ts` barrel.
+  Missing barrel → **BLOCKER**.
+- The barrel must re-export service functions and adapter functions only.
+  Constants or test utilities re-exported from the barrel → **WARNING**.
+
+```bash
+# Flag any service/adapter files at the flat services root (should be 0):
+fd -t f '\.(service|adapter)\.ts$' src/services --max-depth 1
+
+# Check each Domain folder has an index.ts barrel:
+fd -t d . src/services --max-depth 1 | while read d; do
+  [ -f "$d/index.ts" ] || echo "Missing barrel: $d"
+done
+```
+
 ---
 
 ## Step 5 — Tests per unit

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
-import { getItem, getItems } from '@/services/items.service'
+import { getItem, getItems } from '@/services/Items/items.service'
 
 // The mobile service is a mock backed by an in-memory list with a simulated
 // network delay. Fake timers keep these tests instant and deterministic.

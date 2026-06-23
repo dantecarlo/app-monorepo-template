@@ -62,7 +62,10 @@ the `@/*` alias. UI here is DOM / shadcn / Tailwind.
 | Thing                  | Path                                                                    | Suffix                        | What it holds                                              |
 | ---------------------- | ----------------------------------------------------------------------- | ----------------------------- | ---------------------------------------------------------- |
 | Shared UI kit          | `apps/web/src/components/ui`                                            | `.component.tsx`              | Reusable primitives (`Button`, `Chip`, `GlassCard`)        |
-| Transversal services   | `apps/web/src/services`                                                 | `.service.ts` / `.adapter.ts` | Cross-screen data access — always service + adapter paired |
+| Transversal services   | `apps/web/src/services/Items/items.service.ts`                          | `.service.ts`                 | Items data access (mock + HTTP variants)                   |
+| Transversal adapter    | `apps/web/src/services/Items/Items.adapter.ts`                          | `.adapter.ts`                 | DTO → IItemViewModel mapping                               |
+| Service constants      | `apps/web/src/services/Items/items.constant.ts`                         | `.constant.ts`                | Time units, mock tuning, API URL                           |
+| Services barrel        | `apps/web/src/services/Items/index.ts`                                  | `index.ts`                    | Public API barrel for the Items domain                     |
 | Style constants        | `apps/web/src/helpers/style.constant.ts`                                | `.constant.ts`                | Shared Tailwind class-string constants                     |
 | Query keys             | `apps/web/src/lib/query/queryKeys.constant.ts`                          | `.constant.ts`                | Central React Query key registry                           |
 | App-query hook         | `apps/web/src/lib/query/useAppQuery.hook.ts`                            | `.hook.ts`                    | Wrapper over `useQuery` (project defaults)                 |
@@ -87,7 +90,10 @@ Same shape as web, but UI is React Native / NativeWind. Imported via `@/*`.
 
 | Thing                  | Path                                                                          | Suffix                        | What it holds                                       |
 | ---------------------- | ----------------------------------------------------------------------------- | ----------------------------- | --------------------------------------------------- |
-| Transversal services   | `apps/mobile/src/services`                                                    | `.service.ts` / `.adapter.ts` | Cross-screen data access — service + adapter paired |
+| Transversal services   | `apps/mobile/src/services/Items/items.service.ts`                             | `.service.ts`                 | Items data access (mock implementation)             |
+| Transversal adapter    | `apps/mobile/src/services/Items/Items.adapter.ts`                             | `.adapter.ts`                 | DTO → IItemViewModel mapping                        |
+| Service constants      | `apps/mobile/src/services/Items/items.constant.ts`                            | `.constant.ts`                | Time units, mock tuning                             |
+| Services barrel        | `apps/mobile/src/services/Items/index.ts`                                     | `index.ts`                    | Public API barrel for the Items domain              |
 | Style constants        | `apps/mobile/src/helpers/style.constant.ts`                                   | `.constant.ts`                | Shared NativeWind / RN style constants              |
 | Query keys             | `apps/mobile/src/lib/query/queryKeys.constant.ts`                             | `.constant.ts`                | Central React Query key registry                    |
 | App-query hook         | `apps/mobile/src/lib/query/useAppQuery.hook.ts`                               | `.hook.ts`                    | Wrapper over `useQuery` (project defaults)          |
@@ -156,6 +162,7 @@ only — enforced by ESLint and by `node scripts/verify-maps.mjs`.
 1. **Pure value / logic / contract, no framework** → `packages/` (section 1).
 2. **Shared by 2+ screens, app-specific** → that app's `src/` root (sections 2–3).
 3. **Used by exactly one screen** → that screen's folder (per-screen template).
-4. **Data access** → `src/services/` as a `.service.ts` + paired `.adapter.ts`,
-   never `fetch` in a view.
+4. **Data access** → `src/services/<Domain>/` (PascalCase folder) containing
+   `.service.ts` + paired `.adapter.ts` + optional `.constant.ts` + barrel `index.ts`.
+   External consumers import from the barrel; never `fetch` in a view.
 5. **Magic value** → a `*.constant.ts` (or `*.styles.ts` for styling), never inline.
