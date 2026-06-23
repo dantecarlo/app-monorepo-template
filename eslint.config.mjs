@@ -14,6 +14,7 @@ import sortDestructureKeys from 'eslint-plugin-sort-destructure-keys'
 import sortKeysFix from 'eslint-plugin-sort-keys-fix'
 import typescriptSortKeys from 'eslint-plugin-typescript-sort-keys'
 import globals from 'globals'
+import { fileURLToPath } from 'node:url'
 import tseslint from 'typescript-eslint'
 
 import {
@@ -30,6 +31,10 @@ import {
   TOKENS_SOURCE_OVERRIDE,
   UI_COMPONENT_OVERRIDE
 } from './eslint.rules.mjs'
+
+// typescript-eslint v8 errors when multiple candidate tsconfig roots exist
+// (repo root + apps/*). Pin the root to this config file's directory.
+const TSCONFIG_ROOT_DIR = fileURLToPath(new URL('.', import.meta.url))
 
 const IGNORES = [
   '**/node_modules/**',
@@ -81,6 +86,14 @@ export default defineConfig([
   eslint.configs.recommended,
   // @ts-expect-error - Plugin type incompatibility with ESLint 9 defineConfig
   ...tseslint.configs.recommended,
+
+  // Pin the TSConfig root so typescript-eslint's parser doesn't error on
+  // multiple candidate roots (merged into every workspace block's parserOptions).
+  {
+    languageOptions: {
+      parserOptions: { tsconfigRootDir: TSCONFIG_ROOT_DIR }
+    }
+  },
 
   // -------------------------------------------------------------------------
   // packages/core — framework-agnostic TS
