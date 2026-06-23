@@ -47,10 +47,16 @@ pnpm validate
 ```
 
 `pnpm validate` runs `turbo run lint typecheck test build format:check` across all
-packages. Turbo runs lint and typecheck in the order defined by `dependsOn`;
+packages, then runs `pnpm verify:tests` (the tests-per-unit presence check).
+Turbo runs lint and typecheck in the order defined by `dependsOn`;
 build depends on typecheck; test depends on ^build (package deps must build
 first). Only `apps/web` defines a `build` task (Next.js build); packages
 that do not define `build` are skipped by Turbo automatically.
+
+`pnpm verify:tests` (`scripts/verify-tests.mjs`) fails if any
+`*.component.tsx` / `*.hook.ts` / `*.helper.ts` / `*.service.ts` /
+`*.adapter.ts` unit lacks a sibling `*.test.*` file. A missing test is a
+**BLOCKER** — add the sibling test before proceeding.
 
 **If this step fails:**
 

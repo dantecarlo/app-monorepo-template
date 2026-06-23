@@ -289,11 +289,32 @@ export const TEST_FILE_OVERRIDE = {
   }
 }
 
-// Generated declaration files.
+// Test infrastructure: setup files, the test helper re-export, MSW server +
+// handlers, and mock data fixtures live under src/test/ (or __mocks__/) and do
+// NOT carry a fractal suffix — they are harness plumbing, not feature units.
+// The tests-per-unit presence check (scripts/verify-tests.mjs) already exempts
+// the same paths, so this keeps the two enforcers consistent.
+export const TEST_INFRA_OVERRIDE = {
+  files: ['**/src/test/**/*.{ts,tsx}', '**/__mocks__/**/*.{ts,tsx}'],
+  rules: {
+    'check-file/filename-naming-convention': 'off',
+    'no-magic-numbers': 'off'
+  }
+}
+
+// Generated + augmentation declaration files. Interface augmentations target
+// third-party interface names (e.g. Vitest's Assertion) that cannot carry the
+// I-prefix, so the naming-convention and empty-object-type rules are relaxed.
 export const DTS_FILE_OVERRIDE = {
   files: ['**/*.d.ts'],
   rules: {
+    '@typescript-eslint/naming-convention': 'off',
+    '@typescript-eslint/no-empty-object-type': 'off',
+    // Interface augmentations must mirror upstream generic signatures (e.g.
+    // Assertion<T>) even when the param is unused locally.
+    '@typescript-eslint/no-unused-vars': 'off',
     'no-magic-numbers': 'off',
+    'no-unused-vars': 'off',
     'sort-keys': 'off',
     'sort-keys-fix/sort-keys-fix': 'off'
   }

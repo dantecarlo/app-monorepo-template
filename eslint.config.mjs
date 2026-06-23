@@ -26,6 +26,7 @@ import {
   REACT_RULES,
   STYLES_FILE_OVERRIDE,
   TEST_FILE_OVERRIDE,
+  TEST_INFRA_OVERRIDE,
   TOKENS_SOURCE_OVERRIDE,
   UI_COMPONENT_OVERRIDE
 } from './eslint.rules.mjs'
@@ -269,6 +270,7 @@ export default defineConfig([
   STYLES_FILE_OVERRIDE,
   TOKENS_SOURCE_OVERRIDE,
   TEST_FILE_OVERRIDE,
+  TEST_INFRA_OVERRIDE,
   DTS_FILE_OVERRIDE,
 
   // Prettier must be last to disable conflicting rules.
