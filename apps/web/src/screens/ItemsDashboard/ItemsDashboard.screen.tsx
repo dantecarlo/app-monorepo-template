@@ -227,6 +227,7 @@ const SearchBar = ({ onChange, value }: ISearchBarProps) => {
         </svg>
       </span>
       <input
+        aria-label="Search items"
         className={[
           'w-full rounded-xl pl-10 pr-4 py-3',
           'glass-card',
