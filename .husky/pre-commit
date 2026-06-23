@@ -1,1 +1,6 @@
+# Deterministic, fast gate. ESLint + Prettier on staged files.
+# Semantic checks (fractal architecture, layering, tests-per-unit) are NOT
+# enforced here — run them on each built block before committing:
+#   - per-block fractal audit: .claude/skills/fractal-verify/SKILL.md
+#   - full harness: .claude/skills/validate-all/SKILL.md (G-fractal group)
 pnpm lint-staged

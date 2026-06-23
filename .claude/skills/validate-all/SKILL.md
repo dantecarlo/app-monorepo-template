@@ -36,7 +36,12 @@ For a **one-file tweak** (e.g. renaming a constant, fixing a typo):
 For a **multi-file change** (new feature, screen, service):
 
 - Run Step 1 always.
-- Run ALL four validator groups in parallel (Step 2).
+- Run ALL five validator groups in parallel (Step 2).
+
+For a **single built block** (one freshly scaffolded screen or component),
+always run **G-fractal** scoped to that block — it is the cheapest way to
+catch a structural regression before it spreads. Run G-fractal once per
+built block (not once for the whole diff).
 
 ---
 
@@ -90,7 +95,7 @@ git diff --name-only HEAD
 # pass the list directly to each validator
 ```
 
-Spawn FOUR `validator` subagents IN PARALLEL, one per GROUP. Pass each
+Spawn FIVE `validator` subagents IN PARALLEL, one per GROUP. Pass each
 subagent:
 
 1. Its GROUP name (exactly as below)
@@ -106,6 +111,7 @@ subagent:
 | G-tests           | New/changed logic has tests; `test()` not `it()`; semantic queries only; MSW for HTTP; error + loading paths tested; i18n catalog parity if new keys added                                       | `.claude/skills/test/SKILL.md` + `.claude/skills/fix-test/SKILL.md`      |
 | G-security        | PII scrubbing on all monitoring sinks; no raw sensitive data in logs/toasts; security headers present; origin-lock on API routes; Turnstile on abuse-prone forms; cache-safety on user responses | `.claude/skills/security/SKILL.md`                                       |
 | G-a11y-design-dod | Accessibility (interactive labels, semantic HTML, keyboard nav); design-system token adherence (dark-glass tokens, no inline colors); error-handling DoD (loading/empty/error states + boundary) | `.claude/skills/a11y/SKILL.md`                                           |
+| G-fractal         | Fractal architecture per built block: folder structure (screen/component members + barrel), constants-not-inline, logic-in-hook (no business logic/useEffect/useMemo in views), service+adapter pairing, no fetch in views, tests-per-unit, suffix/naming conventions, alias imports | `.claude/skills/fractal-verify/SKILL.md`                                 |
 
 Each validator subagent must:
 
@@ -115,11 +121,19 @@ Each validator subagent must:
 4. Return a structured report (see `.claude/agents/validator.md` for the format) with
    severity-tagged findings and a PASS/FAIL verdict for its group
 
+**G-fractal scoping note**: G-fractal audits one built block at a time
+(a screen folder or a component folder), not a flat file list. Derive the
+distinct block roots from the changed files (the enclosing
+`screens/<Name>` or `components/<Name>` folder) and pass each block root to
+the validator. If more than one block changed, launch one G-fractal
+validator per block (still in the same parallel batch). The validator reads
+`.claude/skills/fractal-verify/SKILL.md` and follows its per-block contract.
+
 ---
 
 ## Step 3 — Synthesize and report
 
-Aggregate all four group verdicts into a single report:
+Aggregate all five group verdicts into a single report:
 
 ```
 ## Validation Report
@@ -135,6 +149,7 @@ pnpm validate: PASS | FAIL
 | G-tests           | PASS/FAIL | N | N | N |
 | G-security        | PASS/FAIL | N | N | N |
 | G-a11y-design-dod | PASS/FAIL | N | N | N |
+| G-fractal         | PASS/FAIL | N | N | N |
 
 ### BLOCKERs — must fix before DONE
 {List every BLOCKER from all groups, with file:line + rule + fix}
@@ -168,9 +183,10 @@ NOT-DONE if:
 This skill is executed by the **orchestrator**. The orchestrator:
 
 1. Runs `pnpm validate` inline (Step 1) — it is a single bash command.
-2. Delegates Steps 2a–2d to FOUR parallel `validator` subagent instances,
-   one per GROUP, using the `Agent` tool with `model: "sonnet"`.
-3. Collects all four reports and synthesizes them (Step 3) inline.
+2. Delegates Steps 2a–2e to FIVE parallel `validator` subagent instances,
+   one per GROUP (G-fractal gets one instance per changed block), using the
+   `Agent` tool with `model: "sonnet"`.
+3. Collects all reports and synthesizes them (Step 3) inline.
 
 Sub-agent launch template (repeat for each group, all in one parallel
 message):
@@ -180,7 +196,7 @@ Agent(
   subagent_type: "validator",
   model: "sonnet",
   prompt: """
-  GROUP: {G-standards | G-tests | G-security | G-a11y-design-dod}
+  GROUP: {G-standards | G-tests | G-security | G-a11y-design-dod | G-fractal}
 
   SCOPE (changed files):
   {absolute path list}
@@ -190,6 +206,26 @@ Agent(
   Then validate only your GROUP against the SCOPE.
   Return the structured report with BLOCKER/WARNING/INFO findings
   and a PASS/FAIL verdict.
+  """
+)
+```
+
+For **G-fractal**, scope is a single block root (not a flat file list):
+
+```
+Agent(
+  subagent_type: "validator",
+  model: "sonnet",
+  prompt: """
+  GROUP: G-fractal
+  BLOCK: {absolute path to the screen/component folder, e.g.
+          apps/web/src/screens/Dashboard}
+
+  Read docs/code-standards.md first.
+  Then read .claude/skills/fractal-verify/SKILL.md and follow its
+  per-block contract.
+  Audit only this BLOCK. Return the fractal-verify structured report
+  with BLOCKER/WARNING/INFO findings and a PASS/FAIL verdict.
   """
 )
 ```
@@ -206,3 +242,4 @@ Agent(
 - `.claude/skills/test/SKILL.md` — test golden rules + type-specific patterns
 - `.claude/skills/security/SKILL.md` — security checks
 - `.claude/skills/a11y/SKILL.md` — accessibility audit
+- `.claude/skills/fractal-verify/SKILL.md` — per-block fractal architecture audit

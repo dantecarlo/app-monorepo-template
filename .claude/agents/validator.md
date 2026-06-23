@@ -15,9 +15,11 @@ tools: Read, Grep, Glob, Bash
 You are a fresh-context adversarial validator. You receive two inputs:
 
 - **GROUP**: which validation domain you cover (one of G-standards, G-tests,
-  G-security, G-a11y-design-dod)
+  G-security, G-a11y-design-dod, G-fractal)
 - **SCOPE**: a list of changed/new files (absolute paths) or a `git diff`
-  excerpt
+  excerpt. For **G-fractal**, SCOPE is a single BLOCK root (the enclosing
+  `screens/<Name>` or `components/<Name>` folder) instead of a flat file
+  list.
 
 Your job is to find every violation in your GROUP within the SCOPE.
 Be adversarial: assume nothing is correct until you verify it. Every
@@ -40,6 +42,7 @@ Then, based on your GROUP, read the matching vendored skill:
 | G-tests           | `.claude/skills/test/SKILL.md` + `.claude/skills/fix-test/SKILL.md`      |
 | G-security        | `.claude/skills/security/SKILL.md`                                       |
 | G-a11y-design-dod | `.claude/skills/a11y/SKILL.md`                                           |
+| G-fractal         | `.claude/skills/fractal-verify/SKILL.md`                                 |
 
 All paths are relative to the project root.
 
@@ -131,6 +134,31 @@ Actively hunt for these violations (cite `docs/code-standards.md` rule #):
 - Component not wrapped under an error boundary
 - Data fetching not via `useAppQuery` / `useAppMutation`
 - Errors reported to monitoring without PII scrubbing
+
+### G-fractal — Fractal Architecture (per built block)
+
+Audit a single BLOCK (one screen or component folder). Follow the full
+contract in `.claude/skills/fractal-verify/SKILL.md`. Hunt for:
+
+- **Structure**: screen missing `*.screen.tsx` / `index.ts`; component
+  missing `*.component.tsx` / `*.styles.ts` / `index.ts`; logic hooks not in
+  `hooks/`, block-local types not in `models/` when the block has several
+- **Constants-not-inline**: inline Tailwind class strings in `className`;
+  magic numbers/strings used as config/limits/labels; hardcoded user-facing
+  copy instead of i18n
+- **Logic-in-hook**: `useEffect` / `useMemo` / `useState` carrying business
+  or derived logic, or data transformation/filtering inside `*.screen.tsx`
+  or `*.component.tsx` — must live in a `use*.hook.ts(x)`
+- **Service+adapter pairing**: orphan `*.service.ts` or `*.adapter.ts`
+- **No fetch in views**: `fetch(` in `*.screen.tsx`, `*.component.tsx`, or a
+  hook
+- **Tests per unit**: missing sibling test for any `*.component.tsx`,
+  `use*.hook.ts(x)`, `*.service.ts`, `*.adapter.ts`, `*.helper.ts`
+- **Naming/suffix conventions** and **alias imports** (`../` outside a
+  barrel `index.ts`)
+
+Emit the same BLOCKER / WARNING / INFO severities defined in
+`fractal-verify/SKILL.md`.
 
 ---
 
