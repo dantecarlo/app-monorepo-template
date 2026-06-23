@@ -241,7 +241,59 @@ UI strings go through the i18n layer (`@app/i18n`).
 
 ---
 
-## 16. Conventional Commits
+## 16. Error Surfacing — One Global Path
+
+Errors flow through **one** path. Screens and hooks must not bypass it. The
+seven rules below are the **target contract** an app converges on as it grows.
+
+> **What the template ships today (starting point).** This is the contract to
+> grow into, not a description of the stub. The template's `AppError`
+> (`@app/core`) is minimal — `{ code, message }`, no `messageKey` and no
+> `cause` — and `useAppMutation` shows a toast from
+> `errorMessage ?? error.message ?? 'An error occurred'` with no i18n step.
+> There is no `resolveErrorMessage`, no global `QueryCache`/`MutationCache`
+> sink, and no `sanitizeQueryKey` yet. Implement the pieces below as you wire
+> i18n and observability into a real app, and keep a `docs/error-handling.md`
+> documenting the full version — boundaries, Sentry wiring, file layout.
+
+1. **Typed errors only.** Services throw an `AppError` (`@app/core`). The
+   target shape extends the stub with `messageKey` (i18n) + optional `cause`
+   alongside `code`; user-facing copy then lives in the `messageKey` —
+   **never hardcoded** in hooks or screens. Until `messageKey` exists, the
+   stub carries copy in `message`.
+2. **Centralized resolution.** Introduce a `resolveErrorMessage` helper as the
+   single source of truth, with this precedence:
+   `errorMessage` override → `AppError.messageKey` (via i18n) →
+   `error.message` → generic fallback. (The shipped `useAppMutation` resolves
+   inline — `errorMessage ?? error.message ?? fallback` — pending this helper.)
+3. **The `errorMessage` override is a RARE EXCEPTION.** Default: do **not**
+   pass it — let `AppError.messageKey` resolve. Pass it only when a screen
+   genuinely needs different copy than the domain error, and justify it with
+   an inline comment. An unexplained `errorMessage` override in a `*.hook.ts`
+   is a **code-review BLOCKER** — reviewers and pre-commit must flag it.
+4. **Where each error type shows:**
+
+   | Error type                  | Channel                                                |
+   | --------------------------- | ------------------------------------------------------ |
+   | Field **validation**        | inline, on the field                                   |
+   | **Mutation** (server/domain)| global toast (via `useAppMutation`, from `messageKey`) |
+   | **Query** (data-load)       | per-screen `ErrorState` / `AsyncBoundary` (not a toast)|
+   | **Render** crash            | global `ErrorBoundary` + `ErrorState`                  |
+
+5. **Never couple a server/domain error to a form field's error state.** A
+   failed login is not a "wrong password" on the password field.
+6. **Single-sourced observability.** Capture every failed query/mutation
+   **once** in a global `QueryCache` / `MutationCache` `onError` sink
+   (PII-scrubbed via a `sanitizeQueryKey` helper). Do **not** add ad-hoc
+   `captureException` in hooks or screens. The template does not ship this sink
+   or `sanitizeQueryKey` yet — add them when you wire observability.
+7. **`messageKey` parity.** Every `AppError.messageKey` must exist in **all**
+   i18n catalogs — a new key requires an entry in every locale, or the toast
+   silently degrades to the raw technical message.
+
+---
+
+## 17. Conventional Commits
 
 Enforced by commitlint on the `commit-msg` hook.
 
@@ -255,7 +307,7 @@ No `Co-Authored-By` or AI attribution.
 
 ---
 
-## 17. Per-Feature Definition of Done
+## 18. Per-Feature Definition of Done
 
 Before marking a task complete:
 
@@ -267,7 +319,7 @@ Before marking a task complete:
 
 ---
 
-## 18. Validation Gate (definition of done)
+## 19. Validation Gate (definition of done)
 
 Nothing is **DONE** until the validation harness is green.
 
