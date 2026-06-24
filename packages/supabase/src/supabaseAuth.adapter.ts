@@ -7,7 +7,7 @@ import type {
 } from '@app/core'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import type { Database } from '@/types'
+import type { Database } from './types'
 
 const toAuthSession = (session: {
   access_token: string
