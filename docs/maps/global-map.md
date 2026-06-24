@@ -53,8 +53,7 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | i18n constants        | `packages/i18n/src/locales/i18n.constant.ts`                             | `.constant.ts` | Locale codes + default-locale constant                            |
 | i18n resources        | `packages/i18n/src/locales/resources.constant.ts`                        | `.constant.ts` | Catalog registry consumed by each app's i18n adapter              |
 | Backend client        | `packages/supabase/src/client.adapter.ts`                                | `.adapter.ts`  | Browser/native Supabase client factory; satisfies `IBackendClientProvider` |
-| Backend server client | `packages/supabase/src/server.adapter.ts`                                | `.adapter.ts`  | Server/SSR client factory                                         |
-| Backend SSR client    | `packages/supabase/src/ssr.adapter.ts`                                   | `.adapter.ts`  | Cookie-aware SSR client (@supabase/ssr) for RLS propagation       |
+| Backend server client | `packages/supabase/src/server.adapter.ts`                                | `.adapter.ts`  | Cookie-aware SSR client factory; propagates session to RLS via @supabase/ssr |
 | Supabase error mapper | `packages/supabase/src/mapSupabaseError.adapter.ts`                      | `.adapter.ts`  | `IServiceErrorMapper` implementation — maps Postgrest errors to `ServiceErrorCodeType` |
 | Supabase error builder | `packages/supabase/src/buildSupabaseServiceError.helper.ts`             | `.helper.ts`   | Wired default: `buildServiceError` + `mapSupabaseError`; use in services  |
 | Supabase auth gateway | `packages/supabase/src/supabaseAuth.adapter.ts`                          | `.adapter.ts`  | `createSupabaseAuthGateway` — implements `IAuthGateway` over a `SupabaseClient` |
