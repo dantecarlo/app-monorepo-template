@@ -46,7 +46,6 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | Backend server client | `packages/supabase/src/server.adapter.ts`                                | `.adapter.ts`  | Server/SSR client factory                                         |
 | Backend SSR client    | `packages/supabase/src/ssr.adapter.ts`                                   | `.adapter.ts`  | Cookie-aware SSR client (@supabase/ssr) for RLS propagation       |
 | Backend types         | `packages/supabase/src/types.ts`                                         | `.ts`          | Generated DB types + typed exports                                |
-
 | Core test config      | `packages/core/vitest.config.ts`                                         | `.config.ts`   | Vitest config for the core package (node env, includes src/**/*.test.ts)  |
 
 Each package exposes its public surface through a barrel: `packages/core/src/index.ts`,
