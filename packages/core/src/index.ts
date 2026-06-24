@@ -1,8 +1,5 @@
-export type {
-  AppErrorCodeType,
-  IAppErrorParams
-} from './errors/AppError.helper'
-export { APP_ERROR_CODES, AppError } from './errors/AppError.helper'
+export type { IAppErrorParams } from './errors/AppError.helper'
+export { AppError } from './errors/AppError.helper'
 export type { IBuildServiceErrorParams } from './errors/buildServiceError.helper'
 export { buildServiceError } from './errors/buildServiceError.helper'
 export type { IServiceErrorMapper } from './errors/IServiceErrorMapper.type'

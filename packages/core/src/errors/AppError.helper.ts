@@ -1,13 +1,3 @@
-export const APP_ERROR_CODES = {
-  NETWORK: 'NETWORK',
-  NOT_FOUND: 'NOT_FOUND',
-  UNAUTHORIZED: 'UNAUTHORIZED',
-  UNKNOWN: 'UNKNOWN',
-  VALIDATION: 'VALIDATION'
-} as const
-
-export type AppErrorCodeType = keyof typeof APP_ERROR_CODES
-
 export interface IAppErrorParams {
   cause?: unknown
   code: string

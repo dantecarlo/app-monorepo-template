@@ -73,7 +73,7 @@ describe('AppError', () => {
     }
   })
 
-  test('accepts free-string codes outside APP_ERROR_CODES', () => {
+  test('accepts arbitrary string codes', () => {
     const err = new AppError({ code: 'FORBIDDEN' })
     expect(err.code).toBe('FORBIDDEN')
   })
