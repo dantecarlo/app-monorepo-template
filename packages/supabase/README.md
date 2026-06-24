@@ -43,7 +43,7 @@ const supabase = createSupabaseServerClient({
 import { createSupabaseAuthGateway, createSupabaseClient } from '@app/supabase'
 
 const client = createSupabaseClient({ anonKey, url })
-const authGateway = createSupabaseAuthGateway(client)
+const authGateway = createSupabaseAuthGateway({ client })
 ```
 
 ```ts
@@ -114,7 +114,6 @@ pnpm --filter @app/supabase test:db
 
 - `src/client.adapter.ts` — typed browser/client factory; satisfies `IBackendClientProvider`
 - `src/server.adapter.ts` — typed server factory (`@supabase/ssr`, single-object param)
-- `src/ssr.adapter.ts` — cookie-aware SSR factory (`@supabase/ssr`)
 - `src/supabaseAuth.adapter.ts` — `createSupabaseAuthGateway`; implements `IAuthGateway`
 - `src/mapSupabaseError.adapter.ts` — `mapSupabaseError`; implements `IServiceErrorMapper`
 - `src/buildSupabaseServiceError.helper.ts` — wired convenience: `buildServiceError` + `mapSupabaseError`
