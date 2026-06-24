@@ -1,4 +1,6 @@
 // @ts-check
+import vitestPlugin from 'eslint-plugin-vitest'
+
 //
 // Shared ESLint rule sets for the whole monorepo.
 //
@@ -236,6 +238,29 @@ const JSX_LITERAL_SELECTORS = [
 ]
 
 // ---------------------------------------------------------------------------
+// Tailwind 4 named-width utility collision guard.
+// In Tailwind 4, width/height/size utilities with named sizes (xs, sm, md,
+// lg, xl, 2xl, 3xl) resolve to --spacing token px values instead of the TW3
+// fixed-width scale. Shared selectors used in both LOGIC_IN_HOOK_OVERRIDE
+// (component/screen files) and TW4_NAMED_WIDTH_OVERRIDE (all tsx/styles).
+// ---------------------------------------------------------------------------
+const TW4_WIDTH_MESSAGE =
+  'In Tailwind 4, w/h/size utilities with named sizes (xs, sm, md, lg, xl) resolve to --spacing token px values, not TW3 widths. Use an arbitrary value like max-w-[28rem] instead.'
+
+const TW4_WIDTH_SELECTORS = [
+  {
+    message: TW4_WIDTH_MESSAGE,
+    selector:
+      'Literal[value=/\\b(max-w|min-w|w|h|max-h|min-h|size)-(xs|sm|md|lg|xl|2xl|3xl)\\b/]'
+  },
+  {
+    message: TW4_WIDTH_MESSAGE,
+    selector:
+      'TemplateLiteral > TemplateElement[value.cooked=/\\b(max-w|min-w|w|h|max-h|min-h|size)-(xs|sm|md|lg|xl|2xl|3xl)\\b/]'
+  }
+]
+
+// ---------------------------------------------------------------------------
 // Override config objects — reused across workspaces in eslint.config.mjs.
 // ---------------------------------------------------------------------------
 
@@ -253,7 +278,8 @@ export const LOGIC_IN_HOOK_OVERRIDE = {
       'error',
       ...ARROW_ONLY_SELECTORS,
       ...LOGIC_IN_HOOK_SELECTORS,
-      ...JSX_LITERAL_SELECTORS
+      ...JSX_LITERAL_SELECTORS,
+      ...TW4_WIDTH_SELECTORS
     ]
   }
 }
@@ -301,9 +327,11 @@ export const TEST_FILE_OVERRIDE = {
     '**/*.spec.ts',
     '**/*.spec.tsx'
   ],
+  plugins: { vitest: vitestPlugin },
   rules: {
     'no-magic-numbers': 'off',
-    'no-relative-import-paths/no-relative-import-paths': 'off'
+    'no-relative-import-paths/no-relative-import-paths': 'off',
+    'vitest/consistent-test-it': ['error', { fn: 'test' }]
   }
 }
 
@@ -317,6 +345,14 @@ export const TEST_INFRA_OVERRIDE = {
   rules: {
     'check-file/filename-naming-convention': 'off',
     'no-magic-numbers': 'off'
+  }
+}
+
+export const TW4_NAMED_WIDTH_OVERRIDE = {
+  files: ['**/*.tsx', '**/*.styles.ts', '**/*.styles.tsx'],
+  ignores: ['**/*.component.tsx', '**/*.screen.tsx'],
+  rules: {
+    'no-restricted-syntax': ['error', ...TW4_WIDTH_SELECTORS]
   }
 }
 
