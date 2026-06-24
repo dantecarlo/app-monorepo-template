@@ -1,14 +1,14 @@
 'use client'
 
-import { createSupabaseAuthGateway } from '@app/supabase'
+import type { IAuthGateway } from '@app/core'
+import { DEFAULT_LANGUAGE } from '@app/i18n'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NextIntlClientProvider } from 'next-intl'
+import type { ComponentProps } from 'react'
 import { useState } from 'react'
-import type { Messages } from 'use-intl'
 
 import { AuthProvider } from '@/components/AuthProvider'
 import { createQueryClient } from '@/lib/query/createQueryClient.helper'
-import { supabase } from '@/lib/supabase/client.adapter'
 
 const I18N_TIME_ZONE = 'UTC'
 
@@ -22,23 +22,27 @@ const getQueryClient = (): QueryClient => {
   return browserQueryClient
 }
 
-const authGateway = createSupabaseAuthGateway(supabase)
-
 export interface IProvidersProps {
   children: React.ReactNode
-  messages: Messages
+  gateway: IAuthGateway
+  messages: ComponentProps<typeof NextIntlClientProvider>['messages']
 }
 
 export const Providers = ({
   children,
+  gateway,
   messages
 }: IProvidersProps): React.JSX.Element => {
   const [queryClient] = useState(() => getQueryClient())
 
   return (
-    <NextIntlClientProvider messages={messages} timeZone={I18N_TIME_ZONE}>
+    <NextIntlClientProvider
+      locale={DEFAULT_LANGUAGE}
+      messages={messages}
+      timeZone={I18N_TIME_ZONE}
+    >
       <QueryClientProvider client={queryClient}>
-        <AuthProvider gateway={authGateway}>{children}</AuthProvider>
+        <AuthProvider gateway={gateway}>{children}</AuthProvider>
       </QueryClientProvider>
     </NextIntlClientProvider>
   )

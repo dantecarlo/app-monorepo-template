@@ -14,16 +14,27 @@ import { createSupabaseClient } from '@app/supabase'
  * NOTE: The template uses mock data by default. Supabase is only required
  * when you swap the service layer for real API calls.
  */
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+let _supabase: ReturnType<typeof createSupabaseClient> | undefined
 
-if (!url || !anonKey) {
-  throw new Error(
-    'Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. ' +
-      'Copy .env.example to .env.local and fill in your Supabase credentials. ' +
-      'The template uses mock data by default — Supabase is only required when ' +
-      'you wire up real API calls.'
-  )
+export const getSupabaseClient = (): ReturnType<
+  typeof createSupabaseClient
+> => {
+  if (_supabase) {
+    return _supabase
+  }
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!url || !anonKey) {
+    throw new Error(
+      'Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. ' +
+        'Copy .env.example to .env.local and fill in your Supabase credentials. ' +
+        'The template uses mock data by default — Supabase is only required when ' +
+        'you wire up real API calls.'
+    )
+  }
+
+  _supabase = createSupabaseClient({ anonKey, url })
+  return _supabase
 }
-
-export const supabase = createSupabaseClient({ anonKey, url })

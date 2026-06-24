@@ -1,6 +1,6 @@
 import type { IAuthGateway } from '@app/core'
 import type { ReactNode } from 'react'
-import { Fragment } from 'react'
+import React, { Fragment } from 'react'
 
 import { useAuthBootstrap } from '@/components/AuthProvider/useAuthBootstrap.hook'
 

@@ -1,10 +1,10 @@
 import '@/app/globals.css'
 
+import { DEFAULT_LANGUAGE, resources } from '@app/i18n'
 import type { Metadata, Viewport } from 'next'
 import { Inter, Montserrat } from 'next/font/google'
-import { getMessages } from 'next-intl/server'
 
-import { Providers } from '@/app/providers'
+import { SupabaseProviders } from '@/app/SupabaseProviders'
 
 const montserrat = Montserrat({
   display: 'swap',
@@ -49,8 +49,8 @@ interface IRootLayoutProps {
   children: React.ReactNode
 }
 
-const RootLayout = async ({ children }: IRootLayoutProps) => {
-  const messages = await getMessages()
+const RootLayout = ({ children }: IRootLayoutProps) => {
+  const messages = resources[DEFAULT_LANGUAGE].translation
 
   return (
     <html
@@ -59,7 +59,9 @@ const RootLayout = async ({ children }: IRootLayoutProps) => {
       suppressHydrationWarning
     >
       <body className="aurora min-h-screen bg-bg-base font-body text-text-primary antialiased">
-        <Providers messages={messages}>{children}</Providers>
+        <SupabaseProviders messages={messages}>
+          {children}
+        </SupabaseProviders>
       </body>
     </html>
   )
