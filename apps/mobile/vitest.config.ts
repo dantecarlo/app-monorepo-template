@@ -21,6 +21,10 @@ export default defineConfig({
       '@app/i18n': path.resolve(PACKAGES, 'i18n/src'),
       '@app/supabase': path.resolve(PACKAGES, 'supabase/src'),
       '@app/tokens': path.resolve(PACKAGES, 'tokens/src'),
+      'expo-blur': path.resolve(
+        __dirname,
+        './src/test/mocks/expo-blur.ts'
+      ),
       'expo-linear-gradient': path.resolve(
         __dirname,
         './src/test/mocks/expo-linear-gradient.ts'
