@@ -68,6 +68,10 @@ the `@/*` alias. UI here is DOM / shadcn / Tailwind.
 | Transversal adapter    | `apps/web/src/services/Items/Items.adapter.ts`                          | `.adapter.ts`                 | DTO → IItemViewModel mapping                               |
 | Service constants      | `apps/web/src/services/Items/items.constant.ts`                         | `.constant.ts`                | Time units, mock tuning, API URL                           |
 | Services barrel        | `apps/web/src/services/Items/index.ts`                                  | `index.ts`                    | Public API barrel for the Items domain                     |
+| Cached summary service | `apps/web/src/services/ItemsSummary/itemsSummary.service.ts`            | `.service.ts`                 | 'use cache' server fetch — cacheLife('minutes') + cacheTag |
+| Summary adapter        | `apps/web/src/services/ItemsSummary/ItemsSummary.adapter.ts`            | `.adapter.ts`                 | IItemDto[] → IItemsSummaryViewModel counts                 |
+| Summary constants      | `apps/web/src/services/ItemsSummary/itemsSummary.constant.ts`           | `.constant.ts`                | CACHE_LIFE_PROFILE, CACHE_TAG (no magic strings in service)|
+| Summary barrel         | `apps/web/src/services/ItemsSummary/index.ts`                           | `index.ts`                    | Public API barrel for the ItemsSummary domain              |
 | Style constants        | `apps/web/src/helpers/style.constant.ts`                                | `.constant.ts`                | Shared Tailwind class-string constants                     |
 | Query keys             | `apps/web/src/lib/query/queryKeys.constant.ts`                          | `.constant.ts`                | Central React Query key registry                           |
 | App-query hook         | `apps/web/src/lib/query/useAppQuery.hook.ts`                            | `.hook.ts`                    | Wrapper over `useQuery` (project defaults)                 |
@@ -120,6 +124,7 @@ fetching, layout, and local members. Their internals are mapped per screen by
 | App    | Screens root              | Example screen                           |
 | ------ | ------------------------- | ---------------------------------------- |
 | Web    | `apps/web/src/screens`    | `apps/web/src/screens/ItemsDashboard`    |
+| Web    | `apps/web/src/screens`    | `apps/web/src/screens/ItemsSummary`      |
 | Mobile | `apps/mobile/src/screens` | `apps/mobile/src/screens/ItemsDashboard` |
 
 Data flow inside every screen: **screen → hook → service → adapter**. A screen
