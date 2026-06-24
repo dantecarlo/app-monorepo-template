@@ -28,4 +28,13 @@ export type {
   IBackendClientProvider,
   ICreateBackendClientParams
 } from './ports/client/IBackendClientProvider.type'
+export { createConsoleObservability } from './ports/observability/createConsoleObservability.helper'
+export { createNoopObservability } from './ports/observability/createNoopObservability.helper'
+export type {
+  ICaptureErrorParams,
+  ICaptureMessageParams,
+  IObservabilityPort
+} from './ports/observability/IObservabilityPort.type'
+export type { ObservabilityLevelType } from './ports/observability/observabilityLevel.type'
+export { ObservabilityLevelEnum } from './ports/observability/observabilityLevel.type'
 export { PII_KEYS, scrubPII } from './utils/scrubPII.helper'
