@@ -12,7 +12,7 @@ template live in **[CLAUDE.md](CLAUDE.md)** — read it first.
   structural baseline (Clean + Fractal architecture, linting, type-checking,
   testing, validation gates, edge-security docs) for Next.js + Expo projects
   backed by Supabase.
-- **Stack**: pnpm workspaces · Turborepo · Next.js 15 (App Router) · Expo
+- **Stack**: pnpm workspaces · Turborepo · Next.js 16.2.9 (App Router) · Expo SDK 56
   (React Native) · Supabase (Postgres, Auth, RLS) · Cloudflare (edge/CDN/WAF).
 - **Architecture**: Clean + Fractal. Framework-agnostic domain in
   `packages/core`. Platform adapters in `*.adapter.ts` files. See
