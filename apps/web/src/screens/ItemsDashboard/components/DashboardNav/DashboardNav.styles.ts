@@ -1,0 +1,1 @@
+export const DASHBOARD_NAV_ICON_SIZE = 22
