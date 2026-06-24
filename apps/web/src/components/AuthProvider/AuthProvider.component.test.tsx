@@ -1,6 +1,6 @@
 import type { IAuthGateway } from '@app/core'
 import { render } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import { useAuthStore } from '@/stores/auth.store'
 
@@ -14,7 +14,7 @@ const makeGateway = (): IAuthGateway => ({
 })
 
 describe('AuthProvider', () => {
-  it('renders children', () => {
+  test('renders children', () => {
     useAuthStore.setState({ session: null, status: 'loading' })
     const gateway = makeGateway()
     const { getByText } = render(
@@ -25,7 +25,7 @@ describe('AuthProvider', () => {
     expect(getByText('child')).toBeDefined()
   })
 
-  it('calls getSession on mount', async () => {
+  test('calls getSession on mount', async () => {
     const gateway = makeGateway()
     const { unmount } = render(
       <AuthProvider gateway={gateway}>

@@ -1,5 +1,5 @@
 import type { IAuthGateway, IAuthSession } from '@app/core'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { useAuthStore } from '@/stores/auth.store'
 
@@ -23,7 +23,7 @@ beforeEach(() => {
 })
 
 describe('useAuthBootstrap (mobile)', () => {
-  it('hydrates store with session from gateway', async () => {
+  test('hydrates store with session from gateway', async () => {
     const gateway = makeGateway(mockSession)
     const { setSession, setStatus } = useAuthStore.getState()
 
@@ -36,7 +36,7 @@ describe('useAuthBootstrap (mobile)', () => {
     expect(useAuthStore.getState().session).toEqual(mockSession)
   })
 
-  it('sets unauthenticated when session is null', async () => {
+  test('sets unauthenticated when session is null', async () => {
     const gateway = makeGateway(null)
     const { setSession, setStatus } = useAuthStore.getState()
 
@@ -49,7 +49,7 @@ describe('useAuthBootstrap (mobile)', () => {
     expect(useAuthStore.getState().session).toBeNull()
   })
 
-  it('subscribes to auth state changes on mount', () => {
+  test('subscribes to auth state changes on mount', () => {
     const gateway = makeGateway()
     gateway.onAuthStateChange({
       onChange: ({ session }) => {

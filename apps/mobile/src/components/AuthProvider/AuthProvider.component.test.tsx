@@ -1,5 +1,5 @@
 import type { IAuthGateway } from '@app/core'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 vi.mock('@/components/AuthProvider/useAuthBootstrap.hook', () => ({
   useAuthBootstrap: vi.fn()
@@ -17,7 +17,7 @@ const makeGateway = (): IAuthGateway => ({
 })
 
 describe('AuthProvider (mobile)', () => {
-  it('calls getSession on mount via bootstrap', () => {
+  test('calls getSession on mount via bootstrap', () => {
     const gateway = makeGateway()
     AuthProvider({ children: null, gateway })
     expect(useAuthBootstrap).toHaveBeenCalledWith({ gateway })

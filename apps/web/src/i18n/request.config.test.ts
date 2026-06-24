@@ -1,5 +1,5 @@
 import { DEFAULT_LANGUAGE, resources } from '@app/i18n'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 vi.mock('next-intl/server', () => ({
   getRequestConfig: (
@@ -8,7 +8,7 @@ vi.mock('next-intl/server', () => ({
 }))
 
 describe('request.config', () => {
-  it('resolves with the default language and its messages', async () => {
+  test('resolves with the default language and its messages', async () => {
     const factory = (await import('./request.config'))
       .default as unknown as () => Promise<{
       locale: string

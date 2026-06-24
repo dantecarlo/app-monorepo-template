@@ -1,6 +1,6 @@
 import type { IAuthGateway, IAuthSession } from '@app/core'
 import { renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { useAuthStore } from '@/stores/auth.store'
 
@@ -26,7 +26,7 @@ beforeEach(() => {
 })
 
 describe('useAuthBootstrap', () => {
-  it('sets status to authenticated after getSession resolves with a session', async () => {
+  test('sets status to authenticated after getSession resolves with a session', async () => {
     const gateway = makeGateway(mockSession)
     const { unmount } = renderHook(() => useAuthBootstrap({ gateway }))
 
@@ -37,7 +37,7 @@ describe('useAuthBootstrap', () => {
     unmount()
   })
 
-  it('sets status to unauthenticated when getSession resolves with null', async () => {
+  test('sets status to unauthenticated when getSession resolves with null', async () => {
     const gateway = makeGateway(null)
     const { unmount } = renderHook(() => useAuthBootstrap({ gateway }))
 
@@ -47,7 +47,7 @@ describe('useAuthBootstrap', () => {
     unmount()
   })
 
-  it('calls unsubscribe on unmount', () => {
+  test('calls unsubscribe on unmount', () => {
     const unsubscribe = vi.fn()
     const gateway = makeGateway()
     ;(
@@ -60,7 +60,7 @@ describe('useAuthBootstrap', () => {
     expect(unsubscribe).toHaveBeenCalledOnce()
   })
 
-  it('subscribes to auth state changes', () => {
+  test('subscribes to auth state changes', () => {
     const gateway = makeGateway()
     const { unmount } = renderHook(() => useAuthBootstrap({ gateway }))
     expect(gateway.onAuthStateChange).toHaveBeenCalledOnce()

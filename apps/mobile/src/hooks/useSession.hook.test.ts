@@ -1,5 +1,5 @@
 import type { IAuthSession } from '@app/core'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, test } from 'vitest'
 
 import {
   selectAuthStatus,
@@ -18,13 +18,13 @@ beforeEach(() => {
 })
 
 describe('useSession (mobile)', () => {
-  it('returns loading status and null session initially', () => {
+  test('returns loading status and null session initially', () => {
     const state = useAuthStore.getState()
     expect(selectAuthStatus(state)).toBe('loading')
     expect(selectSession(state)).toBeNull()
   })
 
-  it('reflects updates from the auth store', () => {
+  test('reflects updates from the auth store', () => {
     useAuthStore.getState().setSession(mockSession)
     useAuthStore.getState().setStatus('authenticated')
     const state = useAuthStore.getState()

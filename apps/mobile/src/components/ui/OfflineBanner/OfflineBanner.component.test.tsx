@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key })
@@ -7,12 +7,12 @@ vi.mock('react-i18next', () => ({
 import { OfflineBanner } from './OfflineBanner.component'
 
 describe('OfflineBanner (mobile)', () => {
-  it('renders null when isOffline is false', () => {
+  test('renders null when isOffline is false', () => {
     const result = OfflineBanner({ isOffline: false })
     expect(result).toBeNull()
   })
 
-  it('renders the banner when isOffline is true', () => {
+  test('renders the banner when isOffline is true', () => {
     const result = OfflineBanner({ isOffline: true })
     expect(result).not.toBeNull()
   })
