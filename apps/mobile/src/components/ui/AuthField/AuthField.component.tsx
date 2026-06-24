@@ -3,10 +3,8 @@ import { useState } from 'react'
 import type { TextInputProps } from 'react-native'
 import { Pressable, Text, TextInput, View } from 'react-native'
 
-import {
-  AUTH_FIELD_ICON_SIZE,
-  AUTH_FIELD_STYLES as styles
-} from '@/components/ui/AuthField/AuthField.styles'
+import { AUTH_FIELD_ICON_SIZE } from '@/components/ui/AuthField/AuthField.constant'
+import { AUTH_FIELD_STYLES as styles } from '@/components/ui/AuthField/AuthField.styles'
 import { Icon } from '@/components/ui/Icon/Icon.component'
 
 export interface IAuthFieldProps extends Omit<TextInputProps, 'style'> {

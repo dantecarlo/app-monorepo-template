@@ -1,8 +1,6 @@
 import { colors, fontFamily, fontSize, radius, spacing } from '@app/tokens'
 import { StyleSheet } from 'react-native'
 
-export const AUTH_FIELD_ICON_SIZE = 18
-
 export const AUTH_FIELD_STYLES = StyleSheet.create({
   errorText: {
     color: colors.danger,
