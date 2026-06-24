@@ -59,6 +59,14 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 Each package exposes its public surface through a barrel: `packages/core/src/index.ts`,
 `packages/i18n/src/index.ts`, `packages/supabase/src/index.ts`, `packages/tokens/src/index.ts`.
 
+**Backend provider swap.** `@app/core` defines the ports; `@app/supabase` is the
+wired default adapter. To replace Supabase: (1) implement `IAuthGateway`,
+`IBackendClientProvider`, and `IServiceErrorMapper` in a new adapter package;
+(2) repoint each app's `src/lib/supabase/*.adapter.ts` to the new package;
+(3) keep service signatures unchanged — the service seam is the only place the
+client is touched. RLS policies, SQL migrations, and `supabase/config.toml`
+are adapter-owned and must be reproduced in the replacement package.
+
 **Rule of thumb**: imports React / RN / DOM or a UI lib → it does NOT belong
 here (it goes per-app, sections 2–3). Pure logic / values / contracts → here.
 

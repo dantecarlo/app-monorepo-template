@@ -1,11 +1,14 @@
 # @app/supabase
 
-Single typed source for Supabase in the monorepo: client/server factories,
-generated database types, migrations, and local CLI config.
+The default data and authentication provider adapter for the monorepo.
+Implements the `@app/core` ports (`IAuthGateway`, `IBackendClientProvider`,
+`IServiceErrorMapper`) using [Supabase](https://supabase.com) and the
+`@supabase/supabase-js` SDK.
 
-Apps do **not** construct their own Supabase client — they pass their env into
-the factories exported here, so there is exactly one place that knows the
-schema and the SDK surface.
+Apps depend on the **port types** from `@app/core` for type safety and import
+the concrete factories from this package in their `src/lib` adapter layer.
+To swap providers, implement the same ports in a new adapter package and
+update `src/lib/supabase/*.adapter.ts` in each app to point at it.
 
 ## Usage
 
@@ -35,6 +38,54 @@ const supabase = createSupabaseServerClient({
 })
 ```
 
+```ts
+// Auth gateway (IAuthGateway over a provisioned client)
+import { createSupabaseAuthGateway, createSupabaseClient } from '@app/supabase'
+
+const client = createSupabaseClient({ anonKey, url })
+const authGateway = createSupabaseAuthGateway(client)
+```
+
+```ts
+// Error mapping in service layer
+import { buildSupabaseServiceError } from '@app/supabase'
+
+try {
+  // ... supabase data call
+} catch (err) {
+  throw buildSupabaseServiceError({ error: err })
+}
+```
+
+## Ports this package satisfies
+
+| Port                     | Location in `@app/core`                                         | Adapter                                |
+| ------------------------ | --------------------------------------------------------------- | -------------------------------------- |
+| `IAuthGateway`           | `packages/core/src/ports/auth/IAuthGateway.type.ts`            | `createSupabaseAuthGateway`            |
+| `IBackendClientProvider` | `packages/core/src/ports/client/IBackendClientProvider.type.ts` | `createSupabaseClient` (type-verified) |
+| `IServiceErrorMapper`    | `packages/core/src/errors/IServiceErrorMapper.type.ts`          | `mapSupabaseError`                     |
+
+## Swapping the backend provider
+
+The service seam is the single place the provider client is touched.
+Swapping Supabase for another backend requires three steps:
+
+1. **Implement the `@app/core` ports** in a new workspace package (e.g.
+   `@app/firebase`). Provide the equivalent of `createFirebaseAuthGateway`,
+   `mapFirebaseError`, and `buildFirebaseServiceError`.
+
+2. **Repoint each app's `src/lib` adapter** (`src/lib/supabase/*.adapter.ts`)
+   to import from the new adapter package instead. This is the only file that
+   picks the concrete adapter and wires app env into it.
+
+3. **Keep service signatures unchanged.** Services receive/import the wired
+   client and call it; error handling goes through the provider's builder
+   (e.g. `buildFirebaseServiceError`). The service contract does not change.
+
+RLS policies, SQL migrations, and `supabase/config.toml` are **not
+abstracted** — they are inherently adapter-owned. Swapping providers means
+owning the equivalent configuration in the new adapter package.
+
 ## Prerequisites
 
 - [Supabase CLI](https://supabase.com/docs/guides/cli) (`brew install supabase/tap/supabase`)
@@ -61,8 +112,12 @@ pnpm --filter @app/supabase test:db
 
 ## Layout
 
-- `src/client.ts` — typed browser/client factory (single-object param)
-- `src/server.ts` — typed server factory (`@supabase/ssr`, single-object param)
+- `src/client.adapter.ts` — typed browser/client factory; satisfies `IBackendClientProvider`
+- `src/server.adapter.ts` — typed server factory (`@supabase/ssr`, single-object param)
+- `src/ssr.adapter.ts` — cookie-aware SSR factory (`@supabase/ssr`)
+- `src/supabaseAuth.adapter.ts` — `createSupabaseAuthGateway`; implements `IAuthGateway`
+- `src/mapSupabaseError.adapter.ts` — `mapSupabaseError`; implements `IServiceErrorMapper`
+- `src/buildSupabaseServiceError.helper.ts` — wired convenience: `buildServiceError` + `mapSupabaseError`
 - `src/types.ts` — generated `Database` type (placeholder until `gen:types`)
 - `supabase/config.toml` — local CLI config
 - `supabase/migrations/` — SQL migrations (empty skeleton; add yours here)
