@@ -1,6 +1,7 @@
 import '../../global.css'
 import '@/lib/i18n/i18n.config'
 
+import { createSupabaseAuthGateway } from '@app/supabase'
 import {
   Inter_400Regular,
   Inter_500Medium
@@ -20,11 +21,14 @@ import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
+import { AuthProvider } from '@/components/AuthProvider'
 import { createQueryClient } from '@/lib/query/createQueryClient.helper'
+import { supabase } from '@/lib/supabase/client.adapter'
 
 SplashScreen.preventAutoHideAsync()
 
 const queryClient = createQueryClient()
+const authGateway = createSupabaseAuthGateway(supabase)
 
 const RootLayout = () => {
   const [fontsLoaded, fontError] = useFonts({
@@ -50,14 +54,16 @@ const RootLayout = () => {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <StatusBar style="light" />
-        <Stack
-          screenOptions={{
-            animation: 'fade',
-            contentStyle: { backgroundColor: '#0A0B0D' },
-            headerShown: false
-          }}
-        />
+        <AuthProvider gateway={authGateway}>
+          <StatusBar style="light" />
+          <Stack
+            screenOptions={{
+              animation: 'fade',
+              contentStyle: { backgroundColor: '#0A0B0D' },
+              headerShown: false
+            }}
+          />
+        </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   )
