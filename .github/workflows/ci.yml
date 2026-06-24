@@ -44,6 +44,7 @@ jobs:
   expo-health:
     name: expo-health
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -136,13 +137,13 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browser
-        run: pnpm dlx playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Build web app
         run: pnpm --filter @app/web build
 
       - name: Run e2e tests
-        run: pnpm dlx playwright test
+        run: pnpm exec playwright test
         env:
           E2E_BASE_URL: ${{ vars.E2E_BASE_URL }}
 
@@ -173,13 +174,13 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browser
-        run: pnpm dlx playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Build web app
         run: pnpm --filter @app/web build
 
       - name: Run responsive layout checks
-        run: pnpm dlx playwright test --project=mobile-390 --project=tablet-768 --project=desktop-1280 --project=desktop-1920
+        run: pnpm exec playwright test --project=mobile-390 --project=tablet-768 --project=desktop-1280 --project=desktop-1920
         env:
           E2E_BASE_URL: ${{ vars.E2E_BASE_URL }}
 

@@ -12,13 +12,14 @@ const pollUntilReady = async () => {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const res = await fetch(BASE_URL)
-      if (res.ok) return res
+      if (res.status === 200) return res
+      // non-200 (e.g. 503 during Next.js startup) — keep retrying
     } catch {
       // server not yet accepting connections
     }
     if (attempt < MAX_RETRIES) await sleep(RETRY_INTERVAL_MS)
   }
-  throw new Error(`Server at ${BASE_URL} did not respond after ${MAX_RETRIES} attempts`)
+  throw new Error(`Server at ${BASE_URL} did not respond with HTTP 200 after ${MAX_RETRIES} attempts`)
 }
 
 const server = spawn('pnpm', ['--filter', '@app/web', 'start'], {
@@ -44,20 +45,14 @@ try {
   console.log('[smoke-web-render] Waiting for server to be ready...')
   const res = await pollUntilReady()
 
-  const status = res.status
-  if (status !== 200) {
-    console.error(`[smoke-web-render] FAIL: expected HTTP 200, got ${status}`)
+  const body = await res.text()
+  if (!body.includes(KNOWN_MARKER)) {
+    console.error(
+      `[smoke-web-render] FAIL: HTTP 200 but expected marker "${KNOWN_MARKER}" not found in response body`
+    )
     exitCode = 1
   } else {
-    const body = await res.text()
-    if (!body.includes(KNOWN_MARKER)) {
-      console.error(
-        `[smoke-web-render] FAIL: HTTP 200 but expected marker "${KNOWN_MARKER}" not found in response body`
-      )
-      exitCode = 1
-    } else {
-      console.log('[smoke-web-render] OK: HTTP 200 and marker present')
-    }
+    console.log('[smoke-web-render] OK: HTTP 200 and marker present')
   }
 } catch (err) {
   console.error(`[smoke-web-render] FAIL: ${err.message}`)
