@@ -2,7 +2,7 @@
 // ---------------------------------------------------------------------------
 // verify-maps — architecture-map integrity + inline-literal audit.
 //
-// Two independent checks, both must pass for a green run:
+// Four independent checks, all must pass for a green run:
 //
 //   (A) Map-path integrity. Every repo-relative path referenced inside
 //       docs/maps/global-map.md (a `backtick path` that looks like a real
@@ -20,6 +20,21 @@
 //       with the linter. Its added value is COVERAGE: ESLint runs per
 //       workspace; this single pass scans the whole tree at once and reports
 //       any stray magic number as a fatal offender, complementing the rule.
+//
+//   (C) Inline hex-color audit. Same AST walk as (B); flags string literals
+//       whose full text matches /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.
+//       Exemptions: same file-suffix scope as (B) — *.constant.ts and
+//       *.styles.ts are allowed (literals are the point there), as is the
+//       entire packages/tokens/src/** tree (design source of truth).
+//       Fix: move hex values into packages/tokens, a *.constant.ts, or a
+//       *.styles.ts.
+//
+//   (D) Reverse map coverage. For each app root (apps/web, apps/mobile),
+//       lists PascalCase child directories under src/services/<Domain> and
+//       src/screens/<Screen>. Each on-disk domain/screen MUST be referenced
+//       by at least one path substring in docs/maps/global-map.md. Catches
+//       real domains/screens that were added to the codebase but never
+//       documented in the map (the inverse of check A).
 //
 // Why the TS AST and not a regex: a line scanner cannot tell `borderRadius: 8`
 // (object value, allowed) from `setTimeout(fn, 800)` (standalone, magic), nor
@@ -63,6 +78,18 @@ const SCANNED_SUFFIXES = [
 // Numeric literals that never count as "magic" — mirrors the ESLint
 // MAGIC_NUMBER_ALLOWLIST in eslint.rules.mjs.
 const NUMBER_ALLOWLIST = new Set([-1, 0, 1, 2])
+
+// Hex-color string regex — strict #RGB and #RRGGBB (anchored full match).
+const HEX_COLOR_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
+
+// Path segments that mark hex-exempt paths (tokens are the design source of
+// truth; hex inside them is not a leak, it IS the value).
+const HEX_EXEMPT_PATH_SEGMENTS = ['packages/tokens/src']
+
+const isHexExemptPath = (absPath) => {
+  const normalized = absPath.replaceAll('\\', '/')
+  return HEX_EXEMPT_PATH_SEGMENTS.some((seg) => normalized.includes(seg))
+}
 
 // Directories never walked.
 const IGNORED_DIRS = new Set([
@@ -253,7 +280,7 @@ const isAllowedNumeric = (node, value) => {
   return false
 }
 
-const auditFile = (file, offenders) => {
+const auditFile = ({ file, hexOffenders, numericOffenders }) => {
   const source = readFileSync(file, 'utf8')
   const sourceFile = ts.createSourceFile(
     file,
@@ -263,6 +290,8 @@ const auditFile = (file, offenders) => {
     file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
   )
 
+  const checkHex = !isHexExemptPath(file)
+
   const visit = (node) => {
     if (ts.isNumericLiteral(node)) {
       const value = Number(node.text)
@@ -270,13 +299,33 @@ const auditFile = (file, offenders) => {
         const { line } = sourceFile.getLineAndCharacterOfPosition(
           node.getStart(sourceFile)
         )
-        offenders.push({
+        numericOffenders.push({
           line: line + 1,
           path: toRepoRel(file),
           value: node.text
         })
       }
     }
+
+    // Check (C) — hex-color string literals.
+    if (checkHex) {
+      if (
+        ts.isStringLiteral(node) ||
+        ts.isNoSubstitutionTemplateLiteral(node)
+      ) {
+        if (HEX_COLOR_RE.test(node.text)) {
+          const { line } = sourceFile.getLineAndCharacterOfPosition(
+            node.getStart(sourceFile)
+          )
+          hexOffenders.push({
+            line: line + 1,
+            path: toRepoRel(file),
+            value: node.text
+          })
+        }
+      }
+    }
+
     ts.forEachChild(node, visit)
   }
 
@@ -294,10 +343,59 @@ const auditLiterals = (roots) => {
     }
   }
 
+  const hexOffenders = []
   const numericOffenders = []
-  for (const file of files) auditFile(file, numericOffenders)
+  for (const file of files) {
+    auditFile({ file, hexOffenders, numericOffenders })
+  }
 
-  return { numericOffenders, scanned: files.length }
+  return { hexOffenders, numericOffenders, scanned: files.length }
+}
+
+// ---------------------------------------------------------------------------
+// Check (D) — reverse map coverage.
+// ---------------------------------------------------------------------------
+
+// PascalCase folder detection — service domains and screens always use PascalCase.
+const isPascalCase = (name) => /^[A-Z][A-Za-z0-9]*$/.test(name)
+
+const listPascalDirs = ({ parentPath }) => {
+  try {
+    return readdirSync(parentPath).filter((entry) => {
+      if (IGNORED_DIRS.has(entry)) return false
+      if (!isPascalCase(entry)) return false
+      try {
+        return statSync(join(parentPath, entry)).isDirectory()
+      } catch {
+        return false
+      }
+    })
+  } catch {
+    return []
+  }
+}
+
+const APP_ROOTS = ['apps/web', 'apps/mobile']
+
+const verifyReverseMapCoverage = ({ mapContent }) => {
+  const uncovered = []
+
+  for (const appRoot of APP_ROOTS) {
+    for (const subdir of ['services', 'screens']) {
+      const parentPath = resolve(REPO_ROOT, appRoot, 'src', subdir)
+      const domains = listPascalDirs({ parentPath })
+      for (const domain of domains) {
+        const stem = `${appRoot}/src/${subdir}/${domain}`
+        // A domain/screen is covered when at least one map reference starts
+        // with (or contains) its full repo-relative folder path.
+        if (!mapContent.includes(stem)) {
+          uncovered.push(stem)
+        }
+      }
+    }
+  }
+
+  return { ok: uncovered.length === 0, uncovered }
 }
 
 // ---------------------------------------------------------------------------
@@ -310,6 +408,16 @@ const scanRoots = process.argv.slice(2).length
 
 const map = verifyMapPaths()
 const literals = auditLiterals(scanRoots)
+
+// Load map content once for check (D).
+const mapContent = (() => {
+  try {
+    return readFileSync(resolve(REPO_ROOT, GLOBAL_MAP), 'utf8')
+  } catch {
+    return ''
+  }
+})()
+const reverse = verifyReverseMapCoverage({ mapContent })
 
 let failed = false
 
@@ -349,6 +457,44 @@ if (literals.numericOffenders.length > 0) {
 } else {
   console.log(
     `  [B] inline literals: OK — ${literals.scanned} unit(s) scanned, no stray magic numbers.`
+  )
+}
+
+// (C) hex-color strings — FATAL.
+if (literals.hexOffenders.length > 0) {
+  failed = true
+  console.error(
+    `\n  [C] hex colors: FAIL — ${literals.hexOffenders.length} inline hex literal(s) outside *.constant.ts / *.styles.ts / packages/tokens/src:**`
+  )
+  for (const offender of literals.hexOffenders) {
+    console.error(
+      `        - ${offender.path}:${offender.line} -> "${offender.value}"`
+    )
+  }
+  console.error(
+    '\n      Move hex colors into packages/tokens, a *.constant.ts, or a *.styles.ts.'
+  )
+} else {
+  console.log(
+    `  [C] hex colors: OK — ${literals.scanned} unit(s) scanned, no inline hex literals.`
+  )
+}
+
+// (D) reverse map coverage — FATAL.
+if (!reverse.ok) {
+  failed = true
+  console.error(
+    `\n  [D] reverse coverage: FAIL — ${reverse.uncovered.length} domain/screen(s) on disk not referenced in ${GLOBAL_MAP}:`
+  )
+  for (const stem of reverse.uncovered) {
+    console.error(`        - "${stem}" exists on disk but is not referenced in docs/maps/global-map.md`)
+  }
+  console.error(
+    '\n      Add a row for each missing domain/screen to docs/maps/global-map.md.'
+  )
+} else {
+  console.log(
+    `  [D] reverse coverage: OK — all on-disk domains/screens are referenced in ${GLOBAL_MAP}.`
   )
 }
 

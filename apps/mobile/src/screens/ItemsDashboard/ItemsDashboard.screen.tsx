@@ -13,7 +13,10 @@ import {
 } from 'react-native'
 
 import { GLASS, LAYOUT, TEXT } from '@/helpers/style.constant'
-import { ItemCard } from '@/screens/ItemsDashboard/components/ItemCard'
+import {
+  GRADIENT_BRAND_COLORS,
+  ItemCard
+} from '@/screens/ItemsDashboard/components/ItemCard'
 import { useItems } from '@/screens/ItemsDashboard/hooks/useItems.hook'
 import type { IItemViewModel } from '@/screens/ItemsDashboard/models/Item.type'
 
@@ -45,7 +48,7 @@ const DashboardHeader = () => {
         }}
       >
         <LinearGradient
-          colors={['#FF8A3D', '#FF6A1A']}
+          colors={GRADIENT_BRAND_COLORS}
           style={{
             alignItems: 'center',
             borderRadius: 8,
@@ -402,7 +405,7 @@ export const ItemsDashboardScreen = () => {
         {/* Primary CTA */}
         <TouchableOpacity accessibilityRole="button">
           <LinearGradient
-            colors={['#FF8A3D', '#FF6A1A']}
+            colors={GRADIENT_BRAND_COLORS}
             style={{
               alignItems: 'center',
               borderRadius: 9999,
