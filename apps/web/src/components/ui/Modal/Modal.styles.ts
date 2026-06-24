@@ -29,9 +29,9 @@ export const modalPanelVariants = tv({
   },
   variants: {
     size: {
-      lg: 'max-w-2xl',
-      md: 'max-w-lg',
-      sm: 'max-w-sm'
+      lg: 'max-w-[42rem]',
+      md: 'max-w-[32rem]',
+      sm: 'max-w-[24rem]'
     }
   }
 })

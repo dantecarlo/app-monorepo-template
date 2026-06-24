@@ -101,6 +101,7 @@
 
 @layer base {
   html {
+    overflow-x: hidden;
     @apply bg-bg-base text-text-primary;
   }
 

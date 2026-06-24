@@ -13,7 +13,7 @@
 
 export const LAYOUT = {
   CONTENT_AREA: 'relative z-10',
-  MAX_WIDTH: 'max-w-md mx-auto',
+  MAX_WIDTH: 'max-w-[28rem] mx-auto',
   SCREEN: 'min-h-screen bg-bg-base relative',
   SCREEN_PADDING: 'px-4',
   SECTION_GAP: 'space-y-4'

@@ -17,7 +17,7 @@ export const TOAST_DOT_CLASS: Record<ToastVariantType, string> = {
 
 export const toastPillVariants = tv({
   base: [
-    'glass-card pointer-events-auto flex w-full max-w-sm items-center gap-3',
+    'glass-card pointer-events-auto flex w-full max-w-[24rem] items-center gap-3',
     'rounded-full px-4 py-3',
     'animate-in fade-in slide-in-from-bottom-2 duration-200'
   ]

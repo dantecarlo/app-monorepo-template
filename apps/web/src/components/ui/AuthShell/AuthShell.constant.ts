@@ -12,4 +12,4 @@ export const AUTH_SHELL_BRAND_LABEL_CLASS =
 export const AUTH_SHELL_SUBTITLE_CLASS =
   'mt-1 text-center text-body font-body text-text-secondary'
 
-export const AUTH_SHELL_FORM_CLASS = 'w-full max-w-sm'
+export const AUTH_SHELL_FORM_CLASS = 'w-full max-w-[24rem]'
