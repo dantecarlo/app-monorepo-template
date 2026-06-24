@@ -97,7 +97,14 @@ the `@/*` alias. UI here is DOM / shadcn / Tailwind.
 | App-mutation hook      | `apps/web/src/lib/query/useAppMutation.hook.ts`                         | `.hook.ts`                    | Wrapper over `useMutation` (project defaults)              |
 | Supabase client wiring | `apps/web/src/lib/supabase/client.adapter.ts`                           | `.adapter.ts`                 | App-local client adapter over `@app/supabase`              |
 | Supabase server wiring | `apps/web/src/lib/supabase/server.adapter.ts`                           | `.adapter.ts`                 | App-local server adapter over `@app/supabase`              |
+| Auth store             | `apps/web/src/stores/auth.store.ts`                                     | `.store.ts`                   | Zustand session+status slice; depends on IAuthSession (port), no SDK; exports selectSession/selectAuthStatus/useSession |
 | Global stores          | `apps/web/src/stores/ui.store.ts`, `apps/web/src/stores/toast.store.ts` | `.store.ts`                   | Cross-screen Zustand slices                                |
+| Auth provider          | `apps/web/src/components/AuthProvider/AuthProvider.component.tsx`       | `.component.tsx`              | Mounts auth bootstrap; takes IAuthGateway via prop (gateway injected at wiring) |
+| Auth bootstrap hook    | `apps/web/src/components/AuthProvider/useAuthBootstrap.hook.ts`         | `.hook.ts`                    | Subscribes to IAuthGateway, hydrates auth.store, cleans up on unmount |
+| i18n request config    | `apps/web/src/i18n/request.config.ts`                                   | `.config.ts`                  | next-intl getRequestConfig consuming @app/i18n catalogs (locale, messages, timeZone) |
+| Online status hook     | `apps/web/src/components/ui/OfflineBanner/useOnlineStatus.hook.ts`      | `.hook.ts`                    | Tracks navigator connectivity via online/offline events; SSR-safe default true |
+| Offline banner         | `apps/web/src/components/ui/OfflineBanner/OfflineBanner.component.tsx`  | `.component.tsx`              | Controlled connectivity banner; i18n message via next-intl |
+| Modal dismiss hook     | `apps/web/src/components/ui/Modal/useModalDismiss.hook.ts`              | `.hook.ts`                    | Escape-to-close + body scroll lock for modal overlays |
 | Route tree             | `apps/web/src/app`                                                      | Next App Router               | RSC pages, layout, providers                               |
 | Test infra             | `apps/web/src/test`                                                     | (no suffix)                   | Vitest setup, MSW mocks, test helper (harness, not a unit) |
 
@@ -127,7 +134,13 @@ Same shape as web, but UI is React Native / NativeWind. Imported via `@/*`.
 | App-query hook         | `apps/mobile/src/lib/query/useAppQuery.hook.ts`                               | `.hook.ts`                    | Wrapper over `useQuery` (project defaults)          |
 | App-mutation hook      | `apps/mobile/src/lib/query/useAppMutation.hook.ts`                            | `.hook.ts`                    | Wrapper over `useMutation` (project defaults)       |
 | Supabase client wiring | `apps/mobile/src/lib/supabase/client.adapter.ts`                              | `.adapter.ts`                 | App-local client adapter over `@app/supabase`       |
+| Auth store             | `apps/mobile/src/stores/auth.store.ts`                                        | `.store.ts`                   | Zustand session+status slice; depends on IAuthSession (port), no SDK |
 | Global stores          | `apps/mobile/src/stores/ui.store.ts`, `apps/mobile/src/stores/toast.store.ts` | `.store.ts`                   | Cross-screen Zustand slices                         |
+| Auth provider          | `apps/mobile/src/components/AuthProvider/AuthProvider.component.tsx`          | `.component.tsx`              | Mounts auth bootstrap; takes IAuthGateway via prop  |
+| Auth bootstrap hook    | `apps/mobile/src/components/AuthProvider/useAuthBootstrap.hook.ts`            | `.hook.ts`                    | Subscribes to IAuthGateway, hydrates auth.store, cleans up |
+| Session selector hook  | `apps/mobile/src/hooks/useSession.hook.ts`                                    | `.hook.ts`                    | Selector hook returning { session, status } from auth.store |
+| i18n config            | `apps/mobile/src/lib/i18n/i18n.config.ts`                                    | `.config.ts`                  | react-i18next + ICU init consuming @app/i18n resources; AsyncStorage/device locale resolution |
+| Offline banner         | `apps/mobile/src/components/ui/OfflineBanner/OfflineBanner.component.tsx`     | `.component.tsx`              | Controlled connectivity banner; i18n via react-i18next |
 | Route tree             | `apps/mobile/src/app`                                                         | Expo Router                   | `_layout.tsx`, `index.tsx`, file-based routes       |
 | Test infra             | `apps/mobile/src/test`                                                        | (no suffix)                   | Vitest setup + mocks (harness, not a unit)          |
 
