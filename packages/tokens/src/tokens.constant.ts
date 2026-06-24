@@ -23,6 +23,10 @@ export const colors = {
     fill: 'rgba(24,27,34,0.42)',
     stroke: 'rgba(255,255,255,0.10)'
   },
+  knob: {
+    off: '#80828B',
+    on: '#FFFFFF'
+  },
   neutralTint: 'rgba(255,255,255,0.08)',
   scrim: 'rgba(0,0,0,0.60)',
   success: '#34C759',
