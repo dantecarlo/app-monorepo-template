@@ -1,3 +1,4 @@
+import type { IBackendClientProvider } from '@app/core'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 import type { Database } from './types'
@@ -24,3 +25,9 @@ export const createSupabaseClient = ({
   url
 }: ICreateSupabaseClientArgs): SupabaseClient<Database> =>
   createClient<Database>(url, anonKey)
+
+const _providerCheck: IBackendClientProvider<SupabaseClient<Database>> = {
+  createClient: createSupabaseClient
+}
+
+void _providerCheck

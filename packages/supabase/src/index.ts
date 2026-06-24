@@ -1,4 +1,5 @@
 export { buildSupabaseServiceError } from './buildSupabaseServiceError.helper'
 export { createSupabaseClient } from './client.adapter'
 export { mapSupabaseError } from './mapSupabaseError.adapter'
+export { createSupabaseAuthGateway } from './supabaseAuth.adapter'
 export type { Database } from './types'
