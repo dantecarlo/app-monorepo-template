@@ -16,6 +16,7 @@
     "lint:fix": "eslint . --fix",
     "prepare": "husky",
     "typecheck": "turbo run typecheck",
+    "test:e2e": "pnpm dlx playwright test",
     "validate": "turbo run lint typecheck test build format:check && pnpm verify:tests && pnpm verify:maps && pnpm check:identity",
     "verify:maps": "node scripts/verify-maps.mjs",
     "verify:tests": "node scripts/verify-tests.mjs"

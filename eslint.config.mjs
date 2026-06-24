@@ -55,7 +55,10 @@ const IGNORES = [
   '**/babel.config.js',
   'apps/web/next-env.d.ts',
   // Supabase generated types — key order is owned by the generator.
-  'packages/supabase/src/types.ts'
+  'packages/supabase/src/types.ts',
+  // E2E tests run via dlx — Playwright is not a package dep.
+  'e2e/**',
+  'playwright.config.ts'
 ]
 
 // ---------------------------------------------------------------------------

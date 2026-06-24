@@ -15,5 +15,5 @@
       "@app/*": ["packages/*/src"]
     }
   },
-  "exclude": ["node_modules", "dist", ".next", ".expo"]
+  "exclude": ["node_modules", "dist", ".next", ".expo", "e2e", "playwright.config.ts"]
 }
