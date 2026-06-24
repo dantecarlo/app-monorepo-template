@@ -59,6 +59,9 @@
     "*.{ts,tsx}": [
       "eslint --fix",
       "prettier --write"
+    ],
+    "*.mjs": [
+      "eslint --fix"
     ]
   },
   "pnpm": {
