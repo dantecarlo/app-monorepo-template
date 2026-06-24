@@ -142,6 +142,19 @@ Zero matches = seam intact.
 
 ---
 
+## Shared memory
+
+Every project derived from this template shares a single versioned Engram memory
+mirror at **https://github.com/dantecarlo/orquestador-engram-memory**.
+
+At the start of every session, load the shared memory into the project's Engram.
+Whenever portfolio-level decisions, cross-project conventions, or reusable
+architecture knowledge are made, contribute them back to the shared repo.
+
+See `docs/memory.md` for the full LOAD and CONTRIBUTE flow.
+
+---
+
 ## Propagating template improvements to downstream projects
 
 See `docs/propagation.md` and `.claude/skills/propagate-from-template/SKILL.md`.
@@ -159,3 +172,4 @@ See `docs/propagation.md` and `.claude/skills/propagate-from-template/SKILL.md`.
 | `docs/maps/global-map.md` | Navigable index of every shared artifact |
 | `.claude/agents/validator.md` | Adversarial standards validator subagent |
 | `.claude/skills/validate-all/SKILL.md` | Full validation harness |
+| `docs/memory.md` | Shared Engram memory — load at session start, contribute decisions back |

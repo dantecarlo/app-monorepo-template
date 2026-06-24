@@ -20,6 +20,19 @@ template live in **[CLAUDE.md](CLAUDE.md)** — read it first.
 
 ---
 
+## Shared memory
+
+This template's projects share a versioned Engram memory mirror at
+**https://github.com/dantecarlo/orquestador-engram-memory**.
+
+At the start of every session, load the shared memory into the project's Engram.
+Contribute portfolio-level decisions, cross-project conventions, and reusable
+architecture knowledge back to the shared repo after they are made.
+
+See `docs/memory.md` for the LOAD and CONTRIBUTE flow.
+
+---
+
 ## Key docs
 
 | Doc | Purpose |
@@ -32,6 +45,7 @@ template live in **[CLAUDE.md](CLAUDE.md)** — read it first.
 | `docs/e2e.md` | End-to-end testing harness (Playwright via dlx) |
 | `docs/propagation.md` | How to sync template improvements into downstream projects |
 | `docs/maps/global-map.md` | Navigable index of every shared and global artifact |
+| `docs/memory.md` | Shared Engram memory — load at session start, contribute decisions back |
 
 ---
 
