@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - '**'
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-latest
+    env:
+      # The canonical template repo keeps its own identity tokens (@app/*,
+      # app-monorepo-template) intentionally. ATL_TEMPLATE_SELF=1 tells
+      # check-identity.mjs to skip the un-renamed guard for this repo only.
+      # Derived projects must NOT set this variable — their validate fails
+      # until they run `pnpm init <slug>`.
+      ATL_TEMPLATE_SELF: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run validation gate
+        run: pnpm validate
