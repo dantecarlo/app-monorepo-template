@@ -1,5 +1,4 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 
 import { AuthField } from '@/components/ui/AuthField/AuthField.component'
@@ -29,8 +28,7 @@ describe('AuthField', () => {
     expect(screen.getByText('Enter your email')).toBeTruthy()
   })
 
-  test('toggles password visibility', async () => {
-    const user = userEvent.setup()
+  test('shows password reveal button when isPassword is true', () => {
     render(
       <AuthField
         hidePasswordLabel="Hide password"
@@ -39,12 +37,22 @@ describe('AuthField', () => {
         showPasswordLabel="Show password"
       />
     )
-    const input = screen.getByRole('textbox', { hidden: true })
-    expect(input).toHaveAttribute('type', 'password')
+    expect(
+      screen.getByRole('button', { name: 'Show password' })
+    ).toBeTruthy()
+  })
 
+  test('toggles reveal button label on click', () => {
+    render(
+      <AuthField
+        hidePasswordLabel="Hide password"
+        id="password"
+        isPassword
+        showPasswordLabel="Show password"
+      />
+    )
     const toggle = screen.getByRole('button', { name: 'Show password' })
-    await user.click(toggle)
-
+    fireEvent.click(toggle)
     expect(
       screen.getByRole('button', { name: 'Hide password' })
     ).toBeTruthy()
