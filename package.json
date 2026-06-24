@@ -2,6 +2,9 @@
   "name": "app-monorepo-template",
   "private": true,
   "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "build": "turbo run build",
     "check:identity": "node scripts/check-identity.mjs",
@@ -49,8 +52,8 @@
   },
   "pnpm": {
     "overrides": {
-      "@types/react": "^19.0.2",
-      "@types/react-dom": "^19.0.2"
+      "@types/react": "^19.2.17",
+      "@types/react-dom": "^19.2.3"
     },
     "packageExtensions": {
       "@tanstack/react-query": {
