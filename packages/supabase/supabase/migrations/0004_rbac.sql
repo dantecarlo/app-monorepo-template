@@ -13,7 +13,7 @@
 --   app_capability = ('profile.manage')
 --
 -- ANTI-RECURSION: auth_helpers.has_capability / is_staff read these tables.
--- Their own RLS policies (0007) must not call those helpers. See 0007.
+-- Their own RLS policies (0008) must not call those helpers. See 0008.
 
 -- =====================================================================
 -- Section 1: RBAC enums
@@ -58,7 +58,7 @@ create table if not exists public.role_capability (
 );
 
 comment on table public.role_capability is
-  'DB-driven RBAC role→capability map. PK (role, capability). Read by auth_helpers.has_capability / is_staff (SECURITY DEFINER — bypasses RLS). ANTI-RECURSION: RLS on this table must not call the helpers (0007).';
+  'DB-driven RBAC role→capability map. PK (role, capability). Read by auth_helpers.has_capability / is_staff (SECURITY DEFINER — bypasses RLS). ANTI-RECURSION: RLS on this table must not call the helpers (0008).';
 
 -- =====================================================================
 -- Section 3: user_role_grant
@@ -73,7 +73,7 @@ create table if not exists public.user_role_grant (
 );
 
 comment on table public.user_role_grant is
-  'Per-user role grant log. revoked_at IS NULL = active grant; setting it revokes in the same transaction (no hard delete — history preserved). Writes are service-role only (a user cannot self-grant). ANTI-RECURSION: RLS on this table must not call the helpers (0007).';
+  'Per-user role grant log. revoked_at IS NULL = active grant; setting it revokes in the same transaction (no hard delete — history preserved). Writes are service-role only (a user cannot self-grant). ANTI-RECURSION: RLS on this table must not call the helpers (0008).';
 
 comment on column public.user_role_grant.revoked_at is
   'NULL = grant is active. Set to now() to revoke immediately in the same transaction. Never hard-delete — keep the audit trail.';

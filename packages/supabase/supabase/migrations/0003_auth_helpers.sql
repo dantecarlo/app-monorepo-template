@@ -9,7 +9,7 @@
 --   language sql  stable  security definer
 --   set search_path = public, auth_helpers
 --
--- Ownership / least-privilege pattern (mirrors IExam 0011):
+-- Ownership / least-privilege pattern:
 --   1. owner = postgres  → SECURITY DEFINER runs with superuser rights and
 --      bypasses RLS where intended (the sanctioned privileged path).
 --   2. revoke all from public  → no implicit execute grant.
@@ -19,7 +19,7 @@
 --   has_capability() and is_staff() read user_role_grant and role_capability
 --   DIRECTLY (SECURITY DEFINER bypasses their RLS). The RLS policies on those
 --   two tables MUST NOT call any auth_helpers function — doing so creates
---   infinite recursion. See 0007_rls_policies.sql, Section RBAC anti-recursion.
+--   infinite recursion. See 0008_rls_policies.sql, Section RBAC anti-recursion.
 
 -- =====================================================================
 -- Section 1: current_user_id() — identity seam
@@ -135,3 +135,23 @@ $$;
 
 comment on function public.has_capability(public.app_capability) is
   'Public-schema wrapper that delegates to auth_helpers.has_capability. Callable over PostgREST/RPC; the privileged logic stays in auth_helpers. Pattern: one thin wrapper per helper that must be API-accessible.';
+
+-- =====================================================================
+-- Section 6: ownership / least-privilege block for public wrapper
+-- =====================================================================
+
+do $$
+begin
+  if exists (
+    select 1
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname = 'has_capability'
+  ) then
+    alter function public.has_capability(public.app_capability) owner to postgres;
+    revoke all on function public.has_capability(public.app_capability) from public;
+    grant execute on function public.has_capability(public.app_capability) to authenticated, service_role;
+  end if;
+end
+$$;

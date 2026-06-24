@@ -1,6 +1,6 @@
--- 0006_rls_enable.sql
+-- 0007_rls_enable.sql
 -- Concern: default-deny posture. ENABLE + FORCE ROW LEVEL SECURITY over an
---   explicit table list. No policies are added here (those live in 0007).
+--   explicit table list. No policies are added here (those live in 0008).
 -- Source of truth: packages/supabase/docs/database.md (RLS: ENABLE+FORCE).
 -- Idempotency: ALTER TABLE ... ENABLE/FORCE ROW LEVEL SECURITY is itself
 --   idempotent; the do-loop guards on pg_class so a missing table does not abort.
@@ -13,10 +13,10 @@
 --     - service_role with BYPASSRLS for service-path writes.
 --
 -- The table list is EXPLICIT (not a pg_class catalog sweep) so that adding a
--- new table forces a conscious edit here AND a policy in 0007. An RLS-enabled
+-- new table forces a conscious edit here AND a policy in 0008. An RLS-enabled
 -- table with no policy denies everything to non-bypass roles.
 --
--- IMPORTANT: between 0006 and 0007 the schema is fully locked (RLS-on, no policy).
+-- IMPORTANT: between 0007 and 0008 the schema is fully locked (RLS-on, no policy).
 -- Do not split these two migrations across separate deploys.
 
 do $$

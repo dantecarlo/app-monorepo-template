@@ -1,5 +1,5 @@
--- 0007_rls_policies.sql
--- Concern: explicit ALLOW policies per table (default-deny was set in 0006).
+-- 0008_rls_policies.sql
+-- Concern: explicit ALLOW policies per table (default-deny was set in 0007).
 -- Source of truth: packages/supabase/docs/database.md (RLS policies).
 -- Idempotency: every policy is preceded by DROP POLICY IF EXISTS.
 --

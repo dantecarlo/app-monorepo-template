@@ -21,7 +21,7 @@ begin;
 -- Plan
 -- =====================================================================
 -- Count assertions below and update this number when adding new tests.
-select plan(26);
+select plan(22);
 
 -- =====================================================================
 -- Section 1: seed test fixtures (superuser context)

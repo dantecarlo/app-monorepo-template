@@ -16,6 +16,7 @@ create table if not exists public.profile (
   email           extensions.citext unique,
   display_name    text,
   credit_balance  numeric(12,2) not null default 0,
+  status          public.profile_status not null default 'active',
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
 );
@@ -28,6 +29,9 @@ comment on column public.profile.email is
 
 comment on column public.profile.credit_balance is
   'Example numeric(12,2) monetary column. Precision and scale should be adjusted per project requirements.';
+
+comment on column public.profile.status is
+  'Lifecycle state of this profile row. Uses the profile_status enum defined in 0002_enums.sql.';
 
 -- moddatetime trigger: automatically sets updated_at = now() on every UPDATE.
 -- Must reference extensions.moddatetime (schema-qualified) because the function

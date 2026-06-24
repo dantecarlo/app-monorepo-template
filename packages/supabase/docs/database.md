@@ -164,7 +164,7 @@ role.
 
 ## 6. RLS — ENABLE + FORCE, default-deny
 
-Defined in `0006_rls_enable.sql` and `0007_rls_policies.sql`.
+Defined in `0007_rls_enable.sql` and `0008_rls_policies.sql`.
 
 ### Why ENABLE and FORCE
 
@@ -179,14 +179,14 @@ The sanctioned bypass paths are:
 
 ### Explicit table list
 
-`0006_rls_enable.sql` maintains an explicit list of tables, not a `pg_class`
+`0007_rls_enable.sql` maintains an explicit list of tables, not a `pg_class`
 sweep. Adding a new table requires:
 
-1. A new entry in the `rls_tables` array in `0006`.
-2. At least one policy for it in `0007`.
+1. A new entry in the `rls_tables` array in `0007`.
+2. At least one policy for it in `0008`.
 
 An RLS-enabled table with no policy denies everything to non-bypass roles.
-Do not deploy `0006` without `0007`.
+Do not deploy `0007` without `0008`.
 
 ### Policy naming
 
@@ -218,7 +218,7 @@ query time.
 
 ## 7. Append-only audit log
 
-`0008_audit.sql` defines `public.audit_log`:
+`0006_audit.sql` defines `public.audit_log`:
 
 - `actor_id` references `auth.users ON DELETE RESTRICT` — a deactivated actor
   never orphans existing audit events.
@@ -227,7 +227,7 @@ query time.
   (currently `profile_suspended`).
 - The `auth_helpers.tg_audit_immutable()` trigger raises an exception on any
   `UPDATE` or `DELETE`, making the table append-only at the DB level.
-- `INSERT` is service-role only (see `0007_rls_policies.sql`).
+- `INSERT` is service-role only (see `0008_rls_policies.sql`).
 
 ---
 

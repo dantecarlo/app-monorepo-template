@@ -1,4 +1,4 @@
--- 0008_audit.sql
+-- 0006_audit.sql
 -- Concern: append-only audit_log table with metadata.reason requirement and
 --   immutability trigger.
 -- Source of truth: packages/supabase/docs/database.md (Append-only audit).
@@ -8,7 +8,7 @@
 -- audit_action enum is defined here (adjacent to the table that uses it).
 -- Immutability: tg_audit_immutable() raises an exception on any UPDATE or
 --   DELETE attempt, making the table append-only at the DB level.
---   The service path is the only sanctioned INSERT path (policy in 0007).
+--   The service path is the only sanctioned INSERT path (policy in 0008).
 
 -- =====================================================================
 -- Section 1: audit_action enum
@@ -80,6 +80,30 @@ $$;
 
 comment on function auth_helpers.tg_audit_immutable() is
   'Trigger function that enforces append-only semantics on audit_log. Raises an exception on any UPDATE or DELETE attempt.';
+
+-- =====================================================================
+-- Section 4: ownership / least-privilege block for tg_audit_immutable
+-- =====================================================================
+
+do $$
+begin
+  if exists (
+    select 1
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'auth_helpers'
+      and p.proname = 'tg_audit_immutable'
+  ) then
+    alter function auth_helpers.tg_audit_immutable() owner to postgres;
+    revoke all on function auth_helpers.tg_audit_immutable() from public;
+    grant execute on function auth_helpers.tg_audit_immutable() to authenticated, service_role;
+  end if;
+end
+$$;
+
+-- =====================================================================
+-- Section 5: immutability trigger attachment
+-- =====================================================================
 
 create or replace trigger audit_log_immutable
   before update or delete on public.audit_log
