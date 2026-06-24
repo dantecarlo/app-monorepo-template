@@ -30,9 +30,12 @@
         {
           "fonts": []
         }
-      ]
+      ],
+      "expo-localization",
+      "expo-splash-screen"
     ],
     "experiments": {
+      "reactCompiler": true,
       "typedRoutes": true
     }
   }
