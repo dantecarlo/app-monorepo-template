@@ -6,7 +6,10 @@ import {
   type UseMutationResult
 } from '@tanstack/react-query'
 
+import { resolveErrorMessage } from '@/lib/query/resolveErrorMessage.helper'
 import { useToastStore } from '@/stores/toast.store'
+
+const ERROR_FALLBACK = 'An error occurred'
 
 export interface IAppMutationOptions<TData, TVariables, TError = Error> {
   /** Override the default error toast message */
@@ -41,9 +44,13 @@ export const useAppMutation = <
   return useMutation<TData, TError, TVariables>({
     ...mutationOptions,
     onError(error, variables, onMutateResult, context) {
-      const message =
-        errorMessage ??
-        (error instanceof Error ? error.message : 'An error occurred')
+      const message = resolveErrorMessage({
+        error,
+        errorMessage,
+        fallback: ERROR_FALLBACK,
+        hasKey: () => false,
+        translate: (k) => k
+      })
       addToast({ message, variant: 'error' })
       mutationOptions.onError?.(error, variables, onMutateResult, context)
     },

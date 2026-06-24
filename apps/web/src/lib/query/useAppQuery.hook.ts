@@ -7,7 +7,10 @@ import {
   type UseQueryResult
 } from '@tanstack/react-query'
 
+import { resolveErrorMessage } from '@/lib/query/resolveErrorMessage.helper'
 import { useToastStore } from '@/stores/toast.store'
+
+const ERROR_FALLBACK = 'An error occurred'
 
 export interface IAppQueryOptions<TData, TError = Error> {
   /**
@@ -47,14 +50,14 @@ export const useAppQuery = <TData, TError extends Error = Error>({
       : {})
   } as UseQueryOptions<TData, TError, TData, QueryKey>)
 
-  // Fire a toast when the query transitions into error state.
-  // setTimeout defers the state update so it doesn't fire during render.
   if (result.isError && result.error) {
-    const message =
-      errorMessage ??
-      (result.error instanceof Error
-        ? result.error.message
-        : 'An error occurred')
+    const message = resolveErrorMessage({
+      error: result.error,
+      errorMessage,
+      fallback: ERROR_FALLBACK,
+      hasKey: () => false,
+      translate: (k) => k
+    })
     setTimeout(() => addToast({ message, variant: 'error' }), 0)
   }
 
