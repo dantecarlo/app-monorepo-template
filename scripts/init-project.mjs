@@ -77,7 +77,8 @@ const IGNORED_DIRS = new Set([
   '.turbo',
   'coverage',
   'dist',
-  'node_modules'
+  'node_modules',
+  'scripts'
 ])
 
 const TEXT_EXTENSIONS = new Set([

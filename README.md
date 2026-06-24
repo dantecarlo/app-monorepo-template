@@ -38,6 +38,8 @@ app-monorepo-template/
 ├── eslint.config.mjs       # ESLint 9 flat config — wires the shared rules into every workspace
 ├── eslint.rules.mjs        # SHARED rule module (BASE + REACT + FILENAME + overrides)
 ├── scripts/
+│   ├── init-project.mjs    # renames @app/*, app-monorepo-template, and bundle ID to a real slug
+│   ├── check-identity.mjs  # fails if template-default identity tokens are still present
 │   ├── verify-tests.mjs    # fails if any unit lacks a sibling *.test.* (tests-per-unit gate)
 │   └── verify-maps.mjs     # validates docs/maps refs + audits inline magic numbers (AST)
 ├── .prettierrc.json · .prettierignore · commitlint.config.js

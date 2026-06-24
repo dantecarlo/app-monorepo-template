@@ -20,8 +20,8 @@
 //   ATL_TEMPLATE_SELF=1 node scripts/check-identity.mjs   # self-skip
 // ---------------------------------------------------------------------------
 
-import { readFileSync, statSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -114,19 +114,36 @@ if (tsconfig?.compilerOptions?.paths?.['@app/*']) {
 
 // ---------------------------------------------------------------------------
 // 4. All package.json files — any name starting with '@app/'
+//    Walk packages/* and apps/* dynamically instead of a hardcoded list so
+//    newly added packages (e.g. packages/analytics) are always covered.
 // ---------------------------------------------------------------------------
 
-const PACKAGE_PATHS = [
-  'packages/core/package.json',
-  'packages/i18n/package.json',
-  'packages/supabase/package.json',
-  'packages/tokens/package.json',
-  'apps/web/package.json',
-  'apps/mobile/package.json'
-]
+const collectPackageJsonPaths = ({ roots }) => {
+  const paths = []
+  for (const root of roots) {
+    const rootAbs = resolve(REPO_ROOT, root)
+    let entries
+    try {
+      entries = readdirSync(rootAbs)
+    } catch {
+      continue
+    }
+    for (const entry of entries) {
+      const pkgFile = join(rootAbs, entry, 'package.json')
+      try {
+        statSync(pkgFile)
+        paths.push(join(root, entry, 'package.json'))
+      } catch {
+        // no package.json in this subdirectory — skip
+      }
+    }
+  }
+  return paths
+}
 
-for (const pkgPath of PACKAGE_PATHS) {
-  if (!exists({ path: pkgPath })) continue
+const discoveredPackagePaths = collectPackageJsonPaths({ roots: ['packages', 'apps'] })
+
+for (const pkgPath of discoveredPackagePaths) {
   const pkg = readJson({ path: pkgPath })
   if (typeof pkg?.name === 'string' && pkg.name.startsWith('@app/')) {
     offenders.push({
