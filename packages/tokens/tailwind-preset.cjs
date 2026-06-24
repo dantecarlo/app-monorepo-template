@@ -39,8 +39,17 @@ module.exports = {
           DEFAULT: '#34C759',
           tint: 'rgba(52,199,89,0.16)',
         },
-        warning: '#E0A011',
-        danger: '#EF4444',
+        warning: {
+          DEFAULT: '#E0A011',
+          tint: 'rgba(224,160,17,0.16)',
+        },
+        danger: {
+          DEFAULT: '#EF4444',
+          tint: 'rgba(239,68,68,0.16)',
+        },
+        neutral: {
+          tint: 'rgba(255,255,255,0.08)',
+        },
         'cool-glow': '#5B6CFF',
       },
 

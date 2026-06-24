@@ -17,11 +17,13 @@ export const colors = {
   },
   coolGlow: '#5B6CFF',
   danger: '#EF4444',
+  dangerTint: 'rgba(239,68,68,0.16)',
   divider: 'rgba(255,255,255,0.06)',
   glass: {
     fill: 'rgba(24,27,34,0.42)',
     stroke: 'rgba(255,255,255,0.10)'
   },
+  neutralTint: 'rgba(255,255,255,0.08)',
   success: '#34C759',
   successTint: 'rgba(52,199,89,0.16)',
   text: {
@@ -30,7 +32,8 @@ export const colors = {
     secondary: 'rgba(255,255,255,0.55)',
     tertiary: '#7E808A'
   },
-  warning: '#E0A011'
+  warning: '#E0A011',
+  warningTint: 'rgba(224,160,17,0.16)'
 } as const
 
 // ---------------------------------------------------------------------------
