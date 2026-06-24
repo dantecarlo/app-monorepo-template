@@ -4,7 +4,7 @@ import { TOGGLE } from '@/components/ui/Toggle/Toggle.constant'
 
 export interface IToggleProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
-  'onChange'
+  'onChange' | 'value'
 > {
   accessibilityLabel?: string
   onValueChange: (value: boolean) => void

@@ -1,5 +1,4 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
 
 import { Toggle } from '@/components/ui/Toggle/Toggle.component'
@@ -29,7 +28,7 @@ describe('Toggle', () => {
     )
   })
 
-  test('calls onValueChange with the toggled value', async () => {
+  test('calls onValueChange with the toggled value', () => {
     const onValueChange = vi.fn()
     render(
       <Toggle
@@ -38,7 +37,7 @@ describe('Toggle', () => {
         value={false}
       />
     )
-    await userEvent.click(screen.getByRole('switch'))
+    fireEvent.click(screen.getByRole('switch'))
     expect(onValueChange).toHaveBeenCalledWith(true)
   })
 

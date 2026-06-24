@@ -1,5 +1,4 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
 
 import { SegmentedControl } from '@/components/ui/SegmentedControl/SegmentedControl.component'
@@ -34,7 +33,7 @@ describe('SegmentedControl', () => {
     expect(activeTab.getAttribute('aria-selected')).toBe('true')
   })
 
-  test('calls onSegmentPress with the segment id', async () => {
+  test('calls onSegmentPress with the segment id', () => {
     const onSegmentPress = vi.fn()
     render(
       <SegmentedControl
@@ -43,7 +42,7 @@ describe('SegmentedControl', () => {
         segments={SEGMENTS}
       />
     )
-    await userEvent.click(screen.getByRole('tab', { name: 'Por turno' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Por turno' }))
     expect(onSegmentPress).toHaveBeenCalledWith('por-turno')
   })
 

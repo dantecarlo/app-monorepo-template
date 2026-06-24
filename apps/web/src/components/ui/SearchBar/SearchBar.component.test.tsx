@@ -1,5 +1,4 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
 
 import { SearchBar } from '@/components/ui/SearchBar/SearchBar.component'
@@ -16,7 +15,7 @@ describe('SearchBar', () => {
     expect(screen.getByRole('searchbox')).toBeTruthy()
   })
 
-  test('calls onChangeText when user types', async () => {
+  test('calls onChangeText when user types', () => {
     const onChangeText = vi.fn()
     render(
       <SearchBar
@@ -26,8 +25,8 @@ describe('SearchBar', () => {
       />
     )
     const input = screen.getByRole('searchbox')
-    await userEvent.type(input, 'abc')
-    expect(onChangeText).toHaveBeenCalled()
+    fireEvent.change(input, { target: { value: 'abc' } })
+    expect(onChangeText).toHaveBeenCalledWith('abc')
   })
 
   test('is exported as a function', () => {
