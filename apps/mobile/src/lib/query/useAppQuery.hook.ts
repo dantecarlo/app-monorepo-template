@@ -1,7 +1,3 @@
-// Mirrors apps/web/src/lib/query/useAppQuery.hook.ts.
-// TanStack Query v5 works identically in React Native.
-// 'use client' directive removed — not applicable in RN.
-
 import {
   type QueryKey,
   useQuery,
@@ -9,7 +5,10 @@ import {
   type UseQueryResult
 } from '@tanstack/react-query'
 
+import { resolveErrorMessage } from '@/lib/query/resolveErrorMessage.helper'
 import { useToastStore } from '@/stores/toast.store'
+
+const ERROR_FALLBACK = 'An error occurred'
 
 export interface IAppQueryOptions<TData, TError = Error> {
   adapter?: (raw: TData) => TData
@@ -30,11 +29,13 @@ export const useAppQuery = <TData, TError extends Error = Error>({
   } as UseQueryOptions<TData, TError, TData, QueryKey>)
 
   if (result.isError && result.error) {
-    const message =
-      errorMessage ??
-      (result.error instanceof Error
-        ? result.error.message
-        : 'An error occurred')
+    const message = resolveErrorMessage({
+      error: result.error,
+      errorMessage,
+      fallback: ERROR_FALLBACK,
+      hasKey: () => false,
+      translate: (k) => k
+    })
     setTimeout(() => addToast({ message, variant: 'error' }), 0)
   }
 

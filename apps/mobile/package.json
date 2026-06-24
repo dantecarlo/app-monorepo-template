@@ -13,8 +13,11 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@app/core": "workspace:*",
+    "@app/i18n": "workspace:*",
     "@app/supabase": "workspace:*",
     "@app/tokens": "workspace:*",
+    "react-error-boundary": "^4.0.0",
     "@expo-google-fonts/inter": "^0.2.3",
     "@expo-google-fonts/montserrat": "^0.2.3",
     "@supabase/supabase-js": "^2.108.2",

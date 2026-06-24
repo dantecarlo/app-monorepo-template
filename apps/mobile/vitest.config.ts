@@ -20,7 +20,11 @@ export default defineConfig({
       '@app/core': path.resolve(PACKAGES, 'core/src'),
       '@app/i18n': path.resolve(PACKAGES, 'i18n/src'),
       '@app/supabase': path.resolve(PACKAGES, 'supabase/src'),
-      '@app/tokens': path.resolve(PACKAGES, 'tokens/src')
+      '@app/tokens': path.resolve(PACKAGES, 'tokens/src'),
+      'react-native': path.resolve(
+        __dirname,
+        './src/test/mocks/react-native.ts'
+      )
     }
   },
   test: {
