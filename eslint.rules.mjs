@@ -165,13 +165,13 @@ const FILENAME_MATCH_GLOB = '**/src/**/!(index).{ts,tsx}'
 // is false, so only the final extension is removed), so the suffix glob is
 // matched against e.g. `useItems.hook` / `X.screen` — NO trailing `.{ts,tsx}`.
 const FILENAME_SUFFIX_GLOB =
-  '*.{component,screen,styles,hook,service,adapter,type,store,constant,helper,config,spec,test}'
+  '*.{component,screen,styles,hook,service,adapter,type,store,constant,helper,config,schema,spec,test}'
 
 const FILENAME_NAMING_MESSAGE =
   'Source files must use a fractal suffix: .component.tsx / .screen.tsx / ' +
   '.styles.ts / .hook.ts / .service.ts / .adapter.ts / .type.ts / ' +
-  '.store.ts / .constant.ts / .helper.ts / .test.{ts,tsx} — or be an ' +
-  'index.ts barrel (code-standards Rule 4).'
+  '.store.ts / .constant.ts / .helper.ts / .config.ts / .schema.ts / ' +
+  '.test.{ts,tsx} — or be an index.ts barrel (code-standards Rule 4).'
 
 /**
  * The check-file filename suffix rule. Shared by every workspace; each
