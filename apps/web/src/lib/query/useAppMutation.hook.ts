@@ -5,11 +5,12 @@ import {
   type UseMutationOptions,
   type UseMutationResult
 } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
 
 import { resolveErrorMessage } from '@/lib/query/resolveErrorMessage.helper'
 import { useToastStore } from '@/stores/toast.store'
 
-const ERROR_FALLBACK = 'An error occurred'
+const GENERIC_ERROR_KEY = 'helper.error.generic'
 
 export interface IAppMutationOptions<TData, TVariables, TError = Error> {
   /** Override the default error toast message */
@@ -19,13 +20,6 @@ export interface IAppMutationOptions<TData, TVariables, TError = Error> {
   successMessage?: string
 }
 
-/**
- * Thin wrapper over useMutation.
- *
- * - Shows a toast on error (and optionally on success).
- * - Merges caller-provided onError/onSuccess with the toast side-effect.
- * - Single-object param convention for future extensibility.
- */
 export const useAppMutation = <
   TData,
   TVariables,
@@ -40,6 +34,7 @@ export const useAppMutation = <
   TVariables
 > => {
   const addToast = useToastStore((s) => s.add)
+  const t = useTranslations()
 
   return useMutation<TData, TError, TVariables>({
     ...mutationOptions,
@@ -47,9 +42,9 @@ export const useAppMutation = <
       const message = resolveErrorMessage({
         error,
         errorMessage,
-        fallback: ERROR_FALLBACK,
-        hasKey: () => false,
-        translate: (k) => k
+        fallback: t(GENERIC_ERROR_KEY),
+        hasKey: (key) => t.has(key),
+        translate: (key) => t(key)
       })
       addToast({ message, variant: 'error' })
       mutationOptions.onError?.(error, variables, onMutateResult, context)
