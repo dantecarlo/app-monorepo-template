@@ -53,12 +53,57 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         viewport: { width: 1920, height: 1080 }
       }
+    },
+    {
+      name: 'mobile-web-390',
+      testMatch: 'mobile-web.e2e.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 390, height: 844 },
+        baseURL: 'http://localhost:3001'
+      }
+    },
+    {
+      name: 'mobile-web-768',
+      testMatch: 'mobile-web.e2e.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 768, height: 1024 },
+        baseURL: 'http://localhost:3001'
+      }
+    },
+    {
+      name: 'mobile-web-1280',
+      testMatch: 'mobile-web.e2e.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 800 },
+        baseURL: 'http://localhost:3001'
+      }
+    },
+    {
+      name: 'mobile-web-1920',
+      testMatch: 'mobile-web.e2e.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+        baseURL: 'http://localhost:3001'
+      }
     }
   ],
-  webServer: {
-    command: 'pnpm --filter @app/web start',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 30000
-  }
+  webServer: [
+    {
+      command: 'pnpm --filter @app/web start',
+      url: 'http://localhost:3000',
+      reuseExistingServer: !process.env.CI,
+      timeout: 30000
+    },
+    {
+      command:
+        'pnpm exec serve apps/mobile/dist-web -p 3001 -s --no-clipboard',
+      url: 'http://localhost:3001',
+      reuseExistingServer: !process.env.CI,
+      timeout: 60000
+    }
+  ]
 })
