@@ -1,0 +1,40 @@
+-- _setup.test.sql
+-- Concern: shared setup conventions and JWT impersonation pattern for pgTAP tests.
+-- Source of truth: packages/supabase/docs/database.md (pgTAP workflow).
+--
+-- NOTE: This file documents the setup conventions used by rls_profile.test.sql.
+-- It is not a standalone test — run the full suite with: pnpm --filter @app/supabase test:db
+-- (which executes: supabase test db). DB tests require a running Postgres with
+-- pgTAP installed; they are intentionally NOT part of pnpm validate.
+--
+-- JWT IMPERSONATION PATTERN
+-- Supabase resolves auth.uid() from request.jwt.claims ->> 'sub'. To impersonate
+-- a user inside a pgTAP test:
+--
+--   set local "request.jwt.claims" to '{"sub":"<uuid>","role":"authenticated"}';
+--   set local role authenticated;
+--   -- ... assertions as this user ...
+--   reset role;   -- return to superuser for setup / teardown
+--
+-- The test wraps everything in BEGIN / ROLLBACK so no state persists.
+--
+-- SEED APPROACH (used in rls_profile.test.sql)
+-- Seed users directly into auth.users and their profiles into public.profile
+-- using INSERT ... ON CONFLICT DO NOTHING. Use extensions.gen_random_uuid() for
+-- deterministic UUIDs so tests are reproducible.
+--
+-- Example seed (run as superuser before setting role):
+--
+--   insert into auth.users (id, email) values
+--     ('00000000-0000-0000-0000-000000000001', 'alice@example.com'),
+--     ('00000000-0000-0000-0000-000000000002', 'bob@example.com')
+--   on conflict (id) do nothing;
+--
+--   insert into public.profile (id, email, display_name) values
+--     ('00000000-0000-0000-0000-000000000001', 'alice@example.com', 'Alice'),
+--     ('00000000-0000-0000-0000-000000000002', 'bob@example.com',   'Bob')
+--   on conflict (id) do nothing;
+--
+--   insert into public.user_role_grant (user_id, role) values
+--     ('00000000-0000-0000-0000-000000000001', 'admin')
+--   on conflict do nothing;
