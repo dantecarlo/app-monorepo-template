@@ -41,6 +41,7 @@ const TSCONFIG_ROOT_DIR = fileURLToPath(new URL('.', import.meta.url))
 const IGNORES = [
   '**/node_modules/**',
   '**/dist/**',
+  '**/dist-web/**',
   '**/build/**',
   '**/.next/**',
   '**/.expo/**',
