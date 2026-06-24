@@ -47,9 +47,11 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | i18n catalogs         | `packages/i18n/src/locales/es.json`, `packages/i18n/src/locales/en.json` | `.json`        | ICU message catalogs (default `es`, plus `en`)                    |
 | i18n constants        | `packages/i18n/src/locales/i18n.constant.ts`                             | `.constant.ts` | Locale codes + default-locale constant                            |
 | i18n resources        | `packages/i18n/src/locales/resources.constant.ts`                        | `.constant.ts` | Catalog registry consumed by each app's i18n adapter              |
-| Backend client        | `packages/supabase/src/client.adapter.ts`                                | `.adapter.ts`  | Browser/native client factory                                     |
+| Backend client        | `packages/supabase/src/client.adapter.ts`                                | `.adapter.ts`  | Browser/native Supabase client factory; satisfies `IBackendClientProvider` |
 | Backend server client | `packages/supabase/src/server.adapter.ts`                                | `.adapter.ts`  | Server/SSR client factory                                         |
 | Backend SSR client    | `packages/supabase/src/ssr.adapter.ts`                                   | `.adapter.ts`  | Cookie-aware SSR client (@supabase/ssr) for RLS propagation       |
+| Supabase error mapper | `packages/supabase/src/mapSupabaseError.adapter.ts`                      | `.adapter.ts`  | `IServiceErrorMapper` implementation — maps Postgrest errors to `ServiceErrorCodeType` |
+| Supabase error builder | `packages/supabase/src/buildSupabaseServiceError.helper.ts`             | `.helper.ts`   | Wired default: `buildServiceError` + `mapSupabaseError`; use in services  |
 | Backend types         | `packages/supabase/src/types.ts`                                         | `.ts`          | Generated DB types + typed exports                                |
 | Core test config      | `packages/core/vitest.config.ts`                                         | `.config.ts`   | Vitest config for the core package (node env, includes src/**/*.test.ts)  |
 

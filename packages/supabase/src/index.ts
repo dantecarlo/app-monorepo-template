@@ -1,13 +1,4 @@
-// Typed browser/client factory (anon key — pass app env into it)
+export { buildSupabaseServiceError } from './buildSupabaseServiceError.helper'
 export { createSupabaseClient } from './client.adapter'
-
-// Database types (regenerate with: pnpm --filter @app/supabase gen:types)
+export { mapSupabaseError } from './mapSupabaseError.adapter'
 export type { Database } from './types'
-
-// Server factory lives behind the './server' entry point so client bundles
-// never pull in @supabase/ssr / server-only cookie handling:
-//   import { createSupabaseServerClient } from '@app/supabase/server'
-
-// SSR cookie-aware factory lives behind the './ssr' entry point so client
-// bundles never pull in @supabase/ssr:
-//   import { createSupabaseSSRClient } from '@app/supabase/ssr'
