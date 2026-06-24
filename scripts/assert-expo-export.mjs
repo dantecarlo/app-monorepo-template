@@ -1,7 +1,9 @@
 import { readdirSync, existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { join, dirname } from 'node:path'
 
-const DIST_DIR = join(process.cwd(), 'apps', 'mobile', 'dist')
+const REPO_ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
+const DIST_DIR = join(REPO_ROOT, 'apps', 'mobile', 'dist')
 const PLATFORMS = ['ios', 'android']
 const BUNDLE_EXTENSIONS = ['.hbc', '.bundle']
 
