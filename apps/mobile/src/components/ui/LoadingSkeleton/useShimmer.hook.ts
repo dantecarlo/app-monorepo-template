@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import type { ViewStyle } from 'react-native'
 import {
   useAnimatedStyle,
   useSharedValue,
@@ -14,7 +15,7 @@ import {
 } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.styles'
 
 export interface IUseShimmerResult {
-  animatedStyle: ReturnType<typeof useAnimatedStyle>
+  animatedStyle: ReturnType<typeof useAnimatedStyle<ViewStyle>>
 }
 
 export const useShimmer = (): IUseShimmerResult => {
@@ -27,7 +28,7 @@ export const useShimmer = (): IUseShimmerResult => {
     )
   }, [translateX])
 
-  const animatedStyle = useAnimatedStyle(() => ({
+  const animatedStyle = useAnimatedStyle<ViewStyle>(() => ({
     transform: [{ translateX: translateX.value * SHIMMER_TRANSLATE_RANGE }]
   }))
 
