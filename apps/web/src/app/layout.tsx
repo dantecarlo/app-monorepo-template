@@ -2,6 +2,7 @@ import '@/app/globals.css'
 
 import type { Metadata, Viewport } from 'next'
 import { Inter, Montserrat } from 'next/font/google'
+import { getMessages } from 'next-intl/server'
 
 import { Providers } from '@/app/providers'
 
@@ -48,7 +49,9 @@ interface IRootLayoutProps {
   children: React.ReactNode
 }
 
-const RootLayout = ({ children }: IRootLayoutProps) => {
+const RootLayout = async ({ children }: IRootLayoutProps) => {
+  const messages = await getMessages()
+
   return (
     <html
       className={`dark ${montserrat.variable} ${inter.variable}`}
@@ -56,7 +59,7 @@ const RootLayout = ({ children }: IRootLayoutProps) => {
       suppressHydrationWarning
     >
       <body className="aurora min-h-screen bg-bg-base font-body text-text-primary antialiased">
-        <Providers>{children}</Providers>
+        <Providers messages={messages}>{children}</Providers>
       </body>
     </html>
   )

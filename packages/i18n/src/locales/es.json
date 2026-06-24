@@ -15,6 +15,9 @@
       "network": "Error de red. Verifica tu conexión.",
       "notFound": "El recurso solicitado no fue encontrado.",
       "server": "Error del servidor. Por favor, inténtalo más tarde."
+    },
+    "offline": {
+      "message": "Sin conexión"
     }
   },
   "items": {

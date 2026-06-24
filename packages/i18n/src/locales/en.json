@@ -15,6 +15,9 @@
       "network": "A network error occurred. Check your connection.",
       "notFound": "The requested resource was not found.",
       "server": "A server error occurred. Please try again later."
+    },
+    "offline": {
+      "message": "No connection"
     }
   },
   "items": {

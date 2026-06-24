@@ -1,49 +1,40 @@
 'use client'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { NextIntlClientProvider } from 'next-intl'
 import { useState } from 'react'
+import type { Messages } from 'use-intl'
 
-const STALE_TIME_MS = 30_000 // 30 seconds
+import { createQueryClient } from '@/lib/query/createQueryClient.helper'
 
-const makeQueryClient = (): QueryClient =>
-  new QueryClient({
-    defaultOptions: {
-      mutations: {
-        retry: 0
-      },
-      queries: {
-        refetchOnWindowFocus: true,
-        retry: 1,
-        staleTime: STALE_TIME_MS
-      }
-    }
-  })
+const I18N_TIME_ZONE = 'UTC'
 
-// Singleton for the browser; always fresh on the server.
 let browserQueryClient: QueryClient | undefined
 
 const getQueryClient = (): QueryClient => {
   if (typeof window === 'undefined') {
-    // Server: create a new client per request
-    return makeQueryClient()
+    return createQueryClient()
   }
-  if (!browserQueryClient) {
-    browserQueryClient = makeQueryClient()
-  }
+  browserQueryClient ??= createQueryClient()
   return browserQueryClient
 }
 
-interface IProvidersProps {
+export interface IProvidersProps {
   children: React.ReactNode
+  messages: Messages
 }
 
-export const Providers = ({ children }: IProvidersProps) => {
-  // useState prevents client recreation on re-renders
+export const Providers = ({
+  children,
+  messages
+}: IProvidersProps): React.JSX.Element => {
   const [queryClient] = useState(() => getQueryClient())
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
+    <NextIntlClientProvider messages={messages} timeZone={I18N_TIME_ZONE}>
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    </NextIntlClientProvider>
   )
 }
