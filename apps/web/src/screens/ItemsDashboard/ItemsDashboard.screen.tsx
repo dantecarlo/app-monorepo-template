@@ -41,7 +41,11 @@ export const ItemsDashboardScreen = () => {
             onSearchChange={onSearchChange}
             search={search}
           />
-          <Button className="mt-2" fullWidth variant="primary">
+          <Button
+            className={ITEMS_DASHBOARD.VIEW_ALL_BUTTON}
+            fullWidth
+            variant="primary"
+          >
             {t('viewAll')}
           </Button>
         </div>

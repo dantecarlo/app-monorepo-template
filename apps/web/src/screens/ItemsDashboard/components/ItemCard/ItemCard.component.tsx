@@ -42,9 +42,7 @@ export const ItemCard = ({ item }: IItemCardProps) => {
         <p className={ITEM_CARD.TITLE}>{item.title}</p>
         <p className={ITEM_CARD.DESCRIPTION}>{item.description}</p>
         <div className={ITEM_CARD.META}>
-          <span className="inline-flex items-center rounded-full bg-white/[0.06] px-2 py-0.5 font-body text-caption text-text-tertiary">
-            {item.category}
-          </span>
+          <span className={ITEM_CARD.CATEGORY_BADGE}>{item.category}</span>
           {item.authorLabel && (
             <span className={ITEM_CARD.META_TEXT}>{item.authorLabel}</span>
           )}

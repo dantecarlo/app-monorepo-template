@@ -46,7 +46,7 @@ export const ItemsListCard = ({
         />
       </div>
 
-      <div className={`px-5 pb-2 ${isLoading ? 'animate-pulse' : ''}`}>
+      <div className={ITEMS_LIST_CARD.LIST_BODY}>
         {isLoading ? (
           Array.from({ length: SKELETON_ROW_COUNT }).map((_, i) => (
             <div className={ITEMS_LIST_CARD.SKELETON_ROW} key={i}>
