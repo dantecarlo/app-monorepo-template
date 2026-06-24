@@ -50,7 +50,7 @@ export const MODAL_STYLES = StyleSheet.create({
     width: '100%'
   },
   scrim: {
-    backgroundColor: 'rgba(0,0,0,0.60)',
+    backgroundColor: colors.scrim,
     bottom: 0,
     left: 0,
     position: 'absolute',
