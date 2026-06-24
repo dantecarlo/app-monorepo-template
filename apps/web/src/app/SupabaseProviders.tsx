@@ -29,7 +29,9 @@ const getBrowserGateway = (): IAuthGateway => {
   ) {
     return noopGateway
   }
-  browserGateway ??= createSupabaseAuthGateway(getSupabaseClient())
+  browserGateway ??= createSupabaseAuthGateway({
+    client: getSupabaseClient()
+  })
   return browserGateway
 }
 

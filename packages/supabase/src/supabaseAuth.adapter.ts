@@ -19,9 +19,11 @@ const toAuthSession = (session: {
   userId: session.user.id
 })
 
-export const createSupabaseAuthGateway = (
+export const createSupabaseAuthGateway = ({
+  client
+}: {
   client: SupabaseClient<Database>
-): IAuthGateway => ({
+}): IAuthGateway => ({
   getSession: async () => {
     const { data } = await client.auth.getSession()
     if (data.session === null) return null

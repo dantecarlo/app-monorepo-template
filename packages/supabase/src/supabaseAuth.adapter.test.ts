@@ -34,19 +34,19 @@ const makeAuthMock = (sessionOverride?: object | null) => ({
 const makeClient = (authMock = makeAuthMock()) =>
   ({ auth: authMock }) as unknown as Parameters<
     typeof createSupabaseAuthGateway
-  >[0]
+  >[0]['client']
 
 describe('createSupabaseAuthGateway', () => {
   test('getSession returns null when the SDK session is null', async () => {
     const client = makeClient(makeAuthMock(null))
-    const gateway = createSupabaseAuthGateway(client)
+    const gateway = createSupabaseAuthGateway({ client })
 
     expect(await gateway.getSession()).toBeNull()
   })
 
   test('getSession maps the SDK session to IAuthSession', async () => {
     const client = makeClient()
-    const gateway = createSupabaseAuthGateway(client)
+    const gateway = createSupabaseAuthGateway({ client })
 
     const session = await gateway.getSession()
 
@@ -59,7 +59,7 @@ describe('createSupabaseAuthGateway', () => {
 
   test('signIn maps the returned session to IAuthSession', async () => {
     const client = makeClient()
-    const gateway = createSupabaseAuthGateway(client)
+    const gateway = createSupabaseAuthGateway({ client })
 
     const session = await gateway.signIn({
       email: 'user@example.com',
@@ -80,7 +80,7 @@ describe('createSupabaseAuthGateway', () => {
       error: new Error('invalid credentials')
     })
     const client = makeClient(authMock)
-    const gateway = createSupabaseAuthGateway(client)
+    const gateway = createSupabaseAuthGateway({ client })
 
     await expect(
       gateway.signIn({ email: 'user@example.com', password: 'wrong' })
@@ -90,7 +90,7 @@ describe('createSupabaseAuthGateway', () => {
   test('signOut delegates to the SDK', async () => {
     const authMock = makeAuthMock()
     const client = makeClient(authMock)
-    const gateway = createSupabaseAuthGateway(client)
+    const gateway = createSupabaseAuthGateway({ client })
 
     await gateway.signOut()
 
@@ -109,7 +109,7 @@ describe('createSupabaseAuthGateway', () => {
       }
     )
     const client = makeClient(authMock)
-    const gateway = createSupabaseAuthGateway(client)
+    const gateway = createSupabaseAuthGateway({ client })
     const onChange = vi.fn()
 
     gateway.onAuthStateChange({ onChange })
@@ -136,7 +136,7 @@ describe('createSupabaseAuthGateway', () => {
       }
     )
     const client = makeClient(authMock)
-    const gateway = createSupabaseAuthGateway(client)
+    const gateway = createSupabaseAuthGateway({ client })
     const onChange = vi.fn()
 
     gateway.onAuthStateChange({ onChange })
@@ -150,7 +150,7 @@ describe('createSupabaseAuthGateway', () => {
     const authMock = makeAuthMock()
     authMock.onAuthStateChange.mockReturnValue(sub)
     const client = makeClient(authMock)
-    const gateway = createSupabaseAuthGateway(client)
+    const gateway = createSupabaseAuthGateway({ client })
 
     const subscription = gateway.onAuthStateChange({ onChange: vi.fn() })
     subscription.unsubscribe()

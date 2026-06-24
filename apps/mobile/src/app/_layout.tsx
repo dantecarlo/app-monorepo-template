@@ -32,7 +32,7 @@ SplashScreen.preventAutoHideAsync()
 const queryClient = createQueryClient({
   onCaptureError: toCaptureError({ observability })
 })
-const authGateway = createSupabaseAuthGateway(supabase)
+const authGateway = createSupabaseAuthGateway({ client: supabase })
 
 const RootLayout = () => {
   const [fontsLoaded, fontError] = useFonts({
