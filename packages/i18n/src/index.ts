@@ -1,5 +1,6 @@
 export type {
   ILocaleResources,
+  LanguageEnumType,
   SupportedLanguageType
 } from './locales/i18n.constant'
 export {

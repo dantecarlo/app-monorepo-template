@@ -1,9 +1,12 @@
 import type esTranslation from './es.json'
 
-export enum LanguageEnum {
-  EN = 'en',
-  ES = 'es'
-}
+export const LanguageEnum = {
+  EN: 'en',
+  ES: 'es'
+} as const
+
+export type LanguageEnumType =
+  (typeof LanguageEnum)[keyof typeof LanguageEnum]
 
 export const DEFAULT_LANGUAGE = LanguageEnum.EN
 export const FALLBACK_LANGUAGE = LanguageEnum.EN
