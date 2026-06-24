@@ -1,53 +1,20 @@
-import { colors } from '@app/tokens'
+import type { ComponentType, ReactNode } from 'react'
 import { Suspense } from 'react'
 import { ErrorBoundary, type FallbackProps } from 'react-error-boundary'
-import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 
-import { ASYNC_BOUNDARY_STYLES as styles } from '@/components/ui/AsyncBoundary/AsyncBoundary.styles'
-
-const RETRY_LABEL = 'Retry'
+import { AsyncBoundaryDefaultError } from '@/components/ui/AsyncBoundary/AsyncBoundaryDefaultError.component'
+import { AsyncBoundaryDefaultLoading } from '@/components/ui/AsyncBoundary/AsyncBoundaryDefaultLoading.component'
 
 export interface IAsyncBoundaryProps {
-  children: React.ReactNode
-  ErrorFallback?: React.ComponentType<FallbackProps>
-  loadingFallback?: React.ReactNode
+  children: ReactNode
+  ErrorFallback?: ComponentType<FallbackProps>
+  loadingFallback?: ReactNode
 }
 
-const DefaultLoadingFallback = () => (
-  <View
-    accessibilityLabel="Loading…"
-    accessible
-    style={[
-      styles.fill,
-      { alignItems: 'center', justifyContent: 'center' }
-    ]}
-  >
-    <ActivityIndicator color={colors.accent} size="large" />
-  </View>
-)
-
-const DefaultErrorFallback = ({
-  error,
-  resetErrorBoundary
-}: FallbackProps) => (
-  <View accessibilityRole="alert" style={styles.fill}>
-    <Text>
-      {error instanceof Error ? error.message : 'An error occurred'}
-    </Text>
-    <Pressable
-      accessibilityLabel={RETRY_LABEL}
-      accessibilityRole="button"
-      onPress={resetErrorBoundary}
-    >
-      <Text>{RETRY_LABEL}</Text>
-    </Pressable>
-  </View>
-)
-
 export const AsyncBoundary = ({
-  ErrorFallback = DefaultErrorFallback,
+  ErrorFallback = AsyncBoundaryDefaultError,
   children,
-  loadingFallback = <DefaultLoadingFallback />
+  loadingFallback = <AsyncBoundaryDefaultLoading />
 }: IAsyncBoundaryProps) => (
   <ErrorBoundary FallbackComponent={ErrorFallback}>
     <Suspense fallback={loadingFallback}>{children}</Suspense>
