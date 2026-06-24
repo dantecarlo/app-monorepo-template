@@ -1,4 +1,5 @@
 import '../../global.css'
+import '@/lib/i18n/i18n.config'
 
 import {
   Inter_400Regular,
@@ -12,29 +13,18 @@ import {
   Montserrat_800ExtraBold,
   useFonts
 } from '@expo-google-fonts/montserrat'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
-// Keep splash screen visible while fonts load
+import { createQueryClient } from '@/lib/query/createQueryClient.helper'
+
 SplashScreen.preventAutoHideAsync()
 
-const STALE_TIME_MS = 30_000
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    mutations: {
-      retry: 0
-    },
-    queries: {
-      retry: 1,
-      staleTime: STALE_TIME_MS
-    }
-  }
-})
+const queryClient = createQueryClient()
 
 const RootLayout = () => {
   const [fontsLoaded, fontError] = useFonts({
