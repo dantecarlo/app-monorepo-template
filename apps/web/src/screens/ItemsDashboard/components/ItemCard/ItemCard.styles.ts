@@ -7,7 +7,7 @@ export const ITEM_CARD = {
   // Avatar — 36px circle with accent background tint
   AVATAR: [
     'flex h-9 w-9 shrink-0 items-center justify-center',
-    'rounded-full bg-[#241A12] text-accent',
+    'rounded-full bg-accent-surface text-accent',
     'font-display text-label font-bold'
   ].join(' '),
 

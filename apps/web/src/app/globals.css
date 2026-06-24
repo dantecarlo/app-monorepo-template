@@ -1,18 +1,109 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* -------------------------------------------------------------------------
+   * Colors — bg-/text-/border-/ring-/fill- utilities
+   * ------------------------------------------------------------------------- */
+  --color-bg-base: #0a0b0d;
+  --color-bg-raised: #101216;
+
+  --color-glass-fill: rgba(24, 27, 34, 0.42);
+  --color-glass-stroke: rgba(255, 255, 255, 0.1);
+
+  --color-divider: rgba(255, 255, 255, 0.06);
+
+  --color-text-primary: #f7f8fa;
+  --color-text-secondary: rgba(255, 255, 255, 0.55);
+  --color-text-tertiary: #7e808a;
+  --color-text-disabled: rgba(255, 255, 255, 0.25);
+
+  --color-accent: #ff6a1a;
+  --color-accent-light: #ff8a3d;
+  --color-accent-ink: #2a1402;
+  --color-accent-surface: #241a12;
+  --color-accent-tint: rgba(255, 106, 26, 0.16);
+
+  --color-success: #34c759;
+  --color-success-tint: rgba(52, 199, 89, 0.16);
+
+  --color-warning: #e0a011;
+  --color-warning-tint: rgba(224, 160, 17, 0.16);
+
+  --color-danger: #ef4444;
+  --color-danger-tint: rgba(239, 68, 68, 0.16);
+
+  --color-neutral-tint: rgba(255, 255, 255, 0.08);
+
+  --color-scrim: rgba(0, 0, 0, 0.6);
+  --color-cool-glow: #5b6cff;
+
+  --color-knob-off: #80828b;
+  --color-knob-on: #ffffff;
+
+  /* -------------------------------------------------------------------------
+   * Spacing — 8pt scale (merges with the default numeric scale)
+   * ------------------------------------------------------------------------- */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-2xl: 24px;
+  --spacing-3xl: 32px;
+
+  /* -------------------------------------------------------------------------
+   * Border radius
+   * ------------------------------------------------------------------------- */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 26px;
+  --radius-full: 9999px;
+
+  /* -------------------------------------------------------------------------
+   * Font families — wired to Next.js CSS variable injection from layout.tsx
+   * ------------------------------------------------------------------------- */
+  --font-body: var(--font-inter), Inter, sans-serif;
+  --font-display: var(--font-montserrat), Montserrat, sans-serif;
+
+  /* -------------------------------------------------------------------------
+   * Font sizes with paired line-heights
+   * ------------------------------------------------------------------------- */
+  --text-amount-hero: 40px;
+  --text-amount-hero--line-height: 44px;
+  --text-amount: 20px;
+  --text-amount--line-height: 24px;
+  --text-display: 28px;
+  --text-display--line-height: 34px;
+  --text-heading: 18px;
+  --text-heading--line-height: 22px;
+  --text-title: 15px;
+  --text-title--line-height: 20px;
+  --text-button: 15px;
+  --text-button--line-height: 20px;
+  --text-label: 13px;
+  --text-label--line-height: 18px;
+  --text-body: 14px;
+  --text-body--line-height: 20px;
+  --text-caption: 12px;
+  --text-caption--line-height: 15px;
+
+  /* -------------------------------------------------------------------------
+   * Shadows
+   * ------------------------------------------------------------------------- */
+  --shadow-card: 0 18px 44px -6px rgba(0, 0, 0, 0.5), 0 2px 8px 0 rgba(0, 0, 0, 0.28);
+  --shadow-accent-glow: 0 12px 30px 0 rgba(255, 106, 26, 0.5);
+  --shadow-marker-glow: 0 0 8px 0 rgba(255, 255, 255, 0.6);
+  --shadow-rim-light: inset 0 1px 0 0 rgba(255, 255, 255, 0.18);
+}
 
 @layer base {
-  :root {
-    --font-montserrat: 'Montserrat', sans-serif;
-    --font-inter: 'Inter', sans-serif;
-  }
-
   html {
     @apply bg-bg-base text-text-primary;
   }
 
-  /* Tabular figures for numeric displays */
   .font-display {
     font-variant-numeric: tabular-nums;
   }
@@ -39,7 +130,7 @@
     height: 340px;
     top: -120px;
     right: -100px;
-    background: radial-gradient(circle, rgba(255, 106, 26, 0.26) 0%, transparent 70%);
+    background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 26%, transparent) 0%, transparent 70%);
     filter: blur(110px);
   }
 
@@ -49,30 +140,24 @@
     height: 280px;
     bottom: -80px;
     left: -80px;
-    background: radial-gradient(circle, rgba(91, 108, 255, 0.12) 0%, transparent 70%);
+    background: radial-gradient(circle, color-mix(in srgb, var(--color-cool-glow) 12%, transparent) 0%, transparent 70%);
     filter: blur(90px);
   }
 
   /* Glass card recipe — fill + stroke + blur + rim-light + card-shadow */
   .glass-card {
-    background: rgba(24, 27, 34, 0.42);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--color-glass-fill);
+    border: 1px solid var(--color-glass-stroke);
     backdrop-filter: blur(26px);
     -webkit-backdrop-filter: blur(26px);
     box-shadow:
-      0 18px 44px -6px rgba(0, 0, 0, 0.5),
-      0 2px 8px 0 rgba(0, 0, 0, 0.28),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.18);
+      var(--shadow-card),
+      var(--shadow-rim-light);
   }
 
   /* Accent gradient — buttons, logo mark */
   .bg-accent-gradient {
-    background: linear-gradient(180deg, #ff8a3d 0%, #ff6a1a 100%);
-  }
-
-  /* Accent glow shadow — primary CTAs */
-  .shadow-accent-glow {
-    box-shadow: 0 12px 30px 0 rgba(255, 106, 26, 0.5);
+    background: linear-gradient(180deg, var(--color-accent-light) 0%, var(--color-accent) 100%);
   }
 
   /* Skeleton shimmer sweep — loading placeholder animation */
@@ -80,7 +165,7 @@
     background-image: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(255, 255, 255, 0.06) 50%,
+      var(--color-neutral-tint) 50%,
       transparent 100%
     );
     background-size: 200% 100%;
