@@ -10,10 +10,10 @@ export const loadingSkeletonVariants = tv({
   },
   variants: {
     rounded: {
-      full: 'rounded-full',
-      lg: 'rounded-lg',
-      md: 'rounded-md',
-      sm: 'rounded-sm'
+      full: { root: 'rounded-full' },
+      lg: { root: 'rounded-lg' },
+      md: { root: 'rounded-md' },
+      sm: { root: 'rounded-sm' }
     }
   }
 })

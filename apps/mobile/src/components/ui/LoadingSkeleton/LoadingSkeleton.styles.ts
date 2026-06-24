@@ -6,6 +6,11 @@ export const SKELETON_SHIMMER_START = 'transparent'
 export const SKELETON_SHIMMER_MID = colors.glass.stroke
 export const SKELETON_SHIMMER_END = 'transparent'
 
+export const SHIMMER_DURATION = 1200
+export const SHIMMER_TRANSLATE_RANGE = 200
+export const SHIMMER_START_VALUE = -1
+export const SHIMMER_REPEAT_FOREVER = -1
+
 export const ROUNDED_BY_VARIANT = {
   full: radius.full,
   lg: radius.lg,

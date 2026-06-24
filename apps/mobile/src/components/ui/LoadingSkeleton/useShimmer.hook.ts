@@ -6,10 +6,12 @@ import {
   withTiming
 } from 'react-native-reanimated'
 
-const SHIMMER_DURATION = 1200
-const SHIMMER_TRANSLATE_RANGE = 200
-const SHIMMER_START_VALUE = -1
-const SHIMMER_REPEAT_FOREVER = -1
+import {
+  SHIMMER_DURATION,
+  SHIMMER_REPEAT_FOREVER,
+  SHIMMER_START_VALUE,
+  SHIMMER_TRANSLATE_RANGE
+} from '@/components/ui/LoadingSkeleton/LoadingSkeleton.styles'
 
 export interface IUseShimmerResult {
   animatedStyle: ReturnType<typeof useAnimatedStyle>
