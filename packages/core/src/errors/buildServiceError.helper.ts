@@ -1,12 +1,9 @@
-// eslint-disable-next-line no-relative-import-paths/no-relative-import-paths
-import { AppError } from './AppError.helper'
-// eslint-disable-next-line no-relative-import-paths/no-relative-import-paths
-import type { IServiceErrorMapper } from './IServiceErrorMapper.type'
-// eslint-disable-next-line no-relative-import-paths/no-relative-import-paths
+import { AppError } from '@/errors/AppError.helper'
+import type { IServiceErrorMapper } from '@/errors/IServiceErrorMapper.type'
 import {
   SERVICE_ERROR_MESSAGE_KEY_BY_CODE,
   ServiceErrorCodeEnum
-} from './serviceError.type'
+} from '@/errors/serviceError.type'
 
 export interface IBuildServiceErrorParams {
   error: unknown
