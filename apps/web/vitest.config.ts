@@ -1,3 +1,4 @@
+import react from '@vitejs/plugin-react'
 import path from 'path'
 import { defineConfig } from 'vitest/config'
 
@@ -15,13 +16,11 @@ import { defineConfig } from 'vitest/config'
 const PACKAGES = path.resolve(__dirname, '../../packages')
 
 export default defineConfig({
-  // Use the automatic JSX runtime so .tsx render tests don't need an explicit
-  // `import React`. Next uses jsx: 'preserve' in tsconfig, which Vitest's
-  // esbuild does not honour, so set it here.
-  esbuild: {
-    jsx: 'automatic',
-    jsxImportSource: 'react'
-  },
+  // @vitejs/plugin-react provides the automatic JSX runtime for Vitest 4 +
+  // Vite 8. Next uses jsx: 'preserve' in tsconfig (for RSC); the plugin
+  // handles transform for test files so Vitest's OXC transformer can process
+  // .tsx correctly.
+  plugins: [react()],
   resolve: {
     // Array form (not object) so alias precedence is explicit: the
     // @app/supabase/server subpath must be matched BEFORE the bare
