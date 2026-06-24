@@ -100,9 +100,6 @@ const collectTextFiles = ({ dir, acc }) => {
       collectTextFiles({ acc, dir: full })
       continue
     }
-    const ext = entry.includes('.')
-      ? '.' + entry.split('.').slice(1).join('.')
-      : ''
     // Match single-segment extensions like .ts, .tsx, .json, etc.
     const singleExt = entry.includes('.')
       ? '.' + entry.split('.').pop()

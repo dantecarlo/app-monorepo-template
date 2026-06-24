@@ -316,6 +316,21 @@ export default defineConfig([
   },
 
   // -------------------------------------------------------------------------
+  // Node tooling scripts (scripts/**/*.mjs + root *.mjs). Plain ESM executed by
+  // Node, not app source — they rely on the Node global set (process, console,
+  // fetch, URL, setTimeout, …), so they need globals.node for no-undef to pass.
+  // eslint.config.mjs stays ignored via IGNORES; eslint.rules.mjs is covered.
+  // -------------------------------------------------------------------------
+  {
+    files: ['scripts/**/*.mjs', '*.mjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      globals: { ...globals.node },
+      sourceType: 'module'
+    }
+  },
+
+  // -------------------------------------------------------------------------
   // Cross-package overrides (order matters — later wins).
   // -------------------------------------------------------------------------
   UI_COMPONENT_OVERRIDE,
