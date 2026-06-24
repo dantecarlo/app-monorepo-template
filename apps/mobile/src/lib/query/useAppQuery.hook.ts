@@ -4,11 +4,12 @@ import {
   type UseQueryOptions,
   type UseQueryResult
 } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 
 import { resolveErrorMessage } from '@/lib/query/resolveErrorMessage.helper'
 import { useToastStore } from '@/stores/toast.store'
 
-const ERROR_FALLBACK = 'An error occurred'
+const GENERIC_ERROR_KEY = 'helper.error.generic'
 
 export interface IAppQueryOptions<TData, TError = Error> {
   adapter?: (raw: TData) => TData
@@ -22,6 +23,7 @@ export const useAppQuery = <TData, TError extends Error = Error>({
   queryOptions
 }: IAppQueryOptions<TData, TError>): UseQueryResult<TData, TError> => {
   const addToast = useToastStore((s) => s.add)
+  const { i18n, t } = useTranslation()
 
   const result = useQuery<TData, TError>({
     ...queryOptions,
@@ -32,9 +34,9 @@ export const useAppQuery = <TData, TError extends Error = Error>({
     const message = resolveErrorMessage({
       error: result.error,
       errorMessage,
-      fallback: ERROR_FALLBACK,
-      hasKey: () => false,
-      translate: (k) => k
+      fallback: t(GENERIC_ERROR_KEY),
+      hasKey: (key) => i18n.exists(key),
+      translate: (key) => t(key)
     })
     setTimeout(() => addToast({ message, variant: 'error' }), 0)
   }
