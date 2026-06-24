@@ -10,6 +10,7 @@ export const colors = {
   accent: '#FF6A1A',
   accentInk: '#2A1402',
   accentLight: '#FF8A3D',
+  accentSurface: '#241A12',
   accentTint: 'rgba(255,106,26,0.16)',
   bg: {
     base: '#0A0B0D',

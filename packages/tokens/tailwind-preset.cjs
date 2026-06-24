@@ -33,6 +33,7 @@ module.exports = {
           DEFAULT: '#FF6A1A',
           light: '#FF8A3D',
           ink: '#2A1402',
+          surface: '#241A12',
           tint: 'rgba(255,106,26,0.16)',
         },
         success: {
