@@ -49,20 +49,6 @@ export default defineConfig({
         find: '@app/tokens',
         replacement: path.resolve(PACKAGES, 'tokens/src')
       },
-      // Core-internal @/ paths resolve against core/src, not web/src.
-      // Listed before the '@' catch-all so first-match wins.
-      {
-        find: '@/errors',
-        replacement: path.resolve(PACKAGES, 'core/src/errors')
-      },
-      {
-        find: '@/ports',
-        replacement: path.resolve(PACKAGES, 'core/src/ports')
-      },
-      {
-        find: '@/utils',
-        replacement: path.resolve(PACKAGES, 'core/src/utils')
-      },
       { find: '@', replacement: path.resolve(__dirname, './src') }
     ]
   },

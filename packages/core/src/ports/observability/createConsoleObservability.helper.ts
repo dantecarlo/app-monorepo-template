@@ -1,10 +1,12 @@
+/* eslint-disable no-relative-import-paths/no-relative-import-paths */
+import { scrubPII } from '../../utils/scrubPII.helper'
 import type {
   ICaptureErrorParams,
   ICaptureMessageParams,
   IObservabilityPort
-} from '@/ports/observability/IObservabilityPort.type'
-import { ObservabilityLevelEnum } from '@/ports/observability/observabilityLevel.type'
-import { scrubPII } from '@/utils/scrubPII.helper'
+} from './IObservabilityPort.type'
+import { ObservabilityLevelEnum } from './observabilityLevel.type'
+/* eslint-enable no-relative-import-paths/no-relative-import-paths */
 
 export interface ICreateConsoleObservabilityParams {
   isEnabled?: boolean

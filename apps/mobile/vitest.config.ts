@@ -15,67 +15,29 @@ const PACKAGES = path.resolve(__dirname, '../../packages')
 
 export default defineConfig({
   resolve: {
-    alias: [
-      // Core-internal @/ paths resolve against core/src, not mobile/src.
-      // Listed before the '@' catch-all so first-match wins.
-      {
-        find: '@app/core',
-        replacement: path.resolve(PACKAGES, 'core/src')
-      },
-      {
-        find: '@app/i18n',
-        replacement: path.resolve(PACKAGES, 'i18n/src')
-      },
-      {
-        find: '@app/supabase',
-        replacement: path.resolve(PACKAGES, 'supabase/src')
-      },
-      {
-        find: '@app/tokens',
-        replacement: path.resolve(PACKAGES, 'tokens/src')
-      },
-      {
-        find: '@/errors',
-        replacement: path.resolve(PACKAGES, 'core/src/errors')
-      },
-      {
-        find: '@/ports',
-        replacement: path.resolve(PACKAGES, 'core/src/ports')
-      },
-      {
-        find: '@/utils',
-        replacement: path.resolve(PACKAGES, 'core/src/utils')
-      },
-      { find: '@', replacement: path.resolve(__dirname, './src') },
-      {
-        find: 'expo-blur',
-        replacement: path.resolve(
-          __dirname,
-          './src/test/mocks/expo-blur.ts'
-        )
-      },
-      {
-        find: 'expo-linear-gradient',
-        replacement: path.resolve(
-          __dirname,
-          './src/test/mocks/expo-linear-gradient.ts'
-        )
-      },
-      {
-        find: 'react-native',
-        replacement: path.resolve(
-          __dirname,
-          './src/test/mocks/react-native.ts'
-        )
-      },
-      {
-        find: 'react-native-svg',
-        replacement: path.resolve(
-          __dirname,
-          './src/test/mocks/react-native-svg.ts'
-        )
-      }
-    ]
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@app/core': path.resolve(PACKAGES, 'core/src'),
+      '@app/i18n': path.resolve(PACKAGES, 'i18n/src'),
+      '@app/supabase': path.resolve(PACKAGES, 'supabase/src'),
+      '@app/tokens': path.resolve(PACKAGES, 'tokens/src'),
+      'expo-blur': path.resolve(
+        __dirname,
+        './src/test/mocks/expo-blur.ts'
+      ),
+      'expo-linear-gradient': path.resolve(
+        __dirname,
+        './src/test/mocks/expo-linear-gradient.ts'
+      ),
+      'react-native': path.resolve(
+        __dirname,
+        './src/test/mocks/react-native.ts'
+      ),
+      'react-native-svg': path.resolve(
+        __dirname,
+        './src/test/mocks/react-native-svg.ts'
+      )
+    }
   },
   test: {
     environment: 'happy-dom',
