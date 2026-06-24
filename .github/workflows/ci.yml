@@ -40,3 +40,24 @@ jobs:
 
       - name: Run validation gate
         run: pnpm validate
+
+  expo-health:
+    name: expo-health
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run expo health checks
+        run: pnpm verify:expo
