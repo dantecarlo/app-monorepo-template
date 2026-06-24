@@ -59,6 +59,7 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | Supabase error builder | `packages/supabase/src/buildSupabaseServiceError.helper.ts`             | `.helper.ts`   | Wired default: `buildServiceError` + `mapSupabaseError`; use in services  |
 | Supabase auth gateway | `packages/supabase/src/supabaseAuth.adapter.ts`                          | `.adapter.ts`  | `createSupabaseAuthGateway` — implements `IAuthGateway` over a `SupabaseClient` |
 | Backend types         | `packages/supabase/src/types.ts`                                         | `.ts`          | Generated DB types + typed exports                                |
+| DB conventions doc    | `packages/supabase/docs/database.md`                                     | `.md`          | Postgres/Supabase conventions: migrations, schemas, RLS, RBAC, audit, pgTAP |
 | Core test config      | `packages/core/vitest.config.ts`                                         | `.config.ts`   | Vitest config for the core package (node env, includes src/**/*.test.ts)  |
 
 Each package exposes its public surface through a barrel: `packages/core/src/index.ts`,
