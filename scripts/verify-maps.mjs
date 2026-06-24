@@ -21,12 +21,13 @@
 //       workspace; this single pass scans the whole tree at once and reports
 //       any stray magic number as a fatal offender, complementing the rule.
 //
-//   (C) Inline hex-color audit. Same AST walk as (B); flags string literals
-//       whose full text matches /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.
+//   (C) Inline color-literal audit. Same AST walk as (B); flags string
+//       literals whose full text matches a hex color (#RGB / #RRGGBB) or a
+//       color-function call (rgb(), rgba(), hsl(), hsla()).
 //       Exemptions: same file-suffix scope as (B) — *.constant.ts and
 //       *.styles.ts are allowed (literals are the point there), as is the
 //       entire packages/tokens/src/** tree (design source of truth).
-//       Fix: move hex values into packages/tokens, a *.constant.ts, or a
+//       Fix: move color values into packages/tokens, a *.constant.ts, or a
 //       *.styles.ts.
 //
 //   (D) Reverse map coverage. For each app root (apps/web, apps/mobile),
@@ -79,8 +80,10 @@ const SCANNED_SUFFIXES = [
 // MAGIC_NUMBER_ALLOWLIST in eslint.rules.mjs.
 const NUMBER_ALLOWLIST = new Set([-1, 0, 1, 2])
 
-// Hex-color string regex — strict #RGB and #RRGGBB (anchored full match).
-const HEX_COLOR_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
+// Color string regex — strict #RGB / #RRGGBB hex literals plus rgb(), rgba(),
+// hsl(), and hsla() color-function calls (anchored full match).
+const HEX_COLOR_RE =
+  /^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|rgba?\([^)]+\)|hsla?\([^)]+\))$/
 
 // Path segments that mark hex-exempt paths (tokens are the design source of
 // truth; hex inside them is not a leak, it IS the value).
@@ -460,11 +463,11 @@ if (literals.numericOffenders.length > 0) {
   )
 }
 
-// (C) hex-color strings — FATAL.
+// (C) color literals (hex + color functions) — FATAL.
 if (literals.hexOffenders.length > 0) {
   failed = true
   console.error(
-    `\n  [C] hex colors: FAIL — ${literals.hexOffenders.length} inline hex literal(s) outside *.constant.ts / *.styles.ts / packages/tokens/src:**`
+    `\n  [C] color literals: FAIL — ${literals.hexOffenders.length} inline color literal(s) (hex or rgba/rgb/hsl/hsla) outside *.constant.ts / *.styles.ts / packages/tokens/src:**`
   )
   for (const offender of literals.hexOffenders) {
     console.error(
@@ -472,11 +475,11 @@ if (literals.hexOffenders.length > 0) {
     )
   }
   console.error(
-    '\n      Move hex colors into packages/tokens, a *.constant.ts, or a *.styles.ts.'
+    '\n      Move color values into packages/tokens, a *.constant.ts, or a *.styles.ts.'
   )
 } else {
   console.log(
-    `  [C] hex colors: OK — ${literals.scanned} unit(s) scanned, no inline hex literals.`
+    `  [C] color literals: OK — ${literals.scanned} unit(s) scanned, no inline hex or color-function literals.`
   )
 }
 
