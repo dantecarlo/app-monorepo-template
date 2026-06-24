@@ -2,10 +2,20 @@
   "common": {
     "cancel": "Cancel",
     "confirm": "Confirm",
+    "dismiss": "Dismiss",
     "error": "Error",
     "loading": "Loading…",
     "retry": "Retry",
     "save": "Save"
+  },
+  "helper": {
+    "error": {
+      "forbidden": "You do not have permission to perform this action.",
+      "generic": "Something went wrong. Please try again.",
+      "network": "A network error occurred. Check your connection.",
+      "notFound": "The requested resource was not found.",
+      "server": "A server error occurred. Please try again later."
+    }
   },
   "items": {
     "emptyState": "No items found",

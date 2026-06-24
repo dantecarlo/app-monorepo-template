@@ -2,10 +2,20 @@
   "common": {
     "cancel": "Cancelar",
     "confirm": "Confirmar",
+    "dismiss": "Descartar",
     "error": "Error",
     "loading": "Cargando…",
     "retry": "Reintentar",
     "save": "Guardar"
+  },
+  "helper": {
+    "error": {
+      "forbidden": "No tenés permiso para realizar esta acción.",
+      "generic": "Algo salió mal. Por favor, intentá de nuevo.",
+      "network": "Error de red. Verificá tu conexión.",
+      "notFound": "El recurso solicitado no fue encontrado.",
+      "server": "Error del servidor. Por favor, intentá más tarde."
+    }
   },
   "items": {
     "emptyState": "No hay elementos",
