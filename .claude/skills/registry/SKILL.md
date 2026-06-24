@@ -54,34 +54,7 @@ rg '^name:' .claude/skills/*/SKILL.md
 
 ---
 
-## Current Template Skills
-
-After the D1 backport, the template has 22 skills:
-
-| Skill           | Category         | Path                                      |
-| --------------- | ---------------- | ----------------------------------------- |
-| `a11y`          | audit            | `.claude/skills/a11y/SKILL.md`            |
-| `arch`          | generative       | `.claude/skills/arch/SKILL.md`            |
-| `component`     | generative       | `.claude/skills/component/SKILL.md`       |
-| `feature`       | generative       | `.claude/skills/feature/SKILL.md`         |
-| `fix-test`      | testing          | `.claude/skills/fix-test/SKILL.md`        |
-| `fractal-verify`| audit            | `.claude/skills/fractal-verify/SKILL.md`  |
-| `improve-skill` | skill-forge      | `.claude/skills/improve-skill/SKILL.md`   |
-| `lib`           | generative       | `.claude/skills/lib/SKILL.md`             |
-| `mock`          | testing          | `.claude/skills/mock/SKILL.md`            |
-| `modify`        | edit-flow        | `.claude/skills/modify/SKILL.md`          |
-| `new-skill`     | skill-forge      | `.claude/skills/new-skill/SKILL.md`       |
-| `perf`          | audit            | `.claude/skills/perf/SKILL.md`            |
-| `pre-commit`    | audit            | `.claude/skills/pre-commit/SKILL.md`      |
-| `product-discovery` | planning     | `.claude/skills/product-discovery/SKILL.md`|
-| `quality`       | audit            | `.claude/skills/quality/SKILL.md`         |
-| `registry`      | skill-forge      | `.claude/skills/registry/SKILL.md`        |
-| `screen`        | generative       | `.claude/skills/screen/SKILL.md`          |
-| `security`      | audit            | `.claude/skills/security/SKILL.md`        |
-| `service`       | generative       | `.claude/skills/service/SKILL.md`         |
-| `store`         | generative       | `.claude/skills/store/SKILL.md`           |
-| `test`          | testing          | `.claude/skills/test/SKILL.md`            |
-| `validate-all`  | harness          | `.claude/skills/validate-all/SKILL.md`    |
+For the current skill list, see the generated `.claude/skill-registry.md`.
 
 ---
 

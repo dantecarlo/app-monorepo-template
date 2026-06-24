@@ -190,10 +190,10 @@ Last updated: 2026-06-24
 
 ### validate-all
 
-- **Description**: Post-generation deterministic harness: runs pnpm validate + four adversarial subagent groups in parallel (G-standards, G-tests, G-security, G-a11y-design-dod). Overall DONE only when pnpm validate passes and zero BLOCKERs across all groups.
+- **Description**: Post-generation deterministic harness: runs pnpm validate + five adversarial subagent groups in parallel (G-standards, G-tests, G-security, G-a11y-design-dod, G-fractal). Overall DONE only when pnpm validate passes and zero BLOCKERs across all groups.
 - **Triggers**: per the existing skill's USE WHEN phrases
 - **Path**: `.claude/skills/validate-all/SKILL.md`
 
 ---
 
-23 skills indexed.
+24 skills indexed.
