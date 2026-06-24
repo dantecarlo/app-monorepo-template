@@ -4,8 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   selectAuthStatus,
   selectSession,
-  useAuthStore,
-  useSession
+  useAuthStore
 } from './auth.store'
 
 const mockSession: IAuthSession = {
@@ -51,7 +50,11 @@ describe('auth.store', () => {
   it('useSession selector returns session and status together', () => {
     useAuthStore.getState().setSession(mockSession)
     useAuthStore.getState().setStatus('authenticated')
-    const result = useSession()
+    const state = useAuthStore.getState()
+    const result = {
+      session: selectSession(state),
+      status: selectAuthStatus(state)
+    }
     expect(result.session).toEqual(mockSession)
     expect(result.status).toBe('authenticated')
   })

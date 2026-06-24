@@ -1,7 +1,11 @@
 import type { IAuthGateway } from '@app/core'
 import { describe, expect, it, vi } from 'vitest'
 
-import { useAuthStore } from '@/stores/auth.store'
+vi.mock('@/components/AuthProvider/useAuthBootstrap.hook', () => ({
+  useAuthBootstrap: vi.fn()
+}))
+
+import { useAuthBootstrap } from '@/components/AuthProvider/useAuthBootstrap.hook'
 
 import { AuthProvider } from './AuthProvider.component'
 
@@ -13,12 +17,9 @@ const makeGateway = (): IAuthGateway => ({
 })
 
 describe('AuthProvider (mobile)', () => {
-  it('calls getSession on mount via bootstrap', async () => {
-    useAuthStore.setState({ session: null, status: 'loading' })
+  it('calls getSession on mount via bootstrap', () => {
     const gateway = makeGateway()
     AuthProvider({ children: null, gateway })
-    await vi.waitFor(() =>
-      expect(gateway.getSession).toHaveBeenCalledOnce()
-    )
+    expect(useAuthBootstrap).toHaveBeenCalledWith({ gateway })
   })
 })

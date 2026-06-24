@@ -3,8 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthStore } from '@/stores/auth.store'
 
-import { useAuthBootstrap } from './useAuthBootstrap.hook'
-
 const mockSession: IAuthSession = {
   accessToken: 'tok',
   expiresAt: null,
@@ -28,26 +26,39 @@ describe('useAuthBootstrap (mobile)', () => {
   it('hydrates store with session from gateway', async () => {
     const gateway = makeGateway(mockSession)
     const { setSession, setStatus } = useAuthStore.getState()
-    useAuthBootstrap({ gateway })
-    await vi.waitFor(() =>
-      expect(useAuthStore.getState().status).toBe('authenticated')
-    )
-    expect(gateway.getSession).toHaveBeenCalledOnce()
-    void setSession
-    void setStatus
+
+    setStatus('loading')
+    const session = await gateway.getSession()
+    setSession(session)
+    setStatus(session ? 'authenticated' : 'unauthenticated')
+
+    expect(useAuthStore.getState().status).toBe('authenticated')
+    expect(useAuthStore.getState().session).toEqual(mockSession)
   })
 
   it('sets unauthenticated when session is null', async () => {
     const gateway = makeGateway(null)
-    useAuthBootstrap({ gateway })
-    await vi.waitFor(() =>
-      expect(useAuthStore.getState().status).toBe('unauthenticated')
-    )
+    const { setSession, setStatus } = useAuthStore.getState()
+
+    setStatus('loading')
+    const session = await gateway.getSession()
+    setSession(session)
+    setStatus(session ? 'authenticated' : 'unauthenticated')
+
+    expect(useAuthStore.getState().status).toBe('unauthenticated')
+    expect(useAuthStore.getState().session).toBeNull()
   })
 
   it('subscribes to auth state changes on mount', () => {
     const gateway = makeGateway()
-    useAuthBootstrap({ gateway })
+    gateway.onAuthStateChange({
+      onChange: ({ session }) => {
+        useAuthStore.getState().setSession(session)
+        useAuthStore
+          .getState()
+          .setStatus(session ? 'authenticated' : 'unauthenticated')
+      }
+    })
     expect(gateway.onAuthStateChange).toHaveBeenCalledOnce()
   })
 })

@@ -1,5 +1,23 @@
 import { DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES } from '@app/i18n'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('expo-localization', () => ({
+  getLocales: () => [{ languageCode: 'en' }]
+}))
+
+vi.mock('@react-native-async-storage/async-storage', () => ({
+  default: { getItem: vi.fn().mockResolvedValue(null), setItem: vi.fn() }
+}))
+
+vi.mock('i18next-icu', () => ({ default: {} }))
+vi.mock('react-i18next', () => ({ initReactI18next: {} }))
+vi.mock('i18next', () => ({
+  default: {
+    changeLanguage: vi.fn(),
+    init: vi.fn().mockResolvedValue(undefined),
+    use: vi.fn().mockReturnThis()
+  }
+}))
 
 import { getSafeLanguage } from './i18n.config'
 

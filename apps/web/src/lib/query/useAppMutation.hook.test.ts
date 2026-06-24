@@ -4,10 +4,6 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { act, renderHook, waitFor } from '@/test/test.helper'
 
-// ---------------------------------------------------------------------------
-// Mock the toast store — useAppMutation fires toasts on success/error.
-// ---------------------------------------------------------------------------
-
 const { mockAddToast } = vi.hoisted(() => ({ mockAddToast: vi.fn() }))
 
 vi.mock('@/stores/toast.store', () => ({
@@ -16,11 +12,13 @@ vi.mock('@/stores/toast.store', () => ({
   ) => selector({ add: mockAddToast })
 }))
 
-import { useAppMutation } from '@/lib/query/useAppMutation.hook'
+const tFn = Object.assign((key: string) => key, { has: () => false })
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+vi.mock('next-intl', () => ({
+  useTranslations: () => tFn
+}))
+
+import { useAppMutation } from '@/lib/query/useAppMutation.hook'
 
 const makeWrapper = () => {
   const queryClient = new QueryClient({
@@ -34,10 +32,6 @@ const makeWrapper = () => {
     )
   return Wrapper
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe('useAppMutation', () => {
   beforeEach(() => {

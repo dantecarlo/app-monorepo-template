@@ -17,6 +17,12 @@ const { mockGetItems } = vi.hoisted(() => ({
   mockGetItems: vi.fn()
 }))
 
+const tFn = Object.assign((key: string) => key, { has: () => false })
+
+vi.mock('next-intl', () => ({
+  useTranslations: () => tFn
+}))
+
 vi.mock('@/services/Items', async (importActual) => {
   const actual = await importActual<typeof import('@/services/Items')>()
   return {

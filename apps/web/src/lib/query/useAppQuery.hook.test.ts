@@ -16,6 +16,12 @@ vi.mock('@/stores/toast.store', () => ({
   ) => selector({ add: mockAddToast })
 }))
 
+const tFn = Object.assign((key: string) => key, { has: () => false })
+
+vi.mock('next-intl', () => ({
+  useTranslations: () => tFn
+}))
+
 import { useAppQuery } from '@/lib/query/useAppQuery.hook'
 
 // ---------------------------------------------------------------------------
