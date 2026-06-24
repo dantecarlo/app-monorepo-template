@@ -3,9 +3,12 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { createConsoleObservability } from './createConsoleObservability.helper'
 import { ObservabilityLevelEnum } from './observabilityLevel.type'
 
+let errorSpy: ReturnType<typeof vi.spyOn>
+let warnSpy: ReturnType<typeof vi.spyOn>
+
 beforeEach(() => {
-  vi.spyOn(console, 'error').mockImplementation(() => undefined)
-  vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+  errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+  warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
 })
 
 afterEach(() => {
@@ -18,8 +21,9 @@ test('captureError scrubs PII fields from context', () => {
     context: { email: 'user@example.com', source: 'queryCache' },
     error: new Error('network')
   })
-  const args = (console.error as ReturnType<typeof vi.spyOn>).mock.calls[0]
-  const payload = args[1] as { context: Record<string, unknown> }
+  const payload = errorSpy.mock.calls[0][1] as {
+    context: Record<string, unknown>
+  }
   expect(payload.context.email).toBe('[redacted]')
   expect(payload.context.source).toBe('queryCache')
 })
@@ -27,20 +31,20 @@ test('captureError scrubs PII fields from context', () => {
 test('captureError calls console.error', () => {
   const adapter = createConsoleObservability()
   adapter.captureError({ error: new Error('failed') })
-  expect(console.error).toHaveBeenCalledOnce()
+  expect(errorSpy).toHaveBeenCalledOnce()
 })
 
 test('captureError is suppressed when isEnabled is false', () => {
   const adapter = createConsoleObservability({ isEnabled: false })
   adapter.captureError({ error: new Error('test') })
-  expect(console.error).not.toHaveBeenCalled()
+  expect(errorSpy).not.toHaveBeenCalled()
 })
 
 test('captureMessage is suppressed when isEnabled is false', () => {
   const adapter = createConsoleObservability({ isEnabled: false })
   adapter.captureMessage?.({ message: 'hello' })
-  expect(console.warn).not.toHaveBeenCalled()
-  expect(console.error).not.toHaveBeenCalled()
+  expect(warnSpy).not.toHaveBeenCalled()
+  expect(errorSpy).not.toHaveBeenCalled()
 })
 
 test('captureMessage with ERROR level calls console.error', () => {
@@ -49,8 +53,8 @@ test('captureMessage with ERROR level calls console.error', () => {
     level: ObservabilityLevelEnum.ERROR,
     message: 'err'
   })
-  expect(console.error).toHaveBeenCalledOnce()
-  expect(console.warn).not.toHaveBeenCalled()
+  expect(errorSpy).toHaveBeenCalledOnce()
+  expect(warnSpy).not.toHaveBeenCalled()
 })
 
 test('captureMessage with INFO level calls console.warn', () => {
@@ -59,8 +63,8 @@ test('captureMessage with INFO level calls console.warn', () => {
     level: ObservabilityLevelEnum.INFO,
     message: 'info'
   })
-  expect(console.warn).toHaveBeenCalledOnce()
-  expect(console.error).not.toHaveBeenCalled()
+  expect(warnSpy).toHaveBeenCalledOnce()
+  expect(errorSpy).not.toHaveBeenCalled()
 })
 
 test('captureMessage scrubs PII from context', () => {
@@ -69,8 +73,9 @@ test('captureMessage scrubs PII from context', () => {
     context: { token: 'secret', userId: 'abc' },
     message: 'test'
   })
-  const args = (console.warn as ReturnType<typeof vi.spyOn>).mock.calls[0]
-  const payload = args[1] as { context: Record<string, unknown> }
+  const payload = warnSpy.mock.calls[0][1] as {
+    context: Record<string, unknown>
+  }
   expect(payload.context.token).toBe('[redacted]')
   expect(payload.context.userId).toBe('abc')
 })

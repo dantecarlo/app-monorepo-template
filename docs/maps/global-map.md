@@ -43,6 +43,10 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | Service error mapper type | `packages/core/src/errors/IServiceErrorMapper.type.ts`               | `.type.ts`     | `IServiceErrorMapper` port — injectable mapError seam for provider-specific error detection |
 | Auth gateway port     | `packages/core/src/ports/auth/IAuthGateway.type.ts`                      | `.type.ts`     | `IAuthGateway` port + session/user/subscription primitive types — no SDK imports |
 | Backend client port   | `packages/core/src/ports/client/IBackendClientProvider.type.ts`          | `.type.ts`     | `IBackendClientProvider<TClient>` port — url + anonKey provisioning contract  |
+| Observability port    | `packages/core/src/ports/observability/IObservabilityPort.type.ts`       | `.type.ts`     | `IObservabilityPort` + `ICaptureErrorParams` + `ICaptureMessageParams` — provider-agnostic error/message capture seam |
+| Observability levels  | `packages/core/src/ports/observability/observabilityLevel.type.ts`       | `.type.ts`     | `ObservabilityLevelEnum` + `ObservabilityLevelType` — no magic severity strings |
+| No-op adapter         | `packages/core/src/ports/observability/createNoopObservability.helper.ts` | `.helper.ts`  | Production-safe default — swallows all events silently, zero deps, zero PII risk |
+| Console adapter       | `packages/core/src/ports/observability/createConsoleObservability.helper.ts` | `.helper.ts` | Dev-time adapter — logs scrubbed payloads via console.error/warn; isEnabled flag |
 | Query-key sanitizer   | `packages/core/src/observability/sanitizeQueryKey.helper.ts`             | `.helper.ts`   | Redacts dynamic id segments from query keys before error reporting (PII-safe) |
 | PII scrubbing         | `packages/core/src/utils/scrubPII.helper.ts`                             | `.helper.ts`   | Scrub sensitive fields before they reach any monitoring sink      |
 | i18n catalogs         | `packages/i18n/src/locales/es.json`, `packages/i18n/src/locales/en.json` | `.json`        | ICU message catalogs (default `es`, plus `en`)                    |
@@ -98,6 +102,10 @@ the `@/*` alias. UI here is DOM / shadcn / Tailwind.
 | Summary barrel         | `apps/web/src/services/ItemsSummary/index.ts`                           | `index.ts`                    | Public API barrel for the ItemsSummary domain              |
 | Style constants        | `apps/web/src/helpers/style.constant.ts`                                | `.constant.ts`                | Shared Tailwind class-string constants                     |
 | Query keys             | `apps/web/src/lib/query/queryKeys.constant.ts`                          | `.constant.ts`                | Central React Query key registry                           |
+| Observability adapter  | `apps/web/src/lib/observability/observability.adapter.ts`               | `.adapter.ts`                 | App-level observability wiring point — swap this line to inject a Sentry/Datadog adapter |
+| Error bridge           | `apps/web/src/lib/observability/toCaptureError.helper.ts`               | `.helper.ts`                  | Adapts `IObservabilityPort.captureError` to the `createQueryClient` `onCaptureError` callback shape |
+| Validation constants   | `apps/web/src/validation/validation.constant.ts`                        | `.constant.ts`                | Named bounds for validation schemas (NOTE_MAX_LENGTH, QUANTITY_MIN, QUANTITY_MAX) |
+| Example schema factory | `apps/web/src/validation/buildExampleSchema.schema.ts`                  | `.schema.ts`                  | i18n-aware buildExampleSchema({ t }) — zod factory pattern; infers ExampleFormValuesType |
 | Query client factory   | `apps/web/src/lib/query/createQueryClient.helper.ts`                    | `.helper.ts`                  | Configured QueryClient with PII-safe cache error sinks     |
 | Error message resolver | `apps/web/src/lib/query/resolveErrorMessage.helper.ts`                  | `.helper.ts`                  | Standardized query/mutation error → user string (override > messageKey > message > fallback) |
 | App-query hook         | `apps/web/src/lib/query/useAppQuery.hook.ts`                            | `.hook.ts`                    | Wrapper over `useQuery` (project defaults)                 |
@@ -159,6 +167,10 @@ Same shape as web, but UI is React Native / NativeWind. Imported via `@/*`.
 | Segmented control (mobile) | `apps/mobile/src/components/ui/SegmentedControl/SegmentedControl.component.tsx` | `.component.tsx`     | tablist/tab segmented control; accentTint active segment |
 | Toggle (mobile)        | `apps/mobile/src/components/ui/Toggle/Toggle.component.tsx`                   | `.component.tsx`              | Switch; expo-linear-gradient track + Animated knob via useToggleKnob |
 | Toggle knob hook (mobile) | `apps/mobile/src/components/ui/Toggle/useToggleKnob.hook.ts`               | `.hook.ts`                    | Drives knob translateX via RN Animated (native driver, 160ms) |
+| Observability adapter  | `apps/mobile/src/lib/observability/observability.adapter.ts`                  | `.adapter.ts`                 | App-level observability wiring point — swap this line to inject a Sentry/Datadog adapter |
+| Error bridge           | `apps/mobile/src/lib/observability/toCaptureError.helper.ts`                  | `.helper.ts`                  | Adapts `IObservabilityPort.captureError` to the `createQueryClient` `onCaptureError` callback shape |
+| Validation constants   | `apps/mobile/src/validation/validation.constant.ts`                           | `.constant.ts`                | Named bounds for validation schemas (NOTE_MAX_LENGTH, QUANTITY_MIN, QUANTITY_MAX) |
+| Example schema factory | `apps/mobile/src/validation/buildExampleSchema.schema.ts`                     | `.schema.ts`                  | i18n-aware buildExampleSchema({ t }) — zod factory pattern; infers ExampleFormValuesType |
 | Query client factory   | `apps/mobile/src/lib/query/createQueryClient.helper.ts`                       | `.helper.ts`                  | Configured QueryClient with PII-safe cache error sinks |
 | Error message resolver | `apps/mobile/src/lib/query/resolveErrorMessage.helper.ts`                     | `.helper.ts`                  | Standardized query/mutation error → user string     |
 | App-query hook         | `apps/mobile/src/lib/query/useAppQuery.hook.ts`                               | `.hook.ts`                    | Wrapper over `useQuery` (project defaults)          |
