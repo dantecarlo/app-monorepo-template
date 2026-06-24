@@ -1,6 +1,6 @@
 import { colors } from '@app/tokens'
 import { Suspense } from 'react'
-import { ErrorBoundary } from 'react-error-boundary'
+import { ErrorBoundary, type FallbackProps } from 'react-error-boundary'
 import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 
 import { ASYNC_BOUNDARY_STYLES as styles } from '@/components/ui/AsyncBoundary/AsyncBoundary.styles'
@@ -9,10 +9,7 @@ const RETRY_LABEL = 'Retry'
 
 export interface IAsyncBoundaryProps {
   children: React.ReactNode
-  ErrorFallback?: React.ComponentType<{
-    error: Error
-    resetErrorBoundary: () => void
-  }>
+  ErrorFallback?: React.ComponentType<FallbackProps>
   loadingFallback?: React.ReactNode
 }
 
@@ -32,12 +29,11 @@ const DefaultLoadingFallback = () => (
 const DefaultErrorFallback = ({
   error,
   resetErrorBoundary
-}: {
-  error: Error
-  resetErrorBoundary: () => void
-}) => (
+}: FallbackProps) => (
   <View accessibilityRole="alert" style={styles.fill}>
-    <Text>{error.message}</Text>
+    <Text>
+      {error instanceof Error ? error.message : 'An error occurred'}
+    </Text>
     <Pressable
       accessibilityLabel={RETRY_LABEL}
       accessibilityRole="button"
