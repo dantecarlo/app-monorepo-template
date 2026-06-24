@@ -38,7 +38,10 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | Design tokens         | `packages/tokens/src/tokens.constant.ts`                                 | `.constant.ts` | Colors, spacing, type scale — the design source of truth          |
 | Tailwind preset       | `packages/tokens/tailwind-preset.cjs`                                    | `.cjs`         | Token-derived preset consumed by web Tailwind + mobile NativeWind |
 | Domain errors         | `packages/core/src/errors/AppError.helper.ts`                            | `.helper.ts`   | `AppError` + typed error contract (messageKey, cause chaining, prototype fix) |
-| Service error mapper  | `packages/core/src/errors/buildServiceError.helper.ts`                   | `.helper.ts`   | Maps raw Postgrest/Supabase errors to typed AppError codes + i18n keys        |
+| Service error mapper  | `packages/core/src/errors/buildServiceError.helper.ts`                   | `.helper.ts`   | Maps provider errors to typed AppError codes + i18n keys via injectable mapper |
+| Service error mapper type | `packages/core/src/errors/IServiceErrorMapper.type.ts`               | `.type.ts`     | `IServiceErrorMapper` port — injectable mapError seam for provider-specific error detection |
+| Auth gateway port     | `packages/core/src/ports/auth/IAuthGateway.type.ts`                      | `.type.ts`     | `IAuthGateway` port + session/user/subscription primitive types — no SDK imports |
+| Backend client port   | `packages/core/src/ports/client/IBackendClientProvider.type.ts`          | `.type.ts`     | `IBackendClientProvider<TClient>` port — url + anonKey provisioning contract  |
 | Query-key sanitizer   | `packages/core/src/observability/sanitizeQueryKey.helper.ts`             | `.helper.ts`   | Redacts dynamic id segments from query keys before error reporting (PII-safe) |
 | PII scrubbing         | `packages/core/src/utils/scrubPII.helper.ts`                             | `.helper.ts`   | Scrub sensitive fields before they reach any monitoring sink      |
 | i18n catalogs         | `packages/i18n/src/locales/es.json`, `packages/i18n/src/locales/en.json` | `.json`        | ICU message catalogs (default `es`, plus `en`)                    |

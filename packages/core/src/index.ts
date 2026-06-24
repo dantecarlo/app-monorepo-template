@@ -18,4 +18,16 @@ export {
   REDACTED_SEGMENT,
   sanitizeQueryKey
 } from './observability/sanitizeQueryKey.helper'
+export type {
+  IAuthGateway,
+  IAuthSession,
+  IAuthSubscription,
+  IAuthUser,
+  IOnAuthStateChangeParams,
+  ISignInWithPasswordParams
+} from './ports/auth/IAuthGateway.type'
+export type {
+  IBackendClientProvider,
+  ICreateBackendClientParams
+} from './ports/client/IBackendClientProvider.type'
 export { PII_KEYS, scrubPII } from './utils/scrubPII.helper'
