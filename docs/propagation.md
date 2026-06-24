@@ -30,62 +30,177 @@ Confirm the remote is present with `git remote -v`.
 Run these steps whenever you want to pull template improvements into a
 downstream project.
 
-### 1. Fetch the latest template state
+### Precondition — clean tree and identity check
+
+Before fetching the template, the working tree must be clean and the project
+identity must be consistent:
+
+```bash
+git status --short          # must return empty — commit or stash WIP first
+pnpm check:identity         # must pass — fix any identity drift before syncing
+```
+
+A dirty working tree causes unrelated changes to contaminate the sync. An
+identity failure means namespace references are inconsistent and must be
+resolved on a clean baseline before importing new template content.
+
+---
+
+### Step 1 — Fetch
 
 ```bash
 git fetch template
 ```
 
-### 2. Inspect what changed in the template since your last sync
+---
+
+### Step 2 — Inspect and classify
+
+Run one diff per category. For each changed file, assign one of three labels:
+
+| Label | Meaning | Action |
+|---|---|---|
+| `safe` | Config, scripts, or gates with no breaking changes | Copy or apply directly |
+| `major` | Breaking major version bump (Next.js, Tailwind, etc.) | Individual gated migration — do not bulk-copy |
+| `locked` | Framework-governed dep (Expo's react, react-native, nativewind) | Update via `expo install` only — never via npm latest |
 
 ```bash
-# Compare the template main against your local main
-git diff template/main..HEAD -- docs/ .claude/ scripts/ eslint.config.mjs \
-  tsconfig.base.json turbo.json pnpm-workspace.yaml
+# Code standards and linting
+git diff template/main -- eslint.config.mjs eslint.rules.mjs docs/code-standards.md
+
+# TypeScript baseline
+git diff template/main -- tsconfig.base.json
+
+# Build pipeline (typically safe)
+git diff template/main -- turbo.json scripts/
+
+# Agent context
+git diff template/main -- .claude/skills/ .claude/agents/ AGENTS.md CLAUDE.md
+
+# Infrastructure docs
+git diff template/main -- docs/infrastructure.md docs/propagation.md
+
+# E2E harness
+git diff template/main -- playwright.config.ts e2e/ docs/e2e.md
 ```
 
-Focus the diff on the categories below:
+---
 
-| Category | Paths |
-|---|---|
-| Code standards and linting | `eslint.config.mjs`, `eslint.rules.mjs`, `docs/code-standards.md` |
-| TypeScript baseline | `tsconfig.base.json` |
-| Build pipeline | `turbo.json`, `scripts/` |
-| Agent context | `.claude/skills/`, `.claude/agents/`, `AGENTS.md`, `CLAUDE.md` |
-| Infrastructure docs | `docs/infrastructure.md`, `docs/propagation.md` |
-| E2E harness | `playwright.config.ts`, `e2e/`, `docs/e2e.md` |
+### Step 3 — Apply: scripts and gates first
 
-### 3. Apply changes selectively
-
-For each category with relevant changes:
+Apply `safe` changes to `scripts/` and gate files (`check-identity.mjs`,
+`verify-maps.mjs`, `verify-tests.mjs`) before any other category. Then run
+the gates:
 
 ```bash
-# Copy a specific file from the template
-git show template/main:docs/code-standards.md > docs/code-standards.md
-
-# Or cherry-pick only the diff for a specific path
-git diff template/main..HEAD -- docs/code-standards.md | git apply --reverse
+pnpm check:identity
+pnpm verify:maps
+pnpm verify:tests
 ```
 
-Do NOT apply changes wholesale — downstream projects carry project-specific
-content in these same files. Merge carefully.
+The gates must pass before proceeding to remaining categories. If they fail,
+the failures are the next thing to fix (see Step 4).
 
-### 4. Validate after sync
+For other `safe` files:
 
 ```bash
-pnpm install          # update lock if any package versions changed
-pnpm validate         # full gate must stay green after every sync
+git show template/main:<file> > <file>
 ```
 
-Fix any failures before committing the sync.
+For files with project-specific content, merge manually — preserve all project
+sections.
 
-### 5. Commit the sync
+**Never apply wholesale** to `CLAUDE.md`, `AGENTS.md`,
+`docs/maps/global-map.md`, or `pnpm-lock.yaml`.
 
-Use a scoped conventional commit so syncs are traceable:
+`major` changes require a standalone migration branch, not inline application.
 
+`locked` deps must go through `expo install <package>@<version>` to respect
+the Expo SDK peer-dep matrix.
+
+---
+
+### Step 4 — fix-drift
+
+After copying the gates, run them immediately. The newly-copied gates will
+surface existing drift in the downstream project that was previously
+undetected. Fix all reported drift before committing the sync:
+
+- Identity mismatches → update namespace references (see Step 5)
+- Dead map references → create the missing file or remove the stale reference
+- Missing test coverage → add the required unit tests
+
+Do not skip this step or defer the fixes — committing with known drift defeats
+the purpose of the gates.
+
+---
+
+### Step 5 — namespace-adapt
+
+When template changes reference `@app/*` paths, package names, or
+environment-variable prefixes, adapt them to the downstream project's
+namespace before committing.
+
+**Scan for residual `@app/` references:**
+
+```bash
+rg "@app/" --type ts -l
+rg "@app/" --type json -l
 ```
-chore(template-sync): pull <topic> from template@<short-sha>
+
+**Checklist:**
+- `@app/*` import aliases → `@<project-slug>/*` (most handled by
+  `pnpm init <slug>` / `scripts/init-project.mjs`; the scan above catches
+  residuals)
+- `package.json` `name` fields in each workspace package
+- `apps/mobile/app.json`: `slug`, `ios.bundleIdentifier`, `android.package`
+- Env-var prefixes: verify `NEXT_PUBLIC_` and `EXPO_PUBLIC_` variables match
+  the downstream project's naming conventions
+
+Run `pnpm check:identity` after adapting. A passing result confirms all
+namespace references are consistent.
+
+---
+
+### Step 6 — Don't clobber domain code
+
+Template changes to `apps/` and `packages/` are structural guides, not
+content to copy. The downstream project owns its domain code:
+
+- Data layer is swappable via the service/adapter seam — adapt the interface,
+  not the implementation.
+- RLS policies and migrations live in the downstream project's adapter; do not
+  overwrite them.
+- Apply only structural template changes (file layout, barrel exports, seam
+  boundaries) and preserve all project-specific logic.
+
+Verify the seam is intact after any change to `packages/`:
+
+```bash
+rg "from 'react'|from 'next'|from '@supabase" packages/core/src \
+  --type-add 'ts:*.ts' --type-add 'tsx:*.tsx' -l
 ```
+
+Zero matches = seam intact. Non-zero = revert the offending hunk.
+
+---
+
+### Step 7 — Final gate and commit
+
+```bash
+pnpm install   # regenerate lock if package.json changed
+pnpm validate  # full gate — must be green
+```
+
+`pnpm validate` green = propagation done. Then commit:
+
+```bash
+git add <changed files>
+git commit -m "chore(template-sync): pull <topic> from template@$(git rev-parse --short template/main)"
+```
+
+One commit per category. Do not batch unrelated categories into a single
+commit.
 
 ---
 
@@ -98,7 +213,8 @@ These categories should be synced proactively:
 - **ESLint rules** — new or tightened rules keep all projects consistent.
 - **Agent skills and agents** — improvements to `.claude/skills/` and
   `.claude/agents/` benefit every project that uses the same workflow.
-- **Build scripts** — `verify-tests.mjs`, `verify-maps.mjs`, `check-identity.mjs`.
+- **Build scripts** — `verify-tests.mjs`, `verify-maps.mjs`,
+  `check-identity.mjs`.
 
 ---
 
@@ -129,8 +245,8 @@ These categories require manual review:
 
 The template enforces a strict **domain / adapter boundary**: domain and
 application layers in `packages/core` must never import framework or vendor
-SDKs directly. Adapters live in the infrastructure layer
-(`*.adapter.ts` files) and are paired with a `*.service.ts` interface.
+SDKs directly. Adapters live in the infrastructure layer (`*.adapter.ts`
+files) and are paired with a `*.service.ts` interface.
 
 When propagating, preserve this seam. Do not accept template changes that move
 infrastructure concerns into the core package.
@@ -142,10 +258,8 @@ infrastructure concerns into the core package.
 To verify the seam is intact after a sync, run:
 
 ```bash
-# Should return zero matches (no framework imports in core)
 rg "from 'react'|from 'next'|from '@supabase" packages/core/src \
-  --type ts --type tsx -l
+  --type-add 'ts:*.ts' --type-add 'tsx:*.tsx' -l
 ```
 
-A non-zero result is a propagation error — revert and re-apply the change
-without the leaking import.
+Zero matches = seam intact. Non-zero = revert the offending hunk.
