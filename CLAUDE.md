@@ -17,8 +17,11 @@ bootstrap from it and then extend it with product-specific code.
 | Layer | Technology |
 |---|---|
 | Monorepo | pnpm workspaces + Turborepo |
-| Web | Next.js 15 (App Router, RSC, ISR) |
-| Mobile | Expo (React Native, dev builds) |
+| Web | Next.js 16.2.9 (App Router, RSC, ISR) |
+| Mobile | Expo SDK 56, React Native 0.85 (dev builds) |
+| Styling | Tailwind CSS 4 (web), NativeWind 4 (mobile) |
+| Language | TypeScript 6, React 19.2 |
+| Runtime | Node 24 |
 | Shared packages | `packages/core` (domain), `packages/i18n`, `packages/supabase`, `packages/tokens` |
 | Database / Auth | Supabase Cloud (Postgres, Auth, RLS, Edge Functions) |
 | Edge / Security | Cloudflare (DNS proxy, WAF, DDoS, Turnstile, CDN) |
