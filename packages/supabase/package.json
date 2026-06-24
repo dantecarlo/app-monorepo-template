@@ -5,8 +5,7 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./server": "./src/server.adapter.ts",
-    "./ssr": "./src/ssr.adapter.ts"
+    "./server": "./src/server.adapter.ts"
   },
   "files": [
     "src"
