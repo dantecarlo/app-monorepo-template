@@ -1,5 +1,5 @@
-// eslint-disable-next-line no-relative-import-paths/no-relative-import-paths
-import { AppError } from './AppError.helper'
+import { AppError } from '@/../packages/core/src/errors/AppError.helper'
+import type { IServiceErrorMapper } from '@/../packages/core/src/errors/IServiceErrorMapper.type'
 
 export const ServiceErrorCodeEnum = {
   FORBIDDEN: 'FORBIDDEN',
@@ -23,64 +23,26 @@ export const SERVICE_ERROR_MESSAGE_KEY_BY_CODE: Record<
   UNKNOWN: 'helper.error.generic'
 }
 
-const HTTP_STATUS_FORBIDDEN = 403
-const HTTP_STATUS_NOT_FOUND = 404
-const HTTP_STATUS_SERVER_MIN = 500
-
-export interface IPostgrestErrorLike {
-  code: string
-  details: string | null
-  hint: string | null
-  message: string
-  status?: number
-}
-
-const isPostgrestErrorLike = (
-  value: unknown
-): value is IPostgrestErrorLike => {
-  if (typeof value !== 'object' || value === null) return false
-  const candidate = value as Record<string, unknown>
-  return (
-    typeof candidate.message === 'string' &&
-    typeof candidate.code === 'string' &&
-    'details' in candidate &&
-    'hint' in candidate
-  )
-}
-
-const codeFromHttpStatus = (
-  status: number | undefined
-): ServiceErrorCodeType | null => {
-  if (status === undefined) return null
-  if (status === HTTP_STATUS_FORBIDDEN) {
-    return ServiceErrorCodeEnum.FORBIDDEN
-  }
-  if (status === HTTP_STATUS_NOT_FOUND) {
-    return ServiceErrorCodeEnum.NOT_FOUND
-  }
-  if (status >= HTTP_STATUS_SERVER_MIN) {
-    return ServiceErrorCodeEnum.SERVER_ERROR
-  }
-  return null
-}
-
 export interface IBuildServiceErrorParams {
   error: unknown
+  mapper?: IServiceErrorMapper
 }
 
 export const buildServiceError = ({
-  error
+  error,
+  mapper
 }: IBuildServiceErrorParams): AppError => {
   if (error instanceof AppError) return error
 
-  if (isPostgrestErrorLike(error)) {
-    const code =
-      codeFromHttpStatus(error.status) ?? ServiceErrorCodeEnum.UNKNOWN
-    return new AppError({
-      cause: error,
-      code,
-      messageKey: SERVICE_ERROR_MESSAGE_KEY_BY_CODE[code]
-    })
+  if (mapper !== undefined) {
+    const mapped = mapper.mapError({ error })
+    if (mapped !== null) {
+      return new AppError({
+        cause: error,
+        code: mapped,
+        messageKey: SERVICE_ERROR_MESSAGE_KEY_BY_CODE[mapped]
+      })
+    }
   }
 
   return new AppError({
