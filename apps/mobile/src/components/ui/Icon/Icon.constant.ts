@@ -8,11 +8,13 @@ export type IconNameType =
   | 'bell'
   | 'check'
   | 'chevron-down'
+  | 'chevron-left'
   | 'chevron-right'
   | 'clock'
   | 'close'
   | 'edit'
   | 'eye'
+  | 'eye-off'
   | 'filter'
   | 'home'
   | 'info'
@@ -29,12 +31,15 @@ export const ICON_PATHS: Record<IconNameType, string> = {
   bell: 'M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9m-4.27 13a2 2 0 01-3.46 0',
   check: 'M5 13l4 4L19 7',
   'chevron-down': 'M6 9l6 6 6-6',
+  'chevron-left': 'M15 18l-6-6 6-6',
   'chevron-right': 'M9 18l6-6-6-6',
   clock:
     'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm0-14v4l2.5 2.5',
   close: 'M18 6L6 18M6 6l12 12',
   edit: 'M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z',
   eye: 'M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12zm11 3a3 3 0 100-6 3 3 0 000 6z',
+  'eye-off':
+    'M9.9 4.24A9.12 9.12 0 0112 4c7 0 10 8 10 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22M6.61 6.61A18.5 18.5 0 002 12s3 8 10 8a9.12 9.12 0 005.39-1.61',
   filter: 'M22 3H2l8 9.46V19l4 2v-8.54L22 3z',
   home: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9zm6 11V12h6v8',
   info: 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm0-10v4m0-8h.01',
