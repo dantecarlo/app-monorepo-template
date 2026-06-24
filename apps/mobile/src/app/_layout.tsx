@@ -22,12 +22,16 @@ import { useEffect } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { AuthProvider } from '@/components/AuthProvider'
+import { observability } from '@/lib/observability/observability.adapter'
+import { toCaptureError } from '@/lib/observability/toCaptureError.helper'
 import { createQueryClient } from '@/lib/query/createQueryClient.helper'
 import { supabase } from '@/lib/supabase/client.adapter'
 
 SplashScreen.preventAutoHideAsync()
 
-const queryClient = createQueryClient()
+const queryClient = createQueryClient({
+  onCaptureError: toCaptureError({ observability })
+})
 const authGateway = createSupabaseAuthGateway(supabase)
 
 const RootLayout = () => {

@@ -8,6 +8,8 @@ import type { ComponentProps } from 'react'
 import { useState } from 'react'
 
 import { AuthProvider } from '@/components/AuthProvider'
+import { observability } from '@/lib/observability/observability.adapter'
+import { toCaptureError } from '@/lib/observability/toCaptureError.helper'
 import { createQueryClient } from '@/lib/query/createQueryClient.helper'
 
 const I18N_TIME_ZONE = 'UTC'
@@ -15,10 +17,11 @@ const I18N_TIME_ZONE = 'UTC'
 let browserQueryClient: QueryClient | undefined
 
 const getQueryClient = (): QueryClient => {
+  const onCaptureError = toCaptureError({ observability })
   if (typeof window === 'undefined') {
-    return createQueryClient()
+    return createQueryClient({ onCaptureError })
   }
-  browserQueryClient ??= createQueryClient()
+  browserQueryClient ??= createQueryClient({ onCaptureError })
   return browserQueryClient
 }
 
