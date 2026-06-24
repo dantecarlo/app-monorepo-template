@@ -3,16 +3,14 @@ export type {
   IAppErrorParams
 } from './errors/AppError.helper'
 export { APP_ERROR_CODES, AppError } from './errors/AppError.helper'
-export type {
-  IBuildServiceErrorParams,
-  ServiceErrorCodeType
-} from './errors/buildServiceError.helper'
+export type { IBuildServiceErrorParams } from './errors/buildServiceError.helper'
+export { buildServiceError } from './errors/buildServiceError.helper'
+export type { IServiceErrorMapper } from './errors/IServiceErrorMapper.type'
+export type { ServiceErrorCodeType } from './errors/serviceError.type'
 export {
-  buildServiceError,
   SERVICE_ERROR_MESSAGE_KEY_BY_CODE,
   ServiceErrorCodeEnum
-} from './errors/buildServiceError.helper'
-export type { IServiceErrorMapper } from './errors/IServiceErrorMapper.type'
+} from './errors/serviceError.type'
 export type { ISanitizeQueryKeyParams } from './observability/sanitizeQueryKey.helper'
 export {
   REDACTED_SEGMENT,

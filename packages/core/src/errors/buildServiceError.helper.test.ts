@@ -1,12 +1,12 @@
 import { describe, expect, test, vi } from 'vitest'
 
 import { AppError } from '@/errors/AppError.helper'
+import { buildServiceError } from '@/errors/buildServiceError.helper'
+import type { IServiceErrorMapper } from '@/errors/IServiceErrorMapper.type'
 import {
-  buildServiceError,
   SERVICE_ERROR_MESSAGE_KEY_BY_CODE,
   ServiceErrorCodeEnum
-} from '@/errors/buildServiceError.helper'
-import type { IServiceErrorMapper } from '@/errors/IServiceErrorMapper.type'
+} from '@/errors/serviceError.type'
 
 describe('buildServiceError', () => {
   test('passes an existing AppError through unchanged', () => {

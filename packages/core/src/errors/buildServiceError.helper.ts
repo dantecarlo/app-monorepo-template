@@ -1,27 +1,9 @@
-import { AppError } from '@/../packages/core/src/errors/AppError.helper'
-import type { IServiceErrorMapper } from '@/../packages/core/src/errors/IServiceErrorMapper.type'
-
-export const ServiceErrorCodeEnum = {
-  FORBIDDEN: 'FORBIDDEN',
-  NETWORK_ERROR: 'NETWORK_ERROR',
-  NOT_FOUND: 'NOT_FOUND',
-  SERVER_ERROR: 'SERVER_ERROR',
-  UNKNOWN: 'UNKNOWN'
-} as const
-
-export type ServiceErrorCodeType =
-  (typeof ServiceErrorCodeEnum)[keyof typeof ServiceErrorCodeEnum]
-
-export const SERVICE_ERROR_MESSAGE_KEY_BY_CODE: Record<
-  ServiceErrorCodeType,
-  string
-> = {
-  FORBIDDEN: 'helper.error.forbidden',
-  NETWORK_ERROR: 'helper.error.network',
-  NOT_FOUND: 'helper.error.notFound',
-  SERVER_ERROR: 'helper.error.server',
-  UNKNOWN: 'helper.error.generic'
-}
+import { AppError } from '@/errors/AppError.helper'
+import type { IServiceErrorMapper } from '@/errors/IServiceErrorMapper.type'
+import {
+  SERVICE_ERROR_MESSAGE_KEY_BY_CODE,
+  ServiceErrorCodeEnum
+} from '@/errors/serviceError.type'
 
 export interface IBuildServiceErrorParams {
   error: unknown

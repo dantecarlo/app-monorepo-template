@@ -295,6 +295,9 @@ importers:
 
   packages/supabase:
     dependencies:
+      '@app/core':
+        specifier: workspace:*
+        version: link:../core
       '@supabase/ssr':
         specifier: ^0.12.0
         version: 0.12.0(@supabase/supabase-js@2.108.2)
@@ -305,6 +308,9 @@ importers:
       typescript:
         specifier: '*'
         version: 5.9.3
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@22.20.0)(happy-dom@18.0.1)(lightningcss@1.27.0)(msw@2.14.6(@types/node@22.20.0)(typescript@5.9.3))(terser@5.48.0)
 
   packages/tokens:
     dependencies:

@@ -1,4 +1,4 @@
-import type { ServiceErrorCodeType } from '@/../packages/core/src/errors/buildServiceError.helper'
+import type { ServiceErrorCodeType } from '@/errors/serviceError.type'
 
 export interface IServiceErrorMapper {
   mapError(params: { error: unknown }): ServiceErrorCodeType | null
