@@ -3,6 +3,7 @@ import eslint from '@eslint/js'
 import { defineConfig } from 'eslint/config'
 import prettierConfig from 'eslint-config-prettier'
 import checkFile from 'eslint-plugin-check-file'
+import expoPlugin from 'eslint-plugin-expo'
 import importPlugin from 'eslint-plugin-import'
 import jsxA11y from 'eslint-plugin-jsx-a11y'
 import nextPlugin from '@next/eslint-plugin-next'
@@ -214,6 +215,22 @@ export default defineConfig([
       // Router exclusively, so disable to silence the "pages dir not found"
       // noise (the rule has no effect in App Router mode).
       '@next/next/no-html-link-for-pages': 'off'
+    }
+  },
+
+  // -------------------------------------------------------------------------
+  // apps/mobile — Expo plugin rules (scoped block, expo namespace only).
+  // Registers ONLY eslint-plugin-expo so there is no double-registration of
+  // react / react-hooks / import / @typescript-eslint that are already
+  // declared in the shared plugin maps above. Fractal rules win by later-wins.
+  // -------------------------------------------------------------------------
+  {
+    files: ['apps/mobile/**/*.{ts,tsx}'],
+    plugins: { expo: expoPlugin },
+    rules: {
+      'expo/no-dynamic-env-var': 'error',
+      'expo/no-env-var-destructuring': 'error',
+      'expo/use-dom-exports': 'error'
     }
   },
 

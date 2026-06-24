@@ -138,18 +138,36 @@ export const BASE_RULES = {
 
 // ---------------------------------------------------------------------------
 // React rules — applied to web + mobile + packages/tokens.
+// Includes the React Compiler rule set from react-hooks recommended-latest
+// (eslint-plugin-react-hooks 7.1.1). The two core rules are pinned after the
+// spread so they cannot be silently downgraded by a future update.
 // ---------------------------------------------------------------------------
 export const REACT_RULES = {
   'jsx-a11y/anchor-ambiguous-text': 'error',
   'jsx-a11y/control-has-associated-label': 'warn',
   'jsx-a11y/heading-has-content': 'warn',
   'jsx-a11y/scope': 'warn',
+  'react-hooks/config': 'error',
+  'react-hooks/error-boundaries': 'error',
+  'react-hooks/exhaustive-deps': 'warn',
+  'react-hooks/gating': 'error',
+  'react-hooks/globals': 'error',
+  'react-hooks/immutability': 'error',
+  'react-hooks/incompatible-library': 'warn',
+  'react-hooks/preserve-manual-memoization': 'error',
+  'react-hooks/purity': 'error',
+  'react-hooks/refs': 'error',
+  'react-hooks/rules-of-hooks': 'error',
+  'react-hooks/set-state-in-effect': 'error',
+  'react-hooks/set-state-in-render': 'error',
+  'react-hooks/static-components': 'error',
+  'react-hooks/unsupported-syntax': 'warn',
+  'react-hooks/use-memo': 'error',
+  'react-hooks/void-use-memo': 'error',
   'react/function-component-definition': 'off',
   'react/jsx-props-no-spreading': 'error',
   'react/jsx-sort-props': 'error',
-  'react/react-in-jsx-scope': 'off',
-  'react-hooks/exhaustive-deps': 'warn',
-  'react-hooks/rules-of-hooks': 'error'
+  'react/react-in-jsx-scope': 'off'
 }
 
 // ---------------------------------------------------------------------------

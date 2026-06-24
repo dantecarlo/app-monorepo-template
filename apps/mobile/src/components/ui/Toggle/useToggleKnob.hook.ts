@@ -11,17 +11,16 @@ export interface IUseToggleKnobResult {
 }
 
 export const useToggleKnob = (value: boolean): IUseToggleKnobResult => {
-  const translateX = useRef(
-    new Animated.Value(value ? KNOB_ON_X : 0)
-  ).current
+  const translateXRef = useRef(new Animated.Value(value ? KNOB_ON_X : 0))
 
   useEffect(() => {
-    Animated.timing(translateX, {
+    Animated.timing(translateXRef.current, {
       duration: ANIMATE_DURATION_MS,
       toValue: value ? KNOB_ON_X : 0,
       useNativeDriver: true
     }).start()
-  }, [value, translateX])
+  }, [value])
 
-  return { translateX }
+  // eslint-disable-next-line react-hooks/refs -- stable Animated.Value ref; callers need it for RN style wiring
+  return { translateX: translateXRef.current }
 }
