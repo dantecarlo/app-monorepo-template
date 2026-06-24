@@ -78,7 +78,15 @@
       "welcomeBack": "Welcome back"
     },
     "emptyState": "No items found",
+    "errorMessage": "Failed to load items. Please try again.",
     "errorState": "Failed to load items",
+    "summary": {
+      "active": "active",
+      "archived": "archived",
+      "draft": "draft",
+      "title": "Items Summary",
+      "total": "total"
+    },
     "title": "Items"
   }
 }

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { QueryKeys } from '@/lib/query/queryKeys.constant'
 import { useAppQuery } from '@/lib/query/useAppQuery.hook'
@@ -46,11 +47,12 @@ export const useItems = ({
   limit = DEFAULT_ITEMS_LIMIT
 }: IUseItemsParams = {}): IUseItemsResult => {
   const [search, setSearch] = useState('')
+  const { t } = useTranslation()
 
   const { data: items = EMPTY_ITEMS, isLoading } = useAppQuery<
     IItemViewModel[]
   >({
-    errorMessage: 'Failed to load items. Please try again.',
+    errorMessage: t('items.errorMessage'),
     queryOptions: {
       queryFn: async () => {
         const dtos = await getItems({ limit, search })

@@ -78,7 +78,15 @@
       "welcomeBack": "Bienvenido de nuevo"
     },
     "emptyState": "No hay elementos",
+    "errorMessage": "Error al cargar elementos. Por favor, inténtalo de nuevo.",
     "errorState": "Error al cargar elementos",
+    "summary": {
+      "active": "activo",
+      "archived": "archivado",
+      "draft": "borrador",
+      "title": "Resumen de elementos",
+      "total": "total"
+    },
     "title": "Elementos"
   }
 }
