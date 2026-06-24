@@ -54,8 +54,18 @@ This runs `turbo run lint typecheck test build format:check`, then
 E2E tests run separately — after the validation gate, not inside it:
 
 ```bash
-pnpm test:e2e   # requires a running dev server
+pnpm test:e2e   # boots next start via webServer, requires a prior build
 ```
+
+Two additional runtime smokes also run outside `pnpm validate` (CI-only jobs,
+never in the offline gate):
+
+```bash
+pnpm smoke:mobile   # expo export + Hermes bundle assertion (iOS + Android)
+pnpm smoke:web      # next build + next start probe (HTTP 200 + marker check)
+```
+
+See `docs/e2e.md` and `docs/responsive.md` for details.
 
 ---
 

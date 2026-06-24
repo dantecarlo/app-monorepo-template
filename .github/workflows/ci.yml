@@ -61,3 +61,130 @@ jobs:
 
       - name: Run expo health checks
         run: pnpm verify:expo
+
+  mobile-export:
+    name: mobile-export
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Export mobile bundles
+        run: pnpm --filter @app/mobile export:ci
+
+      - name: Assert bundle output
+        run: node scripts/assert-expo-export.mjs
+
+  web-render:
+    name: web-render
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web app
+        run: pnpm --filter @app/web build
+
+      - name: Run web render smoke
+        run: node scripts/smoke-web-render.mjs
+
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    needs: validate
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browser
+        run: pnpm dlx playwright install --with-deps chromium
+
+      - name: Build web app
+        run: pnpm --filter @app/web build
+
+      - name: Run e2e tests
+        run: pnpm dlx playwright test
+        env:
+          E2E_BASE_URL: ${{ vars.E2E_BASE_URL }}
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+
+  responsive:
+    name: responsive
+    runs-on: ubuntu-latest
+    needs: validate
+    continue-on-error: ${{ vars.RESPONSIVE_BLOCKING != 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browser
+        run: pnpm dlx playwright install --with-deps chromium
+
+      - name: Build web app
+        run: pnpm --filter @app/web build
+
+      - name: Run responsive layout checks
+        run: pnpm dlx playwright test --project=mobile-390 --project=tablet-768 --project=desktop-1280 --project=desktop-1920
+        env:
+          E2E_BASE_URL: ${{ vars.E2E_BASE_URL }}
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-responsive
+          path: playwright-report/

@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "export:ci": "expo export --platform ios --platform android --output-dir dist",
+    "smoke:export": "pnpm export:ci && node ../../scripts/assert-expo-export.mjs"
   },
   "expo": {
     "install": {

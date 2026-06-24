@@ -20,8 +20,8 @@ validation gates.
 ## Running e2e tests
 
 ```bash
-# Start the dev server in a separate terminal first
-pnpm --filter @app/web dev
+# Build web first (webServer boots `next start`, not the dev server)
+pnpm --filter @app/web build
 
 # Run all e2e tests (Playwright downloads browsers on first run)
 pnpm test:e2e
@@ -40,32 +40,74 @@ for staging or preview environments.
 
 ## CI integration
 
-E2E must run as a separate job **after** the `validate` job passes. Suggested
-GitHub Actions structure:
+E2E runs as a separate job after the `validate` job passes. The job builds the
+web app, then runs Playwright against the local production server — `webServer`
+in `playwright.config.ts` boots `next start` so the built output is always used.
 
 ```yaml
 jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - run: pnpm install
-      - run: ATL_TEMPLATE_SELF=1 pnpm validate
-
   e2e:
     needs: validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-      - run: pnpm install
+        with:
+          version: 9.15.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
       - run: pnpm dlx playwright install --with-deps chromium
       - run: pnpm --filter @app/web build
       - run: pnpm dlx playwright test
         env:
           E2E_BASE_URL: ${{ vars.E2E_BASE_URL }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
 ```
+
+For the responsive multi-viewport job, see [docs/responsive.md](./responsive.md).
+
+---
+
+## Runtime smokes
+
+Two additional CI jobs run independently of `pnpm validate` and are never part
+of the offline gate:
+
+**mobile-export** — runs `expo export --platform all` and asserts that Hermes
+bundles exist for both iOS and Android platforms. A missing bundle fails the
+job. This is the primary check that Metro bundling works end-to-end for both
+platforms.
+
+**web-render** — builds the Next.js web app and boots `next start` on port 3000,
+then probes `http://localhost:3000/` and asserts HTTP 200 plus a known
+server-rendered marker in the response body. Tears down the server afterwards.
+
+Both jobs run in parallel with the `validate` job (no `needs` dependency) so
+bundle failures surface immediately without waiting for the full validation run.
+Run them locally with:
+
+```bash
+pnpm smoke:mobile   # expo export + bundle assertion
+pnpm smoke:web      # next build + next start probe
+```
+
+---
+
+## Promotion to blocking
+
+All four runtime jobs (mobile-export, web-render, e2e, responsive) ship as
+advisory initially — `continue-on-error: true` in CI. A job is promoted to
+blocking in branch protection after it has been green on the main branch for
+three consecutive runs. This is a behavior-based criterion, not a calendar date.
+See [docs/responsive.md](./responsive.md) for the `RESPONSIVE_BLOCKING` variable
+that controls the responsive job independently.
 
 ---
 
