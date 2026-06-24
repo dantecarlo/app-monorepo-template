@@ -30,7 +30,7 @@ module.exports = function (api) {
           ]
         }
       ],
-      // react-native-worklets/plugin MUST be last (reanimated 4+)
+      // react-native-worklets/plugin MUST be last
       'react-native-worklets/plugin'
     ]
   }
