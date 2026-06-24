@@ -49,7 +49,7 @@ Available aliases:
 | -------------- | -------------------- | ------------------------ |
 | Component      | `Name.component.tsx` | `ItemCard.component.tsx` |
 | Screen         | `Name.screen.tsx`    | `Dashboard.screen.tsx`   |
-| Hook           | `useName.hook.tsx`   | `useItems.hook.tsx`      |
+| Hook           | `useName.hook.ts`    | `useItems.hook.ts`       |
 | Service        | `name.service.ts`    | `items.service.ts`       |
 | Adapter        | `Name.adapter.ts`    | `Items.adapter.ts`       |
 | Type/Interface | `Name.type.ts`       | `Item.type.ts`           |
@@ -276,9 +276,9 @@ After generating any feature, change, or fix:
 1. **Run `pnpm validate`** — the deterministic gate:
    `turbo run lint typecheck test build`. Any failure is a BLOCKER.
 
-2. **Run the grouped validator subagents** via `/validate-all` — four
+2. **Run the grouped validator subagents** via `/validate-all` — five
    adversarial subagents run in parallel (G-standards, G-tests, G-security,
-   G-a11y-design-dod). Each returns a PASS/FAIL verdict with findings tagged
+   G-a11y-design-dod, G-fractal). Each returns a PASS/FAIL verdict with findings tagged
    BLOCKER / WARNING / INFO.
 
 3. **Overall DONE** only when:

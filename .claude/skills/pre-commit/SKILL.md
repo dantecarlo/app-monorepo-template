@@ -42,7 +42,7 @@ changed, stop — nothing to review.
 | File pattern                       | Dimensions triggered                             |
 | ---------------------------------- | ------------------------------------------------ |
 | `**/components/**/*.component.tsx` | a11y, React patterns, naming, magic values       |
-| `**/hooks/*.hook.tsx`              | React patterns, naming                           |
+| `**/hooks/*.hook.ts`               | React patterns, naming                           |
 | `**/services/*.service.ts`         | service+adapter pairing, naming                  |
 | `**/services/*.adapter.ts`         | service+adapter pairing, naming                  |
 | `**/*.test.tsx`                    | test conventions                                 |
@@ -75,7 +75,7 @@ A file may trigger multiple dimensions.
 - Type aliases must have `Type` suffix: `type StatusType`
 - Enums must have `Enum` suffix: `enum ItemStatusEnum`
 - Constants named by purpose, not value: `MAX_RETRIES` not `NUMBER_THREE`
-- File names follow mandatory suffixes (`.component.tsx`, `.hook.tsx`, etc.)
+- File names follow mandatory suffixes (`.component.tsx`, `.hook.ts`, etc.)
 
 ### Dimension: magic values
 
@@ -147,7 +147,7 @@ A file may trigger multiple dimensions.
 # Pre-commit review — {N} files reviewed
 
 ## Blockers (must fix before commit) — {count}
-- [BLOCKER] src/screens/Foo/hooks/useFoo.hook.tsx:42
+- [BLOCKER] src/screens/Foo/hooks/useFoo.hook.ts:42
   useEffect whose only body is setCount(propCount) — sync-prop-to-state anti-pattern.
   Fix: Remove useEffect; derive the value or lift state.
 

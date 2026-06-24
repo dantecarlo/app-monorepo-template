@@ -85,7 +85,7 @@ depend inward through ports/interfaces, never the reverse.
 | --------------------------- | ------------------------ | ---------------------------- |
 | Presentational component    | `Name.component.tsx`     | `ItemCard.component.tsx`     |
 | Screen (container)          | `Name.screen.tsx`        | `Dashboard.screen.tsx`       |
-| Custom hook                 | `useName.hook.tsx`       | `useItems.hook.tsx`          |
+| Custom hook                 | `useName.hook.ts`        | `useItems.hook.ts`           |
 | Service (API calls)         | `name.service.ts`        | `items.service.ts`           |
 | Adapter (DTO → domain)      | `Name.adapter.ts`        | `Items.adapter.ts`           |
 | TypeScript types/interfaces | `Name.type.ts`           | `Item.type.ts`               |

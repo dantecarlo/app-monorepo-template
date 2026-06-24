@@ -53,7 +53,7 @@ src/lib/{name}/
 ├── {name}.config.ts        # Initialization and configuration
 ├── {name}.constant.ts      # URLs, keys, limits, status enums
 ├── {name}.type.ts          # Project-specific types wrapping vendor types
-├── use{Name}.hook.tsx      # React hook wrapping vendor hook (if applicable)
+├── use{Name}.hook.ts       # React hook wrapping vendor hook (if applicable)
 ├── {name}.helper.ts        # Pure utility functions
 └── index.ts                # Barrel export
 ```
@@ -108,7 +108,7 @@ export interface I{Name}Result {
 
 ---
 
-## Step 4 — Hook (`use{Name}.hook.tsx`) — if the lib has a React integration
+## Step 4 — Hook (`use{Name}.hook.ts`) — if the lib has a React integration
 
 ```typescript
 'use client' // web only

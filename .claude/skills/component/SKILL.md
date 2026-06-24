@@ -5,7 +5,7 @@ description: >
   decompose the target into PARTS and extract cross-cutting/recurring parts
   as reusable wrappers (checking components/ui first) BEFORE writing any file.
   Then scaffold: I{Name} interface in {Name}.type.ts, Tailwind constants in
-  {Name}.styles.ts, optional useName.hook.tsx, arrow-const named export in
+  {Name}.styles.ts, optional useName.hook.ts, arrow-const named export in
   {Name}.component.tsx, and index.ts barrel. Arrow-only, no-semi, alias imports,
   no inline Tailwind, no default export, aria-label on icon-only elements.
   DO NOT USE for screens or data-fetching containers — use `screen` instead.
@@ -142,7 +142,7 @@ Rules:
 
 ---
 
-## Step 3 — Hook (`use{Name}.hook.tsx`) — only if logic needed
+## Step 3 — Hook (`use{Name}.hook.ts`) — only if logic needed
 
 ```typescript
 import type { I{Name} } from '@/{path}/I{Name}.type'

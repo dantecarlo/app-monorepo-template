@@ -54,7 +54,7 @@ src/screens/<Name>/
 ├── <Name>.styles.ts             # screen layout Tailwind constants
 ├── index.ts                     # barrel
 ├── hooks/
-│   └── use<Name>.hook.tsx       # useAppQuery wrapper
+│   └── use<Name>.hook.ts        # useAppQuery wrapper
 └── components/                  # optional — private screen components
     └── <Name>Row/
         ├── <Name>Row.component.tsx
@@ -117,10 +117,7 @@ export const get{Domain}List = async (
     `/api/{resource}?contextId=${params.contextId}`
   )
   if (!res.ok) {
-    throw buildServiceError({
-      code: 'FETCH_FAILED',
-      context: { status: res.status }
-    })
+    throw buildServiceError({ error: new Error('FETCH_FAILED') })
   }
   return res.json() as Promise<I{Domain}Dto[]>
 }
@@ -138,7 +135,7 @@ export const create{Domain} = async (
     headers: { 'Content-Type': 'application/json' },
     method: 'POST'
   })
-  if (!res.ok) throw buildServiceError({ code: 'CREATE_FAILED' })
+  if (!res.ok) throw buildServiceError({ error: new Error('CREATE_FAILED') })
   return res.json() as Promise<I{Domain}Dto>
 }
 ```
@@ -198,7 +195,7 @@ Add to `src/lib/query/queryKeys.constant.ts`:
 
 ---
 
-## Step 6 — Hook (`src/screens/<Name>/hooks/use<Name>.hook.tsx`)
+## Step 6 — Hook (`src/screens/<Name>/hooks/use<Name>.hook.ts`)
 
 ```typescript
 'use client' // web only
@@ -350,6 +347,7 @@ export default {Name}Route
 
 - [ ] `pnpm typecheck` — verify all types resolve
 - [ ] Register the screen in the router
+- [ ] Register both the `<Domain>` service folder and `<Name>` screen folder in `docs/maps/global-map.md` — `pnpm validate` (verify-maps check D) will fail if either is missing.
 - [ ] `pnpm lint:fix` — auto-sort imports and JSX props
 - [ ] Write tests with the `test` skill
 - [ ] Verify loading, empty, and error states are implemented

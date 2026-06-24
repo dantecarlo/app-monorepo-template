@@ -45,8 +45,8 @@ src/screens/{Name}/
 │       ├── {Name}Row.component.tsx
 │       ├── {Name}Row.styles.ts
 │       └── index.ts
-├── hooks/                   # optional — logic hooks (use*.hook.tsx)
-│   └── use{Name}.hook.tsx
+├── hooks/                   # optional — logic hooks (use*.hook.ts)
+│   └── use{Name}.hook.ts
 ├── models/                  # optional — block-local *.type.ts
 │   └── {Name}.type.ts
 └── services/                # optional — when the screen owns its data layer
@@ -88,7 +88,7 @@ Use `sanitizeQueryKey` from `@app/core` when any key segment may contain PII.
 
 ---
 
-## Step 3 — Hook (`hooks/use{Name}.hook.tsx`)
+## Step 3 — Hook (`hooks/use{Name}.hook.ts`)
 
 ```typescript
 'use client' // web only — remove for mobile
@@ -211,6 +211,7 @@ keeps a named export.
 ## After Creation
 
 - [ ] Register in the router (see Step 7)
+- [ ] Register the new `{Name}` folder in `docs/maps/global-map.md` — `pnpm validate` (verify-maps check D) will fail if it's missing.
 - [ ] Run `pnpm typecheck`
 - [ ] Run `pnpm lint:fix`
 - [ ] Write tests with the `test` skill

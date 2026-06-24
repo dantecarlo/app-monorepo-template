@@ -122,10 +122,7 @@ export const get{Domain}List = async (
 ): Promise<I{Domain}Dto[]> => {
   const res = await fetch(`/api/{resource}?contextId=${params.contextId}`)
   if (!res.ok) {
-    throw buildServiceError({
-      code: 'FETCH_FAILED',
-      context: { status: res.status }
-    })
+    throw buildServiceError({ error: new Error('FETCH_FAILED') })
   }
   return res.json() as Promise<I{Domain}Dto[]>
 }
@@ -136,7 +133,7 @@ export const get{Domain}ById = async (
 ): Promise<I{Domain}Dto | null> => {
   const res = await fetch(`/api/{resource}/${id}`)
   if (res.status === 404) return null
-  if (!res.ok) throw buildServiceError({ code: 'FETCH_FAILED', context: { id } })
+  if (!res.ok) throw buildServiceError({ error: new Error('FETCH_FAILED') })
   return res.json() as Promise<I{Domain}Dto>
 }
 
@@ -153,7 +150,7 @@ export const create{Domain} = async (
     headers: { 'Content-Type': 'application/json' },
     method: 'POST'
   })
-  if (!res.ok) throw buildServiceError({ code: 'CREATE_FAILED' })
+  if (!res.ok) throw buildServiceError({ error: new Error('CREATE_FAILED') })
   return res.json() as Promise<I{Domain}Dto>
 }
 
@@ -209,9 +206,11 @@ export { create{Domain}, get{Domain}ById, get{Domain}List } from './{domain}.ser
 Barrel exports service functions and adapter functions **only**. Never export
 constants, types, or test utilities from the barrel.
 
+- **Register**: add the new `<Domain>` folder to `docs/maps/global-map.md` — `pnpm validate` (verify-maps check D) will fail if it's missing.
+
 ---
 
-## Step 6 — Query Hook (`use{Domain}List.hook.tsx` — in screen hooks/ or shared hooks/)
+## Step 6 — Query Hook (`use{Domain}List.hook.ts` — in screen hooks/ or shared hooks/)
 
 ```typescript
 'use client' // web only

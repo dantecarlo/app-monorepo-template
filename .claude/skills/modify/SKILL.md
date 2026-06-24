@@ -19,7 +19,7 @@ description: >
 ## Pre-flight (MANDATORY — do all before any change)
 
 1. Read the component file (`{Name}.component.tsx`)
-2. Read the hook file if it exists (`use{Name}.hook.tsx`)
+2. Read the hook file if it exists (`use{Name}.hook.ts`)
 3. Read the types file (`{Name}.type.ts`)
 4. Read the test file (`{Name}.test.tsx`)
 5. Read the styles file (`{Name}.styles.ts`) if relevant to the change
@@ -74,8 +74,8 @@ Rules:
 
 ### B — Adding Logic (event handler, computed value, side effect)
 
-1. If a hook exists → add logic to `use{Name}.hook.tsx` — NOT to the component
-2. If no hook exists → create `use{Name}.hook.tsx` first (follow `component` skill)
+1. If a hook exists → add logic to `use{Name}.hook.ts` — NOT to the component
+2. If no hook exists → create `use{Name}.hook.ts` first (follow `component` skill)
 3. Keep the component file as pure render — no logic in the component body
 4. Add test for the new logic path
 
@@ -174,7 +174,7 @@ const use{Name}Base = ({ ... }: IUse{Name}Base) => { ... }
 Steps:
 1. Identify which boolean combinations are actually used
 2. Create one variant component per valid combination
-3. Share logic in `use{Name}Base.hook.tsx`
+3. Share logic in `use{Name}Base.hook.ts`
 4. Update all call sites
 5. Delete the old component
 

@@ -88,7 +88,7 @@ queryKey: sanitizeQueryKey({ key: ['user', userEmail] })
 ```
 
 What to look for:
-- `rg -n 'queryKey:' --glob '*.hook.tsx'` — check for raw email, name, phone
+- `rg -n 'queryKey:' --glob '*.hook.ts'` — check for raw email, name, phone
 - Error reporting calls (`captureException`, Sentry `beforeSend`) — verify
   `scrubPII` is applied to breadcrumb/event data
 - Mock data files that contain fields in `PII_KEYS` with non-fake values

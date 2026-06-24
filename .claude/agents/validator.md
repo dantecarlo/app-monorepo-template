@@ -65,7 +65,7 @@ Actively hunt for these violations (cite `docs/code-standards.md` rule #):
 
 - **Rule 1** Arrow-only: any `function` keyword outside allowed exceptions
 - **Rule 2** Alias imports: any `../` or `./` path outside barrel `index.ts`
-- **Rule 3** File suffixes: `.component.tsx`, `.screen.tsx`, `.hook.tsx`,
+- **Rule 3** File suffixes: `.component.tsx`, `.screen.tsx`, `.hook.ts`,
   `.service.ts`, `.adapter.ts`, `.type.ts`, `.constant.ts`, `.test.tsx` —
   wrong or missing suffix
 - **Rule 4** Naming: interfaces not `I{Name}`, types not `{Name}Type`, enums

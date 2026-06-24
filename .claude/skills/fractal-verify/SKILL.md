@@ -199,7 +199,7 @@ For each hit, confirm a matching `*.test.*` sibling exists.
 Cite `docs/code-standards.md` rule numbers.
 
 - **Suffixes (Rule 3)**: every file uses the correct suffix from the table
-  (`.screen.tsx`, `.component.tsx`, `.hook.tsx`, `.service.ts`,
+  (`.screen.tsx`, `.component.tsx`, `.hook.ts`, `.service.ts`,
   `.adapter.ts`, `.type.ts`, `.constant.ts`, `.styles.ts`, `.test.tsx`).
   Wrong or missing suffix → **BLOCKER**.
 - **Naming (Rule 4)**: interfaces `I{Name}`, type aliases `{Name}Type`,

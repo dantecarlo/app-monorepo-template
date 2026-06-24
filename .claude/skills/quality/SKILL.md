@@ -152,7 +152,7 @@ Orders/orders.service.ts → (no adapter found)    ❌
 | ---------- | ----------------------- |
 | Component  | `Name.component.tsx`    |
 | Screen     | `Name.screen.tsx`       |
-| Hook       | `useName.hook.tsx`      |
+| Hook       | `useName.hook.ts`       |
 | Service    | `name.service.ts`       |
 | Adapter    | `Name.adapter.ts`       |
 | Types      | `Name.type.ts`          |
@@ -257,7 +257,7 @@ literals in source files. Exception: translation JSON files.
 
 ## Rule Applicability by File Type
 
-| Rule                   | `.component.tsx` | `.hook.tsx` | `.test.tsx` | `.service.ts` | `.adapter.ts` | `.store.ts` |
+| Rule                   | `.component.tsx` | `.hook.ts`  | `.test.tsx` | `.service.ts` | `.adapter.ts` | `.store.ts` |
 | ---------------------- | :--------------: | :---------: | :---------: | :-----------: | :-----------: | :---------: |
 | 1. Arrow Only          | ✅               | ✅          | ✅          | ✅            | ✅            | ✅          |
 | 2. Alias Imports       | ✅               | ✅          | ✅          | ✅            | ✅            | ✅          |
