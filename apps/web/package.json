@@ -39,7 +39,7 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.9",
-    "happy-dom": "^18.0.1",
+    "happy-dom": "^20.10.6",
     "msw": "^2.14.6",
     "postcss": "^8.5.15",
     "prettier": "^3.8.4",
