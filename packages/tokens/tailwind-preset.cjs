@@ -50,6 +50,7 @@ module.exports = {
         neutral: {
           tint: 'rgba(255,255,255,0.08)',
         },
+        scrim: 'rgba(0,0,0,0.60)',
         'cool-glow': '#5B6CFF',
       },
 

@@ -24,6 +24,7 @@ export const colors = {
     stroke: 'rgba(255,255,255,0.10)'
   },
   neutralTint: 'rgba(255,255,255,0.08)',
+  scrim: 'rgba(0,0,0,0.60)',
   success: '#34C759',
   successTint: 'rgba(52,199,89,0.16)',
   text: {
