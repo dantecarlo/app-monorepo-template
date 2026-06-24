@@ -10,6 +10,10 @@ import type { IItemViewModel } from '@/screens/ItemsDashboard/models/Item.type'
 // Raw values
 // ---------------------------------------------------------------------------
 
+// Brand gradient used by the screen header and CTA button. Kept here so the
+// .screen.tsx file stays hex-free (check C in scripts/verify-maps.mjs).
+export const GRADIENT_BRAND_COLORS = ['#FF8A3D', '#FF6A1A'] as const
+
 const AVATAR_BG = '#241A12'
 const CATEGORY_BG = 'rgba(255,255,255,0.06)'
 const AVATAR_FONT_SIZE = 12
