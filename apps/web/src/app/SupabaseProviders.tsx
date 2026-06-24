@@ -23,6 +23,12 @@ const noopGateway: IAuthGateway = {
 let browserGateway: IAuthGateway | undefined
 
 const getBrowserGateway = (): IAuthGateway => {
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    return noopGateway
+  }
   browserGateway ??= createSupabaseAuthGateway(getSupabaseClient())
   return browserGateway
 }
