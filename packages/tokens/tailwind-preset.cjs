@@ -1,7 +1,7 @@
 // Tailwind CSS preset for the shared dark-glass design system.
-// Token values are inlined here (duplicated from src/tokens.ts) because
+// Token values are inlined here (duplicated from src/tokens.constant.ts) because
 // CommonJS Tailwind config cannot require() TypeScript source directly.
-// Keep this file in sync with src/tokens.ts.
+// Keep this file in sync with src/tokens.constant.ts.
 //
 // Usage in tailwind.config.js / tailwind.config.ts:
 //   presets: [require('@app/tokens/tailwind-preset.cjs')]
