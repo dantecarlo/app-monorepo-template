@@ -179,6 +179,23 @@ copy its anatomy for new screens.
 
 ## Getting started
 
+> **First step after cloning — rename the project identity:**
+>
+> ```bash
+> pnpm init <project-slug>   # e.g. pnpm init my-app
+> pnpm install               # refresh lockfile after rename
+> ```
+>
+> `pnpm init <slug>` rewrites all `@app/*` namespace references, the
+> `app-monorepo-template` name, and the `com.app.template` bundle ID across
+> the repo. Re-running with the same slug is a no-op (idempotent).
+>
+> An un-renamed guard (`pnpm check:identity`) is wired into `pnpm validate`
+> and fails the gate if the template-default identity is still present. This
+> is intentional — a derived project cannot pass `validate` until renamed.
+> The canonical template repo itself bypasses this check via `ATL_TEMPLATE_SELF=1`
+> (set in its own CI).
+
 ```bash
 pnpm install            # install all workspace dependencies
 pnpm prepare            # initialize git hooks (run once after clone)

@@ -44,7 +44,10 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | i18n resources        | `packages/i18n/src/locales/resources.constant.ts`                        | `.constant.ts` | Catalog registry consumed by each app's i18n adapter              |
 | Backend client        | `packages/supabase/src/client.adapter.ts`                                | `.adapter.ts`  | Browser/native client factory                                     |
 | Backend server client | `packages/supabase/src/server.adapter.ts`                                | `.adapter.ts`  | Server/SSR client factory                                         |
+| Backend SSR client    | `packages/supabase/src/ssr.adapter.ts`                                   | `.adapter.ts`  | Cookie-aware SSR client (@supabase/ssr) for RLS propagation       |
 | Backend types         | `packages/supabase/src/types.ts`                                         | `.ts`          | Generated DB types + typed exports                                |
+
+| Core test config      | `packages/core/vitest.config.ts`                                         | `.config.ts`   | Vitest config for the core package (node env, includes src/**/*.test.ts)  |
 
 Each package exposes its public surface through a barrel: `packages/core/src/index.ts`,
 `packages/i18n/src/index.ts`, `packages/supabase/src/index.ts`, `packages/tokens/src/index.ts`.
@@ -147,6 +150,9 @@ only — enforced by ESLint and by `node scripts/verify-maps.mjs`.
 | Deterministic gate   | `package.json`                           | `pnpm validate` → `turbo run lint typecheck test build format:check` + verify scripts |
 | Tests-per-unit check | `scripts/verify-tests.mjs`               | Fails if a unit lacks a sibling `*.test.*`                                            |
 | Maps + literal check | `scripts/verify-maps.mjs`                | This map's integrity + magic-literal audit (`pnpm verify:maps`)                       |
+| Project rename       | `scripts/init-project.mjs`               | Rewrites `@app/*`, `app-monorepo-template`, and bundle ID to a real project slug      |
+| Identity guard       | `scripts/check-identity.mjs`             | Fails if template-default identity is still present; wired into `pnpm validate`       |
+| CI workflow          | `.github/workflows/ci.yml`               | Runs `pnpm install` + `pnpm validate` on PR and push to main (ATL_TEMPLATE_SELF=1)   |
 | Lint rules           | `eslint.rules.mjs`, `eslint.config.mjs`  | Arrow-only, alias imports, suffixes, naming, no-magic-numbers                         |
 | Prettier             | `.prettierrc.json`                       | No semicolons, single quotes, width 75                                                |
 | Commit lint          | `commitlint.config.js`                   | Conventional commits (commit-msg hook)                                                |
