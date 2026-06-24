@@ -10,11 +10,11 @@
   },
   "helper": {
     "error": {
-      "forbidden": "No tenés permiso para realizar esta acción.",
-      "generic": "Algo salió mal. Por favor, intentá de nuevo.",
-      "network": "Error de red. Verificá tu conexión.",
+      "forbidden": "No tienes permiso para realizar esta acción.",
+      "generic": "Algo salió mal. Por favor, inténtalo de nuevo.",
+      "network": "Error de red. Verifica tu conexión.",
       "notFound": "El recurso solicitado no fue encontrado.",
-      "server": "Error del servidor. Por favor, intentá más tarde."
+      "server": "Error del servidor. Por favor, inténtalo más tarde."
     }
   },
   "items": {

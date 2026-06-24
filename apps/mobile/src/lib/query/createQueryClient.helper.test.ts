@@ -37,7 +37,7 @@ describe('createQueryClient', () => {
         queryFn: async () => {
           throw error
         },
-        queryKey: ['items', 'tenant-9f3c-uuid', 'list'],
+        queryKey: ['items', 'account-9f3c-uuid', 'list'],
         retry: false
       })
       .catch(() => undefined)
