@@ -8,11 +8,11 @@ import { ASYNC_BOUNDARY_STYLES as styles } from '@/components/ui/AsyncBoundary/A
 const RETRY_LABEL = 'Retry'
 
 export interface IAsyncBoundaryProps {
+  children: React.ReactNode
   ErrorFallback?: React.ComponentType<{
     error: Error
     resetErrorBoundary: () => void
   }>
-  children: React.ReactNode
   loadingFallback?: React.ReactNode
 }
 

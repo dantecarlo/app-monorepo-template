@@ -7,8 +7,8 @@ import { ErrorBoundary, type FallbackProps } from 'react-error-boundary'
 import { asyncBoundaryVariants } from '@/components/ui/AsyncBoundary/AsyncBoundary.styles'
 
 export interface IAsyncBoundaryProps {
-  ErrorFallback?: ComponentType<FallbackProps>
   children: ReactNode
+  ErrorFallback?: ComponentType<FallbackProps>
   loadingFallback?: ReactNode
 }
 

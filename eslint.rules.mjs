@@ -132,8 +132,8 @@ export const BASE_RULES = {
     'asc',
     { caseSensitive: true, natural: true }
   ],
-  'typescript-sort-keys/interface': 'error',
-  'typescript-sort-keys/string-enum': 'error'
+  'perfectionist/sort-enums': 'error',
+  'perfectionist/sort-interfaces': 'error'
 }
 
 // ---------------------------------------------------------------------------

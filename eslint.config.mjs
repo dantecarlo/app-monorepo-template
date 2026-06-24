@@ -13,7 +13,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import simpleImportSort from 'eslint-plugin-simple-import-sort'
 import sortDestructureKeys from 'eslint-plugin-sort-destructure-keys'
 import sortKeysFix from 'eslint-plugin-sort-keys-fix'
-import typescriptSortKeys from 'eslint-plugin-typescript-sort-keys'
+import perfectionist from 'eslint-plugin-perfectionist'
 import globals from 'globals'
 import { fileURLToPath } from 'node:url'
 import tseslint from 'typescript-eslint'
@@ -74,8 +74,8 @@ const TS_PLUGINS = {
   prettier,
   'simple-import-sort': simpleImportSort,
   'sort-destructure-keys': sortDestructureKeys,
-  'sort-keys-fix': sortKeysFix,
-  'typescript-sort-keys': typescriptSortKeys
+  perfectionist,
+  'sort-keys-fix': sortKeysFix
 }
 
 const REACT_PLUGINS = {
