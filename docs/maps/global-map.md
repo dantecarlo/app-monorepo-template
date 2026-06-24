@@ -234,8 +234,8 @@ never calls `fetch` directly and never holds business logic in the view.
 | Concern         | Where                                                                                 | Notes                                            |
 | --------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------ |
 | Token values    | `packages/tokens/src/tokens.constant.ts`                                              | Single source of truth (colors / spacing / type) |
-| Tailwind preset | `packages/tokens/tailwind-preset.cjs`                                                 | Web Tailwind + mobile NativeWind both extend it  |
-| Web Tailwind    | `apps/web/tailwind.config.ts`                                                         | Extends the shared preset                        |
+| Tailwind preset | `packages/tokens/tailwind-preset.cjs`                                                 | Mobile NativeWind extends it; web uses CSS @theme |
+| Web Tailwind    | `apps/web/src/app/globals.css`                                                        | CSS-first @theme derived from @app/tokens (v4)   |
 | Mobile Tailwind | `apps/mobile/tailwind.config.js`                                                      | Extends the shared preset                        |
 | Class constants | `apps/web/src/helpers/style.constant.ts`, `apps/mobile/src/helpers/style.constant.ts` | No inline class strings in views — import these  |
 
