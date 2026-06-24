@@ -109,4 +109,12 @@ describe('ItemsDashboardScreen', () => {
       screen.getByRole('button', { name: 'View all items' })
     ).toBeInTheDocument()
   })
+
+  test('shows empty-state message when items query returns an empty array', async () => {
+    mockGetItems.mockResolvedValue([])
+    render(<ItemsDashboardScreen />, { wrapper: createWrapper() })
+    await waitFor(() =>
+      expect(screen.getByText('No items found.')).toBeInTheDocument()
+    )
+  })
 })
