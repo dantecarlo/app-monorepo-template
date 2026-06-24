@@ -1,9 +1,9 @@
 {
   "name": "app-monorepo-template",
   "private": true,
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@9.15.9",
   "engines": {
-    "node": ">=20.9.0"
+    "node": ">=24.18.0"
   },
   "scripts": {
     "build": "turbo run build",
