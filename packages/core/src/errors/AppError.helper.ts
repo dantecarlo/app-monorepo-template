@@ -8,18 +8,26 @@ export const APP_ERROR_CODES = {
 
 export type AppErrorCodeType = keyof typeof APP_ERROR_CODES
 
-export class AppError extends Error {
-  readonly code: AppErrorCodeType
+export interface IAppErrorParams {
+  cause?: unknown
+  code: string
+  messageKey?: string
+}
 
-  constructor({
-    code,
-    message
-  }: {
-    code: AppErrorCodeType
-    message: string
-  }) {
-    super(message)
-    this.code = code
+export class AppError extends Error {
+  readonly code: string
+  readonly messageKey?: string
+
+  constructor({ cause, code, messageKey }: IAppErrorParams) {
+    super(code)
     this.name = 'AppError'
+    this.code = code
+    this.messageKey = messageKey
+
+    if (cause !== undefined) {
+      ;(this as unknown as { cause: unknown }).cause = cause
+    }
+
+    Object.setPrototypeOf(this, AppError.prototype)
   }
 }
