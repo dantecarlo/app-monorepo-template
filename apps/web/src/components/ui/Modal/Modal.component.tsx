@@ -16,7 +16,7 @@ import { useModalDismiss } from '@/components/ui/Modal/useModalDismiss.hook'
 export interface IModalProps extends VariantProps<
   typeof modalPanelVariants
 > {
-  children: ReactNode
+  children?: ReactNode
   isOpen: boolean
   onClose: () => void
   title?: string
