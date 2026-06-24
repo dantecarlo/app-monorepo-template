@@ -8,6 +8,38 @@
     "retry": "Reintentar",
     "save": "Guardar"
   },
+  "components": {
+    "emptyState": {
+      "message": "Todavía no hay nada aquí.",
+      "title": "Sin resultados"
+    },
+    "errorState": {
+      "byCode": {
+        "403": {
+          "message": "No tiene permiso para ver este contenido.",
+          "title": "Acceso denegado"
+        },
+        "404": {
+          "message": "El recurso que busca no existe.",
+          "title": "No encontrado"
+        },
+        "500": {
+          "message": "Ocurrió un error en el servidor. Intente de nuevo más tarde.",
+          "title": "Error del servidor"
+        },
+        "offline": {
+          "message": "Verifique su conexión e intente de nuevo.",
+          "title": "Sin conexión"
+        }
+      },
+      "message": "Algo salió mal. Por favor, intente de nuevo.",
+      "retry": "Intentar de nuevo",
+      "title": "Ocurrió un error"
+    },
+    "modal": {
+      "close": "Cerrar"
+    }
+  },
   "helper": {
     "error": {
       "forbidden": "No tienes permiso para realizar esta acción.",

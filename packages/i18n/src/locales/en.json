@@ -8,6 +8,38 @@
     "retry": "Retry",
     "save": "Save"
   },
+  "components": {
+    "emptyState": {
+      "message": "There is nothing here yet.",
+      "title": "No results"
+    },
+    "errorState": {
+      "byCode": {
+        "403": {
+          "message": "You do not have permission to view this content.",
+          "title": "Access denied"
+        },
+        "404": {
+          "message": "The resource you are looking for does not exist.",
+          "title": "Not found"
+        },
+        "500": {
+          "message": "A server error occurred. Please try again later.",
+          "title": "Server error"
+        },
+        "offline": {
+          "message": "Check your connection and try again.",
+          "title": "No connection"
+        }
+      },
+      "message": "Something went wrong. Please try again.",
+      "retry": "Try again",
+      "title": "An error occurred"
+    },
+    "modal": {
+      "close": "Close"
+    }
+  },
   "helper": {
     "error": {
       "forbidden": "You do not have permission to perform this action.",
