@@ -37,7 +37,9 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | --------------------- | ------------------------------------------------------------------------ | -------------- | ----------------------------------------------------------------- |
 | Design tokens         | `packages/tokens/src/tokens.constant.ts`                                 | `.constant.ts` | Colors, spacing, type scale — the design source of truth          |
 | Tailwind preset       | `packages/tokens/tailwind-preset.cjs`                                    | `.cjs`         | Token-derived preset consumed by web Tailwind + mobile NativeWind |
-| Domain errors         | `packages/core/src/errors/AppError.helper.ts`                            | `.helper.ts`   | `AppError` + typed error contract (no framework)                  |
+| Domain errors         | `packages/core/src/errors/AppError.helper.ts`                            | `.helper.ts`   | `AppError` + typed error contract (messageKey, cause chaining, prototype fix) |
+| Service error mapper  | `packages/core/src/errors/buildServiceError.helper.ts`                   | `.helper.ts`   | Maps raw Postgrest/Supabase errors to typed AppError codes + i18n keys        |
+| Query-key sanitizer   | `packages/core/src/observability/sanitizeQueryKey.helper.ts`             | `.helper.ts`   | Redacts dynamic id segments from query keys before error reporting (PII-safe) |
 | PII scrubbing         | `packages/core/src/utils/scrubPII.helper.ts`                             | `.helper.ts`   | Scrub sensitive fields before they reach any monitoring sink      |
 | i18n catalogs         | `packages/i18n/src/locales/es.json`, `packages/i18n/src/locales/en.json` | `.json`        | ICU message catalogs (default `es`, plus `en`)                    |
 | i18n constants        | `packages/i18n/src/locales/i18n.constant.ts`                             | `.constant.ts` | Locale codes + default-locale constant                            |
@@ -63,7 +65,7 @@ the `@/*` alias. UI here is DOM / shadcn / Tailwind.
 
 | Thing                  | Path                                                                    | Suffix                        | What it holds                                              |
 | ---------------------- | ----------------------------------------------------------------------- | ----------------------------- | ---------------------------------------------------------- |
-| Shared UI kit          | `apps/web/src/components/ui`                                            | `.component.tsx`              | Reusable primitives (`Button`, `Chip`, `GlassCard`)        |
+| Shared UI kit          | `apps/web/src/components/ui`                                            | `.component.tsx`              | Reusable primitives (`Button`, `Chip`, `GlassCard`, `AsyncBoundary`, `Toast`) |
 | Transversal services   | `apps/web/src/services/Items/items.service.ts`                          | `.service.ts`                 | Items data access (mock + HTTP variants)                   |
 | Transversal adapter    | `apps/web/src/services/Items/Items.adapter.ts`                          | `.adapter.ts`                 | DTO → IItemViewModel mapping                               |
 | Service constants      | `apps/web/src/services/Items/items.constant.ts`                         | `.constant.ts`                | Time units, mock tuning, API URL                           |
@@ -74,6 +76,8 @@ the `@/*` alias. UI here is DOM / shadcn / Tailwind.
 | Summary barrel         | `apps/web/src/services/ItemsSummary/index.ts`                           | `index.ts`                    | Public API barrel for the ItemsSummary domain              |
 | Style constants        | `apps/web/src/helpers/style.constant.ts`                                | `.constant.ts`                | Shared Tailwind class-string constants                     |
 | Query keys             | `apps/web/src/lib/query/queryKeys.constant.ts`                          | `.constant.ts`                | Central React Query key registry                           |
+| Query client factory   | `apps/web/src/lib/query/createQueryClient.helper.ts`                    | `.helper.ts`                  | Configured QueryClient with PII-safe cache error sinks     |
+| Error message resolver | `apps/web/src/lib/query/resolveErrorMessage.helper.ts`                  | `.helper.ts`                  | Standardized query/mutation error → user string (override > messageKey > message > fallback) |
 | App-query hook         | `apps/web/src/lib/query/useAppQuery.hook.ts`                            | `.hook.ts`                    | Wrapper over `useQuery` (project defaults)                 |
 | App-mutation hook      | `apps/web/src/lib/query/useAppMutation.hook.ts`                         | `.hook.ts`                    | Wrapper over `useMutation` (project defaults)              |
 | Supabase client wiring | `apps/web/src/lib/supabase/client.adapter.ts`                           | `.adapter.ts`                 | App-local client adapter over `@app/supabase`              |
@@ -102,6 +106,9 @@ Same shape as web, but UI is React Native / NativeWind. Imported via `@/*`.
 | Services barrel        | `apps/mobile/src/services/Items/index.ts`                                     | `index.ts`                    | Public API barrel for the Items domain              |
 | Style constants        | `apps/mobile/src/helpers/style.constant.ts`                                   | `.constant.ts`                | Shared NativeWind / RN style constants              |
 | Query keys             | `apps/mobile/src/lib/query/queryKeys.constant.ts`                             | `.constant.ts`                | Central React Query key registry                    |
+| Shared UI kit          | `apps/mobile/src/components/ui`                                               | `.component.tsx`              | Reusable primitives (`AsyncBoundary`, `Toast`)      |
+| Query client factory   | `apps/mobile/src/lib/query/createQueryClient.helper.ts`                       | `.helper.ts`                  | Configured QueryClient with PII-safe cache error sinks |
+| Error message resolver | `apps/mobile/src/lib/query/resolveErrorMessage.helper.ts`                     | `.helper.ts`                  | Standardized query/mutation error → user string     |
 | App-query hook         | `apps/mobile/src/lib/query/useAppQuery.hook.ts`                               | `.hook.ts`                    | Wrapper over `useQuery` (project defaults)          |
 | App-mutation hook      | `apps/mobile/src/lib/query/useAppMutation.hook.ts`                            | `.hook.ts`                    | Wrapper over `useMutation` (project defaults)       |
 | Supabase client wiring | `apps/mobile/src/lib/supabase/client.adapter.ts`                              | `.adapter.ts`                 | App-local client adapter over `@app/supabase`       |
