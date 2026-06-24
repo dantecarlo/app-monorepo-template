@@ -80,7 +80,7 @@ the `@/*` alias. UI here is DOM / shadcn / Tailwind.
 
 | Thing                  | Path                                                                    | Suffix                        | What it holds                                              |
 | ---------------------- | ----------------------------------------------------------------------- | ----------------------------- | ---------------------------------------------------------- |
-| Shared UI kit          | `apps/web/src/components/ui`                                            | `.component.tsx`              | Reusable primitives (`Button`, `Chip`, `GlassCard`, `AsyncBoundary`, `Toast`) |
+| Shared UI kit          | `apps/web/src/components/ui`                                            | `.component.tsx`              | Reusable primitives (`Button`, `Chip`, `GlassCard`, `AsyncBoundary`, `Toast`, `Modal`, `ConfirmDialog`, `EmptyState`, `ErrorState`, `LoadingSkeleton`, `StatusBadge`) |
 | Transversal services   | `apps/web/src/services/Items/items.service.ts`                          | `.service.ts`                 | Items data access (mock + HTTP variants)                   |
 | Transversal adapter    | `apps/web/src/services/Items/Items.adapter.ts`                          | `.adapter.ts`                 | DTO → IItemViewModel mapping                               |
 | Service constants      | `apps/web/src/services/Items/items.constant.ts`                         | `.constant.ts`                | Time units, mock tuning, API URL                           |
@@ -105,6 +105,13 @@ the `@/*` alias. UI here is DOM / shadcn / Tailwind.
 | Online status hook     | `apps/web/src/components/ui/OfflineBanner/useOnlineStatus.hook.ts`      | `.hook.ts`                    | Tracks navigator connectivity via online/offline events; SSR-safe default true |
 | Offline banner         | `apps/web/src/components/ui/OfflineBanner/OfflineBanner.component.tsx`  | `.component.tsx`              | Controlled connectivity banner; i18n message via next-intl |
 | Modal dismiss hook     | `apps/web/src/components/ui/Modal/useModalDismiss.hook.ts`              | `.hook.ts`                    | Escape-to-close + body scroll lock for modal overlays |
+| Modal (web)            | `apps/web/src/components/ui/Modal/Modal.component.tsx`                  | `.component.tsx`              | Overlay scrim + dialog panel (size sm/md/lg); consumes useModalDismiss; inline accessible close |
+| Confirm dialog (web)   | `apps/web/src/components/ui/ConfirmDialog/ConfirmDialog.component.tsx`  | `.component.tsx`              | Confirmation composed on Modal; accent/destructive tone; i18n confirm/cancel |
+| Empty state (web)      | `apps/web/src/components/ui/EmptyState/EmptyState.component.tsx`        | `.component.tsx`              | Icon + title + message + optional CTA; copy via next-intl components.emptyState |
+| Error state (web)      | `apps/web/src/components/ui/ErrorState/ErrorState.component.tsx`        | `.component.tsx`              | Error message + optional retry; react-error-boundary FallbackComponent compatible; code-driven copy |
+| Error state codes (web) | `apps/web/src/components/ui/ErrorState/ErrorState.constant.ts`         | `.constant.ts`                | ErrorStateCodeEnum (403/404/500/offline) + i18n namespace keys |
+| Loading skeleton (web) | `apps/web/src/components/ui/LoadingSkeleton/LoadingSkeleton.component.tsx` | `.component.tsx`           | Shimmer placeholder (CSS animate-shimmer); rounded presets; role=status |
+| Status badge (web)     | `apps/web/src/components/ui/StatusBadge/StatusBadge.component.tsx`      | `.component.tsx`              | Pill dot+label; token tones success/warning/danger/neutral |
 | Route tree             | `apps/web/src/app`                                                      | Next App Router               | RSC pages, layout, providers                               |
 | Test infra             | `apps/web/src/test`                                                     | (no suffix)                   | Vitest setup, MSW mocks, test helper (harness, not a unit) |
 
@@ -128,7 +135,7 @@ Same shape as web, but UI is React Native / NativeWind. Imported via `@/*`.
 | Services barrel        | `apps/mobile/src/services/Items/index.ts`                                     | `index.ts`                    | Public API barrel for the Items domain              |
 | Style constants        | `apps/mobile/src/helpers/style.constant.ts`                                   | `.constant.ts`                | Shared NativeWind / RN style constants              |
 | Query keys             | `apps/mobile/src/lib/query/queryKeys.constant.ts`                             | `.constant.ts`                | Central React Query key registry                    |
-| Shared UI kit          | `apps/mobile/src/components/ui`                                               | `.component.tsx`              | Reusable primitives (`AsyncBoundary`, `Toast`)      |
+| Shared UI kit          | `apps/mobile/src/components/ui`                                               | `.component.tsx`              | Reusable primitives (`AsyncBoundary`, `Toast`, `Modal`, `ConfirmDialog`, `EmptyState`, `ErrorState`, `LoadingSkeleton`, `StatusBadge`) |
 | Query client factory   | `apps/mobile/src/lib/query/createQueryClient.helper.ts`                       | `.helper.ts`                  | Configured QueryClient with PII-safe cache error sinks |
 | Error message resolver | `apps/mobile/src/lib/query/resolveErrorMessage.helper.ts`                     | `.helper.ts`                  | Standardized query/mutation error → user string     |
 | App-query hook         | `apps/mobile/src/lib/query/useAppQuery.hook.ts`                               | `.hook.ts`                    | Wrapper over `useQuery` (project defaults)          |
@@ -141,6 +148,16 @@ Same shape as web, but UI is React Native / NativeWind. Imported via `@/*`.
 | Session selector hook  | `apps/mobile/src/hooks/useSession.hook.ts`                                    | `.hook.ts`                    | Selector hook returning { session, status } from auth.store |
 | i18n config            | `apps/mobile/src/lib/i18n/i18n.config.ts`                                    | `.config.ts`                  | react-i18next + ICU init consuming @app/i18n resources; AsyncStorage/device locale resolution |
 | Offline banner         | `apps/mobile/src/components/ui/OfflineBanner/OfflineBanner.component.tsx`     | `.component.tsx`              | Controlled connectivity banner; i18n via react-i18next |
+| Modal (mobile)         | `apps/mobile/src/components/ui/Modal/Modal.component.tsx`                     | `.component.tsx`              | RN Modal bottom-sheet; scrim Pressable + grabber + inline close; tokens via @app/tokens |
+| Modal constants (mobile) | `apps/mobile/src/components/ui/Modal/Modal.constant.ts`                     | `.constant.ts`                | Grabber width/height, close icon size |
+| Confirm dialog (mobile) | `apps/mobile/src/components/ui/ConfirmDialog/ConfirmDialog.component.tsx`   | `.component.tsx`              | Confirmation composed on Modal; danger confirm Pressable; i18n confirm/cancel |
+| Empty state (mobile)   | `apps/mobile/src/components/ui/EmptyState/EmptyState.component.tsx`           | `.component.tsx`              | Icon glyph + title + message + optional CTA; copy via react-i18next |
+| Error state (mobile)   | `apps/mobile/src/components/ui/ErrorState/ErrorState.component.tsx`           | `.component.tsx`              | Error message + optional retry; FallbackComponent compatible; code-driven copy |
+| Error state codes (mobile) | `apps/mobile/src/components/ui/ErrorState/ErrorState.constant.ts`        | `.constant.ts`                | ErrorStateCodeEnum + i18n namespace keys |
+| Loading skeleton (mobile) | `apps/mobile/src/components/ui/LoadingSkeleton/LoadingSkeleton.component.tsx` | `.component.tsx`         | Shimmer placeholder (expo-linear-gradient + Reanimated via useShimmer) |
+| Shimmer hook (mobile)  | `apps/mobile/src/components/ui/LoadingSkeleton/useShimmer.hook.ts`            | `.hook.ts`                    | Reanimated translateX loop driving the skeleton sweep |
+| Status badge (mobile)  | `apps/mobile/src/components/ui/StatusBadge/StatusBadge.component.tsx`         | `.component.tsx`              | Pill dot+label; token tone map success/warning/danger/neutral |
+| Status badge tones (mobile) | `apps/mobile/src/components/ui/StatusBadge/StatusBadge.constant.ts`    | `.constant.ts`                | STATUS_BADGE_TONE_COLORS map + dot/padding consts |
 | Route tree             | `apps/mobile/src/app`                                                         | Expo Router                   | `_layout.tsx`, `index.tsx`, file-based routes       |
 | Test infra             | `apps/mobile/src/test`                                                        | (no suffix)                   | Vitest setup + mocks (harness, not a unit)          |
 
