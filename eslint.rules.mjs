@@ -169,6 +169,7 @@ export const REACT_RULES = {
   'react/function-component-definition': 'off',
   'react/jsx-props-no-spreading': 'error',
   'react/jsx-sort-props': 'error',
+  'react/no-multi-comp': ['error', { ignoreStateless: false }],
   'react/react-in-jsx-scope': 'off'
 }
 
