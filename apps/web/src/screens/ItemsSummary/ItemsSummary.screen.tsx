@@ -22,19 +22,19 @@ const ItemsSummaryScreen = async () => {
           <span className="text-text-secondary">total</span>
         </span>
         <span>
-          <span className="font-semibold text-accent-green">
+          <span className="font-semibold text-success">
             {summary.activeCount}
           </span>{' '}
           <span className="text-text-secondary">active</span>
         </span>
         <span>
-          <span className="font-semibold text-text-muted">
+          <span className="font-semibold text-text-tertiary">
             {summary.draftCount}
           </span>{' '}
           <span className="text-text-secondary">draft</span>
         </span>
         <span>
-          <span className="font-semibold text-text-muted">
+          <span className="font-semibold text-text-tertiary">
             {summary.archivedCount}
           </span>{' '}
           <span className="text-text-secondary">archived</span>
