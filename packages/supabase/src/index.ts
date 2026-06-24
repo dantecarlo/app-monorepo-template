@@ -7,3 +7,7 @@ export type { Database } from './types'
 // Server factory lives behind the './server' entry point so client bundles
 // never pull in @supabase/ssr / server-only cookie handling:
 //   import { createSupabaseServerClient } from '@app/supabase/server'
+
+// SSR cookie-aware factory lives behind the './ssr' entry point so client
+// bundles never pull in @supabase/ssr:
+//   import { createSupabaseSSRClient } from '@app/supabase/ssr'
