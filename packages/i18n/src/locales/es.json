@@ -53,6 +53,30 @@
     }
   },
   "items": {
+    "dashboard": {
+      "appLabel": "App",
+      "listEmpty": "No se encontraron elementos.",
+      "listResults": "{count} resultados",
+      "listTitle": "Elementos",
+      "nav": {
+        "ariaLabel": "Navegación principal",
+        "home": "Inicio",
+        "items": "Elementos",
+        "search": "Buscar",
+        "settings": "Configuración"
+      },
+      "searchLabel": "Buscar elementos",
+      "searchPlaceholder": "Buscar elementos…",
+      "settingsLabel": "Configuración",
+      "statsActive": "activo",
+      "statsLive": "En vivo",
+      "statsOverview": "Resumen",
+      "statsTotalItems": "elementos totales",
+      "statsUpdated": "actualizado ahora mismo",
+      "title": "Panel",
+      "viewAll": "Ver todos los elementos",
+      "welcomeBack": "Bienvenido de nuevo"
+    },
     "emptyState": "No hay elementos",
     "errorState": "Error al cargar elementos",
     "title": "Elementos"

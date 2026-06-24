@@ -1,7 +1,4 @@
-/**
- * ItemCard Tailwind class constants.
- * Extracted per convention: no magic inline className strings in JSX.
- */
+import { GLASS } from '@/helpers/style.constant'
 
 export const ITEM_CARD = {
   // Avatar — 36px circle with accent background tint
@@ -14,7 +11,7 @@ export const ITEM_CARD = {
   DESCRIPTION:
     'font-body text-caption text-text-tertiary line-clamp-1 mt-0.5',
 
-  DIVIDER: 'border-t border-white/[0.06] first:border-t-0',
+  DIVIDER: `${GLASS.DIVIDER} first:border-t-0`,
 
   META: 'flex items-center gap-2 mt-1',
 

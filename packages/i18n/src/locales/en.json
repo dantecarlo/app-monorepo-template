@@ -53,6 +53,30 @@
     }
   },
   "items": {
+    "dashboard": {
+      "appLabel": "App",
+      "listEmpty": "No items found.",
+      "listResults": "{count} results",
+      "listTitle": "Items",
+      "nav": {
+        "ariaLabel": "Main navigation",
+        "home": "Home",
+        "items": "Items",
+        "search": "Search",
+        "settings": "Settings"
+      },
+      "searchLabel": "Search items",
+      "searchPlaceholder": "Search items…",
+      "settingsLabel": "Settings",
+      "statsActive": "active",
+      "statsLive": "Live",
+      "statsOverview": "Overview",
+      "statsTotalItems": "total items",
+      "statsUpdated": "updated just now",
+      "title": "Dashboard",
+      "viewAll": "View all items",
+      "welcomeBack": "Welcome back"
+    },
     "emptyState": "No items found",
     "errorState": "Failed to load items",
     "title": "Items"
