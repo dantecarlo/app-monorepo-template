@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useModalDismiss } from './useModalDismiss.hook'
 
 describe('useModalDismiss', () => {
-  let onClose: ReturnType<typeof vi.fn>
+  let onClose: () => void
 
   beforeEach(() => {
     onClose = vi.fn()
