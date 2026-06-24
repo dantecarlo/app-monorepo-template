@@ -10,8 +10,8 @@ validation gates.
 
 | Decision | Rationale |
 |---|---|
-| `pnpm dlx playwright test` | Playwright runs as a zero-install peer. No `@playwright/test` in `devDependencies`. |
-| `e2e/` excluded from tsconfig | `playwright.config.ts` imports `@playwright/test` via `dlx`; TS resolver must not try to resolve it during normal typecheck. |
+| `pnpm exec playwright test` | `@playwright/test` lives in the root `devDependencies`; all workspace packages share it via pnpm hoisting. `pnpm exec` resolves from the root `node_modules/.bin/` so any workspace cwd works. |
+| `e2e/` excluded from tsconfig | `playwright.config.ts` imports `@playwright/test`; TS resolver must not try to resolve it during normal typecheck. |
 | `e2e/` excluded from ESLint | The flat config covers `apps/` and `packages/` only; e2e files use Playwright globals not registered there. |
 | E2E excluded from `pnpm validate` | `pnpm validate` is the unit/integration gate (lint + typecheck + test + build + verify scripts). E2E requires a running server and is a separate stage in CI. |
 
@@ -27,10 +27,10 @@ pnpm --filter @app/web build
 pnpm test:e2e
 
 # Run with UI mode for interactive debugging
-pnpm dlx playwright test --ui
+pnpm exec playwright test --ui
 
 # Run a single spec file
-pnpm dlx playwright test e2e/home.e2e.ts
+pnpm exec playwright test e2e/home.e2e.ts
 ```
 
 The `baseURL` defaults to `http://localhost:3000`. Override with `E2E_BASE_URL`
@@ -59,9 +59,9 @@ jobs:
           node-version: '24'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
-      - run: pnpm dlx playwright install --with-deps chromium
+      - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm --filter @app/web build
-      - run: pnpm dlx playwright test
+      - run: pnpm exec playwright test
         env:
           E2E_BASE_URL: ${{ vars.E2E_BASE_URL }}
       - uses: actions/upload-artifact@v4

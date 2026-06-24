@@ -1,7 +1,7 @@
 // Playwright configuration for end-to-end tests.
-// Run with: pnpm dlx playwright test
+// Run with: pnpm exec playwright test
 // This file is intentionally excluded from tsconfig and ESLint —
-// @playwright/test is a zero-install peer (dlx); it is not a package dep.
+// @playwright/test lives in the root devDependencies and is not a workspace app dep.
 import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({

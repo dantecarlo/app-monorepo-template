@@ -18,8 +18,8 @@
     "typecheck": "turbo run typecheck",
     "smoke:mobile": "pnpm --filter @app/mobile smoke:export",
     "smoke:web": "pnpm --filter @app/web build && node scripts/smoke-web-render.mjs",
-    "smoke:e2e": "pnpm --filter @app/web build && pnpm dlx playwright install --with-deps chromium && pnpm dlx playwright test",
-    "test:e2e": "pnpm dlx playwright test",
+    "smoke:e2e": "pnpm --filter @app/web build && pnpm exec playwright install --with-deps chromium && pnpm exec playwright test",
+    "test:e2e": "pnpm exec playwright test",
     "validate": "turbo run lint typecheck test build format:check && pnpm verify:tests && pnpm verify:maps && pnpm check:identity",
     "verify:expo": "cd apps/mobile && npx expo-doctor && npx expo install --check",
     "verify:maps": "node scripts/verify-maps.mjs",
@@ -28,6 +28,7 @@
   "devDependencies": {
     "@commitlint/cli": "^21.1.0",
     "@commitlint/config-conventional": "^21.1.0",
+    "@playwright/test": "^1.61.1",
     "eslint": "^9.39.4",
     "eslint-plugin-expo": "1.0.3",
     "eslint-config-prettier": "^10.1.8",

@@ -49,19 +49,19 @@ structural measurements rather than visual diffs.
 
 ```bash
 # Install Playwright browser (one-time)
-pnpm dlx playwright install chromium
+pnpm exec playwright install chromium
 
 # Build the web app first (webServer boots `next start`)
 pnpm --filter @app/web build
 
 # Run all four viewport projects
-pnpm dlx playwright test --project=mobile-390 --project=tablet-768 --project=desktop-1280 --project=desktop-1920
+pnpm exec playwright test --project=mobile-390 --project=tablet-768 --project=desktop-1280 --project=desktop-1920
 
 # Run a single viewport
-pnpm dlx playwright test --project=desktop-1280
+pnpm exec playwright test --project=desktop-1280
 
 # Open the HTML report after a run
-pnpm dlx playwright show-report
+pnpm exec playwright show-report
 ```
 
 ---
@@ -86,9 +86,9 @@ responsive:
         node-version: '24'
         cache: 'pnpm'
     - run: pnpm install --frozen-lockfile
-    - run: pnpm dlx playwright install --with-deps chromium
+    - run: pnpm exec playwright install --with-deps chromium
     - run: pnpm --filter @app/web build
-    - run: pnpm dlx playwright test --project=mobile-390 --project=tablet-768 --project=desktop-1280 --project=desktop-1920
+    - run: pnpm exec playwright test --project=mobile-390 --project=tablet-768 --project=desktop-1280 --project=desktop-1920
       env:
         E2E_BASE_URL: ${{ vars.E2E_BASE_URL }}
     - uses: actions/upload-artifact@v4
