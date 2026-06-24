@@ -5,6 +5,7 @@ import prettierConfig from 'eslint-config-prettier'
 import checkFile from 'eslint-plugin-check-file'
 import importPlugin from 'eslint-plugin-import'
 import jsxA11y from 'eslint-plugin-jsx-a11y'
+import nextPlugin from '@next/eslint-plugin-next'
 import noRelativeImportPaths from 'eslint-plugin-no-relative-import-paths'
 import prettier from 'eslint-plugin-prettier'
 import react from 'eslint-plugin-react'
@@ -192,6 +193,25 @@ export default defineConfig([
       ]
     },
     settings: { react: { version: 'detect' } }
+  },
+
+  // -------------------------------------------------------------------------
+  // apps/web — Next.js core-web-vitals rules (scoped, no plugin duplication).
+  // Registers ONLY @next/next rules via the plugin's own flat-config object.
+  // We intentionally do NOT spread eslint-config-next because that package
+  // re-bundles react / react-hooks / import / jsx-a11y / typescript-eslint
+  // (double-registering plugins already declared above).
+  // -------------------------------------------------------------------------
+  {
+    files: ['apps/web/**/*.{ts,tsx}'],
+    plugins: { '@next/next': nextPlugin },
+    rules: {
+      ...nextPlugin.configs['core-web-vitals'].rules,
+      // no-html-link-for-pages is Pages Router only; this project uses App
+      // Router exclusively, so disable to silence the "pages dir not found"
+      // noise (the rule has no effect in App Router mode).
+      '@next/next/no-html-link-for-pages': 'off'
+    }
   },
 
   // -------------------------------------------------------------------------
