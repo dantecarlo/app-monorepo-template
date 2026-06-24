@@ -180,6 +180,14 @@ Last updated: 2026-06-24
 
 ---
 
+### runtime-verify
+
+- **Description**: Runtime and render smoke harness for all environments — web (Next.js), mobile-web (RNW/Expo web), mobile native bundle, iOS simulator, and Android device/emulator. Detect-and-run across five tiers with a diagnose→fix→re-verify loop on failure. Run after validate-all; covers only the runtime smokes pnpm validate excludes.
+- **Triggers**: "run all smokes", "does this render?", "is the build healthy?", "runtime verify", "smoke test all environments", "before release", "verify native bundle", "check iOS simulator", "check Android device", "run runtime-verify"
+- **Path**: `.claude/skills/runtime-verify/SKILL.md`
+
+---
+
 ### validate-all
 
 - **Description**: Post-generation deterministic harness: runs pnpm validate + four adversarial subagent groups in parallel (G-standards, G-tests, G-security, G-a11y-design-dod). Overall DONE only when pnpm validate passes and zero BLOCKERs across all groups.
@@ -188,4 +196,4 @@ Last updated: 2026-06-24
 
 ---
 
-22 skills indexed.
+23 skills indexed.
