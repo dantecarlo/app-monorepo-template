@@ -14,7 +14,7 @@
   },
   "expo": {
     "install": {
-      "exclude": ["typescript", "react", "react-dom"]
+      "exclude": ["typescript"]
     }
   },
   "dependencies": {
