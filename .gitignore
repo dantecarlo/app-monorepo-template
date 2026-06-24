@@ -44,5 +44,7 @@ expo-env.d.ts
 Thumbs.db
 .idea/
 .vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
 *.swp
 *.swo
