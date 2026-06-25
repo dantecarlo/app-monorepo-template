@@ -1,0 +1,91 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        "scripts/**/*.mjs",
+        "eslint.rules.mjs",
+        "eslint-local-rules/**/*.mjs",
+        ".claude/skills/**/*.mjs"
+      ],
+      "project": [
+        "scripts/**/*.mjs",
+        "eslint-local-rules/**/*.mjs",
+        ".claude/skills/**/*.mjs"
+      ],
+      "ignoreDependencies": [
+        "@commitlint/types",
+        "@eslint/js",
+        "@next/eslint-plugin-next",
+        "vite"
+      ]
+    },
+    "apps/web": {
+      "entry": [
+        "src/app/**/page.tsx",
+        "src/app/**/layout.tsx",
+        "src/app/**/route.ts",
+        "src/components/**/{index,index}.ts",
+        "src/screens/**/{index,index}.ts",
+        "src/screens/*/models/*.type.ts",
+        "src/services/**/{index,index}.ts",
+        "src/stores/*.store.ts",
+        "src/helpers/*.constant.ts",
+        "src/validation/*.schema.ts"
+      ],
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignoreDependencies": [
+        "@next/eslint-plugin-next",
+        "eslint-config-next",
+        "prettier",
+        "@supabase/ssr",
+        "@supabase/supabase-js",
+        "@app/tokens"
+      ]
+    },
+    "apps/mobile": {
+      "entry": [
+        "src/app/**/*.tsx",
+        "src/lib/i18n/i18n.config.ts",
+        "src/test/mocks/*.ts",
+        "src/components/**/{index,index}.ts",
+        "src/screens/**/{index,index}.ts",
+        "src/screens/*/models/*.type.ts",
+        "src/services/**/{index,index}.ts",
+        "src/hooks/*.hook.ts",
+        "src/helpers/*.constant.ts",
+        "src/validation/*.schema.ts"
+      ],
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignoreDependencies": ["@supabase/supabase-js"]
+    },
+    "packages/core": {
+      "project": ["src/**/*.ts"]
+    },
+    "packages/i18n": {
+      "project": ["src/**/*.ts"]
+    },
+    "packages/supabase": {
+      "project": ["src/**/*.ts"],
+      "ignoreBinaries": ["supabase"]
+    },
+    "packages/tokens": {
+      "project": ["src/**/*.ts"]
+    },
+    "packages/cloudflare": {
+      "project": ["src/**/*.ts"]
+    }
+  },
+  "ignoreExportsUsedInFile": true,
+  "ignoreDependencies": ["expo-updates", "expo-system-ui"],
+  "rules": {
+    "duplicates": "off",
+    "files": "error",
+    "exports": "error",
+    "types": "error",
+    "dependencies": "error",
+    "devDependencies": "error",
+    "binaries": "error",
+    "unlisted": "error"
+  }
+}
