@@ -65,7 +65,7 @@ export const AuthField = ({
           type={inputType}
           {...inputProps}
         />
-        {isPassword && (
+        {isPassword === true && (
           <button
             aria-label={
               showPassword ? hidePasswordLabel : showPasswordLabel

@@ -49,7 +49,7 @@ export const AuthField = ({
           style={styles.input}
           {...textInputProps}
         />
-        {isPassword && (
+        {isPassword === true && (
           <Pressable
             accessibilityLabel={
               showPassword ? hidePasswordLabel : showPasswordLabel

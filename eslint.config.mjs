@@ -19,6 +19,8 @@ import globals from 'globals'
 import { fileURLToPath } from 'node:url'
 import tseslint from 'typescript-eslint'
 
+import localRules from './eslint-local-rules/index.mjs'
+
 import {
   BASE_RULES,
   FILENAME_RULES,
@@ -30,9 +32,11 @@ import {
   STYLES_FILE_OVERRIDE,
   TEST_FILE_OVERRIDE,
   TEST_INFRA_OVERRIDE,
+  TESTING_LIBRARY_ALLOWED_OVERRIDE,
   TOKENS_SOURCE_OVERRIDE,
   TW4_NAMED_WIDTH_OVERRIDE,
-  UI_COMPONENT_OVERRIDE
+  UI_COMPONENT_OVERRIDE,
+  VENDOR_SDK_ALLOWED_OVERRIDE
 } from './eslint.rules.mjs'
 
 // typescript-eslint v8 errors when multiple candidate tsconfig roots exist
@@ -73,6 +77,7 @@ const TS_PLUGINS = {
   '@typescript-eslint': tseslint.plugin,
   'check-file': checkFile,
   import: importPlugin,
+  local: localRules,
   'no-relative-import-paths': noRelativeImportPaths,
   prettier,
   'simple-import-sort': simpleImportSort,
@@ -363,7 +368,12 @@ export default defineConfig([
   // and skill validators (e.g. general-plan) are covered.
   // -------------------------------------------------------------------------
   {
-    files: ['scripts/**/*.mjs', '*.mjs', '.claude/skills/**/*.mjs'],
+    files: [
+      'scripts/**/*.mjs',
+      '*.mjs',
+      '.claude/skills/**/*.mjs',
+      'eslint-local-rules/**/*.mjs'
+    ],
     languageOptions: {
       ecmaVersion: 'latest',
       globals: { ...globals.node },
@@ -383,6 +393,12 @@ export default defineConfig([
   TW4_NAMED_WIDTH_OVERRIDE,
   TEST_FILE_OVERRIDE,
   TEST_INFRA_OVERRIDE,
+  // Import-seam allow-lists: re-enable vendor SDKs at the adapter/lib seam and
+  // @testing-library/react in the test render seam. Must come AFTER the
+  // workspace blocks (and TEST_* blocks) so the relaxed no-restricted-imports
+  // config wins by later-wins.
+  VENDOR_SDK_ALLOWED_OVERRIDE,
+  TESTING_LIBRARY_ALLOWED_OVERRIDE,
   DTS_FILE_OVERRIDE,
 
   // Prettier must be last to disable conflicting rules.

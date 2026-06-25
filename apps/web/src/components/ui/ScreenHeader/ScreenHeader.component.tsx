@@ -50,13 +50,13 @@ export const ScreenHeader = ({
       <h1 className={SCREEN_HEADER_TITLE_CLASS}>{title}</h1>
 
       <div className={SCREEN_HEADER_SLOT_CLASS}>
-        {hasAction && (
+        {hasAction ? (
           <IconButton
             accessibilityLabel={actionLabel}
             name={actionName}
             onClick={onAction}
           />
-        )}
+        ) : null}
       </div>
     </header>
   )

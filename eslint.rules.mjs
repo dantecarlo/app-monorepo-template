@@ -51,11 +51,67 @@ const ARROW_ONLY_SELECTORS = [
 ]
 
 // ---------------------------------------------------------------------------
+// Test-query hygiene (code-standards Rule 9: "No data-testid, no getByTestId").
+// Bans the `data-testid` JSX attribute in source and the *ByTestId query
+// family in tests. Semantic queries (getByRole/getByText/getByLabelText) only.
+// Shared by BASE_RULES and every override that redefines no-restricted-syntax
+// (no-restricted-syntax is NOT additive across flat-config blocks — the last
+// block that sets it fully replaces earlier selector lists, so it must be
+// re-spread everywhere the rule is redeclared).
+// ---------------------------------------------------------------------------
+const NO_TESTID_SELECTORS = [
+  {
+    message:
+      'No data-testid — use a semantic query (getByRole/getByText/getByLabelText) instead (code-standards Rule 9).',
+    selector: "JSXAttribute[name.name='data-testid']"
+  },
+  {
+    message:
+      'No *ByTestId queries — use a semantic query (getByRole/getByText/getByLabelText) instead (code-standards Rule 9).',
+    selector:
+      'CallExpression[callee.property.name=/^(get|query|find|getAll|queryAll|findAll)ByTestId$/]'
+  },
+  {
+    message:
+      'No *ByTestId queries — use a semantic query (getByRole/getByText/getByLabelText) instead (code-standards Rule 9).',
+    selector:
+      'CallExpression[callee.name=/^(get|query|find|getAll|queryAll|findAll)ByTestId$/]'
+  }
+]
+
+// ---------------------------------------------------------------------------
+// fetch-in-views ban (code-standards Rule 6: "Never call fetch directly in
+// components or hooks — always through a service function"). Applied to
+// *.screen.tsx / *.component.tsx / *.hook.ts via NO_FETCH_IN_VIEW_OVERRIDE.
+// Covers both bare `fetch(...)` and member `*.fetch(...)` (e.g. window.fetch).
+// ---------------------------------------------------------------------------
+const NO_FETCH_SELECTORS = [
+  {
+    message:
+      'No fetch() in screens/components/hooks — call a *.service.ts function instead (code-standards Rule 6).',
+    selector: "CallExpression[callee.name='fetch']"
+  },
+  {
+    message:
+      'No fetch() in screens/components/hooks — call a *.service.ts function instead (code-standards Rule 6).',
+    selector:
+      "CallExpression[callee.type='MemberExpression'][callee.property.name='fetch']"
+  }
+]
+
+// ---------------------------------------------------------------------------
 // Base rules — shared by EVERY workspace (apps + packages).
 // ---------------------------------------------------------------------------
 export const BASE_RULES = {
   '@typescript-eslint/comma-dangle': 'off',
-  // I-prefix on interfaces, {Name}Type suffix on type aliases.
+  // Ban the `any` escape hatch (code-standards: typed everything). This is the
+  // syntactic guard and needs no type-aware parser; the related
+  // no-unsafe-* family requires a full TypeScript program (parserOptions.project
+  // / projectService), which this flat config intentionally does NOT wire — so
+  // those rules are NOT enabled here to avoid the parser throwing at lint time.
+  '@typescript-eslint/no-explicit-any': 'error',
+  // I-prefix on interfaces, {Name}Type suffix on type aliases, {Name}Enum
+  // suffix on enums (code-standards Rule 4).
   '@typescript-eslint/naming-convention': [
     'error',
     {
@@ -67,6 +123,11 @@ export const BASE_RULES = {
       format: ['PascalCase'],
       selector: 'typeAlias',
       suffix: ['Type']
+    },
+    {
+      format: ['PascalCase'],
+      selector: 'enum',
+      suffix: ['Enum']
     }
   ],
   '@typescript-eslint/no-empty-object-type': [
@@ -80,6 +141,17 @@ export const BASE_RULES = {
 
   // arrow-only functions (no `function` keyword).
   'func-style': ['error', 'expression', { allowArrowFunctions: true }],
+
+  // English-everywhere: identifiers must be ASCII. WARN (medium confidence —
+  // some legitimate edge cases, e.g. interop, may exist).
+  'local/no-non-ascii-identifier': 'warn',
+
+  // Single-object params (code-standards Rule 5). WARN, not error: the static
+  // allow-list (event handlers / array callbacks / documented 3p callbacks)
+  // cannot perfectly distinguish every legitimate positional signature (e.g.
+  // recursive accumulators like scrubPII(input, _seen)), and the gate must
+  // never go red. Surfaced as guidance, escalate per-project if desired.
+  'local/single-object-params': 'warn',
 
   // import sorting — simple-import-sort owns order; turn off the built-in.
   'import/extensions': 'off',
@@ -108,14 +180,50 @@ export const BASE_RULES = {
     }
   ],
 
+  // Import seam guards (code-standards Rule 6 + adapter-seam):
+  //   - Vendor/framework SDKs (@supabase/*, @stripe/*, @sentry/*) may only be
+  //     imported from *.adapter.ts files or src/lib/** composition code; the
+  //     allow-list overrides below re-enable them in exactly those locations.
+  //   - @testing-library/react must flow through the local test.helper re-export
+  //     so render config / providers stay in one seam (re-enabled for the helper
+  //     and *.test.* files via the override below).
+  'no-restricted-imports': [
+    'error',
+    {
+      paths: [
+        {
+          message:
+            'Import render/screen/etc. from the local test.helper (single render seam), not @testing-library/react directly.',
+          name: '@testing-library/react'
+        }
+      ],
+      patterns: [
+        {
+          group: [
+            '@supabase/*',
+            '@stripe/*',
+            '@stripe/stripe-js',
+            '@sentry/*'
+          ],
+          message:
+            'Vendor/framework SDKs may only be imported from *.adapter.ts or src/lib/** — keep the adapter seam intact (code-standards: ports + adapters).'
+        }
+      ]
+    }
+  ],
+
   // alias-only imports (ban relative `../` paths).
   'no-relative-import-paths/no-relative-import-paths': [
     'error',
     { allowSameFolder: false, prefix: '@', rootDir: 'src' }
   ],
 
-  // arrow-only enforcement.
-  'no-restricted-syntax': ['error', ...ARROW_ONLY_SELECTORS],
+  // arrow-only enforcement + test-query hygiene (no data-testid / *ByTestId).
+  'no-restricted-syntax': [
+    'error',
+    ...ARROW_ONLY_SELECTORS,
+    ...NO_TESTID_SELECTORS
+  ],
 
   'no-trailing-spaces': ['error', { skipBlankLines: true }],
 
@@ -146,7 +254,9 @@ export const BASE_RULES = {
 // ---------------------------------------------------------------------------
 export const REACT_RULES = {
   'jsx-a11y/anchor-ambiguous-text': 'error',
-  'jsx-a11y/control-has-associated-label': 'warn',
+  // Every interactive control must expose an accessible label (code-standards:
+  // aria-label on icon-only elements). Promoted from warn to a hard error.
+  'jsx-a11y/control-has-associated-label': 'error',
   'jsx-a11y/heading-has-content': 'warn',
   'jsx-a11y/scope': 'warn',
   'react-hooks/config': 'error',
@@ -167,6 +277,14 @@ export const REACT_RULES = {
   'react-hooks/use-memo': 'error',
   'react-hooks/void-use-memo': 'error',
   'react/function-component-definition': 'off',
+  // Ban leaked renders: `{count && <X/>}` renders a literal 0 when count is 0.
+  // Default strategies (ternary + coerce) permit boolean `&&` and ternaries but
+  // flag number/string left operands that can leak into the DOM (code-standards
+  // Rule 17). Use `count > 0 && <X/>` or `!!value && <X/>` instead.
+  'react/jsx-no-leaked-render': [
+    'error',
+    { validStrategies: ['ternary', 'coerce'] }
+  ],
   'react/jsx-props-no-spreading': 'error',
   'react/jsx-sort-props': 'error',
   'react/no-multi-comp': ['error', { ignoreStateless: false }],
@@ -271,13 +389,84 @@ export const UI_COMPONENT_OVERRIDE = {
   rules: { 'react/jsx-props-no-spreading': 'off' }
 }
 
-// Logic-in-hook: applied to screens + components only.
+// Vendor/framework SDK imports are allowed at the adapter seam and in the
+// app composition layer (src/lib/**). The Sentry framework-instrumentation
+// files (sentry.*.config.ts, instrumentation.ts, next.config.ts) are
+// framework-reserved entry points that must import the SDK directly — they
+// live OUTSIDE src/ so the path-based allow-list does not reach them.
+export const VENDOR_SDK_ALLOWED_OVERRIDE = {
+  files: [
+    '**/*.adapter.ts',
+    '**/src/lib/**/*.{ts,tsx}',
+    'apps/web/sentry.*.config.ts',
+    'apps/web/instrumentation.ts',
+    'apps/web/next.config.ts'
+  ],
+  rules: {
+    'no-restricted-imports': [
+      'error',
+      {
+        paths: [
+          {
+            message:
+              'Import render/screen/etc. from the local test.helper (single render seam), not @testing-library/react directly.',
+            name: '@testing-library/react'
+          }
+        ]
+      }
+    ]
+  }
+}
+
+// The test render seam: the local test.helper re-exports @testing-library/react,
+// and test files import it directly (the established template pattern). Both
+// drop the testing-library restriction; the vendor-SDK pattern ban still
+// applies (tests should not reach for raw vendor SDKs).
+export const TESTING_LIBRARY_ALLOWED_OVERRIDE = {
+  files: [
+    '**/test/test.helper.ts',
+    '**/*.test.ts',
+    '**/*.test.tsx',
+    '**/*.spec.ts',
+    '**/*.spec.tsx'
+  ],
+  rules: {
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: [
+          {
+            group: [
+              '@supabase/*',
+              '@stripe/*',
+              '@stripe/stripe-js',
+              '@sentry/*'
+            ],
+            message:
+              'Vendor/framework SDKs may only be imported from *.adapter.ts or src/lib/** — keep the adapter seam intact (code-standards: ports + adapters).'
+          }
+        ]
+      }
+    ]
+  }
+}
+
+// Logic-in-hook: applied to screens + components only. Also bans fetch() here
+// (Rule 6) and re-spreads the test-id ban (no-restricted-syntax is replace-not-
+// merge across blocks, so every selector group must be repeated).
 export const LOGIC_IN_HOOK_OVERRIDE = {
   files: ['**/*.screen.tsx', '**/*.component.tsx'],
   rules: {
+    // Inline Tailwind className literals belong in *.styles.ts. WARN, not error:
+    // the template's own example components carry pragmatic one-off utility
+    // classes (sr-only, flex-none, animate-spin), so this is guidance rather
+    // than a hard gate — the validation gate must never go red.
+    'local/no-inline-tailwind-classname': 'warn',
     'no-restricted-syntax': [
       'error',
       ...ARROW_ONLY_SELECTORS,
+      ...NO_TESTID_SELECTORS,
+      ...NO_FETCH_SELECTORS,
       ...LOGIC_IN_HOOK_SELECTORS,
       ...JSX_LITERAL_SELECTORS,
       ...TW4_WIDTH_SELECTORS
@@ -285,11 +474,18 @@ export const LOGIC_IN_HOOK_OVERRIDE = {
   }
 }
 
-// Hook files: explicitly allow the hooks banned in components/screens.
+// Hook files: explicitly allow the hooks banned in components/screens, but
+// keep the fetch() ban (data fetching belongs in *.service.ts) and the
+// test-id ban (re-spread for the same replace-not-merge reason).
 export const HOOK_FILE_OVERRIDE = {
   files: ['**/*.hook.ts', '**/*.hook.tsx'],
   rules: {
-    'no-restricted-syntax': ['error', ...ARROW_ONLY_SELECTORS]
+    'no-restricted-syntax': [
+      'error',
+      ...ARROW_ONLY_SELECTORS,
+      ...NO_TESTID_SELECTORS,
+      ...NO_FETCH_SELECTORS
+    ]
   }
 }
 
@@ -353,7 +549,13 @@ export const TW4_NAMED_WIDTH_OVERRIDE = {
   files: ['**/*.tsx', '**/*.styles.ts', '**/*.styles.tsx'],
   ignores: ['**/*.component.tsx', '**/*.screen.tsx'],
   rules: {
-    'no-restricted-syntax': ['error', ...TW4_WIDTH_SELECTORS]
+    // Re-spread the test-id ban alongside the TW4 width guard — this block
+    // redeclares no-restricted-syntax, which replaces (not merges) the base.
+    'no-restricted-syntax': [
+      'error',
+      ...NO_TESTID_SELECTORS,
+      ...TW4_WIDTH_SELECTORS
+    ]
   }
 }
 

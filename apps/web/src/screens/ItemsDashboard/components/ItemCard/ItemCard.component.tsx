@@ -43,7 +43,7 @@ export const ItemCard = ({ item }: IItemCardProps) => {
         <p className={ITEM_CARD.DESCRIPTION}>{item.description}</p>
         <div className={ITEM_CARD.META}>
           <span className={ITEM_CARD.CATEGORY_BADGE}>{item.category}</span>
-          {item.authorLabel && (
+          {item.authorLabel !== undefined && (
             <span className={ITEM_CARD.META_TEXT}>{item.authorLabel}</span>
           )}
         </div>

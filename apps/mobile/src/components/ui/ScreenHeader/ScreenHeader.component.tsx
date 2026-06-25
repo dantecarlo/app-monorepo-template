@@ -52,13 +52,13 @@ export const ScreenHeader = ({
       </Text>
 
       <View style={styles.slot}>
-        {hasAction && (
+        {hasAction ? (
           <IconButton
             accessibilityLabel={actionLabel}
             name={actionName}
             onPress={onAction}
           />
-        )}
+        ) : null}
       </View>
     </View>
   )

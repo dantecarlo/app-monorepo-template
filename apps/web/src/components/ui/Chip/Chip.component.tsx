@@ -31,7 +31,7 @@ export const Chip = ({
       className={chipVariants({ class: className, variant })}
       {...props}
     >
-      {withDot && (
+      {withDot === true && (
         <span
           aria-hidden="true"
           className="h-[7px] w-[7px] rounded-full bg-current"
