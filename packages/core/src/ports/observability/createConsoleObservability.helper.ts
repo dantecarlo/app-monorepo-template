@@ -1,9 +1,11 @@
 /* eslint-disable no-relative-import-paths/no-relative-import-paths */
 import { scrubPII } from '../../utils/scrubPII.helper'
 import type {
+  IAddBreadcrumbParams,
   ICaptureErrorParams,
   ICaptureMessageParams,
-  IObservabilityPort
+  IObservabilityPort,
+  ISetUserParams
 } from './IObservabilityPort.type'
 import { ObservabilityLevelEnum } from './observabilityLevel.type'
 /* eslint-enable no-relative-import-paths/no-relative-import-paths */
@@ -22,6 +24,22 @@ const scrubError = (error: unknown): Record<string, unknown> => {
 export const createConsoleObservability = ({
   isEnabled = true
 }: ICreateConsoleObservabilityParams = {}): IObservabilityPort => ({
+  addBreadcrumb: ({
+    category,
+    data,
+    level = ObservabilityLevelEnum.INFO,
+    message
+  }: IAddBreadcrumbParams): void => {
+    if (!isEnabled) return
+    const scrubbed = {
+      category,
+      data: data ? scrubPII(data) : undefined,
+      level,
+      message
+    }
+    console.warn('[observability] addBreadcrumb', scrubbed)
+  },
+
   captureError: ({ context, error }: ICaptureErrorParams): void => {
     if (!isEnabled) return
     const scrubbed = {
@@ -50,5 +68,11 @@ export const createConsoleObservability = ({
     } else {
       console.warn('[observability] captureMessage', scrubbed)
     }
+  },
+
+  setUser: ({ user }: ISetUserParams): void => {
+    if (!isEnabled) return
+    const scrubbed = user ? scrubPII(user) : null
+    console.warn('[observability] setUser', scrubbed)
   }
 })

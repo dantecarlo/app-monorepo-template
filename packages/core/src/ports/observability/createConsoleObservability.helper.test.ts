@@ -79,3 +79,36 @@ test('captureMessage scrubs PII from context', () => {
   expect(payload.context.token).toBe('[redacted]')
   expect(payload.context.userId).toBe('abc')
 })
+
+test('setUser scrubs PII from the user payload', () => {
+  const adapter = createConsoleObservability()
+  adapter.setUser?.({ user: { email: 'user@example.com', id: 'abc' } })
+  const payload = warnSpy.mock.calls[0][1] as Record<string, unknown>
+  expect(payload.email).toBe('[redacted]')
+  expect(payload.id).toBe('abc')
+})
+
+test('setUser with null is suppressed when isEnabled is false', () => {
+  const adapter = createConsoleObservability({ isEnabled: false })
+  adapter.setUser?.({ user: null })
+  expect(warnSpy).not.toHaveBeenCalled()
+})
+
+test('addBreadcrumb scrubs PII from breadcrumb data', () => {
+  const adapter = createConsoleObservability()
+  adapter.addBreadcrumb?.({
+    data: { email: 'user@example.com', route: '/home' },
+    message: 'navigation'
+  })
+  const payload = warnSpy.mock.calls[0][1] as {
+    data: Record<string, unknown>
+  }
+  expect(payload.data.email).toBe('[redacted]')
+  expect(payload.data.route).toBe('/home')
+})
+
+test('addBreadcrumb is suppressed when isEnabled is false', () => {
+  const adapter = createConsoleObservability({ isEnabled: false })
+  adapter.addBreadcrumb?.({ message: 'noop' })
+  expect(warnSpy).not.toHaveBeenCalled()
+})

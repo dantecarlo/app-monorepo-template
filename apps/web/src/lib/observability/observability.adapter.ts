@@ -1,6 +1,6 @@
-import {
-  createNoopObservability,
-  type IObservabilityPort
-} from '@app/core'
+import type { IObservabilityPort } from '@app/core'
 
-export const observability: IObservabilityPort = createNoopObservability()
+import { createSentryObservability } from '@/lib/observability/createSentryObservability.adapter'
+
+export const observability: IObservabilityPort =
+  createSentryObservability()

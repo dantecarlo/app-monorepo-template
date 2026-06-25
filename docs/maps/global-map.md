@@ -46,7 +46,12 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | Observability port    | `packages/core/src/ports/observability/IObservabilityPort.type.ts`       | `.type.ts`     | `IObservabilityPort` + `ICaptureErrorParams` + `ICaptureMessageParams` — provider-agnostic error/message capture seam |
 | Observability levels  | `packages/core/src/ports/observability/observabilityLevel.type.ts`       | `.type.ts`     | `ObservabilityLevelEnum` + `ObservabilityLevelType` — no magic severity strings |
 | No-op adapter         | `packages/core/src/ports/observability/createNoopObservability.helper.ts` | `.helper.ts`  | Production-safe default — swallows all events silently, zero deps, zero PII risk |
-| Console adapter       | `packages/core/src/ports/observability/createConsoleObservability.helper.ts` | `.helper.ts` | Dev-time adapter — logs scrubbed payloads via console.error/warn; isEnabled flag |
+| Console adapter       | `packages/core/src/ports/observability/createConsoleObservability.helper.ts` | `.helper.ts` | Dev-time adapter — logs scrubbed payloads via console.error/warn; isEnabled flag; covers setUser/addBreadcrumb |
+| Bot-protection port   | `packages/core/src/ports/bot-protection/IBotProtectionPort.type.ts`      | `.type.ts`     | `IBotProtectionPort` + `IVerifyTokenParams` + `IBotVerificationResult` — neutral server-side challenge-token verification seam |
+| Permissive bot adapter | `packages/core/src/ports/bot-protection/createPermissiveBotProtection.helper.ts` | `.helper.ts` | Alternative adapter — verifyToken always resolves { success: true }; proves swappability |
+| Origin-guard port     | `packages/core/src/ports/origin-guard/IOriginGuardPort.type.ts`          | `.type.ts`     | `IOriginGuardPort` + `IHeaderReader` + `IAssertTrustedOriginParams` + `IOriginGuardResult` — framework-neutral trusted-edge assertion |
+| Origin-guard reasons  | `packages/core/src/ports/origin-guard/originGuardReason.type.ts`         | `.type.ts`     | `OriginGuardReasonEnum` + `OriginGuardReasonType` — MISSING_HEADER / MISMATCH / NOT_CONFIGURED (no magic strings) |
+| Passthrough guard adapter | `packages/core/src/ports/origin-guard/createPassthroughOriginGuard.helper.ts` | `.helper.ts` | Alternative adapter — assertTrustedOrigin always { trusted: true, reason: NOT_CONFIGURED } |
 | Query-key sanitizer   | `packages/core/src/observability/sanitizeQueryKey.helper.ts`             | `.helper.ts`   | Redacts dynamic id segments from query keys before error reporting (PII-safe) |
 | PII scrubbing         | `packages/core/src/utils/scrubPII.helper.ts`                             | `.helper.ts`   | Scrub sensitive fields before they reach any monitoring sink      |
 | i18n catalogs         | `packages/i18n/src/locales/es.json`, `packages/i18n/src/locales/en.json` | `.json`        | ICU message catalogs (default `es`, plus `en`)                    |
@@ -59,10 +64,19 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | Supabase auth gateway | `packages/supabase/src/supabaseAuth.adapter.ts`                          | `.adapter.ts`  | `createSupabaseAuthGateway` — implements `IAuthGateway` over a `SupabaseClient` |
 | Backend types         | `packages/supabase/src/types.ts`                                         | `.ts`          | Generated DB types + typed exports                                |
 | DB conventions doc    | `packages/supabase/docs/database.md`                                     | `.md`          | Postgres/Supabase conventions: migrations, schemas, RLS, RBAC, audit, pgTAP |
+| Cloudflare constants  | `packages/cloudflare/src/cloudflare.constant.ts`                         | `.constant.ts` | Turnstile siteverify URL + field names, x-cf-origin-secret header (no magic strings) |
+| Turnstile adapter     | `packages/cloudflare/src/createTurnstileBotProtection.adapter.ts`        | `.adapter.ts`  | `createTurnstileBotProtection` — implements `IBotProtectionPort`; plain fetch siteverify; degrades to success without TURNSTILE_SECRET_KEY |
+| Origin-guard adapter  | `packages/cloudflare/src/createCloudflareOriginGuard.adapter.ts`         | `.adapter.ts`  | `createCloudflareOriginGuard` — implements `IOriginGuardPort`; header compare; passes through without CF_ORIGIN_SECRET |
 | Core test config      | `packages/core/vitest.config.ts`                                         | `.config.ts`   | Vitest config for the core package (node env, includes src/**/*.test.ts)  |
 
 Each package exposes its public surface through a barrel: `packages/core/src/index.ts`,
-`packages/i18n/src/index.ts`, `packages/supabase/src/index.ts`, `packages/tokens/src/index.ts`.
+`packages/i18n/src/index.ts`, `packages/supabase/src/index.ts`, `packages/tokens/src/index.ts`,
+`packages/cloudflare/src/index.ts`.
+
+**Pluggable providers.** Sentry (observability), Cloudflare (bot-protection +
+origin-guard), and Supabase (backend) are the DEFAULT adapters, each behind a
+`@app/core` port and swappable via a one-line composition-root edit. See
+[../architecture/decisions/0001-pluggable-providers.md](../architecture/decisions/0001-pluggable-providers.md).
 
 **Backend provider swap.** `@app/core` defines the ports; `@app/supabase` is the
 wired default adapter. To replace Supabase: (1) implement `IAuthGateway`,
@@ -102,8 +116,13 @@ the `@/*` alias. UI here is DOM / shadcn / Tailwind.
 | Summary barrel         | `apps/web/src/services/ItemsSummary/index.ts`                           | `index.ts`                    | Public API barrel for the ItemsSummary domain              |
 | Style constants        | `apps/web/src/helpers/style.constant.ts`                                | `.constant.ts`                | Shared Tailwind class-string constants                     |
 | Query keys             | `apps/web/src/lib/query/queryKeys.constant.ts`                          | `.constant.ts`                | Central React Query key registry                           |
-| Observability adapter  | `apps/web/src/lib/observability/observability.adapter.ts`               | `.adapter.ts`                 | App-level observability wiring point — swap this line to inject a Sentry/Datadog adapter |
+| Observability root     | `apps/web/src/lib/observability/observability.adapter.ts`               | `.adapter.ts`                 | Composition root — one-line swap; DEFAULT binds `createSentryObservability()` |
+| Sentry adapter (web)   | `apps/web/src/lib/observability/createSentryObservability.adapter.ts`   | `.adapter.ts`                 | Implements `IObservabilityPort` over `@sentry/nextjs`; scrubPII on every payload; no-ops without NEXT_PUBLIC_SENTRY_DSN |
 | Error bridge           | `apps/web/src/lib/observability/toCaptureError.helper.ts`               | `.helper.ts`                  | Adapts `IObservabilityPort.captureError` to the `createQueryClient` `onCaptureError` callback shape |
+| Bot-protection root    | `apps/web/src/lib/bot-protection/botProtection.adapter.ts`              | `.adapter.ts`                 | Composition root — one-line swap; DEFAULT binds `createTurnstileBotProtection()` from `@app/cloudflare` |
+| Origin-guard root      | `apps/web/src/lib/origin-guard/originGuard.adapter.ts`                  | `.adapter.ts`                 | Composition root — one-line swap; DEFAULT binds `createCloudflareOriginGuard()` from `@app/cloudflare` |
+| Edge middleware        | `apps/web/src/middleware.ts`                                           | (Next reserved)               | Origin-lock — builds an IHeaderReader, calls originGuard.assertTrustedOrigin, 403 when untrusted; matcher excludes static assets |
+| Turnstile verify route | `apps/web/src/app/api/turnstile/verify/route.ts`                       | Next route handler            | Server seam — reads token, calls botProtection.verifyToken, 400 on failure |
 | Validation constants   | `apps/web/src/validation/validation.constant.ts`                        | `.constant.ts`                | Named bounds for validation schemas (NOTE_MAX_LENGTH, QUANTITY_MIN, QUANTITY_MAX) |
 | Example schema factory | `apps/web/src/validation/buildExampleSchema.schema.ts`                  | `.schema.ts`                  | i18n-aware buildExampleSchema({ t }) — zod factory pattern; infers ExampleFormValuesType |
 | Query client factory   | `apps/web/src/lib/query/createQueryClient.helper.ts`                    | `.helper.ts`                  | Configured QueryClient with PII-safe cache error sinks     |
@@ -173,7 +192,8 @@ Same shape as web, but UI is React Native / NativeWind. Imported via `@/*`.
 | Segmented control (mobile) | `apps/mobile/src/components/ui/SegmentedControl/SegmentedControl.component.tsx` | `.component.tsx`     | tablist/tab segmented control; accentTint active segment |
 | Toggle (mobile)        | `apps/mobile/src/components/ui/Toggle/Toggle.component.tsx`                   | `.component.tsx`              | Switch; expo-linear-gradient track + Animated knob via useToggleKnob |
 | Toggle knob hook (mobile) | `apps/mobile/src/components/ui/Toggle/useToggleKnob.hook.ts`               | `.hook.ts`                    | Drives knob translateX via RN Animated (native driver, 160ms) |
-| Observability adapter  | `apps/mobile/src/lib/observability/observability.adapter.ts`                  | `.adapter.ts`                 | App-level observability wiring point — swap this line to inject a Sentry/Datadog adapter |
+| Observability root     | `apps/mobile/src/lib/observability/observability.adapter.ts`                  | `.adapter.ts`                 | Composition root — one-line swap; DEFAULT binds `createSentryObservability()` |
+| Sentry adapter (mobile) | `apps/mobile/src/lib/observability/createSentryObservability.adapter.ts`     | `.adapter.ts`                 | Implements `IObservabilityPort` over `@sentry/react-native`; module-scope init; scrubPII; no-ops without EXPO_PUBLIC_SENTRY_DSN |
 | Error bridge           | `apps/mobile/src/lib/observability/toCaptureError.helper.ts`                  | `.helper.ts`                  | Adapts `IObservabilityPort.captureError` to the `createQueryClient` `onCaptureError` callback shape |
 | Validation constants   | `apps/mobile/src/validation/validation.constant.ts`                           | `.constant.ts`                | Named bounds for validation schemas (NOTE_MAX_LENGTH, QUANTITY_MIN, QUANTITY_MAX) |
 | Example schema factory | `apps/mobile/src/validation/buildExampleSchema.schema.ts`                     | `.schema.ts`                  | i18n-aware buildExampleSchema({ t }) — zod factory pattern; infers ExampleFormValuesType |

@@ -12,10 +12,12 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@app/cloudflare": "workspace:*",
     "@app/core": "workspace:*",
     "@app/i18n": "workspace:*",
     "@app/supabase": "workspace:*",
     "@app/tokens": "workspace:*",
+    "@sentry/nextjs": "^10.61.0",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
     "@tanstack/react-query": "^5.101.1",

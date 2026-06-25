@@ -21,6 +21,12 @@ export type {
   IOnAuthStateChangeParams,
   ISignInWithPasswordParams
 } from './ports/auth/IAuthGateway.type'
+export { createPermissiveBotProtection } from './ports/bot-protection/createPermissiveBotProtection.helper'
+export type {
+  IBotProtectionPort,
+  IBotVerificationResult,
+  IVerifyTokenParams
+} from './ports/bot-protection/IBotProtectionPort.type'
 export type {
   IBackendClientProvider,
   ICreateBackendClientParams
@@ -28,10 +34,22 @@ export type {
 export { createConsoleObservability } from './ports/observability/createConsoleObservability.helper'
 export { createNoopObservability } from './ports/observability/createNoopObservability.helper'
 export type {
+  IAddBreadcrumbParams,
   ICaptureErrorParams,
   ICaptureMessageParams,
-  IObservabilityPort
+  IObservabilityPort,
+  IObservabilityUser,
+  ISetUserParams
 } from './ports/observability/IObservabilityPort.type'
 export type { ObservabilityLevelType } from './ports/observability/observabilityLevel.type'
 export { ObservabilityLevelEnum } from './ports/observability/observabilityLevel.type'
+export { createPassthroughOriginGuard } from './ports/origin-guard/createPassthroughOriginGuard.helper'
+export type {
+  IAssertTrustedOriginParams,
+  IHeaderReader,
+  IOriginGuardPort,
+  IOriginGuardResult
+} from './ports/origin-guard/IOriginGuardPort.type'
+export type { OriginGuardReasonType } from './ports/origin-guard/originGuardReason.type'
+export { OriginGuardReasonEnum } from './ports/origin-guard/originGuardReason.type'
 export { PII_KEYS, scrubPII } from './utils/scrubPII.helper'

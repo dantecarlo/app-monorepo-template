@@ -148,6 +148,22 @@ export default defineConfig([
   },
 
   // -------------------------------------------------------------------------
+  // packages/cloudflare — edge adapters (Turnstile siteverify, origin-lock).
+  // Vendor-free TS: plain fetch + header comparison behind @app/core ports.
+  // -------------------------------------------------------------------------
+  {
+    files: ['packages/cloudflare/**/*.{ts,tsx}'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      globals: { ...globals.node, ...globals.es2021 },
+      parser: tseslint.parser,
+      sourceType: 'module'
+    },
+    plugins: TS_PLUGINS,
+    rules: { ...BASE_RULES, ...FILENAME_RULES }
+  },
+
+  // -------------------------------------------------------------------------
   // packages/tokens — design tokens (plain TS objects, no JSX)
   // -------------------------------------------------------------------------
   // @ts-expect-error - Plugin type incompatibility
@@ -293,6 +309,17 @@ export default defineConfig([
   },
 
   // -------------------------------------------------------------------------
+  // Next.js middleware owns the framework-reserved name `middleware.ts` and
+  // must live at the src root. Relax the fractal suffix rule for it.
+  // -------------------------------------------------------------------------
+  {
+    files: ['apps/web/src/middleware.ts'],
+    rules: {
+      'check-file/filename-naming-convention': 'off'
+    }
+  },
+
+  // -------------------------------------------------------------------------
   // packages/i18n locale source files — same-directory JSON imports.
   // -------------------------------------------------------------------------
   {
@@ -310,6 +337,19 @@ export default defineConfig([
   // -------------------------------------------------------------------------
   {
     files: ['packages/supabase/src/*.adapter.ts'],
+    rules: {
+      'no-relative-import-paths/no-relative-import-paths': 'off'
+    }
+  },
+
+  // -------------------------------------------------------------------------
+  // packages/cloudflare adapters import their sibling `./cloudflare.constant`.
+  // The @/ alias maps to src/, but consuming apps resolve @/ to their OWN src/,
+  // so a relative sibling import is the only form that resolves cross-package
+  // (same reasoning as the supabase adapter override above).
+  // -------------------------------------------------------------------------
+  {
+    files: ['packages/cloudflare/src/*.adapter.ts'],
     rules: {
       'no-relative-import-paths/no-relative-import-paths': 'off'
     }

@@ -1,0 +1,25 @@
+{
+  "name": "@app/cloudflare",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@app/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.2",
+    "typescript": "*",
+    "vitest": "^4.1.9"
+  }
+}

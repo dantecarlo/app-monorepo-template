@@ -116,6 +116,65 @@ const securityHeaders = [
 
 ---
 
+## Edge providers behind ports (Turnstile + origin-lock)
+
+The two Cloudflare edge behaviours are wired the same way as the backend
+(Supabase) and observability (Sentry) providers: a provider-agnostic **port**
+in `@app/core`, a **vendor adapter** in `packages/cloudflare`, and a per-app
+**composition root** where the one-line swap happens.
+
+| Concern | Port (`@app/core`) | Default adapter (`@app/cloudflare`) | Alternative (built-in, core) | Composition root (`apps/web`) |
+|---|---|---|---|---|
+| Bot protection | `IBotProtectionPort` | `createTurnstileBotProtection()` | `createPermissiveBotProtection()` | `src/lib/bot-protection/botProtection.adapter.ts` |
+| Origin lock | `IOriginGuardPort` | `createCloudflareOriginGuard()` | `createPassthroughOriginGuard()` | `src/lib/origin-guard/originGuard.adapter.ts` |
+
+`packages/cloudflare` is dependency-light: it imports only `@app/core`. The
+Turnstile siteverify call is a plain `fetch` POST and the origin lock is a
+header comparison — no Cloudflare SDK.
+
+### Bot protection (Turnstile)
+
+- Server-side seam: `apps/web/src/app/api/turnstile/verify/route.ts` reads the
+  submitted token and calls `botProtection.verifyToken({ token, remoteIp? })`,
+  returning `400` on `{ success: false }`.
+- `verifyToken` maps the Cloudflare siteverify DTO into the neutral
+  `IBotVerificationResult` — the Cloudflare DTO never leaks past the adapter.
+- **Graceful degrade:** with no `TURNSTILE_SECRET_KEY`, `verifyToken` resolves
+  `{ success: true }` so the route works credential-free in dev.
+
+### Origin lock
+
+- `apps/web/src/middleware.ts` builds a framework-neutral header reader from
+  `request.headers`, calls `originGuard.assertTrustedOrigin({ headers })`, and
+  returns `403` when `trusted === false`.
+- The `matcher` excludes `_next/static`, `_next/image`, and asset routes so the
+  lock never blocks static assets.
+- **Graceful degrade:** with no `CF_ORIGIN_SECRET`, the guard returns
+  `{ trusted: true, reason: NOT_CONFIGURED }` so local/preview without
+  Cloudflare is not 403'd. Set the secret in production to lock the origin.
+
+### Swapping a provider
+
+```ts
+// apps/web/src/lib/bot-protection/botProtection.adapter.ts
+export const botProtection: IBotProtectionPort = createTurnstileBotProtection() // DEFAULT
+// export const botProtection: IBotProtectionPort = createPermissiveBotProtection() // disable
+
+// apps/web/src/lib/origin-guard/originGuard.adapter.ts
+export const originGuard: IOriginGuardPort = createCloudflareOriginGuard() // DEFAULT
+// export const originGuard: IOriginGuardPort = createPassthroughOriginGuard() // accept all
+```
+
+Mobile bypasses Cloudflare entirely (web-only edge), so there are no
+bot-protection or origin-guard adapters on mobile.
+
+> **Production footgun:** the permissive/pass-through degrades are correct for
+> dev and CI but must NOT silently ship to production. Set `TURNSTILE_SECRET_KEY`
+> and `CF_ORIGIN_SECRET` (and `NEXT_PUBLIC_SENTRY_DSN`) in the production
+> environment.
+
+---
+
 ## Vercel-behind-Cloudflare gotchas
 
 These issues are silent — they will not produce obvious errors, just corrupt behavior
