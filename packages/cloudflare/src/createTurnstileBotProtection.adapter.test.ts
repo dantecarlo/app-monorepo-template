@@ -14,6 +14,29 @@ test('verifyToken no-ops to success when no secret is configured', async () => {
   expect(result.success).toBe(true)
 })
 
+test('verifyToken fails CLOSED when no secret is configured in production', async () => {
+  const previous = process.env.NODE_ENV
+  vi.spyOn(console, 'error').mockImplementation(() => undefined)
+  process.env.NODE_ENV = 'production'
+  try {
+    const adapter = createTurnstileBotProtection({ secretKey: undefined })
+    const result = await adapter.verifyToken({ token: 'any' })
+    expect(result.success).toBe(false)
+  } finally {
+    process.env.NODE_ENV = previous
+  }
+})
+
+test('verifyToken does not throw an unhandled rejection on fetch failure', async () => {
+  vi.spyOn(globalThis, 'fetch').mockRejectedValue(
+    new Error('network down')
+  )
+  const adapter = createTurnstileBotProtection({ secretKey: SECRET })
+  await expect(adapter.verifyToken({ token: 'tok' })).rejects.toThrow(
+    'network down'
+  )
+})
+
 test('verifyToken maps a successful siteverify response', async () => {
   const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
     json: async () => ({

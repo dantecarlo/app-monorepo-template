@@ -40,3 +40,13 @@ test('assertTrustedOrigin rejects a mismatched header', () => {
   expect(result.trusted).toBe(false)
   expect(result.reason).toBe(OriginGuardReasonEnum.MISMATCH)
 })
+
+test('assertTrustedOrigin rejects an equal-length mismatch via constant-time compare', () => {
+  const guard = createCloudflareOriginGuard({ originSecret: SECRET })
+  const sameLengthWrong = 'x'.repeat(SECRET.length)
+  const result = guard.assertTrustedOrigin({
+    headers: makeHeaders(sameLengthWrong)
+  })
+  expect(result.trusted).toBe(false)
+  expect(result.reason).toBe(OriginGuardReasonEnum.MISMATCH)
+})

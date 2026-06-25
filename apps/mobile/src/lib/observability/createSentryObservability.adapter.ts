@@ -28,6 +28,8 @@ const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN
 const isEnabled = (): boolean => !!dsn
 
 Sentry.init({
+  beforeBreadcrumb: (breadcrumb) => scrubPII(breadcrumb),
+  beforeSend: (event) => scrubPII(event),
   dsn,
   enabled: isEnabled(),
   environment: process.env.EXPO_PUBLIC_APP_ENV ?? 'development'

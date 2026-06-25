@@ -49,6 +49,31 @@ test('setUser scrubs PII from the user payload', async () => {
   expect(payload.id).toBe('u1')
 })
 
+test('Sentry.init registers beforeSend that scrubs auto-captured events', async () => {
+  await loadAdapter()
+  const [config] = init.mock.calls[0]
+  const scrubbed = config.beforeSend({
+    request: {
+      headers: {
+        Authorization: 'Bearer leaked',
+        Cookie: 'sb-access-token=x'
+      }
+    }
+  })
+  expect(scrubbed.request.headers.Authorization).toBe('[redacted]')
+  expect(scrubbed.request.headers.Cookie).toBe('[redacted]')
+})
+
+test('Sentry.init registers beforeBreadcrumb that scrubs auto-captured breadcrumbs', async () => {
+  await loadAdapter()
+  const [config] = init.mock.calls[0]
+  const scrubbed = config.beforeBreadcrumb({
+    data: { email: 'user@example.com', screen: 'Home' }
+  })
+  expect(scrubbed.data.email).toBe('[redacted]')
+  expect(scrubbed.data.screen).toBe('Home')
+})
+
 test('methods no-op when the DSN is absent', async () => {
   vi.resetModules()
   delete process.env.EXPO_PUBLIC_SENTRY_DSN

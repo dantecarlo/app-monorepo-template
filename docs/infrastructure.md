@@ -174,7 +174,10 @@ bot-protection or origin-guard adapters on mobile.
 > **Production footgun:** the permissive/pass-through degrades are correct for
 > dev and CI but must NOT silently ship to production. Set `TURNSTILE_SECRET_KEY`
 > and `CF_ORIGIN_SECRET` (and `NEXT_PUBLIC_SENTRY_DSN`) in the production
-> environment.
+> environment. As a backstop, `createTurnstileBotProtection` fails CLOSED when
+> `NODE_ENV === 'production'` and no secret is configured (it returns
+> `success: false` and logs the misconfiguration instead of waving the request
+> through).
 
 ---
 

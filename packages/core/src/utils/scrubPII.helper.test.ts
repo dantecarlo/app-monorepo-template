@@ -24,6 +24,15 @@ describe('PII_KEYS', () => {
     expect(PII_KEYS.has('raw_text')).toBe(true)
   })
 
+  test('contains transport-header and cookie keys', () => {
+    expect(PII_KEYS.has('authorization')).toBe(true)
+    expect(PII_KEYS.has('cookie')).toBe(true)
+    expect(PII_KEYS.has('set-cookie')).toBe(true)
+    expect(PII_KEYS.has('apikey')).toBe(true)
+    expect(PII_KEYS.has('jwt')).toBe(true)
+    expect(PII_KEYS.has('session')).toBe(true)
+  })
+
   test('does NOT contain "name" (business name is not PII by default)', () => {
     expect(PII_KEYS.has('name')).toBe(false)
   })
@@ -84,6 +93,59 @@ describe('scrubPII — case-insensitive matching', () => {
   test('redacts "PASSWORD" (upper)', () => {
     const r = scrubPII({ PASSWORD: 'secret' }) as Record<string, unknown>
     expect(r.PASSWORD).toBe('[redacted]')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Normalized matching — transport headers and cookies (Sentry request payload)
+// ---------------------------------------------------------------------------
+
+describe('scrubPII — normalized header/cookie matching', () => {
+  test('redacts request.headers.Authorization (Bearer token)', () => {
+    const event = {
+      request: {
+        headers: {
+          Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.payload.sig'
+        }
+      }
+    }
+    const result = scrubPII(event) as typeof event
+    expect(result.request.headers.Authorization).toBe('[redacted]')
+  })
+
+  test('redacts request.headers.Cookie (sb-access-token)', () => {
+    const event = {
+      request: {
+        headers: {
+          Cookie: 'sb-access-token=eyJ...; sb-refresh-token=abc'
+        }
+      }
+    }
+    const result = scrubPII(event) as typeof event
+    expect(result.request.headers.Cookie).toBe('[redacted]')
+  })
+
+  test('redacts hyphenated header variants ("access-token", "set-cookie")', () => {
+    const r = scrubPII({
+      'access-token': 'a',
+      'set-cookie': 'b'
+    }) as Record<string, unknown>
+    expect(r['access-token']).toBe('[redacted]')
+    expect(r['set-cookie']).toBe('[redacted]')
+  })
+
+  test('redacts "x-api-key" header', () => {
+    const r = scrubPII({ 'x-api-key': 'k' }) as Record<string, unknown>
+    expect(r['x-api-key']).toBe('[redacted]')
+  })
+
+  test('does NOT over-redact substring matches like "tokenCount"', () => {
+    const r = scrubPII({
+      apikeyLabel: 'public',
+      tokenCount: 42
+    }) as Record<string, unknown>
+    expect(r.tokenCount).toBe(42)
+    expect(r.apikeyLabel).toBe('public')
   })
 })
 

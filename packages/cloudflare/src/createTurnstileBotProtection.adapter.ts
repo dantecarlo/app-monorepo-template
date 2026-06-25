@@ -11,6 +11,10 @@ import {
   TURNSTILE_SITEVERIFY_URL
 } from './cloudflare.constant'
 
+const PRODUCTION_ENV = 'production'
+
+const MISSING_SECRET_PRODUCTION_ERROR = 'turnstile-secret-not-configured'
+
 interface ISiteverifyResponse {
   challenge_ts?: string
   'error-codes'?: string[]
@@ -36,7 +40,20 @@ export const createTurnstileBotProtection = ({
     remoteIp,
     token
   }: IVerifyTokenParams): Promise<IBotVerificationResult> => {
-    if (!secretKey) return { success: true }
+    if (!secretKey) {
+      // Dev/CI may run without a secret. Production must NOT silently allow
+      // every request through — fail CLOSED and surface the misconfiguration.
+      if (process.env.NODE_ENV === PRODUCTION_ENV) {
+        console.error(
+          '[turnstile] TURNSTILE_SECRET_KEY is not configured in production; failing closed.'
+        )
+        return {
+          errorCodes: [MISSING_SECRET_PRODUCTION_ERROR],
+          success: false
+        }
+      }
+      return { success: true }
+    }
 
     const body = new URLSearchParams()
     body.set(TURNSTILE_SECRET_FIELD, secretKey)
