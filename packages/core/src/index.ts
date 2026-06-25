@@ -31,6 +31,13 @@ export type {
   IBackendClientProvider,
   ICreateBackendClientParams
 } from './ports/client/IBackendClientProvider.type'
+export type { ICreatePublicImageDeliveryParams } from './ports/image-delivery/createPublicImageDelivery.helper'
+export { createPublicImageDelivery } from './ports/image-delivery/createPublicImageDelivery.helper'
+export type {
+  IBuildImageUrlParams,
+  IBuildSignedImageUrlParams,
+  IImageDeliveryPort
+} from './ports/image-delivery/IImageDeliveryPort.type'
 export { createConsoleObservability } from './ports/observability/createConsoleObservability.helper'
 export { createNoopObservability } from './ports/observability/createNoopObservability.helper'
 export type {

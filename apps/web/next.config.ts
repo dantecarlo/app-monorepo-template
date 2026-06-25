@@ -2,6 +2,11 @@ import { withSentryConfig } from '@sentry/nextjs'
 import type { NextConfig } from 'next'
 import createNextIntlPlugin from 'next-intl/plugin'
 
+import {
+  CACHE_CONTROL_HEADER,
+  IMAGE_CACHE_CONTROL_VALUE
+} from '@/lib/image-delivery/imageCacheHeaders.constant'
+
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.config.ts')
 
 const securityHeaders = [
@@ -14,12 +19,21 @@ const securityHeaders = [
   }
 ]
 
+const imageHeaders = [
+  { key: CACHE_CONTROL_HEADER, value: IMAGE_CACHE_CONTROL_VALUE }
+]
+
+const imageSource = '/:all*(svg|jpg|jpeg|png|webp|avif|gif|ico)'
+
 const nextConfig: NextConfig = {
   cacheComponents: true,
   experimental: {
     viewTransition: true
   },
-  headers: async () => [{ headers: securityHeaders, source: '/:path*' }],
+  headers: async () => [
+    { headers: securityHeaders, source: '/:path*' },
+    { headers: imageHeaders, source: imageSource }
+  ],
   reactCompiler: true,
   reactStrictMode: true,
   typedRoutes: true

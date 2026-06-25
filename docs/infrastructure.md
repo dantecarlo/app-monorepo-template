@@ -127,6 +127,9 @@ in `@app/core`, a **vendor adapter** in `packages/cloudflare`, and a per-app
 |---|---|---|---|---|
 | Bot protection | `IBotProtectionPort` | `createTurnstileBotProtection()` | `createPermissiveBotProtection()` | `src/lib/bot-protection/botProtection.adapter.ts` |
 | Origin lock | `IOriginGuardPort` | `createCloudflareOriginGuard()` | `createPassthroughOriginGuard()` | `src/lib/origin-guard/originGuard.adapter.ts` |
+| Image delivery | `IImageDeliveryPort` | `createCloudflareImagesDelivery()` / `createR2SignedDelivery()` | `createPublicImageDelivery()` | `src/lib/image-delivery/imageDelivery.adapter.ts` |
+
+> Full image cost/hotlink/scrape posture: see [images.md](images.md).
 
 `packages/cloudflare` is dependency-light: it imports only `@app/core`. The
 Turnstile siteverify call is a plain `fetch` POST and the origin lock is a
@@ -224,7 +227,10 @@ See `.env.example` for the Cloudflare/edge key block. Required keys:
 | `CF_ORIGIN_SECRET`     | Shared secret injected by Cloudflare and verified in Next.js middleware |
 | `TURNSTILE_SITE_KEY`   | Public key for the Turnstile widget in the browser                      |
 | `TURNSTILE_SECRET_KEY` | Server-side key for Turnstile token validation                          |
-| `R2_ACCOUNT_ID`        | Cloudflare account ID (only needed if using R2)                         |
-| `R2_ACCESS_KEY_ID`     | R2 access key (only needed if using R2)                                 |
-| `R2_SECRET_ACCESS_KEY` | R2 secret key (only needed if using R2)                                 |
-| `R2_BUCKET`            | R2 bucket name (only needed if using R2)                                |
+| `R2_ACCOUNT_ID`                  | Cloudflare account ID (only needed if using R2)                         |
+| `R2_ACCESS_KEY_ID`               | R2 access key (only needed if using R2)                                 |
+| `R2_SECRET_ACCESS_KEY`           | R2 secret key (only needed if using R2)                                 |
+| `R2_BUCKET`                      | R2 bucket name (only needed if using R2)                                |
+| `CLOUDFLARE_IMAGES_ACCOUNT_HASH` | Public delivery account hash for Cloudflare Images (safe to expose)    |
+| `CLOUDFLARE_IMAGES_SIGNING_KEY`  | Server-side HMAC key for signed Cloudflare Images URLs — never expose   |
+| `R2_PUBLIC_BASE_URL`             | Public base URL for R2 assets; used by `createR2SignedDelivery`         |

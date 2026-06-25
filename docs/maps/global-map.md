@@ -67,6 +67,11 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | Cloudflare constants  | `packages/cloudflare/src/cloudflare.constant.ts`                         | `.constant.ts` | Turnstile siteverify URL + field names, x-cf-origin-secret header (no magic strings) |
 | Turnstile adapter     | `packages/cloudflare/src/createTurnstileBotProtection.adapter.ts`        | `.adapter.ts`  | `createTurnstileBotProtection` — implements `IBotProtectionPort`; plain fetch siteverify; degrades to success without TURNSTILE_SECRET_KEY |
 | Origin-guard adapter  | `packages/cloudflare/src/createCloudflareOriginGuard.adapter.ts`         | `.adapter.ts`  | `createCloudflareOriginGuard` — implements `IOriginGuardPort`; header compare; passes through without CF_ORIGIN_SECRET |
+| Image-delivery port   | `packages/core/src/ports/image-delivery/IImageDeliveryPort.type.ts`      | `.type.ts`     | `IImageDeliveryPort` — provider-agnostic image delivery contract; `buildImageUrl` + `buildSignedImageUrl` |
+| Public image adapter  | `packages/core/src/ports/image-delivery/createPublicImageDelivery.helper.ts` | `.helper.ts` | Default no-sign adapter — returns raw public URL; graceful degrade when no baseUrl |
+| CF Images adapter     | `packages/cloudflare/src/createCloudflareImagesDelivery.adapter.ts`      | `.adapter.ts`  | HMAC-signed Cloudflare Images delivery; degrades to public without CLOUDFLARE_IMAGES_ACCOUNT_HASH or CLOUDFLARE_IMAGES_SIGNING_KEY |
+| R2 signed adapter     | `packages/cloudflare/src/createR2SignedDelivery.adapter.ts`              | `.adapter.ts`  | HMAC-signed R2 presigned delivery; degrades to public without R2_PUBLIC_BASE_URL or R2_SECRET_ACCESS_KEY |
+| Image delivery constants | `packages/cloudflare/src/imageDelivery.constant.ts`                   | `.constant.ts` | Magic values for both image adapters (base URL, HMAC algorithm, expiry query keys, seconds multiplier) |
 | Core test config      | `packages/core/vitest.config.ts`                                         | `.config.ts`   | Vitest config for the core package (node env, includes src/**/*.test.ts)  |
 
 Each package exposes its public surface through a barrel: `packages/core/src/index.ts`,
@@ -121,6 +126,9 @@ the `@/*` alias. UI here is DOM / shadcn / Tailwind.
 | Error bridge           | `apps/web/src/lib/observability/toCaptureError.helper.ts`               | `.helper.ts`                  | Adapts `IObservabilityPort.captureError` to the `createQueryClient` `onCaptureError` callback shape |
 | Bot-protection root    | `apps/web/src/lib/bot-protection/botProtection.adapter.ts`              | `.adapter.ts`                 | Composition root — one-line swap; DEFAULT binds `createTurnstileBotProtection()` from `@app/cloudflare` |
 | Origin-guard root      | `apps/web/src/lib/origin-guard/originGuard.adapter.ts`                  | `.adapter.ts`                 | Composition root — one-line swap; DEFAULT binds `createCloudflareOriginGuard()` from `@app/cloudflare` |
+| Image cache headers    | `apps/web/src/lib/image-delivery/imageCacheHeaders.helper.ts`           | `.helper.ts`                  | Returns long immutable Cache-Control header for image responses |
+| Image cache constants  | `apps/web/src/lib/image-delivery/imageCacheHeaders.constant.ts`         | `.constant.ts`                | IMAGE_EDGE_MAX_AGE_SECONDS, IMAGE_STALE_WHILE_REVALIDATE_SECONDS, CACHE_CONTROL_HEADER |
+| Image-delivery root    | `apps/web/src/lib/image-delivery/imageDelivery.adapter.ts`              | `.adapter.ts`                 | Composition root — one-line swap; DEFAULT binds `createPublicImageDelivery()` from `@app/core` |
 | Edge middleware        | `apps/web/src/middleware.ts`                                           | (Next reserved)               | Origin-lock — builds an IHeaderReader, calls originGuard.assertTrustedOrigin, 403 when untrusted; matcher excludes static assets |
 | Turnstile verify route | `apps/web/src/app/api/turnstile/verify/route.ts`                       | Next route handler            | Server seam — reads token, calls botProtection.verifyToken, 400 on failure |
 | Validation constants   | `apps/web/src/validation/validation.constant.ts`                        | `.constant.ts`                | Named bounds for validation schemas (NOTE_MAX_LENGTH, QUANTITY_MIN, QUANTITY_MAX) |
@@ -287,6 +295,7 @@ only — enforced by ESLint and by `node scripts/verify-maps.mjs`.
 | Validation harness   | `.claude/skills/validate-all/SKILL.md`   | Deterministic gate + grouped adversarial validators                                   |
 | Fractal audit skill  | `.claude/skills/fractal-verify/SKILL.md` | Per-block fractal architecture audit                                                  |
 | Validator subagent   | `.claude/agents/validator.md`            | Subagent definition used by the harness                                               |
+| Image posture doc    | `docs/images.md`                         | Image cost/hotlink/scrape protection — edge cache, signed URLs, WAF rules, bot mode   |
 
 ---
 
