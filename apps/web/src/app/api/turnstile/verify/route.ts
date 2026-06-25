@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { botProtection } from '@/lib/bot-protection/botProtection.adapter'
 
 const BAD_REQUEST_STATUS = 400
+const NO_STORE_HEADERS = { 'Cache-Control': 'no-store' }
 
 interface IVerifyRequestBody {
   token?: string
@@ -22,9 +23,12 @@ export const POST = async (
   if (!result.success) {
     return NextResponse.json(
       { errorCodes: result.errorCodes, success: false },
-      { status: BAD_REQUEST_STATUS }
+      { headers: NO_STORE_HEADERS, status: BAD_REQUEST_STATUS }
     )
   }
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json(
+    { success: true },
+    { headers: NO_STORE_HEADERS }
+  )
 }

@@ -21,7 +21,10 @@
     "smoke:web": "pnpm --filter @app/web build && node scripts/smoke-web-render.mjs",
     "smoke:e2e": "pnpm --filter @app/web build && pnpm exec playwright install --with-deps chromium && pnpm exec playwright test",
     "test:e2e": "pnpm exec playwright test",
-    "validate": "turbo run lint typecheck test build format:check && pnpm verify:tests && pnpm verify:maps && pnpm check:identity",
+    "validate": "turbo run lint typecheck test build format:check && pnpm verify:tests && pnpm verify:maps && pnpm check:identity && pnpm verify:pairing && pnpm verify:structure && pnpm verify:security && pnpm --filter @app/i18n test",
+    "verify:pairing": "node scripts/verify-pairing.mjs",
+    "verify:security": "node scripts/verify-security-static.mjs",
+    "verify:structure": "node scripts/verify-structure.mjs",
     "verify:expo": "cd apps/mobile && npx expo-doctor && npx expo install --check",
     "verify:maps": "node scripts/verify-maps.mjs",
     "verify:tests": "node scripts/verify-tests.mjs"
