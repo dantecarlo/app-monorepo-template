@@ -316,13 +316,14 @@ export default defineConfig([
   },
 
   // -------------------------------------------------------------------------
-  // Node tooling scripts (scripts/**/*.mjs + root *.mjs). Plain ESM executed by
-  // Node, not app source — they rely on the Node global set (process, console,
-  // fetch, URL, setTimeout, …), so they need globals.node for no-undef to pass.
-  // eslint.config.mjs stays ignored via IGNORES; eslint.rules.mjs is covered.
+  // Node tooling scripts (scripts/**/*.mjs, root *.mjs, .claude/skills/**/*.mjs).
+  // Plain ESM executed by Node, not app source — they rely on the Node global set
+  // (process, console, fetch, URL, setTimeout, …), so they need globals.node for
+  // no-undef to pass. eslint.config.mjs stays ignored via IGNORES; eslint.rules.mjs
+  // and skill validators (e.g. general-plan) are covered.
   // -------------------------------------------------------------------------
   {
-    files: ['scripts/**/*.mjs', '*.mjs'],
+    files: ['scripts/**/*.mjs', '*.mjs', '.claude/skills/**/*.mjs'],
     languageOptions: {
       ecmaVersion: 'latest',
       globals: { ...globals.node },
