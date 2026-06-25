@@ -30,6 +30,8 @@ module.exports = function (api) {
           ]
         }
       ],
+      // class-static-block must come before worklets plugin
+      '@babel/plugin-transform-class-static-block',
       // react-native-worklets/plugin MUST be last
       'react-native-worklets/plugin'
     ]

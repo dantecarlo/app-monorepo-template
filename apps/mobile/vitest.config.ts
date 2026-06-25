@@ -14,6 +14,13 @@ import { defineConfig } from 'vitest/config'
 const PACKAGES = path.resolve(__dirname, '../../packages')
 
 export default defineConfig({
+  // vitest v4 uses oxc (not esbuild) for transforms. Explicit JSX config
+  // ensures React automatic runtime is used for .tsx files under the
+  // happy-dom environment — equivalent to esbuild.jsx = 'automatic' in
+  // older vitest versions.
+  oxc: {
+    jsx: { importSource: 'react', runtime: 'automatic' }
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

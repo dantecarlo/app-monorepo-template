@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@app/core": "workspace:*",
+    "@formatjs/intl-pluralrules": "^6.3.9",
     "@app/i18n": "workspace:*",
     "@app/supabase": "workspace:*",
     "@app/tokens": "workspace:*",
@@ -65,6 +66,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@babel/plugin-transform-class-static-block": "^7.0.0",
     "@testing-library/react": "^16.3.2",
     "@types/react": "~19.2.14",
     "happy-dom": "^20.10.6",

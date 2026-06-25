@@ -1,3 +1,5 @@
+import '@/lib/i18n/intlPolyfill.config'
+
 import {
   DEFAULT_LANGUAGE,
   FALLBACK_LANGUAGE,
