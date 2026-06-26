@@ -330,16 +330,55 @@ export const FILENAME_RULES = {
 
 // ---------------------------------------------------------------------------
 // Logic-in-hook enforcement — bans React hooks that hold derived state /
-// side effects (useEffect/useMemo/useCallback) inside *.screen.tsx and
+// side effects (useEffect/useMemo/useCallback/useRef) inside *.screen.tsx and
 // *.component.tsx. Those belong in *.hook.ts so components stay render-only.
 // Applied via LOGIC_IN_HOOK_OVERRIDE below.
+//
+// useRef is included because an imperative ref handle in a view is behaviour
+// (focus management, scroll control, mutable bookkeeping) — exactly the kind of
+// logic a use{Name}.hook.ts owns. The count-based useState check and the
+// handler-complexity / captured-derivation checks live in the custom
+// `local/logic-in-view` rule (no-restricted-syntax selectors cannot count
+// occurrences or measure a function body), wired alongside these selectors.
 // ---------------------------------------------------------------------------
-const FORBIDDEN_HOOK_CALLEES = ['useEffect', 'useMemo', 'useCallback']
+const FORBIDDEN_HOOK_CALLEES = [
+  'useEffect',
+  'useMemo',
+  'useCallback',
+  'useRef'
+]
 
 const LOGIC_IN_HOOK_SELECTORS = FORBIDDEN_HOOK_CALLEES.map((hook) => ({
   message: `Move ${hook} into a *.hook.ts file — screens/components must stay render-only (code-standards: logic-in-hook).`,
   selector: `CallExpression[callee.name='${hook}']`
 }))
+
+// ---------------------------------------------------------------------------
+// Async-in-view ban (client screens/components). Data fetching + async
+// orchestration belong in a hook (client) calling a *.service.ts. NO_FETCH
+// already bans bare fetch(); this extends the ban to client async arrows used
+// as component bodies / event handlers and to raw promise `.then(...)` chains.
+//
+// IMPORTANT: RSC async server components (apps/web *.screen.tsx that are
+// `async () => { await getX() }`) are a legitimate framework pattern and are
+// NOT statically distinguishable from a client component by file suffix alone.
+// They are re-allowed via RSC_ASYNC_SCREEN_OVERRIDE (apps/web screens), which
+// re-spreads the component/screen selector set MINUS these async selectors.
+// ---------------------------------------------------------------------------
+const NO_ASYNC_VIEW_SELECTORS = [
+  {
+    message:
+      'No async component/handler in a client screen/component — move async data orchestration into a *.hook.ts that calls a *.service.ts (code-standards: logic-in-hook). RSC async server components are exempt via the apps/web screen allowlist.',
+    selector:
+      "VariableDeclarator > ArrowFunctionExpression[async=true]"
+  },
+  {
+    message:
+      'No raw promise .then() in a client screen/component — orchestrate async work in a *.hook.ts via a *.service.ts (code-standards: logic-in-hook).',
+    selector:
+      "CallExpression[callee.type='MemberExpression'][callee.property.name='then']"
+  }
+]
 
 // ---------------------------------------------------------------------------
 // JSX literal enforcement — discourages bare numeric/string literals used as
@@ -454,14 +493,52 @@ export const TESTING_LIBRARY_ALLOWED_OVERRIDE = {
 // Logic-in-hook: applied to screens + components only. Also bans fetch() here
 // (Rule 6) and re-spreads the test-id ban (no-restricted-syntax is replace-not-
 // merge across blocks, so every selector group must be repeated).
+//
+// The count-based / structural checks that selectors cannot express live in the
+// custom `local/logic-in-view` (ERROR: 2+ useState, branching handlers, captured
+// derivations) and `local/single-use-state` (WARN: a single useState may be a
+// trivial toggle or business state — guidance only) rules.
+const LOGIC_IN_HOOK_SELECTOR_SET = [
+  ...ARROW_ONLY_SELECTORS,
+  ...NO_TESTID_SELECTORS,
+  ...NO_FETCH_SELECTORS,
+  ...NO_ASYNC_VIEW_SELECTORS,
+  ...LOGIC_IN_HOOK_SELECTORS,
+  ...JSX_LITERAL_SELECTORS,
+  ...TW4_WIDTH_SELECTORS
+]
+
 export const LOGIC_IN_HOOK_OVERRIDE = {
   files: ['**/*.screen.tsx', '**/*.component.tsx'],
   rules: {
+    // 2+ useState / branching handlers / captured .map/.filter/.sort/.reduce
+    // derivations are logic, not render — ERROR.
+    'local/logic-in-view': 'error',
     // Inline Tailwind className literals belong in *.styles.ts. WARN, not error:
     // the template's own example components carry pragmatic one-off utility
     // classes (sr-only, flex-none, animate-spin), so this is guidance rather
     // than a hard gate — the validation gate must never go red.
     'local/no-inline-tailwind-classname': 'warn',
+    // A single useState may be a trivial toggle (allowed) or business state
+    // (belongs in a hook). Not statically distinguishable → WARN guidance.
+    'local/single-use-state': 'warn',
+    'no-restricted-syntax': ['error', ...LOGIC_IN_HOOK_SELECTOR_SET]
+  }
+}
+
+// RSC async server components: apps/web *.screen.tsx may be `async () => {
+// await getX() }` (a Next.js App Router data-loading pattern). This is NOT
+// distinguishable from a client async component by suffix, so apps/web screens
+// re-declare the component/screen selector set WITHOUT the async-view ban.
+// Everything else (fetch ban, useRef/useEffect ban, derivation/handler rules)
+// still applies — a NAKED service call belongs behind a loader/use-case, which
+// the screen still composes, so the structural rules keep guarding it.
+//
+// This block MUST come AFTER LOGIC_IN_HOOK_OVERRIDE in eslint.config.mjs so the
+// relaxed selector set wins by later-wins for apps/web screens only.
+export const RSC_ASYNC_SCREEN_OVERRIDE = {
+  files: ['apps/web/**/*.screen.tsx'],
+  rules: {
     'no-restricted-syntax': [
       'error',
       ...ARROW_ONLY_SELECTORS,

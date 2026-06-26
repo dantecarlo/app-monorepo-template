@@ -234,6 +234,65 @@ Component → Hook → Service → Adapter
 
 ---
 
+## 14a. Logic in Hooks — Views Stay Render-Only
+
+Separate logic from rendering. A `*.component.tsx` / `*.screen.tsx` is **render
++ composition ONLY**. The moment a view holds logic, that logic moves into a
+colocated `use{Name}.hook.ts`.
+
+A `use{Name}.hook.ts` is **REQUIRED** when a view contains LOGIC. LOGIC means
+any of:
+
+1. **State** — 2+ `useState`, OR a single `useState` holding derived / business
+   / multi-value data (NOT a single trivial boolean open/closed toggle).
+2. **Behavioural hooks** — any `useEffect` / `useMemo` / `useCallback` /
+   `useRef` that carries behaviour.
+3. **Branching handlers** — an event-handler body with branching or 2+
+   statements (validation, state+callback combos, conditional navigation, cache
+   invalidation).
+4. **Derivation** — a data transform / `.map` / `.filter` / `.sort` / `.reduce`
+   in the render body that is **captured into a variable** and produces a NEW
+   shape (i18n view-model mapping counts).
+5. **Async** — client-side `async` / `await` / `.then` / `fetch`.
+
+**ALLOWED INLINE** (no hook required):
+
+- Pure presentational render.
+- ONE `useState` boolean toggle (`isOpen` / `isExpanded`) with a single trivial
+  setter.
+- Direct prop pass-through handlers — `onPress={onPress}` or
+  `onPress={() => onPress?.()}`.
+- `.map` over a prop/hook array **inline in JSX** that ONLY renders JSX (no
+  captured new-shape derivation).
+- RSC async **server** components that call a data / use-case layer (a Next.js
+  App Router framework pattern). A NAKED service call still belongs behind a
+  loader / use-case — keep the screen body an await-and-render, not a raw
+  service call wired straight into JSX.
+
+### Enforcement
+
+The deterministic subset is enforced by ESLint and is a **hard gate** (ERROR):
+
+| Check                                                                    | Where                                        | Tier  |
+| ------------------------------------------------------------------------ | -------------------------------------------- | ----- |
+| 2+ `useState` in a view                                                  | `local/logic-in-view`                        | ERROR |
+| Exactly 1 `useState` (trivial toggle vs business state — not decidable)  | `local/single-use-state`                     | WARN  |
+| `useEffect` / `useMemo` / `useCallback` / `useRef` in a view             | `no-restricted-syntax` (FORBIDDEN_HOOK_CALLEES) | ERROR |
+| Event handler with 2+ statements / `if` / `switch` / `await`             | `local/logic-in-view`                        | ERROR |
+| Captured `.map` / `.filter` / `.sort` / `.reduce` (not inline in JSX)    | `local/logic-in-view`                        | ERROR |
+| Client `async` view body / `.then` chain                                 | `no-restricted-syntax` (NO_ASYNC_VIEW)       | ERROR |
+
+`apps/web` RSC async screens are an explicit allowlist
+(`RSC_ASYNC_SCREEN_OVERRIDE`) — they may be `async`, since RSC vs client is not
+distinguishable by file suffix. Every other rule above still applies to them.
+
+Whether a single `useState` is a trivial toggle, whether a one-statement handler
+hides business meaning, and whether a derivation is "trivial" are **not
+statically decidable** — they stay WARN-tier guidance, caught in review / by the
+`fractal-verify` skill.
+
+---
+
 ## 15. English Everywhere
 
 All identifiers, comments, file names, and commit messages are in English.

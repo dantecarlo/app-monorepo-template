@@ -29,6 +29,7 @@ import {
   HOOK_FILE_OVERRIDE,
   LOGIC_IN_HOOK_OVERRIDE,
   REACT_RULES,
+  RSC_ASYNC_SCREEN_OVERRIDE,
   STYLES_FILE_OVERRIDE,
   TEST_FILE_OVERRIDE,
   TEST_INFRA_OVERRIDE,
@@ -348,13 +349,15 @@ export default defineConfig([
   },
 
   // -------------------------------------------------------------------------
-  // packages/cloudflare adapters import their sibling `./cloudflare.constant`.
-  // The @/ alias maps to src/, but consuming apps resolve @/ to their OWN src/,
-  // so a relative sibling import is the only form that resolves cross-package
-  // (same reasoning as the supabase adapter override above).
+  // packages/cloudflare adapters and helpers import their sibling
+  // `./cloudflare.constant`, `./imageDelivery.constant`, and the edge-safe
+  // `./hmacHexSignature.helper`. The @/ alias maps to src/, but consuming apps
+  // resolve @/ to their OWN src/, so a relative sibling import is the only form
+  // that resolves cross-package (same reasoning as the supabase adapter
+  // override above).
   // -------------------------------------------------------------------------
   {
-    files: ['packages/cloudflare/src/*.adapter.ts'],
+    files: ['packages/cloudflare/src/*.{adapter,helper}.ts'],
     rules: {
       'no-relative-import-paths/no-relative-import-paths': 'off'
     }
@@ -386,6 +389,10 @@ export default defineConfig([
   // -------------------------------------------------------------------------
   UI_COMPONENT_OVERRIDE,
   LOGIC_IN_HOOK_OVERRIDE,
+  // RSC async server-component allowlist for apps/web screens — re-declares the
+  // screen selector set WITHOUT the client async-view ban. Must come AFTER
+  // LOGIC_IN_HOOK_OVERRIDE so it wins by later-wins for apps/web screens.
+  RSC_ASYNC_SCREEN_OVERRIDE,
   HOOK_FILE_OVERRIDE,
   CONSTANT_FILE_OVERRIDE,
   STYLES_FILE_OVERRIDE,

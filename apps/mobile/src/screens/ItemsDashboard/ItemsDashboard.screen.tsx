@@ -1,6 +1,5 @@
 import { colors } from '@app/tokens'
 import { LinearGradient } from 'expo-linear-gradient'
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   SafeAreaView,
@@ -48,15 +47,16 @@ const viewAllTextStyle = {
 }
 
 export const ItemsDashboardScreen = () => {
-  const [activeTab, setActiveTab] = useState('home')
   const { t } = useTranslation('translation', {
     keyPrefix: 'items.dashboard'
   })
 
   const {
     activeCount,
+    activeNav,
     isLoading,
     items,
+    onNavChange,
     onSearchChange,
     search,
     totalCount
@@ -100,7 +100,7 @@ export const ItemsDashboardScreen = () => {
       </ScrollView>
 
       <View style={navContainerStyle}>
-        <DashboardNav activeId={activeTab} onItemPress={setActiveTab} />
+        <DashboardNav activeId={activeNav} onItemPress={onNavChange} />
       </View>
     </SafeAreaView>
   )

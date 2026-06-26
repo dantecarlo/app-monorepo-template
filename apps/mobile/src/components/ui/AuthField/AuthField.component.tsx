@@ -1,10 +1,10 @@
 import { colors } from '@app/tokens'
-import { useState } from 'react'
 import type { TextInputProps } from 'react-native'
 import { Pressable, Text, TextInput, View } from 'react-native'
 
 import { AUTH_FIELD_ICON_SIZE } from '@/components/ui/AuthField/AuthField.constant'
 import { AUTH_FIELD_STYLES as styles } from '@/components/ui/AuthField/AuthField.styles'
+import { useAuthField } from '@/components/ui/AuthField/useAuthField.hook'
 import { Icon } from '@/components/ui/Icon/Icon.component'
 
 export interface IAuthFieldProps extends Omit<TextInputProps, 'style'> {
@@ -26,24 +26,22 @@ export const AuthField = ({
   showPasswordLabel,
   ...textInputProps
 }: IAuthFieldProps) => {
-  const [showPassword, setShowPassword] = useState(false)
-  const [isFocused, setIsFocused] = useState(false)
-
-  const wrapperStyle = [
-    styles.wrapper,
-    isFocused && !isError ? styles.wrapperFocused : undefined,
-    isError ? styles.wrapperError : undefined
-  ]
-
-  const secureEntry = isPassword ? !showPassword : false
+  const {
+    onBlur,
+    onFocus,
+    onTogglePassword,
+    secureEntry,
+    showPassword,
+    wrapperStyle
+  } = useAuthField({ isError, isPassword })
 
   return (
     <View style={styles.root}>
       {label !== undefined && <Text style={styles.label}>{label}</Text>}
       <View style={wrapperStyle}>
         <TextInput
-          onBlur={() => setIsFocused(false)}
-          onFocus={() => setIsFocused(true)}
+          onBlur={onBlur}
+          onFocus={onFocus}
           placeholderTextColor={colors.text.disabled}
           secureTextEntry={secureEntry}
           style={styles.input}
@@ -55,7 +53,7 @@ export const AuthField = ({
               showPassword ? hidePasswordLabel : showPasswordLabel
             }
             accessibilityRole="button"
-            onPress={() => setShowPassword((prev) => !prev)}
+            onPress={onTogglePassword}
             style={styles.revealButton}
           >
             <Icon

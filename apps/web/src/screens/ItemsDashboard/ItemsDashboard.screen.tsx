@@ -1,7 +1,6 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
 
 import { Button } from '@/components/ui/Button'
 import { LAYOUT } from '@/helpers/style.constant'
@@ -13,13 +12,14 @@ import { useItems } from '@/screens/ItemsDashboard/hooks/useItems.hook'
 import { ITEMS_DASHBOARD } from '@/screens/ItemsDashboard/ItemsDashboard.styles'
 
 export const ItemsDashboardScreen = () => {
-  const [activeNav, setActiveNav] = useState('home')
   const t = useTranslations('items.dashboard')
 
   const {
     activeCount,
+    activeNav,
     isLoading,
     items,
+    onNavChange,
     onSearchChange,
     search,
     totalCount
@@ -51,7 +51,7 @@ export const ItemsDashboardScreen = () => {
         </div>
       </main>
 
-      <DashboardNav activeId={activeNav} onItemPress={setActiveNav} />
+      <DashboardNav activeId={activeNav} onItemPress={onNavChange} />
     </div>
   )
 }

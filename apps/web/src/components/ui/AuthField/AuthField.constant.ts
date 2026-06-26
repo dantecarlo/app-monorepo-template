@@ -14,6 +14,9 @@ export const AUTH_FIELD_WRAPPER_ERROR_CLASS =
 export const AUTH_FIELD_INPUT_CLASS =
   'flex-1 bg-transparent text-body font-body text-text-primary placeholder:text-text-disabled outline-none'
 
+export const AUTH_FIELD_REVEAL_BUTTON_CLASS =
+  'ml-2 flex-none text-text-secondary hover:text-text-primary transition-colors'
+
 export const AUTH_FIELD_HELPER_CLASS =
   'text-caption font-body text-text-secondary'
 

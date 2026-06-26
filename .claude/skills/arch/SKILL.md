@@ -238,6 +238,56 @@ Constants describe purpose: `CONTAINER`, `AVATAR` — not `FLEX_ROW`, `ROUNDED`.
 
 ---
 
+## 10a. Logic in Hooks — Views Stay Render-Only (Rule 14a)
+
+A `*.component.tsx` / `*.screen.tsx` is **render + composition ONLY**. When a
+view holds logic, that logic moves into a colocated `use{Name}.hook.ts`. The
+view consumes the hook's result and stays render-only.
+
+```
+View (.component/.screen) → useName.hook.ts → Service → Adapter
+```
+
+A `use{Name}.hook.ts` is **REQUIRED** when the view holds LOGIC:
+
+1. 2+ `useState`, OR a single `useState` holding derived/business/multi-value
+   state (NOT a trivial boolean toggle).
+2. Any `useEffect` / `useMemo` / `useCallback` / `useRef` carrying behaviour.
+3. An event-handler body that branches or has 2+ statements / `await`.
+4. A captured `.map` / `.filter` / `.sort` / `.reduce` derivation producing a
+   NEW shape (i18n view-model mapping counts).
+5. Client-side `async` / `await` / `.then` / `fetch`.
+
+ALLOWED INLINE: pure render; ONE trivial boolean toggle `useState`; prop
+pass-through handlers (`onPress={onPress}`); `.map` inline in JSX that only
+renders JSX; RSC async **server** screens calling a data/use-case layer (a naked
+service call still belongs behind a colocated loader, e.g.
+`loadItemsSummary.service.ts`).
+
+```typescript
+// ❌ Logic stranded in the view
+const ItemsDashboardScreen = () => {
+  const [activeNav, setActiveNav] = useState('home') // business state in view
+  const labels = NAV.map((n) => ({ ...n, label: t(n.key) })) // captured derivation
+  // ...
+}
+
+// ✅ Logic owned by the hook; view renders the result
+const ItemsDashboardScreen = () => {
+  const { activeNav, items, onNavChange } = useItems()
+  return <DashboardNav activeId={activeNav} onItemPress={onNavChange} />
+}
+```
+
+The deterministic subset is a hard ESLint gate: `local/logic-in-view` (ERROR —
+2+ useState, branching handlers, captured derivations), `local/single-use-state`
+(WARN — single useState guidance), `useRef`/`useEffect`/`useMemo`/`useCallback`
+and client `async`/`.then` bans via `no-restricted-syntax`. `apps/web` RSC async
+screens are an explicit allowlist (`RSC_ASYNC_SCREEN_OVERRIDE`). See
+`docs/code-standards.md` Rule 14a.
+
+---
+
 ## 11. TanStack Query Wrappers
 
 Use `useAppQuery` and `useAppMutation` from `@/lib/query`. Never call

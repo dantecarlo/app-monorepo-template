@@ -1,5 +1,4 @@
 import type { InputHTMLAttributes, JSX } from 'react'
-import { useState } from 'react'
 
 import {
   AUTH_FIELD_ERROR_CLASS,
@@ -7,10 +6,10 @@ import {
   AUTH_FIELD_ICON_SIZE,
   AUTH_FIELD_INPUT_CLASS,
   AUTH_FIELD_LABEL_CLASS,
-  AUTH_FIELD_ROOT_CLASS,
-  AUTH_FIELD_WRAPPER_CLASS,
-  AUTH_FIELD_WRAPPER_ERROR_CLASS
+  AUTH_FIELD_REVEAL_BUTTON_CLASS,
+  AUTH_FIELD_ROOT_CLASS
 } from '@/components/ui/AuthField/AuthField.constant'
+import { useAuthField } from '@/components/ui/AuthField/useAuthField.hook'
 import { Icon } from '@/components/ui/Icon/Icon.component'
 
 export interface IAuthFieldProps extends Omit<
@@ -36,20 +35,8 @@ export const AuthField = ({
   showPasswordLabel,
   ...inputProps
 }: IAuthFieldProps): JSX.Element => {
-  const [showPassword, setShowPassword] = useState(false)
-
-  const wrapperClass = [
-    AUTH_FIELD_WRAPPER_CLASS,
-    isError ? AUTH_FIELD_WRAPPER_ERROR_CLASS : ''
-  ]
-    .join(' ')
-    .trim()
-
-  const inputType = isPassword
-    ? showPassword
-      ? 'text'
-      : 'password'
-    : (inputProps.type ?? 'text')
+  const { inputType, onTogglePassword, showPassword, wrapperClass } =
+    useAuthField({ isError, isPassword, type: inputProps.type })
 
   return (
     <div className={AUTH_FIELD_ROOT_CLASS}>
@@ -70,8 +57,8 @@ export const AuthField = ({
             aria-label={
               showPassword ? hidePasswordLabel : showPasswordLabel
             }
-            className="ml-2 flex-none text-text-secondary hover:text-text-primary transition-colors"
-            onClick={() => setShowPassword((prev) => !prev)}
+            className={AUTH_FIELD_REVEAL_BUTTON_CLASS}
+            onClick={onTogglePassword}
             type="button"
           >
             <Icon

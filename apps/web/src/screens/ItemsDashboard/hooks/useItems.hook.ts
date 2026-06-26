@@ -14,6 +14,7 @@ import { adaptItems, getItems } from '@/services/Items'
 const DEFAULT_ITEMS_LIMIT = 50
 const ACTIVE_STATUS = 'active' as const
 const EMPTY_ITEMS: IItemViewModel[] = []
+const DEFAULT_NAV_ID = 'home'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -25,8 +26,10 @@ export interface IUseItemsParams {
 
 export interface IUseItemsResult {
   activeCount: number
+  activeNav: string
   isLoading: boolean
   items: IItemViewModel[]
+  onNavChange: (id: string) => void
   onSearchChange: (value: string) => void
   search: string
   totalCount: number
@@ -48,6 +51,7 @@ export const useItems = ({
   limit = DEFAULT_ITEMS_LIMIT
 }: IUseItemsParams = {}): IUseItemsResult => {
   const [search, setSearch] = useState('')
+  const [activeNav, setActiveNav] = useState(DEFAULT_NAV_ID)
 
   const { data: items = EMPTY_ITEMS, isLoading } = useAppQuery<
     IItemViewModel[]
@@ -72,8 +76,10 @@ export const useItems = ({
 
   return {
     activeCount,
+    activeNav,
     isLoading,
     items,
+    onNavChange: setActiveNav,
     onSearchChange: setSearch,
     search,
     totalCount
