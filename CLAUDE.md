@@ -183,3 +183,10 @@ See `docs/propagation.md` and `.claude/skills/propagate-from-template/SKILL.md`.
 | `.claude/agents/validator.md` | Adversarial standards validator subagent |
 | `.claude/skills/validate-all/SKILL.md` | Full validation harness |
 | `docs/memory.md` | Shared Engram memory — load at session start, contribute decisions back |
+| `docs/SDD_SYNC_PROMPT.md` | SDD context-sync prompt — paste as first message to sync onto the active change |
+
+---
+
+## SDD context-sync prompt
+
+Starting a session on this repo (fresh, or an agent already building)? Paste `docs/SDD_SYNC_PROMPT.md` as your first message — it syncs you onto the orchestrator-level SDD layer (change `template-superset-rollout`, AUTOMATIC + HYBRID store) and the hardened template superset standard, then has you continue under SDD. Per-project repos ship a pre-filled copy.
