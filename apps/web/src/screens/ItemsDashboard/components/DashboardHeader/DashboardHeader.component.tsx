@@ -8,15 +8,14 @@ import { DASHBOARD_HEADER } from '@/screens/ItemsDashboard/components/DashboardH
 
 export const DashboardHeader = () => {
   const t = useTranslations('items.dashboard')
+  const tApp = useTranslations('app')
+  const appName = tApp('name')
 
   return (
     <header className={DASHBOARD_HEADER.ROOT}>
       <div className={DASHBOARD_HEADER.WORDMARK}>
-        <div
-          aria-label={t('appLabel')}
-          className={DASHBOARD_HEADER.APP_BADGE}
-        >
-          A
+        <div aria-label={appName} className={DASHBOARD_HEADER.APP_BADGE}>
+          {appName.charAt(0)}
         </div>
         <div>
           <p className={DASHBOARD_HEADER.SUBTITLE}>{t('welcomeBack')}</p>

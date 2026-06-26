@@ -11,6 +11,14 @@ export const AUTH_SHELL_STYLES = StyleSheet.create({
     marginTop: spacing.md,
     textAlign: 'center'
   },
+  controls: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    position: 'absolute',
+    right: spacing.lg,
+    zIndex: 10
+  },
   form: {
     alignSelf: 'stretch'
   },

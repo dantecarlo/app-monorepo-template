@@ -5,9 +5,11 @@ import { DashboardHeader } from '@/screens/ItemsDashboard/components/DashboardHe
 import { render, screen } from '@/test/test.helper'
 
 const messages = {
+  app: {
+    name: 'Acme'
+  },
   items: {
     dashboard: {
-      appLabel: 'App',
       settingsLabel: 'Settings',
       title: 'Dashboard',
       welcomeBack: 'Welcome back'
@@ -24,6 +26,7 @@ describe('DashboardHeader', () => {
     )
     expect(screen.getByText('Welcome back')).toBeInTheDocument()
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
+    expect(screen.getByLabelText('Acme')).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Settings' })
     ).toBeInTheDocument()

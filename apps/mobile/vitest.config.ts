@@ -28,6 +28,10 @@ export default defineConfig({
       '@app/i18n': path.resolve(PACKAGES, 'i18n/src'),
       '@app/supabase': path.resolve(PACKAGES, 'supabase/src'),
       '@app/tokens': path.resolve(PACKAGES, 'tokens/src'),
+      '@react-native-async-storage/async-storage': path.resolve(
+        __dirname,
+        './src/test/mocks/async-storage.ts'
+      ),
       '@sentry/react-native': path.resolve(
         __dirname,
         './src/test/mocks/sentry-react-native.ts'
@@ -40,6 +44,10 @@ export default defineConfig({
         __dirname,
         './src/test/mocks/expo-linear-gradient.ts'
       ),
+      'expo-localization': path.resolve(
+        __dirname,
+        './src/test/mocks/expo-localization.ts'
+      ),
       nativewind: path.resolve(
         __dirname,
         './src/test/mocks/nativewind.ts'
@@ -47,6 +55,10 @@ export default defineConfig({
       'react-native': path.resolve(
         __dirname,
         './src/test/mocks/react-native.ts'
+      ),
+      'react-native-safe-area-context': path.resolve(
+        __dirname,
+        './src/test/mocks/react-native-safe-area-context.ts'
       ),
       'react-native-svg': path.resolve(
         __dirname,

@@ -3,6 +3,7 @@
 // @testing-library/react (keeps a single seam for render config / providers).
 export {
   act,
+  fireEvent,
   render,
   renderHook,
   screen,

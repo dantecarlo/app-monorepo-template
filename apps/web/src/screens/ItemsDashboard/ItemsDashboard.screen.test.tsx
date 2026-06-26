@@ -18,6 +18,9 @@ vi.mock('@/services/Items', async (importActual) => {
 import { ItemsDashboardScreen } from '@/screens/ItemsDashboard/ItemsDashboard.screen'
 
 const messages = {
+  app: {
+    name: 'Acme'
+  },
   components: {
     emptyState: {
       message: 'There is nothing here yet.',
@@ -26,7 +29,6 @@ const messages = {
   },
   items: {
     dashboard: {
-      appLabel: 'App',
       listEmpty: 'No items found.',
       listResults: '{count} results',
       listTitle: 'Items',

@@ -8,10 +8,20 @@
     },
     "login": {
       "cta": "Sign in",
+      "dividerOr": "or",
       "emailLabel": "Email",
       "emailPlaceholder": "you@example.com",
+      "errors": {
+        "email": "Enter a valid email address.",
+        "password": "Password must be at least 8 characters."
+      },
+      "googleCta": "Continue with Google",
+      "googleLoading": "Connecting…",
+      "hidePassword": "Hide password",
       "passwordLabel": "Password",
       "passwordPlaceholder": "Your password",
+      "showPassword": "Show password",
+      "submitting": "Signing in…",
       "subtitle": "Sign in to continue",
       "title": "Welcome back"
     },
@@ -77,7 +87,6 @@
   },
   "items": {
     "dashboard": {
-      "appLabel": "App",
       "listEmpty": "No items found.",
       "listResults": "{count} results",
       "listTitle": "Items",

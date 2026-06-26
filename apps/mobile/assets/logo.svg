@@ -1,7 +1,7 @@
 <!-- PLACEHOLDER LOGO — replace with your project logo.
-     Project-owned asset slot (apps/web/public is not propagated from the
+     Project-owned asset slot (apps/mobile/assets is not propagated from the
      template), so swapping this file causes zero template-sync conflict.
-     The Logo component falls back to a brandLabel wordmark if this 404s. -->
+     Keep a square viewBox so the AuthShell brand mark stays balanced. -->
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Logo placeholder">
   <defs>
     <linearGradient id="logoPlaceholderGradient" x1="0" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse">

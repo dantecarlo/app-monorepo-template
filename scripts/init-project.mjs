@@ -20,6 +20,10 @@
 //   4. every package.json    name fields (@app/* -> @<slug>/*)
 //   5. turbo.json            @app/* task keys
 //   6. all *.ts *.tsx *.cjs *.js *.md  import specifiers '@app/'
+//   7. packages/i18n en.json + es.json  top-level `app.name` display name,
+//                            kept in sync with app.json expo.name. The web
+//                            metadata.title reads APP_NAME from i18n, so all
+//                            three identity sources stay consistent.
 //
 // Idempotent: re-running with the same slug is a no-op.
 // ---------------------------------------------------------------------------
@@ -166,6 +170,29 @@ try {
   touched.push(appJsonPath)
 } catch {
   console.warn('init-project: WARN — apps/mobile/app.json not found; skipped.')
+}
+
+// packages/i18n catalogs — rewrite the canonical `app.name` display name in
+// every locale so it stays in sync with app.json expo.name (and, via APP_NAME,
+// the web metadata.title). Only the value is touched; all other keys are left
+// intact so catalog parity is preserved.
+const I18N_LOCALE_PATHS = [
+  'packages/i18n/src/locales/en.json',
+  'packages/i18n/src/locales/es.json'
+]
+for (const localePath of I18N_LOCALE_PATHS) {
+  try {
+    const locale = readJson({ path: localePath })
+    if (locale.app && typeof locale.app.name === 'string') {
+      locale.app.name = titleSlug
+      writeJson({ data: locale, path: localePath })
+      touched.push(localePath)
+    }
+  } catch {
+    console.warn(
+      `init-project: WARN — ${localePath} not found or invalid; skipped.`
+    )
+  }
 }
 
 // tsconfig.base.json — rename '@app/*' path key

@@ -1,6 +1,6 @@
 import '@/app/globals.css'
 
-import { DEFAULT_LANGUAGE, resources } from '@app/i18n'
+import { APP_NAME, DEFAULT_LANGUAGE, resources } from '@app/i18n'
 import { DEFAULT_THEME } from '@app/tokens'
 import type { Metadata, Viewport } from 'next'
 import { Inter, Montserrat } from 'next/font/google'
@@ -30,8 +30,8 @@ export const metadata: Metadata = {
   // Point at the real production URL via an env var in deployed environments.
   metadataBase: new URL('http://localhost:3000'),
   title: {
-    default: 'App — Dashboard',
-    template: '%s · App'
+    default: APP_NAME,
+    template: `%s · ${APP_NAME}`
   }
 }
 

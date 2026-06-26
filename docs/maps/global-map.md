@@ -256,7 +256,9 @@ fetching, layout, and local members. Their internals are mapped per screen by
 | ------ | ------------------------- | ---------------------------------------- |
 | Web    | `apps/web/src/screens`    | `apps/web/src/screens/ItemsDashboard`    |
 | Web    | `apps/web/src/screens`    | `apps/web/src/screens/ItemsSummary`      |
+| Web    | `apps/web/src/screens`    | `apps/web/src/screens/Login`             |
 | Mobile | `apps/mobile/src/screens` | `apps/mobile/src/screens/ItemsDashboard` |
+| Mobile | `apps/mobile/src/screens` | `apps/mobile/src/screens/Login`          |
 
 Data flow inside every screen: **screen → hook → service → adapter**. A screen
 never calls `fetch` directly and never holds business logic in the view.

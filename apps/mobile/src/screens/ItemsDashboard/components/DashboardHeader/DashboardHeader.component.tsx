@@ -12,16 +12,19 @@ export const DashboardHeader = () => {
   const { t } = useTranslation('translation', {
     keyPrefix: 'items.dashboard'
   })
+  const { t: tRoot } = useTranslation()
+  const appName = tRoot('app.name')
 
   return (
     <View style={styles.root}>
       <View style={styles.wordmark}>
         <LinearGradient
+          accessibilityLabel={appName}
           colors={GRADIENT_BRAND_COLORS}
           style={styles.badge}
         >
           <Text style={[{ color: colors.accentInk }, styles.badgeText]}>
-            A
+            {appName.charAt(0)}
           </Text>
         </LinearGradient>
         <View>

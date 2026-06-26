@@ -1,17 +1,24 @@
 import { render, screen } from '@testing-library/react'
-import type { ImgHTMLAttributes } from 'react'
 import { describe, expect, test, vi } from 'vitest'
 
 vi.mock('next-intl', () => ({
+  useLocale: () => 'en',
   // eslint-disable-next-line local/single-object-params -- mirrors next-intl's t(key, values) callback shape
   useTranslations: () => (key: string, values?: Record<string, string>) =>
     values?.name ? `${values.name} ${key}` : key
 }))
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ refresh: vi.fn() })
+}))
+
+vi.mock('@/components/ThemeProvider/useTheme.hook', () => ({
+  useTheme: () => ({ setTheme: vi.fn(), theme: 'dark' })
+}))
+
 vi.mock('next/image', () => ({
-  default: (props: ImgHTMLAttributes<HTMLImageElement>) => (
-    // eslint-disable-next-line @next/next/no-img-element -- test stub mirroring next/image
-    <img {...props} />
+  default: ({ alt, src }: { alt: string; src: string }) => (
+    <img alt={alt} src={src} />
   )
 }))
 

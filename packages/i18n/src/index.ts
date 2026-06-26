@@ -10,4 +10,4 @@ export {
   LanguageEnum,
   SUPPORTED_LANGUAGES
 } from './locales/i18n.constant'
-export { resources } from './locales/resources.constant'
+export { APP_NAME, resources } from './locales/resources.constant'
