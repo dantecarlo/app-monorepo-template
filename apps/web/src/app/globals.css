@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -16,7 +16,7 @@
 
   --color-text-primary: #f7f8fa;
   --color-text-secondary: rgba(255, 255, 255, 0.55);
-  --color-text-tertiary: #7e808a;
+  --color-text-tertiary: #8a8c96;
   --color-text-disabled: rgba(255, 255, 255, 0.25);
 
   --color-accent: #ff6a1a;
@@ -93,7 +93,8 @@
   /* -------------------------------------------------------------------------
    * Shadows
    * ------------------------------------------------------------------------- */
-  --shadow-card: 0 18px 44px -6px rgba(0, 0, 0, 0.5), 0 2px 8px 0 rgba(0, 0, 0, 0.28);
+  --shadow-card:
+    0 18px 44px -6px rgba(0, 0, 0, 0.5), 0 2px 8px 0 rgba(0, 0, 0, 0.28);
   --shadow-accent-glow: 0 12px 30px 0 rgba(255, 106, 26, 0.5);
   --shadow-marker-glow: 0 0 8px 0 rgba(255, 255, 255, 0.6);
   --shadow-rim-light: inset 0 1px 0 0 rgba(255, 255, 255, 0.18);
@@ -107,6 +108,22 @@
 
   .font-display {
     font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* Glass card recipe — fill + stroke + blur + rim-light + card-shadow.
+     Lives in the components layer (not utilities) so the unprefixed
+     backdrop-filter does not collide with Tailwind's own backdrop-filter
+     utility registration. The -webkit- prefix is intentionally NOT written
+     by hand: Lightning CSS adds it automatically from the browserslist
+     targets (Safari needs it), and authoring both manually makes the
+     minifier collapse them to a single declaration. */
+  .glass-card {
+    background: var(--color-glass-fill);
+    border: 1px solid var(--color-glass-stroke);
+    backdrop-filter: blur(26px);
+    box-shadow: var(--shadow-card), var(--shadow-rim-light);
   }
 }
 
@@ -131,7 +148,11 @@
     height: 340px;
     top: -120px;
     right: -100px;
-    background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 26%, transparent) 0%, transparent 70%);
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-accent) 26%, transparent) 0%,
+      transparent 70%
+    );
     filter: blur(110px);
   }
 
@@ -141,24 +162,21 @@
     height: 280px;
     bottom: -80px;
     left: -80px;
-    background: radial-gradient(circle, color-mix(in srgb, var(--color-cool-glow) 12%, transparent) 0%, transparent 70%);
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-cool-glow) 12%, transparent) 0%,
+      transparent 70%
+    );
     filter: blur(90px);
-  }
-
-  /* Glass card recipe — fill + stroke + blur + rim-light + card-shadow */
-  .glass-card {
-    background: var(--color-glass-fill);
-    border: 1px solid var(--color-glass-stroke);
-    backdrop-filter: blur(26px);
-    -webkit-backdrop-filter: blur(26px);
-    box-shadow:
-      var(--shadow-card),
-      var(--shadow-rim-light);
   }
 
   /* Accent gradient — buttons, logo mark */
   .bg-accent-gradient {
-    background: linear-gradient(180deg, var(--color-accent-light) 0%, var(--color-accent) 100%);
+    background: linear-gradient(
+      180deg,
+      var(--color-accent-light) 0%,
+      var(--color-accent) 100%
+    );
   }
 
   /* Skeleton shimmer sweep — loading placeholder animation */

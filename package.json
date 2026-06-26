@@ -21,6 +21,8 @@
     "smoke:web": "pnpm --filter @app/web build && node scripts/smoke-web-render.mjs",
     "smoke:e2e": "pnpm --filter @app/web build && pnpm exec playwright install --with-deps chromium && pnpm exec playwright test",
     "test:e2e": "pnpm exec playwright test",
+    "test:e2e:visual": "E2E_VISUAL=1 pnpm exec playwright test --project=visual",
+    "test:e2e:visual:update": "E2E_VISUAL=1 pnpm exec playwright test --project=visual --update-snapshots",
     "knip": "knip --no-progress",
     "validate": "turbo run lint typecheck test build format:check && pnpm verify:tests && pnpm verify:maps && pnpm check:identity && pnpm verify:pairing && pnpm verify:structure && pnpm verify:security && pnpm --filter @app/i18n test && pnpm knip",
     "verify:pairing": "node scripts/verify-pairing.mjs",
@@ -31,6 +33,7 @@
     "verify:tests": "node scripts/verify-tests.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
     "@commitlint/cli": "^21.1.0",
     "@commitlint/config-conventional": "^21.1.0",
     "@playwright/test": "^1.61.1",

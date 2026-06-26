@@ -36,7 +36,7 @@ export const colors = {
     disabled: 'rgba(255,255,255,0.25)',
     primary: '#F7F8FA',
     secondary: 'rgba(255,255,255,0.55)',
-    tertiary: '#7E808A'
+    tertiary: '#8A8C96'
   },
   warning: '#E0A011',
   warningTint: 'rgba(224,160,17,0.16)'

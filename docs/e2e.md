@@ -8,12 +8,12 @@ validation gates.
 
 ## Design decisions
 
-| Decision | Rationale |
-|---|---|
-| `pnpm exec playwright test` | `@playwright/test` lives in the root `devDependencies`; all workspace packages share it via pnpm hoisting. `pnpm exec` resolves from the root `node_modules/.bin/` so any workspace cwd works. |
-| `e2e/` excluded from tsconfig | `playwright.config.ts` imports `@playwright/test`; TS resolver must not try to resolve it during normal typecheck. |
-| `e2e/` excluded from ESLint | The flat config covers `apps/` and `packages/` only; e2e files use Playwright globals not registered there. |
-| E2E excluded from `pnpm validate` | `pnpm validate` is the unit/integration gate (lint + typecheck + test + build + verify scripts). E2E requires a running server and is a separate stage in CI. |
+| Decision                          | Rationale                                                                                                                                                                                      |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm exec playwright test`       | `@playwright/test` lives in the root `devDependencies`; all workspace packages share it via pnpm hoisting. `pnpm exec` resolves from the root `node_modules/.bin/` so any workspace cwd works. |
+| `e2e/` excluded from tsconfig     | `playwright.config.ts` imports `@playwright/test`; TS resolver must not try to resolve it during normal typecheck.                                                                             |
+| `e2e/` excluded from ESLint       | The flat config covers `apps/` and `packages/` only; e2e files use Playwright globals not registered there.                                                                                    |
+| E2E excluded from `pnpm validate` | `pnpm validate` is the unit/integration gate (lint + typecheck + test + build + verify scripts). E2E requires a running server and is a separate stage in CI.                                  |
 
 ---
 
@@ -35,6 +35,56 @@ pnpm exec playwright test e2e/home.e2e.ts
 
 The `baseURL` defaults to `http://localhost:3000`. Override with `E2E_BASE_URL`
 for staging or preview environments.
+
+---
+
+## Deterministic visual + a11y gates (Tier C/D)
+
+Three tool-based checks replace the previous AI-judged "does the glass look
+right / is it accessible" review. They run inside the `test:e2e` harness, never
+inside `pnpm validate`.
+
+### Glass computed-style (`e2e/glass.e2e.ts`)
+
+Navigates to a page rendering `.glass-card`, reads `getComputedStyle`, and
+asserts the exact recipe (locked in `e2e/glass.constant.ts`): standard
+`backdrop-filter: blur(26px)`, fill `rgba(24, 27, 34, 0.42)`, `1px solid`
+stroke `rgba(255, 255, 255, 0.1)`, and the three composed box-shadow layers.
+The `-webkit-backdrop-filter` fallback is asserted from the RAW served
+stylesheet bytes, because Chromium collapses the prefix into the standard
+property at computed-style time. Fully deterministic — no baseline image.
+
+> Note: `.glass-card` is authored with only the unprefixed `backdrop-filter`;
+> Lightning CSS emits the `-webkit-` fallback automatically from the web app's
+> `browserslist` (Safari floor). Hand-writing both makes the minifier collapse
+> them to one declaration.
+
+### Page-level axe (`e2e/axe.e2e.ts`)
+
+Runs `@axe-core/playwright` against each key page (`e2e/axe.constant.ts`) and
+asserts zero violations, with `color-contrast` and `aria-roles` called out as
+load-bearing. This complements the component-level `vitest-axe` checks.
+
+### Visual regression — opt-in (`e2e/visual.e2e.ts`)
+
+Snapshots each key screen across breakpoints via `toHaveScreenshot`. It is
+**opt-in** so font-render portability never blocks the always-on glass + axe
+gates: the `visual` project is only included when `E2E_VISUAL=1`.
+
+```bash
+# Run visual regression against committed baselines
+pnpm test:e2e:visual
+
+# Regenerate baselines (after an intentional UI change)
+pnpm test:e2e:visual:update
+```
+
+Baselines live in `e2e/visual.e2e.ts-snapshots/` and are OS-suffixed (e.g.
+`-darwin.png`). They are committed. CI runs on a different OS/font stack, so a
+container-matched baseline must be generated there (run the suite once with
+`--update-snapshots` on the CI image and commit the resulting `-linux.png`
+files), or the visual project stays advisory until baselines are matched.
+`maxDiffPixelRatio` (1%) absorbs subpixel font hinting.
 
 ---
 

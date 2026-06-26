@@ -26,7 +26,7 @@ module.exports = {
         text: {
           primary: '#F7F8FA',
           secondary: 'rgba(255,255,255,0.55)',
-          tertiary: '#7E808A',
+          tertiary: '#8A8C96',
           disabled: 'rgba(255,255,255,0.25)',
         },
         accent: {
