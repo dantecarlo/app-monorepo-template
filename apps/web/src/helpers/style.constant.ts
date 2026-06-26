@@ -35,19 +35,19 @@ export const GLASS = {
 // ---------------------------------------------------------------------------
 
 export const TEXT = {
-  ACCENT: 'text-accent',
+  ACCENT: 'text-accent-text',
   AMOUNT:
     'font-display text-amount font-bold text-text-primary tabular-nums',
   AMOUNT_HERO:
     'font-display text-amount-hero font-extrabold text-text-primary tabular-nums',
   BODY: 'font-body text-body text-text-primary',
   CAPTION: 'font-body text-caption text-text-tertiary',
-  DANGER: 'text-danger',
+  DANGER: 'text-danger-text',
   HEADING: 'font-display text-heading font-bold text-text-primary',
   LABEL: 'font-body text-label font-medium text-text-secondary',
-  SUCCESS: 'text-success',
+  SUCCESS: 'text-success-text',
   TITLE: 'font-display text-title font-semibold text-text-primary',
-  WARNING: 'text-warning'
+  WARNING: 'text-warning-text'
 } as const
 
 // ---------------------------------------------------------------------------

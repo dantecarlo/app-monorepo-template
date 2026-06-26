@@ -3,7 +3,7 @@ import { GLASS } from '@/helpers/style.constant'
 export const ITEM_CARD = {
   AVATAR: [
     'flex h-9 w-9 shrink-0 items-center justify-center',
-    'rounded-full bg-accent-surface text-accent',
+    'rounded-full bg-accent-surface text-accent-text',
     'font-display text-label font-bold'
   ].join(' '),
 
@@ -25,11 +25,11 @@ export const ITEM_CARD = {
 
   ROW: 'flex items-start gap-3 py-3',
 
-  STATUS_ACTIVE: 'font-body text-caption text-success',
+  STATUS_ACTIVE: 'font-body text-caption text-success-text',
 
   STATUS_ARCHIVED: 'font-body text-caption text-text-tertiary',
 
-  STATUS_DRAFT: 'font-body text-caption text-warning',
+  STATUS_DRAFT: 'font-body text-caption text-warning-text',
 
   TIME: 'font-body text-caption text-text-tertiary',
 

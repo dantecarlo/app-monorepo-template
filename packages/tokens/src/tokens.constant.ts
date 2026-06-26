@@ -35,12 +35,18 @@ const accentRamp = {
 const darkColors = {
   ...accentRamp,
   accentSurface: '#241A12',
+  // Foreground variant of the brand accent for small TEXT (links, captions,
+  // active nav, ghost-button labels) — distinct from the brand `accent` fill
+  // so text-on-surface reaches WCAG AA >=4.5:1 without altering button fills.
+  accentText: '#FF8A3D',
   bg: {
     base: '#0A0B0D',
     raised: '#101216'
   },
   coolGlow: '#5B6CFF',
   danger: '#EF4444',
+  // Foreground variant of `danger` for text on danger-tint surfaces (AA).
+  dangerText: '#F36A6A',
   dangerTint: 'rgba(239,68,68,0.16)',
   divider: 'rgba(255,255,255,0.06)',
   glass: {
@@ -54,26 +60,36 @@ const darkColors = {
   neutralTint: 'rgba(255,255,255,0.08)',
   scrim: 'rgba(0,0,0,0.60)',
   success: '#34C759',
+  // Foreground variant of `success` for text on success-tint surfaces (AA).
+  successText: '#3DD168',
   successTint: 'rgba(52,199,89,0.16)',
   text: {
     disabled: 'rgba(255,255,255,0.25)',
     primary: '#F7F8FA',
     secondary: 'rgba(255,255,255,0.55)',
-    tertiary: '#8A8C96'
+    tertiary: '#9A9CA6'
   },
   warning: '#E0A011',
+  // Foreground variant of `warning` for text on warning-tint surfaces (AA).
+  warningText: '#EBB13A',
   warningTint: 'rgba(224,160,17,0.16)'
 } as const
 
 const lightColors = {
   ...accentRamp,
   accentSurface: '#FFF1E6',
+  // Foreground variant of the brand accent for small TEXT (links, captions,
+  // active nav, ghost-button labels) — distinct from the brand `accent` fill
+  // so text-on-surface reaches WCAG AA >=4.5:1 without altering button fills.
+  accentText: '#A23209',
   bg: {
     base: '#F4F5F7',
     raised: '#FFFFFF'
   },
   coolGlow: '#5B6CFF',
   danger: '#DC2626',
+  // Foreground variant of `danger` for text on danger-tint surfaces (AA).
+  dangerText: '#BE1B1B',
   dangerTint: 'rgba(220,38,38,0.12)',
   divider: 'rgba(0,0,0,0.08)',
   glass: {
@@ -87,14 +103,18 @@ const lightColors = {
   neutralTint: 'rgba(0,0,0,0.06)',
   scrim: 'rgba(0,0,0,0.40)',
   success: '#1E9E4A',
+  // Foreground variant of `success` for text on success-tint surfaces (AA).
+  successText: '#13702F',
   successTint: 'rgba(30,158,74,0.12)',
   text: {
     disabled: 'rgba(17,19,24,0.28)',
     primary: '#11131A',
     secondary: 'rgba(17,19,24,0.62)',
-    tertiary: '#5C5F6B'
+    tertiary: '#525560'
   },
   warning: '#B7791F',
+  // Foreground variant of `warning` for text on warning-tint surfaces (AA).
+  warningText: '#7E520F',
   warningTint: 'rgba(183,121,31,0.14)'
 } as const
 

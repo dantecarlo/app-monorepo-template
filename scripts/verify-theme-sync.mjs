@@ -83,7 +83,17 @@ const VARIANT_TOKENS = [
     cssVar: 'accent-surface',
     preset: ['accent', 'surface']
   },
+  {
+    ts: ['accentText'],
+    cssVar: 'accent-text',
+    preset: ['accent', 'text']
+  },
   { ts: ['success'], cssVar: 'success', preset: ['success', 'DEFAULT'] },
+  {
+    ts: ['successText'],
+    cssVar: 'success-text',
+    preset: ['success', 'text']
+  },
   {
     ts: ['successTint'],
     cssVar: 'success-tint',
@@ -91,11 +101,21 @@ const VARIANT_TOKENS = [
   },
   { ts: ['warning'], cssVar: 'warning', preset: ['warning', 'DEFAULT'] },
   {
+    ts: ['warningText'],
+    cssVar: 'warning-text',
+    preset: ['warning', 'text']
+  },
+  {
     ts: ['warningTint'],
     cssVar: 'warning-tint',
     preset: ['warning', 'tint']
   },
   { ts: ['danger'], cssVar: 'danger', preset: ['danger', 'DEFAULT'] },
+  {
+    ts: ['dangerText'],
+    cssVar: 'danger-text',
+    preset: ['danger', 'text']
+  },
   { ts: ['dangerTint'], cssVar: 'danger-tint', preset: ['danger', 'tint'] },
   {
     ts: ['neutralTint'],

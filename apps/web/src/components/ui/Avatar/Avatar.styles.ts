@@ -13,7 +13,7 @@ export const avatarVariants = tv({
       44: 'h-11 w-11 text-[16px]'
     },
     variant: {
-      accent: 'bg-accent-tint text-accent',
+      accent: 'bg-accent-tint text-accent-text',
       glass: 'glass-card text-text-secondary',
       neutral: 'bg-neutral-tint text-text-secondary'
     }

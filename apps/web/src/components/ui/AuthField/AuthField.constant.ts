@@ -20,4 +20,5 @@ export const AUTH_FIELD_REVEAL_BUTTON_CLASS =
 export const AUTH_FIELD_HELPER_CLASS =
   'text-caption font-body text-text-secondary'
 
-export const AUTH_FIELD_ERROR_CLASS = 'text-caption font-body text-danger'
+export const AUTH_FIELD_ERROR_CLASS =
+  'text-caption font-body text-danger-text'

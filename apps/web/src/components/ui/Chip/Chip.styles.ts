@@ -19,10 +19,10 @@ export const chipVariants = tv({
   },
   variants: {
     variant: {
-      accent: 'bg-accent-tint text-accent',
+      accent: 'bg-accent-tint text-accent-text',
       glass: 'glass-card text-text-secondary',
       neutral: 'bg-white/[0.08] text-text-secondary',
-      success: 'bg-success-tint text-success'
+      success: 'bg-success-tint text-success-text'
     }
   }
 })

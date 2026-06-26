@@ -33,7 +33,7 @@ module.exports = {
         text: {
           primary: '#F7F8FA',
           secondary: 'rgba(255,255,255,0.55)',
-          tertiary: '#8A8C96',
+          tertiary: '#9A9CA6',
           disabled: 'rgba(255,255,255,0.25)',
         },
         accent: {
@@ -41,18 +41,27 @@ module.exports = {
           light: '#FF8A3D',
           ink: '#2A1402',
           surface: '#241A12',
+          // Foreground variant of the brand accent for small TEXT — keeps the
+          // `accent` fill untouched while text-on-surface meets WCAG AA.
+          text: '#FF8A3D',
           tint: 'rgba(255,106,26,0.16)',
         },
         success: {
           DEFAULT: '#34C759',
+          // Foreground variant of `success` for text on tint surfaces (AA).
+          text: '#3DD168',
           tint: 'rgba(52,199,89,0.16)',
         },
         warning: {
           DEFAULT: '#E0A011',
+          // Foreground variant of `warning` for text on tint surfaces (AA).
+          text: '#EBB13A',
           tint: 'rgba(224,160,17,0.16)',
         },
         danger: {
           DEFAULT: '#EF4444',
+          // Foreground variant of `danger` for text on tint surfaces (AA).
+          text: '#F36A6A',
           tint: 'rgba(239,68,68,0.16)',
         },
         neutral: {

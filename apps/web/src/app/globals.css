@@ -24,18 +24,22 @@
 
   --c-text-primary: #f7f8fa;
   --c-text-secondary: rgba(255, 255, 255, 0.55);
-  --c-text-tertiary: #8a8c96;
+  --c-text-tertiary: #9a9ca6;
   --c-text-disabled: rgba(255, 255, 255, 0.25);
 
   --c-accent-surface: #241a12;
+  --c-accent-text: #ff8a3d;
 
   --c-success: #34c759;
+  --c-success-text: #3dd168;
   --c-success-tint: rgba(52, 199, 89, 0.16);
 
   --c-warning: #e0a011;
+  --c-warning-text: #ebb13a;
   --c-warning-tint: rgba(224, 160, 17, 0.16);
 
   --c-danger: #ef4444;
+  --c-danger-text: #f36a6a;
   --c-danger-tint: rgba(239, 68, 68, 0.16);
 
   --c-neutral-tint: rgba(255, 255, 255, 0.08);
@@ -57,18 +61,22 @@
 
   --c-text-primary: #11131a;
   --c-text-secondary: rgba(17, 19, 24, 0.62);
-  --c-text-tertiary: #5c5f6b;
+  --c-text-tertiary: #525560;
   --c-text-disabled: rgba(17, 19, 24, 0.28);
 
   --c-accent-surface: #fff1e6;
+  --c-accent-text: #a23209;
 
   --c-success: #1e9e4a;
+  --c-success-text: #13702f;
   --c-success-tint: rgba(30, 158, 74, 0.12);
 
   --c-warning: #b7791f;
+  --c-warning-text: #7e520f;
   --c-warning-tint: rgba(183, 121, 31, 0.14);
 
   --c-danger: #dc2626;
+  --c-danger-text: #be1b1b;
   --c-danger-tint: rgba(220, 38, 38, 0.12);
 
   --c-neutral-tint: rgba(0, 0, 0, 0.06);
@@ -102,15 +110,21 @@
   --color-accent-light: #ff8a3d;
   --color-accent-ink: #2a1402;
   --color-accent-surface: var(--c-accent-surface);
+  /* Accent FOREGROUND for small text — flips per theme so text-on-surface
+     meets WCAG AA; the brand `accent` fill above stays theme-invariant. */
+  --color-accent-text: var(--c-accent-text);
   --color-accent-tint: rgba(255, 106, 26, 0.16);
 
   --color-success: var(--c-success);
+  --color-success-text: var(--c-success-text);
   --color-success-tint: var(--c-success-tint);
 
   --color-warning: var(--c-warning);
+  --color-warning-text: var(--c-warning-text);
   --color-warning-tint: var(--c-warning-tint);
 
   --color-danger: var(--c-danger);
+  --color-danger-text: var(--c-danger-text);
   --color-danger-tint: var(--c-danger-tint);
 
   --color-neutral-tint: var(--c-neutral-tint);

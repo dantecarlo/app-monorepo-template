@@ -13,7 +13,7 @@ describe('StatusBadge', () => {
     const { container } = render(<StatusBadge label="OK" tone="success" />)
     expect(container.firstChild?.toString()).toBeTruthy()
     const badge = container.querySelector('span')
-    expect(badge?.className).toContain('text-success')
+    expect(badge?.className).toContain('text-success-text')
   })
 
   test('applies danger tone class', () => {
@@ -21,7 +21,7 @@ describe('StatusBadge', () => {
       <StatusBadge label="Error" tone="danger" />
     )
     const badge = container.querySelector('span')
-    expect(badge?.className).toContain('text-danger')
+    expect(badge?.className).toContain('text-danger-text')
   })
 
   test('applies warning tone class', () => {
@@ -29,6 +29,6 @@ describe('StatusBadge', () => {
       <StatusBadge label="Pending" tone="warning" />
     )
     const badge = container.querySelector('span')
-    expect(badge?.className).toContain('text-warning')
+    expect(badge?.className).toContain('text-warning-text')
   })
 })

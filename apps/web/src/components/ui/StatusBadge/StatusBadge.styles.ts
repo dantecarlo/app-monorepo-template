@@ -7,10 +7,10 @@ export const statusBadgeVariants = tv({
   },
   variants: {
     tone: {
-      danger: 'bg-danger-tint text-danger',
+      danger: 'bg-danger-tint text-danger-text',
       neutral: 'bg-neutral-tint text-text-secondary',
-      success: 'bg-success-tint text-success',
-      warning: 'bg-warning-tint text-warning'
+      success: 'bg-success-tint text-success-text',
+      warning: 'bg-warning-tint text-warning-text'
     }
   }
 })

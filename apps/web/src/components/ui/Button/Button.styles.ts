@@ -29,7 +29,7 @@ export const buttonVariants = tv({
       sm: 'h-9 px-4 text-label'
     },
     variant: {
-      ghost: ['bg-transparent text-accent', 'hover:bg-accent-tint'],
+      ghost: ['bg-transparent text-accent-text', 'hover:bg-accent-tint'],
       primary: [
         'bg-accent-gradient text-accent-ink',
         'shadow-accent-glow',
