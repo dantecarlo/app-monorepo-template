@@ -8,8 +8,12 @@ export const SIGNED_URL_EXPIRY_QUERY_KEY = 'exp'
 
 export const SIGNED_URL_SIGNATURE_QUERY_KEY = 'sig'
 
-export const HMAC_ALGORITHM = 'sha256'
+export const HMAC_SIGN_ALGORITHM = 'HMAC'
 
-export const HMAC_DIGEST_ENCODING = 'hex'
+export const HMAC_HASH_ALGORITHM = 'SHA-256'
+
+export const HMAC_KEY_USAGE = 'sign'
+
+export const HMAC_HEX_RADIX = 16
 
 export const SECONDS_TO_MILLISECONDS = 1000

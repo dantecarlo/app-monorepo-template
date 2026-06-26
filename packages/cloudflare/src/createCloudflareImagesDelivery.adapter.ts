@@ -1,16 +1,13 @@
-import { createHmac } from 'node:crypto'
-
 import type {
   IBuildImageUrlParams,
   IBuildSignedImageUrlParams,
   IImageDeliveryPort
 } from '@app/core'
 
+import { hmacHexSignature } from './hmacHexSignature.helper'
 import {
   CLOUDFLARE_IMAGES_DEFAULT_VARIANT,
   CLOUDFLARE_IMAGES_DELIVERY_BASE,
-  HMAC_ALGORITHM,
-  HMAC_DIGEST_ENCODING,
   SECONDS_TO_MILLISECONDS,
   SIGNED_URL_EXPIRY_QUERY_KEY,
   SIGNED_URL_SIGNATURE_QUERY_KEY
@@ -52,9 +49,10 @@ export const createCloudflareImagesDelivery = ({
       Math.floor(Date.now() / SECONDS_TO_MILLISECONDS) + expiresInSeconds
     url.searchParams.set(SIGNED_URL_EXPIRY_QUERY_KEY, String(expiry))
 
-    const signature = createHmac(HMAC_ALGORITHM, signingKey)
-      .update(`${url.pathname}?${url.searchParams.toString()}`)
-      .digest(HMAC_DIGEST_ENCODING)
+    const signature = await hmacHexSignature({
+      message: `${url.pathname}?${url.searchParams.toString()}`,
+      secret: signingKey
+    })
     url.searchParams.set(SIGNED_URL_SIGNATURE_QUERY_KEY, signature)
 
     return url.toString()

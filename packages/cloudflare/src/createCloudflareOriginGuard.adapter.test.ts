@@ -41,11 +41,30 @@ test('assertTrustedOrigin rejects a mismatched header', () => {
   expect(result.reason).toBe(OriginGuardReasonEnum.MISMATCH)
 })
 
-test('assertTrustedOrigin rejects an equal-length mismatch via constant-time compare', () => {
+test('assertTrustedOrigin rejects an equal-length mismatch via edge-safe constant-time compare', () => {
   const guard = createCloudflareOriginGuard({ originSecret: SECRET })
   const sameLengthWrong = 'x'.repeat(SECRET.length)
   const result = guard.assertTrustedOrigin({
     headers: makeHeaders(sameLengthWrong)
+  })
+  expect(result.trusted).toBe(false)
+  expect(result.reason).toBe(OriginGuardReasonEnum.MISMATCH)
+})
+
+test('assertTrustedOrigin rejects a single trailing-character difference', () => {
+  const guard = createCloudflareOriginGuard({ originSecret: SECRET })
+  const lastCharWrong = `${SECRET.slice(0, -1)}X`
+  const result = guard.assertTrustedOrigin({
+    headers: makeHeaders(lastCharWrong)
+  })
+  expect(result.trusted).toBe(false)
+  expect(result.reason).toBe(OriginGuardReasonEnum.MISMATCH)
+})
+
+test('assertTrustedOrigin rejects a length-mismatch (prefix) header as untrusted', () => {
+  const guard = createCloudflareOriginGuard({ originSecret: SECRET })
+  const result = guard.assertTrustedOrigin({
+    headers: makeHeaders(SECRET.slice(0, -1))
   })
   expect(result.trusted).toBe(false)
   expect(result.reason).toBe(OriginGuardReasonEnum.MISMATCH)

@@ -1,14 +1,11 @@
-import { createHmac } from 'node:crypto'
-
 import type {
   IBuildImageUrlParams,
   IBuildSignedImageUrlParams,
   IImageDeliveryPort
 } from '@app/core'
 
+import { hmacHexSignature } from './hmacHexSignature.helper'
 import {
-  HMAC_ALGORITHM,
-  HMAC_DIGEST_ENCODING,
   R2_DEFAULT_PUBLIC_BASE,
   SECONDS_TO_MILLISECONDS,
   SIGNED_URL_EXPIRY_QUERY_KEY,
@@ -50,9 +47,10 @@ export const createR2SignedDelivery = ({
       Math.floor(Date.now() / SECONDS_TO_MILLISECONDS) + expiresInSeconds
     url.searchParams.set(SIGNED_URL_EXPIRY_QUERY_KEY, String(expiry))
 
-    const signature = createHmac(HMAC_ALGORITHM, signingSecret)
-      .update(`${url.pathname}?${url.searchParams.toString()}`)
-      .digest(HMAC_DIGEST_ENCODING)
+    const signature = await hmacHexSignature({
+      message: `${url.pathname}?${url.searchParams.toString()}`,
+      secret: signingSecret
+    })
     url.searchParams.set(SIGNED_URL_SIGNATURE_QUERY_KEY, signature)
 
     return url.toString()
