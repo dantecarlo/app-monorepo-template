@@ -40,6 +40,10 @@ export default defineConfig({
         __dirname,
         './src/test/mocks/expo-linear-gradient.ts'
       ),
+      nativewind: path.resolve(
+        __dirname,
+        './src/test/mocks/nativewind.ts'
+      ),
       'react-native': path.resolve(
         __dirname,
         './src/test/mocks/react-native.ts'

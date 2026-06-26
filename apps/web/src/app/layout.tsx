@@ -1,10 +1,13 @@
 import '@/app/globals.css'
 
 import { DEFAULT_LANGUAGE, resources } from '@app/i18n'
+import { DEFAULT_THEME } from '@app/tokens'
 import type { Metadata, Viewport } from 'next'
 import { Inter, Montserrat } from 'next/font/google'
 
 import { SupabaseProviders } from '@/app/SupabaseProviders'
+import { ThemeProvider } from '@/components/ThemeProvider'
+import { NO_FLASH_THEME_SCRIPT } from '@/lib/theme/noFlashTheme.constant'
 
 const montserrat = Montserrat({
   display: 'swap',
@@ -22,7 +25,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   description:
-    'A production-grade Next.js starter with fractal architecture, dark-glass design system, TanStack Query, and Zustand.',
+    'A production-grade Next.js starter with fractal architecture, glass design system, TanStack Query, and Zustand.',
   // metadataBase is required for fully-qualified Open Graph / Twitter URLs.
   // Point at the real production URL via an env var in deployed environments.
   metadataBase: new URL('http://localhost:3000'),
@@ -33,10 +36,10 @@ export const metadata: Metadata = {
 }
 
 // Exported separately from `metadata` per Next 16 convention.
-// themeColor aligns with the dark-glass design-system background token.
+// 'dark light' lets the UA render form controls / scrollbars for whichever
+// theme the user resolved to via cookie or prefers-color-scheme.
 export const viewport: Viewport = {
-  colorScheme: 'dark',
-  themeColor: '#0b0b0f'
+  colorScheme: 'dark light'
 }
 
 // ---------------------------------------------------------------------------
@@ -54,14 +57,27 @@ const RootLayout = ({ children }: IRootLayoutProps) => {
 
   return (
     <html
-      className={`dark ${montserrat.variable} ${inter.variable}`}
+      className={`${montserrat.variable} ${inter.variable}`}
+      data-theme={DEFAULT_THEME}
       lang="en"
       suppressHydrationWarning
     >
+      <head>
+        {/* Blocking pre-paint script: resolves the theme before first paint
+            (NEXT_THEME cookie first, else prefers-color-scheme) and overrides
+            the static default data-theme above with zero flash. The layout
+            stays static — reading cookies() here would make every route
+            dynamic under Cache Components. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME_SCRIPT }}
+        />
+      </head>
       <body className="aurora min-h-screen bg-bg-base font-body text-text-primary antialiased">
-        <SupabaseProviders messages={messages}>
-          {children}
-        </SupabaseProviders>
+        <ThemeProvider>
+          <SupabaseProviders messages={messages}>
+            {children}
+          </SupabaseProviders>
+        </ThemeProvider>
       </body>
     </html>
   )

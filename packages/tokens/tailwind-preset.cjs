@@ -1,7 +1,14 @@
-// Tailwind CSS preset for the shared dark-glass design system.
+// Tailwind CSS preset for the shared glass design system (mobile / NativeWind).
 // Token values are inlined here (duplicated from src/tokens.constant.ts) because
 // CommonJS Tailwind config cannot require() TypeScript source directly.
-// Keep this file in sync with src/tokens.constant.ts.
+//
+// These colors are the DARK canon (themes.dark). Mobile flips to light at
+// runtime via NativeWind colorScheme + the useThemeTokens() hook (StyleSheet
+// consumers read themes[active]); the preset itself stays single-valued.
+//
+// Keep this file in sync with src/tokens.constant.ts (themes.dark) and
+// apps/web/src/app/globals.css — scripts/verify-theme-sync.mjs guards drift
+// across all three copies for both dark and light.
 //
 // Usage in tailwind.config.js / tailwind.config.ts:
 //   presets: [require('@app/tokens/tailwind-preset.cjs')]

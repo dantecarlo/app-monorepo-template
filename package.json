@@ -24,10 +24,11 @@
     "test:e2e:visual": "E2E_VISUAL=1 pnpm exec playwright test --project=visual",
     "test:e2e:visual:update": "E2E_VISUAL=1 pnpm exec playwright test --project=visual --update-snapshots",
     "knip": "knip --no-progress",
-    "validate": "turbo run lint typecheck test build format:check && pnpm verify:tests && pnpm verify:maps && pnpm check:identity && pnpm verify:pairing && pnpm verify:structure && pnpm verify:security && pnpm --filter @app/i18n test && pnpm knip",
+    "validate": "turbo run lint typecheck test build format:check && pnpm verify:tests && pnpm verify:maps && pnpm check:identity && pnpm verify:pairing && pnpm verify:structure && pnpm verify:security && pnpm verify:theme-sync && pnpm --filter @app/i18n test && pnpm knip",
     "verify:pairing": "node scripts/verify-pairing.mjs",
     "verify:security": "node scripts/verify-security-static.mjs",
     "verify:structure": "node scripts/verify-structure.mjs",
+    "verify:theme-sync": "node scripts/verify-theme-sync.mjs",
     "verify:expo": "cd apps/mobile && npx expo-doctor && npx expo install --check",
     "verify:maps": "node scripts/verify-maps.mjs",
     "verify:tests": "node scripts/verify-tests.mjs"

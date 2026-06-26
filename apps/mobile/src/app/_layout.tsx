@@ -1,5 +1,6 @@
 import '../../global.css'
 import '@/lib/i18n/i18n.config'
+import '@/lib/theme/theme.config'
 
 import { createSupabaseAuthGateway } from '@app/supabase'
 import {
@@ -26,6 +27,7 @@ import { observability } from '@/lib/observability/observability.adapter'
 import { toCaptureError } from '@/lib/observability/toCaptureError.helper'
 import { createQueryClient } from '@/lib/query/createQueryClient.helper'
 import { supabase } from '@/lib/supabase/client.adapter'
+import { useRootTheme } from '@/lib/theme/useRootTheme.hook'
 
 SplashScreen.preventAutoHideAsync()
 
@@ -35,6 +37,7 @@ const queryClient = createQueryClient({
 const authGateway = createSupabaseAuthGateway({ client: supabase })
 
 const RootLayout = () => {
+  const { contentBackgroundColor, statusBarStyle } = useRootTheme()
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -59,11 +62,11 @@ const RootLayout = () => {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider gateway={authGateway}>
-          <StatusBar style="light" />
+          <StatusBar style={statusBarStyle} />
           <Stack
             screenOptions={{
               animation: 'fade',
-              contentStyle: { backgroundColor: '#0A0B0D' },
+              contentStyle: { backgroundColor: contentBackgroundColor },
               headerShown: false
             }}
           />

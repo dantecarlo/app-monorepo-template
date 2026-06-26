@@ -1,46 +1,125 @@
 @import 'tailwindcss';
 
-@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* ---------------------------------------------------------------------------
+ * Themed color values — the single light/dark source on web.
+ * @theme maps every --color-* utility to a --c-* indirection var (below), so
+ * flipping [data-theme] on <html> re-points every token at once. Utilities
+ * (bg-bg-base, text-text-primary, .glass-card, .aurora, …) flip with zero
+ * selector changes because they all read through these vars.
+ *
+ * Keep these blocks in lockstep with packages/tokens themes.{dark,light} and
+ * tailwind-preset.cjs — scripts/verify-theme-sync.mjs guards the three copies.
+ * ------------------------------------------------------------------------- */
+:root,
+[data-theme='dark'] {
+  --c-bg-base: #0a0b0d;
+  --c-bg-raised: #101216;
+
+  --c-glass-fill: rgba(24, 27, 34, 0.42);
+  --c-glass-stroke: rgba(255, 255, 255, 0.1);
+
+  --c-divider: rgba(255, 255, 255, 0.06);
+
+  --c-text-primary: #f7f8fa;
+  --c-text-secondary: rgba(255, 255, 255, 0.55);
+  --c-text-tertiary: #8a8c96;
+  --c-text-disabled: rgba(255, 255, 255, 0.25);
+
+  --c-accent-surface: #241a12;
+
+  --c-success: #34c759;
+  --c-success-tint: rgba(52, 199, 89, 0.16);
+
+  --c-warning: #e0a011;
+  --c-warning-tint: rgba(224, 160, 17, 0.16);
+
+  --c-danger: #ef4444;
+  --c-danger-tint: rgba(239, 68, 68, 0.16);
+
+  --c-neutral-tint: rgba(255, 255, 255, 0.08);
+
+  --c-scrim: rgba(0, 0, 0, 0.6);
+
+  --c-knob-off: #80828b;
+  --c-knob-on: #ffffff;
+}
+
+[data-theme='light'] {
+  --c-bg-base: #f4f5f7;
+  --c-bg-raised: #ffffff;
+
+  --c-glass-fill: rgba(255, 255, 255, 0.66);
+  --c-glass-stroke: rgba(0, 0, 0, 0.08);
+
+  --c-divider: rgba(0, 0, 0, 0.08);
+
+  --c-text-primary: #11131a;
+  --c-text-secondary: rgba(17, 19, 24, 0.62);
+  --c-text-tertiary: #5c5f6b;
+  --c-text-disabled: rgba(17, 19, 24, 0.28);
+
+  --c-accent-surface: #fff1e6;
+
+  --c-success: #1e9e4a;
+  --c-success-tint: rgba(30, 158, 74, 0.12);
+
+  --c-warning: #b7791f;
+  --c-warning-tint: rgba(183, 121, 31, 0.14);
+
+  --c-danger: #dc2626;
+  --c-danger-tint: rgba(220, 38, 38, 0.12);
+
+  --c-neutral-tint: rgba(0, 0, 0, 0.06);
+
+  --c-scrim: rgba(0, 0, 0, 0.4);
+
+  --c-knob-off: #b7b9c0;
+  --c-knob-on: #ffffff;
+}
 
 @theme {
   /* -------------------------------------------------------------------------
-   * Colors — bg-/text-/border-/ring-/fill- utilities
+   * Colors — bg-/text-/border-/ring-/fill- utilities.
+   * Theme-variant tokens indirect through the --c-* vars above; the accent
+   * ramp + cool-glow are theme-invariant brand colors and stay literal.
    * ------------------------------------------------------------------------- */
-  --color-bg-base: #0a0b0d;
-  --color-bg-raised: #101216;
+  --color-bg-base: var(--c-bg-base);
+  --color-bg-raised: var(--c-bg-raised);
 
-  --color-glass-fill: rgba(24, 27, 34, 0.42);
-  --color-glass-stroke: rgba(255, 255, 255, 0.1);
+  --color-glass-fill: var(--c-glass-fill);
+  --color-glass-stroke: var(--c-glass-stroke);
 
-  --color-divider: rgba(255, 255, 255, 0.06);
+  --color-divider: var(--c-divider);
 
-  --color-text-primary: #f7f8fa;
-  --color-text-secondary: rgba(255, 255, 255, 0.55);
-  --color-text-tertiary: #8a8c96;
-  --color-text-disabled: rgba(255, 255, 255, 0.25);
+  --color-text-primary: var(--c-text-primary);
+  --color-text-secondary: var(--c-text-secondary);
+  --color-text-tertiary: var(--c-text-tertiary);
+  --color-text-disabled: var(--c-text-disabled);
 
   --color-accent: #ff6a1a;
   --color-accent-light: #ff8a3d;
   --color-accent-ink: #2a1402;
-  --color-accent-surface: #241a12;
+  --color-accent-surface: var(--c-accent-surface);
   --color-accent-tint: rgba(255, 106, 26, 0.16);
 
-  --color-success: #34c759;
-  --color-success-tint: rgba(52, 199, 89, 0.16);
+  --color-success: var(--c-success);
+  --color-success-tint: var(--c-success-tint);
 
-  --color-warning: #e0a011;
-  --color-warning-tint: rgba(224, 160, 17, 0.16);
+  --color-warning: var(--c-warning);
+  --color-warning-tint: var(--c-warning-tint);
 
-  --color-danger: #ef4444;
-  --color-danger-tint: rgba(239, 68, 68, 0.16);
+  --color-danger: var(--c-danger);
+  --color-danger-tint: var(--c-danger-tint);
 
-  --color-neutral-tint: rgba(255, 255, 255, 0.08);
+  --color-neutral-tint: var(--c-neutral-tint);
 
-  --color-scrim: rgba(0, 0, 0, 0.6);
+  --color-scrim: var(--c-scrim);
   --color-cool-glow: #5b6cff;
 
-  --color-knob-off: #80828b;
-  --color-knob-on: #ffffff;
+  --color-knob-off: var(--c-knob-off);
+  --color-knob-on: var(--c-knob-on);
 
   /* -------------------------------------------------------------------------
    * Spacing — 8pt scale (merges with the default numeric scale)

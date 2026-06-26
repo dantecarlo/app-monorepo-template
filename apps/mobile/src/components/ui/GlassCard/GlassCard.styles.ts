@@ -1,6 +1,8 @@
-import { colors, radius, rnShadows, spacing } from '@app/tokens'
+import { radius, rnShadows, spacing } from '@app/tokens'
 import { StyleSheet } from 'react-native'
 
+// Layout only — theme-variant fill/stroke/tint come from useGlassCard so the
+// surface flips with the active theme. overlay/root carry no static color.
 export const GLASS_CARD_STYLES = StyleSheet.create({
   blur: {
     borderRadius: radius.xl,
@@ -14,7 +16,6 @@ export const GLASS_CARD_STYLES = StyleSheet.create({
     flex: 1
   },
   overlay: {
-    backgroundColor: colors.glass.fill,
     bottom: 0,
     left: 0,
     position: 'absolute',
@@ -22,7 +23,6 @@ export const GLASS_CARD_STYLES = StyleSheet.create({
     top: 0
   },
   root: {
-    borderColor: colors.glass.stroke,
     borderRadius: radius.xl,
     borderWidth: 1,
     overflow: 'hidden',

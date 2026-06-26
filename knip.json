@@ -44,14 +44,14 @@
         "eslint-config-next",
         "prettier",
         "@supabase/ssr",
-        "@supabase/supabase-js",
-        "@app/tokens"
+        "@supabase/supabase-js"
       ]
     },
     "apps/mobile": {
       "entry": [
         "src/app/**/*.tsx",
         "src/lib/i18n/i18n.config.ts",
+        "src/lib/theme/theme.config.ts",
         "src/lib/observability/index.ts",
         "src/test/mocks/*.ts",
         "src/components/**/{index,index}.ts",

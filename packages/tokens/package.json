@@ -13,10 +13,12 @@
     "tailwind-preset.cjs"
   ],
   "scripts": {
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "vitest run"
   },
   "devDependencies": {
-    "typescript": "*"
+    "typescript": "*",
+    "vitest": "^4.1.9"
   },
   "peerDependencies": {
     "tailwindcss": ">=3.4.0"

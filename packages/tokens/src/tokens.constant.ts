@@ -1,17 +1,40 @@
-// Source of truth for the dark-glass design system.
+// Source of truth for the glass design system — now light + dark.
 // These are stack-agnostic plain TS objects — no framework imports.
 // Consumed by Tailwind (web) via tailwind-preset.cjs and by NativeWind (mobile) directly.
 
 // ---------------------------------------------------------------------------
-// Colors
+// Theme identity
 // ---------------------------------------------------------------------------
 
-export const colors = {
+export const ThemeEnum = {
+  DARK: 'dark',
+  LIGHT: 'light'
+} as const
+
+export type ThemeEnumType = (typeof ThemeEnum)[keyof typeof ThemeEnum]
+
+export const DEFAULT_THEME: ThemeEnumType = ThemeEnum.DARK
+
+// ---------------------------------------------------------------------------
+// Accent ramp — theme-invariant brand color (shared across themes)
+// ---------------------------------------------------------------------------
+
+const accentRamp = {
   accent: '#FF6A1A',
   accentInk: '#2A1402',
   accentLight: '#FF8A3D',
+  accentTint: 'rgba(255,106,26,0.16)'
+} as const
+
+// ---------------------------------------------------------------------------
+// Semantic color themes — identical key shape across dark + light.
+// `glass.fill` / `glass.stroke` are the surface recipe consumed by the
+// .glass-card web utility and the mobile GlassCard overlay/blur.
+// ---------------------------------------------------------------------------
+
+const darkColors = {
+  ...accentRamp,
   accentSurface: '#241A12',
-  accentTint: 'rgba(255,106,26,0.16)',
   bg: {
     base: '#0A0B0D',
     raised: '#101216'
@@ -41,6 +64,54 @@ export const colors = {
   warning: '#E0A011',
   warningTint: 'rgba(224,160,17,0.16)'
 } as const
+
+const lightColors = {
+  ...accentRamp,
+  accentSurface: '#FFF1E6',
+  bg: {
+    base: '#F4F5F7',
+    raised: '#FFFFFF'
+  },
+  coolGlow: '#5B6CFF',
+  danger: '#DC2626',
+  dangerTint: 'rgba(220,38,38,0.12)',
+  divider: 'rgba(0,0,0,0.08)',
+  glass: {
+    fill: 'rgba(255,255,255,0.66)',
+    stroke: 'rgba(0,0,0,0.08)'
+  },
+  knob: {
+    off: '#B7B9C0',
+    on: '#FFFFFF'
+  },
+  neutralTint: 'rgba(0,0,0,0.06)',
+  scrim: 'rgba(0,0,0,0.40)',
+  success: '#1E9E4A',
+  successTint: 'rgba(30,158,74,0.12)',
+  text: {
+    disabled: 'rgba(17,19,24,0.28)',
+    primary: '#11131A',
+    secondary: 'rgba(17,19,24,0.62)',
+    tertiary: '#5C5F6B'
+  },
+  warning: '#B7791F',
+  warningTint: 'rgba(183,121,31,0.14)'
+} as const
+
+/**
+ * Themed semantic colors keyed by ThemeEnum value. Both themes expose the
+ * exact same semantic keys — a consumer can switch by reading themes[active].
+ */
+export const themes = {
+  dark: darkColors,
+  light: lightColors
+} as const
+
+export type ThemeColorsType = (typeof themes)[ThemeEnumType]
+
+// Back-compat: existing imports of `colors` resolve to the dark theme. Keeping
+// this alias lets every current StyleSheet / consumer compile unchanged.
+export const colors = themes.dark
 
 // ---------------------------------------------------------------------------
 // Spacing — 8pt scale
@@ -154,7 +225,8 @@ export const tokens = {
   radius,
   rnShadows,
   shadows,
-  spacing
+  spacing,
+  themes
 } as const
 
 export default tokens
