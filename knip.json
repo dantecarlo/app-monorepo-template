@@ -63,6 +63,7 @@
         "src/validation/*.schema.ts"
       ],
       "project": ["src/**/*.{ts,tsx}"],
+      "metro": false,
       "ignoreDependencies": ["@supabase/supabase-js"]
     },
     "packages/core": {
