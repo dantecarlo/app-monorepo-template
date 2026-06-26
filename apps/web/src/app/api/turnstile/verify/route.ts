@@ -12,7 +12,17 @@ interface IVerifyRequestBody {
 export const POST = async (
   request: NextRequest
 ): Promise<NextResponse> => {
-  const body = (await request.json()) as IVerifyRequestBody
+  let body: IVerifyRequestBody
+
+  try {
+    body = (await request.json()) as IVerifyRequestBody
+  } catch {
+    return NextResponse.json(
+      { success: false },
+      { headers: NO_STORE_HEADERS, status: BAD_REQUEST_STATUS }
+    )
+  }
+
   const token = body.token ?? ''
 
   const result = await botProtection.verifyToken({
