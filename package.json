@@ -17,7 +17,7 @@
     "prepare": "husky",
     "typecheck": "turbo run typecheck",
     "smoke:mobile": "pnpm --filter @app/mobile smoke:export",
-    "smoke:mobile-web": "pnpm --filter @app/mobile export:web && pnpm exec playwright test --project=mobile-web-390 --project=mobile-web-768 --project=mobile-web-1280 --project=mobile-web-1920",
+    "smoke:mobile-web": "pnpm --filter @app/mobile export:web && E2E_MOBILE_WEB=1 pnpm exec playwright test --project=mobile-web-390 --project=mobile-web-768 --project=mobile-web-1280 --project=mobile-web-1920",
     "smoke:web": "pnpm --filter @app/web build && node scripts/smoke-web-render.mjs",
     "smoke:e2e": "pnpm --filter @app/web build && pnpm exec playwright install --with-deps chromium && pnpm exec playwright test",
     "test:e2e": "pnpm exec playwright test",
