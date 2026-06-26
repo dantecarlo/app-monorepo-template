@@ -1,14 +1,10 @@
-import { LinearGradient } from 'expo-linear-gradient'
 import type { ReactNode } from 'react'
 import { Text, View } from 'react-native'
 
-import {
-  AUTH_SHELL_GLYPH_SIZE,
-  AUTH_SHELL_LOGO_GRADIENT
-} from '@/components/ui/AuthShell/AuthShell.constant'
+import { AUTH_SHELL_LOGO_SIZE } from '@/components/ui/AuthShell/AuthShell.constant'
 import { AUTH_SHELL_STYLES as styles } from '@/components/ui/AuthShell/AuthShell.styles'
 import { GlassCard } from '@/components/ui/GlassCard/GlassCard.component'
-import { Icon } from '@/components/ui/Icon/Icon.component'
+import { Logo } from '@/components/ui/Logo/Logo.component'
 
 export interface IAuthShellProps {
   brandLabel: string
@@ -26,14 +22,7 @@ export const AuthShell = ({
 }: IAuthShellProps) => (
   <View style={styles.root}>
     <View style={styles.header}>
-      <LinearGradient
-        colors={AUTH_SHELL_LOGO_GRADIENT}
-        end={{ x: 0, y: 1 }}
-        start={{ x: 0, y: 0 }}
-        style={styles.logo}
-      >
-        <Icon decorative name="check" size={AUTH_SHELL_GLYPH_SIZE} />
-      </LinearGradient>
+      <Logo brandLabel={brandLabel} size={AUTH_SHELL_LOGO_SIZE} />
 
       <Text style={styles.brandLabel}>{brandLabel}</Text>
       <Text accessibilityRole="header" style={styles.title}>

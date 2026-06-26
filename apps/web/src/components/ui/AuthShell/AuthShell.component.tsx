@@ -2,14 +2,12 @@ import type { JSX, ReactNode } from 'react'
 
 import {
   AUTH_SHELL_BRAND_LABEL_CLASS,
-  AUTH_SHELL_BRAND_MARK_CLASS,
   AUTH_SHELL_FORM_CLASS,
-  AUTH_SHELL_GLYPH_SIZE,
   AUTH_SHELL_ROOT_CLASS,
   AUTH_SHELL_SUBTITLE_CLASS
 } from '@/components/ui/AuthShell/AuthShell.constant'
 import { GlassCard } from '@/components/ui/GlassCard/GlassCard.component'
-import { Icon } from '@/components/ui/Icon/Icon.component'
+import { Logo } from '@/components/ui/Logo/Logo.component'
 
 export interface IAuthShellProps {
   brandLabel: string
@@ -27,9 +25,7 @@ export const AuthShell = ({
 }: IAuthShellProps): JSX.Element => (
   <main className={AUTH_SHELL_ROOT_CLASS}>
     <div className="flex flex-col items-center">
-      <div className={AUTH_SHELL_BRAND_MARK_CLASS}>
-        <Icon decorative name="check" size={AUTH_SHELL_GLYPH_SIZE} />
-      </div>
+      <Logo brandLabel={brandLabel} />
       <p className={AUTH_SHELL_BRAND_LABEL_CLASS}>{brandLabel}</p>
       <h1 className="mt-6 font-display text-heading font-semibold text-text-primary text-center">
         {title}

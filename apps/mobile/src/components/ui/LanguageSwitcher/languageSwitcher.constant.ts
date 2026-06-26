@@ -1,0 +1,1 @@
+export const LANGUAGE_SWITCHER_MIN_WIDTH = 40

@@ -1,4 +1,27 @@
 {
+  "app": {
+    "name": "App"
+  },
+  "auth": {
+    "languageSwitcher": {
+      "label": "Cambiar idioma"
+    },
+    "login": {
+      "cta": "Iniciar sesión",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "tu@ejemplo.com",
+      "passwordLabel": "Contraseña",
+      "passwordPlaceholder": "Tu contraseña",
+      "subtitle": "Inicia sesión para continuar",
+      "title": "Bienvenido de nuevo"
+    },
+    "logo": {
+      "label": "Logo de {name}"
+    },
+    "themeToggle": {
+      "label": "Alternar tema claro y oscuro"
+    }
+  },
   "common": {
     "cancel": "Cancelar",
     "confirm": "Confirmar",

@@ -1,7 +1,5 @@
-import { colors, fontFamily, fontSize, radius, spacing } from '@app/tokens'
+import { colors, fontFamily, fontSize, spacing } from '@app/tokens'
 import { StyleSheet } from 'react-native'
-
-import { AUTH_SHELL_LOGO_SIZE } from '@/components/ui/AuthShell/AuthShell.constant'
 
 export const AUTH_SHELL_STYLES = StyleSheet.create({
   brandLabel: {
@@ -18,13 +16,6 @@ export const AUTH_SHELL_STYLES = StyleSheet.create({
   },
   header: {
     alignItems: 'center'
-  },
-  logo: {
-    alignItems: 'center',
-    borderRadius: radius.lg,
-    height: AUTH_SHELL_LOGO_SIZE,
-    justifyContent: 'center',
-    width: AUTH_SHELL_LOGO_SIZE
   },
   root: {
     alignItems: 'center',

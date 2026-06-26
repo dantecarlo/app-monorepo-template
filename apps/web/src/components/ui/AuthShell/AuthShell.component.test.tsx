@@ -1,5 +1,19 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, test } from 'vitest'
+import type { ImgHTMLAttributes } from 'react'
+import { describe, expect, test, vi } from 'vitest'
+
+vi.mock('next-intl', () => ({
+  // eslint-disable-next-line local/single-object-params -- mirrors next-intl's t(key, values) callback shape
+  useTranslations: () => (key: string, values?: Record<string, string>) =>
+    values?.name ? `${values.name} ${key}` : key
+}))
+
+vi.mock('next/image', () => ({
+  default: (props: ImgHTMLAttributes<HTMLImageElement>) => (
+    // eslint-disable-next-line @next/next/no-img-element -- test stub mirroring next/image
+    <img {...props} />
+  )
+}))
 
 import { AuthShell } from '@/components/ui/AuthShell/AuthShell.component'
 
