@@ -15,6 +15,32 @@ description: >
 
 ---
 
+## What is now deterministic
+
+The following checks are fully covered by automated tooling and do NOT
+require AI review:
+
+- **Code standards** (naming, no-any, imports, fetch-in-views,
+  logic-in-view, inline-tailwind, single-object-params, magic numbers)
+  → ESLint (`eslint.rules.mjs`)
+- **Fractal folder structure** → `pnpm verify:structure`
+- **Service+adapter pairing** → `pnpm verify:pairing`
+- **Security static analysis** (secrets in public namespaces, security
+  headers, origin-lock presence, scrubPII wired at Sentry) →
+  `pnpm verify:security`
+- **Component-level a11y** → vitest-axe (in test suite)
+- **Page-level a11y** → `@axe-core/playwright` (`e2e/axe.e2e.ts`)
+- **Glass computed style** (backdrop-filter, colors, borders) →
+  `e2e/glass.e2e.ts`
+- **Theme sync** → `pnpm verify:theme-sync`
+- **Dead exports / unused imports** → `pnpm knip`
+- **Architecture map integrity + magic literals** → `pnpm verify:maps`
+
+AI validation is scoped to the semantic residue that these tools cannot
+cover. See the Groups table below.
+
+---
+
 ## When to run
 
 - After any `/feature`, `/component`, `/screen`, `/service`, `/store`, `/lib`
@@ -30,18 +56,14 @@ description: >
 For a **one-file tweak** (e.g. renaming a constant, fixing a typo):
 
 - Run Step 1 (deterministic gate) always.
-- Run only **G-standards** as the validator group; skip G-tests, G-security,
-  and G-a11y-design-dod unless the change touches those areas.
+- Run only **G-tests** if the changed file has a test pair; skip
+  G-security and G-a11y-design-dod unless the change touches those
+  areas.
 
 For a **multi-file change** (new feature, screen, service):
 
 - Run Step 1 always.
-- Run ALL five validator groups in parallel (Step 2).
-
-For a **single built block** (one freshly scaffolded screen or component),
-always run **G-fractal** scoped to that block — it is the cheapest way to
-catch a structural regression before it spreads. Run G-fractal once per
-built block (not once for the whole diff).
+- Run ALL three validator groups in parallel (Step 2).
 
 ---
 
@@ -51,42 +73,65 @@ built block (not once for the whole diff).
 pnpm validate
 ```
 
-`pnpm validate` runs `turbo run lint typecheck test build format:check` across all
-packages, then runs `pnpm verify:tests` (the tests-per-unit presence check)
-and `pnpm verify:maps` (the architecture-map + magic-literal check).
-Turbo runs lint and typecheck in the order defined by `dependsOn`;
-build depends on typecheck; test depends on ^build (package deps must build
-first). Only `apps/web` defines a `build` task (Next.js build); packages
-that do not define `build` are skipped by Turbo automatically.
+`pnpm validate` runs the following in order:
 
-`pnpm verify:tests` (`scripts/verify-tests.mjs`) fails if any
-`*.component.tsx` / `*.hook.ts` / `*.helper.ts` / `*.service.ts` /
-`*.adapter.ts` unit lacks a sibling `*.test.*` file. A missing test is a
-**BLOCKER** — add the sibling test before proceeding.
-
-`pnpm verify:maps` (`scripts/verify-maps.mjs`) runs two checks: (A) every
-repo path referenced in `docs/maps/global-map.md` must still resolve — a dead
-reference is a **BLOCKER** (update the map when you move things); and (B) a
-whole-tree magic-number audit (TS AST, faithful to the ESLint
-`no-magic-numbers` contract) — any stray magic number outside
-`*.constant.ts` / `*.styles.ts` is a **BLOCKER** (extract it to a constant).
-The architecture maps live under `docs/maps/`: `global-map.md` (the shared /
-global index) and `screen-map.template.md` (the per-screen internal map,
-copied once per screen).
+1. `turbo run lint typecheck test build format:check` — linting (ESLint),
+   type-checking, tests, Next.js build, and Prettier format check across
+   all packages. Turbo respects `dependsOn`; build depends on typecheck;
+   test depends on `^build`.
+2. `pnpm verify:tests` (`scripts/verify-tests.mjs`) — fails if any
+   `*.component.tsx` / `*.hook.ts` / `*.helper.ts` / `*.service.ts` /
+   `*.adapter.ts` unit lacks a sibling `*.test.*` file. A missing test
+   is a **BLOCKER**.
+3. `pnpm verify:maps` (`scripts/verify-maps.mjs`) — (A) every repo path
+   referenced in `docs/maps/global-map.md` must still resolve (dead
+   reference = **BLOCKER**); (B) whole-tree magic-number audit — any
+   stray magic number outside `*.constant.ts` / `*.styles.ts` is a
+   **BLOCKER**.
+4. `pnpm check:identity` — identity / branding consistency check.
+5. `pnpm verify:pairing` (`scripts/verify-pairing.mjs`) — every
+   `*.service.ts` must have a paired `*.adapter.ts` and vice-versa.
+   Unpaired file = **BLOCKER**.
+6. `pnpm verify:structure` (`scripts/verify-structure.mjs`) — fractal
+   folder structure correctness. Structural violation = **BLOCKER**.
+7. `pnpm verify:security` (`scripts/verify-security-static.mjs`) —
+   static security checks: secrets in `NEXT_PUBLIC_` / `EXPO_PUBLIC_`
+   namespaces, required security headers present, `assertTrustedOrigin`
+   wired in middleware, `scrubPII` wired at Sentry `beforeSend`.
+   Any failure = **BLOCKER**.
+8. `pnpm verify:theme-sync` — design-token / theme synchronization check.
+9. `pnpm --filter @app/i18n test` — i18n catalog parity tests.
+10. `pnpm knip` — dead exports and unused imports audit.
 
 **If this step fails:**
 
 - Capture the full output.
-- The failing task (lint / typecheck / test / build) is an automatic
-  **BLOCKER**.
+- The failing task is an automatic **BLOCKER**.
 - Do NOT proceed to Step 2 — report the gate failure immediately.
 - Fix the failure before continuing.
 
-**Optional i18n parity check** (run if any `packages/i18n` or locale files
-were changed, or if new i18n keys were introduced):
+---
+
+## E2E gates (run separately, not inside `pnpm validate`)
 
 ```bash
-pnpm --filter @app/i18n test
+pnpm test:e2e
+```
+
+Boots `next start` via Playwright `webServer` (requires a prior build).
+Key suites:
+
+- `e2e/glass.e2e.ts` — asserts glass-card computed style matches the
+  locked recipe (backdrop-filter, background-color, border, box-shadow).
+  Deterministic; replaces any AI "glass looks right" check.
+- `e2e/axe.e2e.ts` — `@axe-core/playwright` page-level a11y: zero
+  violations across key pages with `color-contrast` + `aria-roles` rules.
+- `e2e/home.e2e.ts` and other integration suites.
+
+Visual regression (opt-in):
+
+```bash
+E2E_VISUAL=1 pnpm test:e2e:visual
 ```
 
 ---
@@ -106,7 +151,7 @@ git diff --name-only HEAD
 # pass the list directly to each validator
 ```
 
-Spawn FIVE `validator` subagents IN PARALLEL, one per GROUP. Pass each
+Spawn THREE `validator` subagents IN PARALLEL, one per GROUP. Pass each
 subagent:
 
 1. Its GROUP name (exactly as below)
@@ -116,13 +161,11 @@ subagent:
 
 ### Groups
 
-| Group ID          | Focus                                                                                                                                                                                                                                                                                | Vendored skills to load                                                  |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
-| G-standards       | Code-standards compliance: arrow-only, alias imports, file suffixes, naming, single-object params, service+adapter pairing, no magic values, no inline component defs, English-only, Prettier                                                                                        | `.claude/skills/quality/SKILL.md` + `.claude/skills/pre-commit/SKILL.md` |
-| G-tests           | New/changed logic has tests; `test()` not `it()`; semantic queries only; MSW for HTTP; error + loading paths tested; i18n catalog parity if new keys added                                                                                                                           | `.claude/skills/test/SKILL.md` + `.claude/skills/fix-test/SKILL.md`      |
-| G-security        | PII scrubbing on all monitoring sinks; no raw sensitive data in logs/toasts; security headers present; origin-lock on API routes; Turnstile on abuse-prone forms; cache-safety on user responses                                                                                     | `.claude/skills/security/SKILL.md`                                       |
-| G-a11y-design-dod | Accessibility (interactive labels, semantic HTML, keyboard nav); design-system token adherence (dark-glass tokens, no inline colors); error-handling DoD (loading/empty/error states + boundary)                                                                                     | `.claude/skills/a11y/SKILL.md`                                           |
-| G-fractal         | Fractal architecture per built block: folder structure (screen/component members + barrel), constants-not-inline, logic-in-hook (no business logic/useEffect/useMemo in views), service+adapter pairing, no fetch in views, tests-per-unit, suffix/naming conventions, alias imports | `.claude/skills/fractal-verify/SKILL.md`                                 |
+| Group ID          | Focus                                                                                                                                                      | Vendored skills to load                                             |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| G-tests           | New/changed logic has tests; `test()` not `it()`; semantic queries only; MSW for HTTP; error + loading paths tested; i18n catalog parity if new keys added | `.claude/skills/test/SKILL.md` + `.claude/skills/fix-test/SKILL.md` |
+| G-security        | RLS actually enforced server-side (not client-bypassed); abuse-prone forms that need Turnstile judgment                                                    | `.claude/skills/security/SKILL.md`                                  |
+| G-a11y-design-dod | Qualitative design quality: is the UI genuinely on-brand / good? Does it meet the visual intent of the dark-glass design system?                           | `.claude/skills/a11y/SKILL.md`                                      |
 
 Each validator subagent must:
 
@@ -132,19 +175,11 @@ Each validator subagent must:
 4. Return a structured report (see `.claude/agents/validator.md` for the format) with
    severity-tagged findings and a PASS/FAIL verdict for its group
 
-**G-fractal scoping note**: G-fractal audits one built block at a time
-(a screen folder or a component folder), not a flat file list. Derive the
-distinct block roots from the changed files (the enclosing
-`screens/<Name>` or `components/<Name>` folder) and pass each block root to
-the validator. If more than one block changed, launch one G-fractal
-validator per block (still in the same parallel batch). The validator reads
-`.claude/skills/fractal-verify/SKILL.md` and follows its per-block contract.
-
 ---
 
 ## Step 3 — Synthesize and report
 
-Aggregate all five group verdicts into a single report:
+Aggregate all three group verdicts into a single report:
 
 ```
 ## Validation Report
@@ -156,11 +191,9 @@ pnpm validate: PASS | FAIL
 ### Group verdicts
 | Group             | Verdict | BLOCKERs | WARNINGs | INFOs |
 |-------------------|---------|----------|----------|-------|
-| G-standards       | PASS/FAIL | N | N | N |
 | G-tests           | PASS/FAIL | N | N | N |
 | G-security        | PASS/FAIL | N | N | N |
 | G-a11y-design-dod | PASS/FAIL | N | N | N |
-| G-fractal         | PASS/FAIL | N | N | N |
 
 ### BLOCKERs — must fix before DONE
 {List every BLOCKER from all groups, with file:line + rule + fix}
@@ -194,9 +227,8 @@ NOT-DONE if:
 This skill is executed by the **orchestrator**. The orchestrator:
 
 1. Runs `pnpm validate` inline (Step 1) — it is a single bash command.
-2. Delegates Steps 2a–2e to FIVE parallel `validator` subagent instances,
-   one per GROUP (G-fractal gets one instance per changed block), using the
-   `Agent` tool with `model: "sonnet"`.
+2. Delegates Steps 2a–2c to THREE parallel `validator` subagent instances,
+   one per GROUP, using the `Agent` tool with `model: "sonnet"`.
 3. Collects all reports and synthesizes them (Step 3) inline.
 
 Sub-agent launch template (repeat for each group, all in one parallel
@@ -207,7 +239,7 @@ Agent(
   subagent_type: "validator",
   model: "sonnet",
   prompt: """
-  GROUP: {G-standards | G-tests | G-security | G-a11y-design-dod | G-fractal}
+  GROUP: {G-tests | G-security | G-a11y-design-dod}
 
   SCOPE (changed files):
   {absolute path list}
@@ -221,26 +253,6 @@ Agent(
 )
 ```
 
-For **G-fractal**, scope is a single block root (not a flat file list):
-
-```
-Agent(
-  subagent_type: "validator",
-  model: "sonnet",
-  prompt: """
-  GROUP: G-fractal
-  BLOCK: {absolute path to the screen/component folder, e.g.
-          apps/web/src/screens/Dashboard}
-
-  Read docs/code-standards.md first.
-  Then read .claude/skills/fractal-verify/SKILL.md and follow its
-  per-block contract.
-  Audit only this BLOCK. Return the fractal-verify structured report
-  with BLOCKER/WARNING/INFO findings and a PASS/FAIL verdict.
-  """
-)
-```
-
 ---
 
 ## Key files for context
@@ -248,9 +260,6 @@ Agent(
 - `docs/code-standards.md` — all binding rules
 - `docs/error-handling.md` — error/loading/empty DoD + PII scrubbing contract (if present)
 - `.claude/agents/validator.md` — validator subagent definition
-- `.claude/skills/quality/SKILL.md` — quality audit
-- `.claude/skills/pre-commit/SKILL.md` — pre-commit dimension checks
 - `.claude/skills/test/SKILL.md` — test golden rules + type-specific patterns
 - `.claude/skills/security/SKILL.md` — security checks
 - `.claude/skills/a11y/SKILL.md` — accessibility audit
-- `.claude/skills/fractal-verify/SKILL.md` — per-block fractal architecture audit
