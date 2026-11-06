@@ -61,9 +61,13 @@ The chain runs in cost order:
 
 | Gate                            | Proves                                                    |
 | ------------------------------- | --------------------------------------------------------- |
+| `pnpm verify:manifest`          | `template.manifest.json` is well formed                   |
+| `pnpm verify:manifest:coverage` | Every tracked file has exactly one owner, no stale claims |
+| `pnpm verify:manifest:test`     | The pure engine behind both still behaves                 |
 | `pnpm verify:lint-rules:test`   | The local ESLint rules still report what they must        |
 
-A broken rule fails here, before anything expensive builds.
+Structural drift fails here, before anything expensive builds. See
+[manifest.md](manifest.md).
 
 ### 3b. Turbo — lint, typecheck, test, build
 

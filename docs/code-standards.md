@@ -16,6 +16,7 @@ one-line pointer here — never a restatement. Drift-proof by construction.
 | **RULES** — the binding laws                         | this file (`docs/code-standards.md`)                     | every coding rule + the §21 coverage ledger |
 | **STRUCTURE** — fractal tree, layers, block shape    | `.claude/skills/arch/SKILL.md`, `docs/architecture/*.md` | how code is organized and built             |
 | **FLOW** — data wiring and error surfacing           | §14 and §19 of this file                                 | how data and errors move end-to-end         |
+| **OWNERSHIP** — who owns each file, what init prunes | `template.manifest.json`, `docs/manifest.md`             | the deterministic init contract             |
 
 Reading order for any agent: **this file → `arch` skill → the task skill →
 `pnpm validate`**.
@@ -520,8 +521,8 @@ Nothing is **DONE** until the validation harness is green.
 After generating any feature, change, or fix:
 
 1. **Run `ATL_TEMPLATE_SELF=1 pnpm validate`** — the deterministic gate. It runs
-   the lint-rule tests first (instant, so a broken rule fails before anything
-   expensive), then
+   the manifest gates and the lint-rule tests first (instant, so structural
+   drift fails before anything expensive), then
    `turbo run lint typecheck test build format:check`, then the `verify:*`
    scripts, the diagram drift check and `knip`. Any failure is a BLOCKER.
 
@@ -661,6 +662,7 @@ This table exists so that difference is visible.
 | §19 Error surfacing         | **none yet**  | needs an `error-contract` verify script                             |
 | §20 Severity ratchet        | **none yet**  | needs `--max-warnings 0` + `reportUnusedDisableDirectives`          |
 | §21 This table              | review        | —                                                                   |
+| File ownership / init prune | script        | `verify:manifest` + `verify:manifest:coverage`                      |
 
 **Rows that read "none yet", "warn only" or "partial"** are not aspirations
 hidden in prose — they are named gaps with a named mechanism, tracked as

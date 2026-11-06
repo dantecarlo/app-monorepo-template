@@ -1,0 +1,343 @@
+{
+  "version": 1,
+  "core": [
+    ".claude/agents/**",
+    ".claude/commands/**",
+    ".claude/skill-registry.md",
+    ".claude/skills-lock.json",
+    ".claude/skills/a11y/**",
+    ".claude/skills/arch/**",
+    ".claude/skills/component/**",
+    ".claude/skills/feature/**",
+    ".claude/skills/fix-test/**",
+    ".claude/skills/fractal-verify/**",
+    ".claude/skills/general-plan/**",
+    ".claude/skills/improve-skill/**",
+    ".claude/skills/lib/**",
+    ".claude/skills/mock/**",
+    ".claude/skills/modify/**",
+    ".claude/skills/new-skill/**",
+    ".claude/skills/perf/**",
+    ".claude/skills/pre-commit/**",
+    ".claude/skills/product-discovery/**",
+    ".claude/skills/propagate-from-template/**",
+    ".claude/skills/quality/**",
+    ".claude/skills/registry/**",
+    ".claude/skills/runtime-verify/**",
+    ".claude/skills/screen/**",
+    ".claude/skills/security/**",
+    ".claude/skills/service/**",
+    ".claude/skills/store/**",
+    ".claude/skills/test/**",
+    ".claude/skills/validate-all/**",
+    ".github/workflows/ci.yml",
+    ".gitignore",
+    ".husky/**",
+    ".npmrc",
+    ".nvmrc",
+    ".prettierignore",
+    ".prettierrc.json",
+    ".vscode/**",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "LICENSE",
+    "README.md",
+    "commitlint.config.js",
+    "docs/architecture/decisions/**",
+    "docs/architecture/shared.md",
+    "docs/code-standards.md",
+    "docs/harness.md",
+    "docs/manifest.md",
+    "docs/maps/**",
+    "docs/memory.md",
+    "docs/observability.md",
+    "docs/propagation.md",
+    "eslint-local-rules/**",
+    "eslint.config.mjs",
+    "eslint.rules.mjs",
+    "knip.json",
+    "package.json",
+    "packages/core/**",
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    "scripts/check-identity.mjs",
+    "scripts/init-project.mjs",
+    "scripts/manifest.mjs",
+    "scripts/manifest.test.mjs",
+    "scripts/verify-manifest-coverage.mjs",
+    "scripts/verify-manifest.mjs",
+    "scripts/verify-maps.mjs",
+    "scripts/verify-pairing.mjs",
+    "scripts/verify-security-static.mjs",
+    "scripts/verify-structure.mjs",
+    "scripts/verify-tests.mjs",
+    "scripts/verify-theme-sync.mjs",
+    "template.manifest.json",
+    "tsconfig.base.json",
+    "turbo.json"
+  ],
+  "capabilities": [
+    {
+      "id": "design-tokens",
+      "title": "Design tokens and theme contract",
+      "group": "foundation",
+      "claims": ["packages/tokens/**"],
+      "onAbsent": [
+        {
+          "verb": "remove-workspace",
+          "entry": "packages/tokens"
+        }
+      ]
+    },
+    {
+      "id": "i18n",
+      "title": "Internationalization catalogs",
+      "group": "foundation",
+      "claims": ["packages/i18n/**"],
+      "onAbsent": [
+        {
+          "verb": "remove-workspace",
+          "entry": "packages/i18n"
+        },
+        {
+          "verb": "remove",
+          "paths": ["apps/mobile/src/lib/i18n/**", "apps/web/src/i18n/**"]
+        }
+      ]
+    },
+    {
+      "id": "web-next",
+      "title": "Next.js web application",
+      "group": "web",
+      "requires": ["design-tokens"],
+      "claims": [
+        "apps/web/**",
+        "docs/architecture/web.md",
+        "scripts/smoke-web-render.mjs"
+      ],
+      "onAbsent": [
+        {
+          "verb": "remove-workspace",
+          "entry": "apps/web"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.smoke:web"
+        }
+      ]
+    },
+    {
+      "id": "mobile-expo",
+      "title": "Expo / React Native mobile application",
+      "group": "mobile",
+      "requires": ["design-tokens"],
+      "claims": [
+        "apps/mobile/**",
+        "docs/architecture/mobile.md",
+        "scripts/assert-expo-export.mjs"
+      ],
+      "onAbsent": [
+        {
+          "verb": "remove-workspace",
+          "entry": "apps/mobile"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.smoke:mobile"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.smoke:mobile-web"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.verify:expo"
+        }
+      ]
+    },
+    {
+      "id": "supabase",
+      "title": "Supabase backend (Postgres, Auth, RLS)",
+      "group": "backend",
+      "claims": ["packages/supabase/**"],
+      "onAbsent": [
+        {
+          "verb": "remove-workspace",
+          "entry": "packages/supabase"
+        },
+        {
+          "verb": "remove",
+          "paths": [
+            "apps/mobile/src/lib/supabase/**",
+            "apps/web/src/app/SupabaseProviders.tsx",
+            "apps/web/src/lib/supabase/**"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cloudflare",
+      "title": "Cloudflare edge (origin lock, Turnstile, R2, image delivery)",
+      "group": "edge",
+      "requires": ["web-next"],
+      "claims": [
+        "packages/cloudflare/**",
+        "docs/images.md",
+        "docs/infrastructure.md"
+      ],
+      "onAbsent": [
+        {
+          "verb": "remove-workspace",
+          "entry": "packages/cloudflare"
+        },
+        {
+          "verb": "remove",
+          "paths": [
+            "apps/web/src/lib/bot-protection/**",
+            "apps/web/src/lib/image-delivery/**",
+            "apps/web/src/lib/origin-guard/**"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "e2e-playwright",
+      "title": "Playwright end-to-end and visual harness",
+      "group": "quality",
+      "requires": ["web-next"],
+      "claims": [
+        "docs/e2e.md",
+        "docs/responsive.md",
+        "e2e/**",
+        "playwright.config.ts"
+      ],
+      "onAbsent": [
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.smoke:e2e"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.test:e2e"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.test:e2e:visual"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.test:e2e:visual:update"
+        },
+        {
+          "verb": "remove-dep",
+          "file": "package.json",
+          "name": "@playwright/test",
+          "scope": "devDependencies"
+        },
+        {
+          "verb": "remove-dep",
+          "file": "package.json",
+          "name": "@axe-core/playwright",
+          "scope": "devDependencies"
+        }
+      ]
+    },
+    {
+      "id": "diagrams",
+      "title": "Generated diagrams — vendored archify renderer, specs, drift check",
+      "group": "docs",
+      "requires": ["design-tokens"],
+      "claims": [
+        ".claude/skills/archify/**",
+        "docs/diagrams/**",
+        "scripts/build-diagrams.mjs"
+      ],
+      "onAbsent": [
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.docs:diagrams"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.docs:diagrams:check"
+        },
+        {
+          "verb": "patch-json",
+          "file": ".claude/skills-lock.json",
+          "op": "unset",
+          "path": "skills.archify"
+        }
+      ]
+    },
+    {
+      "id": "template-maintainer",
+      "title": "Template maintainer material — plans and audits, never selected by a preset",
+      "group": "maintainer",
+      "claims": [
+        "docs/GENERALIZATION_PLAN.md",
+        "docs/INIT_AND_HARNESS_PLAN.md",
+        "docs/audits/**"
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "id": "full",
+      "title": "Everything — Next.js web + Expo mobile + Supabase + Cloudflare",
+      "capabilities": [
+        "cloudflare",
+        "design-tokens",
+        "diagrams",
+        "e2e-playwright",
+        "i18n",
+        "mobile-expo",
+        "supabase",
+        "web-next"
+      ]
+    },
+    {
+      "id": "web-only",
+      "title": "Next.js web + Supabase + Cloudflare, no mobile app",
+      "capabilities": [
+        "cloudflare",
+        "design-tokens",
+        "diagrams",
+        "e2e-playwright",
+        "i18n",
+        "supabase",
+        "web-next"
+      ]
+    },
+    {
+      "id": "mobile-only",
+      "title": "Expo mobile + Supabase, no web app",
+      "capabilities": [
+        "design-tokens",
+        "diagrams",
+        "i18n",
+        "mobile-expo",
+        "supabase"
+      ]
+    }
+  ]
+}

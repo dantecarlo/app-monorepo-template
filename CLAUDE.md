@@ -47,9 +47,20 @@ See `docs/architecture/shared.md`, `docs/architecture/web.md`, and
 ATL_TEMPLATE_SELF=1 pnpm validate
 ```
 
-This runs `turbo run lint typecheck test build format:check`, then
-`pnpm verify:tests` (tests-per-unit presence) and `pnpm verify:maps`
-(architecture-map integrity + magic-literal audit). Every failure is a blocker.
+This runs the manifest gates first (they are instant, so structural drift fails
+before anything expensive), then `turbo run lint typecheck test build
+format:check`, then `pnpm verify:tests` (tests-per-unit presence) and
+`pnpm verify:maps` (architecture-map integrity + magic-literal audit). Every
+failure is a blocker.
+
+| Manifest gate                   | What it proves                                            |
+| ------------------------------- | --------------------------------------------------------- |
+| `pnpm verify:manifest`          | `template.manifest.json` is well formed                   |
+| `pnpm verify:manifest:coverage` | Every tracked file has exactly one owner, no stale claims |
+| `pnpm verify:manifest:test`     | The pure engine behind both still behaves                 |
+
+A new file with no owner fails the gate — that is deliberate. See
+`docs/manifest.md`.
 
 E2E tests run separately — after the validation gate, not inside it:
 
