@@ -1,4 +1,3 @@
-// eslint-disable-next-line no-relative-import-paths/no-relative-import-paths
 import type { ObservabilityLevelType } from './observabilityLevel.type'
 
 export interface ICaptureErrorParams {

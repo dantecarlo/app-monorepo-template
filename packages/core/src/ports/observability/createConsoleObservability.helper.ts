@@ -1,4 +1,3 @@
-/* eslint-disable no-relative-import-paths/no-relative-import-paths */
 import { hostConsole } from '../../utils/hostConsole.helper'
 import { scrubPII } from '../../utils/scrubPII.helper'
 import type {
@@ -9,7 +8,6 @@ import type {
   ISetUserParams
 } from './IObservabilityPort.type'
 import { ObservabilityLevelEnum } from './observabilityLevel.type'
-/* eslint-enable no-relative-import-paths/no-relative-import-paths */
 
 export interface ICreateConsoleObservabilityParams {
   isEnabled?: boolean

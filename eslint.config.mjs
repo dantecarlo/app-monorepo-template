@@ -129,14 +129,18 @@ export default defineConfig([
 
   // -------------------------------------------------------------------------
   // packages/core/src — the domain layer proper. Production files import only
-  // their own modules, by relative path. The package's build config
+  // their own modules, by relative path, so the alias-only rule is off here:
+  // core-import-boundary owns import paths in core. The package's build config
   // (vitest.config.ts) and its tests stay outside this rule: they are tooling,
   // not domain code, and tests may use the `@/` alias.
   // -------------------------------------------------------------------------
   {
     files: ['packages/core/src/**/*.{ts,tsx}'],
     ignores: ['packages/core/src/**/*.test.{ts,tsx}'],
-    rules: { 'local/core-import-boundary': 'error' }
+    rules: {
+      'local/core-import-boundary': 'error',
+      'no-relative-import-paths/no-relative-import-paths': 'off'
+    }
   },
 
   // -------------------------------------------------------------------------
