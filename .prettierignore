@@ -8,5 +8,8 @@ ios
 pnpm-lock.yaml
 *.d.ts
 
+# Vendored third-party skill — not ours to reformat (see its provenance file)
+.claude/skills/archify
+
 # Generated audit row data (written by the audit merge script)
 docs/audits/*.json

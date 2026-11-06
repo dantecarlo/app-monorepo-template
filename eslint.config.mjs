@@ -56,6 +56,8 @@ const IGNORES = [
   '**/android/**',
   '**/ios/**',
   '**/coverage/**',
+  // Vendored third-party skill — pinned upstream, not ours to lint.
+  '.claude/skills/archify/**',
   '**/.turbo/**',
   '*.config.{js,cjs,mjs}',
   '**/*.config.{js,cjs,mjs}',
