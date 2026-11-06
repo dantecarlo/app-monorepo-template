@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "The validation harness",
+    "output": "docs/diagrams/harness.html",
+    "animation": "trace",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "cost-order",
+        "label": "Cost order",
+        "focus": ["editor", "hooks", "manifest"],
+        "note": "Each layer is cheaper than the one after it, so the cheap ones run first."
+      },
+      {
+        "id": "the-gate",
+        "label": "Inside the gate",
+        "focus": ["manifest", "turbo", "done"],
+        "note": "Structural drift fails on the instant manifest gates, before anything expensive builds."
+      },
+      {
+        "id": "excluded",
+        "label": "Outside the gate",
+        "focus": ["done", "runtime"],
+        "note": "E2E and runtime smokes need a built app and a browser, so they stay out of the offline gate."
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "local",
+      "label": "Local"
+    },
+    {
+      "id": "gate",
+      "label": "pnpm validate",
+      "variant": "exception"
+    },
+    {
+      "id": "after",
+      "label": "After"
+    },
+    {
+      "id": "excluded",
+      "label": "Outside the gate",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "write",
+      "label": "Write",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "prove",
+      "label": "Prove",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "ship",
+      "label": "Ship",
+      "fromCol": 5,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "groups": [
+    {
+      "id": "blocking",
+      "label": "Blocking chain",
+      "lane": "gate",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    }
+  ],
+  "mainPath": ["editor", "hooks", "manifest", "turbo", "done"],
+  "nodes": [
+    {
+      "id": "editor",
+      "lane": "local",
+      "col": 0,
+      "type": "frontend",
+      "label": "Editor",
+      "sublabel": "tsc + eslint"
+    },
+    {
+      "id": "hooks",
+      "lane": "local",
+      "col": 1,
+      "type": "backend",
+      "label": "Hooks",
+      "sublabel": "lint-staged"
+    },
+    {
+      "id": "manifest",
+      "width": 86,
+      "lane": "gate",
+      "col": 2,
+      "type": "security",
+      "label": "Manifest",
+      "sublabel": "ownership",
+      "tag": "runs first"
+    },
+    {
+      "id": "turbo",
+      "width": 118,
+      "lane": "gate",
+      "col": 3,
+      "type": "backend",
+      "label": "Build + verify",
+      "sublabel": "turbo + verify:*",
+      "tag": "blocking"
+    },
+    {
+      "id": "done",
+      "lane": "after",
+      "col": 5,
+      "type": "cloud",
+      "label": "Exit 0",
+      "sublabel": "done"
+    },
+    {
+      "id": "runtime",
+      "lane": "excluded",
+      "col": 5,
+      "type": "external",
+      "label": "E2E",
+      "sublabel": "needs build"
+    }
+  ],
+  "edges": [
+    {
+      "from": "editor",
+      "to": "hooks",
+      "label": "commit"
+    },
+    {
+      "from": "hooks",
+      "to": "manifest",
+      "label": "push",
+      "variant": "emphasis",
+      "route": "drop",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "manifest",
+      "to": "turbo"
+    },
+    {
+      "from": "done",
+      "to": "runtime",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "turbo",
+      "to": "done",
+      "variant": "emphasis",
+      "route": "drop",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ]
+}

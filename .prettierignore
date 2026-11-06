@@ -11,5 +11,8 @@ pnpm-lock.yaml
 # Vendored third-party skill — not ours to reformat (see its provenance file)
 .claude/skills/archify
 
+# Generated diagram output — regenerate with `pnpm docs:diagrams`
+docs/diagrams/*.html
+
 # Generated audit row data (written by the audit merge script)
 docs/audits/*.json
