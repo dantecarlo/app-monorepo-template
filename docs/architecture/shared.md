@@ -9,11 +9,13 @@
 app/                              # pnpm workspaces + Turborepo
 ├── apps/
 │   ├── mobile/   # Expo (React Native) — see mobile.md
-│   └── web/      # Next.js 15 (App Router) — see web.md
+│   └── web/      # Next.js 16 (App Router) — see web.md
 └── packages/                     # SHARED, framework-agnostic only
     ├── tokens/    # design tokens (colors/spacing/type) + tailwind preset — VALUES, no components
     ├── core/      # domain/app logic: AppError, scrubPII, shared types/contracts (no React/RN/DOM)
-    └── i18n/      # shared ICU catalogs (es/en) + locale constants
+    ├── i18n/      # shared ICU catalogs (es/en) + locale constants
+    ├── supabase/  # Supabase client, schema types and the service-error mapper (backend adapter)
+    └── cloudflare/ # Cloudflare adapters: origin guard, Turnstile, R2 and image delivery
 ```
 
 ## 2. The fractal, screen-centric philosophy (applies to BOTH apps)
@@ -40,7 +42,7 @@ The deliberate middle ground: a **shared base** + **everything UI-specific separ
 | Domain/app logic, `AppError`, contracts   | `packages/core`          |   ✅    | Pure TS, no framework                                                              |
 | i18n catalogs (ICU JSON)                  | `packages/i18n`          |   ✅    | Same keys both apps; adapter differs (react-i18next vs next-intl)                  |
 | Optional backend client + generated types | project-specific package |   ✅    | One backend contract                                                               |
-| **UI components, screens, navigation**    | `apps/<app>/src`         |   ❌    | **RN/NativeWind vs DOM/shadcn — never shared**                                     |
+| **UI components, screens, navigation**    | `apps/<app>/src`         |   ❌    | **RN/NativeWind vs DOM/Tailwind — never shared**                                   |
 | Hooks/stores/lib wiring                   | `apps/<app>/src`         |   ❌    | App-specific (Expo Router vs Next App Router)                                      |
 
 **Rule of thumb:** imports React/RN/DOM or a UI lib → **per-app**. Pure logic / values / contracts

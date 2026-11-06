@@ -14,18 +14,18 @@ bootstrap from it and then extend it with product-specific code.
 
 ## Stack
 
-| Layer | Technology |
-|---|---|
-| Monorepo | pnpm workspaces + Turborepo |
-| Web | Next.js 16.2.9 (App Router, RSC, ISR) |
-| Mobile | Expo SDK 56, React Native 0.85 (dev builds) |
-| Styling | Tailwind CSS 4 (web), NativeWind 4 (mobile) |
-| Language | TypeScript 6, React 19.2 |
-| Runtime | Node 24 |
+| Layer           | Technology                                                                        |
+| --------------- | --------------------------------------------------------------------------------- |
+| Monorepo        | pnpm workspaces + Turborepo                                                       |
+| Web             | Next.js 16.2.9 (App Router, RSC, ISR)                                             |
+| Mobile          | Expo SDK 56, React Native 0.85 (dev builds)                                       |
+| Styling         | Tailwind CSS 4 (web), NativeWind 4 (mobile)                                       |
+| Language        | TypeScript 6, React 19.2                                                          |
+| Runtime         | Node 24                                                                           |
 | Shared packages | `packages/core` (domain), `packages/i18n`, `packages/supabase`, `packages/tokens` |
-| Database / Auth | Supabase Cloud (Postgres, Auth, RLS, Edge Functions) |
-| Edge / Security | Cloudflare (DNS proxy, WAF, DDoS, Turnstile, CDN) |
-| Hosting | Vercel (Next.js) |
+| Database / Auth | Supabase Cloud (Postgres, Auth, RLS, Edge Functions)                              |
+| Edge / Security | Cloudflare (DNS proxy, WAF, DDoS, Turnstile, CDN)                                 |
+| Hosting         | Vercel (Next.js)                                                                  |
 
 ---
 
@@ -104,11 +104,11 @@ supabase gen types typescript --linked > src/types.ts
 
 ### Env layout
 
-| File | Read by | Holds |
-|---|---|---|
-| `packages/supabase/.env` | Supabase CLI (sourced) | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF` |
-| `apps/web/.env.local` | Next.js | `NEXT_PUBLIC_SUPABASE_URL`, `_ANON_KEY`, `CF_ORIGIN_SECRET`, `TURNSTILE_SECRET_KEY`, `R2_*` |
-| `apps/mobile/.env` | Expo | `EXPO_PUBLIC_SUPABASE_URL`, `_ANON_KEY` |
+| File                     | Read by                | Holds                                                                                       |
+| ------------------------ | ---------------------- | ------------------------------------------------------------------------------------------- |
+| `packages/supabase/.env` | Supabase CLI (sourced) | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF`                     |
+| `apps/web/.env.local`    | Next.js                | `NEXT_PUBLIC_SUPABASE_URL`, `_ANON_KEY`, `CF_ORIGIN_SECRET`, `TURNSTILE_SECRET_KEY`, `R2_*` |
+| `apps/mobile/.env`       | Expo                   | `EXPO_PUBLIC_SUPABASE_URL`, `_ANON_KEY`                                                     |
 
 A root `.env` is not read by either framework. Never put secrets in
 `NEXT_PUBLIC_` or `EXPO_PUBLIC_` namespaces.
@@ -173,20 +173,13 @@ See `docs/propagation.md` and `.claude/skills/propagate-from-template/SKILL.md`.
 
 ## Key docs
 
-| Doc | Purpose |
-|---|---|
-| `docs/code-standards.md` | All binding rules — read before writing code |
-| `docs/infrastructure.md` | Hosting, edge security, origin-lock, Cloudflare cache rules |
-| `docs/e2e.md` | Playwright e2e harness — zero-dep via dlx |
-| `docs/propagation.md` | Selective diff-based sync from the template |
-| `docs/maps/global-map.md` | Navigable index of every shared artifact |
-| `.claude/agents/validator.md` | Adversarial standards validator subagent |
-| `.claude/skills/validate-all/SKILL.md` | Full validation harness |
-| `docs/memory.md` | Shared Engram memory — load at session start, contribute decisions back |
-| `docs/SDD_SYNC_PROMPT.md` | SDD context-sync prompt — paste as first message to sync onto the active change |
-
----
-
-## SDD context-sync prompt
-
-Starting a session on this repo (fresh, or an agent already building)? Paste `docs/SDD_SYNC_PROMPT.md` as your first message — it syncs you onto the orchestrator-level SDD layer (change `template-superset-rollout`, AUTOMATIC + HYBRID store) and the hardened template superset standard, then has you continue under SDD. Per-project repos ship a pre-filled copy.
+| Doc                                    | Purpose                                                                 |
+| -------------------------------------- | ----------------------------------------------------------------------- |
+| `docs/code-standards.md`               | All binding rules — read before writing code                            |
+| `docs/infrastructure.md`               | Hosting, edge security, origin-lock, Cloudflare cache rules             |
+| `docs/e2e.md`                          | Playwright e2e harness — zero-dep via dlx                               |
+| `docs/propagation.md`                  | Selective diff-based sync from the template                             |
+| `docs/maps/global-map.md`              | Navigable index of every shared artifact                                |
+| `.claude/agents/validator.md`          | Adversarial standards validator subagent                                |
+| `.claude/skills/validate-all/SKILL.md` | Full validation harness                                                 |
+| `docs/memory.md`                       | Shared Engram memory — load at session start, contribute decisions back |
