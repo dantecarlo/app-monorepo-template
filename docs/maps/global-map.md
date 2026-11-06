@@ -291,6 +291,10 @@ only — enforced by ESLint and by `node scripts/verify-maps.mjs`.
 | Project rename       | `scripts/init-project.mjs`               | Rewrites `@app/*`, `app-monorepo-template`, and bundle ID to a real project slug      |
 | Identity guard       | `scripts/check-identity.mjs`             | Fails if template-default identity is still present; wired into `pnpm validate`       |
 | CI workflow          | `.github/workflows/ci.yml`               | Runs `pnpm install` + `pnpm validate` on PR and push to main (ATL_TEMPLATE_SELF=1)   |
+| Local lint plugin     | `eslint-local-rules/index.mjs`                     | The repo-owned ESLint rules: arrow/view/naming plus the boundary and contract gates           |
+| Adapter purity gate   | `eslint-local-rules/index.mjs`                     | `local/pure-domain-adapter` — a domain adapter is a sync DTO mapper, provider-agnostic        |
+| Comment discipline    | `eslint-local-rules/justifying-comment.detect.mjs` | The 7 enforceable phrases behind `local/no-justifying-comment` (§1.2)                         |
+| Suffix contract       | `eslint-local-rules/suffix-contract.detect.mjs`    | Top-level type/const detection behind `local/suffix-contract` (§3.1)                          |
 | Lint rules           | `eslint.rules.mjs`, `eslint.config.mjs`  | Arrow-only, alias imports, suffixes, naming, no-magic-numbers                         |
 | Prettier             | `.prettierrc.json`                       | No semicolons, single quotes, width 75                                                |
 | Commit lint          | `commitlint.config.js`                   | Conventional commits (commit-msg hook)                                                |

@@ -20,6 +20,9 @@
 // cleanly excluded by a static selector, and the project contract forbids ever
 // leaving the validation gate red. #19 is `warn` by design (medium confidence).
 
+import { findJustifyingPhrase } from './justifying-comment.detect.mjs'
+import { collectTopLevelViolations } from './suffix-contract.detect.mjs'
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -278,7 +281,13 @@ const USE_STATE_NAME = 'useState'
 // Array methods that PRODUCE a new shape when their result is captured. .find
 // returns a single element (not a new collection) and is intentionally omitted:
 // `const x = list.find(...)` is a lookup, not a view-model transform.
-const DERIVATION_METHODS = new Set(['filter', 'flatMap', 'map', 'reduce', 'sort'])
+const DERIVATION_METHODS = new Set([
+  'filter',
+  'flatMap',
+  'map',
+  'reduce',
+  'sort'
+])
 
 // Handler attribute names look like onPress / onClick / onChange (on + Cap).
 const ON_HANDLER_ATTR_RE = /^on[A-Z]/
@@ -314,7 +323,8 @@ const handlerBodyHasLogic = (fn) => {
 // True when a function literal is the value of an on*-handler JSX attribute.
 const isHandlerJsxAttribute = (fn) => {
   const container = fn.parent
-  if (!container || container.type !== 'JSXExpressionContainer') return false
+  if (!container || container.type !== 'JSXExpressionContainer')
+    return false
   const attr = container.parent
   return (
     attr !== undefined &&
@@ -366,7 +376,10 @@ const isInlineJsxExpression = (node) => {
 const derivationMethodOf = (node) => {
   if (node.type !== 'CallExpression') return undefined
   const callee = node.callee
-  if (callee.type !== 'MemberExpression' || callee.property === undefined) {
+  if (
+    callee.type !== 'MemberExpression' ||
+    callee.property === undefined
+  ) {
     return undefined
   }
   const name = callee.property.name
@@ -414,7 +427,8 @@ const logicInView = {
         }
       },
       'ArrowFunctionExpression, FunctionExpression'(node) {
-        if (!isHandlerJsxAttribute(node) && !isHandlerVariable(node)) return
+        if (!isHandlerJsxAttribute(node) && !isHandlerVariable(node))
+          return
         if (handlerBodyHasLogic(node)) {
           context.report({ messageId: 'handler', node })
         }
@@ -472,14 +486,194 @@ const singleUseState = {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Rule: core-import-boundary
+// packages/core is the innermost layer: framework-agnostic and vendor-free by
+// construction. Its production files import only their own modules, by
+// relative path. An `@/` alias resolves against the consuming app's src when
+// core compiles from source, and `node:` builtins do not exist in React Native
+// or the browser. Re-exports (`export ... from`) are judged like imports.
+// Vendors enter through ports implemented OUTSIDE core.
+// ---------------------------------------------------------------------------
+
+const coreImportBoundary = {
+  create(context) {
+    const check = (node) => {
+      const source = node.source?.value
+      if (typeof source !== 'string') return
+      if (source.startsWith('./') || source.startsWith('../')) return
+      context.report({
+        data: { source },
+        messageId: 'vendorInCore',
+        node: node.source
+      })
+    }
+
+    return {
+      ExportAllDeclaration: check,
+      ExportNamedDeclaration: check,
+      ImportDeclaration: check
+    }
+  },
+  meta: {
+    docs: {
+      description:
+        'packages/core imports nothing external — relative imports of its own modules only (clean-architecture dependency rule).'
+    },
+    messages: {
+      vendorInCore:
+        "'{{source}}' inside packages/core — the domain layer imports only its own modules, by relative path (no package, no `@/` alias, no `node:` builtin). Implement the vendor behind a port OUTSIDE core."
+    },
+    schema: [],
+    type: 'problem'
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Rule: no-justifying-comment (code-standards §1.2)
+// A comment states what the code does. It is not a defense of the choice
+// against alternatives, and never a log of how the change was made. Only the
+// narrow phrase set in ./justifying-comment.detect.mjs fails the build; the
+// broader grep tell in §1.2 stays a review aid.
+// ---------------------------------------------------------------------------
+
+const noJustifyingComment = {
+  create(context) {
+    const source = context.sourceCode ?? context.getSourceCode()
+
+    return {
+      Program() {
+        for (const comment of source.getAllComments()) {
+          const hit = findJustifyingPhrase(comment.value)
+          if (!hit) continue
+          context.report({
+            data: { phrase: hit.label },
+            loc: comment.loc,
+            messageId: 'justifyingComment'
+          })
+        }
+      }
+    }
+  },
+  meta: {
+    docs: {
+      description:
+        'Comments state what the code does, not why an alternative was rejected (code-standards §1.2).'
+    },
+    messages: {
+      justifyingComment:
+        'This comment argues for the code ("{{phrase}}") instead of stating what it does. Move the reasoning to the commit message or an ADR — code-standards §1.2.'
+    },
+    schema: [],
+    type: 'suggestion'
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Rule: suffix-contract (code-standards §3.1)
+// A *.component.tsx / *.screen.tsx / *.hook.ts declares no top-level type and
+// no top-level SCREAMING_SNAKE const. Those belong to the block's *.type.ts
+// and *.constant.ts. Detection is shared with the test suite so the gate and
+// its fixtures judge a file with the same code.
+// ---------------------------------------------------------------------------
+
+const suffixContract = {
+  create(context) {
+    return {
+      Program(node) {
+        for (const violation of collectTopLevelViolations(node.body)) {
+          context.report({
+            data: { name: violation.name ?? '' },
+            messageId:
+              violation.kind === 'type' ? 'typeInView' : 'constInView',
+            node: violation.node
+          })
+        }
+      }
+    }
+  },
+  meta: {
+    docs: {
+      description:
+        'A view or hook file declares no top-level types and no SCREAMING_SNAKE constants — they belong to the block siblings that own them by suffix (code-standards §3.1).'
+    },
+    messages: {
+      constInView:
+        "Top-level constant '{{name}}' in a view or hook — move it to the block's *.constant.ts (code-standards §3.1).",
+      typeInView:
+        "Top-level type declaration in a view or hook — move it to the block's *.type.ts (code-standards §3.1). There is no single-use exception: that is how a block's contract ends up buried in a .tsx with a dozen importers."
+    },
+    schema: [],
+    type: 'problem'
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Rule: pure-domain-adapter (code-standards Rule 6)
+// A domain adapter under src/services/**/*.adapter.ts maps DTO -> domain shape
+// and nothing else. The transport lives in the sibling *.service.ts, so the
+// adapter is synchronous by construction: no async, no await, no fetch.
+//
+// Stated as purity, not as a vendor list, so it holds whichever backend a
+// project selects at init. The transport adapters under src/lib/ are a
+// different artifact and out of scope — this rule is wired to services only.
+// ---------------------------------------------------------------------------
+
+const pureDomainAdapter = {
+  create(context) {
+    const reportAsync = (node) => {
+      if (!node.async) return
+      context.report({ messageId: 'asyncAdapter', node })
+    }
+
+    return {
+      ArrowFunctionExpression: reportAsync,
+      AwaitExpression(node) {
+        context.report({ messageId: 'awaitInAdapter', node })
+      },
+      CallExpression(node) {
+        const { callee } = node
+        const isFetch =
+          (callee.type === 'Identifier' && callee.name === 'fetch') ||
+          (callee.type === 'MemberExpression' &&
+            callee.property &&
+            callee.property.name === 'fetch')
+        if (isFetch) context.report({ messageId: 'ioInAdapter', node })
+      },
+      FunctionDeclaration: reportAsync,
+      FunctionExpression: reportAsync
+    }
+  },
+  meta: {
+    docs: {
+      description:
+        'A domain adapter is a pure DTO -> domain mapper: no async, no await, no fetch. Transport belongs in the sibling *.service.ts (code-standards Rule 6).'
+    },
+    messages: {
+      asyncAdapter:
+        'A domain adapter is synchronous — an `async` here means transport leaked in from the sibling *.service.ts (code-standards Rule 6).',
+      awaitInAdapter:
+        'No `await` in a domain adapter — it maps a DTO the service already resolved (code-standards Rule 6).',
+      ioInAdapter:
+        'No fetch() in a domain adapter — move the transport to the sibling *.service.ts (code-standards Rule 6).'
+    },
+    schema: [],
+    type: 'problem'
+  }
+}
+
 const plugin = {
   meta: { name: 'local', version: '1.0.0' },
   rules: {
+    'core-import-boundary': coreImportBoundary,
+    'pure-domain-adapter': pureDomainAdapter,
     'logic-in-view': logicInView,
     'no-inline-tailwind-classname': noInlineTailwindClassname,
+    'no-justifying-comment': noJustifyingComment,
     'no-non-ascii-identifier': noNonAsciiIdentifier,
     'single-object-params': singleObjectParams,
-    'single-use-state': singleUseState
+    'single-use-state': singleUseState,
+    'suffix-contract': suffixContract
   }
 }
 

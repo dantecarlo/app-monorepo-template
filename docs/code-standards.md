@@ -22,6 +22,54 @@ React components follow the same rule — arrow expression assigned to a `const`
 
 ---
 
+### 1.2 Comments Say What the Code Does
+
+A comment states **what the code does**, plus only the mechanical fact a reader
+needs in order not to break it. It is not a defense of the choice, and never a
+log of how the change was made.
+
+```ts
+// ❌ wrong — defends the placement against alternatives nobody proposed,
+//    and records the session rather than the code
+// Imported HERE, once, rather than inside each test. It stays a dynamic
+// import because vi.mock hoists above static ones. Measured 2026-07-27.
+
+// ✅ correct
+// Loads the module under test. Dynamic so vi.mock applies first.
+```
+
+**The tell.** Any comment containing _"rather than"_, _"instead of"_, _"not
+because"_, _"exists to"_, _"deliberately"_, _"on purpose"_ or _"would have"_ is
+arguing with an alternative. Grep your diff before pushing:
+
+```bash
+rg -n '^\s*//.*(rather than|instead of|not because|exists to|deliberately|on purpose|would have)'
+```
+
+Two related smells: a comment that restates the PR description, and a comment
+that outlives the code it defended.
+
+**Where the reasoning goes instead:** the commit message, the ADR under
+`docs/architecture/decisions/`, or the doc that owns the topic. Evidence belongs
+where it is dated and attributable, not inline where it silently rots.
+
+### The two halves of this rule
+
+The grep above is a **review aid**, not the gate. Those broad phrasings were
+measured across 2421 files upstream and produce hundreds of false positives:
+plenty of legitimate behavior descriptions and constraint statements contain
+"rather than" or "instead of".
+
+What **fails the build** is a narrow set of seven phrases, listed in
+`eslint-local-rules/justifying-comment.detect.mjs` and enforced at `error` by
+`local/no-justifying-comment`. The idea is broader than the gate, and the gate
+says so out loud instead of pretending otherwise.
+
+> Status: **lint-enforced** (narrow set). Measured at 0 violations in this repo
+> when the rule landed.
+
+---
+
 ## 2. Imports — Alias Only, Never Relative
 
 `../` paths are banned. Every import must use a workspace or path alias.
@@ -55,6 +103,35 @@ Available aliases:
 | Type/Interface | `Name.type.ts`       | `Item.type.ts`           |
 | Constant       | `Name.constant.ts`   | `queryKeys.constant.ts`  |
 | Test           | `Name.test.tsx`      | `ItemCard.test.tsx`      |
+
+---
+
+### 3.1 Type Placement
+
+Where a type is **declared** follows one rule:
+
+> **A view or hook file declares no types.** Every `interface` / `type` / `enum`
+> a block uses lives in that block's `*.type.ts` — props, hook param and return
+> contracts, and view-model shapes alike.
+
+- **MUST move to `*.type.ts`** — every type that would otherwise sit in a
+  `*.component.tsx`, `*.screen.tsx`, or `*.hook.ts`. This includes single-use
+  prop interfaces and hook contracts. **There is no "single-use" exception**: a
+  props type that starts single-use is exactly how a block's contract ends up
+  buried in a `.tsx` with a dozen importers and nobody aware it became public
+  API. One home from birth means no promotion later.
+- SCREAMING_SNAKE constants follow the same contract — they live in
+  `*.constant.ts`, never in a view or hook.
+- **Two narrow homes remain**, because the alias cannot leave its source without
+  a circular import:
+  - aliases **derived from a const** stay in the declaring `*.constant.ts`
+    (`type XType = (typeof X_ENUM)[keyof typeof X_ENUM]`),
+  - types **inferred from a schema** stay in the `*.schema.ts`
+    (`type X = z.infer<typeof x>`).
+
+> Status: **lint-enforced** by `local/suffix-contract` on `*.component.tsx`,
+> `*.screen.tsx` and `*.hook.ts`. The 133 pre-existing declarations were moved
+> to their block siblings first, so the rule landed with no exemption file.
 
 ---
 
