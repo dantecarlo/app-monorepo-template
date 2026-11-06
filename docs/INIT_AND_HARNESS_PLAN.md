@@ -88,6 +88,46 @@ decides and what proves it done.
 Every new mechanism in either list first answers the five questions
 (decision 37).
 
+### Parity ledger
+
+Owner, 2026-11-05: "Recuerda que si hay algo que cambia en certifipago, tambei
+debería implementarlo en el template y viceversa". Every harness change in one
+repository gets its counterpart in the other, done in the same work or recorded
+here with the step that carries it. A product-only change says why it does not
+apply. A row closes when its counterpart has merged. Template to Certifipago goes
+through the `propagate-from-template` skill.
+
+The template holds none of the PD1 harness yet (no write guard, review verdict,
+hook-safe test helpers, architecture contract or launch example), so the PD1
+fixes reach it through the harvest steps below, which harvest from Certifipago
+master after these merges.
+
+**Certifipago → template**
+
+| Certifipago change                                                       | Merged in  | Template counterpart                                                    | Carried by     | Status |
+| ------------------------------------------------------------------------ | ---------- | ----------------------------------------------------------------------- | -------------- | ------ |
+| Dead overrides, unused web deps, stale knip ignores (T1a)                | #735       | none: Certifipago's own dependencies                                    | not applicable | closed |
+| `.claude/launch.json` untracked, `launch.example.json` added (T1b)       | #755       | the same ignore entry and example file                                  | T2             | open   |
+| Product names read from config (T2)                                      | #743       | the registry generator reads the product name from config               | T2 (P2)        | open   |
+| Per-finding review records (T4, decision 36)                             | #745       | the review record format and its gates                                  | T3 (P3)        | open   |
+| Codex read-only sessions do not relaunch themselves (T5)                 | #741       | the projector's Codex read-only launcher                                | T2 (P2)        | open   |
+| Prompt-audit findings in skill files (T6)                                | #742       | the same fixes in the harvested skills                                  | T4 (PS)        | open   |
+| Agent write guard: Bash writes, continuations, scopes (T7, decision 34)  | #753       | the guard and its suite                                                 | T2 (P2)        | open   |
+| Flow gates and hook-safe test helpers (T8, decision 33)                  | #752       | `gitFreeEnv`, `withHookGitDir`; the flow gates                          | T2, T5 (PF)    | open   |
+| Merge-result gate, client-side (T9)                                      | #739       | the merge gate in the gate registry                                     | T3 (P3)        | open   |
+| Skill completeness gate (T10, decision 29)                               | #748       | the gate and the per-skill bar                                          | T3, T4         | open   |
+| LAWs in `AGENTS.md`, Codex project-doc budget (T11, decisions 12 and 39) | #756       | the router carries the LAWs; the budget setting and its test            | T2 (P1–P2)     | open   |
+| Architecture contract and gate (T14, decision 32)                        | #749       | the contract per app and package; `verify:architecture`                 | T3 (P3–P4)     | open   |
+| Knowledge skills routed from the build step (T16, decision 30)           | PR #758    | the routed table in the generated router                                | T4 (PS), T5    | open   |
+| Merge policy as a setting (T17, decision 38)                             | PR pending | `delivery.mergePolicy` in the harness config; `/init` section 7 asks it | T3 (P4), T6    | open   |
+| Design review owed by changed paths (T15)                                | PR pending | the path-to-review-skill contract and the PR hook                       | T5 (PF)        | open   |
+
+**Template → Certifipago**
+
+| Template change                                                           | Landed in             | Certifipago counterpart                                      | Carried by   | Status |
+| ------------------------------------------------------------------------- | --------------------- | ------------------------------------------------------------ | ------------ | ------ |
+| P0 units (hooks, core seam, lint rules, archify lock, diagrams, manifest) | `feat/p0-land-staged` | each unit checked against Certifipago after its verification | P0 follow-up | open   |
+
 ---
 
 ## Decisions
@@ -1200,3 +1240,19 @@ GENERALIZATION_PLAN.md) and a green `ATL_TEMPLATE_SELF=1 pnpm validate`.
   missing. `templates/video-notes.md` is on master in both skill trees; the video
   agents read the owner's main checkout, 97 commits behind master, because the
   brief pointed there. The step was removed from "Next steps".
+- **L45 (2026-11-05, owner, verbatim):** "Recuerda que si hay algo que cambia en
+  certifipago, tambei debería implementarlo en el template y viceversa". Added the
+  parity ledger under "Next steps"; the template has none of the PD1 pieces yet,
+  so they travel with the harvest steps T2–T5.
+- **L46 (2026-11-05):** P0 landed locally on `feat/p0-land-staged`: the 351 staged
+  paths as 10 commits (`08752d9`…`0e3f49b`), backups `refs/backup/p0-staged-index`
+  and `refs/backup/p0-worktree` first; `ATL_TEMPLATE_SELF=1 pnpm validate` green on
+  every commit but the first, whose typecheck failure was already on `main` and is
+  fixed by the second. `.atl/` is ignored; `docs/SDD_SYNC_PROMPT.md` is dropped per
+  the audit. Native review assessment: only `08752d9` (hooks, root scripts) is due;
+  the rest are medium and under budget. An independent verifier runs first.
+- **L47 (2026-11-05):** Certifipago C2 measured (32 build probes, one run each):
+  14 of 32 build skills load on their own prompt, against 10 before; the 24 newly
+  routed 10 of 24 (5 before). Still under half, so decision 30's router hook is
+  next, after the five questions. C2 is PR #758; C3 and C4 are being pushed; C4's
+  independent verifier found no blocker and two advisories, both fixed.
