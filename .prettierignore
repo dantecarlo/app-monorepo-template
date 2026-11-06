@@ -7,3 +7,6 @@ android
 ios
 pnpm-lock.yaml
 *.d.ts
+
+# Generated audit row data (written by the audit merge script)
+docs/audits/*.json
