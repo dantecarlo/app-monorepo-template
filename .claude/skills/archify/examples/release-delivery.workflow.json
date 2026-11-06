@@ -32,15 +32,15 @@
   "mainPath": ["commit", "pull_request", "build", "checks", "approval", "deploy", "verify_prod", "announce"],
   "nodes": [
     { "id": "commit", "lane": "dev", "col": 0, "type": "frontend", "label": "Commit", "sublabel": "signed change" },
-    { "id": "pull_request", "lane": "dev", "col": 1, "type": "frontend", "label": "Pull Request", "sublabel": "reviewed diff" },
-    { "id": "build", "lane": "ci", "col": 2, "type": "backend", "label": "Build", "sublabel": "locked inputs", "tag": "reproducible" },
-    { "id": "checks", "lane": "ci", "col": 3, "type": "security", "label": "Quality Gates", "sublabel": "test + scan", "tag": "blocking" },
+    { "id": "pull_request", "width": 107, "lane": "dev", "col": 1, "type": "frontend", "label": "Pull Request", "sublabel": "reviewed diff" },
+    { "id": "build", "width": 91, "lane": "ci", "col": 2, "type": "backend", "label": "Build", "sublabel": "locked inputs", "tag": "reproducible" },
+    { "id": "checks", "width": 113, "lane": "ci", "col": 3, "type": "security", "label": "Quality Gates", "sublabel": "test + scan", "tag": "blocking" },
     { "id": "approval", "lane": "approval", "col": 4, "type": "security", "label": "Approve", "sublabel": "release owner", "tag": "human gate" },
     { "id": "deploy", "lane": "environment", "col": 4, "type": "cloud", "label": "Deploy", "sublabel": "canary 10%", "tag": "production" },
     { "id": "verify_prod", "lane": "environment", "col": 5, "type": "backend", "label": "Verify", "sublabel": "smoke + SLO" },
     { "id": "announce", "lane": "communication", "col": 5, "type": "external", "label": "Announce", "sublabel": "status + notes" },
-    { "id": "failed", "lane": "exceptions", "col": 2, "type": "security", "label": "Stop Release", "sublabel": "gate failed" },
-    { "id": "rollback", "lane": "exceptions", "col": 4, "width": 64, "type": "messagebus", "label": "Rollback", "sublabel": "last good image", "tag": "owner: on-call" }
+    { "id": "failed", "width": 107, "lane": "exceptions", "col": 2, "type": "security", "label": "Stop Release", "sublabel": "gate failed" },
+    { "id": "rollback", "lane": "exceptions", "col": 4, "width": 86, "type": "messagebus", "label": "Rollback", "sublabel": "last good image", "tag": "owner: on-call" }
   ],
   "edges": [
     { "from": "commit", "to": "pull_request" },

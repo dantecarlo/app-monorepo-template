@@ -74,10 +74,18 @@ const SIGIL_SHAPE = {
             <circle cx="8" cy="8" r="1.2" class="sigil-fill"/>`,
 };
 
+// Where renderers stamp the sigil: `inset` px in from a top corner of the node
+// box, `size` px square. Node label fitting reserves this box (text-fit.mjs),
+// so keep the renderers' placement and these values in step.
+export const semanticSigilBox = {
+  inset: 6,
+  size: 11,
+};
+
 // A quiet, renderer-owned role stamp. It is authored SVG content rather than a
 // viewer overlay, so it survives canonical export while adding no focus target,
 // accessible name, layout box, or interaction state of its own.
-export function renderSemanticSigil(kind, { x, y, size = 11 } = {}) {
+export function renderSemanticSigil(kind, { x, y, size = semanticSigilBox.size } = {}) {
   const normalized = Object.hasOwn(SIGIL_SHAPE, kind) ? kind : 'neutral';
   const tone = SIGIL_TONE[normalized] || 'external';
   const scale = size / 16;

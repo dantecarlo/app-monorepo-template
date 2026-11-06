@@ -5,7 +5,8 @@ import https from 'node:https';
 import net from 'node:net';
 import { BRAND_MARKS } from './generated-brand-marks.mjs';
 import { throwDiagnosticError } from './diagnostics.mjs';
-import { esc, textUnits } from './utils.mjs';
+import { availableNodeLabelWidth, minimumNodeTextWidth, requiredNodeLabelBoxWidth } from './text-fit.mjs';
+import { esc } from './utils.mjs';
 
 const COLLECTIONS = Object.freeze({
   architecture: 'components',
@@ -518,17 +519,24 @@ export function brandMetadataFor(node) {
   } : {};
 }
 
+// Label room on a node's top rail, net of the semantic sigil and — when the
+// node carries one — the brand mark. Pass to fittedNodeLabelFontSize.
 export function brandLabelFitWidth(node, width) {
-  return brandMarkFor(node) ? Math.max(1, width - 48) : width;
+  return Math.max(1, availableNodeLabelWidth(width, Boolean(brandMarkFor(node))));
 }
 
-export function brandTopRailProblem(node, width, minimumFontSize, subject = 'Node') {
-  if (!brandMarkFor(node)) return null;
-  const available = width - 48;
-  const required = textUnits(node.label) * minimumFontSize * 0.6;
+// Validation half of brandLabelFitWidth: every node label shares its top rail
+// with the semantic sigil, so this applies to all nodes, branded or not.
+// `widthNote` explains how the box width is set when it is not authored directly.
+export function brandTopRailProblem(node, width, minimumFontSize, subject = 'Node', widthNote = '') {
+  const hasBrand = Boolean(brandMarkFor(node));
+  const available = availableNodeLabelWidth(width, hasBrand);
+  const required = minimumNodeTextWidth(node.label, minimumFontSize);
   if (available >= required) return null;
-  return `${subject} "${node.id}" brand top rail leaves ${Math.max(0, available)}px for its label, but `
-    + `"${node.label}" needs ~${Math.ceil(required)}px at the ${minimumFontSize}px legible minimum — widen the node or shorten the label.`;
+  const rail = hasBrand ? 'semantic sigil and brand mark' : 'semantic sigil';
+  return `${subject} "${node.id}" (${width}px) leaves ${Math.max(0, available)}px for its label beside its ${rail}, but `
+    + `"${node.label}" needs ~${Math.ceil(required)}px at the ${minimumFontSize}px legible minimum — increase the width to at least `
+    + `${requiredNodeLabelBoxWidth(node.label, minimumFontSize, hasBrand)}px${widthNote ? ` (${widthNote})` : ''}.`;
 }
 
 function markAttrs(mark) {
