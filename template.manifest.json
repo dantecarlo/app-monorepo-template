@@ -30,6 +30,7 @@
     ".claude/skills/store/**",
     ".claude/skills/test/**",
     ".claude/skills/validate-all/**",
+    ".gitattributes",
     ".github/workflows/ci.yml",
     ".gitignore",
     ".husky/**",
