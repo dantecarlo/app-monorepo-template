@@ -124,9 +124,14 @@ master after these merges.
 
 **Template → Certifipago**
 
-| Template change                                                           | Landed in             | Certifipago counterpart                                      | Carried by   | Status |
-| ------------------------------------------------------------------------- | --------------------- | ------------------------------------------------------------ | ------------ | ------ |
-| P0 units (hooks, core seam, lint rules, archify lock, diagrams, manifest) | `feat/p0-land-staged` | each unit checked against Certifipago after its verification | P0 follow-up | open   |
+| Template change                                                                      | Landed in             | Certifipago counterpart                                                                                                             | Carried by            | Status |
+| ------------------------------------------------------------------------------------ | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------- | ------ |
+| Hooks run `commitlint` and `lint-staged` through `pnpm exec` (P0 `08752d9`)          | `feat/p0-land-staged` | the same two lines in `.husky/commit-msg` and `.husky/pre-commit` (Certifipago still runs `pnpm commitlint` and `pnpm lint-staged`) | C5                    | open   |
+| archify lock: a hash per file and the sigil patch recorded (P0 `e040feb`, `417ae5c`) | `feat/p0-land-staged` | Certifipago's `skills-lock.json` holds one hash per skill and no patch record; check whether its archify carries the sigil patch    | PD2 (one lock format) | open   |
+| `.gitattributes` (P0 `3d31c02`)                                                      | `feat/p0-land-staged` | none: copied from Certifipago                                                                                                       | not applicable        | closed |
+| Core console seam, suffix codemod, docs, capability manifest (P0)                    | `feat/p0-land-staged` | none: template code and template-only files                                                                                         | not applicable        | closed |
+| NUL byte escaped in the local lint rules (P0 `1d5ce1c`)                              | `feat/p0-land-staged` | none: Certifipago's rules carry no NUL byte                                                                                         | not applicable        | closed |
+| Core import rules no longer contradict (P0 `91bcd11`)                                | `feat/p0-land-staged` | checked when the lint rules are harvested                                                                                           | T3 (P3)               | open   |
 
 ---
 
@@ -1256,3 +1261,11 @@ GENERALIZATION_PLAN.md) and a green `ATL_TEMPLATE_SELF=1 pnpm validate`.
   routed 10 of 24 (5 before). Still under half, so decision 30's router hook is
   next, after the five questions. C2 is PR #758; C3 and C4 are being pushed; C4's
   independent verifier found no blocker and two advisories, both fixed.
+- **L48 (2026-11-05):** P0 closed locally: four more commits (`ee09208` the seven
+  audit docs, `91bcd11` core import rules, `3d31c02` `.gitattributes` copied from
+  Certifipago, `4a9ec5f` the 19 P0 items checked off); `ATL_TEMPLATE_SELF=1 pnpm
+validate` exits 0. Independent verifier: no blocker. Native review: the hooks
+  commit was reviewed alone (granted, two lenses, no finding, acknowledged); the
+  whole range against `main` stopped with `lens_context_budget_exceeded` (382 files,
+  64,788 lines, no authority created), and the range after the hooks commit assesses
+  medium and under budget, so no further review is due. Parity rows for P0 added.
