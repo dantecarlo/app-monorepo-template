@@ -54,6 +54,7 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | Passthrough guard adapter | `packages/core/src/ports/origin-guard/createPassthroughOriginGuard.helper.ts` | `.helper.ts` | Alternative adapter — assertTrustedOrigin always { trusted: true, reason: NOT_CONFIGURED } |
 | Query-key sanitizer   | `packages/core/src/observability/sanitizeQueryKey.helper.ts`             | `.helper.ts`   | Redacts dynamic id segments from query keys before error reporting (PII-safe) |
 | PII scrubbing         | `packages/core/src/utils/scrubPII.helper.ts`                             | `.helper.ts`   | Scrub sensitive fields before they reach any monitoring sink      |
+| Host console seam         | `packages/core/src/utils/hostConsole.helper.ts`                                  | `.helper.ts`   | Narrow module-scoped type for the one host API the agnostic layer uses — never a global                                                    |
 | i18n catalogs         | `packages/i18n/src/locales/es.json`, `packages/i18n/src/locales/en.json` | `.json`        | ICU message catalogs (default `es`, plus `en`)                    |
 | i18n constants        | `packages/i18n/src/locales/i18n.constant.ts`                             | `.constant.ts` | Locale codes + default-locale constant                            |
 | i18n resources        | `packages/i18n/src/locales/resources.constant.ts`                        | `.constant.ts` | Catalog registry consumed by each app's i18n adapter              |
