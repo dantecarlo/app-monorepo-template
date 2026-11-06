@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
 import { Icon } from '@/components/ui/Icon/Icon.component'
@@ -6,16 +5,7 @@ import {
   SETTING_ROW_CHEVRON_SIZE,
   SETTING_ROW_STYLES as styles
 } from '@/components/ui/SettingRow/SettingRow.styles'
-
-export interface ISettingRowProps {
-  control?: ReactNode
-  isFirst?: boolean
-  label: string
-  leading?: ReactNode
-  onPress?: () => void
-  subtitle?: string
-  value?: string
-}
+import type { ISettingRowProps } from '@/components/ui/SettingRow/SettingRow.type'
 
 /**
  * Settings list row: leading slot + label/subtitle + trailing value/control

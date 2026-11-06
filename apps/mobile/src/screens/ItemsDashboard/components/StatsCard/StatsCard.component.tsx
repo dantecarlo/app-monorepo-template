@@ -4,12 +4,7 @@ import { Text, View } from 'react-native'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { TEXT } from '@/helpers/style.constant'
 import { STATS_CARD_STYLES as styles } from '@/screens/ItemsDashboard/components/StatsCard/StatsCard.styles'
-
-export interface IStatsCardProps {
-  activeCount: number
-  isLoading: boolean
-  totalCount: number
-}
+import type { IStatsCardProps } from '@/screens/ItemsDashboard/components/StatsCard/StatsCard.type'
 
 export const StatsCard = ({
   activeCount,

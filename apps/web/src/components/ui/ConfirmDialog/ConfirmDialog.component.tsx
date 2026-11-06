@@ -2,26 +2,14 @@
 
 import { useTranslations } from 'next-intl'
 import type { JSX } from 'react'
-import type { VariantProps } from 'tailwind-variants'
 
 import {
   CANCEL_BUTTON,
   CONFIRM_DIALOG_ACTIONS,
   confirmButtonVariants
 } from '@/components/ui/ConfirmDialog/ConfirmDialog.styles'
+import type { IConfirmDialogProps } from '@/components/ui/ConfirmDialog/ConfirmDialog.type'
 import { Modal } from '@/components/ui/Modal/Modal.component'
-
-export interface IConfirmDialogProps extends VariantProps<
-  typeof confirmButtonVariants
-> {
-  cancelLabel?: string
-  confirmLabel?: string
-  isOpen: boolean
-  message: string
-  onCancel: () => void
-  onConfirm: () => void
-  title?: string
-}
 
 export const ConfirmDialog = ({
   cancelLabel,

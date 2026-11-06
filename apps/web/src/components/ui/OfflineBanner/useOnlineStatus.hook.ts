@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react'
 
-const ONLINE_EVENT = 'online'
-const OFFLINE_EVENT = 'offline'
+import {
+  OFFLINE_EVENT,
+  ONLINE_EVENT
+} from '@/components/ui/OfflineBanner/OfflineBanner.constant'
 
 export const useOnlineStatus = (): boolean => {
   const [isOnline, setIsOnline] = useState(true)

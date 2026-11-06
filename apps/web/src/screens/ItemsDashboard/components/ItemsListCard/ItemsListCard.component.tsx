@@ -12,14 +12,7 @@ import {
   ITEMS_LIST_CARD,
   SKELETON_ROW_COUNT
 } from '@/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.styles'
-import type { IItemViewModel } from '@/screens/ItemsDashboard/models/Item.type'
-
-export interface IItemsListCardProps {
-  isLoading: boolean
-  items: IItemViewModel[]
-  onSearchChange: (v: string) => void
-  search: string
-}
+import type { IItemsListCardProps } from '@/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.type'
 
 export const ItemsListCard = ({
   isLoading,

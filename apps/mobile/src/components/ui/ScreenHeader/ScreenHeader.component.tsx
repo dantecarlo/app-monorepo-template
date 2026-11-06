@@ -1,17 +1,8 @@
 import { Text, View } from 'react-native'
 
-import type { IconNameType } from '@/components/ui/Icon/Icon.component'
 import { IconButton } from '@/components/ui/IconButton/IconButton.component'
 import { SCREEN_HEADER_STYLES as styles } from '@/components/ui/ScreenHeader/ScreenHeader.styles'
-
-export interface IScreenHeaderProps {
-  actionLabel?: string
-  actionName?: IconNameType
-  backLabel: string
-  onAction?: () => void
-  onBack?: () => void
-  title: string
-}
+import type { IScreenHeaderProps } from '@/components/ui/ScreenHeader/ScreenHeader.type'
 
 /**
  * Fixed header with symmetric slots: back button (left) + title (center) +

@@ -5,16 +5,9 @@ import {
   ICON_PATHS,
   STROKE_WIDTH
 } from '@/components/ui/Icon/Icon.constant'
+import type { IIconProps } from '@/components/ui/Icon/Icon.type'
 
 export type { IconNameType } from '@/components/ui/Icon/Icon.constant'
-
-export interface IIconProps {
-  color?: string
-  decorative?: boolean
-  label?: string
-  name: keyof typeof ICON_PATHS
-  size?: number
-}
 
 export const Icon = ({
   color = 'currentColor',

@@ -1,17 +1,10 @@
-import type { JSX, ReactNode } from 'react'
+import type { JSX } from 'react'
 
 import {
   listRowInteractiveVariants,
   listRowVariants
 } from '@/components/ui/ListRow/ListRow.styles'
-
-export interface IListRowProps {
-  leading?: ReactNode
-  onClick?: () => void
-  subtitle?: string
-  title: string
-  trailing?: ReactNode
-}
+import type { IListRowProps } from '@/components/ui/ListRow/ListRow.type'
 
 /** Generic list item with optional leading/trailing slots and divider. */
 export const ListRow = ({

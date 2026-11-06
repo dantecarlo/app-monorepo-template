@@ -4,11 +4,8 @@ import { useTranslations } from 'next-intl'
 import type { JSX } from 'react'
 
 import { offlineBannerVariants } from '@/components/ui/OfflineBanner/OfflineBanner.styles'
+import type { IOfflineBannerProps } from '@/components/ui/OfflineBanner/OfflineBanner.type'
 import { useOnlineStatus } from '@/components/ui/OfflineBanner/useOnlineStatus.hook'
-
-export interface IOfflineBannerProps {
-  forceOffline?: boolean
-}
 
 export const OfflineBanner = ({
   forceOffline

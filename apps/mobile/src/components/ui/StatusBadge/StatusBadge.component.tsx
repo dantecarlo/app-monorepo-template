@@ -1,13 +1,8 @@
 import { Text, View } from 'react-native'
 
-import type { StatusBadgeToneType } from '@/components/ui/StatusBadge/StatusBadge.constant'
 import { STATUS_BADGE_TONE_COLORS } from '@/components/ui/StatusBadge/StatusBadge.constant'
 import { STATUS_BADGE_STYLES as styles } from '@/components/ui/StatusBadge/StatusBadge.styles'
-
-export interface IStatusBadgeProps {
-  label: string
-  tone?: StatusBadgeToneType
-}
+import type { IStatusBadgeProps } from '@/components/ui/StatusBadge/StatusBadge.type'
 
 export const StatusBadge = ({
   label,

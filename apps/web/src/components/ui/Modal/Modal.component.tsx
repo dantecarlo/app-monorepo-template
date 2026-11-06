@@ -1,8 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import type { JSX, ReactNode } from 'react'
-import type { VariantProps } from 'tailwind-variants'
+import type { JSX } from 'react'
 
 import {
   MODAL_BODY,
@@ -11,16 +10,8 @@ import {
   modalPanelVariants,
   modalScrimVariants
 } from '@/components/ui/Modal/Modal.styles'
+import type { IModalProps } from '@/components/ui/Modal/Modal.type'
 import { useModalDismiss } from '@/components/ui/Modal/useModalDismiss.hook'
-
-export interface IModalProps extends VariantProps<
-  typeof modalPanelVariants
-> {
-  children?: ReactNode
-  isOpen: boolean
-  onClose: () => void
-  title?: string
-}
 
 export const Modal = ({
   children,

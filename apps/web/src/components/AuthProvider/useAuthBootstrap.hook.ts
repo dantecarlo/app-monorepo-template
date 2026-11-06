@@ -1,13 +1,9 @@
 'use client'
 
-import type { IAuthGateway } from '@app/core'
 import { useEffect } from 'react'
 
+import type { IUseAuthBootstrapParams } from '@/components/AuthProvider/AuthProvider.type'
 import { useAuthStore } from '@/stores/auth.store'
-
-export interface IUseAuthBootstrapParams {
-  gateway: IAuthGateway
-}
 
 export const useAuthBootstrap = ({
   gateway

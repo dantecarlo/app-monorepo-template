@@ -1,15 +1,7 @@
 import { ThemeEnum } from '@app/tokens'
-import type { ColorValue } from 'react-native'
 
+import type { IUseGlassCardResult } from '@/components/ui/GlassCard/GlassCard.type'
 import { useThemeTokens } from '@/lib/theme/useThemeTokens.hook'
-
-export type GlassCardTintType = 'dark' | 'light'
-
-export interface IUseGlassCardResult {
-  borderColor: ColorValue
-  overlayColor: ColorValue
-  tint: GlassCardTintType
-}
 
 /**
  * Resolves the theme-variant glass surface values (BlurView tint + overlay

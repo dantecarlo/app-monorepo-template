@@ -3,6 +3,7 @@
 import { type ThemeEnumType } from '@app/tokens'
 import { useCallback } from 'react'
 
+import type { IUseThemeResult } from '@/components/ThemeProvider/ThemeProvider.type'
 import {
   THEME_ATTRIBUTE,
   THEME_COOKIE_MAX_AGE_SECONDS,
@@ -13,11 +14,6 @@ import {
   selectTheme,
   useThemeStore
 } from '@/stores/theme.store'
-
-export interface IUseThemeResult {
-  setTheme: (theme: ThemeEnumType) => void
-  theme: ThemeEnumType
-}
 
 /**
  * Theme controller for client components. `setTheme` performs a pure CSS-var

@@ -1,12 +1,7 @@
 import { ThemeEnum } from '@app/tokens'
-import type { StatusBarStyle } from 'expo-status-bar'
 
+import type { IUseRootThemeResult } from '@/lib/theme/useRootTheme.type'
 import { useThemeTokens } from '@/lib/theme/useThemeTokens.hook'
-
-export interface IUseRootThemeResult {
-  contentBackgroundColor: string
-  statusBarStyle: StatusBarStyle
-}
 
 /**
  * Root-shell theme values for _layout: the StatusBar glyph style and the

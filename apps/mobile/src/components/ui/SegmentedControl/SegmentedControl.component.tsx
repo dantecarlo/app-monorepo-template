@@ -5,17 +5,7 @@ import {
   SEGMENT_COLORS,
   SEGMENTED_CONTROL_STYLES as styles
 } from '@/components/ui/SegmentedControl/SegmentedControl.styles'
-
-export interface ISegment {
-  id: string
-  label: string
-}
-
-export interface ISegmentedControlProps {
-  activeId: string
-  onSegmentPress: (id: string) => void
-  segments: ReadonlyArray<ISegment>
-}
+import type { ISegmentedControlProps } from '@/components/ui/SegmentedControl/SegmentedControl.type'
 
 export const SegmentedControl = ({
   activeId,

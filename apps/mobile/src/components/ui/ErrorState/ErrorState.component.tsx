@@ -1,17 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { Pressable, Text, View } from 'react-native'
 
-import { ErrorStateCodeEnum } from '@/components/ui/ErrorState/ErrorState.constant'
 import { ERROR_STATE_STYLES as styles } from '@/components/ui/ErrorState/ErrorState.styles'
-
-export interface IErrorStateProps {
-  code?: ErrorStateCodeEnum
-  error?: unknown
-  message?: string
-  onRetry?: () => void
-  resetErrorBoundary?: () => void
-  title?: string
-}
+import type { IErrorStateProps } from '@/components/ui/ErrorState/ErrorState.type'
 
 export const ErrorState = ({
   code,

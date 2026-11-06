@@ -16,13 +16,14 @@ import { GRADIENT_BRAND_COLORS } from '@/screens/ItemsDashboard/components/ItemC
 import { ItemsListCard } from '@/screens/ItemsDashboard/components/ItemsListCard'
 import { StatsCard } from '@/screens/ItemsDashboard/components/StatsCard'
 import { useItems } from '@/screens/ItemsDashboard/hooks/useItems.hook'
-
-const VIEW_ALL_HEIGHT = 48
-const VIEW_ALL_BORDER_RADIUS = 9999
-const VIEW_ALL_FONT_SIZE = 15
-const VIEW_ALL_FONT_WEIGHT = '700' as const
-const VIEW_ALL_MARGIN_TOP = 8
-const NAV_BOTTOM = 24
+import {
+  NAV_BOTTOM,
+  VIEW_ALL_BORDER_RADIUS,
+  VIEW_ALL_FONT_SIZE,
+  VIEW_ALL_FONT_WEIGHT,
+  VIEW_ALL_HEIGHT,
+  VIEW_ALL_MARGIN_TOP
+} from '@/screens/ItemsDashboard/ItemsDashboard.constant'
 
 const navContainerStyle = {
   alignItems: 'center' as const,

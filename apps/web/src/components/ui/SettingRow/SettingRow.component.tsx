@@ -1,4 +1,4 @@
-import type { JSX, ReactNode } from 'react'
+import type { JSX } from 'react'
 
 import { Icon } from '@/components/ui/Icon/Icon.component'
 import {
@@ -9,16 +9,7 @@ import {
   SETTING_ROW_SUBTITLE_CLASS,
   SETTING_ROW_VALUE_CLASS
 } from '@/components/ui/SettingRow/SettingRow.constant'
-
-export interface ISettingRowProps {
-  control?: ReactNode
-  isFirst?: boolean
-  label: string
-  leading?: ReactNode
-  onClick?: () => void
-  subtitle?: string
-  value?: string
-}
+import type { ISettingRowProps } from '@/components/ui/SettingRow/SettingRow.type'
 
 /**
  * Settings list row: leading slot + label/subtitle + trailing value/control

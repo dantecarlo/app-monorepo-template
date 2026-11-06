@@ -12,12 +12,8 @@ import { useCallback } from 'react'
 import {
   LOCALE_COOKIE_MAX_AGE_SECONDS,
   LOCALE_COOKIE_NAME
-} from '@/components/ui/LanguageSwitcher/languageSwitcher.constant'
-
-export interface IUseLanguageSwitcherResult {
-  cycleLanguage: () => void
-  locale: SupportedLanguageType
-}
+} from '@/components/ui/LanguageSwitcher/LanguageSwitcher.constant'
+import type { IUseLanguageSwitcherResult } from '@/components/ui/LanguageSwitcher/LanguageSwitcher.type'
 
 const toNextLanguage = (
   current: SupportedLanguageType

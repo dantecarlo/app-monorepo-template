@@ -5,10 +5,7 @@ import {
   ANIMATE_DURATION_MS,
   KNOB_ON_X
 } from '@/components/ui/Toggle/Toggle.constant'
-
-export interface IUseToggleKnobResult {
-  translateX: Animated.Value
-}
+import type { IUseToggleKnobResult } from '@/components/ui/Toggle/Toggle.type'
 
 export const useToggleKnob = (value: boolean): IUseToggleKnobResult => {
   const translateXRef = useRef(new Animated.Value(value ? KNOB_ON_X : 0))

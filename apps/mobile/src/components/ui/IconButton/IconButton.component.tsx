@@ -1,7 +1,6 @@
 import { colors } from '@app/tokens'
 import { Pressable } from 'react-native'
 
-import type { IconNameType } from '@/components/ui/Icon/Icon.component'
 import { Icon } from '@/components/ui/Icon/Icon.component'
 import {
   DEFAULT_ICON_SIZE,
@@ -11,15 +10,7 @@ import {
   ICON_BUTTON_STYLES as styles,
   ICON_BUTTON_VARIANT
 } from '@/components/ui/IconButton/IconButton.styles'
-
-export type IconButtonVariantType = 'glass' | 'accent'
-
-export interface IIconButtonProps {
-  accessibilityLabel: string
-  name: IconNameType
-  onPress: () => void
-  variant?: IconButtonVariantType
-}
+import type { IIconButtonProps } from '@/components/ui/IconButton/IconButton.type'
 
 export const IconButton = ({
   accessibilityLabel,

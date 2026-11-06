@@ -6,13 +6,7 @@ import {
   SOCIAL_AUTH_GLYPH_SIZE,
   SOCIAL_AUTH_STYLES as styles
 } from '@/components/ui/SocialAuthButton/SocialAuthButton.styles'
-
-export interface ISocialAuthButtonProps {
-  disabled?: boolean
-  isLoading?: boolean
-  label: string
-  onPress?: () => void
-}
+import type { ISocialAuthButtonProps } from '@/components/ui/SocialAuthButton/SocialAuthButton.type'
 
 /** Glass Google social-auth pill button. */
 export const SocialAuthButton = ({

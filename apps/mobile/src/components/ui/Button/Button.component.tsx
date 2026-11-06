@@ -1,9 +1,5 @@
 import { ActivityIndicator, Pressable, Text } from 'react-native'
 
-import type {
-  ButtonSizeType,
-  ButtonVariantType
-} from '@/components/ui/Button/Button.constant'
 import { PRESS_OPACITY } from '@/components/ui/Button/Button.constant'
 import {
   BUTTON_BASE_CLASS,
@@ -14,17 +10,7 @@ import {
   BUTTON_TEXT_VARIANT_CLASS,
   BUTTON_VARIANT_CLASS
 } from '@/components/ui/Button/Button.styles'
-
-export interface IButtonProps {
-  accessibilityLabel?: string
-  children?: React.ReactNode
-  disabled?: boolean
-  fullWidth?: boolean
-  isLoading?: boolean
-  onPress?: () => void
-  size?: ButtonSizeType
-  variant?: ButtonVariantType
-}
+import type { IButtonProps } from '@/components/ui/Button/Button.type'
 
 export const Button = ({
   accessibilityLabel,

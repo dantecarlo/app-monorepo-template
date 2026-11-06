@@ -1,20 +1,10 @@
-import {
-  useMutation,
-  type UseMutationOptions,
-  type UseMutationResult
-} from '@tanstack/react-query'
+import { useMutation, UseMutationResult } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
 import { resolveErrorMessage } from '@/lib/query/resolveErrorMessage.helper'
+import type { IAppMutationOptions } from '@/lib/query/useAppMutation.type'
+import { GENERIC_ERROR_KEY } from '@/lib/query/useAppQuery.constant'
 import { useToastStore } from '@/stores/toast.store'
-
-const GENERIC_ERROR_KEY = 'helper.error.generic'
-
-export interface IAppMutationOptions<TData, TVariables, TError = Error> {
-  errorMessage?: string
-  mutationOptions: UseMutationOptions<TData, TError, TVariables>
-  successMessage?: string
-}
 
 export const useAppMutation = <
   TData,

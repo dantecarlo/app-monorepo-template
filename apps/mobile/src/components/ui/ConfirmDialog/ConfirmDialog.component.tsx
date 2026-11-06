@@ -5,17 +5,8 @@ import {
   CONFIRM_DIALOG_STYLES as styles,
   CONFIRM_PRESSED_OPACITY
 } from '@/components/ui/ConfirmDialog/ConfirmDialog.styles'
+import type { IConfirmDialogProps } from '@/components/ui/ConfirmDialog/ConfirmDialog.type'
 import { Modal } from '@/components/ui/Modal/Modal.component'
-
-export interface IConfirmDialogProps {
-  cancelLabel?: string
-  confirmLabel?: string
-  isOpen: boolean
-  message: string
-  onCancel: () => void
-  onConfirm: () => void
-  title?: string
-}
 
 export const ConfirmDialog = ({
   cancelLabel,

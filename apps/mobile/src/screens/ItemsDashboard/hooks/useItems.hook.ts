@@ -3,36 +3,26 @@ import { useTranslation } from 'react-i18next'
 
 import { QueryKeys } from '@/lib/query/queryKeys.constant'
 import { useAppQuery } from '@/lib/query/useAppQuery.hook'
-import type { IItemViewModel } from '@/screens/ItemsDashboard/models/Item.type'
+import {
+  ACTIVE_STATUS,
+  DEFAULT_ITEMS_LIMIT,
+  DEFAULT_NAV_ID,
+  EMPTY_ITEMS
+} from '@/screens/ItemsDashboard/hooks/useItems.constant'
+import type {
+  IItemViewModel,
+  IUseItemsParams,
+  IUseItemsResult
+} from '@/screens/ItemsDashboard/models/Item.type'
 import { adaptItems, getItems } from '@/services/Items'
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const DEFAULT_ITEMS_LIMIT = 50
-const ACTIVE_STATUS = 'active' as const
-const EMPTY_ITEMS: IItemViewModel[] = []
-const DEFAULT_NAV_ID = 'home'
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-export interface IUseItemsParams {
-  limit?: number
-}
-
-export interface IUseItemsResult {
-  activeCount: number
-  activeNav: string
-  isLoading: boolean
-  items: IItemViewModel[]
-  onNavChange: (id: string) => void
-  onSearchChange: (value: string) => void
-  search: string
-  totalCount: number
-}
 
 // ---------------------------------------------------------------------------
 // Hook

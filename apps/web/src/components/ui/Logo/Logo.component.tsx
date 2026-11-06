@@ -7,14 +7,10 @@ import type { JSX } from 'react'
 import {
   DEFAULT_LOGO_SIZE,
   LOGO_ASSET_SRC
-} from '@/components/ui/Logo/logo.constant'
+} from '@/components/ui/Logo/Logo.constant'
 import { LOGO } from '@/components/ui/Logo/Logo.styles'
+import type { ILogoProps } from '@/components/ui/Logo/Logo.type'
 import { useLogo } from '@/components/ui/Logo/useLogo.hook'
-
-export interface ILogoProps {
-  brandLabel: string
-  size?: number
-}
 
 /**
  * Generic brand mark: renders the per-project SVG asset slot when present and

@@ -1,16 +1,7 @@
-import type { ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
 import { LIST_ROW_STYLES as styles } from '@/components/ui/ListRow/ListRow.styles'
-
-export interface IListRowProps {
-  isFirst?: boolean
-  leading?: ReactNode
-  onPress?: () => void
-  subtitle?: string
-  title: string
-  trailing?: ReactNode
-}
+import type { IListRowProps } from '@/components/ui/ListRow/ListRow.type'
 
 /** Generic list item with optional leading/trailing slots and divider. */
 export const ListRow = ({

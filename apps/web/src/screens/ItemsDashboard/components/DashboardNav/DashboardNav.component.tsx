@@ -6,11 +6,7 @@ import { Icon } from '@/components/ui/Icon/Icon.component'
 import type { INavBarItem } from '@/components/ui/NavBar'
 import { NavBar } from '@/components/ui/NavBar'
 import { DASHBOARD_NAV_ICON_SIZE } from '@/screens/ItemsDashboard/components/DashboardNav/DashboardNav.styles'
-
-export interface IDashboardNavProps {
-  activeId: string
-  onItemPress: (id: string) => void
-}
+import type { IDashboardNavProps } from '@/screens/ItemsDashboard/components/DashboardNav/DashboardNav.type'
 
 export const DashboardNav = ({
   activeId,

@@ -5,16 +5,11 @@ import {
   ITEM_CARD,
   STATUS_COLOR
 } from '@/screens/ItemsDashboard/components/ItemCard/ItemCard.styles'
-import type { IItemViewModel } from '@/screens/ItemsDashboard/models/Item.type'
+import type { IItemCardProps } from '@/screens/ItemsDashboard/components/ItemCard/ItemCard.type'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-export interface IItemCardProps {
-  isLast?: boolean
-  item: IItemViewModel
-}
 
 // ---------------------------------------------------------------------------
 // Component

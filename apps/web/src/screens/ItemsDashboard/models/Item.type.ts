@@ -44,3 +44,22 @@ export interface IItemsDashboardSummary {
   recentItems: IItemViewModel[]
   totalCount: number
 }
+
+// ---------------------------------------------------------------------------
+// useItems hook contract
+// ---------------------------------------------------------------------------
+
+export interface IUseItemsParams {
+  limit?: number
+}
+
+export interface IUseItemsResult {
+  activeCount: number
+  activeNav: string
+  isLoading: boolean
+  items: IItemViewModel[]
+  onNavChange: (id: string) => void
+  onSearchChange: (value: string) => void
+  search: string
+  totalCount: number
+}

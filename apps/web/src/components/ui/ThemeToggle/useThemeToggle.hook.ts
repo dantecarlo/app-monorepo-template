@@ -4,11 +4,7 @@ import { ThemeEnum } from '@app/tokens'
 import { useCallback } from 'react'
 
 import { useTheme } from '@/components/ThemeProvider/useTheme.hook'
-
-export interface IUseThemeToggleResult {
-  isLight: boolean
-  onValueChange: (next: boolean) => void
-}
+import type { IUseThemeToggleResult } from '@/components/ui/ThemeToggle/ThemeToggle.type'
 
 // Bridges the boolean Toggle contract to the theme controller: the switch is
 // "on" when the active theme is light, and flipping it maps back to the

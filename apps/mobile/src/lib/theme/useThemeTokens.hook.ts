@@ -1,16 +1,12 @@
 import {
   DEFAULT_THEME,
-  type ThemeColorsType,
   ThemeEnum,
-  type ThemeEnumType,
+  ThemeEnumType,
   themes
 } from '@app/tokens'
 import { useColorScheme } from 'nativewind'
 
-export interface IUseThemeTokensResult {
-  colors: ThemeColorsType
-  theme: ThemeEnumType
-}
+import type { IUseThemeTokensResult } from '@/lib/theme/useThemeTokens.type'
 
 /**
  * Reactive theme accessor for StyleSheet consumers. Most mobile components

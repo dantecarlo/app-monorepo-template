@@ -1,17 +1,12 @@
 'use client'
 
-import type { ComponentType, JSX, ReactNode } from 'react'
+import type { JSX } from 'react'
 import { Suspense } from 'react'
-import { ErrorBoundary, type FallbackProps } from 'react-error-boundary'
+import { ErrorBoundary } from 'react-error-boundary'
 
+import type { IAsyncBoundaryProps } from '@/components/ui/AsyncBoundary/AsyncBoundary.type'
 import { AsyncBoundaryDefaultError } from '@/components/ui/AsyncBoundary/AsyncBoundaryDefaultError.component'
 import { AsyncBoundaryDefaultLoading } from '@/components/ui/AsyncBoundary/AsyncBoundaryDefaultLoading.component'
-
-export interface IAsyncBoundaryProps {
-  children: ReactNode
-  ErrorFallback?: ComponentType<FallbackProps>
-  loadingFallback?: ReactNode
-}
 
 export const AsyncBoundary = ({
   ErrorFallback = AsyncBoundaryDefaultError,

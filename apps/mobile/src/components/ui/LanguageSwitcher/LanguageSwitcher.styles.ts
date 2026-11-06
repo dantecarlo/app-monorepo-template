@@ -1,7 +1,7 @@
 import { fontFamily, fontSize, radius, spacing } from '@app/tokens'
 import { StyleSheet } from 'react-native'
 
-import { LANGUAGE_SWITCHER_MIN_WIDTH } from '@/components/ui/LanguageSwitcher/languageSwitcher.constant'
+import { LANGUAGE_SWITCHER_MIN_WIDTH } from '@/components/ui/LanguageSwitcher/LanguageSwitcher.constant'
 
 export const LANGUAGE_SWITCHER_STYLES = StyleSheet.create({
   button: {

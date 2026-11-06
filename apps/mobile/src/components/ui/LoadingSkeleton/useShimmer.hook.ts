@@ -13,10 +13,7 @@ import {
   SHIMMER_START_VALUE,
   SHIMMER_TRANSLATE_RANGE
 } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.styles'
-
-export interface IUseShimmerResult {
-  animatedStyle: ReturnType<typeof useAnimatedStyle<ViewStyle>>
-}
+import type { IUseShimmerResult } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.type'
 
 export const useShimmer = (): IUseShimmerResult => {
   const translateX = useSharedValue(SHIMMER_START_VALUE)

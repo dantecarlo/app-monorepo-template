@@ -1,14 +1,9 @@
 'use client'
 
-import type { IAuthGateway } from '@app/core'
-import type { JSX, ReactNode } from 'react'
+import type { JSX } from 'react'
 
+import type { IAuthProviderProps } from '@/components/AuthProvider/AuthProvider.type'
 import { useAuthBootstrap } from '@/components/AuthProvider/useAuthBootstrap.hook'
-
-export interface IAuthProviderProps {
-  children: ReactNode
-  gateway: IAuthGateway
-}
 
 export const AuthProvider = ({
   children,

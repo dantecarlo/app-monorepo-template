@@ -6,12 +6,7 @@ import { Chip } from '@/components/ui/Chip'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { TEXT } from '@/helpers/style.constant'
 import { STATS_CARD } from '@/screens/ItemsDashboard/components/StatsCard/StatsCard.styles'
-
-export interface IStatsCardProps {
-  activeCount: number
-  isLoading: boolean
-  totalCount: number
-}
+import type { IStatsCardProps } from '@/screens/ItemsDashboard/components/StatsCard/StatsCard.type'
 
 export const StatsCard = ({
   activeCount,

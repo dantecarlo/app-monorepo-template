@@ -1,29 +1,17 @@
+import {
+  STATUS_CLASS,
+  STATUS_LABEL
+} from '@/screens/ItemsDashboard/components/ItemCard/ItemCard.constant'
 import { ITEM_CARD } from '@/screens/ItemsDashboard/components/ItemCard/ItemCard.styles'
-import type { IItemViewModel } from '@/screens/ItemsDashboard/models/Item.type'
+import type { IItemCardProps } from '@/screens/ItemsDashboard/components/ItemCard/ItemCard.type'
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const STATUS_LABEL: Record<IItemViewModel['status'], string> = {
-  active: 'active',
-  archived: 'archived',
-  draft: 'draft'
-}
-
-const STATUS_CLASS: Record<IItemViewModel['status'], string> = {
-  active: ITEM_CARD.STATUS_ACTIVE,
-  archived: ITEM_CARD.STATUS_ARCHIVED,
-  draft: ITEM_CARD.STATUS_DRAFT
-}
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-export interface IItemCardProps {
-  item: IItemViewModel
-}
 
 // ---------------------------------------------------------------------------
 // Component

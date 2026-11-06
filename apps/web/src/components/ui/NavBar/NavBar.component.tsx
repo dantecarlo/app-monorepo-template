@@ -1,4 +1,4 @@
-import type { JSX, ReactNode } from 'react'
+import type { JSX } from 'react'
 
 import {
   NAV_BAR_ITEM_ACTIVE_CLASS,
@@ -8,19 +8,7 @@ import {
   NAV_BAR_PILL_CLASS,
   NAV_BAR_ROOT_CLASS
 } from '@/components/ui/NavBar/NavBar.constant'
-
-export interface INavBarItem {
-  icon: ReactNode
-  id: string
-  label: string
-}
-
-export interface INavBarProps {
-  activeId: string
-  ariaLabel: string
-  items: ReadonlyArray<INavBarItem>
-  onItemPress: (id: string) => void
-}
+import type { INavBarProps } from '@/components/ui/NavBar/NavBar.type'
 
 /** Floating glass pill navigation bar. Navigation-agnostic: caller owns routing. */
 export const NavBar = ({

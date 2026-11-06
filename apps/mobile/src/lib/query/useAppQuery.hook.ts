@@ -7,15 +7,9 @@ import {
 import { useTranslation } from 'react-i18next'
 
 import { resolveErrorMessage } from '@/lib/query/resolveErrorMessage.helper'
+import { GENERIC_ERROR_KEY } from '@/lib/query/useAppQuery.constant'
+import type { IAppQueryOptions } from '@/lib/query/useAppQuery.type'
 import { useToastStore } from '@/stores/toast.store'
-
-const GENERIC_ERROR_KEY = 'helper.error.generic'
-
-export interface IAppQueryOptions<TData, TError = Error> {
-  adapter?: (raw: TData) => TData
-  errorMessage?: string
-  queryOptions: UseQueryOptions<TData, TError>
-}
 
 export const useAppQuery = <TData, TError extends Error = Error>({
   adapter,
