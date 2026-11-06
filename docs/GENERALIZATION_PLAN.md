@@ -342,9 +342,11 @@ Fixed in the template's vendored copy, recorded in the lock's `adaptations`:
 - `docs/diagrams/harness.workflow.json` widths adjusted; `docs:diagrams:check`
   exits 0.
 - Proof: 0 of 220 sigils overlap after re-delivery; `doctor` reports ready.
-- Drift tooling hashes only `SKILL.md`, so this adaptation is visible in
-  `adaptations`, not in the hashes. Upstream report and the donor fix are pending
-  (donor via its own worktree).
+- The lock records this adaptation in `adaptations` and as a patch over
+  `b86b607` in `patches`, and `fileHashes` holds a sha256 per vendored file, the
+  patched values included; `computedHash` and `localHash` still cover `SKILL.md`
+  only. Upstream report and the donor fix are pending (donor via its own
+  worktree).
 
 ---
 
@@ -974,7 +976,8 @@ Every doc rewritten general, with no dead links after pruning.
 - ☐ `README.md` — currently describes a Next+Expo template
 - ☐ `AGENTS.md`
 - ☐ `CLAUDE.md` — stack table assumes Next+Expo
-- ☐ `docs/SDD_SYNC_PROMPT.md` — **the only current brand leak**
+- ✗ `docs/SDD_SYNC_PROMPT.md` — dropped in P0 (`bf843af`): it named other
+  products and absolute paths (audit `docs/audits/2026-11-04-remediation.md`)
 - ☐ `docs/architecture/*` — shared / web / mobile
 - ☐ `docs/code-standards.md` (phase 1)
 - ☐ `docs/e2e.md`, `docs/images.md`, `docs/infrastructure.md`,
@@ -1106,7 +1109,7 @@ Blocked by phase 4.
 | 2026-09-07 | Measured the last 8 rules                         | ☑ 3 rejected as `optional` design/NativeWind; 2 need a code fix first; 1 blocked; 2 pending                                 |
 | 2026-09-07 | Component delta measured                          | ☑ 86 upstream vs 29 here; 57 missing, split domain / generic / infrastructure                                               |
 | 2026-09-07 | Decisions 8 and 9 locked                          | ☑ Donor repo is read-only (worktree + its conventions); branch strategy becomes an init capability                          |
-| 2026-09-07 | Vendored the `archify` skill                      | ☑ MIT, pinned at `920543b`; 7.5 MB trimmed to 74 files; provenance in `.claude/skills-lock.json`                            |
+| 2026-09-07 | Vendored the `archify` skill                      | ☑ MIT; 7.5 MB trimmed to 74 files; first recorded at `920543b`, the lock pins `b86b607` since 2026-09-11                    |
 | 2026-09-07 | Wrote `docs/harness.md`                           | ☑ First of the whole-system docs: four layers, every gate, how to add one                                                   |
 | 2026-09-07 | Built the diagram pipeline                        | ☑ `pnpm docs:diagrams` renders each checked-in spec and repaints it with `@app/tokens`                                      |
 | 2026-09-07 | Decisions 10 and 11 locked                        | ☑ Markdown first / HTML derived; diagrams generated from a spec, never drawn                                                |

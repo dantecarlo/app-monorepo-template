@@ -10,10 +10,16 @@ ADR explicitly overrides it.
 
 | Layer                | Default                                                                                                                                                             |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Web app              | **Vercel** — Next.js 15 (App Router, RSC, ISR) runs natively. Best DX; no custom CDN tuning needed for build output.                                                |
+| Web app              | **Vercel** — Next.js 16 (App Router, RSC, ISR) runs natively. Best DX; no custom CDN tuning needed for build output.                                                |
 | Edge / security      | **Cloudflare** — DNS proxy only (WAF, DDoS, CDN, Turnstile, rate limiting). The Next.js runtime does NOT move to Workers or Pages.                                  |
 | Public static assets | **Cloudflare R2 + CDN** — logos, PWA icons, marketing assets, downloadable binaries. Free egress. Next's own `_next/static` stays on Vercel's CDN — don't fight it. |
 | Private user files   | **Supabase Storage** (RLS-integrated), optionally fronted by Cloudflare CDN. No R2 for private files by default — re-implementing auth is not worth it.             |
+
+> **Vercel is today's host, not yet a choice.** This doc and the origin lock
+> below assume it, and no manifest capability lets a project opt out. Plan phase
+> P5 makes the host a `vercel` capability (see
+> [INIT_AND_HARNESS_PLAN.md § Phases](INIT_AND_HARNESS_PLAN.md#phases)); until
+> then, a project on another host overrides this section with an ADR.
 
 ---
 
@@ -123,11 +129,11 @@ The two Cloudflare edge behaviours are wired the same way as the backend
 in `@app/core`, a **vendor adapter** in `packages/cloudflare`, and a per-app
 **composition root** where the one-line swap happens.
 
-| Concern | Port (`@app/core`) | Default adapter (`@app/cloudflare`) | Alternative (built-in, core) | Composition root (`apps/web`) |
-|---|---|---|---|---|
-| Bot protection | `IBotProtectionPort` | `createTurnstileBotProtection()` | `createPermissiveBotProtection()` | `src/lib/bot-protection/botProtection.adapter.ts` |
-| Origin lock | `IOriginGuardPort` | `createCloudflareOriginGuard()` | `createPassthroughOriginGuard()` | `src/lib/origin-guard/originGuard.adapter.ts` |
-| Image delivery | `IImageDeliveryPort` | `createCloudflareImagesDelivery()` / `createR2SignedDelivery()` | `createPublicImageDelivery()` | `src/lib/image-delivery/imageDelivery.adapter.ts` |
+| Concern        | Port (`@app/core`)   | Default adapter (`@app/cloudflare`)                             | Alternative (built-in, core)      | Composition root (`apps/web`)                     |
+| -------------- | -------------------- | --------------------------------------------------------------- | --------------------------------- | ------------------------------------------------- |
+| Bot protection | `IBotProtectionPort` | `createTurnstileBotProtection()`                                | `createPermissiveBotProtection()` | `src/lib/bot-protection/botProtection.adapter.ts` |
+| Origin lock    | `IOriginGuardPort`   | `createCloudflareOriginGuard()`                                 | `createPassthroughOriginGuard()`  | `src/lib/origin-guard/originGuard.adapter.ts`     |
+| Image delivery | `IImageDeliveryPort` | `createCloudflareImagesDelivery()` / `createR2SignedDelivery()` | `createPublicImageDelivery()`     | `src/lib/image-delivery/imageDelivery.adapter.ts` |
 
 > Full image cost/hotlink/scrape posture: see [images.md](images.md).
 
@@ -160,7 +166,8 @@ header comparison — no Cloudflare SDK.
 
 ```ts
 // apps/web/src/lib/bot-protection/botProtection.adapter.ts
-export const botProtection: IBotProtectionPort = createTurnstileBotProtection() // DEFAULT
+export const botProtection: IBotProtectionPort =
+  createTurnstileBotProtection() // DEFAULT
 // export const botProtection: IBotProtectionPort = createPermissiveBotProtection() // disable
 
 // apps/web/src/lib/origin-guard/originGuard.adapter.ts
@@ -225,15 +232,15 @@ BYPASS cache (all others, including):
 
 See `.env.example` for the Cloudflare/edge key block. Required keys:
 
-| Key                    | Purpose                                                                 |
-| ---------------------- | ----------------------------------------------------------------------- |
-| `CF_ORIGIN_SECRET`     | Shared secret injected by Cloudflare and verified in Next.js middleware |
-| `TURNSTILE_SITE_KEY`   | Public key for the Turnstile widget in the browser                      |
-| `TURNSTILE_SECRET_KEY` | Server-side key for Turnstile token validation                          |
+| Key                              | Purpose                                                                 |
+| -------------------------------- | ----------------------------------------------------------------------- |
+| `CF_ORIGIN_SECRET`               | Shared secret injected by Cloudflare and verified in Next.js middleware |
+| `TURNSTILE_SITE_KEY`             | Public key for the Turnstile widget in the browser                      |
+| `TURNSTILE_SECRET_KEY`           | Server-side key for Turnstile token validation                          |
 | `R2_ACCOUNT_ID`                  | Cloudflare account ID (only needed if using R2)                         |
 | `R2_ACCESS_KEY_ID`               | R2 access key (only needed if using R2)                                 |
 | `R2_SECRET_ACCESS_KEY`           | R2 secret key (only needed if using R2)                                 |
 | `R2_BUCKET`                      | R2 bucket name (only needed if using R2)                                |
-| `CLOUDFLARE_IMAGES_ACCOUNT_HASH` | Public delivery account hash for Cloudflare Images (safe to expose)    |
+| `CLOUDFLARE_IMAGES_ACCOUNT_HASH` | Public delivery account hash for Cloudflare Images (safe to expose)     |
 | `CLOUDFLARE_IMAGES_SIGNING_KEY`  | Server-side HMAC key for signed Cloudflare Images URLs — never expose   |
 | `R2_PUBLIC_BASE_URL`             | Public base URL for R2 assets; used by `createR2SignedDelivery`         |

@@ -72,7 +72,7 @@ List the GLOBAL things this screen consumes — verify each is in the
 
 | Dependency  | Source (global)                                         | Used for                |
 | ----------- | ------------------------------------------------------- | ----------------------- |
-| `<service>` | `apps/<app>/src/services/<Name>.service.ts` (+ adapter) | `<data access>`         |
+| `<service>` | `apps/<app>/src/services/<Domain>/` (service + adapter) | `<data access>`         |
 | `<store>`   | `apps/<app>/src/stores/<name>.store.ts`                 | `<shared state>`        |
 | `<ui kit>`  | `apps/web/src/components/ui/<Comp>`                     | `<reused primitive>`    |
 | `<tokens>`  | `packages/tokens/src/tokens.constant.ts`                | `<design values>`       |
@@ -83,8 +83,8 @@ List the GLOBAL things this screen consumes — verify each is in the
 ```
 <ScreenName>.screen.tsx
    └─ use<Thing>.hook.ts        # view logic + query
-        └─ <Name>.service.ts    # data access (transversal)
-             └─ <Name>.adapter.ts  # DTO → ViewModel
+        └─ services/<Domain>/<domain>.service.ts   # data access (transversal)
+             └─ services/<Domain>/<Domain>.adapter.ts  # DTO → ViewModel
 ```
 
 > Invariant: **screen → hook → service → adapter**. Never `fetch` in the screen

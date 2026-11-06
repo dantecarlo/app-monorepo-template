@@ -4,6 +4,12 @@ This document describes the observability seam shipped with this template. The
 default provider is **Sentry**, wired behind a provider-agnostic port. Swapping
 to Console, Noop, or any other provider (Datadog, …) is a one-line change.
 
+> **Sentry is hardwired today.** The port makes the swap a one-line change, but
+> the Sentry SDKs, config files and env keys ship in every project, and no
+> manifest capability prunes them. Plan phase P5 adds a `sentry` capability (see
+> [INIT_AND_HARNESS_PLAN.md § Phases](INIT_AND_HARNESS_PLAN.md#phases)); until
+> then, a project without Sentry removes the wiring by hand.
+
 ---
 
 ## The seam
@@ -26,11 +32,11 @@ valid — consumers must null-check (`observability.setUser?.(…)`).
 
 The template ships built-in adapters:
 
-| Adapter | Location | When to use |
-|---|---|---|
-| `createSentryObservability()` | `apps/{web,mobile}/src/lib/observability/createSentryObservability.adapter.ts` | **DEFAULT** — real capture via `@sentry/nextjs` (web) / `@sentry/react-native` (mobile) |
-| `createConsoleObservability({ isEnabled? })` | `@app/core` | Development — logs scrubbed payloads to `console.error` / `console.warn` |
-| `createNoopObservability()` | `@app/core` | Silent — swallows all events, zero output, zero risk |
+| Adapter                                      | Location                                                                       | When to use                                                                             |
+| -------------------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `createSentryObservability()`                | `apps/{web,mobile}/src/lib/observability/createSentryObservability.adapter.ts` | **DEFAULT** — real capture via `@sentry/nextjs` (web) / `@sentry/react-native` (mobile) |
+| `createConsoleObservability({ isEnabled? })` | `@app/core`                                                                    | Development — logs scrubbed payloads to `console.error` / `console.warn`                |
+| `createNoopObservability()`                  | `@app/core`                                                                    | Silent — swallows all events, zero output, zero risk                                    |
 
 Query and mutation errors flow like this:
 
@@ -62,7 +68,8 @@ changes.
 `apps/web/src/lib/observability/observability.adapter.ts`:
 
 ```ts
-export const observability: IObservabilityPort = createSentryObservability() // DEFAULT
+export const observability: IObservabilityPort =
+  createSentryObservability() // DEFAULT
 // export const observability: IObservabilityPort = createConsoleObservability() // dev logging
 // export const observability: IObservabilityPort = createNoopObservability()    // silent
 ```
@@ -117,13 +124,13 @@ every payload before it reaches an external sink.
 
 ### Env keys
 
-| Key | Public | Purpose |
-|---|---|---|
-| `NEXT_PUBLIC_SENTRY_DSN` | yes | Web DSN. Absent = Sentry disabled (build/validate stay green). |
-| `SENTRY_AUTH_TOKEN` | NO | Deploy-time only. Gates source-map upload. Never `NEXT_PUBLIC_`. |
-| `NEXT_PUBLIC_APP_ENV` | yes | Optional Sentry environment tag (defaults to `development`). |
-| `EXPO_PUBLIC_SENTRY_DSN` | yes | Mobile DSN. Absent = Sentry disabled. |
-| `EXPO_PUBLIC_APP_ENV` | yes | Optional mobile environment tag. |
+| Key                      | Public | Purpose                                                          |
+| ------------------------ | ------ | ---------------------------------------------------------------- |
+| `NEXT_PUBLIC_SENTRY_DSN` | yes    | Web DSN. Absent = Sentry disabled (build/validate stay green).   |
+| `SENTRY_AUTH_TOKEN`      | NO     | Deploy-time only. Gates source-map upload. Never `NEXT_PUBLIC_`. |
+| `NEXT_PUBLIC_APP_ENV`    | yes    | Optional Sentry environment tag (defaults to `development`).     |
+| `EXPO_PUBLIC_SENTRY_DSN` | yes    | Mobile DSN. Absent = Sentry disabled.                            |
+| `EXPO_PUBLIC_APP_ENV`    | yes    | Optional mobile environment tag.                                 |
 
 ---
 

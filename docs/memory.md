@@ -1,9 +1,12 @@
 # Shared Engram memory
 
-Projects bootstrapped from this template share a single versioned Engram memory
-mirror hosted at:
-
-**https://github.com/dantecarlo/orquestador-engram-memory**
+Projects bootstrapped from this template can share a single versioned Engram
+memory mirror: the project's **shared-memory repository**. The template names no
+repository — each project chooses its own, or none. `/init` asks for it in
+section 8, Harness ("shared memory (repo URL or none)"), and records it in
+`project.config.json`; see
+[INIT_AND_HARNESS_PLAN.md § `/init`](INIT_AND_HARNESS_PLAN.md#init). Until
+`/init` lands, the project records the URL in its own instruction file.
 
 The repo acts as the durable, cross-session, cross-project record for
 portfolio-level decisions, conventions, and architecture knowledge. Engram is
