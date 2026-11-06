@@ -32,25 +32,25 @@ Not listed (1047 rows): keep, defer, and donor artifacts that are simply not har
 
 ## P0 — Land the staged work — fix each unit before its commit
 
-- [ ] `audit:template` **doc/docs/architecture/mobile.md** — fix: Wrong routes, flat services, old features/ map
-- [ ] `audit:template` **doc/docs/architecture/shared.md** — fix: Next 15 (:12); package list stale; shadcn not installed
-- [ ] `audit:template` **doc/docs/architecture/web.md** — fix: Next 15 (:1); names files that do not exist (next.config.mjs, tailwind.config.ts, global-error.tsx)
-- [ ] `audit:template` **doc/docs/code-standards.md** — fix: Prettier broke §14a (:405-408); §21 overclaims §5/§13/§15; dead refs (typescript-sort-keys :348, root `pnpm test` :510)
-- [ ] `audit:template` **doc/docs/e2e.md** — fix: "zero-dependency" vs @playwright/test devDep; CI job count
-- [ ] `audit:template` **doc/docs/harness.md** — fix: commit-msg command (:41) wrong; claims format:check runs
-- [ ] `audit:template` **doc/docs/infrastructure.md** — fix: Next 15 (:13); Vercel hardwired with no capability
-- [ ] `audit:template` **doc/docs/manifest.md** — fix: Describes templates/, preset CI matrix and manifest-driven init that do not exist yet; mark as planned
-- [ ] `audit:template` **doc/docs/maps/global-map.md** — fix: Prettier-mangled glob :76; wrong counts/defaults (:58 locale es, :304 7 rules); omits 8 docs and 7 scripts
-- [ ] `audit:template` **doc/docs/maps/screen-map.template.md** — fix: Flat service path :75
-- [ ] `audit:template` **doc/docs/memory.md** — fix: Owner repo URL :6
-- [ ] `audit:template` **doc/docs/observability.md** — fix: Sentry hardwired, no capability
-- [ ] `audit:template` **doc/docs/SDD_SYNC_PROMPT.md** — drop: Owner portfolio + other product names + absolute paths; classed core
-- [ ] `audit:template` **staged-unit/U-a archify vendoring** — fix: Serves decision 11. Land the unstaged sigil patch with the lock in the same commit; add a `diagrams` capability (archify + docs/diagrams + build-diagrams + docs:diagrams scripts) s
-- [ ] `audit:template` **staged-unit/U-b suffix-contract codemod** — fix: Mechanically correct and generic; fix 4 fragmented homes and the casing leftovers in the same unit so the ledger claim "fixed in passing" is true. Must land before or with U-c (suf
-- [ ] `audit:template` **staged-unit/U-c local lint rules** — fix: Rules serve the objective; add rule tests with planted violations, escape the NUL regex (\x00-\x7F), forbid `@/`/`node:` in core prod, then land.
-- [ ] `audit:template` **staged-unit/U-d manifest engine + gates** — fix: Engine and gates keep. Fix the data: maintainer-docs capability (never selected), narrow core globs, resolve the stale claim (track the plan or drop the claim), and record the know
-- [ ] `audit:template` **staged-unit/U-e diagram pipeline** — fix: Keep; wire `docs:diagrams:check` into validate (or the registry), read tokens by import (Node 24 strips types) instead of regex; depends on U-a with its unstaged patch.
-- [ ] `audit:template` **staged-unit/U-g docs** — fix: Keep content; repair the two Prettier breaks, correct §21, move planning docs out of `core`, keep new CLAUDE.md content minimal (P1 moves it to AGENTS.md).
+- [x] `audit:template` **doc/docs/architecture/mobile.md** — fix: Wrong routes, flat services, old features/ map — done in `ee09208`
+- [x] `audit:template` **doc/docs/architecture/shared.md** — fix: Next 15 (:12); package list stale; shadcn not installed — done in `bf843af`
+- [x] `audit:template` **doc/docs/architecture/web.md** — fix: Next 15 (:1); names files that do not exist (next.config.mjs, tailwind.config.ts, global-error.tsx) — done in `ee09208`
+- [x] `audit:template` **doc/docs/code-standards.md** — fix: Prettier broke §14a (:405-408); §21 overclaims §5/§13/§15; dead refs (typescript-sort-keys :348, root `pnpm test` :510) — done in `bf843af`
+- [x] `audit:template` **doc/docs/e2e.md** — fix: "zero-dependency" vs @playwright/test devDep; CI job count — done in `ee09208`
+- [x] `audit:template` **doc/docs/harness.md** — fix: commit-msg command (:41) wrong; claims format:check runs — done in `bf843af`
+- [x] `audit:template` **doc/docs/infrastructure.md** — fix: Next 15 (:13); Vercel hardwired with no capability — done in `ee09208`
+- [x] `audit:template` **doc/docs/manifest.md** — fix: Describes templates/, preset CI matrix and manifest-driven init that do not exist yet; mark as planned — done in `0e3f49b`
+- [x] `audit:template` **doc/docs/maps/global-map.md** — fix: Prettier-mangled glob :76; wrong counts/defaults (:58 locale es, :304 7 rules); omits 8 docs and 7 scripts — done in `bf843af`
+- [x] `audit:template` **doc/docs/maps/screen-map.template.md** — fix: Flat service path :75 — done in `ee09208`
+- [x] `audit:template` **doc/docs/memory.md** — fix: Owner repo URL :6 — done in `ee09208`
+- [x] `audit:template` **doc/docs/observability.md** — fix: Sentry hardwired, no capability — done in `ee09208`
+- [x] `audit:template` **doc/docs/SDD_SYNC_PROMPT.md** — drop: Owner portfolio + other product names + absolute paths; classed core — done in `bf843af`
+- [x] `audit:template` **staged-unit/U-a archify vendoring** — fix: Serves decision 11. Land the unstaged sigil patch with the lock in the same commit; add a `diagrams` capability (archify + docs/diagrams + build-diagrams + docs:diagrams scripts) s — done in `e040feb` + `417ae5c`
+- [x] `audit:template` **staged-unit/U-b suffix-contract codemod** — fix: Mechanically correct and generic; fix 4 fragmented homes and the casing leftovers in the same unit so the ledger claim "fixed in passing" is true. Must land before or with U-c (suf — done in `9e3aa63`
+- [x] `audit:template` **staged-unit/U-c local lint rules** — fix: Rules serve the objective; add rule tests with planted violations, escape the NUL regex (\x00-\x7F), forbid `@/`/`node:` in core prod, then land. — done in `1d5ce1c` + `db7e2ec`
+- [x] `audit:template` **staged-unit/U-d manifest engine + gates** — fix: Engine and gates keep. Fix the data: maintainer-docs capability (never selected), narrow core globs, resolve the stale claim (track the plan or drop the claim), and record the know — done in `0e3f49b`
+- [x] `audit:template` **staged-unit/U-e diagram pipeline** — fix: Keep; wire `docs:diagrams:check` into validate (or the registry), read tokens by import (Node 24 strips types) instead of regex; depends on U-a with its unstaged patch. — done in `6d0f148`
+- [x] `audit:template` **staged-unit/U-g docs** — fix: Keep content; repair the two Prettier breaks, correct §21, move planning docs out of `core`, keep new CLAUDE.md content minimal (P1 moves it to AGENTS.md). — done in `bf843af`
 
 ## P1 — Single router — instruction files
 
