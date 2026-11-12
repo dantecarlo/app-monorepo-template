@@ -62,6 +62,7 @@
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
     "scripts/check-identity.mjs",
+    "scripts/gate/**",
     "scripts/init-project.mjs",
     "scripts/manifest.mjs",
     "scripts/manifest.test.mjs",
@@ -297,7 +298,11 @@
       "claims": [
         "openspec/README.md",
         "openspec/config.yaml",
-        "openspec/templates/**"
+        "openspec/templates/**",
+        "scripts/specs-templates.cases.mjs",
+        "scripts/specs.detect.mjs",
+        "scripts/verify-specs.mjs",
+        "scripts/verify-specs.test.mjs"
       ]
     },
     {
