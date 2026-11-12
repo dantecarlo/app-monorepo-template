@@ -15,14 +15,15 @@ product specs, names no product.
 
 The owner's words, verbatim:
 
-- 2026-11-11: "Retoma lo que falta, pero ahora tambien en el init preguntar si se desea ODD o SDD
-  como en el repo de certifipago que justo se acaba de implmentar y por default dejar sdd y dejar
-  los specs echos. Justo la sesion del arquitecto agrego ello. Agregalo y adapta el planm y hasta
-  poedmos actualizar en algunos puntos al plan antes que nada y continua. Ademas hay nuevos
-  cambios, entonces hay que ver si todo es correctoadoptarlo y corregir todo. Ademas como estamos
-  haciendo ahora con sdd, lo mejor seria que todo el plan pasara por este nuevo proceso de sdd para
-  validar el flujo"
-- 2026-11-12: "apruebo lo de apdt-sdd" (approval of this proposal)
+- 2026-11-11 (translated from Spanish): "Pick up what is left, but now /init should also ask
+  whether to use ODD or SDD, as in the Certifipago repo, where it has just been implemented, with
+  SDD as the default and the specs already written. The architect's session just added that. Add
+  it and adapt the plan; we can even update the plan in a few places before anything else, and
+  continue. There are also new changes, so we have to check whether everything is correct, adopt
+  it and fix everything. And since we are now working with SDD, the best would be for the whole
+  plan to go through this new SDD process, to validate the flow"
+- 2026-11-12 (translated from Spanish): "I approve the adopt-sdd proposal" (approval of this
+  proposal)
 
 ## What changes
 
