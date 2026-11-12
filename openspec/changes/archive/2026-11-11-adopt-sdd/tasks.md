@@ -6,7 +6,7 @@
 - [x] T4 — the `sdd` skill and its evals in `.claude/skills/sdd/`, with product names removed and its paths checked against this tree · Requirements: none · Commit: 2f1d4e7
 - [x] T5 — `template.manifest.json`: the `sdd` capability in every preset, `openspec/changes/**` claimed by `template-maintainer`; `verify:manifest`, `:coverage` and `:test` green · Requirements: none · Commit: 72301ed
 - [x] T6 — docs: `docs/maps/global-map.md` rows for the new files, the plan's step T1a marked done, the parity ledger row closed · Requirements: none · Commit: e73ff32
-- [ ] T7 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-11-adopt-sdd/` as the last commit · Requirements: none · Commit: —
+- [x] T7 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-11-adopt-sdd/` as the last commit · Requirements: none · Commit: 018a78c
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of

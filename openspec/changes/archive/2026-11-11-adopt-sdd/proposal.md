@@ -1,6 +1,6 @@
 # Proposal: adopt SDD in the template
 
-> **Status:** open
+> **Status:** archived — 2026-11-12
 
 ## Why
 
