@@ -291,6 +291,16 @@
       ]
     },
     {
+      "id": "sdd",
+      "title": "Spec-Driven Development — operating model, templates, spec gates, the sdd skill",
+      "group": "workflow",
+      "claims": [
+        "openspec/README.md",
+        "openspec/config.yaml",
+        "openspec/templates/**"
+      ]
+    },
+    {
       "id": "template-maintainer",
       "title": "Template maintainer material — plans and audits, never selected by a preset",
       "group": "maintainer",
