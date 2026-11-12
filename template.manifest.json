@@ -334,6 +334,7 @@
         "e2e-playwright",
         "i18n",
         "mobile-expo",
+        "sdd",
         "supabase",
         "web-next"
       ]
@@ -347,6 +348,7 @@
         "diagrams",
         "e2e-playwright",
         "i18n",
+        "sdd",
         "supabase",
         "web-next"
       ]
@@ -359,6 +361,7 @@
         "diagrams",
         "i18n",
         "mobile-expo",
+        "sdd",
         "supabase"
       ]
     }
