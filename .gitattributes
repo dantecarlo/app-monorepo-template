@@ -2,6 +2,10 @@
 # regardless of the OS the contributor checks out on.
 * text=auto
 
+# Git hooks run under sh on every platform: a CR ends each line wrongly for the
+# tools that read them (knip reads .husky/pre-commit to find the binaries it runs).
+.husky/* text eol=lf
+
 # Binary assets — never diff or normalize.
 *.png binary
 *.jpg binary
