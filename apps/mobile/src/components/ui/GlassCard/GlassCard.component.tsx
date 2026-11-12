@@ -1,6 +1,4 @@
 import { BlurView } from 'expo-blur'
-import type { ReactNode } from 'react'
-import type { ViewProps } from 'react-native'
 import { View } from 'react-native'
 
 import {
@@ -8,16 +6,8 @@ import {
   GLASS_CARD_PADDING,
   GLASS_CARD_STYLES as styles
 } from '@/components/ui/GlassCard/GlassCard.styles'
+import type { IGlassCardProps } from '@/components/ui/GlassCard/GlassCard.type'
 import { useGlassCard } from '@/components/ui/GlassCard/useGlassCard.hook'
-
-export type GlassCardPaddingType = keyof typeof GLASS_CARD_PADDING
-export type GlassCardRadiusType = keyof typeof GLASS_CARD_BORDER_RADIUS
-
-export interface IGlassCardProps extends ViewProps {
-  children?: ReactNode
-  padding?: GlassCardPaddingType
-  radius?: GlassCardRadiusType
-}
 
 /** Glass surface backed by expo-blur + glass.fill overlay + 1px stroke. */
 export const GlassCard = ({

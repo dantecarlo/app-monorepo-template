@@ -1,25 +1,14 @@
 import { useState } from 'react'
-import type { StyleProp, ViewStyle } from 'react-native'
 
 import { AUTH_FIELD_STYLES as styles } from '@/components/ui/AuthField/AuthField.styles'
+import type {
+  IUseAuthFieldParams,
+  IUseAuthFieldResult
+} from '@/components/ui/AuthField/AuthField.type'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-export interface IUseAuthFieldParams {
-  isError: boolean
-  isPassword: boolean
-}
-
-export interface IUseAuthFieldResult {
-  onBlur: () => void
-  onFocus: () => void
-  onTogglePassword: () => void
-  secureEntry: boolean
-  showPassword: boolean
-  wrapperStyle: StyleProp<ViewStyle>
-}
 
 // ---------------------------------------------------------------------------
 // Hook

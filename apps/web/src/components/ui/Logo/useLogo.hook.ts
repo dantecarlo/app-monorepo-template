@@ -2,10 +2,7 @@
 
 import { useCallback, useState } from 'react'
 
-export interface IUseLogoResult {
-  hasAsset: boolean
-  onAssetError: () => void
-}
+import type { IUseLogoResult } from '@/components/ui/Logo/Logo.type'
 
 // Tracks whether the project asset slot resolved. When the <img> fails to load
 // (no per-project logo dropped in), it flips to the wordmark fallback.

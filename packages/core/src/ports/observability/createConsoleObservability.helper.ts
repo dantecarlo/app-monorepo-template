@@ -1,4 +1,4 @@
-/* eslint-disable no-relative-import-paths/no-relative-import-paths */
+import { hostConsole } from '../../utils/hostConsole.helper'
 import { scrubPII } from '../../utils/scrubPII.helper'
 import type {
   IAddBreadcrumbParams,
@@ -8,7 +8,6 @@ import type {
   ISetUserParams
 } from './IObservabilityPort.type'
 import { ObservabilityLevelEnum } from './observabilityLevel.type'
-/* eslint-enable no-relative-import-paths/no-relative-import-paths */
 
 export interface ICreateConsoleObservabilityParams {
   isEnabled?: boolean
@@ -37,7 +36,7 @@ export const createConsoleObservability = ({
       level,
       message
     }
-    console.warn('[observability] addBreadcrumb', scrubbed)
+    hostConsole.warn('[observability] addBreadcrumb', scrubbed)
   },
 
   captureError: ({ context, error }: ICaptureErrorParams): void => {
@@ -46,7 +45,7 @@ export const createConsoleObservability = ({
       context: context ? scrubPII(context) : undefined,
       error: scrubError(error)
     }
-    console.error('[observability] captureError', scrubbed)
+    hostConsole.error('[observability] captureError', scrubbed)
   },
 
   captureMessage: ({
@@ -64,15 +63,15 @@ export const createConsoleObservability = ({
       level === ObservabilityLevelEnum.ERROR ||
       level === ObservabilityLevelEnum.FATAL
     ) {
-      console.error('[observability] captureMessage', scrubbed)
+      hostConsole.error('[observability] captureMessage', scrubbed)
     } else {
-      console.warn('[observability] captureMessage', scrubbed)
+      hostConsole.warn('[observability] captureMessage', scrubbed)
     }
   },
 
   setUser: ({ user }: ISetUserParams): void => {
     if (!isEnabled) return
     const scrubbed = user ? scrubPII(user) : null
-    console.warn('[observability] setUser', scrubbed)
+    hostConsole.warn('[observability] setUser', scrubbed)
   }
 })

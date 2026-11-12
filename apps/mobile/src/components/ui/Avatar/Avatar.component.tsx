@@ -1,22 +1,15 @@
 import { fontFamily } from '@app/tokens'
 import { Text, View } from 'react-native'
 
-import type { AvatarSizeType } from '@/components/ui/Avatar/Avatar.constant'
 import {
   AVATAR_DEFAULT_SIZE,
   AVATAR_FONT_SIZES
 } from '@/components/ui/Avatar/Avatar.constant'
-import type { AvatarVariantType } from '@/components/ui/Avatar/Avatar.styles'
 import {
   AVATAR_BORDER_RADIUS,
   AVATAR_VARIANT_COLORS
 } from '@/components/ui/Avatar/Avatar.styles'
-
-export interface IAvatarProps {
-  initials: string
-  size?: AvatarSizeType
-  variant?: AvatarVariantType
-}
+import type { IAvatarProps } from '@/components/ui/Avatar/Avatar.type'
 
 export const Avatar = ({
   initials,

@@ -1,16 +1,11 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import type { JSX, ReactNode } from 'react'
+import type { JSX } from 'react'
 
 import { emptyStateVariants } from '@/components/ui/EmptyState/EmptyState.styles'
+import type { IEmptyStateProps } from '@/components/ui/EmptyState/EmptyState.type'
 import { EmptyStateIcon } from '@/components/ui/EmptyState/EmptyStateIcon.component'
-
-export interface IEmptyStateProps {
-  cta?: ReactNode
-  message?: string
-  title?: string
-}
 
 export const EmptyState = ({
   cta,

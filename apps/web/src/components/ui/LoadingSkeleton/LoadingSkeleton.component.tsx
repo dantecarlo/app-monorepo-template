@@ -1,15 +1,7 @@
-import type { CSSProperties, JSX } from 'react'
-import type { VariantProps } from 'tailwind-variants'
+import type { JSX } from 'react'
 
 import { loadingSkeletonVariants } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.styles'
-
-export interface ILoadingSkeletonProps extends VariantProps<
-  typeof loadingSkeletonVariants
-> {
-  className?: string
-  height?: CSSProperties['height']
-  width?: CSSProperties['width']
-}
+import type { ILoadingSkeletonProps } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.type'
 
 export const LoadingSkeleton = ({
   className,

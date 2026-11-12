@@ -1,14 +1,8 @@
-import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Text, View } from 'react-native'
 
 import { EMPTY_STATE_STYLES as styles } from '@/components/ui/EmptyState/EmptyState.styles'
-
-export interface IEmptyStateProps {
-  cta?: ReactNode
-  message?: string
-  title?: string
-}
+import type { IEmptyStateProps } from '@/components/ui/EmptyState/EmptyState.type'
 
 export const EmptyState = ({ cta, message, title }: IEmptyStateProps) => {
   const { t } = useTranslation()

@@ -5,14 +5,8 @@ import {
   GRADIENT_COLORS,
   TOGGLE_STYLES as styles
 } from '@/components/ui/Toggle/Toggle.styles'
+import type { IToggleProps } from '@/components/ui/Toggle/Toggle.type'
 import { useToggleKnob } from '@/components/ui/Toggle/useToggleKnob.hook'
-
-export interface IToggleProps {
-  accessibilityLabel?: string
-  disabled?: boolean
-  onValueChange: (value: boolean) => void
-  value: boolean
-}
 
 export const Toggle = ({
   accessibilityLabel,

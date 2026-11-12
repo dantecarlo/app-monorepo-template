@@ -5,13 +5,7 @@ import {
   SEARCH_BAR,
   SEARCH_BAR_ICON_SIZE
 } from '@/components/ui/SearchBar/SearchBar.constant'
-
-export interface ISearchBarProps {
-  accessibilityLabel?: string
-  onChangeText: (value: string) => void
-  placeholder?: string
-  value: string
-}
+import type { ISearchBarProps } from '@/components/ui/SearchBar/SearchBar.type'
 
 export const SearchBar = ({
   accessibilityLabel,

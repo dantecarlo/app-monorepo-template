@@ -22,3 +22,7 @@ export const AUTH_FIELD_HELPER_CLASS =
 
 export const AUTH_FIELD_ERROR_CLASS =
   'text-caption font-body text-danger-text'
+
+export const TEXT_TYPE = 'text'
+
+export const PASSWORD_TYPE = 'password'

@@ -1,0 +1,40 @@
+# Normalize line endings: text files are stored with LF in the repo
+# regardless of the OS the contributor checks out on.
+* text=auto
+
+# Git hooks run under sh on every platform: a CR ends each line wrongly for the
+# tools that read them (knip reads .husky/pre-commit to find the binaries it runs).
+.husky/* text eol=lf
+
+# Binary assets — never diff or normalize.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.apk binary
+*.aab binary
+*.jar binary
+*.keystore binary
+*.jks binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+
+# The SessionStart hook regenerates this file with LF on every OS; pin
+# its checkout to LF so the regen is byte-stable and git status stays clean.
+.atl/skill-registry.md text eol=lf
+
+# vitest writes snapshots with LF on every OS. Without this pin, autocrlf
+# checks them out with CRLF and every test run reports all of them as
+# modified, which makes verify:diff-mutation refuse a push for a dirty
+# tree it created itself.
+*.snap text eol=lf
+
+# The impeccable engine launcher is a POSIX sh script: a CRLF checkout on
+# Windows breaks it under Git Bash. Pin it to LF in both skill trees; its
+# impeccable.cmd twin keeps the native endings.
+.agents/skills/impeccable/scripts/impeccable text eol=lf
+.claude/skills/impeccable/scripts/impeccable text eol=lf

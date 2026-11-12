@@ -1,15 +1,8 @@
 import type { JSX } from 'react'
-import type { VariantProps } from 'tailwind-variants'
 
-import type { AvatarSizeType } from '@/components/ui/Avatar/Avatar.constant'
 import { AVATAR_DEFAULT_SIZE } from '@/components/ui/Avatar/Avatar.constant'
 import { avatarVariants } from '@/components/ui/Avatar/Avatar.styles'
-
-export interface IAvatarProps extends VariantProps<typeof avatarVariants> {
-  className?: string
-  initials: string
-  size?: AvatarSizeType
-}
+import type { IAvatarProps } from '@/components/ui/Avatar/Avatar.type'
 
 export const Avatar = ({
   className,

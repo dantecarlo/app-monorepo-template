@@ -1,34 +1,25 @@
-import type { HTMLInputTypeAttribute } from 'react'
 import { useState } from 'react'
 
 import {
   AUTH_FIELD_WRAPPER_CLASS,
   AUTH_FIELD_WRAPPER_ERROR_CLASS
 } from '@/components/ui/AuthField/AuthField.constant'
+import {
+  PASSWORD_TYPE,
+  TEXT_TYPE
+} from '@/components/ui/AuthField/AuthField.constant'
+import type {
+  IUseAuthFieldParams,
+  IUseAuthFieldResult
+} from '@/components/ui/AuthField/AuthField.type'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export interface IUseAuthFieldParams {
-  isError: boolean
-  isPassword: boolean
-  type?: HTMLInputTypeAttribute
-}
-
-export interface IUseAuthFieldResult {
-  inputType: HTMLInputTypeAttribute
-  onTogglePassword: () => void
-  showPassword: boolean
-  wrapperClass: string
-}
-
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
-
-const TEXT_TYPE = 'text'
-const PASSWORD_TYPE = 'password'
 
 /**
  * Owns the AuthField's password-reveal state and the derived wrapper class +

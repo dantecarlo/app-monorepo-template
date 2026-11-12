@@ -1,9 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient'
-import type { DimensionValue } from 'react-native'
 import { View } from 'react-native'
 import Animated from 'react-native-reanimated'
 
-import type { SkeletonRoundedType } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.styles'
 import {
   LOADING_SKELETON_STYLES as styles,
   ROUNDED_BY_VARIANT,
@@ -11,13 +9,8 @@ import {
   SKELETON_SHIMMER_MID,
   SKELETON_SHIMMER_START
 } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.styles'
+import type { ILoadingSkeletonProps } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.type'
 import { useShimmer } from '@/components/ui/LoadingSkeleton/useShimmer.hook'
-
-export interface ILoadingSkeletonProps {
-  height?: DimensionValue
-  rounded?: SkeletonRoundedType
-  width?: DimensionValue
-}
 
 export const LoadingSkeleton = ({
   height,

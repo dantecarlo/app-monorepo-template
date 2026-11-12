@@ -4,18 +4,9 @@ import { useTranslations } from 'next-intl'
 import type { JSX } from 'react'
 
 import { Button } from '@/components/ui/Button/Button.component'
-import { ErrorStateCodeEnum } from '@/components/ui/ErrorState/ErrorState.constant'
 import { errorStateVariants } from '@/components/ui/ErrorState/ErrorState.styles'
+import type { IErrorStateProps } from '@/components/ui/ErrorState/ErrorState.type'
 import { ErrorStateIcon } from '@/components/ui/ErrorState/ErrorStateIcon.component'
-
-export interface IErrorStateProps {
-  code?: ErrorStateCodeEnum
-  error?: unknown
-  message?: string
-  onRetry?: () => void
-  resetErrorBoundary?: () => void
-  title?: string
-}
 
 export const ErrorState = ({
   code,

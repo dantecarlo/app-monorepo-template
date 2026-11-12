@@ -30,7 +30,9 @@ import {
   LOGIC_IN_HOOK_OVERRIDE,
   REACT_RULES,
   RSC_ASYNC_SCREEN_OVERRIDE,
+  PURE_DOMAIN_ADAPTER_OVERRIDE,
   STYLES_FILE_OVERRIDE,
+  SUFFIX_CONTRACT_OVERRIDE,
   TEST_FILE_OVERRIDE,
   TEST_INFRA_OVERRIDE,
   TESTING_LIBRARY_ALLOWED_OVERRIDE,
@@ -54,6 +56,8 @@ const IGNORES = [
   '**/android/**',
   '**/ios/**',
   '**/coverage/**',
+  // Vendored third-party skill — pinned upstream, not ours to lint.
+  '.claude/skills/archify/**',
   '**/.turbo/**',
   '*.config.{js,cjs,mjs}',
   '**/*.config.{js,cjs,mjs}',
@@ -121,6 +125,22 @@ export default defineConfig([
     },
     plugins: TS_PLUGINS,
     rules: { ...BASE_RULES, ...FILENAME_RULES }
+  },
+
+  // -------------------------------------------------------------------------
+  // packages/core/src — the domain layer proper. Production files import only
+  // their own modules, by relative path, so the alias-only rule is off here:
+  // core-import-boundary owns import paths in core. The package's build config
+  // (vitest.config.ts) and its tests stay outside this rule: they are tooling,
+  // not domain code, and tests may use the `@/` alias.
+  // -------------------------------------------------------------------------
+  {
+    files: ['packages/core/src/**/*.{ts,tsx}'],
+    ignores: ['packages/core/src/**/*.test.{ts,tsx}'],
+    rules: {
+      'local/core-import-boundary': 'error',
+      'no-relative-import-paths/no-relative-import-paths': 'off'
+    }
   },
 
   // -------------------------------------------------------------------------
@@ -389,6 +409,8 @@ export default defineConfig([
   // -------------------------------------------------------------------------
   UI_COMPONENT_OVERRIDE,
   LOGIC_IN_HOOK_OVERRIDE,
+  SUFFIX_CONTRACT_OVERRIDE,
+  PURE_DOMAIN_ADAPTER_OVERRIDE,
   // RSC async server-component allowlist for apps/web screens — re-declares the
   // screen selector set WITHOUT the client async-view ban. Must come AFTER
   // LOGIC_IN_HOOK_OVERRIDE so it wins by later-wins for apps/web screens.

@@ -142,6 +142,11 @@ export const BASE_RULES = {
   // arrow-only functions (no `function` keyword).
   'func-style': ['error', 'expression', { allowArrowFunctions: true }],
 
+  // Comments state what the code does (code-standards §1.2). ERROR: measured
+  // at 0 violations across this repo when the rule landed, and the phrase set
+  // is the narrow enforceable one, not the broad review tell.
+  'local/no-justifying-comment': 'error',
+
   // English-everywhere: identifiers must be ASCII. WARN (medium confidence —
   // some legitimate edge cases, e.g. interop, may exist).
   'local/no-non-ascii-identifier': 'warn',
@@ -652,4 +657,29 @@ export const DTS_FILE_OVERRIDE = {
     'sort-keys': 'off',
     'sort-keys-fix/sort-keys-fix': 'off'
   }
+}
+
+// ---------------------------------------------------------------------------
+// Suffix contract (code-standards §3.1) — a view or hook declares no top-level
+// type and no top-level SCREAMING_SNAKE const. Scoped to exactly those three
+// suffixes: the sibling *.type.ts and *.constant.ts are where those
+// declarations are supposed to live, so the rule must never look at them.
+//
+// It lands at `error` because the 133 pre-existing declarations were moved to
+// their siblings first, so it enters with no exemption file.
+// ---------------------------------------------------------------------------
+export const SUFFIX_CONTRACT_OVERRIDE = {
+  files: ['**/*.component.tsx', '**/*.screen.tsx', '**/*.hook.ts'],
+  rules: { 'local/suffix-contract': 'error' }
+}
+
+// ---------------------------------------------------------------------------
+// Pure domain adapter (code-standards Rule 6) — scoped to the domain adapters
+// under src/services. The transport adapters under src/lib (a backend client,
+// an edge adapter) are a different artifact and legitimately async, so they
+// stay out of this glob.
+// ---------------------------------------------------------------------------
+export const PURE_DOMAIN_ADAPTER_OVERRIDE = {
+  files: ['**/src/services/**/*.adapter.ts'],
+  rules: { 'local/pure-domain-adapter': 'error' }
 }

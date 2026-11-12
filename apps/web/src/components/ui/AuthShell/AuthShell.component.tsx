@@ -1,4 +1,4 @@
-import type { JSX, ReactNode } from 'react'
+import type { JSX } from 'react'
 
 import {
   AUTH_SHELL_BRAND_LABEL_CLASS,
@@ -9,18 +9,11 @@ import {
   AUTH_SHELL_SUBTITLE_CLASS,
   AUTH_SHELL_TITLE_CLASS
 } from '@/components/ui/AuthShell/AuthShell.constant'
+import type { IAuthShellProps } from '@/components/ui/AuthShell/AuthShell.type'
 import { GlassCard } from '@/components/ui/GlassCard/GlassCard.component'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher/LanguageSwitcher.component'
 import { Logo } from '@/components/ui/Logo/Logo.component'
 import { ThemeToggle } from '@/components/ui/ThemeToggle/ThemeToggle.component'
-
-export interface IAuthShellProps {
-  brandLabel: string
-  children: ReactNode
-  logo?: ReactNode
-  subtitle?: string
-  title: string
-}
 
 /**
  * Centred auth layout: a pinned top-right controls row (theme + language),

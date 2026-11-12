@@ -1,12 +1,9 @@
 'use client'
 
-import type { JSX, ReactNode } from 'react'
+import type { JSX } from 'react'
 
+import type { IThemeProviderProps } from '@/components/ThemeProvider/ThemeProvider.type'
 import { useThemeBootstrap } from '@/components/ThemeProvider/useThemeBootstrap.hook'
-
-export interface IThemeProviderProps {
-  children: ReactNode
-}
 
 export const ThemeProvider = ({
   children

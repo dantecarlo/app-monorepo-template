@@ -1,8 +1,9 @@
 # End-to-end testing
 
-This template includes a zero-dependency Playwright harness. Tests live under
-`e2e/` and are intentionally isolated from the monorepo's unit-test and
-validation gates.
+This template includes a Playwright harness. `@playwright/test` and
+`@axe-core/playwright` are root `devDependencies`; no app package depends on
+them. Tests live under `e2e/` and are intentionally isolated from the
+monorepo's unit-test and validation gates.
 
 ---
 
@@ -34,7 +35,15 @@ pnpm exec playwright test e2e/home.e2e.ts
 ```
 
 The `baseURL` defaults to `http://localhost:3000`. Override with `E2E_BASE_URL`
-for staging or preview environments.
+for staging or preview environments. An empty value counts as unset: CI passes
+`${{ vars.E2E_BASE_URL }}`, which is empty when the repository variable is not
+defined, and `e2e/base-url.e2e.ts` fails fast if the resolved `baseURL` is not
+an absolute http(s) URL.
+
+The mobile-web tier (`e2e/mobile-web.e2e.ts`, served from `apps/mobile/dist-web`
+on `:3001`) is opt-in: its projects exist only with `E2E_MOBILE_WEB=1`, and the
+run still boots `next start` on `:3000`, so it needs both
+`pnpm --filter @app/mobile export:web` and a web build.
 
 ---
 
@@ -99,6 +108,7 @@ jobs:
   e2e:
     needs: validate
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -130,10 +140,10 @@ For the responsive multi-viewport job, see [docs/responsive.md](./responsive.md)
 Two additional CI jobs run independently of `pnpm validate` and are never part
 of the offline gate:
 
-**mobile-export** — runs `expo export --platform all` and asserts that Hermes
-bundles exist for both iOS and Android platforms. A missing bundle fails the
-job. This is the primary check that Metro bundling works end-to-end for both
-platforms.
+**mobile-export** — runs `expo export --platform ios --platform android`
+(`pnpm --filter @app/mobile export:ci`) and asserts that Hermes bundles exist
+for both iOS and Android platforms. A missing bundle fails the job. This is the
+primary check that Metro bundling works end-to-end for both platforms.
 
 **web-render** — builds the Next.js web app and boots `next start` on port 3000,
 then probes `http://localhost:3000/` and asserts HTTP 200 plus a known
@@ -152,12 +162,16 @@ pnpm smoke:web      # next build + next start probe
 
 ## Promotion to blocking
 
-All four runtime jobs (mobile-export, web-render, e2e, responsive) ship as
-advisory initially — `continue-on-error: true` in CI. A job is promoted to
-blocking in branch protection after it has been green on the main branch for
-three consecutive runs. This is a behavior-based criterion, not a calendar date.
-See [docs/responsive.md](./responsive.md) for the `RESPONSIVE_BLOCKING` variable
-that controls the responsive job independently.
+`.github/workflows/ci.yml` defines seven jobs: `validate`, which blocks, and
+six runtime jobs that ship as advisory — `expo-health`, `mobile-export`,
+`web-render`, `e2e`, `responsive` and `mobile-web`, each with
+`continue-on-error: true` (for `responsive`, unless `RESPONSIVE_BLOCKING` is
+`'true'`). `expo-health`, `mobile-export` and `web-render` start alongside
+`validate`; `e2e`, `responsive` and `mobile-web` wait for it (`needs: validate`).
+A job is promoted to blocking in branch protection after it has been green on
+the main branch for three consecutive runs. This is a behavior-based criterion,
+not a calendar date. See [docs/responsive.md](./responsive.md) for the
+`RESPONSIVE_BLOCKING` variable that controls the responsive job independently.
 
 ---
 

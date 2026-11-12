@@ -17,17 +17,11 @@ import {
   LOGO_MARK_STROKE_WIDTH,
   LOGO_RADIUS,
   LOGO_VIEW_BOX
-} from '@/components/ui/Logo/logo.constant'
+} from '@/components/ui/Logo/Logo.constant'
+import { LOGO_GRADIENT_ID } from '@/components/ui/Logo/Logo.constant'
 import { LOGO_STYLES as styles } from '@/components/ui/Logo/Logo.styles'
+import type { ILogoProps } from '@/components/ui/Logo/Logo.type'
 import { useLogo } from '@/components/ui/Logo/useLogo.hook'
-
-const LOGO_GRADIENT_ID = 'logoPlaceholderGradient'
-
-export interface ILogoProps {
-  brandLabel: string
-  hasAsset?: boolean
-  size?: number
-}
 
 /**
  * Generic brand mark: renders the per-project SVG asset placeholder when

@@ -1,15 +1,7 @@
-import type { ButtonHTMLAttributes, JSX } from 'react'
+import type { JSX } from 'react'
 
 import { TOGGLE } from '@/components/ui/Toggle/Toggle.constant'
-
-export interface IToggleProps extends Omit<
-  ButtonHTMLAttributes<HTMLButtonElement>,
-  'onChange' | 'value'
-> {
-  accessibilityLabel?: string
-  onValueChange: (value: boolean) => void
-  value: boolean
-}
+import type { IToggleProps } from '@/components/ui/Toggle/Toggle.type'
 
 export const Toggle = ({
   accessibilityLabel,

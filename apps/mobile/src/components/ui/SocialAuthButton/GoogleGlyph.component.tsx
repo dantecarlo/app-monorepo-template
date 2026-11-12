@@ -7,10 +7,7 @@ import {
   GOOGLE_RED,
   GOOGLE_YELLOW
 } from '@/components/ui/SocialAuthButton/GoogleGlyph.constant'
-
-export interface IGoogleGlyphProps {
-  size?: number
-}
+import type { IGoogleGlyphProps } from '@/components/ui/SocialAuthButton/SocialAuthButton.type'
 
 /** SVG replica of the Google 'G' brand mark. Colors from GoogleGlyph.constant.ts. */
 export const GoogleGlyph = ({

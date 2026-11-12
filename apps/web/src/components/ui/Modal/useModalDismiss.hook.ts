@@ -2,12 +2,8 @@
 
 import { useEffect } from 'react'
 
-export interface IUseModalDismissParams {
-  isOpen: boolean
-  onClose: () => void
-}
-
-const ESCAPE_KEY = 'Escape'
+import { ESCAPE_KEY } from '@/components/ui/Modal/Modal.constant'
+import type { IUseModalDismissParams } from '@/components/ui/Modal/Modal.type'
 
 export const useModalDismiss = ({
   isOpen,

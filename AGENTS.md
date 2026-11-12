@@ -35,17 +35,17 @@ See `docs/memory.md` for the LOAD and CONTRIBUTE flow.
 
 ## Key docs
 
-| Doc | Purpose |
-|---|---|
-| `docs/code-standards.md` | Binding code conventions — read before writing any code |
-| `docs/architecture/shared.md` | Monorepo and cross-package sharing model |
-| `docs/architecture/web.md` | Next.js App Router fractal structure |
-| `docs/architecture/mobile.md` | Expo Router fractal structure |
-| `docs/infrastructure.md` | Hosting, edge security, origin-lock, cache rules |
-| `docs/e2e.md` | End-to-end testing harness (Playwright via dlx) |
-| `docs/propagation.md` | How to sync template improvements into downstream projects |
-| `docs/maps/global-map.md` | Navigable index of every shared and global artifact |
-| `docs/memory.md` | Shared Engram memory — load at session start, contribute decisions back |
+| Doc                           | Purpose                                                                 |
+| ----------------------------- | ----------------------------------------------------------------------- |
+| `docs/code-standards.md`      | Binding code conventions — read before writing any code                 |
+| `docs/architecture/shared.md` | Monorepo and cross-package sharing model                                |
+| `docs/architecture/web.md`    | Next.js App Router fractal structure                                    |
+| `docs/architecture/mobile.md` | Expo Router fractal structure                                           |
+| `docs/infrastructure.md`      | Hosting, edge security, origin-lock, cache rules                        |
+| `docs/e2e.md`                 | End-to-end testing harness (Playwright via dlx)                         |
+| `docs/propagation.md`         | How to sync template improvements into downstream projects              |
+| `docs/maps/global-map.md`     | Navigable index of every shared and global artifact                     |
+| `docs/memory.md`              | Shared Engram memory — load at session start, contribute decisions back |
 
 ---
 
@@ -70,13 +70,14 @@ server and run after `pnpm validate` in CI, not inside it.
 Project-level skills live under `.claude/skills/`. Each skill provides a
 `SKILL.md` with its trigger contract.
 
-| Skill | Trigger |
-|---|---|
-| `validate-all` | After any multi-file change; before marking done |
-| `propagate-from-template` | Syncing template improvements into a downstream project |
-| `product-discovery` | Structuring a raw product idea into a buildable plan |
-| `fractal-verify` | Auditing a single screen or component block |
-| `security` | Edge/DDoS/headers/Turnstile/origin-lock audit |
+| Skill                     | Trigger                                                                                                                                                                                                                  |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `validate-all`            | After any multi-file change; before marking done                                                                                                                                                                         |
+| `propagate-from-template` | Syncing template improvements into a downstream project                                                                                                                                                                  |
+| `product-discovery`       | Structuring a raw product idea into a buildable plan                                                                                                                                                                     |
+| `fractal-verify`          | Auditing a single screen or component block                                                                                                                                                                              |
+| `security`                | Edge/DDoS/headers/Turnstile/origin-lock audit                                                                                                                                                                            |
+| `archify`                 | Diagram the architecture, a workflow, a request sequence, a data pipeline or a state machine — and the HTML counterpart every generated document ships. Spec in `docs/diagrams/*.json`, render with `pnpm docs:diagrams` |
 
 ---
 

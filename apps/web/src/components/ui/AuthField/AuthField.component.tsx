@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, JSX } from 'react'
+import type { JSX } from 'react'
 
 import {
   AUTH_FIELD_ERROR_CLASS,
@@ -9,20 +9,9 @@ import {
   AUTH_FIELD_REVEAL_BUTTON_CLASS,
   AUTH_FIELD_ROOT_CLASS
 } from '@/components/ui/AuthField/AuthField.constant'
+import type { IAuthFieldProps } from '@/components/ui/AuthField/AuthField.type'
 import { useAuthField } from '@/components/ui/AuthField/useAuthField.hook'
 import { Icon } from '@/components/ui/Icon/Icon.component'
-
-export interface IAuthFieldProps extends Omit<
-  InputHTMLAttributes<HTMLInputElement>,
-  'className'
-> {
-  helperText?: string
-  hidePasswordLabel: string
-  isError?: boolean
-  isPassword?: boolean
-  label?: string
-  showPasswordLabel: string
-}
 
 /** Glass labeled text field. Password reveal toggle is i18n-decoupled via props. */
 export const AuthField = ({

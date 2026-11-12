@@ -48,3 +48,6 @@ Thumbs.db
 !.vscode/extensions.json
 *.swp
 *.swo
+
+# Machine-local agent tooling (absolute paths, personal skills)
+.atl/

@@ -1,15 +1,8 @@
-import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Modal as RNModal, Pressable, Text, View } from 'react-native'
 
 import { MODAL_STYLES as styles } from '@/components/ui/Modal/Modal.styles'
-
-export interface IModalProps {
-  children: ReactNode
-  isOpen: boolean
-  onClose: () => void
-  title?: string
-}
+import type { IModalProps } from '@/components/ui/Modal/Modal.type'
 
 export const Modal = ({
   children,

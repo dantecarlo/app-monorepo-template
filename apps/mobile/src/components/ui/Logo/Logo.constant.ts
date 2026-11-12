@@ -17,3 +17,5 @@ export const LOGO_GRADIENT_FROM = colors.accentLight
 export const LOGO_GRADIENT_TO = colors.accent
 
 export const LOGO_MARK_COLOR = colors.accentInk
+
+export const LOGO_GRADIENT_ID = 'logoPlaceholderGradient'

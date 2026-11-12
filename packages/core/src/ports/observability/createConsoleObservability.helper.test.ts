@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
+import { hostConsole } from '../../utils/hostConsole.helper'
 import { createConsoleObservability } from './createConsoleObservability.helper'
 import { ObservabilityLevelEnum } from './observabilityLevel.type'
 
@@ -7,8 +8,12 @@ let errorSpy: ReturnType<typeof vi.spyOn>
 let warnSpy: ReturnType<typeof vi.spyOn>
 
 beforeEach(() => {
-  errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
-  warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+  errorSpy = vi
+    .spyOn(hostConsole, 'error')
+    .mockImplementation(() => undefined)
+  warnSpy = vi
+    .spyOn(hostConsole, 'warn')
+    .mockImplementation(() => undefined)
 })
 
 afterEach(() => {

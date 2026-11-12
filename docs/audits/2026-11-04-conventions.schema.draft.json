@@ -1,0 +1,28 @@
+{
+  "$comment": "Proposed shared conventions contract read by agents and skills instead of hardcoding project style. Each key names the /init section that sets it.",
+  "language": { "artifacts": "en", "ui.locales": ["es-PE", "en"], "reports": "en|es", "_init": "1 identity" },
+  "stack": { "web": "next@16", "mobile": "expo@56", "packageManager": "pnpm", "_init": "3 stack fit" },
+  "structure": { "roots": ["apps/web/src", "apps/mobile/src", "packages/*"], "legacyRoots": [], "suffixes": { "component": ".component.tsx", "hook": ".hook.ts", "service": ".service.ts", "adapter": ".adapter.ts", "store": ".store.ts", "screen": ".screen.tsx", "test": ".test.ts" }, "scaffoldCommand": "pnpm scaffold", "maxLines": 500, "_init": "3 stack fit + 9 quality profile" },
+  "test": { "runner": "vitest|jest", "style": "test|it", "queries": "semantic", "bannedSelectors": ["data-testid"], "httpMock": "msw", "helper": "@/test/test.helper", "_init": "9 quality profile" },
+  "e2e": { "tool": "maestro|playwright|none", "flowDir": "apps/mobile/.maestro/flows", "flowIdPattern": "F-<AREA>-NN", "runCommand": "bash apps/mobile/scripts/e2e-mobile.sh --device <serial> --flow <id>", "logs": "~/.maestro/tests", "standardsDoc": "docs/qa/flow-standards.md", "inventoryDoc": "docs/qa/e2e-traceability.md", "gradeFloor": "B", "_init": "6 flows & screens + 9 quality profile" },
+  "backend": { "provider": "supabase|none", "authz": "rls|server-guard", "piiScrubber": "@app/core scrubPII", "_init": "4 backend & data" },
+  "security": { "botProtection": "turnstile|none", "deterministicGate": "pnpm verify:security", "_init": "4 backend & data" },
+  "design": { "system": { "name": "", "intent": "e.g. dark-glass", "doc": "docs/design-system.md" }, "tokens": "@app/tokens", "_init": "5 design system" },
+  "a11y": { "standard": "WCAG 2.1 AA", "automatedTools": ["vitest-axe", "@axe-core/playwright"], "_init": "5 design system" },
+  "quality": { "gate": "pnpm validate", "bindingDocs": ["docs/code-standards.md"], "checks": [{ "name": "tsc", "command": "", "scope": "touched" }], "baselines": { "tsc": null }, "_init": "9 quality profile" },
+  "validation": { "groups": { "<name>": { "skills": [".claude/skills/<x>/SKILL.md"], "focus": "", "deterministicOwners": ["pnpm verify:<x>"] } }, "_init": "9 quality profile" },
+  "review": { "severityScale": ".agents/core/contracts/review-severity.md", "severityWords": ["BLOCKER", "WARNING", "SUGGESTION"], "reportPrecedence": "agent-envelope-wraps-skill-template", "tokenBudget": 2500, "_init": "8 harness" },
+  "harness": {
+    "runtimes": ["claude", "codex", "opencode", "copilot"],
+    "models": { "claude": { "judge": "fable", "exec": "sonnet" }, "codex": { "judge": "<openai model id>", "exec": "<openai model id>" } },
+    "readOnly": { "enforcement": "allowlist+write-hook|sandbox_mode=read-only", "scratch": "mktemp -d outside the worktree" },
+    "shell": { "blocked": ["cat", "grep", "find", "sed", "ls"], "preferred": ["rg", "fd", "bat", "eza"] },
+    "codegraph": { "available": true },
+    "skillTrees": [".claude/skills", ".agents/skills"], "skillGates": ["pnpm verify:governance"],
+    "agents": { "<name>": { "writeSurface": ["apps/mobile/.maestro/**", "docs/qa/**"] } },
+    "_init": "8 harness"
+  },
+  "git": { "owner": "orchestrator|agent", "baseRef": "origin/main", "commitStyle": "conventional, no AI attribution", "push": "human", "_init": "7 team workflow" },
+  "remote": { "target": "<name of a local untracked ssh profile; never inline host/account/address>", "_init": "7 team workflow" },
+  "docs": { "projectContext": "docs/agent-harness/project-context.md", "generatedIndex": "docs/app/README.md", "_init": "10 docs & diagrams" }
+}

@@ -9,11 +9,13 @@
 app/                              # pnpm workspaces + Turborepo
 ├── apps/
 │   ├── mobile/   # Expo (React Native) — see mobile.md
-│   └── web/      # Next.js 15 (App Router) — see web.md
+│   └── web/      # Next.js 16 (App Router) — see web.md
 └── packages/                     # SHARED, framework-agnostic only
     ├── tokens/    # design tokens (colors/spacing/type) + tailwind preset — VALUES, no components
     ├── core/      # domain/app logic: AppError, scrubPII, shared types/contracts (no React/RN/DOM)
-    └── i18n/      # shared ICU catalogs (es/en) + locale constants
+    ├── i18n/      # shared ICU catalogs (es/en) + locale constants
+    ├── supabase/  # Supabase client, schema types and the service-error mapper (backend adapter)
+    └── cloudflare/ # Cloudflare adapters: origin guard, Turnstile, R2 and image delivery
 ```
 
 ## 2. The fractal, screen-centric philosophy (applies to BOTH apps)
@@ -40,7 +42,7 @@ The deliberate middle ground: a **shared base** + **everything UI-specific separ
 | Domain/app logic, `AppError`, contracts   | `packages/core`          |   ✅    | Pure TS, no framework                                                              |
 | i18n catalogs (ICU JSON)                  | `packages/i18n`          |   ✅    | Same keys both apps; adapter differs (react-i18next vs next-intl)                  |
 | Optional backend client + generated types | project-specific package |   ✅    | One backend contract                                                               |
-| **UI components, screens, navigation**    | `apps/<app>/src`         |   ❌    | **RN/NativeWind vs DOM/shadcn — never shared**                                     |
+| **UI components, screens, navigation**    | `apps/<app>/src`         |   ❌    | **RN/NativeWind vs DOM/Tailwind — never shared**                                   |
 | Hooks/stores/lib wiring                   | `apps/<app>/src`         |   ❌    | App-specific (Expo Router vs Next App Router)                                      |
 
 **Rule of thumb:** imports React/RN/DOM or a UI lib → **per-app**. Pure logic / values / contracts
@@ -53,6 +55,48 @@ The deliberate middle ground: a **shared base** + **everything UI-specific separ
 - **Code standards** — arrow-only, alias imports, suffixes, naming, single-object params
   ([code-standards.md](../code-standards.md)), enforced by ESLint/Prettier/Husky.
 - **Validation gate** — nothing is done until `pnpm validate` + the grouped validators are green.
+
+### Host APIs in `packages/core`
+
+`packages/core` compiles under `lib: ["ES2022"]` with **no DOM lib and no
+`@types/node`**, because it must run unchanged in Node, the browser, and React
+Native. That is deliberate: anything the ES language does not define — `console`,
+`fetch`, `setTimeout`, `process`, `crypto` — has no type in this layer, so
+reaching for it is a compile error.
+
+**Do not fix that error by widening the package.** Adding `@types/node` hands
+this layer `process` and `Buffer`; adding the DOM lib hands it `window` and
+`document`. Either one lets code call APIs that do not exist in every target
+runtime, and the type system stops enforcing the contract the package exists to
+hold.
+
+**Declare the dependency narrowly and locally instead.** The pattern lives in
+[`packages/core/src/utils/hostConsole.helper.ts`](../../packages/core/src/utils/hostConsole.helper.ts):
+
+```ts
+export interface IHostConsole {
+  error: (...args: readonly unknown[]) => void
+  warn: (...args: readonly unknown[]) => void
+}
+
+// Module-scoped: shadows nothing globally, so it cannot collide with the real
+// console types that apps/web (DOM) and apps/mobile already carry.
+declare const console: IHostConsole
+
+export const hostConsole: IHostConsole = console
+```
+
+Three rules for a new host API:
+
+1. Declare only the members actually used — never the whole interface.
+2. Keep the declaration **module-scoped**. A `declare global` would leak into
+   every consumer and collide with their real DOM or Node types.
+3. Only do this for an API that genuinely exists in **every** target runtime. If
+   it does not, it belongs behind a port in `packages/core/src/ports/` with a
+   per-app adapter — see the observability, bot-protection, and origin-guard
+   ports for the shape.
+
+Tests spy on the seam (`vi.spyOn(hostConsole, 'error')`), not on the bare global.
 
 ## 5. Adding a new app (or new project)
 

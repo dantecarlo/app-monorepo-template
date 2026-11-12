@@ -6,12 +6,8 @@ import {
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import type { IUseLanguageSwitcherResult } from '@/components/ui/LanguageSwitcher/LanguageSwitcher.type'
 import { setLanguage } from '@/lib/i18n/i18n.config'
-
-export interface IUseLanguageSwitcherResult {
-  cycleLanguage: () => void
-  locale: SupportedLanguageType
-}
 
 const toNextLanguage = (
   current: SupportedLanguageType

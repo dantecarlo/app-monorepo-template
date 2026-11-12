@@ -1,20 +1,11 @@
 import { colors } from '@app/tokens'
-import type { TextInputProps } from 'react-native'
 import { Pressable, Text, TextInput, View } from 'react-native'
 
 import { AUTH_FIELD_ICON_SIZE } from '@/components/ui/AuthField/AuthField.constant'
 import { AUTH_FIELD_STYLES as styles } from '@/components/ui/AuthField/AuthField.styles'
+import type { IAuthFieldProps } from '@/components/ui/AuthField/AuthField.type'
 import { useAuthField } from '@/components/ui/AuthField/useAuthField.hook'
 import { Icon } from '@/components/ui/Icon/Icon.component'
-
-export interface IAuthFieldProps extends Omit<TextInputProps, 'style'> {
-  helperText?: string
-  hidePasswordLabel: string
-  isError?: boolean
-  isPassword?: boolean
-  label?: string
-  showPasswordLabel: string
-}
 
 /** Glass labeled TextInput. Password reveal toggle is i18n-decoupled via props. */
 export const AuthField = ({

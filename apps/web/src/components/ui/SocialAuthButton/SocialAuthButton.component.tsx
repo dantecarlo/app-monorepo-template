@@ -6,14 +6,7 @@ import {
   SOCIAL_AUTH_LABEL_CLASS,
   SOCIAL_AUTH_ROOT_CLASS
 } from '@/components/ui/SocialAuthButton/SocialAuthButton.constant'
-
-export interface ISocialAuthButtonProps {
-  disabled?: boolean
-  isLoading?: boolean
-  label: string
-  loadingLabel: string
-  onClick?: () => void
-}
+import type { ISocialAuthButtonProps } from '@/components/ui/SocialAuthButton/SocialAuthButton.type'
 
 /** Glass Google social-auth pill button. */
 export const SocialAuthButton = ({

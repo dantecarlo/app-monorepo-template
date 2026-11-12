@@ -1,12 +1,8 @@
 import { useTranslation } from 'react-i18next'
 
 import { NavBar } from '@/components/ui/NavBar'
-import type { INavBarItem } from '@/components/ui/NavBar/NavBar.component'
-
-export interface IDashboardNavProps {
-  activeId: string
-  onItemPress: (id: string) => void
-}
+import type { INavBarItem } from '@/components/ui/NavBar/NavBar.type'
+import type { IDashboardNavProps } from '@/screens/ItemsDashboard/components/DashboardNav/DashboardNav.type'
 
 export const DashboardNav = ({
   activeId,

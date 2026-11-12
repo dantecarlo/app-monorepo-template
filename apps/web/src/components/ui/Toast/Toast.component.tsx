@@ -2,6 +2,7 @@
 
 import type { JSX } from 'react'
 
+import { DISMISS_LABEL } from '@/components/ui/Toast/Toast.constant'
 import {
   TOAST_DISMISS_BTN,
   TOAST_DOT_BASE,
@@ -15,8 +16,6 @@ import {
   selectToasts,
   useToastStore
 } from '@/stores/toast.store'
-
-const DISMISS_LABEL = 'Dismiss'
 
 export const Toast = (): JSX.Element => {
   const toasts = useToastStore(selectToasts)

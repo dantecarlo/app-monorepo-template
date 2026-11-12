@@ -1,21 +1,12 @@
 import type { JSX } from 'react'
 
-import type { IconNameType } from '@/components/ui/Icon/Icon.component'
 import { IconButton } from '@/components/ui/IconButton/IconButton.component'
 import {
   SCREEN_HEADER_ROOT_CLASS,
   SCREEN_HEADER_SLOT_CLASS,
   SCREEN_HEADER_TITLE_CLASS
 } from '@/components/ui/ScreenHeader/ScreenHeader.constant'
-
-export interface IScreenHeaderProps {
-  actionLabel?: string
-  actionName?: IconNameType
-  backLabel: string
-  onAction?: () => void
-  onBack?: () => void
-  title: string
-}
+import type { IScreenHeaderProps } from '@/components/ui/ScreenHeader/ScreenHeader.type'
 
 /**
  * Fixed header with symmetric slots: back button (left) + title (center) +

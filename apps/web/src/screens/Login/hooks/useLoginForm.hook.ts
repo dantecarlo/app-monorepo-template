@@ -4,6 +4,7 @@ import type { ChangeEvent, FormEvent } from 'react'
 import { useCallback, useState } from 'react'
 
 import {
+  EMPTY_VALUES,
   LOGIN_EMAIL_PATTERN,
   LOGIN_ERROR_KEY,
   LOGIN_MIN_PASSWORD_LENGTH
@@ -13,8 +14,6 @@ import type {
   ILoginFormValues,
   IUseLoginFormResult
 } from '@/screens/Login/models/Login.type'
-
-const EMPTY_VALUES: ILoginFormValues = { email: '', password: '' }
 
 const validate = ({
   email,
