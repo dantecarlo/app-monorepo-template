@@ -10,14 +10,11 @@ this one.
 
 ## Quick orientation
 
-A production-ready monorepo template for Next.js + Expo projects backed by
-Supabase. It is the structural baseline — not a runnable product. Projects
-bootstrap from it and then extend it with product-specific code.
-
 - **What**: production-ready pnpm + Turborepo monorepo template. Provides the
   structural baseline (Clean + Fractal architecture, linting, type-checking,
   testing, validation gates, edge-security docs) for Next.js + Expo projects
-  backed by Supabase.
+  backed by Supabase. It is not a runnable product: projects bootstrap from it
+  and then extend it with product-specific code.
 - **Stack**: pnpm workspaces · Turborepo · Next.js 16.2.9 (App Router) · Expo SDK 56
   (React Native) · Supabase (Postgres, Auth, RLS) · Cloudflare (edge/CDN/WAF).
 - **Architecture**: Clean + Fractal. Framework-agnostic domain in
@@ -117,14 +114,12 @@ Project-level skills live under `.claude/skills/`. Each skill provides a
 ## Conventions
 
 - Conventional commits only. No AI attribution or Co-Authored-By in commits.
-- Code, identifiers, comments, and documentation default to English.
 - Domain and application layers must not import framework or vendor SDKs.
 - Every `*.service.ts` is paired with a `*.adapter.ts` — no fetch in components.
-- File suffixes are binding: `.component.tsx`, `.hook.ts`, `.service.ts`, etc.
 - `pnpm validate` must be green before any work is reported as done.
 - Arrow functions only — no `function` keyword.
 - Alias imports only — `@app/*` paths; no `../` outside barrel `index.ts`.
-- File suffixes in full: `.component.tsx`, `.hook.ts`, `.service.ts`, `.adapter.ts`,
+- File suffixes are binding: `.component.tsx`, `.hook.ts`, `.service.ts`, `.adapter.ts`,
   `.type.ts`, `.constant.ts`, `.styles.ts`, `.test.ts`.
 - Naming: `I{Name}` interfaces, `{Name}Type` types, `{Name}Enum` enums,
   `ALL_CAPS_PURPOSE` consts.
