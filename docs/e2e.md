@@ -40,6 +40,11 @@ for staging or preview environments. An empty value counts as unset: CI passes
 defined, and `e2e/base-url.e2e.ts` fails fast if the resolved `baseURL` is not
 an absolute http(s) URL.
 
+The mobile-web tier (`e2e/mobile-web.e2e.ts`, served from `apps/mobile/dist-web`
+on `:3001`) is opt-in: its projects exist only with `E2E_MOBILE_WEB=1`, and the
+run still boots `next start` on `:3000`, so it needs both
+`pnpm --filter @app/mobile export:web` and a web build.
+
 ---
 
 ## Deterministic visual + a11y gates (Tier C/D)

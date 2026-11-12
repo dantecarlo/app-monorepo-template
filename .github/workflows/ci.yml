@@ -219,8 +219,17 @@ jobs:
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 
+      # playwright.config.ts always boots `next start` on :3000 next to the
+      # :3001 static server, so this run needs a built web app as well.
+      - name: Build web app
+        run: pnpm --filter @app/web build
+
       - name: Run mobile-web smoke
         run: pnpm exec playwright test --project=mobile-web-390 --project=mobile-web-768 --project=mobile-web-1280 --project=mobile-web-1920
+        env:
+          # The mobile-web projects and the :3001 server are opt-in; without
+          # this flag Playwright reports them as "not found".
+          E2E_MOBILE_WEB: '1'
 
       - uses: actions/upload-artifact@v4
         if: failure()
