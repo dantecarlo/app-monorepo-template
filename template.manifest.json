@@ -297,7 +297,8 @@
       "claims": [
         "docs/GENERALIZATION_PLAN.md",
         "docs/INIT_AND_HARNESS_PLAN.md",
-        "docs/audits/**"
+        "docs/audits/**",
+        "openspec/changes/**"
       ]
     }
   ],
