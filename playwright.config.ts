@@ -29,9 +29,14 @@ const visualProject: Project = {
 const baseProjects: Project[] = [
   {
     name: 'chromium',
-    // Always-on deterministic gates against the web app: smoke load,
-    // glass computed-style recipe, and page-level axe a11y.
-    testMatch: ['home.e2e.ts', 'glass.e2e.ts', 'axe.e2e.ts'],
+    // Always-on deterministic gates against the web app: baseURL guard,
+    // smoke load, glass computed-style recipe, and page-level axe a11y.
+    testMatch: [
+      'base-url.e2e.ts',
+      'home.e2e.ts',
+      'glass.e2e.ts',
+      'axe.e2e.ts'
+    ],
     use: {
       ...devices['Desktop Chrome'],
       // Pin the dark theme the glass/axe baseline expects. The no-flash head
@@ -128,7 +133,10 @@ export default defineConfig({
   reporter: 'html',
   timeout: 60000,
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',
+    // `||`, not `??`: CI passes `${{ vars.E2E_BASE_URL }}`, which is an empty
+    // string when the repository variable is not defined, and an empty
+    // baseURL breaks every relative page.goto.
+    baseURL: process.env.E2E_BASE_URL || 'http://localhost:3000',
     trace: 'on-first-retry'
   },
   projects: [

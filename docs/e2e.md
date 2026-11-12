@@ -35,7 +35,10 @@ pnpm exec playwright test e2e/home.e2e.ts
 ```
 
 The `baseURL` defaults to `http://localhost:3000`. Override with `E2E_BASE_URL`
-for staging or preview environments.
+for staging or preview environments. An empty value counts as unset: CI passes
+`${{ vars.E2E_BASE_URL }}`, which is empty when the repository variable is not
+defined, and `e2e/base-url.e2e.ts` fails fast if the resolved `baseURL` is not
+an absolute http(s) URL.
 
 ---
 
