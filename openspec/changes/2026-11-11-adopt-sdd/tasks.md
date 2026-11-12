@@ -1,7 +1,7 @@
 # Tasks: 2026-11-11-adopt-sdd
 
 - [x] T1 — `openspec/README.md`, `openspec/config.yaml` and the six templates, harvested from Certifipago `cda657025` without product text · Requirements: none · Commit: c4ab3d9
-- [ ] T2 — `verify:specs` with its cases and the helpers it imports (`scripts/gate/gate.mjs`), run first among the doc gates of `validate`; RED on a planted malformed spec · Requirements: none · Commit: —
+- [x] T2 — `verify:specs` with its cases and the helpers it imports (`scripts/gate/gate.mjs`), run first among the doc gates of `validate`; RED on a planted malformed spec · Requirements: none · Commit: bfa24ec
 - [ ] T3 — `report:spec-drift` with `scripts/git-free-env.mjs`, inside `validate` and never blocking; its cases prove a spec whose governed code moved is listed · Requirements: none · Commit: —
 - [ ] T4 — the `sdd` skill and its evals in `.claude/skills/sdd/`, with product names removed and its paths checked against this tree · Requirements: none · Commit: —
 - [ ] T5 — `template.manifest.json`: the `sdd` capability in every preset, `openspec/changes/**` claimed by `template-maintainer`; `verify:manifest`, `:coverage` and `:test` green · Requirements: none · Commit: —
