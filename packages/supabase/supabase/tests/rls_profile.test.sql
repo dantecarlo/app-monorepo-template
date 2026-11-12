@@ -8,7 +8,7 @@
 --
 -- NOTE: DB tests require a running Postgres instance with pgTAP installed.
 -- They are intentionally NOT in the pnpm validate chain (validate is pure
--- TypeScript; DB tests need a live stack). See CLAUDE.md — no local Docker.
+-- TypeScript; DB tests need a live stack). See AGENTS.md — no local Docker.
 --
 -- IMPERSONATION: auth.uid() reads request.jwt.claims ->> 'sub'. Use:
 --   set local "request.jwt.claims" to '{"sub":"<uuid>","role":"authenticated"}';
