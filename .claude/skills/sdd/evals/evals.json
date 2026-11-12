@@ -1,0 +1,114 @@
+{
+  "skill_name": "sdd",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I want users to export their item list to a CSV file from the web app.",
+      "expected_output": "The agent reads the living specs the request touches (apps/web and packages/core) and sizes it as large, because it adds requirements. It creates openspec/changes/<today>-<name>/ with proposal.md quoting the request verbatim and dated, a delta at specs/apps/web/spec.md and one at specs/packages/core/spec.md under ADDED Requirements with the next free IDs, and tasks.md naming those IDs; it runs pnpm verify:specs, commits the folder as one commit and stops for the owner's review without writing code.",
+      "assertions": [
+        "Creates a folder under openspec/changes/ whose name starts with today's date",
+        "proposal.md has the sections Why, What changes, Out of scope and Affected specs, and quotes the request verbatim",
+        "Each delta sits at the path of an existing living spec under the change's specs/ and uses ## ADDED Requirements",
+        "Every added scenario has GIVEN, WHEN, THEN and a Test line",
+        "tasks.md names requirement IDs on every task",
+        "Commits the change folder as one commit and writes no application code",
+        "Runs pnpm verify:specs"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "The dashboard total shows 3 decimals instead of 2, fix it.",
+      "expected_output": "The agent reads the requirement that states the dashboard total (apps/web) and finds the fix restores what it already says, so the change is small: it says so in one line, fixes the code test first, and creates no change folder and no delta.",
+      "assertions": [
+        "States that the change is small because it changes no requirement",
+        "Creates nothing under openspec/changes/",
+        "Writes a failing test before the fix"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Scaffold a new Reports screen for the mobile app.",
+      "expected_output": "Scaffolding the files of a screen belongs to the screen skill (and a whole slice to feature), not to sdd. If the screen adds behaviour, sdd runs first as a propose; the scaffold itself is done by `screen`.",
+      "assertions": [
+        "Names the screen or feature skill as the one that scaffolds the files",
+        "Does not hand-write the screen's file set from this skill"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Sync the living spec of packages/core with the code.",
+      "expected_output": "The agent runs sync on openspec/specs/packages/core/spec.md: re-reads packages/core/src/, checks every requirement's evidence line and every test title with rg -F, corrects what drifted, lists any document that disagrees under Open questions, runs pnpm verify:specs and pnpm report:spec-drift, commits the spec as one commit and replies with the six Output lines.",
+      "assertions": [
+        "Edits only openspec/specs/packages/core/spec.md",
+        "Every Test title it keeps is found in its file by rg -F",
+        "Writes no requirement from a document the code contradicts; records it as an open question",
+        "Replies with the Mode, Commits, Requirements, Not covered, Gates and Next lines"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "We are not doing the CSV export change anymore, discard it.",
+      "expected_output": "The agent runs discard on that change: writes Status: discarded with today's date and the owner's reason in the proposal, merges no delta into openspec/specs/, moves the folder to openspec/changes/archive/ with git mv and commits with the reason in the message.",
+      "assertions": [
+        "The proposal reads > **Status:** discarded — <date>, <reason>",
+        "No file under openspec/specs/ changes",
+        "The folder ends under openspec/changes/archive/ with its own dated name",
+        "Runs pnpm verify:specs before the commit"
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "The owner approved the CSV export proposal. Build it.",
+      "expected_output": "The agent runs apply on the approved change folder: for each task it writes the scenario's test, runs it red, builds the code through the scaffold or modify skill that owns its shape until the test is green, commits, and writes the short sha into the task line of tasks.md. It then writes verify-report.md with one row per scenario of the deltas and the result it observed, runs pnpm validate and records the exit code, and in the last commit merges the deltas into openspec/specs/ (ADDED appended, MODIFIED replaced, REMOVED deleted), fills the evidence lines, marks the proposal archived and moves the folder under its own name. It replies with the six Output lines, Gates included.",
+      "assertions": [
+        "Every task shows a test seen red before the code that turns it green",
+        "Every ticked task in tasks.md names a short sha",
+        "verify-report.md has one row per scenario of the change's deltas",
+        "Records the exit code of pnpm validate",
+        "The living specs carry the merged requirements with path:line evidence",
+        "The reply has the Mode, Commits, Requirements, Not covered, Gates and Next lines"
+      ],
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "You already wrote the CSV export proposal; start coding it right away.",
+      "expected_output": "The propose commit has no yes from the owner yet, so the agent does not build: it says the change waits for the owner's review of the propose commit, names that commit, and writes no code and no test. It offers to answer questions about the proposal in the meantime.",
+      "assertions": [
+        "Writes no application code and no test",
+        "Names the propose commit the owner has to review",
+        "States that nothing is built before the owner approves the proposal and its deltas"
+      ],
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "pnpm report:spec-drift lists packages/i18n; we are cutting a release, bring it up to date.",
+      "expected_output": "The agent runs sync on openspec/specs/packages/i18n/spec.md, starting from the files the report names as changed: it re-reads the requirements those files hold evidence for, rewrites what the code no longer does, re-checks every test title, moves the spec's Verified against the code line to today and the short sha of HEAD, runs pnpm verify:specs and pnpm report:spec-drift, and confirms the report no longer lists the spec before committing it as one commit.",
+      "assertions": [
+        "Starts from the files pnpm report:spec-drift names for the spec",
+        "The spec's Verified against the code line carries today and the short sha of HEAD",
+        "pnpm report:spec-drift no longer lists packages/i18n after the commit",
+        "Edits only openspec/specs/packages/i18n/spec.md"
+      ],
+      "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "The spec says the item list loads 20 items per page, but the code has always loaded 25. Fix that.",
+      "expected_output": "The code has always loaded 25 items per page, so the spec states behaviour the code never had: this is a small change. The agent corrects that one requirement of apps/web with its path:line evidence, in a commit of its own, and creates no change folder and no delta.",
+      "assertions": [
+        "Classifies the request as small: the requirement was wrong, the code does not change",
+        "Creates nothing under openspec/changes/",
+        "Edits one requirement of openspec/specs/apps/web/spec.md and cites the code line",
+        "Writes no application code"
+      ],
+      "files": []
+    }
+  ]
+}

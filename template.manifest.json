@@ -298,6 +298,7 @@
       "title": "Spec-Driven Development — operating model, templates, spec gates, the sdd skill",
       "group": "workflow",
       "claims": [
+        ".claude/skills/sdd/**",
         "openspec/README.md",
         "openspec/config.yaml",
         "openspec/templates/**",
