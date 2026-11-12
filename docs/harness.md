@@ -78,17 +78,19 @@ the pre-commit hook on staged files.
 
 ### 3c. The verify scripts
 
-| Gate                  | Proves                                                    |
-| --------------------- | --------------------------------------------------------- |
-| `verify:tests`        | Every unit has a sibling test                             |
-| `verify:maps`         | The global map resolves, and no stray magic literals      |
-| `verify:pairing`      | A service has its adapter and vice versa                  |
-| `verify:structure`    | Screen and component folders satisfy the block contract   |
-| `verify:security`     | The static security posture holds                         |
-| `verify:theme-sync`   | Web and mobile themes agree                               |
-| `docs:diagrams:check` | Every committed diagram matches its spec and the tokens   |
-| `check:identity`      | The template's default identity is gone (skipped on self) |
-| `knip`                | No dead exports, no unlisted or unused dependencies       |
+| Gate                  | Proves                                                                                    |
+| --------------------- | ----------------------------------------------------------------------------------------- |
+| `verify:tests`        | Every unit has a sibling test                                                             |
+| `verify:maps`         | The global map resolves, and no stray magic literals                                      |
+| `verify:pairing`      | A service has its adapter and vice versa                                                  |
+| `verify:structure`    | Screen and component folders satisfy the block contract                                   |
+| `verify:security`     | The static security posture holds                                                         |
+| `verify:theme-sync`   | Web and mobile themes agree                                                               |
+| `docs:diagrams:check` | Every committed diagram matches its spec and the tokens                                   |
+| `verify:specs`        | Every living spec and change has its shape, and every test a scenario names exists        |
+| `report:spec-drift`   | Lists the living specs whose governed code moved past their verified commit; never blocks |
+| `check:identity`      | The template's default identity is gone (skipped on self)                                 |
+| `knip`                | No dead exports, no unlisted or unused dependencies                                       |
 
 ### 3d. What the gate deliberately excludes
 

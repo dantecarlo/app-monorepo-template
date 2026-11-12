@@ -307,8 +307,37 @@
         "scripts/spec-drift.detect.mjs",
         "scripts/specs-templates.cases.mjs",
         "scripts/specs.detect.mjs",
+        "scripts/verify-specs.change.cases.mjs",
+        "scripts/verify-specs.fixtures.mjs",
         "scripts/verify-specs.mjs",
+        "scripts/verify-specs.spec.cases.mjs",
         "scripts/verify-specs.test.mjs"
+      ],
+      "onAbsent": [
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.verify:specs"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.verify:specs:test"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.report:spec-drift"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.report:spec-drift:test"
+        }
       ]
     },
     {
