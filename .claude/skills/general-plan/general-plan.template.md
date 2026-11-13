@@ -175,7 +175,7 @@ tables/columns/RPCs to add — not just UI>.
 | 1 |  |  | — |
 | 2 |  |  | 1 |
 
-## Necesito del usuario / Needs from user
+## Needs from user
 
 <!--
   NEEDS FROM OWNER — the credentials, decisions, content, and legal items only

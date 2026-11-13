@@ -4,32 +4,32 @@ import { describe, expect, test, vi } from 'vitest'
 import { SegmentedControl } from '@/components/ui/SegmentedControl/SegmentedControl.component'
 
 const SEGMENTS = [
-  { id: 'siempre', label: 'Siempre' },
-  { id: 'por-turno', label: 'Por turno' }
+  { id: 'always', label: 'Always' },
+  { id: 'per-shift', label: 'Per shift' }
 ] as const
 
 describe('SegmentedControl', () => {
   test('renders all segments', () => {
     render(
       <SegmentedControl
-        activeId="siempre"
+        activeId="always"
         onSegmentPress={vi.fn()}
         segments={SEGMENTS}
       />
     )
-    expect(screen.getByRole('tab', { name: 'Siempre' })).toBeTruthy()
-    expect(screen.getByRole('tab', { name: 'Por turno' })).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Always' })).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Per shift' })).toBeTruthy()
   })
 
   test('marks active tab as selected', () => {
     render(
       <SegmentedControl
-        activeId="siempre"
+        activeId="always"
         onSegmentPress={vi.fn()}
         segments={SEGMENTS}
       />
     )
-    const activeTab = screen.getByRole('tab', { name: 'Siempre' })
+    const activeTab = screen.getByRole('tab', { name: 'Always' })
     expect(activeTab.getAttribute('aria-selected')).toBe('true')
   })
 
@@ -37,13 +37,13 @@ describe('SegmentedControl', () => {
     const onSegmentPress = vi.fn()
     render(
       <SegmentedControl
-        activeId="siempre"
+        activeId="always"
         onSegmentPress={onSegmentPress}
         segments={SEGMENTS}
       />
     )
-    fireEvent.click(screen.getByRole('tab', { name: 'Por turno' }))
-    expect(onSegmentPress).toHaveBeenCalledWith('por-turno')
+    fireEvent.click(screen.getByRole('tab', { name: 'Per shift' }))
+    expect(onSegmentPress).toHaveBeenCalledWith('per-shift')
   })
 
   test('is exported as a function', () => {

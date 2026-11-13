@@ -78,7 +78,7 @@ const requiredSections = [
   { label: 'Current Stack & Architecture', pattern: /^##\s+.*\b(stack|architecture)\b/im },
   { label: 'What\'s DONE', pattern: /^##\s+.*\bdone\b/im },
   { label: 'What\'s PENDING', pattern: /^##\s+.*\bpending\b/im },
-  { label: 'Needs from user / owner', pattern: /^##\s+.*\b(needs from|necesito del usuario)\b/im },
+  { label: 'Needs from user / owner', pattern: /^##\s+.*\bneeds from\b/im },
   { label: 'Path to Launch', pattern: /^##\s+.*\blaunch\b/im },
   { label: 'Technical Details, Conventions & Gotchas', pattern: /^##\s+.*\bgotchas\b/im },
   { label: 'Risks & Open Decisions', pattern: /^##\s+.*\brisks?\b/im }

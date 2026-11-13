@@ -138,8 +138,8 @@ Use these `##` headings, in this order (mirrors the template file):
     mitigation, cross-referenced from dependent phases; then a short list of
     still-open decisions with an owner column.
 
-The template also includes a `## Necesito del usuario / Needs from user`
-bilingual anchor for section 9 so Spanish-language product docs read naturally.
+The template heads section 9 `## Needs from user`; the validator finds that
+section by the words "needs from" in its heading.
 
 ## Execution Steps
 
