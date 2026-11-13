@@ -12,70 +12,70 @@ stay in the product's real UI locale (they are the literal labels).
 
 ```markdown
 # {Product} — PRD
-> Estado: Draft v1 · Fecha: {date} · Owner: {owner}
+> Status: Draft v1 · Date: {date} · Owner: {owner}
 
-## 1. Visión            — qué es, en una idea; los motores que se retroalimentan
-## 2. Problema          — qué duele hoy y por qué
-## 3. Usuarios          — personas + necesidad principal; mercado inicial
-## 4. Decisiones de producto — las definidas; CERRADAS: no se reabren sin justificación registrada
-## 5. Propuesta de valor / diferenciadores
-## 6. Alcance del MVP   — En alcance · Fuera del MVP · No-goals
-## 7. Funcionalidades por motor/área
-## 8. Reglas de negocio + legal + anti-fraude
-## 9. Monetización      — ver ECONOMY.md
-## 10. Modelo de dominio (alto nivel) — entidades + relaciones
+## 1. Vision            — what it is, in one idea; the engines that feed each other
+## 2. Problem           — what hurts today and why
+## 3. Users             — personas + main need; initial market
+## 4. Product decisions — the ones already made; LOCKED: not reopened without a recorded justification
+## 5. Value proposition / differentiators
+## 6. MVP scope         — In scope · Out of the MVP · No-goals
+## 7. Features by engine/area
+## 8. Business rules + legal + anti-fraud
+## 9. Monetization      — see ECONOMY.md
+## 10. Domain model (high level) — entities + relationships
 ## 11. KPIs
-## 12. Riesgos y mitigaciones
-## 13. Roadmap por fases
-## 14. Supuestos abiertos (checklist [ ]/[x])
+## 12. Risks and mitigations
+## 13. Roadmap by phase
+## 14. Open assumptions (checklist [ ]/[x])
 ```
 
 ## USER-FLOWS.md
 
 ```markdown
-# {Product} — Flujos de usuario (MVP)
-Mapa general (diagrama de texto).
-Por flujo: pasos numerados + Regla/edge key. Cubrir: onboarding, dashboard,
-buscar, acción-de-valor (paywall/conversión), aportar, reportar, reputación,
-y el flujo de staff/admin si hay back-office.
+# {Product} — User flows (MVP)
+Overall map (text diagram).
+Per flow: numbered steps + key rule/edge. Cover: onboarding, dashboard,
+search, value action (paywall/conversion), contribute, report, reputation,
+and the staff/admin flow if there is a back office.
 ```
 
-## ECONOMY.md (si hay monetización)
+## ECONOMY.md (if there is monetization)
 
 ```markdown
-# {Product} — Economía
-Principios (la balanza; desacople moneda↔dinero).
-Moneda / unidad monetizable. Ganar (tabla). Comprar (paquetes).
-Planes/suscripción. Activación del usuario nuevo. Pasarela + métodos locales.
-Punto de cruce (que ninguna vía canibalice a otra). Reglas. Decisiones abiertas.
+# {Product} — Economy
+Principles (the balance; decoupling currency↔money).
+Currency / monetizable unit. Earn (table). Buy (bundles).
+Plans/subscription. New-user activation. Payment gateway + local methods.
+Crossover point (no path cannibalizes another). Rules. Open decisions.
 ```
 
 ## SCREENS.md
 
 ```markdown
-# {Product} — Inventario de vistas
-Por superficie (app/web/admin) y área. Asigná a cada vista un ID estable.
-Cada vista: propósito + una línea de ALCANCE (qué hace + qué puede/no puede el
-usuario + gating gratis/pago). Resumen (conteo por superficie + por rol).
+# {Product} — View inventory
+By surface (app/web/admin) and area. Give each view a stable ID.
+Each view: purpose + one SCOPE line (what it does + what the user can/cannot
+do + free/paid gating). Summary (count per surface + per role).
 
-## {Área}
-| ID | Pantalla | Plataforma | Rol | Alcance (qué hace + puede/no + gating) |
+## {Area}
+| ID | Screen | Platform | Role | Scope (what it does + can/cannot + gating) |
 ```
 
 ## SERVICES.md
 
 ```markdown
-# {Product} — Vistas ↔ Servicios
+# {Product} — Views ↔ Services
 
-## SERVICIOS
-| Código | Módulo   | Qué hace | Status |   ← propios (a construir)
-| Código | Servicio | Cubre    | Status |   ← gestionados (terceros/SaaS)
+## SERVICES
+| Code | Module   | What it does | Status |   ← owned (to build)
+| Code | Service  | Covers       | Status |   ← managed (third-party/SaaS)
 
-## Mapa vista → servicios
-| Pantalla | Propios | Gestionados |        ← mismas vistas/IDs de SCREENS
-Reglas: una idea por celda; códigos 3–4 letras consistentes entre tablas.
-Lo transversal (DB backbone, i18n, edge, observabilidad) se omite por fila y se
-lista una sola vez como "cross-cutting".
+## View → services map
+| Screen | Owned | Managed |        ← same views/IDs as SCREENS
+Rules: one idea per cell; 3–4 letter codes consistent across tables.
+Cross-cutting concerns (DB backbone, i18n, edge, observability) are omitted per row and
+listed once as "cross-cutting".
 ```
 
 ## DATA-MODEL.md
