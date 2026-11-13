@@ -1,4 +1,4 @@
-| | | closed, not a defect: Claude Code reads no file under a `.agents/` directory |
+# Generic template, `/init` and a centralized harness — plan
 
 The template becomes fully generic and is configured head to toe by one `/init`
 interview. The interview writes only data (an answers file); a deterministic
@@ -142,17 +142,17 @@ is decided, neither repository changes that convention.
 
 ### Conformance track — Certifipago onto the template's standards (Arquitecto, in parallel)
 
-| #   | Item                                                                                              | Status                               |
-| --- | ------------------------------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------- | ------------- |
-| K1  | `.gitattributes` pins `.husky/* text eol=lf`                                                      | asked 2026-11-13                     |
-| K2  | hooks run `commitlint` and `lint-staged` through `pnpm exec`                                      | Certifipago #785, waits on the owner |
-| K3  | `E2E_BASE_URL` falls back with `                                                                  |                                      | ` (`playwright.config.ts:234`, `apps/web/e2e/fixtures/global-setup.ts:47`) | routed to Web |
-| K4  | `engines.node: ">=24.2.0"`                                                                        | asked 2026-11-13                     |
-| K5  | the alias rule names `#src/` (`openspec/config.yaml:70`, `.github/copilot-instructions.md:35-36`) | asked 2026-11-13                     |
-| K6  | `openspec/README.md:9` stops calling Certifipago the template                                     | asked 2026-11-13                     |
-| K7  | `claudeMdExcludes` covers the `.agents/skills` mirror                                             | asked 2026-11-13                     |
-| K8  | D-S1 to D-S6, once the owner decides                                                              | waits on the owner                   |
-| K9  | the 12 cross-workspace relative imports move to `@app/tooling`                                    | waits on 2.2                         |
+| #   | Item                                                                                                                                                        | Status                                                                       |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| K1  | `.gitattributes` pins `.husky/* text eol=lf`                                                                                                                | in Certifipago `chore/align-template-standards` (2026-11-13)                 |
+| K2  | hooks run `commitlint` and `lint-staged` through `pnpm exec`                                                                                                | Certifipago #785, waits on the owner                                         |
+| K3  | `E2E_BASE_URL` falls back to localhost on an empty value, not only on an unset one (`playwright.config.ts:234`, `apps/web/e2e/fixtures/global-setup.ts:47`) | routed to Web                                                                |
+| K4  | `engines.node: ">=24.2.0"`                                                                                                                                  | in Certifipago `chore/align-template-standards` (2026-11-13)                 |
+| K5  | the alias rule names `#src/` (`openspec/config.yaml:70`, `.github/copilot-instructions.md:35-36`)                                                           | in Certifipago `chore/align-template-standards` (2026-11-13)                 |
+| K6  | `openspec/README.md:9` stops calling Certifipago the template                                                                                               | in Certifipago `chore/align-template-standards` (2026-11-13)                 |
+| K7  | `claudeMdExcludes` covers the `.agents/skills` mirror                                                                                                       | closed, not a defect: Claude Code reads no file under a `.agents/` directory |
+| K8  | D-S1 to D-S6, once the owner decides                                                                                                                        | waits on the owner                                                           |
+| K9  | the 12 cross-workspace relative imports move to `@app/tooling`                                                                                              | waits on 2.2                                                                 |
 
 ## Next steps (2026-11-05, updated 2026-11-12)
 
@@ -248,19 +248,19 @@ master after these merges.
 
 **Template → Certifipago**
 
-| Template change                                                                      | Landed in             | Certifipago counterpart                                                                                                             | Carried by            | Status             |
-| ------------------------------------------------------------------------------------ | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------- | ------------------ | ---------------------------- | ---- |
-| Hooks run `commitlint` and `lint-staged` through `pnpm exec` (P0 `08752d9`)          | `feat/p0-land-staged` | the same two lines in `.husky/commit-msg` and `.husky/pre-commit` (Certifipago still runs `pnpm commitlint` and `pnpm lint-staged`) | C5                    | open               |
-| archify lock: a hash per file and the sigil patch recorded (P0 `e040feb`, `417ae5c`) | `feat/p0-land-staged` | Certifipago's `skills-lock.json` holds one hash per skill and no patch record; check whether its archify carries the sigil patch    | PD2 (one lock format) | open               |
-| `.gitattributes`, with `.husky/* text eol=lf` (P0 `3d31c02`, `c7737fd`)              | #2                    | Certifipago's file lacks the `.husky` pin                                                                                           | Arquitecto (K1)       | open               |
-| Core console seam, suffix codemod, docs, capability manifest (P0)                    | `feat/p0-land-staged` | none: template code and template-only files                                                                                         | not applicable        | closed             |
-| NUL byte escaped in the local lint rules (P0 `1d5ce1c`)                              | `feat/p0-land-staged` | none: Certifipago's rules carry no NUL byte                                                                                         | not applicable        | closed             |
-| Core import rules no longer contradict (P0 `91bcd11`)                                | `feat/p0-land-staged` | checked when the lint rules are harvested                                                                                           | T3 (P3)               | open               |
-| The workflow as a setting (decision 40)                                              | this plan             | `workflow.mode: "sdd"` in `.agents/harness.config.json`, the mode it already runs                                                   | C6                    | open               |
-| MCP servers pinned to the version resolved at install (decision 44)                  | this plan             | `.mcp.json` runs five servers through unpinned `npx -y`; pinning them is the owner's call                                           | C7 (owner decides)    | open               |
-| `E2E_BASE_URL` falls back with `                                                     |                       | `(P0`699c6cd`)                                                                                                                      | #2                    | two `??` fallbacks | Web, via the Arquitecto (K3) | open |
-| `engines.node: ">=24.2.0"` (SDD-0)                                                   | #4                    | no `engines` field                                                                                                                  | Arquitecto (K4)       | open               |
-| The template is the reference (decision 47)                                          | this plan             | `openspec/README.md:9` still calls Certifipago the template                                                                         | Arquitecto (K6)       | open               |
+| Template change                                                                      | Landed in             | Certifipago counterpart                                                                                                             | Carried by                   | Status |
+| ------------------------------------------------------------------------------------ | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ------ |
+| Hooks run `commitlint` and `lint-staged` through `pnpm exec` (P0 `08752d9`)          | `feat/p0-land-staged` | the same two lines in `.husky/commit-msg` and `.husky/pre-commit` (Certifipago still runs `pnpm commitlint` and `pnpm lint-staged`) | C5                           | open   |
+| archify lock: a hash per file and the sigil patch recorded (P0 `e040feb`, `417ae5c`) | `feat/p0-land-staged` | Certifipago's `skills-lock.json` holds one hash per skill and no patch record; check whether its archify carries the sigil patch    | PD2 (one lock format)        | open   |
+| `.gitattributes`, with `.husky/* text eol=lf` (P0 `3d31c02`, `c7737fd`)              | #2                    | Certifipago's file lacks the `.husky` pin                                                                                           | Arquitecto (K1)              | open   |
+| Core console seam, suffix codemod, docs, capability manifest (P0)                    | `feat/p0-land-staged` | none: template code and template-only files                                                                                         | not applicable               | closed |
+| NUL byte escaped in the local lint rules (P0 `1d5ce1c`)                              | `feat/p0-land-staged` | none: Certifipago's rules carry no NUL byte                                                                                         | not applicable               | closed |
+| Core import rules no longer contradict (P0 `91bcd11`)                                | `feat/p0-land-staged` | checked when the lint rules are harvested                                                                                           | T3 (P3)                      | open   |
+| The workflow as a setting (decision 40)                                              | this plan             | `workflow.mode: "sdd"` in `.agents/harness.config.json`, the mode it already runs                                                   | C6                           | open   |
+| MCP servers pinned to the version resolved at install (decision 44)                  | this plan             | `.mcp.json` runs five servers through unpinned `npx -y`; pinning them is the owner's call                                           | C7 (owner decides)           | open   |
+| `E2E_BASE_URL` falls back to localhost on an empty value (P0 `699c6cd`)              | #2                    | two fallbacks that cover only an unset value                                                                                        | Web, via the Arquitecto (K3) | open   |
+| `engines.node: ">=24.2.0"` (SDD-0)                                                   | #4                    | no `engines` field                                                                                                                  | Arquitecto (K4)              | open   |
+| The template is the reference (decision 47)                                          | this plan             | `openspec/README.md:9` still calls Certifipago the template                                                                         | Arquitecto (K6)              | open   |
 
 ---
 
