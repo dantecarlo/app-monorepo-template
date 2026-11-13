@@ -178,8 +178,10 @@ a measurement date — is the sanctioned way to carry a backlog.
 
 One exception, approved with the `english-only` change:
 `scripts/verify-english.allow.json` may name a single line that must keep
-Spanish (a person's name a test needs, a quoted product label), each with its
-reason. It blesses lines, not paths, and `verify:english` fails on an entry
+text the gate reads as Spanish, each with its reason: Spanish itself (a quoted
+product label), or a non-English accented word the gate cannot tell from
+Spanish, such as a person's name a test needs or a loanword like
+"caf&eacute;". It blesses lines, not paths, and `verify:english` fails on an entry
 that excuses no line, so it cannot hold a backlog; it ships empty. The gate
 reads the allowlist like any other file, so an entry writes a Spanish-only
 character as a JSON Unicode escape and matches a line of plain Spanish words

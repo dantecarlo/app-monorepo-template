@@ -611,6 +611,12 @@ self-cleaning**.
 > nobody reads and the ratchet stops moving. A rule either passes clean here, or
 > the code is fixed, or the rule does not land. See `docs/GENERALIZATION_PLAN.md`
 > decision 1.
+>
+> **The one exception** is `scripts/verify-english.allow.json`, the allowlist
+> of `verify:english` (§15). It cannot hold a backlog: it ships empty, each
+> entry names its file, its line (the text or a pattern) and the reason the
+> line keeps that text, and the gate fails an entry that excuses no line, so a
+> stale one cannot stay. See `docs/harness.md`.
 
 > Status: **not in place.** Packages lint with `eslint .` — no
 > `--max-warnings 0`, no `reportUnusedDisableDirectives`. Tracked in §21.
@@ -654,7 +660,7 @@ This table exists so that difference is visible.
 | §14 Data flow               | review        | —                                                                   |
 | §14a Logic in hooks         | lint          | `local/logic-in-view` + `local/single-use-state`                    |
 | Core import boundary        | lint          | `local/core-import-boundary` on `packages/core/src/**`              |
-| §15 English everywhere      | **warn only** | `local/no-non-ascii-identifier` at `warn`; no `--max-warnings 0`    |
+| §15 English everywhere      | script        | `verify:english` (allowlist: §20 exception); identifier lint `warn` |
 | §15.1 i18n catalogs         | test          | `catalog-parity.test.ts` — **parity only**, casing not yet          |
 | §16 Conventional commits    | hook          | `commitlint` on `commit-msg`                                        |
 | §17 Per-feature DoD         | review        | —                                                                   |
@@ -668,7 +674,9 @@ This table exists so that difference is visible.
 hidden in prose — they are named gaps with a named mechanism, tracked as
 harvest work in
 `docs/GENERALIZATION_PLAN.md` phases 2 and 3. A row moves to a real method only
-when the mechanism lands **and passes clean with no exemption file**.
+when the mechanism lands **and passes clean with no exemption file**; the
+`verify:english` allowlist is the one exception, and §20 says how it stays
+honest.
 
 ---
 
