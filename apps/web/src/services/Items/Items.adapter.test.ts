@@ -50,8 +50,8 @@ describe('adaptItem', () => {
   })
 
   test('collapses extra whitespace when building initials (null-guard)', () => {
-    const vm = adaptItem(makeDto({ author_name: '  Ana  García  López ' }))
-    expect(vm.authorInitials).toBe('AG')
+    const vm = adaptItem(makeDto({ author_name: '  Mary  Ann  Smith ' }))
+    expect(vm.authorInitials).toBe('MA')
   })
 
   test('falls back to "?" initials when author_name is null', () => {
