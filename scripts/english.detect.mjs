@@ -9,8 +9,10 @@
 // with a diaeresis, in either case — or two or more distinct Spanish function
 // words, each a whole word written in lower case, capitalised or in capitals.
 // A run of letters mixed with digits or in mixed case, such as base64, is not
-// a word. Every such character below is a Unicode escape and the words sit one
-// per line, so this file passes the rule it states.
+// a word. Each line is normalised to NFC first, so a vowel written as a base
+// letter plus a combining accent reads as the accented vowel it shows. Every
+// such character below is a Unicode escape and the words sit one per line, so
+// this file passes the rule it states.
 //
 // The words leave out those English or code also uses: `todo`, `del`, `con`,
 // `solo`, `algo`. A lone Spanish word is not a sentence, so it passes.
@@ -34,6 +36,7 @@ const SPANISH_CHARACTER =
 const TOKEN = /[\p{L}\p{N}]+/gu
 const WORD_SHAPE = /^(?:\p{Lu}?\p{Ll}+|\p{Lu}+)$/u
 const WORD_THRESHOLD = 2
+const NORMAL_FORM = 'NFC'
 const EXCERPT_LENGTH = 120
 const HEX_RADIX = 16
 const CODE_POINT_DIGITS = 4
@@ -171,10 +174,11 @@ export const judgedFiles = ({ files }) =>
   )
 
 // Every Spanish line of the judged files, with its 1-based number, its
-// trimmed text and the reason it reads as Spanish.
+// trimmed text in NFC and the reason it reads as Spanish.
 export const findSpanishLines = ({ files }) =>
   judgedFiles({ files }).flatMap(({ path, text }) =>
-    text.split(LINE_BREAK).flatMap((line, index) => {
+    text.split(LINE_BREAK).flatMap((raw, index) => {
+      const line = raw.normalize(NORMAL_FORM)
       const reason = spanishReason({ line })
       return reason === null
         ? []
@@ -217,7 +221,7 @@ const excuses = ({ entry, hit }) =>
   entry.path === hit.path &&
   (entry.text === undefined
     ? new RegExp(entry.pattern, 'u').test(hit.text)
-    : entry.text.trim() === hit.text)
+    : entry.text.normalize(NORMAL_FORM).trim() === hit.text)
 
 const excerpt = ({ text }) =>
   text.length > EXCERPT_LENGTH

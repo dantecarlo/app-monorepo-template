@@ -38,11 +38,42 @@ const ENGLISH_TEXT = [
 const NAME_LINE = 'Author: Jos\u00e9'
 const REASON = 'a person the fixture needs by name'
 
+// The 16 characters only Spanish writes, one case each below, so a
+// character dropped from the detector fails the case that names it.
+const SPANISH_CHARACTERS = [
+  ...('\u00a1\u00bf\u00c1\u00c9\u00cd\u00d1\u00d3\u00da' +
+    '\u00dc\u00e1\u00e9\u00ed\u00f1\u00f3\u00fa\u00fc')
+]
+// An o followed by a combining acute accent: the same word as the
+// precomposed one once the line is normalised to NFC.
+const DECOMPOSED_WORD = 'configuracio\u0301n'
+// Two listed words, each on its own line so this file holds no Spanish
+// line of its own.
+const LISTED_WORD = 'para'
+const OTHER_LISTED_WORD = 'porque'
+const HEX_RADIX = 16
+const CODE_POINT_DIGITS = 4
+
 const file = ({ path = NOTES_PATH, text }) => ({ path, text })
 
 const context =
   ({ allowlist = [], files }) =>
   () => ({ allowlist, files })
+
+const codePointName = ({ character }) =>
+  `U+${character
+    .codePointAt(0)
+    .toString(HEX_RADIX)
+    .toUpperCase()
+    .padStart(CODE_POINT_DIGITS, '0')}`
+
+const characterCase = ({ character }) => ({
+  context: context({
+    files: [file({ text: `Planted ${character} here.` })]
+  }),
+  expected: 1,
+  name: `the Spanish character ${codePointName({ character })} fires`
+})
 
 export const ENGLISH_CASES = [
   {
@@ -169,5 +200,36 @@ export const ENGLISH_CASES = [
     }),
     expected: 1,
     name: 'an allowlist that is not an array fires'
-  }
+  },
+  {
+    context: context({
+      files: [file({ text: `The ${DECOMPOSED_WORD} screen` })]
+    }),
+    expected: 1,
+    name: 'a decomposed accented word fires once normalised to NFC'
+  },
+  {
+    context: context({
+      files: [
+        file({ text: `Ship ${LISTED_WORD} and ${OTHER_LISTED_WORD} now` })
+      ]
+    }),
+    expected: 1,
+    name: 'exactly two distinct listed words fire'
+  },
+  {
+    context: context({
+      files: [file({ text: `Ship ${LISTED_WORD} now` })]
+    }),
+    expected: 0,
+    name: 'a single listed word fires nothing'
+  },
+  {
+    context: context({
+      files: [file({ text: `Ship ${LISTED_WORD} and ${LISTED_WORD} now` })]
+    }),
+    expected: 0,
+    name: 'one listed word written twice fires nothing'
+  },
+  ...SPANISH_CHARACTERS.map((character) => characterCase({ character }))
 ]
