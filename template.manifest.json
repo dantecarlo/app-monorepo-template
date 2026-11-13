@@ -40,7 +40,6 @@
     ".prettierrc.json",
     ".vscode/**",
     "AGENTS.md",
-    "CLAUDE.md",
     "LICENSE",
     "README.md",
     "commitlint.config.js",

@@ -73,7 +73,7 @@ Contribute to the shared memory when the knowledge is:
 - Applicable across multiple projects bootstrapped from this template.
 - A decision that a future agent bootstrapping a new project would need.
 - A hard-won discovery, gotcha, or edge case that is not obvious from the code.
-- A policy or convention that overrides or extends what is written in CLAUDE.md.
+- A policy or convention that overrides or extends what is written in AGENTS.md.
 
 Do not contribute project-specific implementation details, secrets, or anything
 scoped only to a single product.
