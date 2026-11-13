@@ -4,7 +4,7 @@
 - [x] T2 — the owner quotes of `docs/INIT_AND_HARNESS_PLAN.md` translated and marked `(translated from Spanish)` · Requirements: none · Commit: 284786f
 - [x] T3 — the PRD skeleton of `.claude/skills/product-discovery/assets/templates.md` in English · Requirements: none · Commit: a75133f
 - [x] T4 — the `Items.adapter.test.ts` fixture name in English, same whitespace shape, same assertion · Requirements: none · Commit: ceebeb0
-- [ ] T5 — docs: `docs/harness.md` and `docs/maps/global-map.md` rows; the "English everywhere" line of `AGENTS.md` names the gate; `verify:english` green on the whole tree · Requirements: none · Commit: —
+- [x] T5 — docs: `docs/harness.md` and `docs/maps/global-map.md` rows; the "English everywhere" line of `AGENTS.md` names the gate; `verify:english` green on the whole tree · Requirements: none · Commit: d4c3179
 - [ ] T6 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-12-english-only/` as the last commit · Requirements: none · Commit: —
 
 <!--
