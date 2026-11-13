@@ -18,7 +18,10 @@
 // The translation catalogs are the one place Spanish belongs. Elsewhere, a
 // line that must keep it is listed in ALLOWLIST_PATH as
 // `{ "path", "text" | "pattern", "reason" }`: `text` is the whole line,
-// trimmed; `pattern` is a regular expression tested on the trimmed line.
+// trimmed; `pattern` is a regular expression tested on the trimmed line. The
+// allowlist is judged like any other file, so an entry writes a Spanish-only
+// character as a JSON Unicode escape, and matches a line of plain Spanish
+// words with a `pattern` on a fragment of it.
 // ---------------------------------------------------------------------------
 
 export const ALLOWLIST_PATH = 'scripts/verify-english.allow.json'
