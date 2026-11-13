@@ -1,4 +1,4 @@
-# Generic template, `/init` and a centralized harness — plan
+| | | closed, not a defect: Claude Code reads no file under a `.agents/` directory |
 
 The template becomes fully generic and is configured head to toe by one `/init`
 interview. The interview writes only data (an answers file); a deterministic
