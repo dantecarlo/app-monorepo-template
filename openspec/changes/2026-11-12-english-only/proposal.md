@@ -39,7 +39,9 @@ The owner's words:
 - The gate's cases, test first: a planted Spanish sentence, a planted accented word and an
   unlisted catalog outside `packages/i18n` each fail; English text, the catalogs and an allowed
   line pass.
-- `template.manifest.json`: the gate, its cases and its allowlist owned by `core`; `docs/harness.md`,
+- `template.manifest.json`: the gate, its cases and its allowlist owned by a capability of their
+  own, `english-artifacts` (group `workflow`), that every preset selects, so `/init` can drop it for
+  a project whose artifact language is not English (plan decision 48); `docs/harness.md`,
   `docs/maps/global-map.md` and the "English everywhere" line of `AGENTS.md` name the gate (`CLAUDE.md` is being retired in a parallel change).
 
 ## Out of scope
