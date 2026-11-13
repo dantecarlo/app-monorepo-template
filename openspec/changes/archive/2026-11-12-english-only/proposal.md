@@ -1,6 +1,6 @@
 # Proposal: keep the template in English
 
-> **Status:** open
+> **Status:** archived — 2026-11-13
 
 ## Why
 

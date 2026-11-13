@@ -5,7 +5,7 @@
 - [x] T3 — the PRD skeleton of `.claude/skills/product-discovery/assets/templates.md` in English · Requirements: none · Commit: a75133f
 - [x] T4 — the `Items.adapter.test.ts` fixture name in English, same whitespace shape, same assertion · Requirements: none · Commit: ceebeb0
 - [x] T5 — docs: `docs/harness.md` and `docs/maps/global-map.md` rows; the "English everywhere" line of `AGENTS.md` names the gate; `verify:english` green on the whole tree · Requirements: none · Commit: d4c3179
-- [ ] T6 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-12-english-only/` as the last commit · Requirements: none · Commit: —
+- [x] T6 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-12-english-only/` as the last commit · Requirements: none · Commit: 54cf1a2
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of
