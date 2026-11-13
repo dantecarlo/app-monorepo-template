@@ -67,6 +67,9 @@ projects will be adapted to you, and you will ask the others to adapt to the new
 their detail. Every template step is an OpenSpec change (decision 42) unless it says
 "small". "Template" is this repository's session; "Arquitecto" is the Certifipago session
 that conforms Certifipago or routes the work to its App and Web sessions.
+Owner rule of 2026-11-13, relayed by the Arquitecto (translated from Spanish): when Certifipago
+finishes a harness or architecture change, it tells the template, which applies it too; each
+such report becomes a parity-ledger row.
 
 ### Stage 0 — land what is open
 
@@ -102,11 +105,11 @@ is decided, neither repository changes that convention.
 
 ### Stage 3 — the harness core (T2: P1–P2)
 
-| #   | Step                                                                                                                                                                                                         | Who      | Waits on | Done when                                       |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | -------- | ----------------------------------------------- |
-| 3.1 | `AGENTS.md` as the router: the LAWs, the Router tables (knowledge rows included), the Codex project-doc budget and its test; `verify:instruction-entry`, which also refuses a `CLAUDE.md` (Certifipago #791) | Template | Stage 2  | gates green; `AGENTS.md` under the Codex budget |
-| 3.2 | `.agents/` structure, the four-runtime projector and `projection-check`; agents with `gradedBy`; `sdd-steward`                                                                                               | Template | 3.1      | `projection-check` green                        |
-| 3.3 | Hook-safe test helpers (`withHookGitDir` beside `gitFreeEnv`); the agent write guard; the worktree pruner with Certifipago's ignored-files fix (#789); `.claude/launch.example.json`                         | Template | 3.2      | each hook has its suite, run in `validate`      |
+| #   | Step                                                                                                                                                                                                                                                                                                                                                                                                     | Who      | Waits on | Done when                                       |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------- | ----------------------------------------------- |
+| 3.1 | `AGENTS.md` as the router: the LAWs, the Router tables (knowledge rows included), the Codex project-doc budget and its test; `verify:instruction-entry`, which also refuses a `CLAUDE.md` (Certifipago #791)                                                                                                                                                                                             | Template | Stage 2  | gates green; `AGENTS.md` under the Codex budget |
+| 3.2 | `.agents/` structure, the four-runtime projector and `projection-check`; agents with `gradedBy`; `sdd-steward`                                                                                                                                                                                                                                                                                           | Template | 3.1      | `projection-check` green                        |
+| 3.3 | Hook-safe test helpers (`withHookGitDir` beside `gitFreeEnv`); the agent write guard; the worktree pruner with Certifipago's ignored-files fix (#789); `.claude/launch.example.json`; `core.hooksPath` stays the relative `.husky/_` husky writes at repository level, never per worktree and never absolute (Certifipago found git 2.55 copying an absolute per-worktree value into every new worktree) | Template | 3.2      | each hook has its suite, run in `validate`      |
 
 ### Stage 4 — gates (T3: P3–P4)
 
@@ -245,6 +248,7 @@ master after these merges.
 | `CLAUDE.md` retired; `verify:doc-links` refuses one                                                                  | #791                | retired here by #5; the refusal goes into `verify:instruction-entry`                                                                                                        | Stage 3 (3.1)                    | open   |
 | Motion pairs, stagger and exit tokens, `verify:motion-pairs`                                                         | #713                | with the design-system intake                                                                                                                                               | Stage 7 (7.2)                    | open   |
 | pnpm 11.9.0, `nodeLinker: hoisted`                                                                                   | master              | the template is on 9.15.9                                                                                                                                                   | Stage 2 (2.3), D-S6              | open   |
+| `impeccable.cmd` creates its temporary directory with an atomic `mkdir` instead of a `%RANDOM%` name                 | #790                | none until `impeccable` is vendored here                                                                                                                                    | Stage 5 (5.1), when vendored     | open   |
 
 **Template → Certifipago**
 
