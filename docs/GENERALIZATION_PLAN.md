@@ -3,7 +3,7 @@
 Living document. **Update it at the end of every working step**, before the
 session closes. If a step is not written here, it did not happen.
 
-- **Source repo:** `C:\Users\usuario\verifipagos` (certifipago) — read-only
+- **Source repo:** the owner's local checkout of `verifipagos` (certifipago) — read-only
 - **Target repo:** this one
 - **Started:** 2026-09-04
 - **Strategy and phase order since 2026-11-04:** [INIT_AND_HARNESS_PLAN.md](INIT_AND_HARNESS_PLAN.md).
@@ -57,8 +57,8 @@ These are settled. Do not re-open them without a written reason here.
    PRs and a CI that other people depend on. If a harvest ever requires changing
    it, the change goes through a **git worktree** and follows **its** conventions
    — its commit style, its gates, its PR flow — never a direct edit to the
-   working checkout we read from. Nothing in this plan writes to
-   `C:\Users\usuario\verifipagos` without that.
+   working checkout we read from. Nothing in this plan writes to the
+   owner's `verifipagos` checkout without that.
 9. **Branch strategy is a project decision, so it is an init question.** How a
    team branches, names, protects and merges is not a template default — it is
    configuration. It joins the manifest as a capability with declared actions

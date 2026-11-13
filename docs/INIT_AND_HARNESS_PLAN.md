@@ -16,7 +16,7 @@ Both are living documents: update them at the end of every step.
   29–36, PS round 3, PD1 status).
 - **Donor read at:** `verifipagos@6bf0e179` (2026-10-30), 2309 commits after the
   last harvest point `bcf7310b` (2026-09-11). Read-only (decision 8).
-- **Other inputs:** the Qik workspace (`D:/Documents/Dev/Baufest/qik`), this
+- **Other inputs:** the Qik workspace (a folder on the owner's machine), this
   repo's state at `a6b9d50` + 351 staged paths, Claude Code documentation.
 - **Agent consultations:** the Certifipago architect session did not receive
   the first request (held, then expired: different permission mode); after the
@@ -519,7 +519,7 @@ staged, untouched, until PA judges them.
 | Certifipago architect's view                       | Cross-session consultation (harness source of truth, what worked, what to redo, what to configure at init)                                                                                        | answered                              |
 | Qik frontend's view                                | Cross-session consultation (what paid off, what is used day to day, what adopt mode needs)                                                                                                        | answered                              |
 | Deep analysis of Certifipago against the objective | Per area (skills, agents, gates, scripts, packages, UI, docs, contracts): does it serve a generic template with `/init`, which parameter it needs, which `/init` section owns it                  | done                                  |
-| Deep analysis of Qik against the objective         | The code lives on another machine, so the analysis reads Qik's generated catalogs (`docs/app/`), its knowledge census and its harness, and asks the Qik session for what only the code can answer | done (static, through generated docs) |
+| Deep analysis of Qik against the objective         | The code lives on another machine, so the analysis reads Qik's generated catalogs, its knowledge census and its harness, and asks the Qik session for what only the code can answer               | done (static, through generated docs) |
 | Deep analysis of this repo against the objective   | Same questions over the template, the staged work included                                                                                                                                        | done                                  |
 | `/doctor` reports                                  | `/doctor`, `/doctor prompt-audit`, `/skill-doctor` in both repos, run headless with `claude -p`, read-only                                                                                        | done for both repos                   |
 
