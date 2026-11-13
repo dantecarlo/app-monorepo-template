@@ -18,6 +18,7 @@ The owner's words:
 - 2026-11-12 (translated from Spanish): "Something we have to make sure of is that everything in
   the template is in English, no matter what, no parts in Spanish or anything; the only Spanish
   would be the translations, and nothing else beyond that."
+- 2026-11-13 (translated from Spanish): "I approve the english only" (approval of this proposal)
 
 ## What changes
 
