@@ -15,7 +15,7 @@ this one.
   testing, validation gates, edge-security docs) for Next.js + Expo projects
   backed by Supabase. It is not a runnable product: projects bootstrap from it
   and then extend it with product-specific code.
-- **Stack**: pnpm workspaces · Turborepo · Next.js 16.2.9 (App Router) · Expo SDK 56
+- **Stack**: pnpm workspaces · Turborepo · Next.js 16.2.9 (App Router) · Expo SDK 58
   (React Native) · Supabase (Postgres, Auth, RLS) · Cloudflare (edge/CDN/WAF).
 - **Architecture**: Clean + Fractal. Framework-agnostic domain in
   `packages/core`. Platform adapters in `*.adapter.ts` files. See
@@ -137,9 +137,9 @@ Project-level skills live under `.claude/skills/`. Each skill provides a
 | --------------- | -------------------------------------------------------------------------------------------------------- |
 | Monorepo        | pnpm workspaces + Turborepo                                                                              |
 | Web             | Next.js 16.2.9 (App Router, RSC, ISR)                                                                    |
-| Mobile          | Expo SDK 56, React Native 0.85 (dev builds)                                                              |
+| Mobile          | Expo SDK 58, React Native 0.88 (dev builds)                                                              |
 | Styling         | Tailwind CSS 4 (web), NativeWind 4 (mobile)                                                              |
-| Language        | TypeScript 6, React 19.2                                                                                 |
+| Language        | TypeScript 6, React 19.3                                                                                 |
 | Runtime         | Node 24                                                                                                  |
 | Shared packages | `packages/core` (domain), `packages/cloudflare`, `packages/i18n`, `packages/supabase`, `packages/tokens` |
 | Database / Auth | Supabase Cloud (Postgres, Auth, RLS, Edge Functions)                                                     |
