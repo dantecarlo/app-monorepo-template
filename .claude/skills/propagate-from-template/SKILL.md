@@ -72,7 +72,7 @@ git diff template/main -- tsconfig.base.json
 git diff template/main -- turbo.json scripts/
 
 # Agent context
-git diff template/main -- .claude/skills/ .claude/agents/ AGENTS.md CLAUDE.md
+git diff template/main -- .claude/skills/ .claude/agents/ AGENTS.md
 
 # Infrastructure docs
 git diff template/main -- docs/infrastructure.md docs/propagation.md
@@ -108,7 +108,6 @@ For files with project-specific content, merge manually — preserve all project
 sections.
 
 **Never apply wholesale** to:
-- `CLAUDE.md` — project sections must survive.
 - `AGENTS.md` — project-specific orientation must survive.
 - `docs/maps/global-map.md` — downstream projects own their own map.
 - `pnpm-lock.yaml` — always regenerated, never copied.

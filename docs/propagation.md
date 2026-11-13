@@ -75,7 +75,7 @@ git diff template/main -- tsconfig.base.json
 git diff template/main -- turbo.json scripts/
 
 # Agent context
-git diff template/main -- .claude/skills/ .claude/agents/ AGENTS.md CLAUDE.md
+git diff template/main -- .claude/skills/ .claude/agents/ AGENTS.md
 
 # Infrastructure docs
 git diff template/main -- docs/infrastructure.md docs/propagation.md
@@ -110,7 +110,7 @@ git show template/main:<file> > <file>
 For files with project-specific content, merge manually — preserve all project
 sections.
 
-**Never apply wholesale** to `CLAUDE.md`, `AGENTS.md`,
+**Never apply wholesale** to `AGENTS.md`,
 `docs/maps/global-map.md`, or `pnpm-lock.yaml`.
 
 `major` changes require a standalone migration branch, not inline application.
@@ -227,8 +227,8 @@ These categories require manual review:
 - **`tsconfig.base.json`** — compiler options affect the whole repo; validate
   typecheck after applying.
 - **`pnpm-workspace.yaml`** — only if workspace glob patterns changed.
-- **`CLAUDE.md` / `AGENTS.md`** — downstream projects extend these with
-  project-specific sections; do not overwrite project content.
+- **`AGENTS.md`** — downstream projects extend it with project-specific
+  sections; do not overwrite project content.
 
 ---
 
