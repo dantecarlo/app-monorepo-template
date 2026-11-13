@@ -96,8 +96,7 @@ Beyond the per-artifact four, the following are **whole-system documents** that
 must end the work accurate, not stale:
 
 - ☐ `README.md` — the front door. Currently describes a Next+Expo template
-- ☐ `CLAUDE.md` — agent instructions, stack table, validation gate
-- ☐ `AGENTS.md`
+- ☐ `AGENTS.md` — agent instructions, stack table, validation gate (`CLAUDE.md` was retired; `AGENTS.md` is the single instruction file)
 - ☐ `docs/code-standards.md` — the rule authority (§21 must have no lie in it)
 - ☐ `docs/manifest.md` — the init contract
 - ☐ `docs/architecture/*.md` — shared, web, mobile
@@ -520,7 +519,7 @@ in `BASE_RULES`.
 > That number came from the broad grep. Against the enforceable set the template
 > measures **0**, which is why the rule could land at `error` immediately.
 
-**`core-import-boundary`** — backs the constraint `CLAUDE.md` calls the single
+**`core-import-boundary`** — backs the constraint `AGENTS.md` calls the single
 most important one, which had no gate at all. Scoped to `packages/core/src/**`,
 excluding tests.
 
@@ -974,8 +973,7 @@ is classified — the same discipline the rules got.
 Every doc rewritten general, with no dead links after pruning.
 
 - ☐ `README.md` — currently describes a Next+Expo template
-- ☐ `AGENTS.md`
-- ☐ `CLAUDE.md` — stack table assumes Next+Expo
+- ☐ `AGENTS.md` — stack table assumes Next+Expo (it held `CLAUDE.md`'s content once that file was retired)
 - ✗ `docs/SDD_SYNC_PROMPT.md` — dropped in P0 (`bf843af`): it named other
   products and absolute paths (audit `docs/audits/2026-11-04-remediation.md`)
 - ☐ `docs/architecture/*` — shared / web / mobile
