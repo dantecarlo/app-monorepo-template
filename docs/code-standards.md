@@ -139,7 +139,7 @@ Two related smells: a comment that restates the PR description, and a comment
 that outlives the code it defended.
 
 **Where the reasoning goes instead:** the commit message, the ADR under
-`docs/architecture/decisions/`, or the doc that owns the topic. Evidence belongs
+`docs/decisions/`, or the doc that owns the topic. Evidence belongs
 where it is dated and attributable, not inline where it silently rots.
 
 ### The two halves of this rule

@@ -1,7 +1,7 @@
 # Tasks: 2026-11-13-conventions
 
 - [x] T1 — D-S1: the `*.styles.ts` files renamed to `*.style.ts` with their imports, the suffix contract in the lint rules and gates, RED first on a case that refuses `*.styles.ts` and accepts `*.style.ts`; the docs and skills name the new suffix · Requirements: none · Commit: 8bbd1f1
-- [ ] T2 — D-S3: Markdown out of Prettier (`.prettierignore`, the root `format` scripts), `format:check` kept for code; code-standards § 13 says so; no Markdown reformatted · Requirements: none · Commit: —
+- [x] T2 — D-S3: Markdown out of Prettier (`.prettierignore`, the root `format` scripts), `format:check` kept for code; code-standards § 13 says so; no Markdown reformatted · Requirements: none · Commit: b16ea12
 - [ ] T3 — D-S4: the decision record moved to `docs/decisions/` with `git mv`; the manifest claim, the global map, code-standards, `openspec/README.md`, `openspec/templates/design.md` and the `sdd` skill follow · Requirements: none · Commit: —
 - [ ] T4 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-13-conventions/` as the last commit · Requirements: none · Commit: —
 

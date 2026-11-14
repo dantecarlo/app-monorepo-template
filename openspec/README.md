@@ -76,7 +76,7 @@ The phases run in one context, the main session, never as one subagent per phase
 | 1   | **Explore** | none                                           | the living specs of every unit the request touches are read, and the code behind them                                             |
 | 2   | **Propose** | `proposal.md`                                  | why (the owner's words, verbatim, dated and in English), what changes, what is out of scope, the specs it affects                 |
 | 3   | **Specify** | `specs/<spec path>/spec.md`                    | each added, modified or removed requirement is written as a delta, with its scenarios                                             |
-| 4   | **Design**  | `design.md`, only for an architecture decision | the decision, its options and the reason; a decision that outlives the change is an ADR in `docs/architecture/decisions/` instead |
+| 4   | **Design**  | `design.md`, only for an architecture decision | the decision, its options and the reason; a decision that outlives the change is an ADR in `docs/decisions/` instead              |
 | 5   | **Plan**    | `tasks.md`                                     | every task names the requirements it satisfies                                                                                    |
 | —   | **Review**  | the first commit of the pull request           | the owner read the proposal and the deltas and said yes; nothing is built before                                                  |
 | 6   | **Apply**   | code and tests                                 | each task is built test first: the scenario's test is seen red, then green; its commit is recorded in `tasks.md`                  |
