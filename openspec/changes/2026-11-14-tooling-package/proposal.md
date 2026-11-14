@@ -48,8 +48,10 @@ The owner's words:
   server through `signalProcessTree`. Each of them declares `@app/tooling` as a `workspace:*`
   devDependency (the root for its script) and imports it by name.
 - **Turborepo.** `globalDependencies` names the root files cached tasks read: the lint
-  configuration, `tsconfig.base.json`, the Prettier configuration and the tooling sources. `test`
-  passes `VITEST_SEQUENCE_SEED` through, so a replay reaches Vitest.
+  configuration, `tsconfig.base.json` and the Prettier configuration. The tooling sources need no
+  entry: a workspace that declares `@app/tooling` already hashes its files into its tasks
+  (measured with `turbo run --dry=json`). `test` passes `VITEST_SEQUENCE_SEED` through, so a
+  replay reaches Vitest.
 - **The rename.** `scripts/init-project.mjs` rewrites `@app/` under `scripts/` too, except the two
   files that hold the template's tokens on purpose (`init-project.mjs` and `check-identity.mjs`),
   and its header names the extensions it rewrites.
