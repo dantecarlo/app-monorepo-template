@@ -54,9 +54,9 @@ The deliberate middle ground: a **shared base** + **everything UI-specific separ
 - **Error-handling DoD** — every screen handles loading/empty/error + boundary; PII scrubbed.
 - **Code standards** — arrow-only, alias imports, suffixes, naming, single-object params
   ([code-standards.md](../code-standards.md)), enforced by ESLint/Prettier/Husky.
-- **Imports inside a package** — a package's own files reach each other through the `#src/`
-  key of its `package.json` `"imports"`, never `@/` or a relative path
-  ([code-standards.md §2](../code-standards.md#2-imports--alias-only-never-relative)).
+- **Imports inside a package** — a package's sources reach each other through the `#src/` key
+  of its `package.json` `"imports"`, never `@/` (it resolves in the consuming app) or a relative
+  path ([code-standards.md §2](../code-standards.md#2-imports--alias-only-never-relative)).
 - **Validation gate** — nothing is done until `pnpm validate` + the grouped validators are green.
 
 ### Host APIs in `packages/core`
