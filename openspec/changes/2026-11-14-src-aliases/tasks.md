@@ -3,7 +3,7 @@
 - [x] T1 — `core-import-boundary` accepts `#src/` as core's own module and refuses any other `#` key, RED first on both cases · Requirements: none · Commit: e6ca894
 - [x] T2 — `core`: `"imports": { "#src/*": "./src/*.ts" }`, a test that pins that mapping (RED first), and its files import their siblings through `#src/` · Requirements: none · Commit: b4a9860
 - [x] T3 — `cloudflare`: the `#src/*` key and its files through `#src/` · Requirements: none · Commit: bca120b
-- [ ] T4 — `i18n`: the `#src/*` and `#src/*.json` keys and its files through `#src/` · Requirements: none · Commit: —
+- [x] T4 — `i18n`: the `#src/*` and `#src/*.json` keys and its files through `#src/` · Requirements: none · Commit: 2a3a290
 - [ ] T5 — `supabase`: the `#src/*` key and its files through `#src/`, the inline disable of `no-relative-import-paths` removed · Requirements: none · Commit: —
 - [ ] T6 — `tokens`: the `#src/*` key and its barrel through `#src/` · Requirements: none · Commit: —
 - [ ] T7 — the `eslint.config.mjs` overrides that turn `no-relative-import-paths` off in packages removed, the core production override included · Requirements: none · Commit: —
