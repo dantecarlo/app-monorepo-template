@@ -18,8 +18,8 @@ pnpm 11 reads its configuration differently from pnpm 9, observed on this tree u
 - it reads no `public-hoist-pattern` from `.npmrc` (`pnpm config get public-hoist-pattern`
   prints `undefined`), so the four hoist patterns there would stop applying;
 - it fails the install with `ERR_PNPM_IGNORED_BUILDS` on every dependency build script it has
-  not been told to allow; seven ran under pnpm 9 without asking (`@parcel/watcher`, `@sentry/cli`
-  in two versions, `@swc/core`, `msw`, `sharp`, `unrs-resolver`).
+  not been told to allow; pnpm 9 ran seven builds without asking, from six package names
+  (`@parcel/watcher`, `@sentry/cli` in two versions, `@swc/core`, `msw`, `sharp`, `unrs-resolver`).
 
 The owner's words:
 

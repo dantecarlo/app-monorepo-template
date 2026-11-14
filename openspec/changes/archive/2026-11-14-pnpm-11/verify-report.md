@@ -1,6 +1,7 @@
 # Verify report: 2026-11-14-pnpm-11
 
-> **Verified:** 2026-11-14 at `87fb174`
+> **Verified:** 2026-11-14 at `87fb174`, at `084c10d` for the runtime checks and the gate, and at
+> `7a96d3f` after the correction
 
 ## Scenarios
 
