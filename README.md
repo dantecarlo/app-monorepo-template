@@ -137,7 +137,7 @@ from a typical starter: **the rules are enforced automatically across all 6 work
 shared `eslint.rules.mjs` — no workspace escapes.
 
 - **Arrow functions only** — no `function` keyword (`no-restricted-syntax`)
-- **Alias imports only** — `@/*`, `@app/*`; ban `../`
+- **Alias imports only** — `@/*`, `@app/*`, and `#src/*` inside a package; ban `../`
 - **File suffixes enforced** — `.component.tsx`, `.screen.tsx`, `.style.ts`, `.hook.ts`,
   `.service.ts`, `.adapter.ts`, `.type.ts`, `.store.ts`, `.constant.ts`, `.helper.ts`, `.test.*`
   (via `eslint-plugin-check-file` — not honor-system)
