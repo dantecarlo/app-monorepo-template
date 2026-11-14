@@ -65,7 +65,9 @@ app-monorepo-template/
 │   ├── tokens/    # @app/tokens — src/tokens.constant.ts + tailwind-preset.cjs (VALUES, no components)
 │   ├── core/      # @app/core — errors/AppError.helper.ts, utils/scrubPII.helper.ts (no React/RN/DOM)
 │   ├── i18n/      # @app/i18n — locales/{en,es}.json + i18n.constant.ts + resources.constant.ts + parity test
-│   └── supabase/  # @app/supabase — src/{client.adapter,server.adapter,types}.ts + supabase/{config,migrations,tests}
+│   ├── supabase/  # @app/supabase — src/{client.adapter,server.adapter,types}.ts + supabase/{config,migrations,tests}
+│   ├── cloudflare/ # @app/cloudflare — Turnstile, origin guard and image delivery adapters
+│   └── tooling/   # @app/tooling — src/{vitest-package-base,vitest-sequence,process-tree}.mjs (test + process scripts)
 │
 └── apps/
     ├── web/       # @app/web — Next.js 15 (App Router)

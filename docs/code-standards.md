@@ -373,9 +373,10 @@ screen.getByRole('heading', { name: /item title/i })
 - Semantic queries only: `getByRole`, `getByText`, `getByLabelText`
 - No `data-testid`, no `container`, no `getByTestId`
 - One test file per component/hook
-- Every suite runs shuffled. `@app/tooling/vitest-sequence` seeds the order of the tests inside
-  each file from the commit, so a test that passes only after another one can fail on the next
-  commit. Each run prints its seed, and
+- Every Vitest suite runs shuffled. `@app/tooling/vitest-sequence` seeds the order of the tests
+  inside each file from the commit, so a test that passes only after another one can fail on the
+  next commit. A checkout with no commit fails to load the config unless `VITEST_SEQUENCE_SEED`
+  is set. Each run prints its seed, and
   `VITEST_SEQUENCE_SEED=<seed> pnpm --filter <workspace> test` replays that order. A package's
   `vitest.config.ts` builds on `packageTestBase` (`@app/tooling/vitest-package-base`) and states
   only its `include`; an app config takes `sequence: testSequence({ packageDir: __dirname })`.
