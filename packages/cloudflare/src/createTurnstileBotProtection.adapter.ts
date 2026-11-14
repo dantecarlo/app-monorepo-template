@@ -9,7 +9,7 @@ import {
   TURNSTILE_RESPONSE_FIELD,
   TURNSTILE_SECRET_FIELD,
   TURNSTILE_SITEVERIFY_URL
-} from './cloudflare.constant'
+} from '#src/cloudflare.constant'
 
 const PRODUCTION_ENV = 'production'
 

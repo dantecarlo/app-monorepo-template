@@ -5,7 +5,7 @@ import {
   OriginGuardReasonEnum
 } from '@app/core'
 
-import { CF_ORIGIN_SECRET_HEADER } from './cloudflare.constant'
+import { CF_ORIGIN_SECRET_HEADER } from '#src/cloudflare.constant'
 
 /**
  * Edge-safe constant-time secret comparison.

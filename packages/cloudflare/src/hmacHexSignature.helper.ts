@@ -3,7 +3,7 @@ import {
   HMAC_HEX_RADIX,
   HMAC_KEY_USAGE,
   HMAC_SIGN_ALGORITHM
-} from './imageDelivery.constant'
+} from '#src/imageDelivery.constant'
 
 const textEncoder = new TextEncoder()
 
