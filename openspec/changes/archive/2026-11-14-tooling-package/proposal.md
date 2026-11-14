@@ -1,6 +1,6 @@
 # Proposal: share the test and process scripts through `@app/tooling`
 
-> **Status:** open
+> **Status:** archived — 2026-11-14
 
 ## Why
 
