@@ -47,6 +47,7 @@
     "verify:theme-sync": "node scripts/verify-theme-sync.mjs"
   },
   "devDependencies": {
+    "@app/tooling": "workspace:*",
     "@axe-core/playwright": "^4.10.2",
     "@commitlint/cli": "^21.1.0",
     "@commitlint/config-conventional": "^21.1.0",
