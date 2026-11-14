@@ -16,7 +16,7 @@ Both are living documents: update them at the end of every step.
   29–36, PS round 3, PD1 status).
 - **Donor read at:** `verifipagos@6bf0e179` (2026-10-30), 2309 commits after the
   last harvest point `bcf7310b` (2026-09-11). Read-only (decision 8).
-- **Other inputs:** the Qik workspace (`D:/Documents/Dev/Baufest/qik`), this
+- **Other inputs:** the Qik workspace (a folder on the owner's machine), this
   repo's state at `a6b9d50` + 351 staged paths, Claude Code documentation.
 - **Agent consultations:** the Certifipago architect session did not receive
   the first request (held, then expired: different permission mode); after the
@@ -205,8 +205,8 @@ for the rest of what is missing, and include this with priority". Open pull requ
 
 ### Parity ledger
 
-Owner, 2026-11-05: "Recuerda que si hay algo que cambia en certifipago, tambei
-debería implementarlo en el template y viceversa". Every harness change in one
+Owner, 2026-11-05 (translated from Spanish): "Remember that if something changes in
+certifipago, it should also be implemented in the template and vice versa". Every harness change in one
 repository gets its counterpart in the other, done in the same work or recorded
 here with the step that carries it. A product-only change says why it does not
 apply. A row closes when its counterpart has merged. Template to Certifipago goes
@@ -316,7 +316,7 @@ init, markdown first, diagrams from specs). This plan adds:
 | 45  | A package imports its own files through a private `#src` alias declared in its `package.json` `imports`, never by relative path, so a file moves without rewriting its neighbours and the alias rule holds in packages as it does in apps. Verified 2026-11-12 (Certifipago #792): Turbopack (Next 16), Metro 0.87, TypeScript with `moduleResolution: bundler` and Vitest resolve `#src`; Node refuses a relative target that leaves the package but accepts a package name as target. The `#` keys carry no project name, so `/init` never rewrites them.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | 46  | Scripts that every workspace imports live in a workspace package, `@app/tooling`, declared as a `workspace:*` devDependency and imported by name, so the dependency is explicit and turbo can track it; a root `scripts/` file is for repository gates, not for code other workspaces import. `scripts/init-project.mjs` already renames `@app/` in `.mjs` and `.json`, so derived projects receive it without changing `/init`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | 47  | The template is the reference standard (owner, 2026-11-13). A project starts from it; an improvement proven in a derived project is adopted here adapted to the template's standards (English-only, its code standards, an OpenSpec change); then the derived project is asked to conform, Certifipago through its Arquitecto session, others through `propagate-from-template`. It extends decision 18, which made the template the upstream of the harness core: the template now also owns the conventions. Where the two repositories differ on a convention, the owner decides once (Roadmap, Stage 1) and both follow.                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| 48  | `/init` asks the artifact language — specs, docs, code comments, commit and pull request text — with English as the default, separately from the conversation language (owner, 2026-11-13). The template itself stays English-only. `/init` writes the choice where the SDD artifacts and the skills read it (`openspec/config.yaml` and the `AGENTS.md` rule), so a project that chooses another language quotes and writes in it.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| 48  | `/init` asks the artifact language — specs, docs, code comments, commit and pull request text — with English as the default, separately from the conversation language (owner, 2026-11-13). The template itself stays English-only. `/init` writes the choice where the SDD artifacts and the skills read it (`openspec/config.yaml` and the `AGENTS.md` rule), so a project that chooses another language quotes and writes in it. When the owner picks another artifact language, `/init` drops the `english-artifacts` capability, so `verify:english` does not hold the project to English.                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | 49 | `/init` asks what runs before a push, from the cheapest up (owner, 2026-11-13): **husky only** (the default: `pre-commit` runs lint-staged, `commit-msg` runs commitlint, and CI runs `validate`); **pre-push gate** (refuse a push to the protected branch, check the commit author when the host deploys by author, run the database tests when SQL changed, `validate`, mutation on changed lines); **peer review** (each pushed commit reviewed by Codex, or by a read-only `claude -p` session when Codex is absent, with one adjudication record per finding); **review skills owed** (the skills the review routing says the changed paths owe, each in a clean session; Certifipago #803). Each extra adds minutes to every push; Certifipago runs all four. |
 
 ---
@@ -523,7 +523,7 @@ staged, untouched, until PA judges them.
 | Certifipago architect's view                       | Cross-session consultation (harness source of truth, what worked, what to redo, what to configure at init)                                                                                        | answered                              |
 | Qik frontend's view                                | Cross-session consultation (what paid off, what is used day to day, what adopt mode needs)                                                                                                        | answered                              |
 | Deep analysis of Certifipago against the objective | Per area (skills, agents, gates, scripts, packages, UI, docs, contracts): does it serve a generic template with `/init`, which parameter it needs, which `/init` section owns it                  | done                                  |
-| Deep analysis of Qik against the objective         | The code lives on another machine, so the analysis reads Qik's generated catalogs (`docs/app/`), its knowledge census and its harness, and asks the Qik session for what only the code can answer | done (static, through generated docs) |
+| Deep analysis of Qik against the objective         | The code lives on another machine, so the analysis reads Qik's generated catalogs, its knowledge census and its harness, and asks the Qik session for what only the code can answer               | done (static, through generated docs) |
 | Deep analysis of this repo against the objective   | Same questions over the template, the staged work included                                                                                                                                        | done                                  |
 | `/doctor` reports                                  | `/doctor`, `/doctor prompt-audit`, `/skill-doctor` in both repos, run headless with `claude -p`, read-only                                                                                        | done for both repos                   |
 
@@ -1177,25 +1177,26 @@ GENERALIZATION_PLAN.md) and a green `ATL_TEMPLATE_SELF=1 pnpm validate`.
 
 ## Log
 
-- **L1 (2026-11-04, owner, verbatim):** "Resumiendo, armar un plan apra volver
-  el proyecto genérico per o con un init que permita configurarlo de pies a
-  cabeza. Centrilzar el harness y permitir que todo sea configurable. Para ello
-  armar estrategias de tener los skills centralizados y luego que llamen a los
-  archivos especificos del proyecto, entre otras que puedas identificar y
-  comunicarte con los otros agente para tener mucho mas contexto"
+- **L1 (2026-11-04, owner, translated from Spanish):** "To sum up, put together a
+  plan to make the project generic but with an init that lets it be configured
+  from head to toe. Centralize the harness and let everything be configurable.
+  To do that, put together strategies such as having the skills centralized and
+  then having them call the project-specific files, among others you can
+  identify, and communicate with the other agents to get much more context"
 - **L2 (2026-11-04):** four read-only maps (donor harness, donor delta, Qik
   workspace, this repo) and two documentation checks (AGENTS.md loading, skill
   name precedence, plugins). Architect consultation expired undelivered; Qik
   consultation queued while that session is offline.
 - **L3 (2026-11-04):** the owner aligned the permission modes; the architect
   consultation was sent again and reached that session's inbox.
-- **L4 (2026-11-04, owner, verbatim):** "vamos con la opción A, vendorizado y
-  versionado / Ademas tambien queiro en el plan incluyas un refacto a
-  Certifipago y su harness para poder actualziarlo y ver si tambien hay cosas
-  que necesitamos actualizar. Ademas antes de copiar los skill y todo lo que
-  usa, deberiamos ver que tanto se usa, si se usa adecuadamente con /doctor"
-- **L5 (2026-11-04, owner, verbatim):** "y tambien no solo /doctor sino con un
-  analisis intensivo de todo en el repo"
+- **L4 (2026-11-04, owner, translated from Spanish):** "let's go with option A,
+  vendored and versioned / Also, I want you to include in the plan a refactor of
+  Certifipago and its harness so it can be updated, and to see whether there are
+  also things we need to update. Also, before copying the skills and everything
+  they use, we should see how much they are used, and whether they are used
+  properly, with /doctor"
+- **L5 (2026-11-04, owner, translated from Spanish):** "and also not only /doctor
+  but with an intensive analysis of everything in the repo"
 - **L6 (2026-11-04):** D-A decided (decision 18). Added decision 19, phase PA
   (intensive audit) and phase PD (distribution and Certifipago convergence);
   P12 now covers the other derived projects. Verified in the Claude Code docs:
@@ -1208,9 +1209,9 @@ GENERALIZATION_PLAN.md) and a green `ATL_TEMPLATE_SELF=1 pnpm validate`.
 - **L7 (2026-11-04):** two sessions named "Qik - Frontend" were listed; the
   consultation had gone to the offline one. It was sent again to the active
   local session.
-- **L8 (2026-11-04, owner, verbatim):** "Como vasa arrancar con el P0 si no
-  tiene toda la info de certifipago y qik y un analisis de ambos codigos justo
-  con el objetivo?"
+- **L8 (2026-11-04, owner, translated from Spanish):** "How are you going to
+  start P0 if you don't have all the info on certifipago and qik, and an analysis
+  of both codebases made with the objective in mind?"
 - **L9 (2026-11-04):** correct, and the plan contradicted itself: decision 19
   forbids harvesting without a PA verdict, P0 came before PA, and the staged
   work holds harvested material (72 archify files, harvested lint rules,
@@ -1233,16 +1234,16 @@ GENERALIZATION_PLAN.md) and a green `ATL_TEMPLATE_SELF=1 pnpm validate`.
   edits, gate on the merge result, precedence line with user-level
   instructions); ten new `/init` parameters; eight new Certifipago items for PD.
 
-- **L13 (2026-11-04, owner, verbatim):** "Una vez tengamos todo claro, hay que
-  ver como agrupar y arreglar las skill de un modo que se puedan usar
-  correctamente y arreglaro todo lo que las auditorias pidan"
+- **L13 (2026-11-04, owner, translated from Spanish):** "Once we have everything
+  clear, we have to see how to group and fix the skills in a way that they can be
+  used correctly, and fix everything the audits ask for"
 - **L14 (2026-11-04):** added phase PS (packs, front doors, merges, quality bar,
   skill gates, trigger evals, 30-day usage review) and decision 25. Generated
   the remediation backlog: 517 actionable items from the audit rows and both
   prompt audits, each assigned to its phase.
 
-- **L15 (2026-11-04, owner, verbatim):** "Puede revisar el plan y ver si todo
-  es correcto con el adviosr?"
+- **L15 (2026-11-04, owner, translated from Spanish):** "Can you review the plan
+  and see whether everything is correct with the advisor?"
 - **L16 (2026-11-04):** advisor review applied. Decision 25 could not work
   (a generated file with checkboxes, generators only in the session): the
   backlog is now hand-maintained and `pnpm harness:audit` moves to P3 with a
@@ -1252,13 +1253,13 @@ GENERALIZATION_PLAN.md) and a green `ATL_TEMPLATE_SELF=1 pnpm validate`.
   Skills with a high-confidence prompt-audit finding cannot stay keep or defer.
   Same-name skills get a base-copy rule. Counts left the exit checks. A table
   now says which phase each open input blocks.
-- **L17 (2026-11-04, owner, verbatim):** "Ademas tambien ver los sub agenrtes,
-  validalor y ver si funciona com ose deben y colocarlos en plan. Y tambien que
-  los sub agentes sus reglas sean adaptables al estilo. Y eso tambien que se
-  parte del init."
-- **L18 (2026-11-04, owner, verbatim):** "Ademas pensar en lo flujos completos
-  y no solo en skills o cosas puntuales. Verificar eso y tenerlo encuenta en el
-  plan"
+- **L17 (2026-11-04, owner, translated from Spanish):** "Also look at the
+  subagents too, validate them and see whether they work as they should, and put
+  them in the plan. And also that the subagents' rules be adaptable to the style.
+  And that too should be part of the init."
+- **L18 (2026-11-04, owner, translated from Spanish):** "Also think about the
+  complete flows and not only about skills or one-off things. Verify that and
+  take it into account in the plan"
 - **L19 (2026-11-04):** two read-only evaluations launched: real subagent runs
   (tool discipline, output contract, hardcoded rules) and real end-to-end flows
   from session transcripts against the declared lifecycle. Their results feed
@@ -1269,11 +1270,12 @@ GENERALIZATION_PLAN.md) and a green `ATL_TEMPLATE_SELF=1 pnpm validate`.
   validator's format conflicts with skill report templates. Added decision 26
   and the agents section; P2 now carries the fixes.
 
-- **L21 (2026-11-04, owner, verbatim):** "para DB, no no todos usan agents.md y
-  se puede hacer algo centralizado? Si no es el caso, preguntar o por defecto.
-  Ademas algoq ue me olvide y justo me hiciste acordar, es el revisor de pares
-  de los PRs, preguntar si tiene codex o si queire que una sesion independiente
-  lo revisa usando el mismo proveedor. DC, DD recomendado"
+- **L21 (2026-11-04, owner, translated from Spanish):** "for DB, no, not everyone
+  uses agents.md, and can something centralized be done? If that is not the
+  case, ask, or by default. Also, something I forgot and you just reminded me of
+  is the peer reviewer of the PRs: ask whether they have codex or whether they
+  want an independent session to review it using the same provider. DC, DD as
+  recommended"
 - **L22 (2026-11-04):** D-C and D-D decided as recommended. D-B direction
   recorded; a support matrix (AGENTS.md, skills folders, agent formats,
   sandbox, hooks, MCP per runtime) and the peer-review mechanisms are being
@@ -1298,22 +1300,23 @@ GENERALIZATION_PLAN.md) and a green `ATL_TEMPLATE_SELF=1 pnpm validate`.
   28; P10 now generates the cheap pieces first and the code map on demand;
   `/init` section 0 carries the adopt-mode questions.
 
-- **L26 (2026-11-04, owner, verbatim):** "Habria que ver porque no se usan,
-  proque n realidad deberia usarse por el contexto de programacio y casi todas
-  son de ello, las otras de markting y po no se usan porque todavia no las
-  estamos aplicacando. Primemo analisemos las de por defecto, y si es necesario
-  agregarlas, proque tambien se basa esa desccion de que loq ue queire, si
-  quierer marketing, solo web, solo app, etc y eso deberia tmbnien preguntarse
-  en el /init Ademas si el probelmas es lo del maximo de token, ve validando una
-  a una y pruebas un flow quwedeberia usarlas todas y asi poco a poco"
+- **L26 (2026-11-04, owner, translated from Spanish):** "We would have to see why
+  they are not used, because in reality they should be used given the
+  programming context, and almost all of them are about that; the others are
+  marketing and PO ones, and they are not used because we are not applying them
+  yet. First let's analyse the default ones, and if it is necessary, add them,
+  because that decision also rests on what one wants, whether they want
+  marketing, web only, app only, etc., and that should also be asked in the
+  /init. Also, if the problem is the token maximum, go validating them one by one
+  and test a flow that should use all of them, and so little by little"
 - **L27 (2026-11-04):** root cause confirmed from `/skill-doctor` (105 of 123
   donor skills listed by name only). Decision 20 rewritten (grown one by one,
   packs derived from `/init` answers); verdict rule corrected (reads split into
   use and authoring; no signal means deferred, not dropped); PS gains tiers a–c.
   Two runs launched: the use/authoring split of reads, and tiers a and b on a
   scratch clone.
-- **L28 (2026-11-04, owner, verbatim):** "Pero si las 11 a eliminar es por
-  defectos, no seria mejor arreglarlos?"
+- **L28 (2026-11-04, owner, translated from Spanish):** "But if the 11 to remove
+  are because of defects, wouldn't it be better to fix them?"
 - **L29 (2026-11-04):** verified: only four of the eleven had fixable defects
   (missing upstream files, an oversized description, files `/init` can create);
   two were duplicates; five were out of the donor's scope but useful to other
@@ -1326,20 +1329,20 @@ GENERALIZATION_PLAN.md) and a green `ATL_TEMPLATE_SELF=1 pnpm validate`.
   and the trigger misses recorded under PS. Side effects reported to the owner:
   usage counters moved and the completed runs billed usage.
 
-- **L31 (2026-11-04, owner, verbatim):** "Recuerda que el plan debe incluir
-  actualizar el harness de certifipago tambien"
+- **L31 (2026-11-04, owner, translated from Spanish):** "Remember that the plan
+  must include updating certifipago's harness too"
 - **L32 (2026-11-04):** PD was stale (it still said "drop unused skills" and
   lacked the agent, flow, budget and runtime findings) and waited for the whole
   core. Split into PD1, Certifipago fixes that start right after P0, and PD2,
   the convergence on the versioned core.
 
-- **L33 (2026-11-04, owner, verbatim):** "mientras vas instalando eso, tambien
-  hay que actualizar toda la docuemntacion de certifipago, como se hizo en qik,
-  eo tambien ayudara al templrate para dejar todo limpio / tambien encontre esta
-  skill https://github.com/caru-ini/stack-diagram, validada con el harnees de
-  certifipago e instalala y colocarla en algun flujo para que tambien actualice
-  con ello la docuemntacion, vendoreala o sino tambien se puede integrar en
-  alguna skill"
+- **L33 (2026-11-04, owner, translated from Spanish):** "while you are installing
+  that, we also have to update all of certifipago's documentation, as was done in
+  qik; that will also help the template, to leave everything clean / I also
+  found this skill https://github.com/caru-ini/stack-diagram; validate it with
+  certifipago's harness, install it and put it in some flow so that it also
+  updates the documentation with it; vendor it, or otherwise it can also be
+  integrated into some skill"
 - **L34 (2026-11-04):** Two PD1 docs slices added (docs refresh, stack-diagram);
   they start now because they touch only the donor tree. Caveat recorded: Qik's
   own retrospective rated its generated knowledge base high cost, low payoff so
@@ -1357,31 +1360,31 @@ GENERALIZATION_PLAN.md) and a green `ATL_TEMPLATE_SELF=1 pnpm validate`.
   model in the real setup, where the budget settings may live, three-repeat
   probes, cost and side effects.
 
-- **L37 (2026-11-05, owner, verbatim):** "algo que creo que tambien necesitamos es un
-  revisor de arquitectura, uno que valide las capetas siguan lo que dice la
-  docuemtnacion de arquitctura antes de un commit. podemos validar eso y agregarlo
-  al plan?" Validated on Certifipago master: folders and `docs/architecture` agree
+- **L37 (2026-11-05, owner, translated from Spanish):** "something I think we also
+  need is an architecture reviewer, one that validates that the folders follow what
+  the architecture documentation says before a commit. can we validate that and add
+  it to the plan?" Validated on Certifipago master: folders and `docs/architecture` agree
   after #738, but no gate holds it; the structure gates hard-code their rules and
   the doc gates check only docs → repo. Added: a PD1 "Architecture gate" slice, an
   architecture contract in the project facts, an "Architecture change" flow, and
   `/init` section 3 producing the contract and the docs' folder tables.
 
-- **L38 (2026-11-05, owner, verbatim):** "ycomo pudo hacer que cuando se crear un compoente /
-  screen / seccion pase las auditorias de diseño". Added a PD1 "Design review by change"
+- **L38 (2026-11-05, owner, translated from Spanish):** "and how can I make it so that when a
+  component / screen / section is created it passes the design audits". Added a PD1 "Design review by change"
   slice: compliant scaffolds at creation, and a path → review-skill routing table the PR
   hook enforces on the review verdict; the Feature flow and `/init` section 5 name it.
-- **L39 (2026-11-05):** T13 — plan rebuilt from PD1 and its tests (owner, PD1:
-  "y con ello rearmas el plan para el template"). Added decisions 29–36, PS
+- **L39 (2026-11-05):** T13 — plan rebuilt from PD1 and its tests (owner, PD1,
+  translated from Spanish: "and with that you rebuild the plan for the template"). Added decisions 29–36, PS
   round 3, "PD1 status", four risks, the P2, P4 and PD1 phase cells, and the
   "PD1 findings" backlog section; Quick path step 7 updated. Evidence: the
   donor feature document `odd/tasks/harness-pd1.md`, L13–L22.
 - **L40 (2026-11-05):** `pnpm validate` over the integrated PD1 tree (master
   plus all ten PD1 branches, in a separate clone) exits 0: 33 of 33 turbo tasks
   and every gate.
-- **L41 (2026-11-05):** All ten PD1 PRs merged on the owner's word ("mergea
-  todo lo demas"); master at `48c3c9e3f`. T11 (instruction files) is next.
-- **L42 (2026-11-05, owner, verbatim):** "Si ceirral como propones, pero validado
-  primero". T1b closed. `.claude/launch.json` is per machine (ignored, with an
+- **L41 (2026-11-05):** All ten PD1 PRs merged on the owner's word (translated
+  from Spanish: "merge all the rest"); master at `48c3c9e3f`. T11 (instruction files) is next.
+- **L42 (2026-11-05, owner, translated from Spanish):** "Yes, close it as you propose,
+  but validated first". T1b closed. `.claude/launch.json` is per machine (ignored, with an
   example). Session ownership is not configured: hook input carries `session_id`,
   `cwd`, `permission_mode` and, inside subagents, `agent_type`, but no session
   name (code.claude.com/docs/en/hooks), so nothing could enforce it, and each
@@ -1389,10 +1392,10 @@ GENERALIZATION_PLAN.md) and a green `ATL_TEMPLATE_SELF=1 pnpm validate`.
   section 7; `CODEOWNERS` is written only where GitHub honours it: code owners
   in private repositories need GitHub Pro or Team (docs.github.com, GitHub's
   plans), so Certifipago, private on the free plan, keeps none.
-- **L43 (2026-11-05, owner, verbatim):** "lo del enrutar si, lo del umbras podemos
-  preguntarlo en el init, para certifiapgo por ahora que siga siendo manual pero se
-  pueda cambiar / para lo demas sigamos tu recomendacion", then "arma un lpan para
-  el tempalde tu el proyecto actual y actualiza el plan actual". Added "Next steps"
+- **L43 (2026-11-05, owner, translated from Spanish):** "the routing, yes; the
+  threshold we can ask in the init; for certifipago, for now, let it stay manual but
+  be changeable / for the rest, let's follow your recommendation", then "put together
+  a plan for the template and the current project, and update the current plan". Added "Next steps"
   (Certifipago C1–C5, template T1–T7) and decisions 37 (five questions), 38 (merge
   policy as a setting) and 39 (Codex project-doc budget); `/init` section 7 asks the
   merge policy; PD1 status updated (T11 PR open, design review unblocked).
@@ -1400,8 +1403,9 @@ GENERALIZATION_PLAN.md) and a green `ATL_TEMPLATE_SELF=1 pnpm validate`.
   missing. `templates/video-notes.md` is on master in both skill trees; the video
   agents read the owner's main checkout, 97 commits behind master, because the
   brief pointed there. The step was removed from "Next steps".
-- **L45 (2026-11-05, owner, verbatim):** "Recuerda que si hay algo que cambia en
-  certifipago, tambei debería implementarlo en el template y viceversa". Added the
+- **L45 (2026-11-05, owner, translated from Spanish):** "Remember that if something
+  changes in certifipago, it should also be implemented in the template and vice
+  versa". Added the
   parity ledger under "Next steps"; the template has none of the PD1 pieces yet,
   so they travel with the harvest steps T2–T5.
 - **L46 (2026-11-05):** P0 landed locally on `feat/p0-land-staged`: the 351 staged
@@ -1424,13 +1428,14 @@ validate` exits 0. Independent verifier: no blocker. Native review: the hooks
   whole range against `main` stopped with `lens_context_budget_exceeded` (382 files,
   64,788 lines, no authority created), and the range after the hooks commit assesses
   medium and under budget, so no further review is due. Parity rows for P0 added.
-- **L49 (2026-11-11, owner, verbatim):** "Retoma lo que falta, pero ahora tambien en el
-  init preguntar si se desea ODD o SDD como en el repo de certifipago que justo se acaba de
-  implmentar y por default dejar sdd y dejar los specs echos. Justo la sesion del arquitecto
-  agrego ello. Agregalo y adapta el planm y hasta poedmos actualizar en algunos puntos al
-  plan antes que nada y continua. Ademas hay nuevos cambios, entonces hay que ver si todo es
-  correctoadoptarlo y corregir todo. Ademas como estamos haciendo ahora con sdd, lo mejor
-  seria que todo el plan pasara por este nuevo proceso de sdd para validar el flujo".
+- **L49 (2026-11-11, owner, translated from Spanish):** "Pick up what is missing, but now
+  also, in the init, ask whether ODD or SDD is wanted, as in the certifipago repo, where it
+  has just been implemented, and by default leave sdd and leave the specs done. The
+  architect's session just added that. Add it and adapt the plan, and we can even update the
+  plan at some points before anything else, and continue. Also, there are new changes, so we
+  have to see whether everything is correct, adopt it and fix everything. Also, as we are
+  doing now with sdd, the best would be for the whole plan to go through this new sdd process
+  to validate the flow".
   Checked at Certifipago `origin/master` `cda657025` and its open pull requests: SDD
   replaced ODD on 2026-11-10 (`AGENTS.md:66`), chosen by size, with no ODD/SDD setting, so
   the `/init` choice is new design. Added decisions 40–43, steps T1a–T1b, the workflow in
@@ -1440,9 +1445,9 @@ validate` exits 0. Independent verifier: no blocker. Native review: the hooks
   2026-11-05 and 2026-11-11. Its pending list survives in Engram (`odd/harness-pd1/tasks`);
   its verbatim specs S1–S23 are lost, and the pull requests and this plan carry what each
   asked. Decision 40 records the lesson.
-- **L51 (2026-11-11, owner, verbatim):** "algoq ue me olvidadad y era que el init debe instalar
-  la ultima version de getle ai y cualquier otro conecto o mcp o plugin que se encesite y no
-  este vendoreado". Decision 44, `/init` section 8, two configurable rows, step T6 and a
+- **L51 (2026-11-11, owner, translated from Spanish):** "something I forgot, and it was that
+  the init must install the latest version of gentle ai and any other connector or mcp or
+  plugin that is needed and is not vendored". Decision 44, `/init` section 8, two configurable rows, step T6 and a
   parity row (pinning Certifipago's MCP servers, the owner's call). Checked first: gentle-ai
   4.3.1 (`go install`), its `install`/`upgrade`/`sync`/`doctor` commands, CodeGraph 1.4.1 (npm),
   and the five MCP servers of Certifipago's `.mcp.json`.

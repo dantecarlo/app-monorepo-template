@@ -7,7 +7,7 @@ describe('SearchBar', () => {
   test('renders the input', () => {
     render(
       <SearchBar
-        accessibilityLabel="Buscar"
+        accessibilityLabel="Search"
         onChangeText={vi.fn()}
         value=""
       />
@@ -19,7 +19,7 @@ describe('SearchBar', () => {
     const onChangeText = vi.fn()
     render(
       <SearchBar
-        accessibilityLabel="Buscar"
+        accessibilityLabel="Search"
         onChangeText={onChangeText}
         value=""
       />

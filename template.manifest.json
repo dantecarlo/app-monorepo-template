@@ -340,6 +340,32 @@
       ]
     },
     {
+      "id": "english-artifacts",
+      "title": "English artifacts — every file in English outside the translation catalogs, held by verify:english",
+      "group": "workflow",
+      "claims": [
+        "scripts/english.cases.mjs",
+        "scripts/english.detect.mjs",
+        "scripts/verify-english.allow.json",
+        "scripts/verify-english.mjs",
+        "scripts/verify-english.test.mjs"
+      ],
+      "onAbsent": [
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.verify:english"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.verify:english:test"
+        }
+      ]
+    },
+    {
       "id": "template-maintainer",
       "title": "Template maintainer material — plans and audits, never selected by a preset",
       "group": "maintainer",
@@ -360,6 +386,7 @@
         "design-tokens",
         "diagrams",
         "e2e-playwright",
+        "english-artifacts",
         "i18n",
         "mobile-expo",
         "sdd",
@@ -375,6 +402,7 @@
         "design-tokens",
         "diagrams",
         "e2e-playwright",
+        "english-artifacts",
         "i18n",
         "sdd",
         "supabase",
@@ -387,6 +415,7 @@
       "capabilities": [
         "design-tokens",
         "diagrams",
+        "english-artifacts",
         "i18n",
         "mobile-expo",
         "sdd",

@@ -7,7 +7,7 @@ describe('Toggle', () => {
   test('renders a switch role', () => {
     render(
       <Toggle
-        accessibilityLabel="Notificaciones push"
+        accessibilityLabel="Push notifications"
         onValueChange={vi.fn()}
         value={false}
       />
@@ -18,7 +18,7 @@ describe('Toggle', () => {
   test('reflects value in aria-checked', () => {
     render(
       <Toggle
-        accessibilityLabel="Notificaciones push"
+        accessibilityLabel="Push notifications"
         onValueChange={vi.fn()}
         value
       />
@@ -32,7 +32,7 @@ describe('Toggle', () => {
     const onValueChange = vi.fn()
     render(
       <Toggle
-        accessibilityLabel="Notificaciones push"
+        accessibilityLabel="Push notifications"
         onValueChange={onValueChange}
         value={false}
       />

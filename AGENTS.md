@@ -65,7 +65,7 @@ ATL_TEMPLATE_SELF=1 pnpm validate
 
 `pnpm validate` runs `turbo run lint typecheck test build format:check`, then
 `pnpm verify:tests`, the spec gates (`verify:specs`, and `report:spec-drift`, which
-only reports) and `pnpm verify:maps`. All must pass.
+only reports), `pnpm verify:english` and `pnpm verify:maps`. All must pass.
 
 The manifest gates run first (they are instant, so structural drift fails
 before anything expensive). `pnpm verify:tests` checks tests-per-unit presence
@@ -137,7 +137,8 @@ Project-level skills live under `.claude/skills/`. Each skill provides a
 - No magic numbers or strings — enums and constants always.
 - Max 500 lines per file.
 - Tests: `test()` not `it()`; semantic queries; no `data-testid`.
-- English everywhere — identifiers, comments, docs. UI strings via i18n catalogs.
+- English everywhere — identifiers, comments, docs. UI strings via i18n catalogs, the only
+  place Spanish may appear; `pnpm verify:english` fails on a Spanish line anywhere else.
 
 ---
 

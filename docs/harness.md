@@ -89,6 +89,7 @@ the pre-commit hook on staged files.
 | `docs:diagrams:check` | Every committed diagram matches its spec and the tokens                                   |
 | `verify:specs`        | Every living spec and change has its shape, and every test a scenario names exists        |
 | `report:spec-drift`   | Lists the living specs whose governed code moved past their verified commit; never blocks |
+| `verify:english`      | No tracked text outside the i18n catalogs holds a Spanish line, unless allowlisted        |
 | `check:identity`      | The template's default identity is gone (skipped on self)                                 |
 | `knip`                | No dead exports, no unlisted or unused dependencies                                       |
 
@@ -174,3 +175,14 @@ Flexibility without weakening the gate, in order of preference (§20):
 **Never an allowlist file.** A list of blessed paths freezes a backlog into a
 file nobody reads. A ceiling — one number per scope that can only go down, with
 a measurement date — is the sanctioned way to carry a backlog.
+
+One exception, approved with the `english-only` change:
+`scripts/verify-english.allow.json` may name a single line that must keep
+text the gate reads as Spanish, each with its reason: Spanish itself (a quoted
+product label), or a non-English accented word the gate cannot tell from
+Spanish, such as a person's name a test needs or a loanword like
+"caf&eacute;". It blesses lines, not paths, and `verify:english` fails on an entry
+that excuses no line, so it cannot hold a backlog; it ships empty. The gate
+reads the allowlist like any other file, so an entry writes a Spanish-only
+character as a JSON Unicode escape and matches a line of plain Spanish words
+with a `pattern` on a fragment of it.

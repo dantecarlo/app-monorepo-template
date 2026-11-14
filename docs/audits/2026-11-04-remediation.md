@@ -70,7 +70,7 @@ Not listed (1047 rows): keep, defer, and donor artifacts that are simply not har
 - [ ] `agent-eval` **validator (template)** — fix: checklists inline (Supabase RLS, Turnstile, dark-glass, test style) move to the conventions contract; remove the missing `docs/error-handling.md` citation; group names from `validation.groups`
 - [ ] `agent-eval` **codegraph-explorer** — merge into one explorer with a read-only hook
 - [ ] `agent-eval` **e2e-author** — fix: write surface enforced (it edited the runner it must not touch); e2e rules from the conventions contract
-- [ ] `agent-eval` **qik-explorer, qik-verifier** — fix: remote host data out of the definitions into an untracked local profile; read-only by mechanism
+- [ ] `agent-eval` **the Qik explorer and verifier agents** — fix: remote host data out of the definitions into an untracked local profile; read-only by mechanism
 - [ ] `agent-eval` **built-in Explore** — enforce: wrote into the repo through Bash once; the write hook covers built-in agents too
 - [ ] `agent-eval` **all projections** — fix: read-only Codex agents run in a session with `--sandbox read-only` (agent TOML cannot set `sandbox_mode`); OpenCode tool keys and model names verified; test how runtimes that read both skills folders handle a mirrored skill
 
@@ -470,53 +470,53 @@ Not listed (1047 rows): keep, defer, and donor artifacts that are simply not har
 ## P10 — Adopt mode and living docs — Qik patterns
 
 - [ ] `audit:qik` **adopt-remote/Remote access block** — keep-as-pattern: Exactly the adopt-mode 'code on another machine' option in the plan; must become one wrapper script plus a contract key so the template is copied once, and read-only enforcement mu
-- [ ] `audit:qik` **agent/qik-explorer** — keep-as-pattern: Docs-first, bounded, evidence-marked read-only explorer is a generic default agent; access and docs paths are parameters; read-only must be enforced by permissions.
-- [ ] `audit:qik` **agent/qik-reviewer** — keep-as-pattern: Overlaps the template's validator agent; merge into one fresh-context reviewer that reads the review skill and contracts. Low usage evidence, so keep only as the merged default.
-- [ ] `audit:qik` **agent/qik-verifier** — keep-as-pattern: A command-list verifier with a fixed observed-results report is generic; the command list and baselines must come from a contract so the agent body carries no numbers.
-- [ ] `audit:qik` **check-test/tools/checks tests** — keep-as-pattern: Planted-violation fixture repos are the proof the plan already requires for every gate; switch the harness to node:test to match the donor's scripts-test base.
-- [ ] `audit:qik` **check/antipattern-check.js** — keep-as-pattern: 'Only judge what a change adds' is the key ratchet for adopted legacy codebases; harvest the engine, move the rule table to a contract shared with the census so docs and gate canno
-- [ ] `audit:qik` **check/local-types-check.js** — adapt: Rule is project-specific; fold it into the generic diff-gate as one contract rule instead of a separate script.
-- [ ] `audit:qik` **doc-binding/docs/architecture.md** — keep-as-pattern: A target-architecture page derived from recent code (not legacy) with an explicit 'new code here?' column is the core adopt-mode document; its tables should be generated from contr
-- [ ] `audit:qik` **doc-workflow/docs/workflow-remote-mac.md** — adapt: The remote recipe (snapshot via git archive, HEAD typecheck delta, owner-preserving upload) generalizes into an adopt-mode remote doc template; machine facts stay local.
-- [ ] `audit:qik` **doc/README.md** — adapt: A harness README is useful, but hand-maintained it went stale within two weeks; generate its contents table from the skill registry and capability set.
-- [ ] `audit:qik` **generated-docs/docs/app/areas/\*** — keep-as-pattern: Screen dossiers are generic given the probes; business areas need an owner-approved taxonomy step (LLM-proposed). Content never travels; size per file needs a cap or split.
-- [ ] `audit:qik` **generated-docs/docs/app/arquitectura.md** — keep-as-pattern: The 'old number vs re-measured number' table is a generic staleness mechanism for any hand-written doc that quotes counts.
-- [ ] `audit:qik` **generated-docs/docs/app/catalogos/\*** — keep-as-pattern: 'Search the catalog before creating' is what every scaffold skill's Map-first step needs; which catalogs exist depends on the enabled probes.
-- [ ] `audit:qik` **generated-docs/docs/app/patrones.md** — keep-as-pattern: Measured antipatterns with a 'checkable' column is the bridge between census and gate; generate the column from the gate's actual rule ids to stop false claims.
-- [ ] `audit:qik` **generated-docs/docs/app/README.md + glosario.md** — keep-as-pattern: Single revision stamp + 'fix the data or the generator' header is the contract every generated doc should carry.
-- [ ] `audit:qik` **instruction/CLAUDE.md** — adapt: Shape (one-paragraph stack summary, remote block, owner rules, verification, where-to-look router) is what adopt mode must generate; values belong in project.config.json and contra
-- [ ] `audit:qik` **knowledge-census/knowledge/01-architecture.md** — adapt: Hand census superseded by the generated docs; keep the method (parallel explorers, one area each, ~25 min) as adopt-mode bootstrap, not the file.
-- [ ] `audit:qik` **knowledge-census/knowledge/02-ui-i18n.md** — adapt: The legacy-to-target design table is the seed of contracts/design.json Use/Avoid; numbers are stale.
-- [ ] `audit:qik` **knowledge-census/knowledge/03-data-logic.md** — adapt: Same as 01: method generic, content specific and partly superseded.
-- [ ] `audit:qik` **knowledge-census/knowledge/04-testing-tooling.md** — adapt: Its facts are exactly what adopt-mode stack/quality detection should produce automatically.
-- [ ] `audit:qik` **knowledge-census/knowledge/05-legacy-antipatterns.md** — adapt: Top-10 improvement backlog format is useful for an adopt report; counts belong to the generated census.
-- [ ] `audit:qik` **lessons/docs/lessons-learned.md** — keep-as-pattern: Strongest usage signal in the workspace: continuously appended and the origin of most rules. Ship the format and the 'promote to skill/rule when it changes a procedure' step; conte
-- [ ] `audit:qik` **living-docs-doc/knowledge/app-map/README.md** — adapt: Becomes the capability's README; the multi-step manual recipe must collapse into one 'living-docs:refresh' command with a remote adapter.
-- [ ] `audit:qik` **living-docs-eval/app-map evals results** — adapt: Stored results drift from the tools; results should carry the tool hash and be regenerated by one command, or not be stored.
-- [ ] `audit:qik` **living-docs-eval/eval-docs.js + eval-freshness.js** — keep-as-pattern: Deterministic, cheap gates; both belong in validate when living-docs is on.
-- [ ] `audit:qik` **living-docs-eval/eval-harness-refs.js** — adapt: The plan's verify:harness-refs; widen to every harness path, section anchor and skill/agent name, drop the hard-coded prefix, run in every mode.
+- [ ] `audit:qik` **agent/explorer agent** — keep-as-pattern: Docs-first, bounded, evidence-marked read-only explorer is a generic default agent; access and docs paths are parameters; read-only must be enforced by permissions.
+- [ ] `audit:qik` **agent/reviewer agent** — keep-as-pattern: Overlaps the template's validator agent; merge into one fresh-context reviewer that reads the review skill and contracts. Low usage evidence, so keep only as the merged default.
+- [ ] `audit:qik` **agent/verifier agent** — keep-as-pattern: A command-list verifier with a fixed observed-results report is generic; the command list and baselines must come from a contract so the agent body carries no numbers.
+- [ ] `audit:qik` **check-test/check-script tests** — keep-as-pattern: Planted-violation fixture repos are the proof the plan already requires for every gate; switch the harness to node:test to match the donor's scripts-test base.
+- [ ] `audit:qik` **check/antipattern diff check** — keep-as-pattern: 'Only judge what a change adds' is the key ratchet for adopted legacy codebases; harvest the engine, move the rule table to a contract shared with the census so docs and gate canno
+- [ ] `audit:qik` **check/local-types check** — adapt: Rule is project-specific; fold it into the generic diff-gate as one contract rule instead of a separate script.
+- [ ] `audit:qik` **doc-binding/target-architecture doc** — keep-as-pattern: A target-architecture page derived from recent code (not legacy) with an explicit 'new code here?' column is the core adopt-mode document; its tables should be generated from contr
+- [ ] `audit:qik` **doc-workflow/remote-machine workflow doc** — adapt: The remote recipe (snapshot via git archive, HEAD typecheck delta, owner-preserving upload) generalizes into an adopt-mode remote doc template; machine facts stay local.
+- [ ] `audit:qik` **doc/harness README** — adapt: A harness README is useful, but hand-maintained it went stale within two weeks; generate its contents table from the skill registry and capability set.
+- [ ] `audit:qik` **generated-docs/generated area pages** — keep-as-pattern: Screen dossiers are generic given the probes; business areas need an owner-approved taxonomy step (LLM-proposed). Content never travels; size per file needs a cap or split.
+- [ ] `audit:qik` **generated-docs/generated architecture page** — keep-as-pattern: The 'old number vs re-measured number' table is a generic staleness mechanism for any hand-written doc that quotes counts.
+- [ ] `audit:qik` **generated-docs/generated catalogs** — keep-as-pattern: 'Search the catalog before creating' is what every scaffold skill's Map-first step needs; which catalogs exist depends on the enabled probes.
+- [ ] `audit:qik` **generated-docs/generated antipatterns page** — keep-as-pattern: Measured antipatterns with a 'checkable' column is the bridge between census and gate; generate the column from the gate's actual rule ids to stop false claims.
+- [ ] `audit:qik` **generated-docs/generated index + glossary** — keep-as-pattern: Single revision stamp + 'fix the data or the generator' header is the contract every generated doc should carry.
+- [ ] `audit:qik` **instruction/root instruction file** — adapt: Shape (one-paragraph stack summary, remote block, owner rules, verification, where-to-look router) is what adopt mode must generate; values belong in project.config.json and contra
+- [ ] `audit:qik` **knowledge-census/census: architecture** — adapt: Hand census superseded by the generated docs; keep the method (parallel explorers, one area each, ~25 min) as adopt-mode bootstrap, not the file.
+- [ ] `audit:qik` **knowledge-census/census: UI and i18n** — adapt: The legacy-to-target design table is the seed of contracts/design.json Use/Avoid; numbers are stale.
+- [ ] `audit:qik` **knowledge-census/census: data and logic** — adapt: Same as the architecture census: method generic, content specific and partly superseded.
+- [ ] `audit:qik` **knowledge-census/census: testing and tooling** — adapt: Its facts are exactly what adopt-mode stack/quality detection should produce automatically.
+- [ ] `audit:qik` **knowledge-census/census: legacy antipatterns** — adapt: Top-10 improvement backlog format is useful for an adopt report; counts belong to the generated census.
+- [ ] `audit:qik` **lessons/lessons log** — keep-as-pattern: Strongest usage signal in the workspace: continuously appended and the origin of most rules. Ship the format and the 'promote to skill/rule when it changes a procedure' step; conte
+- [ ] `audit:qik` **living-docs-doc/living-docs README** — adapt: Becomes the capability's README; the multi-step manual recipe must collapse into one 'living-docs:refresh' command with a remote adapter.
+- [ ] `audit:qik` **living-docs-eval/code-map eval results** — adapt: Stored results drift from the tools; results should carry the tool hash and be regenerated by one command, or not be stored.
+- [ ] `audit:qik` **living-docs-eval/docs + freshness evals** — keep-as-pattern: Deterministic, cheap gates; both belong in validate when living-docs is on.
+- [ ] `audit:qik` **living-docs-eval/harness-references eval** — adapt: The plan's verify:harness-refs; widen to every harness path, section anchor and skill/agent name, drop the hard-coded prefix, run in every mode.
 - [ ] `audit:qik` **living-docs-eval/golden questions** — keep-as-pattern: Best proof that docs are sufficient; it spends model calls, so it is an opt-in periodic eval, not a validate gate.
-- [ ] `audit:qik` **living-docs-tool/detect-patterns.js + patterns-guide.json** — adapt: Merge census and diff gate onto one rule registry (id, matcher, census unit, diff severity, why, fix) so a rule is defined once.
+- [ ] `audit:qik` **living-docs-tool/pattern detector + patterns guide** — adapt: Merge census and diff gate onto one rule registry (id, matcher, census unit, diff severity, why, fix) so a rule is defined once.
 - [ ] `audit:qik` **living-docs-tool/diagram pipeline** — adapt: Diagrams-from-data is the plan's decision 11, but this pipeline needs the newer archify (finalize, locales) vendored and pinned first; also needs a size budget.
-- [ ] `audit:qik` **living-docs-tool/extract.js** — adapt: Split into a stack-agnostic core plus probe modules configured by a contract; add probes for Expo Router, Next App Router, TanStack Query/Supabase and i18next so the template's own
+- [ ] `audit:qik` **living-docs-tool/extractor** — adapt: Split into a stack-agnostic core plus probe modules configured by a contract; add probes for Expo Router, Next App Router, TanStack Query/Supabase and i18next so the template's own
 - [ ] `audit:qik` **living-docs-tool/extractor tests** — keep-as-pattern: Fixture-repo tests per probe are the right proof; each new probe ships with its own fixture.
-- [ ] `audit:qik` **living-docs-tool/flag-effects.js + analytics-tags.js** — adapt: 'What changes if this flag is off' is valuable for any flags-first project; make it a probe-dependent optional module.
+- [ ] `audit:qik` **living-docs-tool/flag-effects + analytics-tags modules** — adapt: 'What changes if this flag is off' is valuable for any flags-first project; make it a probe-dependent optional module.
 - [ ] `audit:qik` **living-docs-tool/induction (taxonomy and PO copy) pipeline** — adapt: Business-area taxonomy is what makes docs usable by non-developers; generic as a staged, owner-approved step, but heavy; ship as optional sub-capability.
 - [ ] `audit:qik` **living-docs-tool/LLM enrichment pipeline** — keep-as-pattern: 'Model writes data, a deterministic eval proves every identifier it cites exists' matches locked decision 4; keep the pattern, make the stage optional.
-- [ ] `audit:qik` **living-docs-tool/load.js + build-docs.js** — adapt: Keep the single-loader design; move output strings to a locale catalog and make doc families depend on enabled probes.
-- [ ] `audit:qik` **living-docs-tool/verify-evidence.js** — keep-as-pattern: Independent evidence verification is what makes generated docs trustworthy; checks follow the probes.
-- [ ] `audit:qik` **odd/odd/tasks/app-knowledge.md** — keep-as-pattern: This doc is effectively the adopt-mode playbook: snapshot -> extract -> census -> docs -> adjust harness -> diff gates -> evals. Reuse its phase order for /init adopt.
-- [ ] `audit:qik` **odd/odd/tasks/app-map-induccion.md** — keep-as-pattern: Format evidence; the onboarding layer itself is an optional capability (see living-docs rows).
-- [ ] `audit:qik` **odd/odd/tasks/app-map.md** — keep-as-pattern: Shows the ODD document format working in adopt mode; the missing Engram mirror is a gap adopt mode must close.
-- [ ] `audit:qik` **rule-set/Owner rules (CLAUDE.md § Owner rules)** — keep-as-pattern: Rules with stable ids referenced by skills and the review checklist are the right mechanism; the template should ship a rules contract where each rule names its enforcing gate. Rul
-- [ ] `audit:qik` **skill/qik-component** — adapt: Placement decision tree (one screen -> feature -> shared) and 'reuse before create' are generic; folder shape, design-system package and the Use/Avoid table are facts. Template's c
-- [ ] `audit:qik` **skill/qik-data** — adapt: Data-unit CONTRACT (operation/hook/util/enum with spec) is a reusable shape; the sensitive-operation and error-code sections are bank-specific facts and never travel.
-- [ ] `audit:qik` **skill/qik-feature** — adapt: Template has a feature skill; the useful addition is the explicit 'wiring edits' list in the CONTRACT. Remove line anchors.
-- [ ] `audit:qik` **skill/qik-i18n** — adapt: The 'migrate touched hard-coded text with a characterization test' procedure is generic; everything else is i18n-mechanism facts. Add a CONTRACT.
-- [ ] `audit:qik` **skill/qik-review** — keep-as-pattern: 'Deterministic gate first, judgment second, compare with living docs' is the right generic review shape; thresholds must come from one contract to remove the 300/500 split.
-- [ ] `audit:qik` **skill/qik-screen** — adapt: Template already has a screen skill; harvest the 'Map first' step, the CONTRACT block and the flags-first section as parameters, drop line-number anchors (they rot).
-- [ ] `audit:qik` **skill/qik-story** — keep-as-pattern: Most evidenced workflow in the workspace; procedure is generic once board, design source, branch pattern and commit authority are contract keys. Memory integration needs a working
-- [ ] `audit:qik` **skill/qik-test** — adapt: Discipline (RED/GREEN, characterization, flag-off test, include caller suites) is generic; naming and mock layout must be detected facts in adopt mode, never imposed by template co
+- [ ] `audit:qik` **living-docs-tool/loader + doc builder** — adapt: Keep the single-loader design; move output strings to a locale catalog and make doc families depend on enabled probes.
+- [ ] `audit:qik` **living-docs-tool/evidence verifier** — keep-as-pattern: Independent evidence verification is what makes generated docs trustworthy; checks follow the probes.
+- [ ] `audit:qik` **odd/ODD task doc for the app knowledge** — keep-as-pattern: This doc is effectively the adopt-mode playbook: snapshot -> extract -> census -> docs -> adjust harness -> diff gates -> evals. Reuse its phase order for /init adopt.
+- [ ] `audit:qik` **odd/ODD task doc for the onboarding layer** — keep-as-pattern: Format evidence; the onboarding layer itself is an optional capability (see living-docs rows).
+- [ ] `audit:qik` **odd/ODD task doc for the code map** — keep-as-pattern: Shows the ODD document format working in adopt mode; the missing Engram mirror is a gap adopt mode must close.
+- [ ] `audit:qik` **rule-set/Owner rules (a section of the root instruction file)** — keep-as-pattern: Rules with stable ids referenced by skills and the review checklist are the right mechanism; the template should ship a rules contract where each rule names its enforcing gate. Rul
+- [ ] `audit:qik` **skill/component skill** — adapt: Placement decision tree (one screen -> feature -> shared) and 'reuse before create' are generic; folder shape, design-system package and the Use/Avoid table are facts. Template's c
+- [ ] `audit:qik` **skill/data skill** — adapt: Data-unit CONTRACT (operation/hook/util/enum with spec) is a reusable shape; the sensitive-operation and error-code sections are bank-specific facts and never travel.
+- [ ] `audit:qik` **skill/feature skill** — adapt: Template has a feature skill; the useful addition is the explicit 'wiring edits' list in the CONTRACT. Remove line anchors.
+- [ ] `audit:qik` **skill/i18n skill** — adapt: The 'migrate touched hard-coded text with a characterization test' procedure is generic; everything else is i18n-mechanism facts. Add a CONTRACT.
+- [ ] `audit:qik` **skill/review skill** — keep-as-pattern: 'Deterministic gate first, judgment second, compare with living docs' is the right generic review shape; thresholds must come from one contract to remove the 300/500 split.
+- [ ] `audit:qik` **skill/screen skill** — adapt: Template already has a screen skill; harvest the 'Map first' step, the CONTRACT block and the flags-first section as parameters, drop line-number anchors (they rot).
+- [ ] `audit:qik` **skill/story skill** — keep-as-pattern: Most evidenced workflow in the workspace; procedure is generic once board, design source, branch pattern and commit authority are contract keys. Memory integration needs a working
+- [ ] `audit:qik` **skill/test skill** — adapt: Discipline (RED/GREEN, characterization, flag-off test, include caller suites) is generic; naming and mock layout must be detected facts in adopt mode, never imposed by template co
 
 ## P10 additions — from the Qik frontend session
 
