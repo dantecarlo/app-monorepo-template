@@ -1,6 +1,6 @@
 # Proposal: import a package's own files through its `#src` alias
 
-> **Status:** open
+> **Status:** archived — 2026-11-14
 
 ## Why
 

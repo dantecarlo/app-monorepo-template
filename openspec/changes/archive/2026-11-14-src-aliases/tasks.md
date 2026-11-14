@@ -9,7 +9,7 @@
 - [x] T7 — the `eslint.config.mjs` overrides that turn `no-relative-import-paths` off in packages removed, the core production override included · Requirements: none · Commit: a985ea6
 - [x] T8 — `docs/code-standards.md` § 2, `docs/architecture/shared.md`, `AGENTS.md` and `openspec/config.yaml` state the `#src` alias · Requirements: none · Commit: 7cc35d9
 - [x] T10 — correction after the independent verification: `package-src-alias` holds `#src/` over imports, re-exports and `import()` in package production files, with a fix computed from the file's path, and replaces `no-relative-import-paths` there; `core-import-boundary` judges `import()`; every package's `#src` mapping pinned; the skills and the README name `#src/*` · Requirements: none · Commit: e3c60c4, 3fcf7f6
-- [ ] T9 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-14-src-aliases/` as the last commit · Requirements: none · Commit: —
+- [x] T9 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-14-src-aliases/` as the last commit · Requirements: none · Commit: 1e389b1
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of
