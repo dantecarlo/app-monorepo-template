@@ -6,7 +6,7 @@
 - [x] T4 — the apps/web spec · Requirements: WEB-01 to WEB-36 · Commit: a7f67f6
 - [x] T5 — the apps/mobile spec · Requirements: MOBILE-01 to MOBILE-35 · Commit: a7f67f6
 - [x] T6 — the plan records T1b, the defects the specs found as follow-up work, and what `/init` owes the § 2.1 table · Requirements: none · Commit: 138078d
-- [ ] T7 — `verify-report.md`, then the archive as the last commit: the deltas become the living specs, `openspec/README.md` § 2.1 lists them, `template.manifest.json` gives each spec to the owner of its code, and the folder moves to `openspec/changes/archive/2026-11-14-living-specs/` · Requirements: none · Commit: —
+- [x] T7 — `verify-report.md`, then the archive as the last commit: the deltas become the living specs, `openspec/README.md` § 2.1 lists them, `template.manifest.json` gives each spec to the owner of its code, and the folder moves to `openspec/changes/archive/2026-11-14-living-specs/` · Requirements: none · Commit: 1673cd2
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of

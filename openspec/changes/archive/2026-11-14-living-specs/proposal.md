@@ -1,6 +1,6 @@
 # Proposal: write the template's living specs from its code
 
-> **Status:** open
+> **Status:** archived — 2026-11-14
 
 ## Why
 

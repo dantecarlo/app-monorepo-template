@@ -85,7 +85,10 @@
       "id": "design-tokens",
       "title": "Design tokens and theme contract",
       "group": "foundation",
-      "claims": ["packages/tokens/**"],
+      "claims": [
+        "openspec/specs/packages/tokens/spec.md",
+        "packages/tokens/**"
+      ],
       "onAbsent": [
         {
           "verb": "remove-workspace",
@@ -97,7 +100,10 @@
       "id": "i18n",
       "title": "Internationalization catalogs",
       "group": "foundation",
-      "claims": ["packages/i18n/**"],
+      "claims": [
+        "openspec/specs/packages/i18n/spec.md",
+        "packages/i18n/**"
+      ],
       "onAbsent": [
         {
           "verb": "remove-workspace",
@@ -117,6 +123,7 @@
       "claims": [
         "apps/web/**",
         "docs/architecture/web.md",
+        "openspec/specs/apps/web/spec.md",
         "scripts/smoke-web-render.mjs"
       ],
       "onAbsent": [
@@ -140,6 +147,7 @@
       "claims": [
         "apps/mobile/**",
         "docs/architecture/mobile.md",
+        "openspec/specs/apps/mobile/spec.md",
         "scripts/assert-expo-export.mjs"
       ],
       "onAbsent": [
@@ -171,7 +179,10 @@
       "id": "supabase",
       "title": "Supabase backend (Postgres, Auth, RLS)",
       "group": "backend",
-      "claims": ["packages/supabase/**"],
+      "claims": [
+        "openspec/specs/packages/supabase/spec.md",
+        "packages/supabase/**"
+      ],
       "onAbsent": [
         {
           "verb": "remove-workspace",
@@ -193,9 +204,10 @@
       "group": "edge",
       "requires": ["web-next"],
       "claims": [
-        "packages/cloudflare/**",
         "docs/images.md",
-        "docs/infrastructure.md"
+        "docs/infrastructure.md",
+        "openspec/specs/packages/cloudflare/spec.md",
+        "packages/cloudflare/**"
       ],
       "onAbsent": [
         {
@@ -301,6 +313,8 @@
         ".claude/skills/sdd/**",
         "openspec/README.md",
         "openspec/config.yaml",
+        "openspec/specs/packages/core/spec.md",
+        "openspec/specs/packages/tooling/spec.md",
         "openspec/templates/**",
         "scripts/report-spec-drift.mjs",
         "scripts/report-spec-drift.test.mjs",
@@ -337,6 +351,10 @@
           "file": "package.json",
           "op": "unset",
           "path": "scripts.report:spec-drift:test"
+        },
+        {
+          "paths": ["openspec/specs/**"],
+          "verb": "remove"
         }
       ]
     },
