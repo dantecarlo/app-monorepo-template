@@ -50,7 +50,10 @@ The owner's words:
   of owner quotes) change Certifipago, not the template, through the conformance track (K8).
 - pnpm 11.9.0 (D-S6), its own change (Roadmap step 2.3).
 - The exported style constants (`ASYNC_BOUNDARY_STYLES`, `BUTTON_BASE_CLASS` and the like) keep
-  their names: the decision names the file suffix, not the constants.
+  their names: the decision names the file suffix, not the constants. One export of the lint
+  configuration does change: `STYLES_FILE_OVERRIDE` in `eslint.rules.mjs` becomes
+  `STYLE_FILE_OVERRIDE`, so a derived project whose `eslint.config.mjs` imports it renames the
+  import (a breaking change, as the rename commit says).
 - Records that stay as written: the archived changes under `openspec/changes/archive/`, the
   2026-11-04 audit data, and the plan's own account of the decisions.
 

@@ -389,8 +389,9 @@ No semicolons, single quotes, 75-character print width.
 
 Prettier formats code and JSON, never Markdown: `.prettierignore` lists
 `*.md`. Markdown is prose, and Prettier broke two docs and realigns a whole
-table when one cell changes. A doc's links and shape are held by `verify:maps`
-and `verify:specs`; align a table by hand when you edit it.
+table when one cell changes. `verify:maps` checks the links of `docs/maps/global-map.md`
+and `verify:specs` the shape of `openspec/`; the links of every other doc are
+checked in review. Align a table by hand when you edit it.
 
 ---
 
