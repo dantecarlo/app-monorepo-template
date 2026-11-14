@@ -3,7 +3,7 @@ import { TextInput, View } from 'react-native'
 
 import { Icon } from '@/components/ui/Icon/Icon.component'
 import { ICON_SIZE } from '@/components/ui/SearchBar/SearchBar.constant'
-import { SEARCH_BAR_STYLES as styles } from '@/components/ui/SearchBar/SearchBar.styles'
+import { SEARCH_BAR_STYLES as styles } from '@/components/ui/SearchBar/SearchBar.style'
 import type { ISearchBarProps } from '@/components/ui/SearchBar/SearchBar.type'
 
 export const SearchBar = ({

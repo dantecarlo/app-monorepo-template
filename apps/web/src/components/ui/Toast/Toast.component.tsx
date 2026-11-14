@@ -10,7 +10,7 @@ import {
   TOAST_MESSAGE,
   TOAST_VIEWPORT,
   toastPillVariants
-} from '@/components/ui/Toast/Toast.styles'
+} from '@/components/ui/Toast/Toast.style'
 import {
   selectRemoveToast,
   selectToasts,

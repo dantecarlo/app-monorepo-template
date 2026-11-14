@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native'
 
 import { IconButton } from '@/components/ui/IconButton/IconButton.component'
-import { SCREEN_HEADER_STYLES as styles } from '@/components/ui/ScreenHeader/ScreenHeader.styles'
+import { SCREEN_HEADER_STYLES as styles } from '@/components/ui/ScreenHeader/ScreenHeader.style'
 import type { IScreenHeaderProps } from '@/components/ui/ScreenHeader/ScreenHeader.type'
 
 /**

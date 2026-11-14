@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl'
 import type { JSX } from 'react'
 
 import { Button } from '@/components/ui/Button/Button.component'
-import { errorStateVariants } from '@/components/ui/ErrorState/ErrorState.styles'
+import { errorStateVariants } from '@/components/ui/ErrorState/ErrorState.style'
 import type { IErrorStateProps } from '@/components/ui/ErrorState/ErrorState.type'
 import { ErrorStateIcon } from '@/components/ui/ErrorState/ErrorStateIcon.component'
 

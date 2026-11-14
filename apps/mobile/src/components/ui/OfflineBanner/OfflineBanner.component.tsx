@@ -2,7 +2,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Text, View } from 'react-native'
 
-import { OFFLINE_BANNER_STYLES } from '@/components/ui/OfflineBanner/OfflineBanner.styles'
+import { OFFLINE_BANNER_STYLES } from '@/components/ui/OfflineBanner/OfflineBanner.style'
 import type { IOfflineBannerProps } from '@/components/ui/OfflineBanner/OfflineBanner.type'
 
 export const OfflineBanner = ({

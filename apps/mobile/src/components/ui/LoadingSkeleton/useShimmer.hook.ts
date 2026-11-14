@@ -12,7 +12,7 @@ import {
   SHIMMER_REPEAT_FOREVER,
   SHIMMER_START_VALUE,
   SHIMMER_TRANSLATE_RANGE
-} from '@/components/ui/LoadingSkeleton/LoadingSkeleton.styles'
+} from '@/components/ui/LoadingSkeleton/LoadingSkeleton.style'
 import type { IUseShimmerResult } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.type'
 
 export const useShimmer = (): IUseShimmerResult => {

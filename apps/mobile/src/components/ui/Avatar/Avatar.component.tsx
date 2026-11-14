@@ -8,7 +8,7 @@ import {
 import {
   AVATAR_BORDER_RADIUS,
   AVATAR_VARIANT_COLORS
-} from '@/components/ui/Avatar/Avatar.styles'
+} from '@/components/ui/Avatar/Avatar.style'
 import type { IAvatarProps } from '@/components/ui/Avatar/Avatar.type'
 
 export const Avatar = ({

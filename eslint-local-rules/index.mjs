@@ -7,7 +7,7 @@
 // Rules:
 //   no-inline-tailwind-classname  (#9)  — warn: ban string-literal className in
 //                                          *.component.tsx / *.screen.tsx;
-//                                          Tailwind classes belong in *.styles.ts.
+//                                          Tailwind classes belong in *.style.ts.
 //   single-object-params          (#16) — warn: functions take ONE object param;
 //                                          allow-lists event handlers, array
 //                                          callbacks, reducers, and documented
@@ -130,11 +130,11 @@ const noInlineTailwindClassname = {
   meta: {
     docs: {
       description:
-        'Disallow string-literal className values in components/screens — Tailwind classes belong in *.styles.ts constants.'
+        'Disallow string-literal className values in components/screens — Tailwind classes belong in *.style.ts constants.'
     },
     messages: {
       inline:
-        'No inline Tailwind className literal — extract the class string into a *.styles.ts constant (code-standards: Tailwind-in-constants).'
+        'No inline Tailwind className literal — extract the class string into a *.style.ts constant (code-standards: Tailwind-in-constants).'
     },
     schema: [],
     type: 'suggestion'
@@ -159,7 +159,7 @@ const noInlineTailwindClassname = {
 
         // className={'literal'} or className={`static template`} (no
         // interpolation). Templates WITH interpolation usually compose
-        // *.styles constants, so they are left alone.
+        // *.style constants, so they are left alone.
         if (expr.type === 'Literal' && typeof expr.value === 'string') {
           report(expr)
           return

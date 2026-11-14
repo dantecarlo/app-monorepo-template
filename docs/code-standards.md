@@ -139,7 +139,7 @@ Two related smells: a comment that restates the PR description, and a comment
 that outlives the code it defended.
 
 **Where the reasoning goes instead:** the commit message, the ADR under
-`docs/architecture/decisions/`, or the doc that owns the topic. Evidence belongs
+`docs/decisions/`, or the doc that owns the topic. Evidence belongs
 where it is dated and attributable, not inline where it silently rots.
 
 ### The two halves of this rule
@@ -191,6 +191,7 @@ Available aliases:
 | Adapter        | `Name.adapter.ts`    | `Items.adapter.ts`       |
 | Type/Interface | `Name.type.ts`       | `Item.type.ts`           |
 | Constant       | `Name.constant.ts`   | `queryKeys.constant.ts`  |
+| Style          | `Name.style.ts`      | `ItemCard.style.ts`      |
 | Test           | `Name.test.tsx`      | `ItemCard.test.tsx`      |
 
 ---
@@ -385,6 +386,12 @@ Feature folders at the route level follow lowercase convention (e.g.
 ```
 
 No semicolons, single quotes, 75-character print width.
+
+Prettier formats code and JSON, never Markdown: `.prettierignore` lists
+`*.md`. Markdown is prose, and Prettier broke two docs and realigns a whole
+table when one cell changes. `verify:maps` checks the links of `docs/maps/global-map.md`
+and `verify:specs` the shape of `openspec/`; the links of every other doc are
+checked in review. Align a table by hand when you edit it.
 
 ---
 

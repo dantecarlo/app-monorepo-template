@@ -2,7 +2,7 @@ import type { FallbackProps } from 'react-error-boundary'
 import { Pressable, Text, View } from 'react-native'
 
 import { RETRY_LABEL } from '@/components/ui/AsyncBoundary/AsyncBoundary.constant'
-import { ASYNC_BOUNDARY_STYLES as styles } from '@/components/ui/AsyncBoundary/AsyncBoundary.styles'
+import { ASYNC_BOUNDARY_STYLES as styles } from '@/components/ui/AsyncBoundary/AsyncBoundary.style'
 
 export const AsyncBoundaryDefaultError = ({
   error,

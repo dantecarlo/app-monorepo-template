@@ -86,7 +86,7 @@ pnpm validate
 3. `pnpm verify:maps` (`scripts/verify-maps.mjs`) — (A) every repo path
    referenced in `docs/maps/global-map.md` must still resolve (dead
    reference = **BLOCKER**); (B) whole-tree magic-number audit — any
-   stray magic number outside `*.constant.ts` / `*.styles.ts` is a
+   stray magic number outside `*.constant.ts` / `*.style.ts` is a
    **BLOCKER**.
 4. `pnpm check:identity` — identity / branding consistency check.
 5. `pnpm verify:pairing` (`scripts/verify-pairing.mjs`) — every

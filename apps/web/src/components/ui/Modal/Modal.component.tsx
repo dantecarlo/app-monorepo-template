@@ -9,7 +9,7 @@ import {
   MODAL_TITLE,
   modalPanelVariants,
   modalScrimVariants
-} from '@/components/ui/Modal/Modal.styles'
+} from '@/components/ui/Modal/Modal.style'
 import type { IModalProps } from '@/components/ui/Modal/Modal.type'
 import { useModalDismiss } from '@/components/ui/Modal/useModalDismiss.hook'
 

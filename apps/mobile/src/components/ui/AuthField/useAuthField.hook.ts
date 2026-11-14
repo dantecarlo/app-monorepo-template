@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { AUTH_FIELD_STYLES as styles } from '@/components/ui/AuthField/AuthField.styles'
+import { AUTH_FIELD_STYLES as styles } from '@/components/ui/AuthField/AuthField.style'
 import type {
   IUseAuthFieldParams,
   IUseAuthFieldResult

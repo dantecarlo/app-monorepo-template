@@ -7,7 +7,7 @@ import {
   CANCEL_BUTTON,
   CONFIRM_DIALOG_ACTIONS,
   confirmButtonVariants
-} from '@/components/ui/ConfirmDialog/ConfirmDialog.styles'
+} from '@/components/ui/ConfirmDialog/ConfirmDialog.style'
 import type { IConfirmDialogProps } from '@/components/ui/ConfirmDialog/ConfirmDialog.type'
 import { Modal } from '@/components/ui/Modal/Modal.component'
 

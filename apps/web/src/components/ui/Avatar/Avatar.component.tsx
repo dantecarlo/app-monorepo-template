@@ -1,7 +1,7 @@
 import type { JSX } from 'react'
 
 import { AVATAR_DEFAULT_SIZE } from '@/components/ui/Avatar/Avatar.constant'
-import { avatarVariants } from '@/components/ui/Avatar/Avatar.styles'
+import { avatarVariants } from '@/components/ui/Avatar/Avatar.style'
 import type { IAvatarProps } from '@/components/ui/Avatar/Avatar.type'
 
 export const Avatar = ({

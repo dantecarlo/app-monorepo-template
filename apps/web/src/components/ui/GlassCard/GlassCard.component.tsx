@@ -1,4 +1,4 @@
-import { glassCardVariants } from '@/components/ui/GlassCard/GlassCard.styles'
+import { glassCardVariants } from '@/components/ui/GlassCard/GlassCard.style'
 import type { IGlassCardProps } from '@/components/ui/GlassCard/GlassCard.type'
 
 // ---------------------------------------------------------------------------

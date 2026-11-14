@@ -5,7 +5,7 @@ import { GoogleGlyph } from '@/components/ui/SocialAuthButton/GoogleGlyph.compon
 import {
   SOCIAL_AUTH_GLYPH_SIZE,
   SOCIAL_AUTH_STYLES as styles
-} from '@/components/ui/SocialAuthButton/SocialAuthButton.styles'
+} from '@/components/ui/SocialAuthButton/SocialAuthButton.style'
 import type { ISocialAuthButtonProps } from '@/components/ui/SocialAuthButton/SocialAuthButton.type'
 
 /** Glass Google social-auth pill button. */

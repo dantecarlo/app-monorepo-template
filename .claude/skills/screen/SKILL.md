@@ -2,7 +2,7 @@
 name: screen
 description: >
   Generate a screen (container) block that owns data fetching, loading/error/empty
-  states, and layout composition. Scaffolds {Name}.screen.tsx + {Name}.styles.ts +
+  states, and layout composition. Scaffolds {Name}.screen.tsx + {Name}.style.ts +
   index.ts (mandatory); optional components/, hooks/, models/, services/ subfolders.
   Uses useAppQuery/useAppMutation from @/lib/query and the QueryKeys constant.
   Arrow-only, alias imports, named export. Handles Next.js app/ and Expo Router
@@ -38,12 +38,12 @@ description: >
 ```
 src/screens/{Name}/
 ├── {Name}.screen.tsx        # mandatory — container, composes components
-├── {Name}.styles.ts         # mandatory — Tailwind class constants for the screen layout
+├── {Name}.style.ts          # mandatory — Tailwind class constants for the screen layout
 ├── index.ts                 # mandatory — barrel
 ├── components/              # optional — private components of this screen
 │   └── {Name}Row/
 │       ├── {Name}Row.component.tsx
-│       ├── {Name}Row.styles.ts
+│       ├── {Name}Row.style.ts
 │       └── index.ts
 ├── hooks/                   # optional — logic hooks (use*.hook.ts)
 │   └── use{Name}.hook.ts
@@ -119,7 +119,7 @@ export const use{Name} = ({ contextId }: IUse{Name}) => {
 
 ---
 
-## Step 4 — Styles (`{Name}.styles.ts`)
+## Step 4 — Styles (`{Name}.style.ts`)
 
 ```typescript
 export const {NAME}_SCREEN = {
@@ -138,7 +138,7 @@ export const {NAME}_SCREEN = {
 
 import { use{Name} } from './hooks/use{Name}.hook'
 import { {Component} } from './components/{Component}'
-import { {NAME}_SCREEN } from './{Name}.styles'
+import { {NAME}_SCREEN } from './{Name}.style'
 
 export const {Name}Screen = () => {
   const { data, isLoading, isError } = use{Name}({
@@ -226,6 +226,6 @@ keeps a named export.
 | Data transformation inline in the screen JSX       | Move to adapter + hook                           |
 | Direct `fetch()` or service call in the screen      | Use a hook that wraps `useAppQuery`              |
 | Missing loading / error / empty guard               | Always all three, in that order                  |
-| Inline Tailwind class strings                       | Extract to `{Name}.styles.ts`                    |
+| Inline Tailwind class strings                       | Extract to `{Name}.style.ts`                     |
 | `function {Name}Screen(...)` keyword               | Arrow const: `const {Name}Screen = () => ...`   |
 | Default export on the screen component              | Named export on screen; default only for route page |

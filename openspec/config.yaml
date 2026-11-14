@@ -92,7 +92,7 @@ phases:
     artifact: 'openspec/changes/{change}/specs/{spec path}/spec.md'
   design:
     artifact: 'openspec/changes/{change}/design.md'
-    when: 'an architecture decision only; a lasting one is an ADR in docs/architecture/decisions/'
+    when: 'an architecture decision only; a lasting one is an ADR in docs/decisions/'
   tasks:
     artifact: 'openspec/changes/{change}/tasks.md'
   apply:

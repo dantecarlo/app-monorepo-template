@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl'
 
 import { IconButton } from '@/components/ui/IconButton'
 import { TEXT } from '@/helpers/style.constant'
-import { DASHBOARD_HEADER } from '@/screens/ItemsDashboard/components/DashboardHeader/DashboardHeader.styles'
+import { DASHBOARD_HEADER } from '@/screens/ItemsDashboard/components/DashboardHeader/DashboardHeader.style'
 
 export const DashboardHeader = () => {
   const t = useTranslations('items.dashboard')

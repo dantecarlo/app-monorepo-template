@@ -126,7 +126,7 @@ was being broken with nothing to notice.
 | `local/no-justifying-comment`        | everywhere                     | §1.2 — comments say what the code does       |
 | `local/logic-in-view`                | views                          | §14a — logic lives in hooks                  |
 | `local/single-use-state`             | views                          | §14a                                         |
-| `local/no-inline-tailwind-classname` | views                          | Classes live in `*.styles.ts`                |
+| `local/no-inline-tailwind-classname` | views                          | Classes live in `*.style.ts`                 |
 | `local/single-object-params`         | everywhere                     | Rule 5                                       |
 | `local/no-non-ascii-identifier`      | everywhere                     | §15 — English everywhere                     |
 

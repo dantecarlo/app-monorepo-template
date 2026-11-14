@@ -6,7 +6,7 @@ import { AuthShell } from '@/components/ui/AuthShell/AuthShell.component'
 import { Button } from '@/components/ui/Button/Button.component'
 import { SocialAuthButton } from '@/components/ui/SocialAuthButton/SocialAuthButton.component'
 import { useLoginForm } from '@/screens/Login/hooks/useLoginForm.hook'
-import { LOGIN_STYLES as styles } from '@/screens/Login/Login.styles'
+import { LOGIN_STYLES as styles } from '@/screens/Login/Login.style'
 
 export const LoginScreen = () => {
   const { t } = useTranslation('translation', { keyPrefix: 'auth.login' })

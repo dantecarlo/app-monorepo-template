@@ -1,6 +1,6 @@
 import type { JSX } from 'react'
 
-import { loadingSkeletonVariants } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.styles'
+import { loadingSkeletonVariants } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.style'
 import type { ILoadingSkeletonProps } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.type'
 
 export const LoadingSkeleton = ({

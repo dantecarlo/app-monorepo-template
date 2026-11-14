@@ -1,7 +1,7 @@
 # Design: <change name>
 
 Write this file only when the change makes an architecture decision. A decision that outlives
-the change (a new port, a new storage, a vendor) is an ADR in `docs/architecture/decisions/`
+the change (a new port, a new storage, a vendor) is an ADR in `docs/decisions/`
 instead, and this file links to it.
 
 ## Decision

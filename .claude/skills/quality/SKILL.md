@@ -157,7 +157,7 @@ Orders/orders.service.ts → (no adapter found)    ❌
 | Adapter    | `Name.adapter.ts`       |
 | Types      | `Name.type.ts`          |
 | Constants  | `Name.constant.ts`      |
-| Styles     | `Name.styles.ts`        |
+| Styles     | `Name.style.ts`         |
 | Helpers    | `name.helper.ts`        |
 | Store      | `name.store.ts`         |
 | Test       | `Name.test.tsx`         |

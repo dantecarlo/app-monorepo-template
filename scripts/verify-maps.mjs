@@ -12,7 +12,7 @@
 //
 //   (B) Inline-literal audit. Walks source units with the TypeScript AST and
 //       flags magic NUMERIC literals that live OUTSIDE the two files where
-//       literals are the point (`*.constant.ts`, `*.styles.ts`). It mirrors
+//       literals are the point (`*.constant.ts`, `*.style.ts`). It mirrors
 //       the ESLint `no-magic-numbers` contract exactly — allowlist [-1,0,1,2],
 //       `detectObjects:false` (object-property values are design, allowed),
 //       `enforceConst` (named const initializers are the CORRECT pattern,
@@ -25,10 +25,10 @@
 //       literals whose full text matches a hex color (#RGB / #RRGGBB) or a
 //       color-function call (rgb(), rgba(), hsl(), hsla()).
 //       Exemptions: same file-suffix scope as (B) — *.constant.ts and
-//       *.styles.ts are allowed (literals are the point there), as is the
+//       *.style.ts are allowed (literals are the point there), as is the
 //       entire packages/tokens/src/** tree (design source of truth).
 //       Fix: move color values into packages/tokens, a *.constant.ts, or a
-//       *.styles.ts.
+//       *.style.ts.
 //
 //   (D) Reverse map coverage. For each app root (apps/web, apps/mobile),
 //       lists PascalCase child directories under src/services/<Domain> and
@@ -62,7 +62,7 @@ const REPO_ROOT = resolve(HERE, '..')
 const GLOBAL_MAP = 'docs/maps/global-map.md'
 
 // Files where literals ARE the point — exempt from the literal audit.
-const LITERAL_EXEMPT_SUFFIXES = ['.constant.ts', '.styles.ts']
+const LITERAL_EXEMPT_SUFFIXES = ['.constant.ts', '.style.ts']
 
 // Source suffixes scanned for inline literals.
 const SCANNED_SUFFIXES = [
@@ -447,7 +447,7 @@ if (!map.ok) {
 if (literals.numericOffenders.length > 0) {
   failed = true
   console.error(
-    `\n  [B] inline literals: FAIL — ${literals.numericOffenders.length} magic number(s) outside *.constant.ts / *.styles.ts:`
+    `\n  [B] inline literals: FAIL — ${literals.numericOffenders.length} magic number(s) outside *.constant.ts / *.style.ts:`
   )
   for (const offender of literals.numericOffenders) {
     console.error(
@@ -467,7 +467,7 @@ if (literals.numericOffenders.length > 0) {
 if (literals.hexOffenders.length > 0) {
   failed = true
   console.error(
-    `\n  [C] color literals: FAIL — ${literals.hexOffenders.length} inline color literal(s) (hex or rgba/rgb/hsl/hsla) outside *.constant.ts / *.styles.ts / packages/tokens/src:**`
+    `\n  [C] color literals: FAIL — ${literals.hexOffenders.length} inline color literal(s) (hex or rgba/rgb/hsl/hsla) outside *.constant.ts / *.style.ts / packages/tokens/src:**`
   )
   for (const offender of literals.hexOffenders) {
     console.error(
@@ -475,7 +475,7 @@ if (literals.hexOffenders.length > 0) {
     )
   }
   console.error(
-    '\n      Move color values into packages/tokens, a *.constant.ts, or a *.styles.ts.'
+    '\n      Move color values into packages/tokens, a *.constant.ts, or a *.style.ts.'
   )
 } else {
   console.log(

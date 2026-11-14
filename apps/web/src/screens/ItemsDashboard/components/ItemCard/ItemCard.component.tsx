@@ -2,7 +2,7 @@ import {
   STATUS_CLASS,
   STATUS_LABEL
 } from '@/screens/ItemsDashboard/components/ItemCard/ItemCard.constant'
-import { ITEM_CARD } from '@/screens/ItemsDashboard/components/ItemCard/ItemCard.styles'
+import { ITEM_CARD } from '@/screens/ItemsDashboard/components/ItemCard/ItemCard.style'
 import type { IItemCardProps } from '@/screens/ItemsDashboard/components/ItemCard/ItemCard.type'
 
 // ---------------------------------------------------------------------------

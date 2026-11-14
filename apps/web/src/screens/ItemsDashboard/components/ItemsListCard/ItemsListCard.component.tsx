@@ -11,7 +11,7 @@ import { ItemCard } from '@/screens/ItemsDashboard/components/ItemCard'
 import {
   ITEMS_LIST_CARD,
   SKELETON_ROW_COUNT
-} from '@/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.styles'
+} from '@/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.style'
 import type { IItemsListCardProps } from '@/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.type'
 
 export const ItemsListCard = ({

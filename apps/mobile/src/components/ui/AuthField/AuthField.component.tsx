@@ -2,7 +2,7 @@ import { colors } from '@app/tokens'
 import { Pressable, Text, TextInput, View } from 'react-native'
 
 import { AUTH_FIELD_ICON_SIZE } from '@/components/ui/AuthField/AuthField.constant'
-import { AUTH_FIELD_STYLES as styles } from '@/components/ui/AuthField/AuthField.styles'
+import { AUTH_FIELD_STYLES as styles } from '@/components/ui/AuthField/AuthField.style'
 import type { IAuthFieldProps } from '@/components/ui/AuthField/AuthField.type'
 import { useAuthField } from '@/components/ui/AuthField/useAuthField.hook'
 import { Icon } from '@/components/ui/Icon/Icon.component'

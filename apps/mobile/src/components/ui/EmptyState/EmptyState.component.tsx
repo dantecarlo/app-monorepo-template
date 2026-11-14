@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Text, View } from 'react-native'
 
-import { EMPTY_STATE_STYLES as styles } from '@/components/ui/EmptyState/EmptyState.styles'
+import { EMPTY_STATE_STYLES as styles } from '@/components/ui/EmptyState/EmptyState.style'
 import type { IEmptyStateProps } from '@/components/ui/EmptyState/EmptyState.type'
 
 export const EmptyState = ({ cta, message, title }: IEmptyStateProps) => {

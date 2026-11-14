@@ -2,7 +2,7 @@ import type { JSX } from 'react'
 
 import { Icon } from '@/components/ui/Icon/Icon.component'
 import { ICON_BUTTON_DEFAULT_ICON_SIZE } from '@/components/ui/IconButton/IconButton.constant'
-import { iconButtonVariants } from '@/components/ui/IconButton/IconButton.styles'
+import { iconButtonVariants } from '@/components/ui/IconButton/IconButton.style'
 import type { IIconButtonProps } from '@/components/ui/IconButton/IconButton.type'
 
 export const IconButton = ({

@@ -6,7 +6,7 @@ import {
   CHIP_TEXT_BASE_CLASS,
   CHIP_TEXT_VARIANT_CLASS,
   CHIP_VARIANT_CLASS
-} from '@/components/ui/Chip/Chip.styles'
+} from '@/components/ui/Chip/Chip.style'
 import type { IChipProps } from '@/components/ui/Chip/Chip.type'
 
 export const Chip = ({

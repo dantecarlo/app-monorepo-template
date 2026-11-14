@@ -1,4 +1,4 @@
-import { chipVariants } from '@/components/ui/Chip/Chip.styles'
+import { chipVariants } from '@/components/ui/Chip/Chip.style'
 import type { IChipProps } from '@/components/ui/Chip/Chip.type'
 
 // ---------------------------------------------------------------------------

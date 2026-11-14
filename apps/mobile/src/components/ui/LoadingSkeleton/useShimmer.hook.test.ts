@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest'
 import {
   SHIMMER_DURATION,
   SHIMMER_TRANSLATE_RANGE
-} from '@/components/ui/LoadingSkeleton/LoadingSkeleton.styles'
+} from '@/components/ui/LoadingSkeleton/LoadingSkeleton.style'
 
 describe('useShimmer constants', () => {
   test('SHIMMER_DURATION is a positive number', () => {

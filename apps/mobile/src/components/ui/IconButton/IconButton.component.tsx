@@ -9,7 +9,7 @@ import {
 import {
   ICON_BUTTON_STYLES as styles,
   ICON_BUTTON_VARIANT
-} from '@/components/ui/IconButton/IconButton.styles'
+} from '@/components/ui/IconButton/IconButton.style'
 import type { IIconButtonProps } from '@/components/ui/IconButton/IconButton.type'
 
 export const IconButton = ({

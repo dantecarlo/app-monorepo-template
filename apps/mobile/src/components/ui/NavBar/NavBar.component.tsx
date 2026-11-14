@@ -8,7 +8,7 @@ import {
   NAV_BAR_ICON_SIZE,
   NAV_BAR_PRESSED_OPACITY
 } from '@/components/ui/NavBar/NavBar.constant'
-import { NAV_BAR_STYLES as styles } from '@/components/ui/NavBar/NavBar.styles'
+import { NAV_BAR_STYLES as styles } from '@/components/ui/NavBar/NavBar.style'
 import type { INavBarProps } from '@/components/ui/NavBar/NavBar.type'
 
 /** Floating glass pill navigation bar backed by expo-blur. Navigation-agnostic: caller owns routing. */

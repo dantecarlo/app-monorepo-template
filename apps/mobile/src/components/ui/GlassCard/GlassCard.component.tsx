@@ -5,7 +5,7 @@ import {
   GLASS_CARD_BORDER_RADIUS,
   GLASS_CARD_PADDING,
   GLASS_CARD_STYLES as styles
-} from '@/components/ui/GlassCard/GlassCard.styles'
+} from '@/components/ui/GlassCard/GlassCard.style'
 import type { IGlassCardProps } from '@/components/ui/GlassCard/GlassCard.type'
 import { useGlassCard } from '@/components/ui/GlassCard/useGlassCard.hook'
 

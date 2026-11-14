@@ -8,7 +8,7 @@ import {
   DEFAULT_LOGO_SIZE,
   LOGO_ASSET_SRC
 } from '@/components/ui/Logo/Logo.constant'
-import { LOGO } from '@/components/ui/Logo/Logo.styles'
+import { LOGO } from '@/components/ui/Logo/Logo.style'
 import type { ILogoProps } from '@/components/ui/Logo/Logo.type'
 import { useLogo } from '@/components/ui/Logo/useLogo.hook'
 

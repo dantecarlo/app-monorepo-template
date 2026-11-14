@@ -1,4 +1,4 @@
-// ItemCard RN style constants — mirrors the web ItemCard.styles.ts pattern.
+// ItemCard RN style constants — mirrors the web ItemCard.style.ts pattern.
 // Plain StyleSheet objects; no inline magic style objects in the component.
 
 import { colors } from '@app/tokens'

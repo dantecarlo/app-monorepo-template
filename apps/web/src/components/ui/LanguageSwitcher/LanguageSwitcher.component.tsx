@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl'
 import type { JSX } from 'react'
 
-import { LANGUAGE_SWITCHER } from '@/components/ui/LanguageSwitcher/LanguageSwitcher.styles'
+import { LANGUAGE_SWITCHER } from '@/components/ui/LanguageSwitcher/LanguageSwitcher.style'
 import type { ILanguageSwitcherProps } from '@/components/ui/LanguageSwitcher/LanguageSwitcher.type'
 import { useLanguageSwitcher } from '@/components/ui/LanguageSwitcher/useLanguageSwitcher.hook'
 

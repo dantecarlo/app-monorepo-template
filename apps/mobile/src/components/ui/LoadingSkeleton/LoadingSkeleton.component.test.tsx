@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { ROUNDED_BY_VARIANT } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.styles'
+import { ROUNDED_BY_VARIANT } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.style'
 
 describe('LoadingSkeleton', () => {
   test('ROUNDED_BY_VARIANT covers all preset keys', () => {

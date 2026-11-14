@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Pressable, Text } from 'react-native'
 
-import { LANGUAGE_SWITCHER_STYLES as styles } from '@/components/ui/LanguageSwitcher/LanguageSwitcher.styles'
+import { LANGUAGE_SWITCHER_STYLES as styles } from '@/components/ui/LanguageSwitcher/LanguageSwitcher.style'
 import type { ILanguageSwitcherProps } from '@/components/ui/LanguageSwitcher/LanguageSwitcher.type'
 import { useLanguageSwitcher } from '@/components/ui/LanguageSwitcher/useLanguageSwitcher.hook'
 import { useThemeTokens } from '@/lib/theme/useThemeTokens.hook'

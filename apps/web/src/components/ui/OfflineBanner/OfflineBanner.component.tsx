@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl'
 import type { JSX } from 'react'
 
-import { offlineBannerVariants } from '@/components/ui/OfflineBanner/OfflineBanner.styles'
+import { offlineBannerVariants } from '@/components/ui/OfflineBanner/OfflineBanner.style'
 import type { IOfflineBannerProps } from '@/components/ui/OfflineBanner/OfflineBanner.type'
 import { useOnlineStatus } from '@/components/ui/OfflineBanner/useOnlineStatus.hook'
 

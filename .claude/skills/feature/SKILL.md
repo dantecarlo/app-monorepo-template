@@ -51,14 +51,14 @@ src/lib/query/queryKeys.constant.ts
 
 src/screens/<Name>/
 ├── <Name>.screen.tsx            # container — composes components, owns layout
-├── <Name>.styles.ts             # screen layout Tailwind constants
+├── <Name>.style.ts              # screen layout Tailwind constants
 ├── index.ts                     # barrel
 ├── hooks/
 │   └── use<Name>.hook.ts        # useAppQuery wrapper
 └── components/                  # optional — private screen components
     └── <Name>Row/
         ├── <Name>Row.component.tsx
-        ├── <Name>Row.styles.ts
+        ├── <Name>Row.style.ts
         └── index.ts
 
 src/app/{route}/page.tsx         # Next.js App Router entry (web)
@@ -252,7 +252,7 @@ export const use{Name} = ({ contextId }: IUse{Name}) => {
 
 ## Step 7 — Component Block (`src/screens/<Name>/components/<Name>Row/`)
 
-### `{Name}Row.styles.ts`
+### `{Name}Row.style.ts`
 
 ```typescript
 export const {NAME}_ROW = {
@@ -267,7 +267,7 @@ export const {NAME}_ROW = {
 ```typescript
 import type { I{Domain}ViewModel }
   from '@/services/{Domain}/{domain}.type'
-import { {NAME}_ROW } from './{Name}Row.styles'
+import { {NAME}_ROW } from './{Name}Row.style'
 
 export interface I{Name}Row {
   item: I{Domain}ViewModel
@@ -295,7 +295,7 @@ export const {Name}Row = ({ item, onPress }: I{Name}Row) => (
 
 import { {Name}Row } from './components/{Name}Row'
 import { use{Name} } from './hooks/use{Name}.hook'
-import { {NAME}_SCREEN } from './{Name}.styles'
+import { {NAME}_SCREEN } from './{Name}.style'
 
 export const {Name}Screen = () => {
   const { query } = use{Name}({ contextId: /* from context or store */ '' })

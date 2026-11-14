@@ -3,7 +3,7 @@ import type { JSX } from 'react'
 import {
   statusBadgeDotVariants,
   statusBadgeVariants
-} from '@/components/ui/StatusBadge/StatusBadge.styles'
+} from '@/components/ui/StatusBadge/StatusBadge.style'
 import type { IStatusBadgeProps } from '@/components/ui/StatusBadge/StatusBadge.type'
 
 export const StatusBadge = ({

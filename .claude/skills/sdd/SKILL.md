@@ -45,7 +45,7 @@ README § 2.1) and the code behind them.
    modified requirement is written whole, under its existing ID. Every scenario names the test
    that will prove it, by the path and title it will have.
 4. Only when the change makes an architecture decision, copy `openspec/templates/design.md`; a
-   decision that outlives the change is an ADR in `docs/architecture/decisions/` instead.
+   decision that outlives the change is an ADR in `docs/decisions/` instead.
 5. Copy `openspec/templates/tasks.md` to `tasks.md`: one line per task, each naming the
    requirement IDs it satisfies.
 6. Run `pnpm verify:specs`; it exits 0. Open every backticked path the folder cites and confirm

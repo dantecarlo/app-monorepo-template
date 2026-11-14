@@ -18,7 +18,7 @@
 //    - Must contain <Name>.component.tsx (the component entry point).
 //
 // Scanning roots: apps/*/src/screens, apps/*/src/components
-// The check is intentionally liberal about *optional* members (.styles.ts,
+// The check is intentionally liberal about *optional* members (.style.ts,
 // .constant.ts, hooks/, models/) — those are allowed but not required.
 //
 // Usage:

@@ -140,7 +140,7 @@ Last updated: 2026-06-24
 
 ### screen
 
-- **Description**: Generate a screen (container) block: {Name}.screen.tsx + {Name}.styles.ts + index.ts mandatory; optional components/, hooks/, models/, services/ subfolders. Uses useAppQuery/useAppMutation from @/lib/query and QueryKeys. Handles Next.js and Expo Router registration.
+- **Description**: Generate a screen (container) block: {Name}.screen.tsx + {Name}.style.ts + index.ts mandatory; optional components/, hooks/, models/, services/ subfolders. Uses useAppQuery/useAppMutation from @/lib/query and QueryKeys. Handles Next.js and Expo Router registration.
 - **Triggers**: "create screen", "new screen [name]", "build the [name] page/screen", "scaffold the [name] route", "generate container for [name]"
 - **DO NOT USE**: for presentational components — use `component` instead
 - **Path**: `.claude/skills/screen/SKILL.md`
