@@ -18,7 +18,8 @@
         "@eslint/js",
         "@next/eslint-plugin-next",
         "vite"
-      ]
+      ],
+      "ignoreBinaries": ["taskkill"]
     },
     "apps/web": {
       "entry": [
