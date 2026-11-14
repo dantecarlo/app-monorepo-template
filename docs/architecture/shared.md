@@ -42,6 +42,7 @@ The deliberate middle ground: a **shared base** + **everything UI-specific separ
 | Domain/app logic, `AppError`, contracts   | `packages/core`          |   ✅    | Pure TS, no framework                                                              |
 | i18n catalogs (ICU JSON)                  | `packages/i18n`          |   ✅    | Same keys both apps; adapter differs (react-i18next vs next-intl)                  |
 | Optional backend client + generated types | project-specific package |   ✅    | One backend contract                                                               |
+| Test and process tooling                  | `packages/tooling`       |   ✅    | Plain ESM every workspace imports by name: Vitest base, shuffled order, tree kill  |
 | **UI components, screens, navigation**    | `apps/<app>/src`         |   ❌    | **RN/NativeWind vs DOM/Tailwind — never shared**                                   |
 | Hooks/stores/lib wiring                   | `apps/<app>/src`         |   ❌    | App-specific (Expo Router vs Next App Router)                                      |
 

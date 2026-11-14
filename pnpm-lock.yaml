@@ -14,6 +14,9 @@ importers:
 
   .:
     devDependencies:
+      '@app/tooling':
+        specifier: workspace:*
+        version: link:packages/tooling
       '@axe-core/playwright':
         specifier: ^4.10.2
         version: 4.12.1(playwright-core@1.61.1)
@@ -219,6 +222,9 @@ importers:
         specifier: ^5.0.14
         version: 5.0.14(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.6.0(react@19.3.0))
     devDependencies:
+      '@app/tooling':
+        specifier: workspace:*
+        version: link:../../packages/tooling
       '@babel/plugin-transform-class-static-block':
         specifier: ^7.0.0
         version: 7.29.7(@babel/core@7.29.7)
@@ -307,6 +313,9 @@ importers:
         specifier: ^5.0.14
         version: 5.0.14(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.6.0(react@19.3.0))
     devDependencies:
+      '@app/tooling':
+        specifier: workspace:*
+        version: link:../../packages/tooling
       '@next/eslint-plugin-next':
         specifier: ^16.2.9
         version: 16.2.9
@@ -371,6 +380,9 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@app/tooling':
+        specifier: workspace:*
+        version: link:../tooling
       '@types/node':
         specifier: ^24.13.2
         version: 24.13.2
@@ -383,6 +395,9 @@ importers:
 
   packages/core:
     devDependencies:
+      '@app/tooling':
+        specifier: workspace:*
+        version: link:../tooling
       typescript:
         specifier: '*'
         version: 5.9.3
@@ -392,6 +407,9 @@ importers:
 
   packages/i18n:
     devDependencies:
+      '@app/tooling':
+        specifier: workspace:*
+        version: link:../tooling
       typescript:
         specifier: '*'
         version: 5.9.3
@@ -411,6 +429,9 @@ importers:
         specifier: ^2.108.2
         version: 2.108.2
     devDependencies:
+      '@app/tooling':
+        specifier: workspace:*
+        version: link:../tooling
       typescript:
         specifier: '*'
         version: 5.9.3
@@ -424,12 +445,17 @@ importers:
         specifier: '>=3.4.0'
         version: 3.4.19(yaml@2.9.0)
     devDependencies:
+      '@app/tooling':
+        specifier: workspace:*
+        version: link:../tooling
       typescript:
         specifier: '*'
         version: 5.9.3
       vitest:
         specifier: ^4.1.9
         version: 4.1.9(@opentelemetry/api@1.9.1)(@types/node@24.13.2)(happy-dom@20.10.6)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(vite@8.1.0(@types/node@24.13.2)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0))
+
+  packages/tooling: {}
 
 packages:
 

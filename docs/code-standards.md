@@ -373,6 +373,13 @@ screen.getByRole('heading', { name: /item title/i })
 - Semantic queries only: `getByRole`, `getByText`, `getByLabelText`
 - No `data-testid`, no `container`, no `getByTestId`
 - One test file per component/hook
+- Every Vitest suite runs shuffled. `@app/tooling/vitest-sequence` seeds the order of the tests
+  inside each file from the commit, so a test that passes only after another one can fail on the
+  next commit. A checkout with no commit fails to load the config unless `VITEST_SEQUENCE_SEED`
+  is set. Each run prints its seed, and
+  `VITEST_SEQUENCE_SEED=<seed> pnpm --filter <workspace> test` replays that order. A package's
+  `vitest.config.ts` builds on `packageTestBase` (`@app/tooling/vitest-package-base`) and states
+  only its `include`; an app config takes `sequence: testSequence({ packageDir: __dirname })`.
 
 ---
 
@@ -731,6 +738,13 @@ honest.
 | `pnpm typecheck`    | TypeScript across all packages             |
 | `pnpm validate`     | Full gate: lint + typecheck + test + build |
 | `pnpm prepare`      | Initialize Husky hooks                     |
+
+**Shared tooling lives in `@app/tooling`** (decision 46 of `docs/INIT_AND_HARNESS_PLAN.md`). A
+script more than one workspace imports, such as the Vitest base and sequence or the process-tree
+kill, is a module of `packages/tooling`, declared as a `workspace:*` devDependency and imported by
+name. A root `scripts/` file is a repository gate, and no workspace imports it. Turborepo hashes
+`@app/tooling` into the tasks of every workspace that declares it, and the root configs the tasks
+read are `globalDependencies` in `turbo.json`, so editing them invalidates the cached results.
 
 Pre-commit hook runs `lint-staged` (ESLint + Prettier on staged `.ts/.tsx`).
 Commit-msg hook enforces conventional commits via commitlint.

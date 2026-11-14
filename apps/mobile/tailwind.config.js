@@ -2,7 +2,10 @@
 module.exports = {
   // NativeWind v4 uses 'class' strategy on RN
   darkMode: 'class',
-  presets: [require('nativewind/preset'), require('@app/tokens/tailwind-preset.cjs')],
+  presets: [
+    require('nativewind/preset'),
+    require('@app/tokens/tailwind-preset.cjs')
+  ],
   content: [
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',

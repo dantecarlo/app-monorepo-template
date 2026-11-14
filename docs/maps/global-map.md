@@ -74,6 +74,9 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | R2 signed adapter         | `packages/cloudflare/src/createR2SignedDelivery.adapter.ts`                      | `.adapter.ts`  | HMAC-signed R2 presigned delivery; degrades to public without R2_PUBLIC_BASE_URL or R2_SECRET_ACCESS_KEY                                   |
 | Image delivery constants  | `packages/cloudflare/src/imageDelivery.constant.ts`                              | `.constant.ts` | Magic values for both image adapters (base URL, HMAC algorithm, expiry query keys, seconds multiplier)                                     |
 | Core test config          | `packages/core/vitest.config.ts`                                                 | `.config.ts`   | Vitest config for the core package (node env, includes `src/**/*.test.ts`)                                                                 |
+| Package test base         | `packages/tooling/src/vitest-package-base.mjs`                                   | `.mjs`         | `packageTestBase`: the Vitest config every package merges its `include` into                                                               |
+| Shuffled test order       | `packages/tooling/src/vitest-sequence.mjs`                                       | `.mjs`         | `testSequence`: the seed from the commit or `VITEST_SEQUENCE_SEED`                                                                         |
+| Process-tree kill         | `packages/tooling/src/process-tree.mjs`                                          | `.mjs`         | `signalProcessTree`: ends a child with every process it started                                                                            |
 
 Each package exposes its public surface through a barrel: `packages/core/src/index.ts`,
 `packages/i18n/src/index.ts`, `packages/supabase/src/index.ts`, `packages/tokens/src/index.ts`,

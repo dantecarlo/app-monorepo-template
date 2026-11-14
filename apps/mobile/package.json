@@ -65,6 +65,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@app/tooling": "workspace:*",
     "@babel/plugin-transform-class-static-block": "^7.0.0",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.3.0",

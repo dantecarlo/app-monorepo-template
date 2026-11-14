@@ -1,5 +1,12 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    ".prettierrc.json",
+    "eslint-local-rules/**",
+    "eslint.config.mjs",
+    "eslint.rules.mjs",
+    "tsconfig.base.json"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -16,13 +23,17 @@
       "dependsOn": ["^typecheck"]
     },
     "format:check": {},
+    "//#format:check": {
+      "cache": false
+    },
     "@app/web#typecheck": {
       "dependsOn": ["@app/web#build"]
     },
     "test": {
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"],
-      "cache": false
+      "cache": false,
+      "passThroughEnv": ["VITEST_SEQUENCE_SEED"]
     }
   }
 }

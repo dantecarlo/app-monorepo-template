@@ -145,18 +145,18 @@ Project-level skills live under `.claude/skills/`. Each skill provides a
 
 ## Stack
 
-| Layer           | Technology                                                                                               |
-| --------------- | -------------------------------------------------------------------------------------------------------- |
-| Monorepo        | pnpm 11 workspaces + Turborepo                                                                           |
-| Web             | Next.js 16.2.9 (App Router, RSC, ISR)                                                                    |
-| Mobile          | Expo SDK 58, React Native 0.88 (dev builds)                                                              |
-| Styling         | Tailwind CSS 4 (web), NativeWind 4 (mobile)                                                              |
-| Language        | TypeScript 6, React 19.3                                                                                 |
-| Runtime         | Node 24                                                                                                  |
-| Shared packages | `packages/core` (domain), `packages/cloudflare`, `packages/i18n`, `packages/supabase`, `packages/tokens` |
-| Database / Auth | Supabase Cloud (Postgres, Auth, RLS, Edge Functions)                                                     |
-| Edge / Security | Cloudflare (DNS proxy, WAF, DDoS, Turnstile, CDN)                                                        |
-| Hosting         | Vercel (Next.js)                                                                                         |
+| Layer           | Technology                                                                                                                                                     |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Monorepo        | pnpm 11 workspaces + Turborepo                                                                                                                                 |
+| Web             | Next.js 16.2.9 (App Router, RSC, ISR)                                                                                                                          |
+| Mobile          | Expo SDK 58, React Native 0.88 (dev builds)                                                                                                                    |
+| Styling         | Tailwind CSS 4 (web), NativeWind 4 (mobile)                                                                                                                    |
+| Language        | TypeScript 6, React 19.3                                                                                                                                       |
+| Runtime         | Node 24                                                                                                                                                        |
+| Shared packages | `packages/core` (domain), `packages/cloudflare`, `packages/i18n`, `packages/supabase`, `packages/tokens`, `packages/tooling` (shared test and process scripts) |
+| Database / Auth | Supabase Cloud (Postgres, Auth, RLS, Edge Functions)                                                                                                           |
+| Edge / Security | Cloudflare (DNS proxy, WAF, DDoS, Turnstile, CDN)                                                                                                              |
+| Hosting         | Vercel (Next.js)                                                                                                                                               |
 
 ---
 

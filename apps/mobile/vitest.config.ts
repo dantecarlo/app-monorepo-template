@@ -1,3 +1,4 @@
+import { testSequence } from '@app/tooling/vitest-sequence'
 import path from 'path'
 import { defineConfig } from 'vitest/config'
 
@@ -70,6 +71,7 @@ export default defineConfig({
     environment: 'happy-dom',
     globals: true,
     include: ['src/**/*.test.{ts,tsx}'],
+    sequence: testSequence({ packageDir: __dirname }),
     setupFiles: ['./src/test/setup.ts']
   }
 })

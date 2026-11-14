@@ -21,6 +21,7 @@
     "@app/core": "workspace:*"
   },
   "devDependencies": {
+    "@app/tooling": "workspace:*",
     "@types/node": "^24.13.2",
     "typescript": "*",
     "vitest": "^4.1.9"

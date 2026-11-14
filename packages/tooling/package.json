@@ -1,0 +1,27 @@
+{
+  "name": "@app/tooling",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./process-tree": {
+      "types": "./src/process-tree.d.mts",
+      "default": "./src/process-tree.mjs"
+    },
+    "./vitest-package-base": {
+      "types": "./src/vitest-package-base.d.mts",
+      "default": "./src/vitest-package-base.mjs"
+    },
+    "./vitest-sequence": {
+      "types": "./src/vitest-sequence.d.mts",
+      "default": "./src/vitest-sequence.mjs"
+    }
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "lint": "eslint .",
+    "test": "node --test"
+  }
+}

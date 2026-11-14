@@ -18,8 +18,7 @@
         "@eslint/js",
         "@next/eslint-plugin-next",
         "vite"
-      ],
-      "ignoreBinaries": ["taskkill"]
+      ]
     },
     "apps/web": {
       "entry": [
@@ -82,6 +81,10 @@
     },
     "packages/cloudflare": {
       "project": ["src/**/*.ts"]
+    },
+    "packages/tooling": {
+      "entry": ["src/*.mjs"],
+      "project": ["src/**/*.mjs"]
     }
   },
   "ignoreExportsUsedInFile": true,

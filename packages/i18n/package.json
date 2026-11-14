@@ -19,6 +19,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@app/tooling": "workspace:*",
     "typescript": "*",
     "vitest": "^4.1.9"
   }
