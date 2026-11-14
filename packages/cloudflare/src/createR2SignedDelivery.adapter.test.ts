@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { createR2SignedDelivery } from './createR2SignedDelivery.adapter'
+import { createR2SignedDelivery } from '#src/createR2SignedDelivery.adapter'
 
 const EXPIRES_IN_SECONDS = 600
 const PUBLIC_BASE = 'https://assets.test'

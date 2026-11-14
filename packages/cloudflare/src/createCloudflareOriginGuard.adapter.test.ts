@@ -1,7 +1,7 @@
 import { OriginGuardReasonEnum } from '@app/core'
 import { expect, test } from 'vitest'
 
-import { createCloudflareOriginGuard } from './createCloudflareOriginGuard.adapter'
+import { createCloudflareOriginGuard } from '#src/createCloudflareOriginGuard.adapter'
 
 const SECRET = 'origin-secret'
 

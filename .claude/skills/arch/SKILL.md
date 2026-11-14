@@ -177,8 +177,10 @@ import { getItems } from '@/services/Items'         // domain barrel
 Available aliases:
 - `@/*` → `src/*` inside each app (`apps/web/src`, `apps/mobile/src`)
 - `@app/*` → workspace packages (`@app/core`, `@app/tokens`, `@app/i18n`, etc.)
+- `#src/*` → `src/*` of the package that holds the file, for a package's own sources
 
-Exception: `index.ts` barrel re-exports may use `./` relative paths for siblings.
+Exception: an app's `index.ts` barrel may re-export its block's files by `./`. A
+package barrel re-exports through `#src/*`, like every other package source.
 
 ---
 

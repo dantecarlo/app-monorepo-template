@@ -128,7 +128,8 @@ Project-level skills live under `.claude/skills/`. Each skill provides a
 - Every `*.service.ts` is paired with a `*.adapter.ts` — no fetch in components.
 - `pnpm validate` must be green before any work is reported as done.
 - Arrow functions only — no `function` keyword.
-- Alias imports only — `@app/*` paths; no `../` outside barrel `index.ts`.
+- Alias imports only — `@app/*` paths, `@/` inside an app, `#src/` inside a package; no `../`
+  outside an app barrel `index.ts`.
 - File suffixes are binding: `.component.tsx`, `.hook.ts`, `.service.ts`, `.adapter.ts`,
   `.type.ts`, `.constant.ts`, `.style.ts`, `.test.ts`.
 - Naming: `I{Name}` interfaces, `{Name}Type` types, `{Name}Enum` enums,

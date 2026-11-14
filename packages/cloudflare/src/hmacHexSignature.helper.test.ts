@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { hmacHexSignature } from './hmacHexSignature.helper'
+import { hmacHexSignature } from '#src/hmacHexSignature.helper'
 
 const SECRET = 'r2-secret'
 const MESSAGE = '/file.png?exp=600'

@@ -1,4 +1,4 @@
-import type { ObservabilityLevelType } from './observabilityLevel.type'
+import type { ObservabilityLevelType } from '#src/ports/observability/observabilityLevel.type'
 
 export interface ICaptureErrorParams {
   context?: Record<string, unknown>

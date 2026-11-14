@@ -21,6 +21,7 @@
 // leaving the validation gate red. #19 is `warn` by design (medium confidence).
 
 import { findJustifyingPhrase } from './justifying-comment.detect.mjs'
+import { SRC_ALIAS, toSrcAlias } from './package-src-alias.detect.mjs'
 import { collectTopLevelViolations } from './suffix-contract.detect.mjs'
 
 // ---------------------------------------------------------------------------
@@ -489,19 +490,32 @@ const singleUseState = {
 // ---------------------------------------------------------------------------
 // Rule: core-import-boundary
 // packages/core is the innermost layer: framework-agnostic and vendor-free by
-// construction. Its production files import only their own modules, by
-// relative path. An `@/` alias resolves against the consuming app's src when
+// construction. Its production files import only their own modules, through
+// the `#src/` key of core's package.json "imports" (a test pins that it maps
+// into core's own src). A relative path is passed here and refused by
+// package-src-alias instead. Any other `#` key is reported like a
+// vendor. An `@/` alias resolves against the consuming app's src when
 // core compiles from source, and `node:` builtins do not exist in React Native
-// or the browser. Re-exports (`export ... from`) are judged like imports.
-// Vendors enter through ports implemented OUTSIDE core.
+// or the browser. Re-exports (`export ... from`) and `import()` with a literal
+// specifier are judged like imports. Vendors enter through ports implemented
+// OUTSIDE core.
 // ---------------------------------------------------------------------------
+
+const CORE_OWN_PREFIXES = [SRC_ALIAS, './', '../']
+
+const literalSource = ({ node }) =>
+  node.source?.type === 'Literal' && typeof node.source.value === 'string'
+    ? node.source
+    : null
 
 const coreImportBoundary = {
   create(context) {
     const check = (node) => {
-      const source = node.source?.value
+      const source = literalSource({ node })?.value
       if (typeof source !== 'string') return
-      if (source.startsWith('./') || source.startsWith('../')) return
+      if (CORE_OWN_PREFIXES.some((prefix) => source.startsWith(prefix))) {
+        return
+      }
       context.report({
         data: { source },
         messageId: 'vendorInCore',
@@ -512,17 +526,70 @@ const coreImportBoundary = {
     return {
       ExportAllDeclaration: check,
       ExportNamedDeclaration: check,
-      ImportDeclaration: check
+      ImportDeclaration: check,
+      ImportExpression: check
     }
   },
   meta: {
     docs: {
       description:
-        'packages/core imports nothing external — relative imports of its own modules only (clean-architecture dependency rule).'
+        'packages/core imports nothing external — its own modules only, through `#src/` (clean-architecture dependency rule).'
     },
     messages: {
       vendorInCore:
-        "'{{source}}' inside packages/core — the domain layer imports only its own modules, by relative path (no package, no `@/` alias, no `node:` builtin). Implement the vendor behind a port OUTSIDE core."
+        "'{{source}}' inside packages/core — the domain layer imports only its own modules, through `#src/` (no package, no `@/` alias, no other `#` key, no `node:` builtin). Implement the vendor behind a port OUTSIDE core."
+    },
+    schema: [],
+    type: 'problem'
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Rule: package-src-alias (code-standards §2)
+// A package source reaches its own modules through the `#src/` key of its
+// package.json, never by `./`, `../` or the `@/` alias, which resolves against
+// the consuming app's src. Imports, re-exports and `import()` with a literal
+// specifier are all judged. The fix writes the `#src/` form, computed from the
+// file's own path; a path that leaves the package's src is reported without
+// one. Scoped to the packages' production files in eslint.config.mjs.
+// ---------------------------------------------------------------------------
+
+const packageSrcAlias = {
+  create(context) {
+    const filename = context.filename ?? context.getFilename()
+    const check = (node) => {
+      const literal = literalSource({ node })
+      if (!literal) return
+      const verdict = toSrcAlias({ filename, source: literal.value })
+      if (!verdict) return
+      const quote = literal.raw[0]
+      context.report({
+        data: { source: literal.value },
+        messageId: 'useSrcAlias',
+        node: literal,
+        ...(verdict.alias && {
+          fix: (fixer) =>
+            fixer.replaceText(literal, `${quote}${verdict.alias}${quote}`)
+        })
+      })
+    }
+
+    return {
+      ExportAllDeclaration: check,
+      ExportNamedDeclaration: check,
+      ImportDeclaration: check,
+      ImportExpression: check
+    }
+  },
+  meta: {
+    docs: {
+      description:
+        'A package source imports its own modules through `#src/` (code-standards §2).'
+    },
+    fixable: 'code',
+    messages: {
+      useSrcAlias:
+        "'{{source}}' in a package source — reach the package's own modules through `#src/` (its package.json \"imports\"), and another workspace by its `@app/*` name."
     },
     schema: [],
     type: 'problem'
@@ -671,6 +738,7 @@ const plugin = {
     'no-inline-tailwind-classname': noInlineTailwindClassname,
     'no-justifying-comment': noJustifyingComment,
     'no-non-ascii-identifier': noNonAsciiIdentifier,
+    'package-src-alias': packageSrcAlias,
     'single-object-params': singleObjectParams,
     'single-use-state': singleUseState,
     'suffix-contract': suffixContract

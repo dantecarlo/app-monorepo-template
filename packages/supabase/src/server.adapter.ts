@@ -3,7 +3,7 @@ import {
   createServerClient as createSsrServerClient
 } from '@supabase/ssr'
 
-import type { Database } from './types'
+import type { Database } from '#src/types'
 
 interface ICreateSupabaseServerClientArgs {
   anonKey: string

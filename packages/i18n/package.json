@@ -9,6 +9,10 @@
   "files": [
     "src"
   ],
+  "imports": {
+    "#src/*": "./src/*.ts",
+    "#src/*.json": "./src/*.json"
+  },
   "scripts": {
     "lint": "eslint .",
     "test": "vitest run",

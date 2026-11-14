@@ -4,7 +4,7 @@ import type {
 } from '@app/core'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-import type { Database } from './types'
+import type { Database } from '#src/types'
 
 /**
  * Typed browser/client Supabase factory (anon key).
