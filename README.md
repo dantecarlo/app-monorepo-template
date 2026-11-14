@@ -11,7 +11,7 @@ can't silently rot as the codebase grows).
 
 | Layer            | Technology                                              |
 | ---------------- | ------------------------------------------------------- |
-| Monorepo         | pnpm workspaces + Turborepo                             |
+| Monorepo         | pnpm 11 workspaces + Turborepo                          |
 | Web              | Next.js 15 (App Router) + Tailwind CSS v3              |
 | Mobile           | Expo (React Native, `src/app` router) + NativeWind v4 |
 | Design system    | `@app/tokens` — shared tokens + Tailwind preset        |
