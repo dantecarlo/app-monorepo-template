@@ -73,9 +73,15 @@ ruleTester.run('core-import-boundary', rules['core-import-boundary'], {
     invalid({
       code: "export * from '#internal/a'",
       errors: ['vendorInCore']
+    }),
+    invalid({
+      code: "const react = import('react')",
+      errors: ['vendorInCore']
     })
   ],
   valid: [
+    "const scrub = import('#src/utils/scrubPII.helper')",
+    'const lazy = import(modulePath)',
     "import { scrubPII } from './scrubPII.helper'",
     "import type { IHostConsole } from '../../utils/hostConsole.helper'",
     "export { AppError } from './errors/AppError.helper'",
@@ -88,17 +94,114 @@ ruleTester.run('core-import-boundary', rules['core-import-boundary'], {
   ]
 })
 
-// core-import-boundary passes `#src/` as core's own module. That holds only
-// while core's package.json maps the key into its own src and nowhere else.
-test('core maps its #src imports into its own src only', () => {
-  const manifest = JSON.parse(
-    readFileSync(
-      join(import.meta.dirname, '..', 'packages', 'core', 'package.json'),
-      'utf8'
-    )
-  )
+// core-import-boundary and package-src-alias pass `#src/` as the package's own
+// module. That holds only while each package.json maps the key into its own
+// src and nowhere else.
+const SRC_IMPORTS = { '#src/*': './src/*.ts' }
+const EXPECTED_IMPORTS = {
+  cloudflare: SRC_IMPORTS,
+  core: SRC_IMPORTS,
+  i18n: { ...SRC_IMPORTS, '#src/*.json': './src/*.json' },
+  supabase: SRC_IMPORTS,
+  tokens: SRC_IMPORTS
+}
 
-  assert.deepEqual(manifest.imports, { '#src/*': './src/*.ts' })
+for (const [name, expected] of Object.entries(EXPECTED_IMPORTS)) {
+  test(`${name} maps its #src imports into its own src only`, () => {
+    const manifest = JSON.parse(
+      readFileSync(
+        join(import.meta.dirname, '..', 'packages', name, 'package.json'),
+        'utf8'
+      )
+    )
+
+    assert.deepEqual(manifest.imports, expected)
+  })
+}
+
+// Absolute paths as ESLint hands them to the rule; the fix depends on the
+// file's path only, never on the folder ESLint runs from.
+const inPackage = ({ name, file }) => `/repo/packages/${name}/src/${file}`
+
+const fixed = ({ code, filename, output }) => ({
+  code,
+  errors: [{ messageId: 'useSrcAlias' }],
+  filename,
+  output
+})
+
+ruleTester.run('package-src-alias', rules['package-src-alias'], {
+  invalid: [
+    fixed({
+      code: "import { HEADER } from './cloudflare.constant'",
+      filename: inPackage({ file: 'hmac.helper.ts', name: 'cloudflare' }),
+      output: "import { HEADER } from '#src/cloudflare.constant'"
+    }),
+    fixed({
+      code: "import type { IA } from '../types/a.type'",
+      filename: inPackage({ file: 'utils/b.helper.ts', name: 'core' }),
+      output: "import type { IA } from '#src/types/a.type'"
+    }),
+    fixed({
+      code: "export { a } from './a.helper'",
+      filename: inPackage({ file: 'index.ts', name: 'tokens' }),
+      output: "export { a } from '#src/a.helper'"
+    }),
+    fixed({
+      code: "export * from './tokens.constant'",
+      filename: inPackage({ file: 'index.ts', name: 'tokens' }),
+      output: "export * from '#src/tokens.constant'"
+    }),
+    fixed({
+      code: "const lazy = import('./lazy.helper')",
+      filename: inPackage({ file: 'index.ts', name: 'supabase' }),
+      output: "const lazy = import('#src/lazy.helper')"
+    }),
+    fixed({
+      code: "import { HEADER } from '@/cloudflare.constant'",
+      filename: inPackage({ file: 'hmac/hmac.helper.ts', name: 'cloudflare' }),
+      output: "import { HEADER } from '#src/cloudflare.constant'"
+    }),
+    fixed({
+      code: "import en from './locales/en.json'",
+      filename: inPackage({ file: 'index.ts', name: 'i18n' }),
+      output: "import en from '#src/locales/en.json'"
+    }),
+    fixed({
+      code: 'import { a } from "./a.helper"',
+      filename: inPackage({ file: 'index.ts', name: 'core' }),
+      output: 'import { a } from "#src/a.helper"'
+    }),
+    // A path out of the package's src, or src itself, has no `#src/` form.
+    fixed({
+      code: "import { b } from '../../cloudflare/src/b.helper'",
+      filename: inPackage({ file: 'utils/a.helper.ts', name: 'core' }),
+      output: null
+    }),
+    fixed({
+      code: "import a from '.'",
+      filename: inPackage({ file: 'a.helper.ts', name: 'core' }),
+      output: null
+    })
+  ],
+  valid: [
+    {
+      code: "import { HEADER } from '#src/cloudflare.constant'",
+      filename: inPackage({ file: 'hmac.helper.ts', name: 'cloudflare' })
+    },
+    {
+      code: "import { AppError } from '@app/core'",
+      filename: inPackage({ file: 'a.adapter.ts', name: 'supabase' })
+    },
+    {
+      code: "import { createClient } from '@supabase/supabase-js'",
+      filename: inPackage({ file: 'a.adapter.ts', name: 'supabase' })
+    },
+    {
+      code: 'const lazy = import(modulePath)',
+      filename: inPackage({ file: 'index.ts', name: 'core' })
+    }
+  ]
 })
 
 ruleTester.run('suffix-contract', rules['suffix-contract'], {

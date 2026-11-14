@@ -195,7 +195,7 @@ file, whoever compiles it: Turbopack (Next 16), Metro, TypeScript with
 package: a file reaches another workspace by its `@app/*` name, never through a
 `#` key, and Node refuses a relative target that leaves the package. In
 `packages/core`, `core-import-boundary` reports every `#` key but `#src/`, and a
-test pins core's mapping to `./src/*.ts`. A package test reaches the unit it
+test pins each package's mapping into its own `src`. A package test reaches the unit it
 tests through `#src/` or `@/`: it runs inside its own package, where both
 resolve.
 
@@ -203,11 +203,13 @@ resolve.
 re-export its block's files by `./` (`export { X } from './X.component'`). A
 package barrel has no exception: it re-exports through `#src/`.
 
-> Status: **lint** (`no-relative-import-paths`, `allowSameFolder: false`) over
-> every `import` declaration in the apps and the packages, with no override for
-> a package source; test files sit outside it (`TEST_FILE_OVERRIDE` in
-> `eslint.rules.mjs`). It reads `import` statements, so an `export … from`
-> re-export in a barrel is outside what it sees and holds by review.
+> Status: **lint**. In the apps, `no-relative-import-paths` (`allowSameFolder:
+> false`) reads every `import` declaration; an `export … from` re-export is
+> outside what it sees and holds by review. In a package's production files,
+> `package-src-alias` (`eslint-local-rules/index.mjs`) reads imports, re-exports
+> and `import()`, and its fix writes the `#src/` form from the file's own path,
+> whichever folder ESLint runs from. Test files sit outside both
+> (`TEST_FILE_OVERRIDE` in `eslint.rules.mjs`).
 
 ---
 

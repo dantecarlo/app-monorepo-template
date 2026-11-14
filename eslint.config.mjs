@@ -209,6 +209,22 @@ export default defineConfig([
   },
 
   // -------------------------------------------------------------------------
+  // packages/*/src — production files reach their own modules through `#src/`
+  // (package-src-alias): imports, re-exports and `import()`, fixed to the
+  // `#src/` form from the file's own path. no-relative-import-paths is off
+  // here: it reads import declarations only, and its fix writes `@/`, which
+  // the apps do not resolve. Placed after every package block so it wins.
+  // -------------------------------------------------------------------------
+  {
+    files: ['packages/*/src/**/*.{ts,tsx}'],
+    ignores: ['packages/*/src/**/*.{test,spec}.{ts,tsx}'],
+    rules: {
+      'local/package-src-alias': 'error',
+      'no-relative-import-paths/no-relative-import-paths': 'off'
+    }
+  },
+
+  // -------------------------------------------------------------------------
   // apps/web — Next.js 15
   // -------------------------------------------------------------------------
   // @ts-expect-error - Plugin type incompatibility
