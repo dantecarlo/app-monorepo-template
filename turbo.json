@@ -1,7 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": [
-    ".prettierignore",
     ".prettierrc.json",
     "eslint-local-rules/**",
     "eslint.config.mjs",
@@ -24,6 +23,9 @@
       "dependsOn": ["^typecheck"]
     },
     "format:check": {},
+    "//#format:check": {
+      "cache": false
+    },
     "@app/web#typecheck": {
       "dependsOn": ["@app/web#build"]
     },
