@@ -1,2 +1,2 @@
-export * from './tokens.constant'
-export { default } from './tokens.constant'
+export * from '#src/tokens.constant'
+export { default } from '#src/tokens.constant'

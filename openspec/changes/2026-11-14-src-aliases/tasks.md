@@ -4,7 +4,7 @@
 - [x] T2 — `core`: `"imports": { "#src/*": "./src/*.ts" }`, a test that pins that mapping (RED first), and its files import their siblings through `#src/` · Requirements: none · Commit: b4a9860
 - [x] T3 — `cloudflare`: the `#src/*` key and its files through `#src/` · Requirements: none · Commit: bca120b
 - [x] T4 — `i18n`: the `#src/*` and `#src/*.json` keys and its files through `#src/` · Requirements: none · Commit: 2a3a290
-- [ ] T5 — `supabase`: the `#src/*` key and its files through `#src/`, the inline disable of `no-relative-import-paths` removed · Requirements: none · Commit: —
+- [x] T5 — `supabase`: the `#src/*` key and its files through `#src/`, the inline disable of `no-relative-import-paths` removed · Requirements: none · Commit: f2a3de6
 - [ ] T6 — `tokens`: the `#src/*` key and its barrel through `#src/` · Requirements: none · Commit: —
 - [ ] T7 — the `eslint.config.mjs` overrides that turn `no-relative-import-paths` off in packages removed, the core production override included · Requirements: none · Commit: —
 - [ ] T8 — `docs/code-standards.md` § 2, `docs/architecture/shared.md`, `AGENTS.md` and `openspec/config.yaml` state the `#src` alias · Requirements: none · Commit: —
