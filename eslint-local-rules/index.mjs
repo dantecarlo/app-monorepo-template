@@ -489,19 +489,25 @@ const singleUseState = {
 // ---------------------------------------------------------------------------
 // Rule: core-import-boundary
 // packages/core is the innermost layer: framework-agnostic and vendor-free by
-// construction. Its production files import only their own modules, by
-// relative path. An `@/` alias resolves against the consuming app's src when
+// construction. Its production files import only their own modules, through
+// the `#src/` key of core's package.json "imports" (a test pins that it maps
+// into core's own src) or by relative path. Any other `#` key is reported
+// like a vendor. An `@/` alias resolves against the consuming app's src when
 // core compiles from source, and `node:` builtins do not exist in React Native
 // or the browser. Re-exports (`export ... from`) are judged like imports.
 // Vendors enter through ports implemented OUTSIDE core.
 // ---------------------------------------------------------------------------
+
+const CORE_OWN_PREFIXES = ['#src/', './', '../']
 
 const coreImportBoundary = {
   create(context) {
     const check = (node) => {
       const source = node.source?.value
       if (typeof source !== 'string') return
-      if (source.startsWith('./') || source.startsWith('../')) return
+      if (CORE_OWN_PREFIXES.some((prefix) => source.startsWith(prefix))) {
+        return
+      }
       context.report({
         data: { source },
         messageId: 'vendorInCore',
@@ -518,11 +524,11 @@ const coreImportBoundary = {
   meta: {
     docs: {
       description:
-        'packages/core imports nothing external — relative imports of its own modules only (clean-architecture dependency rule).'
+        'packages/core imports nothing external — its own modules only, through `#src/` (clean-architecture dependency rule).'
     },
     messages: {
       vendorInCore:
-        "'{{source}}' inside packages/core — the domain layer imports only its own modules, by relative path (no package, no `@/` alias, no `node:` builtin). Implement the vendor behind a port OUTSIDE core."
+        "'{{source}}' inside packages/core — the domain layer imports only its own modules, through `#src/` (no package, no `@/` alias, no other `#` key, no `node:` builtin). Implement the vendor behind a port OUTSIDE core."
     },
     schema: [],
     type: 'problem'

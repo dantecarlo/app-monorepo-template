@@ -62,6 +62,15 @@ ruleTester.run('core-import-boundary', rules['core-import-boundary'], {
     invalid({
       code: "export * from '@/errors/AppError.helper'",
       errors: ['vendorInCore']
+    }),
+    // Only the `#src/` key is core's own: any other `#` key is not.
+    invalid({
+      code: "import { a } from '#vendor/a'",
+      errors: ['vendorInCore']
+    }),
+    invalid({
+      code: "export * from '#internal/a'",
+      errors: ['vendorInCore']
     })
   ],
   valid: [
@@ -69,6 +78,10 @@ ruleTester.run('core-import-boundary', rules['core-import-boundary'], {
     "import type { IHostConsole } from '../../utils/hostConsole.helper'",
     "export { AppError } from './errors/AppError.helper'",
     "export * from './ports/observability/observabilityLevel.type'",
+    "import { scrubPII } from '#src/utils/scrubPII.helper'",
+    "import type { IHostConsole } from '#src/utils/hostConsole.helper'",
+    "export { AppError } from '#src/errors/AppError.helper'",
+    "export * from '#src/ports/observability/observabilityLevel.type'",
     'export const local = 1'
   ]
 })
