@@ -431,6 +431,8 @@ importers:
         specifier: ^4.1.9
         version: 4.1.9(@opentelemetry/api@1.9.1)(@types/node@24.13.2)(happy-dom@20.10.6)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(vite@8.1.0(@types/node@24.13.2)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0))
 
+  packages/tooling: {}
+
 packages:
 
   2g@1.0.1:

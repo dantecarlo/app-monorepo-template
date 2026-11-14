@@ -82,6 +82,10 @@
     },
     "packages/cloudflare": {
       "project": ["src/**/*.ts"]
+    },
+    "packages/tooling": {
+      "entry": ["src/*.mjs"],
+      "project": ["src/**/*.mjs"]
     }
   },
   "ignoreExportsUsedInFile": true,

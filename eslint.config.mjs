@@ -359,7 +359,8 @@ export default defineConfig([
   },
 
   // -------------------------------------------------------------------------
-  // Node tooling scripts (scripts/**/*.mjs, root *.mjs, .claude/skills/**/*.mjs).
+  // Node tooling scripts (scripts/**/*.mjs, root *.mjs, .claude/skills/**/*.mjs,
+  // packages/tooling/**/*.mjs).
   // Plain ESM executed by Node, not app source — they rely on the Node global set
   // (process, console, fetch, URL, setTimeout, …), so they need globals.node for
   // no-undef to pass. eslint.config.mjs stays ignored via IGNORES; eslint.rules.mjs
@@ -370,7 +371,8 @@ export default defineConfig([
       'scripts/**/*.mjs',
       '*.mjs',
       '.claude/skills/**/*.mjs',
-      'eslint-local-rules/**/*.mjs'
+      'eslint-local-rules/**/*.mjs',
+      'packages/tooling/**/*.mjs'
     ],
     languageOptions: {
       ecmaVersion: 'latest',

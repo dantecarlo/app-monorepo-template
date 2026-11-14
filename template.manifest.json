@@ -57,6 +57,7 @@
     "knip.json",
     "package.json",
     "packages/core/**",
+    "packages/tooling/**",
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
     "scripts/check-identity.mjs",
