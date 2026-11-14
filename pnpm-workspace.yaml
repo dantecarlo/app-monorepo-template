@@ -1,12 +1,15 @@
 packages:
   - 'apps/*'
   - 'packages/*'
-# Flat node_modules (npm-style) instead of pnpm's symlinked .pnpm store, so
-# React Native's C++ builds (react-native-screens, worklets, new arch) stay
-# under the Windows MAX_PATH limit. The deep `.pnpm/<pkg>@<ver>_<hash>/...`
-# paths otherwise push CMake/ninja object-file paths past 260 chars. Every
-# package already sits at the root, so no public-hoist-pattern is needed.
-nodeLinker: hoisted
+# pnpm's default isolated linker stays: the hoisted one nests a copy of a
+# package under every parent whose version differs from the root's, and it
+# put six copies of @sentry/core in the mobile bundle. pnpm 11 reads no
+# public-hoist-pattern from .npmrc, so the four patterns live here.
+publicHoistPattern:
+  - '*eslint*'
+  - '*prettier*'
+  - whatwg-fetch
+  - react-native-css-interop
 # Scripts run through pnpm's cross-platform shell instead of cmd.exe on
 # Windows, so `VAR=value command` in a script sets the variable on every OS.
 shellEmulator: true
