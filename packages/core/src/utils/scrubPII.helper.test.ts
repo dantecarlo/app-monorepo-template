@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { PII_KEYS, scrubPII } from './scrubPII.helper'
+import { PII_KEYS, scrubPII } from '#src/utils/scrubPII.helper'
 
 // ---------------------------------------------------------------------------
 // PII_KEYS export shape

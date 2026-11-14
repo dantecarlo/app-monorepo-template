@@ -257,7 +257,7 @@ FAIL if any BLOCKER exists. PASS if zero BLOCKERs.
 
 | Severity | Criteria                                                                                                                                                              |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| BLOCKER  | Missing required structure member; inline classes/magic values; business logic in the view; broken service+adapter pairing; fetch in view/hook; missing required test; wrong suffix/naming; relative import outside a barrel |
+| BLOCKER  | Missing required structure member; inline classes/magic values; business logic in the view; broken service+adapter pairing; fetch in view/hook; missing required test; wrong suffix/naming; relative import outside an app barrel |
 | WARNING  | Missing screen test; hooks/types not foldered when they should be; non-trivial inline handler; missing styles file without inline classes                              |
 | INFO     | Style nudge; minor naming inconsistency; suggestion to extract a constant or split a file                                                                              |
 

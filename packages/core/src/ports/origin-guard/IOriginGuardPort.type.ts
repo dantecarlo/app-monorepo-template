@@ -1,4 +1,4 @@
-import type { OriginGuardReasonType } from './originGuardReason.type'
+import type { OriginGuardReasonType } from '#src/ports/origin-guard/originGuardReason.type'
 
 export interface IHeaderReader {
   get(name: string): string | null

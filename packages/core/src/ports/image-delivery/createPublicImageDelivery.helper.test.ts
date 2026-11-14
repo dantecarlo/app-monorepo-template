@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { createPublicImageDelivery } from './createPublicImageDelivery.helper'
+import { createPublicImageDelivery } from '#src/ports/image-delivery/createPublicImageDelivery.helper'
 
 const EXPIRES_IN_SECONDS = 300
 

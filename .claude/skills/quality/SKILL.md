@@ -53,7 +53,7 @@ Flag: any `function` keyword outside configuration files or third-party callback
 ### Rule 2 — Alias-Only Imports (Rule 2)
 
 ```typescript
-// ❌ Relative imports (banned outside barrel index.ts)
+// ❌ Relative imports (banned outside an app barrel index.ts; a package uses #src/)
 import { helper } from '../helpers/app.helper'
 
 // ✅ Alias imports

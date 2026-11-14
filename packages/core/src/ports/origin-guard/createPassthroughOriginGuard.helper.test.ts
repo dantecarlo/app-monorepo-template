@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 
-import { createPassthroughOriginGuard } from './createPassthroughOriginGuard.helper'
-import { OriginGuardReasonEnum } from './originGuardReason.type'
+import { createPassthroughOriginGuard } from '#src/ports/origin-guard/createPassthroughOriginGuard.helper'
+import { OriginGuardReasonEnum } from '#src/ports/origin-guard/originGuardReason.type'
 
 const makeHeaders = (value: string | null) => ({
   get: () => value

@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { hostConsole } from './hostConsole.helper'
+import { hostConsole } from '#src/utils/hostConsole.helper'
 
 // The seam is type-level, but it carries one runtime obligation: it must
 // resolve to a real object in whatever runtime the package is compiled for.

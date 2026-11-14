@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { createPermissiveBotProtection } from './createPermissiveBotProtection.helper'
+import { createPermissiveBotProtection } from '#src/ports/bot-protection/createPermissiveBotProtection.helper'
 
 test('verifyToken resolves success regardless of the token', async () => {
   const adapter = createPermissiveBotProtection()

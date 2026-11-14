@@ -12,6 +12,9 @@
     "src",
     "tailwind-preset.cjs"
   ],
+  "imports": {
+    "#src/*": "./src/*.ts"
+  },
   "scripts": {
     "lint": "eslint .",
     "test": "vitest run"

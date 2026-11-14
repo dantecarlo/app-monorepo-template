@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { createCloudflareImagesDelivery } from './createCloudflareImagesDelivery.adapter'
+import { createCloudflareImagesDelivery } from '#src/createCloudflareImagesDelivery.adapter'
 
 const EXPIRES_IN_SECONDS = 300
 const ACCOUNT_HASH = 'acct-hash'

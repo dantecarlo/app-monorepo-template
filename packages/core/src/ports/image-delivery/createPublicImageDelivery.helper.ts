@@ -2,7 +2,7 @@ import type {
   IBuildImageUrlParams,
   IBuildSignedImageUrlParams,
   IImageDeliveryPort
-} from './IImageDeliveryPort.type'
+} from '#src/ports/image-delivery/IImageDeliveryPort.type'
 
 export interface ICreatePublicImageDeliveryParams {
   baseUrl?: string

@@ -1,4 +1,4 @@
-import type esTranslation from './es.json'
+import type esTranslation from '#src/locales/es.json'
 
 export const LanguageEnum = {
   EN: 'en',

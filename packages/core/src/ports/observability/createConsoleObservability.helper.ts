@@ -1,13 +1,13 @@
-import { hostConsole } from '../../utils/hostConsole.helper'
-import { scrubPII } from '../../utils/scrubPII.helper'
 import type {
   IAddBreadcrumbParams,
   ICaptureErrorParams,
   ICaptureMessageParams,
   IObservabilityPort,
   ISetUserParams
-} from './IObservabilityPort.type'
-import { ObservabilityLevelEnum } from './observabilityLevel.type'
+} from '#src/ports/observability/IObservabilityPort.type'
+import { ObservabilityLevelEnum } from '#src/ports/observability/observabilityLevel.type'
+import { hostConsole } from '#src/utils/hostConsole.helper'
+import { scrubPII } from '#src/utils/scrubPII.helper'
 
 export interface ICreateConsoleObservabilityParams {
   isEnabled?: boolean

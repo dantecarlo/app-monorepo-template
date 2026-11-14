@@ -10,6 +10,9 @@
   "files": [
     "src"
   ],
+  "imports": {
+    "#src/*": "./src/*.ts"
+  },
   "scripts": {
     "lint": "eslint .",
     "test": "vitest run",

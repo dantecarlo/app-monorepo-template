@@ -1,6 +1,6 @@
 import { afterEach, expect, test, vi } from 'vitest'
 
-import { createTurnstileBotProtection } from './createTurnstileBotProtection.adapter'
+import { createTurnstileBotProtection } from '#src/createTurnstileBotProtection.adapter'
 
 const SECRET = 'cf-secret'
 
