@@ -184,11 +184,11 @@ copy its anatomy for new screens.
 > **First step after cloning — rename the project identity:**
 >
 > ```bash
-> pnpm init <project-slug>   # e.g. pnpm init my-app
+> pnpm run init <project-slug>   # e.g. pnpm run init my-app
 > pnpm install               # refresh lockfile after rename
 > ```
 >
-> `pnpm init <slug>` rewrites all `@app/*` namespace references, the
+> `pnpm run init <slug>` rewrites all `@app/*` namespace references, the
 > `app-monorepo-template` name, and the `com.app.template` bundle ID across
 > the repo. Re-running with the same slug is a no-op (idempotent).
 >

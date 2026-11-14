@@ -1,10 +1,13 @@
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 
 const PORT = 3000
 const BASE_URL = `http://localhost:${PORT}`
 const MAX_RETRIES = 30
 const RETRY_INTERVAL_MS = 1000
 const KNOWN_MARKER = 'aurora'
+const IS_WINDOWS = process.platform === 'win32'
+const START_ARGS = ['--filter', '@app/web', 'start']
+const SERVER_STDIO = ['ignore', 'inherit', 'inherit']
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -22,15 +25,31 @@ const pollUntilReady = async () => {
   throw new Error(`Server at ${BASE_URL} did not respond with HTTP 200 after ${MAX_RETRIES} attempts`)
 }
 
-const server = spawn('pnpm', ['--filter', '@app/web', 'start'], {
-  stdio: ['ignore', 'inherit', 'inherit'],
-  shell: false
-})
+// Windows ships pnpm as `pnpm.cmd`, which only a shell can start; the command is
+// one fixed string, so nothing from outside reaches the shell.
+const server = IS_WINDOWS
+  ? spawn(['pnpm', ...START_ARGS].join(' '), { stdio: SERVER_STDIO, shell: true })
+  : spawn('pnpm', START_ARGS, { stdio: SERVER_STDIO, shell: false })
 
 let exitCode = 0
+let cleanedUp = false
 
+// Killing the shell on Windows would leave `next start` running, so the whole
+// process tree goes; a tree that survives would answer the next run's poll.
 const cleanup = () => {
-  if (!server.killed) server.kill('SIGTERM')
+  if (cleanedUp || server.exitCode !== null) return
+  cleanedUp = true
+  if (!IS_WINDOWS) {
+    server.kill('SIGTERM')
+    return
+  }
+  const result = spawnSync('taskkill', ['/pid', String(server.pid), '/T', '/F'], {
+    stdio: 'ignore'
+  })
+  if (result.error || result.status !== 0) {
+    console.error(`[smoke-web-render] FAIL: could not stop the server tree (pid ${server.pid})`)
+    exitCode = 1
+  }
 }
 
 process.on('SIGINT', cleanup)

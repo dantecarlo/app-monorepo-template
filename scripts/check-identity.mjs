@@ -165,7 +165,7 @@ if (offenders.length === 0) {
 
 console.error(
   `check-identity: FAIL — ${offenders.length} template-default identity ` +
-    'token(s) detected. Run `pnpm init <project-slug>` to rename the repo.\n'
+    'token(s) detected. Run `pnpm run init <project-slug>` to rename the repo.\n'
 )
 for (const { field, file, found } of offenders) {
   console.error(`  ${file} — ${field}: "${found}"`)
