@@ -32,18 +32,24 @@ const server = IS_WINDOWS
   : spawn('pnpm', START_ARGS, { stdio: SERVER_STDIO, shell: false })
 
 let exitCode = 0
+let cleanedUp = false
 
 // Killing the shell on Windows would leave `next start` running, so the whole
-// process tree goes.
+// process tree goes; a tree that survives would answer the next run's poll.
 const cleanup = () => {
-  if (server.killed || server.exitCode !== null) return
-  if (IS_WINDOWS) {
-    spawnSync('taskkill', ['/pid', String(server.pid), '/T', '/F'], {
-      stdio: 'ignore'
-    })
+  if (cleanedUp || server.exitCode !== null) return
+  cleanedUp = true
+  if (!IS_WINDOWS) {
+    server.kill('SIGTERM')
     return
   }
-  server.kill('SIGTERM')
+  const result = spawnSync('taskkill', ['/pid', String(server.pid), '/T', '/F'], {
+    stdio: 'ignore'
+  })
+  if (result.error || result.status !== 0) {
+    console.error(`[smoke-web-render] FAIL: could not stop the server tree (pid ${server.pid})`)
+    exitCode = 1
+  }
 }
 
 process.on('SIGINT', cleanup)
