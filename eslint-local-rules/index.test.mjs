@@ -8,6 +8,8 @@
 // Run: pnpm verify:lint-rules:test
 // ---------------------------------------------------------------------------
 
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, test } from 'node:test'
 
@@ -84,6 +86,19 @@ ruleTester.run('core-import-boundary', rules['core-import-boundary'], {
     "export * from '#src/ports/observability/observabilityLevel.type'",
     'export const local = 1'
   ]
+})
+
+// core-import-boundary passes `#src/` as core's own module. That holds only
+// while core's package.json maps the key into its own src and nowhere else.
+test('core maps its #src imports into its own src only', () => {
+  const manifest = JSON.parse(
+    readFileSync(
+      join(import.meta.dirname, '..', 'packages', 'core', 'package.json'),
+      'utf8'
+    )
+  )
+
+  assert.deepEqual(manifest.imports, { '#src/*': './src/*.ts' })
 })
 
 ruleTester.run('suffix-contract', rules['suffix-contract'], {

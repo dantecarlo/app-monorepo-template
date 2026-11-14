@@ -1,9 +1,9 @@
-import { AppError } from './AppError.helper'
-import type { IServiceErrorMapper } from './IServiceErrorMapper.type'
+import { AppError } from '#src/errors/AppError.helper'
+import type { IServiceErrorMapper } from '#src/errors/IServiceErrorMapper.type'
 import {
   SERVICE_ERROR_MESSAGE_KEY_BY_CODE,
   ServiceErrorCodeEnum
-} from './serviceError.type'
+} from '#src/errors/serviceError.type'
 
 export interface IBuildServiceErrorParams {
   error: unknown

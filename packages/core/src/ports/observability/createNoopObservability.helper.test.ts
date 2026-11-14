@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { createNoopObservability } from './createNoopObservability.helper'
+import { createNoopObservability } from '#src/ports/observability/createNoopObservability.helper'
 
 test('captureError is callable and returns undefined', () => {
   const adapter = createNoopObservability()

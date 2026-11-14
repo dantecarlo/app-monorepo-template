@@ -1,4 +1,4 @@
-import type { IObservabilityPort } from './IObservabilityPort.type'
+import type { IObservabilityPort } from '#src/ports/observability/IObservabilityPort.type'
 
 export const createNoopObservability = (): IObservabilityPort => ({
   addBreadcrumb: () => undefined,

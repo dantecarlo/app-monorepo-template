@@ -1,5 +1,5 @@
-import type { IOriginGuardPort } from './IOriginGuardPort.type'
-import { OriginGuardReasonEnum } from './originGuardReason.type'
+import type { IOriginGuardPort } from '#src/ports/origin-guard/IOriginGuardPort.type'
+import { OriginGuardReasonEnum } from '#src/ports/origin-guard/originGuardReason.type'
 
 export const createPassthroughOriginGuard = (): IOriginGuardPort => ({
   assertTrustedOrigin: () => ({

@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
-import { hostConsole } from '../../utils/hostConsole.helper'
-import { createConsoleObservability } from './createConsoleObservability.helper'
-import { ObservabilityLevelEnum } from './observabilityLevel.type'
+import { createConsoleObservability } from '#src/ports/observability/createConsoleObservability.helper'
+import { ObservabilityLevelEnum } from '#src/ports/observability/observabilityLevel.type'
+import { hostConsole } from '#src/utils/hostConsole.helper'
 
 let errorSpy: ReturnType<typeof vi.spyOn>
 let warnSpy: ReturnType<typeof vi.spyOn>
