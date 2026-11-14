@@ -19,7 +19,10 @@
 //   3. tsconfig.base.json    paths key '@app/*'
 //   4. every package.json    name fields (@app/* -> @<slug>/*)
 //   5. turbo.json            @app/* task keys
-//   6. all *.ts *.tsx *.cjs *.js *.md  import specifiers '@app/'
+//   6. every *.cjs *.js *.json *.md *.mjs *.ts *.tsx file  '@app/' specifiers,
+//                            the template slug and its bundle id, except
+//                            the two files that hold those tokens on purpose
+//                            (KEPT_FILES)
 //   7. packages/i18n en.json + es.json  top-level `app.name` display name,
 //                            kept in sync with app.json expo.name. The web
 //                            metadata.title reads APP_NAME from i18n, so all
@@ -30,7 +33,7 @@
 
 import { execSync } from 'node:child_process'
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -81,9 +84,14 @@ const IGNORED_DIRS = new Set([
   '.turbo',
   'coverage',
   'dist',
-  'node_modules',
-  'scripts'
+  'node_modules'
 ])
+
+// They hold the template's tokens on purpose: this script replaces them, and
+// check-identity reports any that is left.
+const KEPT_FILES = new Set(['scripts/check-identity.mjs', 'scripts/init-project.mjs'])
+
+const toRel = ({ file }) => relative(REPO_ROOT, file).split(sep).join('/')
 
 const TEXT_EXTENSIONS = new Set([
   '.cjs',
@@ -108,7 +116,9 @@ const collectTextFiles = ({ dir, acc }) => {
     const singleExt = entry.includes('.')
       ? '.' + entry.split('.').pop()
       : ''
-    if (TEXT_EXTENSIONS.has(singleExt)) acc.push(full)
+    if (TEXT_EXTENSIONS.has(singleExt) && !KEPT_FILES.has(toRel({ file: full }))) {
+      acc.push(full)
+    }
   }
 }
 
@@ -237,7 +247,7 @@ const allFiles = []
 collectTextFiles({ acc: allFiles, dir: REPO_ROOT })
 
 for (const file of allFiles) {
-  const rel = file.replace(REPO_ROOT + '/', '')
+  const rel = toRel({ file })
   if (!rel.endsWith('package.json')) continue
   // Skip root package.json — already handled above.
   if (rel === 'package.json') continue
@@ -262,7 +272,7 @@ for (const file of allFiles) {
 // ---------------------------------------------------------------------------
 
 for (const file of allFiles) {
-  const rel = file.replace(REPO_ROOT + '/', '')
+  const rel = toRel({ file })
   // Lockfile: do not string-patch (hashes would corrupt).
   if (rel === 'pnpm-lock.yaml') continue
   // Skip already-handled structured JSON files.

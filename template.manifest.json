@@ -65,6 +65,7 @@
     "scripts/git-free-env.mjs",
     "scripts/git-free-env.test.mjs",
     "scripts/init-project.mjs",
+    "scripts/init-project.test.mjs",
     "scripts/manifest.mjs",
     "scripts/manifest.test.mjs",
     "scripts/verify-manifest-coverage.mjs",
