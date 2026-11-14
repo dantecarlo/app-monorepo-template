@@ -1,6 +1,6 @@
 # Proposal: move the template to pnpm 11.9.0
 
-> **Status:** open
+> **Status:** archived — 2026-11-14
 
 ## Why
 
