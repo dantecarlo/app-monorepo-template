@@ -219,6 +219,9 @@ importers:
         specifier: ^5.0.14
         version: 5.0.14(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.6.0(react@19.3.0))
     devDependencies:
+      '@app/tooling':
+        specifier: workspace:*
+        version: link:../../packages/tooling
       '@babel/plugin-transform-class-static-block':
         specifier: ^7.0.0
         version: 7.29.7(@babel/core@7.29.7)
@@ -307,6 +310,9 @@ importers:
         specifier: ^5.0.14
         version: 5.0.14(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.6.0(react@19.3.0))
     devDependencies:
+      '@app/tooling':
+        specifier: workspace:*
+        version: link:../../packages/tooling
       '@next/eslint-plugin-next':
         specifier: ^16.2.9
         version: 16.2.9
@@ -371,6 +377,9 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@app/tooling':
+        specifier: workspace:*
+        version: link:../tooling
       '@types/node':
         specifier: ^24.13.2
         version: 24.13.2
@@ -383,6 +392,9 @@ importers:
 
   packages/core:
     devDependencies:
+      '@app/tooling':
+        specifier: workspace:*
+        version: link:../tooling
       typescript:
         specifier: '*'
         version: 5.9.3
@@ -392,6 +404,9 @@ importers:
 
   packages/i18n:
     devDependencies:
+      '@app/tooling':
+        specifier: workspace:*
+        version: link:../tooling
       typescript:
         specifier: '*'
         version: 5.9.3
@@ -411,6 +426,9 @@ importers:
         specifier: ^2.108.2
         version: 2.108.2
     devDependencies:
+      '@app/tooling':
+        specifier: workspace:*
+        version: link:../tooling
       typescript:
         specifier: '*'
         version: 5.9.3
@@ -424,6 +442,9 @@ importers:
         specifier: '>=3.4.0'
         version: 3.4.19(yaml@2.9.0)
     devDependencies:
+      '@app/tooling':
+        specifier: workspace:*
+        version: link:../tooling
       typescript:
         specifier: '*'
         version: 5.9.3

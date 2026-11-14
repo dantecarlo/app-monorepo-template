@@ -1,16 +1,11 @@
-import { resolve } from 'node:path'
+import { packageTestBase } from '@app/tooling/vitest-package-base'
+import { defineConfig, mergeConfig } from 'vitest/config'
 
-import { defineConfig } from 'vitest/config'
-
-export default defineConfig({
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src')
+export default mergeConfig(
+  packageTestBase({ packageDir: __dirname }),
+  defineConfig({
+    test: {
+      include: ['src/**/*.test.ts']
     }
-  },
-  test: {
-    environment: 'node',
-    globals: true,
-    include: ['src/**/*.test.ts']
-  }
-})
+  })
+)
