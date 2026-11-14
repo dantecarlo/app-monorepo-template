@@ -1,3 +1,33 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+# Flat node_modules (npm-style) instead of pnpm's symlinked .pnpm store, so
+# React Native's C++ builds (react-native-screens, worklets, new arch) stay
+# under the Windows MAX_PATH limit. The deep `.pnpm/<pkg>@<ver>_<hash>/...`
+# paths otherwise push CMake/ninja object-file paths past 260 chars. Every
+# package already sits at the root, so no public-hoist-pattern is needed.
+nodeLinker: hoisted
+# Scripts run through pnpm's cross-platform shell instead of cmd.exe on
+# Windows, so `VAR=value command` in a script sets the variable on every OS.
+shellEmulator: true
+# pnpm 11 runs only the dependency build scripts listed here, and fails the
+# install on one it has not been told about. pnpm 9 ran all six.
+allowBuilds:
+  '@parcel/watcher': true
+  '@sentry/cli': true
+  '@swc/core': true
+  msw: true
+  sharp: true
+  unrs-resolver: true
+# pnpm 11 reads overrides/packageExtensions from here, not package.json
+# (the old `pnpm` field there is ignored with a warning).
+overrides:
+  '@types/react': ^19.3.0
+  '@types/react-dom': ^19.3.0
+packageExtensions:
+  '@tanstack/react-query':
+    peerDependencies:
+      '@types/react': '*'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true

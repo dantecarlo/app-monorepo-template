@@ -34,7 +34,6 @@
     ".github/workflows/ci.yml",
     ".gitignore",
     ".husky/**",
-    ".npmrc",
     ".nvmrc",
     ".prettierignore",
     ".prettierrc.json",
