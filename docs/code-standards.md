@@ -161,7 +161,8 @@ says so out loud instead of pretending otherwise.
 
 ## 2. Imports — Alias Only, Never Relative
 
-`../` paths are banned. Every import must use a workspace or path alias.
+`../` paths are banned. Every import must use a workspace or path alias, or
+the `#src/` key of the package that holds the file.
 
 ```ts
 // ❌ wrong
@@ -171,12 +172,41 @@ import { ItemEntity } from '../../domain/Item.type'
 import { ItemEntity } from '@app/core'
 import { Button } from '@/*' // apps/web
 import { Button } from '@/*' // apps/mobile
+import { AppError } from '#src/errors/AppError.helper' // packages/core
 ```
 
 Available aliases:
 
-- `@/*` → `src/*` inside each app
+- `@/*` → `src/*` inside each app, and inside each package for its tests
 - `@app/*` → workspace packages (`@app/core`, `@app/tokens`, etc.)
+- `#src/*` → `src/*` of the package that holds the file, for its own sources
+
+**A package imports its own files through `#src/`.** Each package another
+workspace consumes by source (`core`, `cloudflare`, `i18n`, `supabase`,
+`tokens`) declares `"imports": { "#src/*": "./src/*.ts" }` in its
+`package.json`, plus `"#src/*.json": "./src/*.json"` in `i18n` for its
+catalogs, and its sources, the `index.ts` barrel and its re-exports included,
+reach their siblings through that key. `@/` cannot serve there: it resolves
+against the `src` of the workspace that compiles the file, which is the
+consuming app. A `#` key resolves against the `package.json` that holds the
+file, whoever compiles it: Turbopack (Next 16), Metro, TypeScript with
+`moduleResolution: bundler` and Vitest all read it (decision 45 of
+`docs/INIT_AND_HARNESS_PLAN.md`, measured 2026-11-12). The key is private to its
+package: a file reaches another workspace by its `@app/*` name, never through a
+`#` key, and Node refuses a relative target that leaves the package. In
+`packages/core`, `core-import-boundary` reports every `#` key but `#src/`, and a
+test pins core's mapping to `./src/*.ts`. A package test imports through `@/`,
+which resolves inside the package it runs in.
+
+**One exception remains: an app barrel.** An `index.ts` under `apps/*/src`
+re-exports its block's files by `./` (`export { X } from './X.component'`). A
+package barrel has no exception: it re-exports through `#src/`.
+
+> Status: **lint** (`no-relative-import-paths`, `allowSameFolder: false`) over
+> every `import` declaration in the apps and the packages, with no override for
+> a package source; test files sit outside it (`TEST_FILE_OVERRIDE` in
+> `eslint.rules.mjs`). It reads `import` statements, so an `export … from`
+> re-export in a barrel is outside what it sees and holds by review.
 
 ---
 

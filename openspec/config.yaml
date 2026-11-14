@@ -65,7 +65,7 @@ validation_gate:
 
 conventions:
   - Arrow functions only — no function keyword
-  - Alias imports only (@/*, @app/*) — no ../ outside a barrel index.ts
+  - 'Alias imports only (@/* in an app, @app/*, #src/* inside a package) — no ../ outside an app barrel index.ts'
   - File suffixes required (.component.tsx, .service.ts, .adapter.ts, etc.)
   - Naming: I{Name} interfaces, {Name}Type, {Name}Enum, ALL_CAPS_PURPOSE consts
   - Single-object params — no positional args; destructure from one typed object
