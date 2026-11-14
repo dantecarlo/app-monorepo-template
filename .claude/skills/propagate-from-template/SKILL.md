@@ -158,7 +158,7 @@ rg "@app/" --type json -l
 
 **Checklist:**
 - `@app/*` import aliases → `@<project-slug>/*` (most handled by
-  `pnpm init <slug>` / `scripts/init-project.mjs`; the scan above catches
+  `pnpm run init <slug>` / `scripts/init-project.mjs`; the scan above catches
   residuals)
 - `package.json` `name` fields in each workspace package
 - `apps/mobile/app.json`: `slug`, `ios.bundleIdentifier`, `android.package`

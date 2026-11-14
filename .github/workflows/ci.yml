@@ -21,7 +21,7 @@ jobs:
       # app-monorepo-template) intentionally. ATL_TEMPLATE_SELF=1 tells
       # check-identity.mjs to skip the un-renamed guard for this repo only.
       # Derived projects must NOT set this variable — their validate fails
-      # until they run `pnpm init <slug>`.
+      # until they run `pnpm run init <slug>`.
       ATL_TEMPLATE_SELF: '1'
     steps:
       - uses: actions/checkout@v4
