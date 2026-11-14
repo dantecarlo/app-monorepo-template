@@ -61,6 +61,9 @@
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
     "scripts/check-identity.mjs",
+    "scripts/gate/**",
+    "scripts/git-free-env.mjs",
+    "scripts/git-free-env.test.mjs",
     "scripts/init-project.mjs",
     "scripts/manifest.mjs",
     "scripts/manifest.test.mjs",
@@ -290,13 +293,61 @@
       ]
     },
     {
+      "id": "sdd",
+      "title": "Spec-Driven Development — operating model, templates, spec gates, the sdd skill",
+      "group": "workflow",
+      "claims": [
+        ".claude/skills/sdd/**",
+        "openspec/README.md",
+        "openspec/config.yaml",
+        "openspec/templates/**",
+        "scripts/report-spec-drift.mjs",
+        "scripts/report-spec-drift.test.mjs",
+        "scripts/spec-drift.detect.mjs",
+        "scripts/specs-templates.cases.mjs",
+        "scripts/specs.detect.mjs",
+        "scripts/verify-specs.change.cases.mjs",
+        "scripts/verify-specs.fixtures.mjs",
+        "scripts/verify-specs.mjs",
+        "scripts/verify-specs.spec.cases.mjs",
+        "scripts/verify-specs.test.mjs"
+      ],
+      "onAbsent": [
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.verify:specs"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.verify:specs:test"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.report:spec-drift"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.report:spec-drift:test"
+        }
+      ]
+    },
+    {
       "id": "template-maintainer",
       "title": "Template maintainer material — plans and audits, never selected by a preset",
       "group": "maintainer",
       "claims": [
         "docs/GENERALIZATION_PLAN.md",
         "docs/INIT_AND_HARNESS_PLAN.md",
-        "docs/audits/**"
+        "docs/audits/**",
+        "openspec/changes/**"
       ]
     }
   ],
@@ -311,6 +362,7 @@
         "e2e-playwright",
         "i18n",
         "mobile-expo",
+        "sdd",
         "supabase",
         "web-next"
       ]
@@ -324,6 +376,7 @@
         "diagrams",
         "e2e-playwright",
         "i18n",
+        "sdd",
         "supabase",
         "web-next"
       ]
@@ -336,6 +389,7 @@
         "diagrams",
         "i18n",
         "mobile-expo",
+        "sdd",
         "supabase"
       ]
     }

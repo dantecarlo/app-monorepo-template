@@ -47,13 +47,27 @@ init → `pnpm validate`, planned) is what will prove they are complete.
 
 The `template-maintainer` capability (group `maintainer`) owns the template's
 own plans and audits: `docs/GENERALIZATION_PLAN.md`,
-`docs/INIT_AND_HARNESS_PLAN.md` and `docs/audits/**`. They name donor products
-and record how this template was built, so they must never ship.
+`docs/INIT_AND_HARNESS_PLAN.md`, `docs/audits/**`, and the template's own
+OpenSpec changes, `openspec/changes/**`. They name donor products and record
+how this template was built, so they must never ship.
 
 - **No preset selects it**, so init always removes it from a derived project.
 - **The brand gate exempts it.** The planned `verify:generic` gate (blocker B3)
   scans what ships for product names; maintainer material never ships, so the
   gate skips the paths this capability claims.
+
+### The SDD machinery
+
+The `sdd` capability (group `workflow`) owns what a derived project needs to
+run Spec-Driven Development: `openspec/README.md`, `openspec/config.yaml`,
+`openspec/templates/**`, the `verify:specs` and `report:spec-drift` gates with
+their detectors and tests, and the `sdd` skill. Every preset selects it. The
+two helpers the gates import, `scripts/gate/**` and `scripts/git-free-env.mjs`,
+belong to `core`: other gates are built on them.
+
+`openspec/specs/**` is not claimed yet. No living spec exists, and a claim that
+matches no tracked file fails the coverage gate as stale; the claim lands with
+the first spec.
 
 ---
 
@@ -144,15 +158,16 @@ Deleting files cannot remove a stale import, a doc section or a CI job inside a
 file another owner keeps. Each hole below needs region markers or an injected
 adapter (blocker B4); a delete-only executor cannot close it.
 
-| Absent capability     | What breaks                                                                                                                                |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `supabase`            | `apps/web/src/app/layout.tsx` (via `SupabaseProviders`) and `apps/mobile/src/app/_layout.tsx` keep their Supabase imports                  |
-| `i18n`                | `apps/web/src/app/layout.tsx` and the `LanguageSwitcher` blocks keep their `@app/i18n` imports                                             |
-| `e2e-playwright`      | `scripts.smoke:mobile-web` and the CI `mobile-web` job still call Playwright                                                               |
-| `web-next`            | `verify-security-static`, `verify-theme-sync`, `verify-maps` and the knip workspaces still read `apps/web`                                 |
-| `mobile-expo`         | `verify-maps` and the knip workspaces still name `apps/mobile`                                                                             |
-| `diagrams`            | `pnpm validate` still calls `docs:diagrams:check` (B2); the global map rows for `docs/diagrams/` and `build-diagrams` fail `verify:maps`   |
-| `template-maintainer` | Never selected, so always absent: the global map rows for the plans and `docs/audits/`, and the plan citations in code-standards, go stale |
+| Absent capability     | What breaks                                                                                                                                         |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `supabase`            | `apps/web/src/app/layout.tsx` (via `SupabaseProviders`) and `apps/mobile/src/app/_layout.tsx` keep their Supabase imports                           |
+| `i18n`                | `apps/web/src/app/layout.tsx` and the `LanguageSwitcher` blocks keep their `@app/i18n` imports                                                      |
+| `e2e-playwright`      | `scripts.smoke:mobile-web` and the CI `mobile-web` job still call Playwright                                                                        |
+| `web-next`            | `verify-security-static`, `verify-theme-sync`, `verify-maps` and the knip workspaces still read `apps/web`                                          |
+| `mobile-expo`         | `verify-maps` and the knip workspaces still name `apps/mobile`                                                                                      |
+| `diagrams`            | `pnpm validate` still calls `docs:diagrams:check` (B2); the global map rows for `docs/diagrams/` and `build-diagrams` fail `verify:maps`            |
+| `sdd`                 | `pnpm validate` still calls `verify:specs`, `report:spec-drift` and their tests (B2); the global map rows for them and the skill fail `verify:maps` |
+| `template-maintainer` | Never selected, so always absent: the global map rows for the plans and `docs/audits/`, and the plan citations in code-standards, go stale          |
 
 `copy` and `render` read from `templates/`, which does not exist yet; no
 capability declares either verb today.

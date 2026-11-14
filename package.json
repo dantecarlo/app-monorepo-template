@@ -3,7 +3,7 @@
   "private": true,
   "packageManager": "pnpm@9.15.9",
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=24.2.0"
   },
   "scripts": {
     "build": "turbo run build",
@@ -13,11 +13,14 @@
     "docs:diagrams:check": "node scripts/build-diagrams.mjs --check",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\"",
+    "git-free-env:test": "node --test scripts/git-free-env.test.mjs",
     "init": "node scripts/init-project.mjs",
     "knip": "knip --no-progress",
     "lint": "turbo run lint",
     "lint:fix": "eslint . --fix",
     "prepare": "husky",
+    "report:spec-drift": "node scripts/report-spec-drift.mjs",
+    "report:spec-drift:test": "node --test scripts/report-spec-drift.test.mjs",
     "smoke:e2e": "pnpm --filter @app/web build && pnpm exec playwright install --with-deps chromium && pnpm exec playwright test",
     "smoke:mobile": "pnpm --filter @app/mobile smoke:export",
     "smoke:mobile-web": "pnpm --filter @app/mobile export:web && E2E_MOBILE_WEB=1 pnpm exec playwright test --project=mobile-web-390 --project=mobile-web-768 --project=mobile-web-1280 --project=mobile-web-1920",
@@ -26,7 +29,7 @@
     "test:e2e:visual": "E2E_VISUAL=1 pnpm exec playwright test --project=visual",
     "test:e2e:visual:update": "E2E_VISUAL=1 pnpm exec playwright test --project=visual --update-snapshots",
     "typecheck": "turbo run typecheck",
-    "validate": "pnpm verify:manifest && pnpm verify:manifest:coverage && pnpm verify:manifest:test && pnpm verify:lint-rules:test && turbo run lint typecheck test build format:check && pnpm verify:tests && pnpm verify:maps && pnpm check:identity && pnpm verify:pairing && pnpm verify:structure && pnpm verify:security && pnpm verify:theme-sync && pnpm docs:diagrams:check && pnpm --filter @app/i18n test && pnpm knip",
+    "validate": "pnpm verify:manifest && pnpm verify:manifest:coverage && pnpm verify:manifest:test && pnpm verify:lint-rules:test && turbo run lint typecheck test build format:check && pnpm verify:tests && pnpm verify:specs:test && pnpm verify:specs && pnpm git-free-env:test && pnpm report:spec-drift:test && pnpm report:spec-drift && pnpm verify:maps && pnpm check:identity && pnpm verify:pairing && pnpm verify:structure && pnpm verify:security && pnpm verify:theme-sync && pnpm docs:diagrams:check && pnpm --filter @app/i18n test && pnpm knip",
     "verify:expo": "cd apps/mobile && npx expo-doctor && npx expo install --check",
     "verify:lint-rules:test": "node --test eslint-local-rules/index.test.mjs",
     "verify:manifest": "node scripts/verify-manifest.mjs",
@@ -35,6 +38,8 @@
     "verify:maps": "node scripts/verify-maps.mjs",
     "verify:pairing": "node scripts/verify-pairing.mjs",
     "verify:security": "node scripts/verify-security-static.mjs",
+    "verify:specs": "node scripts/verify-specs.mjs",
+    "verify:specs:test": "node --test scripts/verify-specs.test.mjs",
     "verify:structure": "node scripts/verify-structure.mjs",
     "verify:tests": "node scripts/verify-tests.mjs",
     "verify:theme-sync": "node scripts/verify-theme-sync.mjs"

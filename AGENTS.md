@@ -64,7 +64,8 @@ ATL_TEMPLATE_SELF=1 pnpm validate
 ```
 
 `pnpm validate` runs `turbo run lint typecheck test build format:check`, then
-`pnpm verify:tests` and `pnpm verify:maps`. All must pass.
+`pnpm verify:tests`, the spec gates (`verify:specs`, and `report:spec-drift`, which
+only reports) and `pnpm verify:maps`. All must pass.
 
 The manifest gates run first (they are instant, so structural drift fails
 before anything expensive). `pnpm verify:tests` checks tests-per-unit presence
@@ -92,6 +93,15 @@ See `docs/e2e.md` and `docs/responsive.md` for details.
 
 E2E tests (`pnpm test:e2e`) are a separate stage — they require a running
 server and run after `pnpm validate` in CI, not inside it.
+
+## Spec-driven changes
+
+A change that adds, modifies or removes a requirement of a living spec, or creates
+a unit no spec describes yet, runs the SDD lifecycle: load the `sdd` skill and
+follow `openspec/README.md` (proposal, spec deltas, a design only for an
+architecture decision, tasks, apply test first, verify, archive). A small change
+needs no spec; its commit and pull request are the record. Owner requests are
+quoted in English, translated and marked when written in another language.
 
 ---
 

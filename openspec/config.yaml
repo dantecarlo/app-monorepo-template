@@ -1,0 +1,104 @@
+version: '1.0'
+project: app-monorepo-template
+initialized: '2026-11-12'
+# The repository is the store: every artifact is a file under openspec/, tracked
+# by git. openspec/README.md is the operating model.
+artifact_store: openspec
+
+context: |
+  Versions as of 2026-11-13; the package.json files own them.
+  pnpm workspaces + Turborepo monorepo; workspace namespace @app/*.
+  apps/web: Next.js 16.2.9 (App Router, RSC, ISR) + React 19.3 + Tailwind CSS 4.
+  apps/mobile: Expo SDK 58 / React Native 0.88 (dev builds) / React 19.3 / NativeWind 4.
+  packages/core: domain and application layers (ports, errors, PII scrubbing), ZERO framework/vendor imports.
+  packages/i18n: shared ICU catalogs.
+  packages/supabase: migrations, RLS, typed clients (Supabase Cloud for development, no local Docker stack).
+  packages/tokens: shared design tokens.
+  packages/cloudflare: edge adapters (origin guard, Turnstile bot protection, image delivery).
+  TypeScript 6 on Node 24. Hosting: Vercel (Next.js). Edge and security: Cloudflare.
+  Architecture: Clean + Fractal. *.adapter.ts files are the only place framework or vendor SDKs appear.
+
+testing:
+  strict_tdd: true
+  test_command: 'ATL_TEMPLATE_SELF=1 pnpm validate'
+  note: 'Node 24. ATL_TEMPLATE_SELF=1 skips the identity guard on the template itself only; a derived project runs pnpm validate without it.'
+  unit:
+    available: true
+    framework: vitest
+    packages:
+      - apps/web — vitest run (happy-dom, vitest-axe)
+      - apps/mobile — vitest run (happy-dom)
+      - packages/core — vitest run (node)
+      - packages/i18n — vitest run (node)
+      - packages/supabase — vitest run (node)
+      - packages/tokens — vitest run
+      - packages/cloudflare — vitest run (node)
+  integration:
+    available: true
+    framework: '@testing-library/react (v16)'
+    note: 'MSW v2 for HTTP mocking; semantic queries only (no data-testid)'
+  e2e:
+    available: true
+    framework: playwright
+    command: 'pnpm test:e2e'
+    note: 'Runs after the validation gate, never inside it, and needs a prior build. Visual regression via E2E_VISUAL=1. Axe-core for a11y.'
+  coverage:
+    available: false
+    note: 'No coverage thresholds; scripts/verify-tests.mjs enforces a sibling test per unit.'
+  linter:
+    available: true
+    command: 'pnpm lint (turbo run lint)'
+    tool: 'ESLint 9 flat config + local rules + perfectionist + sort-keys + jsx-a11y'
+  typechecker:
+    available: true
+    command: 'pnpm typecheck (turbo run typecheck)'
+    tool: 'TypeScript 6'
+  formatter:
+    available: true
+    command: 'pnpm format:check'
+    tool: 'Prettier 3 (no semicolons, single quotes, 75-char width)'
+
+validation_gate:
+  command: 'ATL_TEMPLATE_SELF=1 pnpm validate'
+  composition:
+    - 'enumerated only in the root package.json validate script (the manifest gates first, then turbo run lint typecheck test build format:check, the verify:* gates, knip)'
+
+conventions:
+  - Arrow functions only — no function keyword
+  - Alias imports only (@/*, @app/*) — no ../ outside a barrel index.ts
+  - File suffixes required (.component.tsx, .service.ts, .adapter.ts, etc.)
+  - Naming: I{Name} interfaces, {Name}Type, {Name}Enum, ALL_CAPS_PURPOSE consts
+  - Single-object params — no positional args; destructure from one typed object
+  - Service + Adapter always paired — never fetch in components
+  - No magic numbers/strings — enums and constants always
+  - Max 500 lines per file (ESLint error)
+  - Tests: test(), semantic queries, no data-testid
+  - Auto-sort: imports, keys, props (ESLint enforced, pnpm lint:fix auto-fixes)
+  - Prettier: no semicolons, single quotes, 75-char width
+  - English everywhere: identifiers, comments, docs; UI strings via i18n
+  - Conventional commits enforced by commitlint — NO AI attribution
+  - ZERO framework/vendor imports in packages/core
+  - Adapter seam mandatory between infrastructure and domain
+
+# Every phase runs in ONE context, the main session, never one subagent per
+# phase. Each phase leaves the file below; the templates are in
+# openspec/templates/ and the procedure is the sdd skill.
+execution: single-context
+living_specs: 'openspec/specs/{spec path}/spec.md'
+phases:
+  proposal:
+    artifact: 'openspec/changes/{change}/proposal.md'
+  spec:
+    artifact: 'openspec/changes/{change}/specs/{spec path}/spec.md'
+  design:
+    artifact: 'openspec/changes/{change}/design.md'
+    when: 'an architecture decision only; a lasting one is an ADR in docs/architecture/decisions/'
+  tasks:
+    artifact: 'openspec/changes/{change}/tasks.md'
+  apply:
+    artifact: 'the code and tests each task names, one commit per task'
+    strict_tdd: true
+  verify:
+    artifact: 'openspec/changes/{change}/verify-report.md'
+  archive:
+    artifact: 'openspec/changes/archive/{change}/, the deltas merged into openspec/specs/'
