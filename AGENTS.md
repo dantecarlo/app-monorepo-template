@@ -15,7 +15,7 @@ this one.
   testing, validation gates, edge-security docs) for Next.js + Expo projects
   backed by Supabase. It is not a runnable product: projects bootstrap from it
   and then extend it with product-specific code.
-- **Stack**: pnpm workspaces · Turborepo · Next.js 16.2.9 (App Router) · Expo SDK 58
+- **Stack**: pnpm 11 workspaces · Turborepo · Next.js 16.2.9 (App Router) · Expo SDK 58
   (React Native) · Supabase (Postgres, Auth, RLS) · Cloudflare (edge/CDN/WAF).
 - **Architecture**: Clean + Fractal. Framework-agnostic domain in
   `packages/core`. Platform adapters in `*.adapter.ts` files. See
@@ -146,7 +146,7 @@ Project-level skills live under `.claude/skills/`. Each skill provides a
 
 | Layer           | Technology                                                                                               |
 | --------------- | -------------------------------------------------------------------------------------------------------- |
-| Monorepo        | pnpm workspaces + Turborepo                                                                              |
+| Monorepo        | pnpm 11 workspaces + Turborepo                                                                           |
 | Web             | Next.js 16.2.9 (App Router, RSC, ISR)                                                                    |
 | Mobile          | Expo SDK 58, React Native 0.88 (dev builds)                                                              |
 | Styling         | Tailwind CSS 4 (web), NativeWind 4 (mobile)                                                              |

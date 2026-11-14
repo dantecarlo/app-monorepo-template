@@ -1,3 +1,36 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+# pnpm's default isolated linker stays: the hoisted one nests a copy of a
+# package under every parent whose version differs from the root's, and it
+# put six copies of @sentry/core in the mobile bundle. pnpm 11 reads no
+# public-hoist-pattern from .npmrc, so the four patterns live here.
+publicHoistPattern:
+  - '*eslint*'
+  - '*prettier*'
+  - whatwg-fetch
+  - react-native-css-interop
+# Scripts run through pnpm's cross-platform shell instead of cmd.exe on
+# Windows, so `VAR=value command` in a script sets the variable on every OS.
+shellEmulator: true
+# pnpm 11 runs only the dependency build scripts listed here, and fails the
+# install on one it has not been told about. pnpm 9 ran all six.
+allowBuilds:
+  '@parcel/watcher': true
+  '@sentry/cli': true
+  '@swc/core': true
+  msw: true
+  sharp: true
+  unrs-resolver: true
+# pnpm 11 reads overrides/packageExtensions from here, not package.json
+# (the old `pnpm` field there is ignored with a warning).
+overrides:
+  '@types/react': ^19.3.0
+  '@types/react-dom': ^19.3.0
+packageExtensions:
+  '@tanstack/react-query':
+    peerDependencies:
+      '@types/react': '*'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
