@@ -1,6 +1,6 @@
 # Proposal: align three conventions with Certifipago
 
-> **Status:** open
+> **Status:** archived — 2026-11-13
 
 ## Why
 
