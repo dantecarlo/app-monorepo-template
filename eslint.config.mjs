@@ -129,18 +129,15 @@ export default defineConfig([
 
   // -------------------------------------------------------------------------
   // packages/core/src — the domain layer proper. Production files import only
-  // their own modules, by relative path, so the alias-only rule is off here:
-  // core-import-boundary owns import paths in core. The package's build config
+  // their own modules, through the `#src/` key of core's package.json
+  // "imports" (core-import-boundary). The package's build config
   // (vitest.config.ts) and its tests stay outside this rule: they are tooling,
   // not domain code, and tests may use the `@/` alias.
   // -------------------------------------------------------------------------
   {
     files: ['packages/core/src/**/*.{ts,tsx}'],
     ignores: ['packages/core/src/**/*.test.{ts,tsx}'],
-    rules: {
-      'local/core-import-boundary': 'error',
-      'no-relative-import-paths/no-relative-import-paths': 'off'
-    }
+    rules: { 'local/core-import-boundary': 'error' }
   },
 
   // -------------------------------------------------------------------------
@@ -342,44 +339,6 @@ export default defineConfig([
     files: ['apps/web/src/middleware.ts'],
     rules: {
       'check-file/filename-naming-convention': 'off'
-    }
-  },
-
-  // -------------------------------------------------------------------------
-  // packages/i18n locale source files — same-directory JSON imports.
-  // -------------------------------------------------------------------------
-  {
-    files: ['packages/i18n/src/locales/*.ts'],
-    rules: {
-      'no-relative-import-paths/no-relative-import-paths': 'off'
-    }
-  },
-
-  // -------------------------------------------------------------------------
-  // packages/supabase factory files import the generated `./types` sibling.
-  // The @/ alias maps to src/, but consuming apps resolve @/ to their OWN
-  // src/, so a relative import is the only form that resolves cross-package
-  // (same reasoning as the i18n locales override above).
-  // -------------------------------------------------------------------------
-  {
-    files: ['packages/supabase/src/*.adapter.ts'],
-    rules: {
-      'no-relative-import-paths/no-relative-import-paths': 'off'
-    }
-  },
-
-  // -------------------------------------------------------------------------
-  // packages/cloudflare adapters and helpers import their sibling
-  // `./cloudflare.constant`, `./imageDelivery.constant`, and the edge-safe
-  // `./hmacHexSignature.helper`. The @/ alias maps to src/, but consuming apps
-  // resolve @/ to their OWN src/, so a relative sibling import is the only form
-  // that resolves cross-package (same reasoning as the supabase adapter
-  // override above).
-  // -------------------------------------------------------------------------
-  {
-    files: ['packages/cloudflare/src/*.{adapter,helper}.ts'],
-    rules: {
-      'no-relative-import-paths/no-relative-import-paths': 'off'
     }
   },
 

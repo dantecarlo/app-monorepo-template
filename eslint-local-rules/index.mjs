@@ -491,8 +491,9 @@ const singleUseState = {
 // packages/core is the innermost layer: framework-agnostic and vendor-free by
 // construction. Its production files import only their own modules, through
 // the `#src/` key of core's package.json "imports" (a test pins that it maps
-// into core's own src) or by relative path. Any other `#` key is reported
-// like a vendor. An `@/` alias resolves against the consuming app's src when
+// into core's own src). A relative path is passed here and refused by
+// no-relative-import-paths instead. Any other `#` key is reported like a
+// vendor. An `@/` alias resolves against the consuming app's src when
 // core compiles from source, and `node:` builtins do not exist in React Native
 // or the browser. Re-exports (`export ... from`) are judged like imports.
 // Vendors enter through ports implemented OUTSIDE core.
