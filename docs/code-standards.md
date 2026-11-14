@@ -387,6 +387,11 @@ Feature folders at the route level follow lowercase convention (e.g.
 
 No semicolons, single quotes, 75-character print width.
 
+Prettier formats code and JSON, never Markdown: `.prettierignore` lists
+`*.md`. Markdown is prose, and Prettier broke two docs and realigns a whole
+table when one cell changes. A doc's links and shape are held by `verify:maps`
+and `verify:specs`; align a table by hand when you edit it.
+
 ---
 
 ## 14. Data Flow

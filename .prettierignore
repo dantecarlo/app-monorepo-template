@@ -16,3 +16,7 @@ docs/diagrams/*.html
 
 # Generated audit row data (written by the audit merge script)
 docs/audits/*.json
+
+# Markdown is prose: Prettier broke two docs and realigns a whole table on a
+# one-cell edit. Links and shape are held by verify:maps and verify:specs.
+*.md

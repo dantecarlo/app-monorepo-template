@@ -378,7 +378,9 @@ import { scrubPII, PII_KEYS, sanitizeQueryKey } from '@app/core'
 }
 ```
 
-No semicolons. Single quotes. 75-character print width.
+No semicolons. Single quotes. 75-character print width. Prettier formats code
+and JSON, never Markdown (`.prettierignore` lists `*.md`): align a Markdown
+table by hand when you edit it.
 
 ---
 
