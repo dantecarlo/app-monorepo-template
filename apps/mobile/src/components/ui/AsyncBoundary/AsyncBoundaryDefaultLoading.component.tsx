@@ -1,7 +1,7 @@
 import { colors } from '@app/tokens'
 import { ActivityIndicator, View } from 'react-native'
 
-import { ASYNC_BOUNDARY_STYLES as styles } from '@/components/ui/AsyncBoundary/AsyncBoundary.styles'
+import { ASYNC_BOUNDARY_STYLES as styles } from '@/components/ui/AsyncBoundary/AsyncBoundary.style'
 
 export const AsyncBoundaryDefaultLoading = () => (
   <View

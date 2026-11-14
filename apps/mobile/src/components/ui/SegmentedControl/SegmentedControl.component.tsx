@@ -4,7 +4,7 @@ import { PRESSED_OPACITY } from '@/components/ui/SegmentedControl/SegmentedContr
 import {
   SEGMENT_COLORS,
   SEGMENTED_CONTROL_STYLES as styles
-} from '@/components/ui/SegmentedControl/SegmentedControl.styles'
+} from '@/components/ui/SegmentedControl/SegmentedControl.style'
 import type { ISegmentedControlProps } from '@/components/ui/SegmentedControl/SegmentedControl.type'
 
 export const SegmentedControl = ({

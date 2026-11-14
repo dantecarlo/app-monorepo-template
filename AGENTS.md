@@ -130,7 +130,7 @@ Project-level skills live under `.claude/skills/`. Each skill provides a
 - Arrow functions only — no `function` keyword.
 - Alias imports only — `@app/*` paths; no `../` outside barrel `index.ts`.
 - File suffixes are binding: `.component.tsx`, `.hook.ts`, `.service.ts`, `.adapter.ts`,
-  `.type.ts`, `.constant.ts`, `.styles.ts`, `.test.ts`.
+  `.type.ts`, `.constant.ts`, `.style.ts`, `.test.ts`.
 - Naming: `I{Name}` interfaces, `{Name}Type` types, `{Name}Enum` enums,
   `ALL_CAPS_PURPOSE` consts.
 - Single-object params — destructure from one typed object; no positional args.

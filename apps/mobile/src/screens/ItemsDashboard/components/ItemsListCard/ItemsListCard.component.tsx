@@ -7,7 +7,7 @@ import { GlassCard } from '@/components/ui/GlassCard'
 import { SearchBar } from '@/components/ui/SearchBar'
 import { TEXT } from '@/helpers/style.constant'
 import { ItemCard } from '@/screens/ItemsDashboard/components/ItemCard'
-import { ITEMS_LIST_CARD_STYLES as styles } from '@/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.styles'
+import { ITEMS_LIST_CARD_STYLES as styles } from '@/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.style'
 import type { IItemsListCardProps } from '@/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.type'
 
 export const ItemsListCard = ({

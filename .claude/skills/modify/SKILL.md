@@ -22,7 +22,7 @@ description: >
 2. Read the hook file if it exists (`use{Name}.hook.ts`)
 3. Read the types file (`{Name}.type.ts`)
 4. Read the test file (`{Name}.test.tsx`)
-5. Read the styles file (`{Name}.styles.ts`) if relevant to the change
+5. Read the styles file (`{Name}.style.ts`) if relevant to the change
 6. Run the Wrapper Detection Flow below
 
 ---
@@ -104,11 +104,11 @@ export const {Name} = ({ items }: I{Name}) => {
 
 ### C — Adding a Tailwind Style Variant
 
-1. Add new constant keys to `{Name}.styles.ts`
+1. Add new constant keys to `{Name}.style.ts`
 2. Use conditional class application in the component
 
 ```typescript
-// {Name}.styles.ts
+// {Name}.style.ts
 export const {NAME} = {
   CONTAINER: 'flex items-center gap-2',
   CONTAINER_COMPACT: 'flex items-center gap-1 py-1'  // new variant
@@ -188,7 +188,7 @@ Steps:
 - [ ] Constants named by purpose, not value
 - [ ] Imports use `@/` path aliases
 - [ ] Logic in hook, not component
-- [ ] No inline Tailwind strings (use `.styles.ts`)
+- [ ] No inline Tailwind strings (use `.style.ts`)
 - [ ] Arrow const — no `function` keyword
 
 ## Post-Modification Checklist

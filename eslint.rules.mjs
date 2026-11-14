@@ -18,7 +18,7 @@ import vitestPlugin from 'eslint-plugin-vitest'
 //   LOGIC_IN_HOOK_*   — bans useEffect/useMemo/useCallback outside *.hook.ts.
 //   NO_JSX_LITERAL_*  — discourages magic literals in component/screen JSX.
 //
-// The override config objects (CONSTANT_FILE_OVERRIDE, STYLES_FILE_OVERRIDE,
+// The override config objects (CONSTANT_FILE_OVERRIDE, STYLE_FILE_OVERRIDE,
 // TEST_FILE_OVERRIDE, DTS_FILE_OVERRIDE, CONFIG_FILE_OVERRIDE) relax the
 // strict literal rules where they are impractical (constants, Tailwind class
 // strings, tests, generated declarations, config files).
@@ -309,11 +309,11 @@ const FILENAME_MATCH_GLOB = '**/src/**/!(index).{ts,tsx}'
 // is false, so only the final extension is removed), so the suffix glob is
 // matched against e.g. `useItems.hook` / `X.screen` — NO trailing `.{ts,tsx}`.
 const FILENAME_SUFFIX_GLOB =
-  '*.{component,screen,styles,hook,service,adapter,type,store,constant,helper,config,schema,spec,test}'
+  '*.{component,screen,style,hook,service,adapter,type,store,constant,helper,config,schema,spec,test}'
 
 const FILENAME_NAMING_MESSAGE =
   'Source files must use a fractal suffix: .component.tsx / .screen.tsx / ' +
-  '.styles.ts / .hook.ts / .service.ts / .adapter.ts / .type.ts / ' +
+  '.style.ts / .hook.ts / .service.ts / .adapter.ts / .type.ts / ' +
   '.store.ts / .constant.ts / .helper.ts / .config.ts / .schema.ts / ' +
   '.test.{ts,tsx} — or be an index.ts barrel (code-standards Rule 4).'
 
@@ -405,7 +405,7 @@ const JSX_LITERAL_SELECTORS = [
 // In Tailwind 4, width/height/size utilities with named sizes (xs, sm, md,
 // lg, xl, 2xl, 3xl) resolve to --spacing token px values instead of the TW3
 // fixed-width scale. Shared selectors used in both LOGIC_IN_HOOK_OVERRIDE
-// (component/screen files) and TW4_NAMED_WIDTH_OVERRIDE (all tsx/styles).
+// (component/screen files) and TW4_NAMED_WIDTH_OVERRIDE (all tsx/style files).
 // ---------------------------------------------------------------------------
 const TW4_WIDTH_MESSAGE =
   'In Tailwind 4, w/h/size utilities with named sizes (xs, sm, md, lg, xl) resolve to --spacing token px values, not TW3 widths. Use an arbitrary value like max-w-[28rem] instead.'
@@ -519,7 +519,7 @@ export const LOGIC_IN_HOOK_OVERRIDE = {
     // 2+ useState / branching handlers / captured .map/.filter/.sort/.reduce
     // derivations are logic, not render — ERROR.
     'local/logic-in-view': 'error',
-    // Inline Tailwind className literals belong in *.styles.ts. WARN, not error:
+    // Inline Tailwind className literals belong in *.style.ts. WARN, not error:
     // the template's own example components carry pragmatic one-off utility
     // classes (sr-only, flex-none, animate-spin), so this is guidance rather
     // than a hard gate — the validation gate must never go red.
@@ -580,9 +580,9 @@ export const CONSTANT_FILE_OVERRIDE = {
   }
 }
 
-// Styles files: Tailwind class strings + RN style numbers are design tokens.
-export const STYLES_FILE_OVERRIDE = {
-  files: ['**/*.styles.ts', '**/*.styles.tsx'],
+// Style files: Tailwind class strings + RN style numbers are design tokens.
+export const STYLE_FILE_OVERRIDE = {
+  files: ['**/*.style.ts', '**/*.style.tsx'],
   rules: {
     '@typescript-eslint/no-magic-numbers': 'off',
     'no-magic-numbers': 'off'
@@ -628,7 +628,7 @@ export const TEST_INFRA_OVERRIDE = {
 }
 
 export const TW4_NAMED_WIDTH_OVERRIDE = {
-  files: ['**/*.tsx', '**/*.styles.ts', '**/*.styles.tsx'],
+  files: ['**/*.tsx', '**/*.style.ts', '**/*.style.tsx'],
   ignores: ['**/*.component.tsx', '**/*.screen.tsx'],
   rules: {
     // Re-spread the test-id ban alongside the TW4 width guard — this block

@@ -9,7 +9,7 @@ import { DashboardNav } from '@/screens/ItemsDashboard/components/DashboardNav'
 import { ItemsListCard } from '@/screens/ItemsDashboard/components/ItemsListCard'
 import { StatsCard } from '@/screens/ItemsDashboard/components/StatsCard'
 import { useItems } from '@/screens/ItemsDashboard/hooks/useItems.hook'
-import { ITEMS_DASHBOARD } from '@/screens/ItemsDashboard/ItemsDashboard.styles'
+import { ITEMS_DASHBOARD } from '@/screens/ItemsDashboard/ItemsDashboard.style'
 
 export const ItemsDashboardScreen = () => {
   const t = useTranslations('items.dashboard')

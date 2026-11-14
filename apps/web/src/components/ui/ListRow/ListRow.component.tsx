@@ -3,7 +3,7 @@ import type { JSX } from 'react'
 import {
   listRowInteractiveVariants,
   listRowVariants
-} from '@/components/ui/ListRow/ListRow.styles'
+} from '@/components/ui/ListRow/ListRow.style'
 import type { IListRowProps } from '@/components/ui/ListRow/ListRow.type'
 
 /** Generic list item with optional leading/trailing slots and divider. */

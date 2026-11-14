@@ -38,7 +38,7 @@ component + styles (+ optional local hook) + barrel.
 
 | Component | Folder / files                                                                                               | Renders           |
 | --------- | ------------------------------------------------------------------------------------------------------------ | ----------------- |
-| `<Comp>`  | `components/<Comp>/<Comp>.component.tsx`, `components/<Comp>/<Comp>.styles.ts`, `components/<Comp>/index.ts` | `<what it shows>` |
+| `<Comp>`  | `components/<Comp>/<Comp>.component.tsx`, `components/<Comp>/<Comp>.style.ts`, `components/<Comp>/index.ts`  | `<what it shows>` |
 | `<Comp2>` | `components/<Comp2>/...`                                                                                     | `<...>`           |
 
 ## Local hooks (`hooks/`)
@@ -63,7 +63,7 @@ Types/contracts scoped to this screen's view (ViewModels, prop shapes).
 | Kind      | File                                 | Holds                                             |
 | --------- | ------------------------------------ | ------------------------------------------------- |
 | Constants | `<name>.constant.ts`                 | Screen-local enums / magic values (never inline)  |
-| Styles    | `components/<Comp>/<Comp>.styles.ts` | Class-string / style constants for that component |
+| Styles    | `components/<Comp>/<Comp>.style.ts`  | Class-string / style constants for that component |
 
 ## Dependencies out (what this screen uses from elsewhere)
 
@@ -94,7 +94,7 @@ List the GLOBAL things this screen consumes — verify each is in the
 
 - [ ] Every local unit (`.component.tsx` / `.hook.ts` / `.service.ts` /
       `.adapter.ts` / `.helper.ts`) has a sibling `*.test.*`.
-- [ ] No inline magic numbers/strings — all in `*.constant.ts` / `*.styles.ts`.
+- [ ] No inline magic numbers/strings — all in `*.constant.ts` / `*.style.ts`.
 - [ ] Loading / empty / error states handled; user-facing strings via i18n.
 - [ ] Imports use `@/*` / `@app/*` aliases — no `../`.
 - [ ] `node scripts/verify-maps.mjs` and `pnpm validate` are green.

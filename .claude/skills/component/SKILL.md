@@ -5,7 +5,7 @@ description: >
   decompose the target into PARTS and extract cross-cutting/recurring parts
   as reusable wrappers (checking components/ui first) BEFORE writing any file.
   Then scaffold: I{Name} interface in {Name}.type.ts, Tailwind constants in
-  {Name}.styles.ts, optional useName.hook.ts, arrow-const named export in
+  {Name}.style.ts, optional useName.hook.ts, arrow-const named export in
   {Name}.component.tsx, and index.ts barrel. Arrow-only, no-semi, alias imports,
   no inline Tailwind, no default export, aria-label on icon-only elements.
   DO NOT USE for screens or data-fetching containers — use `screen` instead.
@@ -58,7 +58,7 @@ OR recurring (appears 2+ times here or will appear elsewhere)?
 │         ├── YES → Compose it in — do NOT re-create it.
 │         └── NO  → Create a new reusable block in
 │                   apps/*/src/components/ui/<Wrapper>/
-│                   with its own .component.tsx + .styles.ts + index.ts
+│                   with its own .component.tsx + .style.ts + index.ts
 │                   BEFORE working on the target component.
 │
 └── NO  → Keep it local to this component's file/styles.
@@ -123,7 +123,7 @@ Rules:
 
 ---
 
-## Step 2 — Styles Constant (`{Name}.styles.ts`)
+## Step 2 — Styles Constant (`{Name}.style.ts`)
 
 ```typescript
 export const {NAME_UPPER} = {
@@ -172,7 +172,7 @@ Skip this file entirely if the component has no interaction logic.
 
 ```typescript
 import type { I{Name} } from '@/{path}/{Name}.type'
-import { {NAME_UPPER} } from '@/{path}/{Name}.styles'
+import { {NAME_UPPER} } from '@/{path}/{Name}.style'
 // import { use{Name} } from '@/{path}/use{Name}.hook'
 
 export const {Name} = ({ label, disabled = false, onPress }: I{Name}) => {
@@ -227,7 +227,7 @@ export type { I{Name} } from './{Name}.type'
 | Default export (`export default`)                       | Named export only                           |
 | `function {Name}(...)` keyword                         | Arrow const: `const {Name} = (...) => ...` |
 | Logic in component body (handlers, computed values)     | Move to hook                                |
-| Inline Tailwind class strings                           | Extract to `{Name}.styles.ts` constant      |
+| Inline Tailwind class strings                           | Extract to `{Name}.style.ts` constant       |
 | Magic numbers / hardcoded strings                       | Named constant with purpose name            |
 | Relative imports (`'../something'`)                     | `@/` path alias                             |
 | Interface `{Name}Props` without I prefix                | `I{Name}`                                   |

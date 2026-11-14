@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl'
 import type { JSX } from 'react'
 
-import { emptyStateVariants } from '@/components/ui/EmptyState/EmptyState.styles'
+import { emptyStateVariants } from '@/components/ui/EmptyState/EmptyState.style'
 import type { IEmptyStateProps } from '@/components/ui/EmptyState/EmptyState.type'
 import { EmptyStateIcon } from '@/components/ui/EmptyState/EmptyStateIcon.component'
 

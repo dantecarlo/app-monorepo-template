@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import type { VariantProps } from 'tailwind-variants'
 
-import { modalPanelVariants } from '@/components/ui/Modal/Modal.styles'
+import { modalPanelVariants } from '@/components/ui/Modal/Modal.style'
 
 export interface IModalProps extends VariantProps<
   typeof modalPanelVariants

@@ -4,7 +4,7 @@ import { Animated, Pressable } from 'react-native'
 import {
   GRADIENT_COLORS,
   TOGGLE_STYLES as styles
-} from '@/components/ui/Toggle/Toggle.styles'
+} from '@/components/ui/Toggle/Toggle.style'
 import type { IToggleProps } from '@/components/ui/Toggle/Toggle.type'
 import { useToggleKnob } from '@/components/ui/Toggle/useToggleKnob.hook'
 

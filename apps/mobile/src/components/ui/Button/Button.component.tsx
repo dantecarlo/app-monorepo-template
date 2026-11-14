@@ -9,7 +9,7 @@ import {
   BUTTON_TEXT_SIZE_CLASS,
   BUTTON_TEXT_VARIANT_CLASS,
   BUTTON_VARIANT_CLASS
-} from '@/components/ui/Button/Button.styles'
+} from '@/components/ui/Button/Button.style'
 import type { IButtonProps } from '@/components/ui/Button/Button.type'
 
 export const Button = ({

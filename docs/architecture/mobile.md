@@ -30,7 +30,7 @@ apps/mobile/
     ├── screens/                  # one folder per screen — FRACTAL (ItemsDashboard, Login)
     │   └── <ScreenName>/
     │       ├── <ScreenName>.screen.tsx
-    │       ├── <ScreenName>.styles.ts · <ScreenName>.constant.ts   # when needed
+    │       ├── <ScreenName>.style.ts · <ScreenName>.constant.ts   # when needed
     │       ├── components/       # components used ONLY by this screen
     │       ├── hooks/            # hooks used ONLY by this screen
     │       ├── models/           # types/interfaces specific to this screen
@@ -93,7 +93,7 @@ also re-export an `ErrorBoundary` from its screen barrel (Expo Router convention
 
 All of [../code-standards.md](../code-standards.md) applies: arrow-only, alias imports (`@/*`),
 file suffixes (`.screen.tsx`/`.component.tsx`/`.hook.ts`/`.service.ts`/`.adapter.ts`/`.type.ts`/
-`.styles.ts`/`.constant.ts`), `I{Name}`/`{Name}Type`/`{Name}Enum`, single-object params, UI
+`.style.ts`/`.constant.ts`), `I{Name}`/`{Name}Type`/`{Name}Enum`, single-object params, UI
 strings via i18n, screens handle loading/empty/error states.
 
 ## 6. The shipped sample

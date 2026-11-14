@@ -1,6 +1,6 @@
 import type { VariantProps } from 'tailwind-variants'
 
-import { confirmButtonVariants } from '@/components/ui/ConfirmDialog/ConfirmDialog.styles'
+import { confirmButtonVariants } from '@/components/ui/ConfirmDialog/ConfirmDialog.style'
 
 export interface IConfirmDialogProps extends VariantProps<
   typeof confirmButtonVariants

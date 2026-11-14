@@ -19,7 +19,7 @@ import {
   LOGO_VIEW_BOX
 } from '@/components/ui/Logo/Logo.constant'
 import { LOGO_GRADIENT_ID } from '@/components/ui/Logo/Logo.constant'
-import { LOGO_STYLES as styles } from '@/components/ui/Logo/Logo.styles'
+import { LOGO_STYLES as styles } from '@/components/ui/Logo/Logo.style'
 import type { ILogoProps } from '@/components/ui/Logo/Logo.type'
 import { useLogo } from '@/components/ui/Logo/useLogo.hook'
 

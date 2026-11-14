@@ -4,7 +4,7 @@ import {
   TOAST_DISMISS_LABEL,
   TOAST_DOT_COLOR
 } from '@/components/ui/Toast/Toast.constant'
-import { TOAST_STYLES } from '@/components/ui/Toast/Toast.styles'
+import { TOAST_STYLES } from '@/components/ui/Toast/Toast.style'
 import {
   selectRemoveToast,
   selectToasts,

@@ -8,7 +8,7 @@ import {
   SKELETON_SHIMMER_END,
   SKELETON_SHIMMER_MID,
   SKELETON_SHIMMER_START
-} from '@/components/ui/LoadingSkeleton/LoadingSkeleton.styles'
+} from '@/components/ui/LoadingSkeleton/LoadingSkeleton.style'
 import type { ILoadingSkeletonProps } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.type'
 import { useShimmer } from '@/components/ui/LoadingSkeleton/useShimmer.hook'
 

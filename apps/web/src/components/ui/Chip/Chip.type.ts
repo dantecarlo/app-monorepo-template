@@ -1,7 +1,7 @@
 import type { HTMLAttributes } from 'react'
 import type { VariantProps } from 'tailwind-variants'
 
-import { chipVariants } from '@/components/ui/Chip/Chip.styles'
+import { chipVariants } from '@/components/ui/Chip/Chip.style'
 
 export interface IChipProps
   extends

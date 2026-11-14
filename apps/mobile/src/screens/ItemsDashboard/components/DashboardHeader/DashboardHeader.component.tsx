@@ -5,7 +5,7 @@ import { Text, View } from 'react-native'
 
 import { IconButton } from '@/components/ui/IconButton'
 import { TEXT } from '@/helpers/style.constant'
-import { DASHBOARD_HEADER_STYLES as styles } from '@/screens/ItemsDashboard/components/DashboardHeader/DashboardHeader.styles'
+import { DASHBOARD_HEADER_STYLES as styles } from '@/screens/ItemsDashboard/components/DashboardHeader/DashboardHeader.style'
 import { GRADIENT_BRAND_COLORS } from '@/screens/ItemsDashboard/components/ItemCard'
 
 export const DashboardHeader = () => {

@@ -138,7 +138,7 @@ shared `eslint.rules.mjs` — no workspace escapes.
 
 - **Arrow functions only** — no `function` keyword (`no-restricted-syntax`)
 - **Alias imports only** — `@/*`, `@app/*`; ban `../`
-- **File suffixes enforced** — `.component.tsx`, `.screen.tsx`, `.styles.ts`, `.hook.ts`,
+- **File suffixes enforced** — `.component.tsx`, `.screen.tsx`, `.style.ts`, `.hook.ts`,
   `.service.ts`, `.adapter.ts`, `.type.ts`, `.store.ts`, `.constant.ts`, `.helper.ts`, `.test.*`
   (via `eslint-plugin-check-file` — not honor-system)
 - **Constants, not inline** — `no-magic-numbers` is an **error**; literals live in `*.constant.ts`
@@ -240,7 +240,7 @@ Both apps ship with mock data + placeholder Supabase env, so they render without
 ```
 src/screens/<ScreenName>/
 ├── <ScreenName>.screen.tsx    # render-only container: composes children from hook data
-├── <ScreenName>.styles.ts     # Tailwind / RN StyleSheet constants
+├── <ScreenName>.style.ts      # Tailwind / RN StyleSheet constants
 ├── components/<Child>/        # components used ONLY by this screen
 ├── hooks/                     # hooks (own ALL logic/derivation) used ONLY by this screen
 ├── models/                    # types specific to this screen

@@ -4,7 +4,7 @@ import { GLASS, TEXT } from '@/helpers/style.constant'
 import {
   ITEM_CARD,
   STATUS_COLOR
-} from '@/screens/ItemsDashboard/components/ItemCard/ItemCard.styles'
+} from '@/screens/ItemsDashboard/components/ItemCard/ItemCard.style'
 import type { IItemCardProps } from '@/screens/ItemsDashboard/components/ItemCard/ItemCard.type'
 
 // ---------------------------------------------------------------------------

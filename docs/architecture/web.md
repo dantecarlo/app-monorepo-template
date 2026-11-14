@@ -28,7 +28,7 @@ apps/web/
     │   └── api/turnstile/verify/route.ts   # Turnstile token check (botProtection adapter)
     │
     ├── screens/<ScreenName>/      # one folder per screen — FRACTAL (same as mobile)
-    │   ├── <ScreenName>.screen.tsx · .styles.ts · components/ · hooks/ · models/ · index.ts
+    │   ├── <ScreenName>.screen.tsx · .style.ts · components/ · hooks/ · models/ · index.ts
     │
     ├── components/                # SHARED UI — AuthProvider/, ThemeProvider/, ui/{Button,Chip,GlassCard,…}
     ├── services/<Domain>/         # SHARED transversal services — service + adapter + barrel

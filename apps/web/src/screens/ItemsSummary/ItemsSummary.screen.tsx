@@ -1,7 +1,7 @@
 import { getTranslations } from 'next-intl/server'
 
 import { GlassCard } from '@/components/ui/GlassCard'
-import { ITEMS_SUMMARY } from '@/screens/ItemsSummary/ItemsSummary.styles'
+import { ITEMS_SUMMARY } from '@/screens/ItemsSummary/ItemsSummary.style'
 import { loadItemsSummary } from '@/screens/ItemsSummary/loadItemsSummary.service'
 
 const ItemsSummaryScreen = async () => {

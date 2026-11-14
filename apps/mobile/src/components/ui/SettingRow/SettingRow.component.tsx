@@ -4,7 +4,7 @@ import { Icon } from '@/components/ui/Icon/Icon.component'
 import {
   SETTING_ROW_CHEVRON_SIZE,
   SETTING_ROW_STYLES as styles
-} from '@/components/ui/SettingRow/SettingRow.styles'
+} from '@/components/ui/SettingRow/SettingRow.style'
 import type { ISettingRowProps } from '@/components/ui/SettingRow/SettingRow.type'
 
 /**

@@ -90,7 +90,7 @@ depend inward through ports/interfaces, never the reverse.
 | Adapter (DTO → domain)      | `Name.adapter.ts`        | `Items.adapter.ts`           |
 | TypeScript types/interfaces | `Name.type.ts`           | `Item.type.ts`               |
 | Constants                   | `Name.constant.ts`       | `queryKeys.constant.ts`      |
-| Tailwind class constants     | `Name.styles.ts`         | `ItemCard.styles.ts`         |
+| Tailwind class constants     | `Name.style.ts`          | `ItemCard.style.ts`          |
 | Helper / pure utility       | `name.helper.ts`         | `formatDate.helper.ts`       |
 | Zustand store               | `name.store.ts`          | `ui.store.ts`                |
 | Test file                   | `Name.test.tsx`          | `ItemCard.test.tsx`          |
@@ -221,8 +221,8 @@ third-party library callbacks (TanStack `queryFn`, MSW handlers).
 // ❌ Inline class soup in JSX
 <div className="flex items-center gap-3 py-3 border-t">
 
-// ✅ Named constants in *.styles.ts
-// ItemCard.styles.ts
+// ✅ Named constants in *.style.ts
+// ItemCard.style.ts
 export const ITEM_CARD = {
   CONTAINER: 'flex items-center gap-3 py-3',
   DIVIDER: 'border-t border-white/[0.06] first:border-t-0',
@@ -230,7 +230,7 @@ export const ITEM_CARD = {
 } as const
 
 // In component
-import { ITEM_CARD } from '@/components/ItemCard/ItemCard.styles'
+import { ITEM_CARD } from '@/components/ItemCard/ItemCard.style'
 <div className={`${ITEM_CARD.CONTAINER} ${ITEM_CARD.DIVIDER}`}>
 ```
 
@@ -395,7 +395,7 @@ project's i18n hook.
 | Concern       | Web (Next.js App Router) | Mobile (Expo Router)               |
 | ------------- | ------------------------ | ---------------------------------- |
 | Routing       | `app/` directory         | `app/` directory                   |
-| Styling       | Tailwind + `*.styles.ts` | NativeWind or StyleSheet + `*.styles.ts` |
+| Styling       | Tailwind + `*.style.ts`  | NativeWind or StyleSheet + `*.style.ts`  |
 | Nav hook      | `useRouter` (next/navigation) | `useRouter` (expo-router)     |
 | State/query   | Zustand + TanStack Query | Same                               |
 | `'use client'`| Required for hooks/interactivity | Not applicable             |

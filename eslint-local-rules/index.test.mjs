@@ -8,11 +8,14 @@
 // Run: pnpm verify:lint-rules:test
 // ---------------------------------------------------------------------------
 
+import { join } from 'node:path'
 import { describe, test } from 'node:test'
 
 import { RuleTester } from 'eslint'
+import checkFile from 'eslint-plugin-check-file'
 import tseslint from 'typescript-eslint'
 
+import { FILENAME_RULES } from '../eslint.rules.mjs'
 import localRules from './index.mjs'
 
 RuleTester.describe = describe
@@ -175,3 +178,45 @@ ruleTester.run('no-justifying-comment', rules['no-justifying-comment'], {
     "const d = 'this string is not because of anything'"
   ]
 })
+
+// The filename suffix contract (code-standards §3) is a check-file rule, not a
+// local one. These cases run it with the options eslint.rules.mjs configures,
+// so they pin the suffix glob itself: the style-constant suffix is the
+// singular `.style.ts`, like every other binding suffix.
+const [, suffixPatterns, suffixOptions] =
+  FILENAME_RULES['check-file/filename-naming-convention']
+
+const sourceFile = ({ path }) => ({
+  code: 'export const A = 1',
+  filename: join(process.cwd(), path),
+  options: [suffixPatterns, suffixOptions]
+})
+
+ruleTester.run(
+  'check-file/filename-naming-convention',
+  checkFile.rules['filename-naming-convention'],
+  {
+    invalid: [
+      {
+        ...sourceFile({
+          path: 'apps/web/src/components/ui/Chip/Chip.styles.ts'
+        }),
+        errors: [{ message: suffixOptions.errorMessage }]
+      },
+      {
+        ...sourceFile({ path: 'apps/web/src/screens/Login/Login.css.ts' }),
+        errors: [{ message: suffixOptions.errorMessage }]
+      }
+    ],
+    valid: [
+      sourceFile({
+        path: 'apps/web/src/components/ui/Chip/Chip.style.ts'
+      }),
+      sourceFile({ path: 'apps/mobile/src/screens/Login/Login.style.ts' }),
+      sourceFile({
+        path: 'apps/web/src/components/ui/Chip/Chip.constant.ts'
+      }),
+      sourceFile({ path: 'apps/web/src/components/ui/Chip/index.ts' })
+    ]
+  }
+)

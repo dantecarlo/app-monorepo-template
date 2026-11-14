@@ -6,7 +6,7 @@ import { useThemeTokens } from '@/lib/theme/useThemeTokens.hook'
 /**
  * Resolves the theme-variant glass surface values (BlurView tint + overlay
  * fill + stroke) from the active theme. Layout (positions, radius, shadow)
- * stays static in GlassCard.styles.ts.
+ * stays static in GlassCard.style.ts.
  */
 export const useGlassCard = (): IUseGlassCardResult => {
   const { colors, theme } = useThemeTokens()

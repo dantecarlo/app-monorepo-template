@@ -8,7 +8,7 @@ import { AuthShell } from '@/components/ui/AuthShell/AuthShell.component'
 import { SocialAuthButton } from '@/components/ui/SocialAuthButton/SocialAuthButton.component'
 import { useLoginForm } from '@/screens/Login/hooks/useLoginForm.hook'
 import { LOGIN_FIELD_ID } from '@/screens/Login/Login.constant'
-import { LOGIN } from '@/screens/Login/Login.styles'
+import { LOGIN } from '@/screens/Login/Login.style'
 
 export const LoginScreen = (): JSX.Element => {
   const t = useTranslations('auth.login')

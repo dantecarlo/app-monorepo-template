@@ -62,7 +62,7 @@ A screen folder MUST contain:
 | Member          | Required | Notes                                                       |
 | --------------- | -------- | ----------------------------------------------------------- |
 | `*.screen.tsx`  | yes      | the container; owns layout + composition                    |
-| `*.styles.ts`   | yes\*    | Tailwind class constants (\*or a `*.constant.ts` for styles) |
+| `*.style.ts`    | yes\*    | Tailwind class constants (\*or a `*.constant.ts` for styles) |
 | `index.ts`      | yes      | barrel — single public entry point                          |
 | `components/`   | when ≥1  | private presentational components of this screen            |
 | `hooks/`        | when ≥1  | logic hooks (`use*.hook.ts(x)`)                             |
@@ -78,7 +78,7 @@ A component folder MUST contain:
 | Member            | Required | Notes                                          |
 | ----------------- | -------- | ---------------------------------------------- |
 | `*.component.tsx` | yes      | presentational; no data fetching               |
-| `*.styles.ts`     | yes      | Tailwind class constants                       |
+| `*.style.ts`      | yes      | Tailwind class constants                       |
 | `index.ts`        | yes      | barrel — single public entry point             |
 
 A component MAY have a sibling `*.hook.ts(x)`, `*.type.ts`, and
@@ -88,7 +88,7 @@ A component MAY have a sibling `*.hook.ts(x)`, `*.type.ts`, and
 
 - Missing `*.screen.tsx` / `*.component.tsx` → **BLOCKER**.
 - Missing `index.ts` barrel → **BLOCKER**.
-- Missing styles file (`*.styles.ts` or styles `*.constant.ts`) →
+- Missing styles file (`*.style.ts` or styles `*.constant.ts`) →
   **WARNING** (BLOCKER if the screen/component file contains inline class
   strings — see Step 2).
 - Logic hooks placed at the block root instead of `hooks/` when the block
@@ -103,7 +103,7 @@ A component MAY have a sibling `*.hook.ts(x)`, `*.type.ts`, and
 In `*.screen.tsx` and `*.component.tsx`:
 
 - **No inline Tailwind class strings** in JSX `className`. Class strings
-  belong in the `*.styles.ts` constant and are referenced by name.
+  belong in the `*.style.ts` constant and are referenced by name.
   Inline `className="flex gap-2 ..."` → **BLOCKER** (Rule 7, magic strings).
 - **No magic numbers / string literals** used as config, labels, limits,
   keys, or URLs. They belong in a `*.constant.ts` (or i18n catalog for
@@ -200,7 +200,7 @@ Cite `docs/code-standards.md` rule numbers.
 
 - **Suffixes (Rule 3)**: every file uses the correct suffix from the table
   (`.screen.tsx`, `.component.tsx`, `.hook.ts`, `.service.ts`,
-  `.adapter.ts`, `.type.ts`, `.constant.ts`, `.styles.ts`, `.test.tsx`).
+  `.adapter.ts`, `.type.ts`, `.constant.ts`, `.style.ts`, `.test.tsx`).
   Wrong or missing suffix → **BLOCKER**.
 - **Naming (Rule 4)**: interfaces `I{Name}`, type aliases `{Name}Type`,
   enums `{Name}Enum`, constants `ALL_CAPS_BY_PURPOSE`. Violations →

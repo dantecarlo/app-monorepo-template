@@ -2,7 +2,7 @@ import type { DimensionValue } from 'react-native'
 import type { ViewStyle } from 'react-native'
 import { useAnimatedStyle } from 'react-native-reanimated'
 
-import type { SkeletonRoundedType } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.styles'
+import type { SkeletonRoundedType } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.style'
 
 export interface ILoadingSkeletonProps {
   height?: DimensionValue

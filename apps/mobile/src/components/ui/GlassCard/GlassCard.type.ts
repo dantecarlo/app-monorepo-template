@@ -5,7 +5,7 @@ import type { ColorValue } from 'react-native'
 import {
   GLASS_CARD_BORDER_RADIUS,
   GLASS_CARD_PADDING
-} from '@/components/ui/GlassCard/GlassCard.styles'
+} from '@/components/ui/GlassCard/GlassCard.style'
 
 export type GlassCardPaddingType = keyof typeof GLASS_CARD_PADDING
 

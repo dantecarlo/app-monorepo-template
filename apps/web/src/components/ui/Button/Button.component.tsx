@@ -1,4 +1,4 @@
-import { buttonVariants } from '@/components/ui/Button/Button.styles'
+import { buttonVariants } from '@/components/ui/Button/Button.style'
 import type { IButtonProps } from '@/components/ui/Button/Button.type'
 
 // ---------------------------------------------------------------------------

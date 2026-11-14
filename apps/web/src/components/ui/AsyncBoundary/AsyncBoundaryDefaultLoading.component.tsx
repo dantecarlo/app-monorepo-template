@@ -2,7 +2,7 @@
 
 import type { JSX } from 'react'
 
-import { asyncBoundaryVariants } from '@/components/ui/AsyncBoundary/AsyncBoundary.styles'
+import { asyncBoundaryVariants } from '@/components/ui/AsyncBoundary/AsyncBoundary.style'
 
 export const AsyncBoundaryDefaultLoading = (): JSX.Element => {
   const { loadingWrapper, spinner } = asyncBoundaryVariants()

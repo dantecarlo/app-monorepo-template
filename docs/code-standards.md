@@ -191,6 +191,7 @@ Available aliases:
 | Adapter        | `Name.adapter.ts`    | `Items.adapter.ts`       |
 | Type/Interface | `Name.type.ts`       | `Item.type.ts`           |
 | Constant       | `Name.constant.ts`   | `queryKeys.constant.ts`  |
+| Style          | `Name.style.ts`      | `ItemCard.style.ts`      |
 | Test           | `Name.test.tsx`      | `ItemCard.test.tsx`      |
 
 ---
