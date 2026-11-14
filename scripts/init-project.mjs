@@ -13,7 +13,7 @@
 //   --git-origin <url>  Optional. Runs `git remote set-url origin <url>`.
 //
 // What it rewrites:
-//   1. root package.json     name field
+//   1. root package.json     name field, then its `@app/` specifiers in step 6
 //   2. apps/mobile/app.json  expo.slug, expo.name, expo.scheme,
 //                            android.package, ios.bundleIdentifier
 //   3. tsconfig.base.json    paths key '@app/*'
@@ -21,7 +21,7 @@
 //   5. turbo.json            @app/* task keys
 //   6. every *.cjs *.js *.json *.md *.mjs *.ts *.tsx file  '@app/' specifiers,
 //                            the template slug and its bundle id, except
-//                            the two files that hold those tokens on purpose
+//                            the files that hold those tokens on purpose
 //                            (KEPT_FILES)
 //   7. packages/i18n en.json + es.json  top-level `app.name` display name,
 //                            kept in sync with app.json expo.name. The web
@@ -87,9 +87,14 @@ const IGNORED_DIRS = new Set([
   'node_modules'
 ])
 
-// They hold the template's tokens on purpose: this script replaces them, and
-// check-identity reports any that is left.
-const KEPT_FILES = new Set(['scripts/check-identity.mjs', 'scripts/init-project.mjs'])
+// They hold the template's tokens on purpose: this script replaces them,
+// check-identity reports any that is left, and the test of this script tells
+// the template's tree from a derived one by them.
+const KEPT_FILES = new Set([
+  'scripts/check-identity.mjs',
+  'scripts/init-project.mjs',
+  'scripts/init-project.test.mjs'
+])
 
 const toRel = ({ file }) => relative(REPO_ROOT, file).split(sep).join('/')
 
@@ -277,7 +282,6 @@ for (const file of allFiles) {
   if (rel === 'pnpm-lock.yaml') continue
   // Skip already-handled structured JSON files.
   if (
-    rel === 'package.json' ||
     rel === 'apps/mobile/app.json' ||
     rel === 'tsconfig.base.json' ||
     rel === 'turbo.json'
