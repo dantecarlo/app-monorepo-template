@@ -8,7 +8,7 @@ import {
   AUTH_SHELL_ROOT_CLASS,
   AUTH_SHELL_SUBTITLE_CLASS,
   AUTH_SHELL_TITLE_CLASS
-} from '@/components/ui/AuthShell/AuthShell.constant'
+} from '@/components/ui/AuthShell/AuthShell.style'
 import type { IAuthShellProps } from '@/components/ui/AuthShell/AuthShell.type'
 import { GlassCard } from '@/components/ui/GlassCard/GlassCard.component'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher/LanguageSwitcher.component'

@@ -12,10 +12,6 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key })
 }))
 
-vi.mock('expo-linear-gradient', () => ({
-  LinearGradient: ({ children }: { children?: unknown }) => children
-}))
-
 vi.mock('@/screens/ItemsDashboard/hooks/useItems.hook', () => ({
   useItems: () => ({
     activeCount: 2,
@@ -41,10 +37,6 @@ vi.mock('@/screens/ItemsDashboard/components/ItemsListCard', () => ({
 
 vi.mock('@/screens/ItemsDashboard/components/DashboardNav', () => ({
   DashboardNav: () => null
-}))
-
-vi.mock('@/screens/ItemsDashboard/components/ItemCard', () => ({
-  GRADIENT_BRAND_COLORS: ['#FF8A3D', '#FF6A1A']
 }))
 
 import { ItemsDashboardScreen } from './ItemsDashboard.screen'

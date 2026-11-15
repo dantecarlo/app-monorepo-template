@@ -15,7 +15,7 @@ only differences from mobile are the routing layer and the UI primitives.
 
 ```
 apps/web/
-├── next.config.ts · postcss.config.mjs · instrumentation.ts
+├── next.config.ts · postcss.config.mjs · tailwind.config.cjs · instrumentation.ts
 ├── sentry.client.config.ts · sentry.server.config.ts · sentry.edge.config.ts
 └── src/
     ├── middleware.ts              # origin lock (originGuard adapter)
@@ -24,7 +24,7 @@ apps/web/
     │   ├── providers.tsx · SupabaseProviders.tsx   # NextIntl, QueryClient, AuthProvider, Toast
     │   ├── error.tsx              # root segment boundary: render crash → ErrorState + retry
     │   ├── global-error.tsx       # root layout crash: own html/body → ErrorState + retry
-    │   ├── globals.css            # Tailwind CSS 4 entry + @theme tokens
+    │   ├── globals.css            # Tailwind CSS 4 entry: @config the preset, themed colours, body base
     │   ├── page.tsx               # / → ItemsSummaryScreen (RSC, in Suspense) + ItemsDashboardScreen
     │   ├── login/page.tsx         # /login → LoginScreen
     │   └── api/turnstile/verify/route.ts   # Turnstile token check (botProtection adapter)
@@ -32,11 +32,11 @@ apps/web/
     ├── screens/<ScreenName>/      # one folder per screen — FRACTAL (same as mobile)
     │   ├── <ScreenName>.screen.tsx · .style.ts · components/ · hooks/ · models/ · index.ts
     │
-    ├── components/                # SHARED UI — AuthProvider/, ThemeProvider/, ui/{Button,Chip,GlassCard,…}
+    ├── components/                # SHARED UI — AuthProvider/, ThemeProvider/, ui/{Button,Text,Divider,Screen,…}
     ├── services/<Domain>/         # SHARED transversal services — service + adapter + barrel
     ├── lib/                       # bot-protection, image-delivery, observability, origin-guard,
     │                              # query, supabase, theme
-    └── stores/  helpers/  validation/  i18n/  test/
+    └── stores/  helpers/ (layout.style.ts: positioning only)  validation/  i18n/  test/
 ```
 
 A shared `src/hooks/` folder is created on first use; none ships on web today.
@@ -67,10 +67,20 @@ export default LoginPage
 
 ## 4. UI & i18n stack
 
-- **In-repo UI primitives** under `src/components/ui/` (no shadcn) + **Tailwind CSS 4**,
-  configured CSS-first in `src/app/globals.css` (`@theme`). Its token values mirror
-  `@app/tokens`; `pnpm verify:theme-sync` keeps the copies in lockstep. Dark-glass token set for
-  the default visual language.
+- **In-repo UI primitives** under `src/components/ui/` (no shadcn) + **Tailwind CSS 4**.
+  `src/app/globals.css` loads `tailwind.config.cjs` with `@config`, and that config loads the
+  `@app/tokens` preset: the spacing, radius, font-size, layout-width, glyph and inset scales come
+  from it. The CSS keeps what the preset cannot carry, the colours that flip per theme through the
+  `--c-*` variables (its `@theme` wins over the preset), the font families `next/font` injects,
+  the shadows `.glass-card` reads, and the base look of `<body>`. `pnpm verify:theme-sync` keeps
+  every colour of both themes equal to the tokens.
+- **Styling lives in the components** (`AGENTS.md` LAW, `docs/code-standards.md` §22). A block
+  under `components/ui/`, or a screen's own `components/`, owns its look; a screen, a route entry
+  and a container only position, through their `*.style.ts` and `helpers/layout.style.ts`. Text
+  is `ui/Text` (a variant, or a tone and a weight), a labelled rule is `ui/Divider`, and a
+  screen's surface is `ui/Screen`. Every value is a token or a step of Tailwind's scale, and only
+  `ui/` imports a UI kit or `tailwind-variants`. `local/style-positions-only`,
+  `local/style-token-values` and `local/ui-kit-boundary` hold it.
 - **i18n: `next-intl`** reading the shared `@app/i18n` ICU catalogs — same keys as mobile,
   different adapter. `src/i18n/request.config.ts` resolves the locale from the `NEXT_LOCALE`
   cookie; there is no locale middleware.

@@ -3,7 +3,8 @@
 import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/Button'
-import { LAYOUT } from '@/helpers/style.constant'
+import { Screen } from '@/components/ui/Screen'
+import { LAYOUT } from '@/helpers/layout.style'
 import { DashboardHeader } from '@/screens/ItemsDashboard/components/DashboardHeader'
 import { DashboardNav } from '@/screens/ItemsDashboard/components/DashboardNav'
 import { ItemsListCard } from '@/screens/ItemsDashboard/components/ItemsListCard'
@@ -26,7 +27,7 @@ export const ItemsDashboardScreen = () => {
   } = useItems()
 
   return (
-    <div className={`${LAYOUT.SCREEN} ${LAYOUT.CONTENT_AREA}`}>
+    <Screen className={LAYOUT.CONTENT_AREA}>
       <main className={ITEMS_DASHBOARD.MAIN}>
         <div className={LAYOUT.SECTION_GAP}>
           <DashboardHeader />
@@ -52,6 +53,6 @@ export const ItemsDashboardScreen = () => {
       </main>
 
       <DashboardNav activeId={activeNav} onItemPress={onNavChange} />
-    </div>
+    </Screen>
   )
 }

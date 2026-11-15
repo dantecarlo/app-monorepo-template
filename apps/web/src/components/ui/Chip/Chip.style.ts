@@ -10,7 +10,7 @@ import { tv } from 'tailwind-variants'
 export const chipVariants = tv({
   base: [
     'inline-flex items-center gap-1.5',
-    'rounded-full px-[11px] py-[5px]',
+    'rounded-full px-pill-x py-pill-y',
     'font-body text-caption font-medium',
     'select-none whitespace-nowrap'
   ],
@@ -21,7 +21,7 @@ export const chipVariants = tv({
     variant: {
       accent: 'bg-accent-tint text-accent-text',
       glass: 'glass-card text-text-secondary',
-      neutral: 'bg-white/[0.08] text-text-secondary',
+      neutral: 'bg-neutral-tint text-text-secondary',
       success: 'bg-success-tint text-success-text'
     }
   }

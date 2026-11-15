@@ -128,8 +128,8 @@ Rules:
 ```typescript
 export const {NAME_UPPER} = {
   CONTAINER: 'flex items-center gap-2',
-  LABEL: 'text-sm font-medium text-foreground',
-  ICON: 'h-4 w-4 shrink-0',
+  LABEL: 'font-body text-label font-medium text-text-secondary',
+  ICON: 'size-4 shrink-0',
   DISABLED: 'opacity-50 cursor-not-allowed'
 } as const
 ```
@@ -138,7 +138,21 @@ Rules:
 - One exported `const` in `SCREAMING_SNAKE_CASE` named after the component
 - Keys describe purpose: `CONTAINER`, `LABEL`, `BADGE` — not `FLEX_CENTER`
 - Use `as const` for type narrowing
-- No token values hardcoded — use `var(--color-...)` or Tailwind token classes
+- The styling pillar (`AGENTS.md` § Styling lives in the components,
+`docs/code-standards.md` §22): a `ui/` block, or a block in a screen's own `components/`, owns its
+look; a screen, a route entry and a container only position. This block is where its look goes:
+  colour, type, border, radius, shadow, opacity, states and variants.
+- Every value is a token (`text-text-primary`, `max-w-content`, `px-pill-x`; `colors.accent` in a
+  React Native StyleSheet) or a step of Tailwind's scale (`px-2.75`). No raw colour, no palette
+  colour (`bg-white/…`), no arbitrary value (`[…]`): `local/style-token-values` fails them. A value
+  no token carries is added to `packages/tokens` first.
+- A `tv()` config whose classes hold a token font size (`text-title`) passes `{ twMerge: false }`:
+  tailwind-merge reads the token as a colour and drops it.
+- Only a `ui/` block imports a UI kit or its helpers (`tailwind-variants`, Radix,
+  `class-variance-authority`, `expo-linear-gradient`, …): `local/ui-kit-boundary`. A screen-local
+  block that needs one renders the `ui/` wrapper, or a wrapper is added to `ui/`.
+- Text, a labelled rule and a screen surface already have blocks: `ui/Text`, `ui/Divider`,
+  `ui/Screen`.
 
 ---
 
@@ -233,3 +247,5 @@ export type { I{Name} } from './{Name}.type'
 | Interface `{Name}Props` without I prefix                | `I{Name}`                                   |
 | JSX prop spreading `{...props}`                         | List each prop explicitly                   |
 | Recreating `Avatar`, `Button`, `Chip` from scratch      | Import from `@/components/ui/`              |
+| A hex, a palette colour or `[…]` in a style             | The token (`bg-neutral-tint`, `max-w-narrow`) |
+| A UI kit imported outside `components/ui`               | Wrap it in a `ui/` block and render that    |

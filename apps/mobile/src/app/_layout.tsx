@@ -41,7 +41,7 @@ const queryClient = createQueryClient({
 const authGateway = createSupabaseAuthGateway({ client: supabase })
 
 const RootLayout = () => {
-  const { contentBackgroundColor, statusBarStyle } = useRootTheme()
+  const { contentStyle, statusBarStyle } = useRootTheme()
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -70,7 +70,7 @@ const RootLayout = () => {
           <Stack
             screenOptions={{
               animation: 'fade',
-              contentStyle: { backgroundColor: contentBackgroundColor },
+              contentStyle,
               headerShown: false
             }}
           />

@@ -110,6 +110,15 @@ In `*.screen.tsx` and `*.component.tsx`:
   user-facing copy) → **BLOCKER**.
 - User-facing copy hardcoded instead of pulled from the i18n catalog →
   **BLOCKER**.
+- **Styling lives in the components** (`AGENTS.md` LAW, code-standards §22).
+  A screen's or a route's `*.style.ts`, inline `style` or `*Style` constant
+  that holds a colour, a type class, a border, a radius, a shadow or an
+  opacity → **BLOCKER** (`local/style-positions-only`). A raw colour, a
+  palette colour or an arbitrary value (`[…]`) in any style → **BLOCKER**
+  (`local/style-token-values`). A UI kit imported outside `components/ui`
+  → **BLOCKER** (`local/ui-kit-boundary`). An entry added to
+  `eslint-style-positioning-allowlist.json` without a reason that the value
+  cannot move → **BLOCKER**.
 
 A single inline literal that is genuinely structural (e.g. `key={item.id}`)
 is fine — do not flag identifiers, `key` props, or boolean/`null` literals.

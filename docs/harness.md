@@ -67,6 +67,8 @@ The chain runs in cost order:
 | `pnpm verify:manifest:coverage` | Every tracked file has exactly one owner, no stale claims |
 | `pnpm verify:manifest:test`     | The pure engine behind both still behaves                 |
 | `pnpm verify:lint-rules:test`   | The local ESLint rules still report what they must        |
+| `pnpm verify:allowlist-freshness:test` | The styling allowlist gate fails a stale entry and an unlisted violation |
+| `pnpm verify:allowlist-freshness` | Every entry of `eslint-style-positioning-allowlist.json` still breaks its rule, and every violation is listed; prints the live count |
 
 Structural drift fails here, before anything expensive builds. See
 [manifest.md](manifest.md). The projection check is step 1 of the chain: an agent
@@ -88,7 +90,7 @@ the pre-commit hook on staged files.
 | `verify:pairing`      | A service has its adapter and vice versa                                                  |
 | `verify:structure`    | Screen and component folders satisfy the block contract                                   |
 | `verify:security`     | The static security posture holds                                                         |
-| `verify:theme-sync`   | Web and mobile themes agree                                                               |
+| `verify:theme-sync`   | Every colour of both themes agrees across `tokens.constant.ts`, `globals.css` and the preset; `verify:theme-sync:test` plants each drift |
 | `docs:diagrams:check` | Every committed diagram matches its spec and the tokens                                   |
 | `verify:specs`        | Every living spec and change has its shape, and every test a scenario names exists        |
 | `report:spec-drift`   | Lists the living specs whose governed code moved past their verified commit; never blocks |
@@ -159,6 +161,9 @@ was being broken with nothing to notice.
 | `local/no-inline-tailwind-classname` | views                          | Classes live in `*.style.ts`                 |
 | `local/single-object-params`         | everywhere                     | Rule 5                                       |
 | `local/no-non-ascii-identifier`      | everywhere                     | §15 — English everywhere                     |
+| `local/style-positions-only`         | both apps, outside the component blocks | §22 — a screen or section only positions |
+| `local/style-token-values`           | every style file and view of both apps | §22 — every value is a token        |
+| `local/ui-kit-boundary`              | both apps, outside `components/ui` | §22 — only `ui/` imports a UI kit        |
 
 ---
 
@@ -202,8 +207,8 @@ Flexibility without weakening the gate, in order of preference (§20):
    reformat.
 3. **A justified inline disable**, with a written reason, one rule per line.
 
-**Never an allowlist file.** A list of blessed paths freezes a backlog into a
-file nobody reads. A ceiling — one number per scope that can only go down, with
+**Never an allowlist file**, but for the two below. A list of blessed paths
+freezes a backlog into a file nobody reads. A ceiling — one number per scope that can only go down, with
 a measurement date — is the sanctioned way to carry a backlog.
 
 One exception, approved with the `english-only` change:
@@ -216,3 +221,12 @@ that excuses no line, so it cannot hold a backlog; it ships empty. The gate
 reads the allowlist like any other file, so an entry writes a Spanish-only
 character as a JSON Unicode escape and matches a line of plain Spanish words
 with a `pattern` on a fragment of it.
+
+The second, approved with the styling pillar (2026-11-14):
+`eslint-style-positioning-allowlist.json` lets `local/style-positions-only` or
+`local/style-token-values` skip one file, as `{ path, rule, reason }`, where a
+value truly cannot move. It ships empty. `verify:allowlist-freshness` re-derives
+every violation with the rules' own detection and fails an entry whose file no
+longer breaks its rule, so the list only shrinks; a new entry is a hand edit,
+with its reason, in the diff. Turborepo does not hash the list into the lint
+task, so a lint result cached before an edit to it is reused.

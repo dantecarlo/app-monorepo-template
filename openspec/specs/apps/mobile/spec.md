@@ -3,7 +3,7 @@
 > **Governs:** `apps/mobile/src`, `apps/mobile/app.json`
 > **ID prefix:** `MOBILE`
 > **Derived from:** `docs/architecture/mobile.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/observability.md`, `docs/e2e.md`, `docs/responsive.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-14 at `58733aa`
+> **Verified against the code:** 2026-11-15 at `6c82909`
 
 ## Purpose
 
@@ -107,7 +107,7 @@ store the matching theme under the app.theme key and apply it to the NativeWind 
 The mobile app SHALL paint the navigator background with the active theme's base background and
 show dark status bar glyphs under the light theme and light glyphs under the dark one.
 
-**Evidence:** `apps/mobile/src/lib/theme/useRootTheme.hook.ts:14-17`, `apps/mobile/src/app/_layout.tsx:69-73`
+**Evidence:** `apps/mobile/src/lib/theme/useRootTheme.hook.ts:16-20`, `apps/mobile/src/app/_layout.tsx:69-73`
 
 #### Scenario: the light theme is active
 
@@ -721,7 +721,7 @@ The mobile app's web export SHALL render the root route in a centred column at m
 with no horizontal overflow and every interactive control that is not fixed or sticky inside the
 viewport, at 390, 768, 1280 and 1920 px wide.
 
-**Evidence:** `apps/mobile/src/helpers/style.constant.ts:20-28`, `apps/mobile/src/screens/ItemsDashboard/ItemsDashboard.screen.tsx:67-74`
+**Evidence:** `apps/mobile/src/helpers/layout.style.ts:12-16`, `apps/mobile/src/screens/ItemsDashboard/ItemsDashboard.screen.tsx:48-55`
 
 #### Scenario: the four viewport widths
 
@@ -792,7 +792,7 @@ The mobile app SHALL export an `ErrorBoundary` from the root layout, which Expo 
 around the layout and every route below it, rendering the error state with its generic copy on
 the theme background and a retry control that re-renders the route.
 
-**Evidence:** `apps/mobile/src/app/_layout.tsx:33-34`, `apps/mobile/src/components/RootErrorBoundary/RootErrorBoundary.component.tsx:8-18`, `apps/mobile/src/components/ui/ErrorState/ErrorState.component.tsx:16-47`
+**Evidence:** `apps/mobile/src/app/_layout.tsx:34`, `apps/mobile/src/components/RootErrorBoundary/RootErrorBoundary.component.tsx:7-11`, `apps/mobile/src/components/ui/Screen/Screen.component.tsx:10`, `apps/mobile/src/components/ui/ErrorState/ErrorState.component.tsx:16-47`
 
 #### Scenario: a route crashes while rendering
 
@@ -808,6 +808,96 @@ the theme background and a retry control that re-renders the route.
 - **WHEN** Expo Router reads its exports
 - **THEN** its `ErrorBoundary` is the root error boundary
 - **Test:** `apps/mobile/src/app/__tests__/_layout.test.tsx` › "exports the root error boundary as its ErrorBoundary"
+
+### Requirement: MOBILE-38 — A screen or section only positions
+
+The mobile app SHALL keep the look of a screen, a route entry and a container outside the
+component blocks in a component block (`src/components/ui/`, or a screen's own `components/`):
+their NativeWind classes, StyleSheet entries and style slots carry only layout, spacing, size,
+position, overflow and visibility.
+
+**Evidence:** `eslint-local-rules/style-positioning.detect.mjs:342`, `eslint.rules.mjs:696`, `apps/mobile/src/helpers/layout.style.ts:8`, `apps/mobile/src/components/RootErrorBoundary/RootErrorBoundary.component.tsx:7`
+
+#### Scenario: a screen StyleSheet entry carries a colour
+
+- **GIVEN** a mobile screen style file whose StyleSheet entry sets a text colour
+- **WHEN** it is linted
+- **THEN** `local/style-positions-only` reports the declaration key
+- **Test:** `eslint-local-rules/index.test.mjs` › "export const S = StyleSheet.create({ title: { color: colors.text.primary, marginTop: 4 } })"
+
+#### Scenario: a container paints its background inline
+
+- **GIVEN** the root error boundary container with an inline background colour
+- **WHEN** it is linted
+- **THEN** the declaration key is reported
+- **Test:** `eslint-local-rules/index.test.mjs` › "const B = () => <View style={{ backgroundColor: bg, flex: 1 }} />"
+
+### Requirement: MOBILE-39 — Every mobile style value is a token
+
+The mobile app SHALL take every colour of its style files and views from `@app/tokens`, and every
+NativeWind class value from the tokens preset or Tailwind's scale: no raw colour, no Tailwind
+palette colour and no arbitrary value.
+
+**Evidence:** `eslint-local-rules/style-positioning.detect.mjs:721`, `apps/mobile/src/components/ui/AccentGradient/AccentGradient.style.ts:5`
+
+#### Scenario: a style file spells a raw colour
+
+- **GIVEN** a mobile style file holding two hex colours
+- **WHEN** it is linted
+- **THEN** `local/style-token-values` reports each of them
+- **Test:** `eslint-local-rules/index.test.mjs` › "export const GRADIENT = ['#FF8A3D', '#FF6A1A'] as const"
+
+### Requirement: MOBILE-40 — Text, Divider and Screen carry the look screens used to hold
+
+The mobile app SHALL render text through the `Text` block, whose variant sets its typography and
+colour, a labelled rule through the `Divider` block, and a screen's surface through the `Screen`
+block, which fills its parent and paints the dark base background, or the active theme's base
+background when it is themed.
+
+**Evidence:** `apps/mobile/src/components/ui/Text/Text.style.ts:8`, `apps/mobile/src/components/ui/Divider/Divider.component.tsx:6`, `apps/mobile/src/components/ui/Screen/Screen.component.tsx:10`
+
+#### Scenario: a text variant renders
+
+- **GIVEN** the `Text` block with the caption variant
+- **WHEN** it renders
+- **THEN** its style holds the caption size, line height and tertiary colour of the tokens
+- **Test:** `apps/mobile/src/components/ui/Text/Text.component.test.tsx` › "renders a variant's typography"
+
+#### Scenario: a labelled divider renders
+
+- **GIVEN** the `Divider` block with a label
+- **WHEN** it renders
+- **THEN** the label is shown between two hairline rules
+- **Test:** `apps/mobile/src/components/ui/Divider/Divider.component.test.tsx` › "renders the label between two rules"
+
+#### Scenario: a themed screen surface renders
+
+- **GIVEN** the `Screen` block, themed and not themed, under the light theme
+- **WHEN** it renders
+- **THEN** the themed surface paints the light base background and the other the dark one
+- **Test:** `apps/mobile/src/components/ui/Screen/Screen.component.test.tsx` › "paints the dark base, or the active theme's base when themed"
+
+### Requirement: MOBILE-41 — Only the ui blocks import a UI kit
+
+The mobile app SHALL import a UI kit or the drawing primitives the blocks wrap
+(`expo-linear-gradient`, `expo-blur`, `react-native-svg`, a future `react-native-paper`) only from
+a block under `src/components/ui/`, so a kit is swapped by rewriting that folder alone.
+
+**Evidence:** `eslint-local-rules/ui-kit.detect.mjs:17`, `apps/mobile/src/components/ui/AccentGradient/AccentGradient.component.tsx:8`
+
+#### Scenario: a screen-local component imports the gradient
+
+- **GIVEN** a screen's own component that imports `expo-linear-gradient`
+- **WHEN** it is linted
+- **THEN** `local/ui-kit-boundary` reports the import
+- **Test:** `eslint-local-rules/index.test.mjs` › "import { LinearGradient } from 'expo-linear-gradient'"
+
+#### Scenario: the gradient renders through its block
+
+- **GIVEN** the `AccentGradient` block around content
+- **WHEN** it renders
+- **THEN** it paints the light accent to the accent behind the content
+- **Test:** `apps/mobile/src/components/ui/AccentGradient/AccentGradient.component.test.tsx` › "paints the accent gradient behind its children"
 
 ## Open questions
 

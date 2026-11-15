@@ -1,5 +1,3 @@
-import { GLASS } from '@/helpers/style.constant'
-
 export const ITEM_CARD = {
   AVATAR: [
     'flex h-9 w-9 shrink-0 items-center justify-center',
@@ -8,12 +6,12 @@ export const ITEM_CARD = {
   ].join(' '),
 
   CATEGORY_BADGE:
-    'inline-flex items-center rounded-full bg-white/[0.06] px-2 py-0.5 font-body text-caption text-text-tertiary',
+    'inline-flex items-center rounded-full bg-divider px-2 py-0.5 font-body text-caption text-text-tertiary',
 
   DESCRIPTION:
     'font-body text-caption text-text-tertiary line-clamp-1 mt-0.5',
 
-  DIVIDER: `${GLASS.DIVIDER} first:border-t-0`,
+  DIVIDER: 'border-t border-divider first:border-t-0',
 
   META: 'flex items-center gap-2 mt-1',
 

@@ -121,6 +121,12 @@ export const {NAME} = {
 Rules:
 - Keys describe purpose — never CSS values
 - Never add inline Tailwind strings — always through the styles constant
+- A variant of a look is added to the block that owns the look: a `ui/` block, or a block in a
+  screen's own `components/`. In a screen, a route or a container the style file only positions
+  (`local/style-positions-only`), so a new look there is a variant or a prop of the `ui/` block it
+  renders, never a class in the screen (`AGENTS.md` § Styling lives in the components).
+- Every value is a token or a step of Tailwind's scale; a raw colour, a palette colour or `[…]`
+  fails `local/style-token-values`, and a value no token carries is added to `packages/tokens`.
 
 ---
 

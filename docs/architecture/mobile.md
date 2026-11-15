@@ -49,7 +49,7 @@ apps/mobile/
     ├── hooks/                    # SHARED hooks (used across screens, e.g. useSession)
     ├── stores/                   # Zustand slices (auth, toast, ui) — shared by definition
     ├── lib/                      # framework wiring: i18n/, observability/, query/, supabase/, theme/
-    ├── helpers/                  # shared pure helpers + style.constant.ts
+    ├── helpers/                  # shared pure helpers + layout.style.ts (positioning only)
     ├── validation/               # shared zod schemas (or per-screen in the screen's models/)
     └── test/                     # test helper, setup, MSW and native-module mocks
 ```
@@ -99,6 +99,18 @@ All of [../code-standards.md](../code-standards.md) applies: arrow-only, alias i
 file suffixes (`.screen.tsx`/`.component.tsx`/`.hook.ts`/`.service.ts`/`.adapter.ts`/`.type.ts`/
 `.style.ts`/`.constant.ts`), `I{Name}`/`{Name}Type`/`{Name}Enum`, single-object params, UI
 strings via i18n, screens handle loading/empty/error states.
+
+**Styling lives in the components** (`AGENTS.md` LAW, `docs/code-standards.md` §22). A block under
+`src/components/ui/`, or a screen's own `components/`, owns its look, in NativeWind classes or a
+StyleSheet built from `@app/tokens`. A screen, a route file and a container under
+`src/components/<Name>/` only position: their StyleSheet entries and style props carry flex,
+gap, alignment, position, size and spacing, never a colour, a font or a radius. Text is
+`ui/Text`, a labelled rule `ui/Divider`, a screen's surface `ui/Screen` (dark by default, the
+active theme when `themed`) and the accent gradient `ui/AccentGradient`; the navigator's themed
+background comes from `useRootTheme`. Only `ui/` imports a UI kit or a drawing primitive
+(`expo-linear-gradient`, `react-native-svg`). `local/style-positions-only`,
+`local/style-token-values` and `local/ui-kit-boundary` hold it; a number in a StyleSheet is not
+read.
 
 ## 6. The shipped sample
 

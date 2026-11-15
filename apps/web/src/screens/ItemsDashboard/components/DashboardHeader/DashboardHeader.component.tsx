@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl'
 
 import { IconButton } from '@/components/ui/IconButton'
-import { TEXT } from '@/helpers/style.constant'
+import { Text } from '@/components/ui/Text'
 import { DASHBOARD_HEADER } from '@/screens/ItemsDashboard/components/DashboardHeader/DashboardHeader.style'
 
 export const DashboardHeader = () => {
@@ -19,7 +19,9 @@ export const DashboardHeader = () => {
         </div>
         <div>
           <p className={DASHBOARD_HEADER.SUBTITLE}>{t('welcomeBack')}</p>
-          <p className={TEXT.TITLE}>{t('title')}</p>
+          <Text as="p" variant="title">
+            {t('title')}
+          </Text>
         </div>
       </div>
       <IconButton

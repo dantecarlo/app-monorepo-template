@@ -227,8 +227,8 @@ third-party library callbacks (TanStack `queryFn`, MSW handlers).
 // ItemCard.style.ts
 export const ITEM_CARD = {
   CONTAINER: 'flex items-center gap-3 py-3',
-  DIVIDER: 'border-t border-white/[0.06] first:border-t-0',
-  AVATAR: 'flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted',
+  DIVIDER: 'border-t border-divider first:border-t-0',
+  AVATAR: 'flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-surface',
 } as const
 
 // In component
@@ -237,6 +237,21 @@ import { ITEM_CARD } from '@/components/ItemCard/ItemCard.style'
 ```
 
 Constants describe purpose: `CONTAINER`, `AVATAR` — not `FLEX_ROW`, `ROUNDED`.
+
+### 10b. Styling lives in the components (LAW)
+
+| Layer                                               | Its style files hold                                   | Held by                      |
+| --------------------------------------------------- | ------------------------------------------------------ | ---------------------------- |
+| `components/ui/**`, a screen's own `components/**`  | The look: colour, type, border, radius, shadow, states | `local/style-token-values`   |
+| A screen, a route entry, `components/<Name>/`       | Positioning only                                       | `local/style-positions-only` |
+| `helpers/layout.style.ts`                           | The shared positioning classes                         | `local/style-positions-only` |
+| `packages/tokens` (preset + constants)              | Every value                                            | `verify:theme-sync`          |
+
+Only `components/ui/**` imports a UI kit or its helpers (`tailwind-variants`, Radix,
+`class-variance-authority`, `expo-linear-gradient`, `react-native-svg`): `local/ui-kit-boundary`.
+The look and the kit are one replaceable layer. Text is `ui/Text`, a labelled rule `ui/Divider`, a
+screen surface `ui/Screen`. See `AGENTS.md` § Styling lives in the components and
+`docs/code-standards.md` §22.
 
 ---
 

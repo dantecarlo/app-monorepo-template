@@ -6,7 +6,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
 import { SearchBar } from '@/components/ui/SearchBar'
-import { GLASS, TEXT } from '@/helpers/style.constant'
+import { Text } from '@/components/ui/Text'
 import { ItemCard } from '@/screens/ItemsDashboard/components/ItemCard'
 import {
   ITEMS_LIST_CARD,
@@ -24,9 +24,9 @@ export const ItemsListCard = ({
 
   return (
     <GlassCard padding="none">
-      <div className={`flex flex-col gap-3 ${GLASS.CARD_PADDING}`}>
+      <div className={ITEMS_LIST_CARD.TOP}>
         <div className={ITEMS_LIST_CARD.HEADER}>
-          <span className={TEXT.TITLE}>{t('listTitle')}</span>
+          <Text variant="title">{t('listTitle')}</Text>
           <span className={ITEMS_LIST_CARD.COUNT_LABEL}>
             {isLoading ? '…' : t('listResults', { count: items.length })}
           </span>

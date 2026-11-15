@@ -1,12 +1,21 @@
 @import 'tailwindcss';
+@config '../../tailwind.config.cjs';
 
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* ---------------------------------------------------------------------------
+ * The spacing, radius, font-size and layout-width scales come from the
+ * @app/tokens preset, which ../../tailwind.config.cjs loads (@config above).
+ * This file keeps what the preset cannot carry: the colors, which flip per
+ * theme, the font families next/font injects, and the shadows .glass-card
+ * reads through var(). A key defined in @theme here wins over the preset.
+ * ------------------------------------------------------------------------- */
 
 /* ---------------------------------------------------------------------------
  * Themed color values — the single light/dark source on web.
  * @theme maps every --color-* utility to a --c-* indirection var (below), so
  * flipping [data-theme] on <html> re-points every token at once. Utilities
- * (bg-bg-base, text-text-primary, .glass-card, .aurora, …) flip with zero
+ * (bg-bg-base, text-text-primary, .glass-card, the body aurora, …) flip with zero
  * selector changes because they all read through these vars.
  *
  * Keep these blocks in lockstep with packages/tokens themes.{dark,light} and
@@ -37,6 +46,7 @@
   --c-warning: #e0a011;
   --c-warning-text: #ebb13a;
   --c-warning-tint: rgba(224, 160, 17, 0.16);
+  --c-warning-stroke: rgba(224, 160, 17, 0.3);
 
   --c-danger: #ef4444;
   --c-danger-text: #f36a6a;
@@ -74,6 +84,7 @@
   --c-warning: #b7791f;
   --c-warning-text: #7e520f;
   --c-warning-tint: rgba(183, 121, 31, 0.14);
+  --c-warning-stroke: rgba(183, 121, 31, 0.3);
 
   --c-danger: #dc2626;
   --c-danger-text: #be1b1b;
@@ -122,6 +133,7 @@
   --color-warning: var(--c-warning);
   --color-warning-text: var(--c-warning-text);
   --color-warning-tint: var(--c-warning-tint);
+  --color-warning-stroke: var(--c-warning-stroke);
 
   --color-danger: var(--c-danger);
   --color-danger-text: var(--c-danger-text);
@@ -136,52 +148,10 @@
   --color-knob-on: var(--c-knob-on);
 
   /* -------------------------------------------------------------------------
-   * Spacing — 8pt scale (merges with the default numeric scale)
-   * ------------------------------------------------------------------------- */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 12px;
-  --spacing-lg: 16px;
-  --spacing-xl: 20px;
-  --spacing-2xl: 24px;
-  --spacing-3xl: 32px;
-
-  /* -------------------------------------------------------------------------
-   * Border radius
-   * ------------------------------------------------------------------------- */
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 26px;
-  --radius-full: 9999px;
-
-  /* -------------------------------------------------------------------------
    * Font families — wired to Next.js CSS variable injection from layout.tsx
    * ------------------------------------------------------------------------- */
   --font-body: var(--font-inter), Inter, sans-serif;
   --font-display: var(--font-montserrat), Montserrat, sans-serif;
-
-  /* -------------------------------------------------------------------------
-   * Font sizes with paired line-heights
-   * ------------------------------------------------------------------------- */
-  --text-amount-hero: 40px;
-  --text-amount-hero--line-height: 44px;
-  --text-amount: 20px;
-  --text-amount--line-height: 24px;
-  --text-display: 28px;
-  --text-display--line-height: 34px;
-  --text-heading: 18px;
-  --text-heading--line-height: 22px;
-  --text-title: 15px;
-  --text-title--line-height: 20px;
-  --text-button: 15px;
-  --text-button--line-height: 20px;
-  --text-label: 13px;
-  --text-label--line-height: 18px;
-  --text-body: 14px;
-  --text-body--line-height: 20px;
-  --text-caption: 12px;
-  --text-caption--line-height: 15px;
 
   /* -------------------------------------------------------------------------
    * Shadows
@@ -221,13 +191,16 @@
 }
 
 @layer utilities {
-  /* Aurora background — dual ambient glow effect */
-  .aurora {
+  /* The document body: the base surface, the body font and the aurora, a
+     dual ambient glow. It is the look of the document itself, which no
+     component renders, so the route layouts only position <body>. */
+  body {
     position: relative;
+    @apply bg-bg-base font-body text-text-primary antialiased;
   }
 
-  .aurora::before,
-  .aurora::after {
+  body::before,
+  body::after {
     content: '';
     position: fixed;
     border-radius: 9999px;
@@ -236,7 +209,7 @@
   }
 
   /* Accent glow — top-right */
-  .aurora::before {
+  body::before {
     width: 340px;
     height: 340px;
     top: -120px;
@@ -250,7 +223,7 @@
   }
 
   /* Cool glow — bottom-left */
-  .aurora::after {
+  body::after {
     width: 280px;
     height: 280px;
     bottom: -80px;

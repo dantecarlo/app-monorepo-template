@@ -3,6 +3,7 @@
   "globalDependencies": [
     ".prettierrc.json",
     "eslint-local-rules/**",
+    "eslint-style-positioning-allowlist.json",
     "eslint.config.mjs",
     "eslint.rules.mjs",
     "tsconfig.base.json"

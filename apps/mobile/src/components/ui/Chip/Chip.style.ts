@@ -1,10 +1,10 @@
 export const CHIP_BASE_CLASS =
-  'flex-row items-center gap-1.5 rounded-full px-[11px] py-[5px]'
+  'flex-row items-center gap-1.5 rounded-full px-pill-x py-pill-y'
 
 export const CHIP_VARIANT_CLASS: Record<string, string> = {
   accent: 'bg-accent-tint',
   glass: 'bg-glass-fill border border-glass-stroke',
-  neutral: 'bg-white/[0.08]',
+  neutral: 'bg-neutral-tint',
   success: 'bg-success-tint'
 }
 

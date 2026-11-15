@@ -1,6 +1,6 @@
 import type { JSX } from 'react'
 
-import { TOGGLE } from '@/components/ui/Toggle/Toggle.constant'
+import { TOGGLE } from '@/components/ui/Toggle/Toggle.style'
 import type { IToggleProps } from '@/components/ui/Toggle/Toggle.type'
 
 export const Toggle = ({

@@ -51,7 +51,7 @@ src/lib/query/queryKeys.constant.ts
 
 src/screens/<Name>/
 ├── <Name>.screen.tsx            # container — composes components, owns layout
-├── <Name>.style.ts              # screen layout Tailwind constants
+├── <Name>.style.ts              # screen positioning only (local/style-positions-only)
 ├── index.ts                     # barrel
 ├── hooks/
 │   └── use<Name>.hook.ts        # useAppQuery wrapper
@@ -267,10 +267,14 @@ export const use{Name} = ({ contextId }: IUse{Name}) => {
 ```typescript
 export const {NAME}_ROW = {
   CONTAINER: 'flex items-center gap-3 py-3',
-  TITLE: 'text-sm font-medium text-foreground',
-  META: 'text-xs text-muted-foreground'
+  TITLE: 'font-body text-body font-medium text-text-primary',
+  META: 'font-body text-caption text-text-tertiary'
 } as const
 ```
+
+A screen-local block owns its look, and its values are tokens (`local/style-token-values`); the
+screen's own `<Name>.style.ts` only positions (`AGENTS.md` § Styling lives in the components).
+Reach for `ui/Text` before writing a text recipe a second screen will want.
 
 ### `{Name}Row.component.tsx`
 

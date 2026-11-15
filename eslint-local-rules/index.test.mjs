@@ -27,6 +27,12 @@ import tseslint from 'typescript-eslint'
 import { FILENAME_RULES } from '../eslint.rules.mjs'
 import localRules from './index.mjs'
 import { toSrcAlias } from './package-src-alias.detect.mjs'
+import {
+  FILE_KIND,
+  isAllowlisted,
+  positionsOnlyScope,
+  tokenValuesScope
+} from './style-positioning.detect.mjs'
 
 RuleTester.describe = describe
 RuleTester.it = test
@@ -526,3 +532,430 @@ ruleTester.run(
     ]
   }
 )
+
+// ---------------------------------------------------------------------------
+// The styling pillar (AGENTS.md § Styling lives in the components). The
+// rules scope themselves from the file's path, so every case names one.
+// ---------------------------------------------------------------------------
+
+const viewTester = new RuleTester({
+  languageOptions: {
+    ecmaVersion: 'latest',
+    parser: tseslint.parser,
+    parserOptions: { ecmaFeatures: { jsx: true } },
+    sourceType: 'module'
+  }
+})
+
+const at = ({ app, file }) => ({
+  filename: `/repo/apps/${app}/src/${file}`
+})
+
+const reports = ({ app, code, file, messageIds }) => ({
+  ...at({ app, file }),
+  code,
+  errors: messageIds.map((messageId) => ({ messageId }))
+})
+
+const silent = ({ app, code, file }) => ({ ...at({ app, file }), code })
+
+const WEB_SCREEN_STYLE = { app: 'web', file: 'screens/X/X.style.ts' }
+const MOBILE_SCREEN_STYLE = { app: 'mobile', file: 'screens/X/X.style.ts' }
+const WEB_ROUTE = { app: 'web', file: 'app/page.tsx' }
+const MOBILE_SCREEN = { app: 'mobile', file: 'screens/X/X.screen.tsx' }
+
+viewTester.run('style-positions-only', rules['style-positions-only'], {
+  invalid: [
+    reports({
+      ...WEB_SCREEN_STYLE,
+      code: "export const X = { TITLE: 'mt-lg text-accent-text' }",
+      messageIds: ['classToken']
+    }),
+    // A styling token is reported whatever variant prefixes it.
+    reports({
+      ...WEB_SCREEN_STYLE,
+      code: "export const X = { LINK: 'lg:flex hover:text-text-primary' }",
+      messageIds: ['classToken']
+    }),
+    // A custom utility nobody listed as positioning is reported.
+    reports({
+      ...WEB_SCREEN_STYLE,
+      code: "export const X = { CARD: 'glass-card p-lg' }",
+      messageIds: ['classToken']
+    }),
+    reports({
+      ...WEB_SCREEN_STYLE,
+      code: 'export const X = { ROW: `flex ${GAP} rounded-md` }',
+      messageIds: ['classToken']
+    }),
+    // An arbitrary property is judged by the CSS property it sets.
+    reports({
+      ...WEB_SCREEN_STYLE,
+      code: "export const X = { RIG: 'flex [filter:blur(2px)]' }",
+      messageIds: ['classToken']
+    }),
+    // A token assembled around an expression is judged by its visible half.
+    reports({
+      ...WEB_SCREEN_STYLE,
+      code: 'export const X = { ROW: `flex text-${TONE}` }',
+      messageIds: ['classToken']
+    }),
+    // A React Native StyleSheet entry is judged by its declaration keys.
+    reports({
+      ...MOBILE_SCREEN_STYLE,
+      code: 'export const S = StyleSheet.create({ title: { color: colors.text.primary, marginTop: 4 } })',
+      messageIds: ['styleKey']
+    }),
+    reports({
+      ...MOBILE_SCREEN_STYLE,
+      code: "export const S = StyleSheet.create({ card: { borderRadius: 8, fontWeight: '700' } })",
+      messageIds: ['styleKey', 'styleKey']
+    }),
+    // NativeWind class strings in a mobile style file are class lists.
+    reports({
+      ...MOBILE_SCREEN_STYLE,
+      code: "export const X = { TITLE: 'mt-2 text-text-primary' }",
+      messageIds: ['classToken']
+    }),
+    // A route entry is a section: its classes and styles only position.
+    reports({
+      ...WEB_ROUTE,
+      code: 'const P = () => <body className="min-h-screen bg-bg-base" />',
+      messageIds: ['classToken']
+    }),
+    reports({
+      ...WEB_ROUTE,
+      code: 'const P = () => <div style={{ opacity: 0 }} />',
+      messageIds: ['styleKey']
+    }),
+    reports({
+      ...WEB_ROUTE,
+      code: 'const P = () => <div style={{ ...rest }} />',
+      messageIds: ['styleNotLiteral']
+    }),
+    // In a view, a style slot is a `*Style` constant, a style prop or option.
+    reports({
+      ...MOBILE_SCREEN,
+      code: 'const textStyle = { color: colors.accentInk }',
+      messageIds: ['styleKey']
+    }),
+    reports({
+      ...MOBILE_SCREEN,
+      code: 'const S = () => <View style={[styles.a, { backgroundColor: bg }]} />',
+      messageIds: ['styleKey']
+    }),
+    reports({
+      ...MOBILE_SCREEN,
+      code: 'const S = () => <Stack screenOptions={{ contentStyle: { backgroundColor: bg } }} />',
+      messageIds: ['styleKey']
+    }),
+    reports({
+      app: 'mobile',
+      code: 'const B = () => <View style={{ backgroundColor: bg, flex: 1 }} />',
+      file: 'components/ErrorFrame/ErrorFrame.component.tsx',
+      messageIds: ['styleKey']
+    })
+  ],
+  valid: [
+    silent({
+      ...WEB_SCREEN_STYLE,
+      code: "export const X = { ROOT: 'relative flex min-h-screen flex-col gap-lg px-lg lg:grid lg:grid-cols-2', SR: 'sr-only text-center whitespace-nowrap truncate z-10 [grid-template-columns:1fr_auto]' }"
+    }),
+    // Variant names in a tailwind-variants config are not classes.
+    silent({
+      ...WEB_SCREEN_STYLE,
+      code: "export const X = tv({ base: 'flex', variants: { tone: { neutral: 'gap-sm' } }, defaultVariants: { tone: 'neutral' }, compoundVariants: [{ tone: 'neutral', class: 'px-lg' }] })"
+    }),
+    silent({
+      ...WEB_SCREEN_STYLE,
+      code: 'export const X = { ROW: `${BASE} flex gap-${STEP} px-lg` }'
+    }),
+    silent({
+      ...MOBILE_SCREEN_STYLE,
+      code: "export const S = StyleSheet.create({ row: { alignItems: 'center', flexDirection: 'row', gap: spacing.md, height: StyleSheet.hairlineWidth, marginVertical: 4, paddingHorizontal: spacing.lg } })"
+    }),
+    silent({
+      ...WEB_ROUTE,
+      code: "const P = () => <div style={{ '--fy': offset, gridColumn: 2, marginTop: 4, width } as CSSProperties} />"
+    }),
+    // A prop or constant that holds no style object is not read.
+    silent({
+      ...WEB_ROUTE,
+      code: 'const P = () => <Chart lineStyle={dashed} />'
+    }),
+    silent({
+      ...WEB_ROUTE,
+      code: "export const viewport = { colorScheme: 'dark light' }"
+    }),
+    silent({
+      ...MOBILE_SCREEN,
+      code: 'const S = () => <View style={[styles.a, { paddingBottom: 120 }]} />'
+    }),
+    silent({
+      ...MOBILE_SCREEN,
+      code: "const navContainerStyle = { bottom: 0, position: 'absolute' }"
+    }),
+    // The component blocks own their look, and tests are no product surface.
+    silent({
+      app: 'web',
+      code: "export const X = { ROOT: 'rounded-full bg-accent text-accent-ink' }",
+      file: 'components/ui/Chip/Chip.style.ts'
+    }),
+    silent({
+      app: 'mobile',
+      code: 'export const S = StyleSheet.create({ a: { color: colors.accent } })',
+      file: 'screens/X/components/Card/Card.style.ts'
+    }),
+    silent({
+      app: 'web',
+      code: 'const T = () => <div className="bg-accent" />',
+      file: 'screens/X/X.screen.test.tsx'
+    }),
+    {
+      code: "export const X = { A: 'bg-accent' }",
+      filename: '/repo/packages/tokens/src/x.style.ts'
+    }
+  ]
+})
+
+viewTester.run('style-token-values', rules['style-token-values'], {
+  invalid: [
+    reports({
+      app: 'web',
+      code: "export const X = { PILL: 'px-[11px] rounded-full' }",
+      file: 'components/ui/Chip/Chip.style.ts',
+      messageIds: ['arbitraryValue']
+    }),
+    reports({
+      app: 'web',
+      code: "export const X = { DOT: 'bg-white/[0.08]', SCRIM: 'bg-black/60' }",
+      file: 'components/ui/Modal/Modal.style.ts',
+      messageIds: ['arbitraryValue', 'paletteColor']
+    }),
+    reports({
+      app: 'web',
+      code: "export const X = { BOX: 'max-w-(--container-md) text-[#fff]' }",
+      file: 'screens/X/X.style.ts',
+      messageIds: ['arbitraryValue', 'arbitraryValue']
+    }),
+    reports({
+      app: 'mobile',
+      code: "const AVATAR_BG = '#241A12'",
+      file: 'screens/X/components/Card/Card.style.ts',
+      messageIds: ['rawColor']
+    }),
+    reports({
+      app: 'mobile',
+      code: "export const S = StyleSheet.create({ a: { backgroundColor: 'rgba(0,0,0,0.5)' } })",
+      file: 'components/ui/Banner/Banner.style.ts',
+      messageIds: ['rawColor']
+    }),
+    reports({
+      app: 'mobile',
+      code: "export const GRADIENT = ['#FF8A3D', '#FF6A1A'] as const",
+      file: 'screens/X/components/Card/Card.style.ts',
+      messageIds: ['rawColor', 'rawColor']
+    }),
+    reports({
+      app: 'web',
+      code: 'const C = () => <Icon color="#fff" />',
+      file: 'components/ui/Icon/Icon.component.tsx',
+      messageIds: ['rawColor']
+    }),
+    reports({
+      app: 'web',
+      code: 'const C = () => <span className="h-[7px] w-2" />',
+      file: 'components/ui/Chip/Chip.component.tsx',
+      messageIds: ['arbitraryValue']
+    }),
+    reports({
+      app: 'mobile',
+      code: "const C = () => <View style={{ backgroundColor: '#000' }} />",
+      file: 'screens/X/X.screen.tsx',
+      messageIds: ['rawColor']
+    })
+  ],
+  valid: [
+    silent({
+      app: 'web',
+      code: "export const X = { A: 'bg-accent text-text-primary rounded-full px-lg data-[state=open]:flex w-1/2 bg-accent/50 bg-neutral-tint' }",
+      file: 'components/ui/Chip/Chip.style.ts'
+    }),
+    silent({
+      app: 'mobile',
+      code: "export const S = StyleSheet.create({ a: { backgroundColor: colors.accent, fontWeight: '700' } })",
+      file: 'components/ui/Chip/Chip.style.ts'
+    }),
+    // Only class attributes, style slots and colour attributes are read.
+    silent({
+      app: 'web',
+      code: 'const C = () => <a href="#add" title="rgb(1,2,3)">x</a>',
+      file: 'screens/X/X.screen.tsx'
+    }),
+    silent({
+      app: 'web',
+      code: "export const X = { A: 'h-[7px]' }",
+      file: 'screens/X/__tests__/X.fixture.style.ts'
+    })
+  ]
+})
+
+const STYLE_FILE = 'apps/web/src/screens/Login/Login.style.ts'
+
+describe('style pillar scope', () => {
+  test('positions-only reads screens, routes and containers, never a component block', () => {
+    assert.deepEqual(
+      [
+        STYLE_FILE,
+        'apps/web/src/app/layout.tsx',
+        'apps/mobile/src/components/RootErrorBoundary/RootErrorBoundary.component.tsx',
+        'apps/web/src/helpers/layout.style.ts',
+        'apps/web/src/components/ui/Button/Button.style.ts',
+        'apps/mobile/src/screens/ItemsDashboard/components/ItemCard/ItemCard.style.ts',
+        'apps/web/src/screens/Login/Login.constant.ts',
+        'apps/mobile/src/app/__tests__/index.test.tsx'
+      ].map((path) => positionsOnlyScope(path)?.kind ?? null),
+      [
+        FILE_KIND.STYLE,
+        FILE_KIND.VIEW,
+        FILE_KIND.VIEW,
+        FILE_KIND.STYLE,
+        null,
+        null,
+        null,
+        null
+      ]
+    )
+  })
+
+  test('token-values reads every style file and view of both apps', () => {
+    assert.deepEqual(
+      [
+        'C:/repo/apps/web/src/components/ui/Button/Button.style.ts'.replaceAll(
+          '/',
+          '\\'
+        ),
+        'apps/mobile/src/screens/ItemsDashboard/components/ItemCard/ItemCard.style.ts',
+        'apps/web/src/screens/Login/Login.constant.ts',
+        'apps/web/src/test/test.helper.ts',
+        'packages/tokens/src/tokens.constant.ts'
+      ].map((path) => tokenValuesScope(path)?.path ?? null),
+      [
+        'apps/web/src/components/ui/Button/Button.style.ts',
+        'apps/mobile/src/screens/ItemsDashboard/components/ItemCard/ItemCard.style.ts',
+        null,
+        null,
+        null
+      ]
+    )
+  })
+
+  test('an allowlist entry exempts its own path under its own rule only', () => {
+    const allowlist = [
+      { path: STYLE_FILE, reason: 'r', rule: 'style-positions-only' }
+    ]
+
+    assert.deepEqual(
+      [
+        isAllowlisted({
+          allowlist,
+          path: STYLE_FILE,
+          rule: 'style-positions-only'
+        }),
+        isAllowlisted({
+          allowlist,
+          path: STYLE_FILE,
+          rule: 'style-token-values'
+        }),
+        isAllowlisted({
+          allowlist,
+          path: 'apps/web/src/screens/X/X.style.ts',
+          rule: 'style-positions-only'
+        })
+      ],
+      [true, false, false]
+    )
+  })
+})
+
+// The UI kit sits behind components/ui: only a ui block imports a kit, so
+// swapping the kit rewrites components/ui and nothing else.
+viewTester.run('ui-kit-boundary', rules['ui-kit-boundary'], {
+  invalid: [
+    reports({
+      app: 'web',
+      code: "import * as Dialog from '@radix-ui/react-dialog'",
+      file: 'screens/X/X.screen.tsx',
+      messageIds: ['kitOutsideUi']
+    }),
+    reports({
+      app: 'web',
+      code: "import { cva } from 'class-variance-authority'",
+      file: 'screens/X/components/Card/Card.style.ts',
+      messageIds: ['kitOutsideUi']
+    }),
+    reports({
+      app: 'web',
+      code: "import { tv } from 'tailwind-variants'",
+      file: 'screens/X/X.style.ts',
+      messageIds: ['kitOutsideUi']
+    }),
+    reports({
+      app: 'web',
+      code: "export { default as Button } from '@mui/material/Button'",
+      file: 'components/AuthProvider/AuthProvider.component.tsx',
+      messageIds: ['kitOutsideUi']
+    }),
+    reports({
+      app: 'web',
+      code: "const kit = import('@mui/material')",
+      file: 'app/page.tsx',
+      messageIds: ['kitOutsideUi']
+    }),
+    reports({
+      app: 'mobile',
+      code: "import { LinearGradient } from 'expo-linear-gradient'",
+      file: 'screens/X/components/Header/Header.component.tsx',
+      messageIds: ['kitOutsideUi']
+    }),
+    reports({
+      app: 'mobile',
+      code: "import Svg from 'react-native-svg'",
+      file: 'app/index.tsx',
+      messageIds: ['kitOutsideUi']
+    })
+  ],
+  valid: [
+    silent({
+      app: 'web',
+      code: "import { tv } from 'tailwind-variants'\nimport * as Dialog from '@radix-ui/react-dialog'",
+      file: 'components/ui/Modal/Modal.style.ts'
+    }),
+    silent({
+      app: 'mobile',
+      code: "import { LinearGradient } from 'expo-linear-gradient'",
+      file: 'components/ui/AccentGradient/AccentGradient.component.tsx'
+    }),
+    silent({
+      app: 'web',
+      code: "import { Button } from '@/components/ui/Button'\nimport { useTranslations } from 'next-intl'",
+      file: 'screens/X/X.screen.tsx'
+    }),
+    // A package whose name only starts like a kit's is another package.
+    silent({
+      app: 'web',
+      code: "import x from 'clsx-extra'\nimport y from 'tailwind-variants-utils'",
+      file: 'screens/X/X.screen.tsx'
+    }),
+    silent({
+      app: 'mobile',
+      code: "import { colorScheme } from 'nativewind'",
+      file: 'lib/theme/theme.config.ts'
+    }),
+    silent({
+      app: 'web',
+      code: "import { tv } from 'tailwind-variants'",
+      file: 'screens/X/X.screen.test.tsx'
+    })
+  ]
+})

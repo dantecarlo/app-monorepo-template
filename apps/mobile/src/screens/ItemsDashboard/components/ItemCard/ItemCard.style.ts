@@ -10,12 +10,6 @@ import type { IItemViewModel } from '@/screens/ItemsDashboard/models/Item.type'
 // Raw values
 // ---------------------------------------------------------------------------
 
-// Brand gradient used by the screen header and CTA button. Kept here so the
-// .screen.tsx file stays hex-free (check C in scripts/verify-maps.mjs).
-export const GRADIENT_BRAND_COLORS = ['#FF8A3D', '#FF6A1A'] as const
-
-const AVATAR_BG = '#241A12'
-const CATEGORY_BG = 'rgba(255,255,255,0.06)'
 const AVATAR_FONT_SIZE = 12
 const AVATAR_FONT_WEIGHT = '700' as const
 
@@ -36,7 +30,7 @@ export const STATUS_COLOR: Record<IItemViewModel['status'], string> = {
 export const ITEM_CARD = StyleSheet.create({
   avatar: {
     alignItems: 'center',
-    backgroundColor: AVATAR_BG,
+    backgroundColor: colors.accentSurface,
     borderRadius: 18,
     flexShrink: 0,
     height: 36,
@@ -49,13 +43,17 @@ export const ITEM_CARD = StyleSheet.create({
     fontWeight: AVATAR_FONT_WEIGHT
   },
   categoryBadge: {
-    backgroundColor: CATEGORY_BG,
+    backgroundColor: colors.divider,
     borderRadius: 9999,
     paddingHorizontal: 8,
     paddingVertical: 2
   },
   description: {
     marginTop: 2
+  },
+  divider: {
+    borderTopColor: colors.divider,
+    borderTopWidth: 1
   },
   meta: {
     alignItems: 'center',

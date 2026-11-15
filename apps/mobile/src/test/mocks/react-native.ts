@@ -9,22 +9,38 @@ interface IHostProps {
   accessibilityRole?: string
   children?: ReactNode
   onPress?: () => void
+  style?: unknown
+}
+
+// A React Native style prop, flattened as StyleSheet.flatten would: nested
+// arrays merge left to right and falsy entries drop out. A style function
+// (Pressable's) is not called.
+export const flattenStyle = (style: unknown): Record<string, unknown> => {
+  if (Array.isArray(style)) {
+    return Object.assign({}, ...style.map(flattenStyle))
+  }
+  return style && typeof style === 'object'
+    ? (style as Record<string, unknown>)
+    : {}
 }
 
 // Renders a host component as a DOM element that keeps its accessibility role,
-// its label and its press handler, so a test can query it by role and press it.
+// its label and its press handler, so a test can query it by role and press it,
+// and its flattened style as `data-style` JSON, so a test can read what it paints.
 const host =
   (tag: string) =>
   ({
     accessibilityLabel,
     accessibilityRole,
     children,
-    onPress
+    onPress,
+    style
   }: IHostProps) =>
     createElement(
       tag,
       {
         'aria-label': accessibilityLabel,
+        'data-style': JSON.stringify(flattenStyle(style)),
         onClick: onPress,
         role: accessibilityRole
       },

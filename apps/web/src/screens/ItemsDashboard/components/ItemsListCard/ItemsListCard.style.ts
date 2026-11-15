@@ -1,5 +1,3 @@
-import { GLASS } from '@/helpers/style.constant'
-
 export const SKELETON_ROW_COUNT = 3
 
 export const ITEMS_LIST_CARD = {
@@ -7,5 +5,7 @@ export const ITEMS_LIST_CARD = {
   HEADER: 'flex items-center justify-between',
   LIST_BODY: 'px-5 pb-2',
   SKELETON_LINES: 'flex-1 space-y-2',
-  SKELETON_ROW: `flex items-center gap-3 py-3 ${GLASS.DIVIDER} first:border-t-0`
+  SKELETON_ROW:
+    'flex items-center gap-3 py-3 border-t border-divider first:border-t-0',
+  TOP: 'flex flex-col gap-3 p-5'
 } as const

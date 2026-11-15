@@ -13,7 +13,7 @@ export const MODAL_BODY = 'text-body font-body text-text-secondary'
 export const modalScrimVariants = tv({
   base: [
     'fixed inset-0 z-50 flex items-center justify-center',
-    'bg-black/60 backdrop-blur-sm',
+    'bg-scrim backdrop-blur-sm',
     'animate-in fade-in duration-200'
   ]
 })
@@ -29,9 +29,9 @@ export const modalPanelVariants = tv({
   },
   variants: {
     size: {
-      lg: 'max-w-[42rem]',
-      md: 'max-w-[32rem]',
-      sm: 'max-w-[24rem]'
+      lg: 'max-w-wide',
+      md: 'max-w-dialog',
+      sm: 'max-w-narrow'
     }
   }
 })

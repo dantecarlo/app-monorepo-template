@@ -23,6 +23,17 @@
 import { findJustifyingPhrase } from './justifying-comment.detect.mjs'
 import { SRC_ALIAS, toSrcAlias } from './package-src-alias.detect.mjs'
 import { collectTopLevelViolations } from './suffix-contract.detect.mjs'
+import { readFileSync } from 'node:fs'
+import {
+  collectPositioningViolations,
+  collectTokenValueViolations,
+  isAllowlisted,
+  positionsOnlyScope,
+  STYLE_ALLOWLIST_FILE,
+  STYLE_RULE,
+  tokenValuesScope
+} from './style-positioning.detect.mjs'
+import { isOutsideUiKit, isUiKitSource } from './ui-kit.detect.mjs'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -732,6 +743,151 @@ const pureDomainAdapter = {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Rules: style-positions-only and style-token-values (AGENTS.md § Styling
+// lives in the components; code-standards §22)
+// A screen, a route entry or a container only positions: its class strings,
+// StyleSheet entries and style slots carry layout, spacing, size, position,
+// overflow and visibility. The look lives in a component block
+// (components/ui, or a screen's own components/), and every value, in every
+// style file and view of both apps, comes from @app/tokens.
+//
+// Both rules scope themselves from the file's path through
+// ./style-positioning.detect.mjs, which the freshness gate also reads. A
+// file listed under a rule in eslint-style-positioning-allowlist.json is
+// skipped by that rule; scripts/verify-allowlist-freshness.mjs fails an entry
+// whose file no longer breaks it, so the list only shrinks.
+// ---------------------------------------------------------------------------
+
+const readStyleAllowlist = () => {
+  try {
+    const parsed = JSON.parse(
+      readFileSync(
+        new URL(`../${STYLE_ALLOWLIST_FILE}`, import.meta.url),
+        'utf8'
+      )
+    )
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+const STYLE_ALLOWLIST = readStyleAllowlist()
+
+const styleRule = ({ collect, meta, rule, scopeOf }) => ({
+  create(context) {
+    const scope = scopeOf(context.filename ?? context.getFilename())
+    if (!scope) return {}
+    if (
+      isAllowlisted({ allowlist: STYLE_ALLOWLIST, path: scope.path, rule })
+    ) {
+      return {}
+    }
+    return {
+      Program(program) {
+        for (const { kind, node, ...data } of collect({
+          kind: scope.kind,
+          program
+        })) {
+          context.report({ data, messageId: kind, node })
+        }
+      }
+    }
+  },
+  meta
+})
+
+const LOOK_HOME =
+  "Render the component block that owns this look (components/ui, or a block in the screen's own components/), or add it there as a variant (AGENTS.md § Styling lives in the components)."
+
+const stylePositionsOnly = styleRule({
+  collect: collectPositioningViolations,
+  meta: {
+    docs: {
+      description:
+        'A screen, a route entry or a container only positions: its classes, StyleSheet entries and style slots carry layout, spacing, size, position, overflow and visibility. The look lives in a component block.'
+    },
+    messages: {
+      classToken: `'{{token}}' is {{category}}, and a screen or section style only positions. ${LOOK_HOME}`,
+      styleKey: `The style key '{{key}}' is not positioning, and a screen or section style only positions. ${LOOK_HOME}`,
+      styleNotLiteral:
+        'A screen or section style prop is an object literal with plain keys, so each key can be checked as positioning. Pass computed values as CSS custom properties, or move the styled element into a component block.'
+    },
+    schema: [],
+    type: 'problem'
+  },
+  rule: STYLE_RULE.POSITIONS_ONLY,
+  scopeOf: positionsOnlyScope
+})
+
+const styleTokenValues = styleRule({
+  collect: collectTokenValueViolations,
+  meta: {
+    docs: {
+      description:
+        'Every style value comes from @app/tokens: no raw colour, no Tailwind palette colour, no arbitrary value.'
+    },
+    messages: {
+      arbitraryValue:
+        "'{{token}}' is an arbitrary value. Every style value comes from @app/tokens: use a token utility or a Tailwind scale step, and add a token to packages/tokens only when none fits.",
+      paletteColor:
+        "'{{token}}' is a Tailwind palette colour, not a design token. Use the colour token that carries this role (bg-scrim, bg-neutral-tint, border-divider).",
+      rawColor:
+        "'{{value}}' is a raw colour. Every colour comes from @app/tokens: a token utility on web (bg-accent), a token constant on mobile (colors.accent)."
+    },
+    schema: [],
+    type: 'problem'
+  },
+  rule: STYLE_RULE.TOKEN_VALUES,
+  scopeOf: tokenValuesScope
+})
+
+// ---------------------------------------------------------------------------
+// Rule: ui-kit-boundary (AGENTS.md § Styling lives in the components)
+// Only a block under components/ui imports a UI kit: a component library, its
+// headless primitives or the class helpers it brings (./ui-kit.detect.mjs).
+// Screens, sections and screen-local components import the ui blocks, so a
+// kit is swapped by rewriting components/ui alone. Imports, re-exports and
+// `import()` with a literal specifier are judged; the rule scopes itself from
+// the file's path, like the two style rules.
+// ---------------------------------------------------------------------------
+
+const uiKitBoundary = {
+  create(context) {
+    if (!isOutsideUiKit(context.filename ?? context.getFilename()))
+      return {}
+    const check = (node) => {
+      const source = literalSource({ node })?.value
+      if (typeof source !== 'string' || !isUiKitSource(source)) return
+      context.report({
+        data: { source },
+        messageId: 'kitOutsideUi',
+        node: node.source
+      })
+    }
+
+    return {
+      ExportAllDeclaration: check,
+      ExportNamedDeclaration: check,
+      ImportDeclaration: check,
+      ImportExpression: check
+    }
+  },
+  meta: {
+    docs: {
+      description:
+        'Only a components/ui block imports a UI kit, so the look and the kit live in one replaceable layer.'
+    },
+    messages: {
+      kitOutsideUi:
+        "'{{source}}' is a UI kit, and only a components/ui block may import one: the look and the kit live in one replaceable layer. Render the ui block that wraps it, or add that wrapper to components/ui (AGENTS.md § Styling lives in the components)."
+    },
+    schema: [],
+    type: 'problem'
+  }
+}
+
 const plugin = {
   meta: { name: 'local', version: '1.0.0' },
   rules: {
@@ -744,7 +900,10 @@ const plugin = {
     'package-src-alias': packageSrcAlias,
     'single-object-params': singleObjectParams,
     'single-use-state': singleUseState,
-    'suffix-contract': suffixContract
+    'style-positions-only': stylePositionsOnly,
+    'style-token-values': styleTokenValues,
+    'suffix-contract': suffixContract,
+    'ui-kit-boundary': uiKitBoundary
   }
 }
 

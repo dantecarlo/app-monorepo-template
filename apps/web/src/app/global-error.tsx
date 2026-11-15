@@ -21,7 +21,7 @@ const GlobalError = ({
   unstable_retry: retry
 }: GlobalErrorPropsType) => (
   <html data-theme={DEFAULT_THEME} lang={DEFAULT_LANGUAGE}>
-    <body className="aurora min-h-screen bg-bg-base font-body text-text-primary antialiased">
+    <body className="min-h-screen">
       <NextIntlClientProvider
         locale={DEFAULT_LANGUAGE}
         messages={resources[DEFAULT_LANGUAGE].translation}

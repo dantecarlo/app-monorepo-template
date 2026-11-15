@@ -32,6 +32,7 @@ import {
   RSC_ASYNC_SCREEN_OVERRIDE,
   PURE_DOMAIN_ADAPTER_OVERRIDE,
   STYLE_FILE_OVERRIDE,
+  STYLE_PILLAR_OVERRIDE,
   SUFFIX_CONTRACT_OVERRIDE,
   TEST_FILE_OVERRIDE,
   TEST_INFRA_OVERRIDE,
@@ -388,6 +389,7 @@ export default defineConfig([
   LOGIC_IN_HOOK_OVERRIDE,
   SUFFIX_CONTRACT_OVERRIDE,
   PURE_DOMAIN_ADAPTER_OVERRIDE,
+  STYLE_PILLAR_OVERRIDE,
   // RSC async server-component allowlist for apps/web screens — re-declares the
   // screen selector set WITHOUT the client async-view ban. Must come AFTER
   // LOGIC_IN_HOOK_OVERRIDE so it wins by later-wins for apps/web screens.

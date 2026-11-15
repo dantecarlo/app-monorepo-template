@@ -37,7 +37,7 @@ export const NavBar = ({
             role="tab"
             type="button"
           >
-            <span className="text-[22px] leading-none">{icon}</span>
+            <span className="text-nav-icon leading-none">{icon}</span>
             <span className={NAV_BAR_LABEL_CLASS}>{label}</span>
           </button>
         )
