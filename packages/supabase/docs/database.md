@@ -285,21 +285,33 @@ query time.
 A Supabase project's default privileges give `anon`, `authenticated` and
 `service_role` ALL on every table, function and sequence `postgres` creates in
 `public`. Row-level security narrows the rows a table privilege reaches, not
-every privilege, so `0010_api_privileges.sql` revokes the ones that reach past
-it:
+every privilege, so `0010_api_privileges.sql` and `0013_table_privileges.sql`
+revoke the ones that reach past it:
 
 - **TRUNCATE.** It ignores row-level security and fires no row trigger, so a
   role holding it empties a table whatever its policies say. `anon` and
   `authenticated` hold it on no table in `public`: it is revoked on the
   existing tables and in the default privileges of `postgres` there, so a table
   added later starts without it. `service_role` keeps it.
+- **TRIGGER, REFERENCES and MAINTAIN.** TRIGGER attaches a trigger to the
+  table: with EXECUTE on a trigger function it reaches, a signed-in user could
+  make every write to the table fail for every user, and only the owner could
+  drop the trigger. REFERENCES points a foreign key at the table, and MAINTAIN
+  (PostgreSQL 17 and later) runs VACUUM, ANALYZE, REINDEX, CLUSTER and LOCK
+  TABLE on it. `anon` and `authenticated` hold none of them in `public`, on
+  the existing tables or in the default privileges of `postgres`; MAINTAIN is
+  revoked only on a server that has it. `service_role` keeps all three.
 - **EXECUTE on a SECURITY DEFINER function in `public`.** See the public
   wrapper convention in section 4: `anon` loses it by name.
+- **EXECUTE on a trigger function.** A trigger runs its function without that
+  privilege, so no API role needs it, and a role that held it could attach the
+  function to a table of its choosing (with TRIGGER there). The audit log's two
+  trigger functions grant it to no API role; a trigger function a project adds
+  grants none either, and skips the `grant execute` line of the helper pattern.
 
-The other privileges the default privileges give stay (SELECT, INSERT, UPDATE,
-DELETE, REFERENCES, TRIGGER and, on PostgreSQL 17 and later, MAINTAIN): a
-policy decides the rows of the first four. A table that needs less grants less
-in its own migration.
+SELECT, INSERT, UPDATE and DELETE stay, and a policy decides their rows; a
+table that needs less, as `public.profile` does, grants less in a migration of
+its own.
 
 ### Profile columns a user edits
 
@@ -350,7 +362,9 @@ path does, as `service_role` or in a function `postgres` owns (a trigger on
   before `TRUNCATE` that raises "audit_log is append-only: TRUNCATE is not
   permitted". It stops every role that holds the privilege: `postgres`, which
   owns the table, and `service_role`. A trigger function needs no EXECUTE grant
-  to fire, so `auth_helpers.tg_audit_no_truncate()` grants none.
+  to fire, so `auth_helpers.tg_audit_no_truncate()` grants none, and
+  `0013_table_privileges.sql` revokes the grant 0006 gives
+  `auth_helpers.tg_audit_immutable()`.
 - `INSERT` is service-role only (see `0008_rls_policies.sql`).
 
 ---

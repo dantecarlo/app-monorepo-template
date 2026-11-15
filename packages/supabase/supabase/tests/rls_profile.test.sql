@@ -37,7 +37,7 @@ begin;
 -- Plan
 -- =====================================================================
 -- Count assertions below and update this number when adding new tests.
-select plan(58);
+select plan(64);
 
 -- =====================================================================
 -- Section 1: seed test fixtures (as postgres, the session role)
@@ -292,6 +292,14 @@ select throws_ok(
 
 set local role service_role;
 
+-- service_role holds UPDATE and bypasses row-level security, so only the row trigger stops it; the
+-- trigger runs its function although service_role may not execute it.
+select throws_ok(
+  $$update public.audit_log set target_table = 'hacked' where actor_id = '00000000-0000-0000-0000-000000000001'$$,
+  'audit_log is append-only: UPDATE and DELETE are not permitted',
+  'audit_log UPDATE by service_role raises immutability exception'
+);
+
 select throws_ok(
   'truncate public.audit_log',
   'audit_log is append-only: TRUNCATE is not permitted',
@@ -488,7 +496,9 @@ select ok(
     and has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'insert')
     and has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'update')
     and has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'delete')
-    and has_table_privilege('service_role', 'public.test_table_with_default_grants', 'truncate'),
+    and has_table_privilege('service_role', 'public.test_table_with_default_grants', 'truncate')
+    and has_table_privilege('service_role', 'public.test_table_with_default_grants', 'trigger')
+    and has_table_privilege('service_role', 'public.test_table_with_default_grants', 'references'),
   'a table added to public keeps the other privileges Supabase gives the API roles'
 );
 
@@ -630,6 +640,84 @@ select is(
    where id = '00000000-0000-0000-0000-000000000003'),
   1,
   'the service role still creates a profile'
+);
+
+-- =====================================================================
+-- Section 13: TRIGGER, REFERENCES and MAINTAIN are service_role's only,
+-- and no API role executes the audit log's trigger functions
+-- =====================================================================
+-- TRIGGER lets a role attach a trigger to a table, REFERENCES point a foreign key at it, and
+-- MAINTAIN (PostgreSQL 17 and later) VACUUM, ANALYZE, REINDEX, CLUSTER or LOCK it. MAINTAIN is
+-- read only where it exists, so the suite runs on PostgreSQL 15 too.
+
+select is(
+  (
+    select coalesce(array_agg(c.relname::text order by c.relname), '{}')
+    from pg_class c
+    where c.relnamespace = 'public'::regnamespace
+      and c.relkind in ('r', 'p')
+      and (
+        has_table_privilege('anon', c.oid, 'trigger')
+        or has_table_privilege('anon', c.oid, 'references')
+        or case when current_setting('server_version_num')::int >= 170000
+             then has_table_privilege('anon', c.oid, 'maintain') else false end
+      )
+  ),
+  '{}'::text[],
+  'anon holds no TRIGGER, REFERENCES or MAINTAIN on any table in public'
+);
+
+select is(
+  (
+    select coalesce(array_agg(c.relname::text order by c.relname), '{}')
+    from pg_class c
+    where c.relnamespace = 'public'::regnamespace
+      and c.relkind in ('r', 'p')
+      and (
+        has_table_privilege('authenticated', c.oid, 'trigger')
+        or has_table_privilege('authenticated', c.oid, 'references')
+        or case when current_setting('server_version_num')::int >= 170000
+             then has_table_privilege('authenticated', c.oid, 'maintain') else false end
+      )
+  ),
+  '{}'::text[],
+  'authenticated holds no TRIGGER, REFERENCES or MAINTAIN on any table in public'
+);
+
+-- Committed, this trigger would refuse every update and delete of every profile, and only the
+-- table owner could drop it.
+set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}';
+set local role authenticated;
+
+select throws_ok(
+  $$create trigger evil before update or delete on public.profile for each row execute function auth_helpers.tg_audit_immutable()$$,
+  '42501',
+  'permission denied for table profile',
+  'a signed-in user cannot create a trigger on a table'
+);
+
+reset role;
+
+select ok(
+  not has_table_privilege('anon', 'public.test_table_with_default_grants', 'trigger')
+    and not has_table_privilege('anon', 'public.test_table_with_default_grants', 'references')
+    and not has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'trigger')
+    and not has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'references')
+    and not (
+      current_setting('server_version_num')::int >= 170000
+      and (
+        has_table_privilege('anon', 'public.test_table_with_default_grants', 'maintain')
+        or has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'maintain')
+      )
+    ),
+  'a table added to public gives anon and authenticated no TRIGGER, REFERENCES or MAINTAIN'
+);
+
+select ok(
+  not has_function_privilege('anon', 'auth_helpers.tg_audit_immutable()', 'execute')
+    and not has_function_privilege('authenticated', 'auth_helpers.tg_audit_immutable()', 'execute')
+    and not has_function_privilege('service_role', 'auth_helpers.tg_audit_immutable()', 'execute'),
+  'no API role may execute tg_audit_immutable'
 );
 
 -- =====================================================================
