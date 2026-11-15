@@ -108,6 +108,8 @@ $$;
 After creating the functions, apply the ownership / least-privilege block:
 
 ```sql
+grant usage on schema auth_helpers to authenticated, service_role;
+
 do $$
 declare
   fn text;
@@ -123,6 +125,13 @@ begin
 end
 $$;
 ```
+
+**Why USAGE and EXECUTE:** USAGE on the schema lets a role resolve the
+names in it, and EXECUTE on a function lets it run that function. A policy
+resolves its functions once, when it is created, so a policy that calls a
+helper works without USAGE; a query or a SECURITY INVOKER function resolves
+them as its caller, so `authenticated` and `service_role` need both. `anon`
+gets neither and cannot name a helper.
 
 **Why `owner = postgres`:** `SECURITY DEFINER` runs with the owner's
 privileges. Setting the owner to `postgres` (the Supabase superuser) lets the

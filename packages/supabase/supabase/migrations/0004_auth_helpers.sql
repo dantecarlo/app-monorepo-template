@@ -16,6 +16,8 @@
 --      bypasses RLS where intended (the sanctioned privileged path).
 --   2. revoke all from public  → no implicit execute grant.
 --   3. grant execute to authenticated, service_role  → explicit callers only.
+--   4. grant usage on the schema to the same two roles  → they can name the
+--      helpers in a query or a SECURITY INVOKER function; anon cannot.
 --
 -- ANTI-RECURSION CONTRACT:
 --   has_capability() and is_staff() read user_role_grant and role_capability
@@ -94,6 +96,11 @@ comment on function auth_helpers.is_staff() is
 -- =====================================================================
 -- Section 4: ownership / least-privilege block
 -- =====================================================================
+
+-- USAGE lets a role resolve names in the schema; EXECUTE, granted per function
+-- below, lets it run one. A policy resolves its functions when it is created,
+-- but a query or a SECURITY INVOKER function resolves them as its caller.
+grant usage on schema auth_helpers to authenticated, service_role;
 
 do $$
 declare

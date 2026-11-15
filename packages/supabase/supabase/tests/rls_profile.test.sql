@@ -21,7 +21,7 @@ begin;
 -- Plan
 -- =====================================================================
 -- Count assertions below and update this number when adding new tests.
-select plan(22);
+select plan(25);
 
 -- =====================================================================
 -- Section 1: seed test fixtures (superuser context)
@@ -150,6 +150,18 @@ select is(
 
 reset role;
 
+-- anon holds no USAGE on the auth_helpers schema, so it cannot name a helper.
+set local "request.jwt.claims" to '{"role":"anon"}';
+set local role anon;
+
+select throws_ok(
+  'select auth_helpers.is_staff()',
+  'permission denied for schema auth_helpers',
+  'anon cannot reach the auth_helpers schema'
+);
+
+reset role;
+
 -- =====================================================================
 -- Section 6: RBAC helper — is_staff returns true for admin user
 -- =====================================================================
@@ -204,6 +216,33 @@ values (
   '00000000-0000-0000-0000-000000000002',
   '{}'
 );
+
+-- The audit-log policy, read as authenticated: Bob (no grant) reads no event, Alice (admin, so
+-- staff) reads it. The count is limited to Alice's events so a database with other events
+-- gives the same answer.
+set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}';
+set local role authenticated;
+
+select is(
+  (select count(*)::int from public.audit_log
+   where actor_id = '00000000-0000-0000-0000-000000000001'),
+  0,
+  'user who is not staff reads no audit event'
+);
+
+reset role;
+
+set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}';
+set local role authenticated;
+
+select is(
+  (select count(*)::int from public.audit_log
+   where actor_id = '00000000-0000-0000-0000-000000000001'),
+  1,
+  'staff user reads audit events'
+);
+
+reset role;
 
 -- Attempt to UPDATE the audit row must fail.
 select throws_ok(
