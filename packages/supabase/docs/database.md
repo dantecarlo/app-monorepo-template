@@ -38,6 +38,19 @@ function's argument types and body when the function is created, so the RBAC
 enums and tables (`0003_rbac.sql`) come before the helpers that take
 `app_capability` and read those tables (`0004_auth_helpers.sql`).
 
+An offline test guards the order in every `pnpm validate`:
+`src/__tests__/supabaseSql.test.ts` reads the migrations in name order, the
+order the CLI applies them, and fails when one names a `public.` type, table,
+view or function that only a later migration creates
+(`src/findMigrationOrderViolations.helper.ts`). It reads code only: a name in a
+comment or in a string literal outside a function body does not count. It
+checks schema-qualified `public.` names; an unqualified name, or one in
+another schema, is the migration author's to order.
+
+A migration a project may have applied is never edited: a change to an applied
+migration never runs again on that project. A fix goes in a new migration with
+the next number.
+
 ### Mandatory header block
 
 Every migration opens with a three-line comment block:
@@ -179,6 +192,20 @@ $$;
 
 The logic stays in `auth_helpers`; only the entry point is exposed.
 
+A wrapper needs a revoke from `anon` by name. A Supabase project's default
+privileges give `anon`, `authenticated` and `service_role` an explicit EXECUTE
+on every function `postgres` creates in `public`, which `revoke ... from
+public` does not remove:
+
+```sql
+revoke execute on function public.my_helper(...) from public, anon;
+grant execute on function public.my_helper(...) to authenticated, service_role;
+```
+
+`0010_api_privileges.sql` does this for `public.has_capability`, and
+`rls_profile.test.sql` fails when `anon` may execute any SECURITY DEFINER
+function in `public` or `auth_helpers`.
+
 ---
 
 ## 5. DB-driven RBAC
@@ -253,6 +280,70 @@ Use direct `auth.uid()` checks or `service_role` policies only on those two
 tables. Violating this rule produces infinite recursion or a planner error at
 query time.
 
+### API role privileges
+
+A Supabase project's default privileges give `anon`, `authenticated` and
+`service_role` ALL on every table, function and sequence `postgres` creates in
+`public`. Row-level security narrows the rows a table privilege reaches, not
+every privilege, so `0010_api_privileges.sql` and `0013_table_privileges.sql`
+revoke the ones that reach past it:
+
+- **TRUNCATE.** It ignores row-level security and fires no row trigger, so a
+  role holding it empties a table whatever its policies say. `anon` and
+  `authenticated` hold it on no table in `public`: it is revoked on the
+  existing tables and in the default privileges of `postgres` there, so a table
+  added later starts without it. `service_role` keeps it.
+- **TRIGGER, REFERENCES and MAINTAIN.** TRIGGER attaches a trigger to the
+  table: with EXECUTE on a trigger function it reaches, a signed-in user could
+  make every write to the table fail for every user, and only the owner could
+  drop the trigger. REFERENCES points a foreign key at the table, and MAINTAIN
+  (PostgreSQL 17 and later) runs VACUUM, ANALYZE, REINDEX, CLUSTER and LOCK
+  TABLE on it. `anon` and `authenticated` hold none of them in `public`, on
+  the existing tables or in the default privileges of `postgres`; MAINTAIN is
+  revoked only on a server that has it. `service_role` keeps all three.
+- **EXECUTE on a SECURITY DEFINER function in `public`.** See the public
+  wrapper convention in section 4: `anon` loses it by name.
+- **EXECUTE on a trigger function.** A trigger runs its function without that
+  privilege, so no API role needs it, and a role that held it could attach the
+  function to a table of its choosing (with TRIGGER there). The audit log's two
+  trigger functions grant it to no API role; a trigger function a project adds
+  grants none either, and skips the `grant execute` line of the helper pattern.
+
+SELECT, INSERT, UPDATE and DELETE stay, and a policy decides their rows; a
+table that needs less, as `public.profile` does, grants less in a migration of
+its own.
+
+### Profile columns a user edits
+
+A policy limits the rows an `UPDATE` reaches, never the columns it sets:
+`profile_update_self` lets a user update their own profile row, and a column
+privilege decides what they may change in it. `0011_profile_columns.sql`
+revokes UPDATE on `public.profile` from `authenticated` and grants it back on
+`display_name` only, so a user never sets the row's `status` or
+`credit_balance` (the service path's), its `id`, `created_at` or `updated_at`
+(the database's), or its `email`, which mirrors the sign-in address that
+Supabase Auth changes only through its confirmed email-change flow. Roles live
+in `user_role_grant`, which only `service_role` writes.
+
+A column a project adds to `public.profile` is not updatable by
+`authenticated` until a grant names it. When users edit it, grant it in a
+migration of its own:
+
+```sql
+grant update (display_name, my_column) on table public.profile to authenticated;
+```
+
+An app's update names only those columns: `update profile set display_name =
+...` works, and an upsert or update that also sends `status` is refused with
+"permission denied for table profile".
+
+A profile row is created on the server only. `0011_profile_columns.sql` also
+revokes INSERT on `public.profile` from `anon` and `authenticated`, so a user
+cannot create their own row with a `credit_balance` of their choosing, whatever
+insert policy a project adds. No migration creates a profile row: the service
+path does, as `service_role` or in a function `postgres` owns (a trigger on
+`auth.users`, for instance), and both keep INSERT.
+
 ---
 
 ## 7. Append-only audit log
@@ -266,6 +357,14 @@ query time.
   (currently `profile_suspended`).
 - The `auth_helpers.tg_audit_immutable()` trigger raises an exception on any
   `UPDATE` or `DELETE`, making the table append-only at the DB level.
+- That trigger is a row trigger, and `TRUNCATE` fires none, so
+  `0012_audit_truncate.sql` adds `audit_log_no_truncate`, a statement trigger
+  before `TRUNCATE` that raises "audit_log is append-only: TRUNCATE is not
+  permitted". It stops every role that holds the privilege: `postgres`, which
+  owns the table, and `service_role`. A trigger function needs no EXECUTE grant
+  to fire, so `auth_helpers.tg_audit_no_truncate()` grants none, and
+  `0013_table_privileges.sql` revokes the grant 0006 gives
+  `auth_helpers.tg_audit_immutable()`.
 - `INSERT` is service-role only (see `0008_rls_policies.sql`).
 
 ---
@@ -317,12 +416,26 @@ reset role; -- return to the session role (postgres) for setup/teardown
 
 ### Test file structure
 
+`pg_prove` runs every `.sql` file in `supabase/tests/` as a suite of its own,
+and fails a file whose output holds no plan line or a count that differs from
+its plan. So a file there is always a suite, never a page of notes: the
+conventions every suite shares live in this section and in the header of
+`rls_profile.test.sql`. The offline test `src/__tests__/supabaseSql.test.ts`
+fails, in every `pnpm validate`, on a file there that never calls `plan()` or
+`finish()`.
+
 Every test file:
 
 1. Opens with `begin;`
-2. Seeds fixtures as the session role, `postgres` (before `set local role`)
+2. Seeds fixtures as the session role, `postgres` (before `set local role`),
+   with fixed UUID literals and `INSERT ... ON CONFLICT DO NOTHING`
 3. Calls `select plan(N)` with the exact assertion count
 4. Runs structural assertions, then behavioral assertions via impersonation
 5. Ends with `select * from finish(); rollback;`
+
+To prove that a policy or a privilege blocks a write, write with no `WHERE`:
+an `UPDATE` whose `WHERE` names a column also applies the `SELECT` policy,
+which may hide the row anyway. Then `reset role` and read the row back as the
+session role.
 
 See `supabase/tests/rls_profile.test.sql` for the full example.

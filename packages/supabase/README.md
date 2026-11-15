@@ -112,6 +112,8 @@ supabase link --project-ref "$SUPABASE_PROJECT_REF"
 pnpm db:push
 
 # Generate TypeScript types from the linked project into src/types.ts
+# (written to src/types.ts.tmp first, and moved over src/types.ts only when the
+# CLI succeeds: a failed run leaves src/types.ts as it was and exits 1)
 pnpm gen:types
 
 # Run the pgTAP tests on the linked project (needs Docker, see below)
@@ -139,6 +141,9 @@ hand, and only on a disposable development project.
 - `src/mapSupabaseError.adapter.ts` — `mapSupabaseError`; implements `IServiceErrorMapper`
 - `src/buildSupabaseServiceError.helper.ts` — wired convenience: `buildServiceError` + `mapSupabaseError`
 - `src/types.ts` — generated `Database` type (placeholder until `gen:types`)
+- `src/findMigrationOrderViolations.helper.ts`, `src/sqlCode.helper.ts` — the offline order
+  check of the migrations; `src/__tests__/supabaseSql.test.ts` runs it, and the other offline
+  checks of the SQL files, in `pnpm validate` (`src/test/sqlFiles.ts` reads the files)
 - `supabase/config.toml` — CLI config (the API schemas and search path)
 - `supabase/migrations/` — SQL migrations, applied in number order; conventions in `docs/database.md`
 - `supabase/tests/` — pgTAP tests, run by `test:db`

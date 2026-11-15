@@ -419,7 +419,7 @@ cd packages/supabase
 set -a; source .env; set +a
 supabase link --project-ref "$SUPABASE_PROJECT_REF"
 supabase db push
-supabase gen types typescript --linked > src/types.ts
+pnpm --filter @app/supabase gen:types
 ```
 
 ### Env layout

@@ -18,7 +18,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "db:push": "supabase db push --linked",
-    "gen:types": "supabase gen types typescript --linked > src/types.ts",
+    "gen:types": "supabase gen types typescript --linked > src/types.ts.tmp && node -e \"require('node:fs').renameSync('src/types.ts.tmp', 'src/types.ts')\" || (node -e \"require('node:fs').rmSync('src/types.ts.tmp', { force: true })\" && exit 1)",
     "test:db": "supabase test db --linked"
   },
   "dependencies": {

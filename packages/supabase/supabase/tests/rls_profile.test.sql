@@ -11,10 +11,25 @@
 -- intentionally NOT in the offline pnpm validate gate; AGENTS.md forbids an
 -- agent to start Docker.
 --
+-- Every .sql file in this folder is a suite pg_prove runs on its own, and pg_prove fails one
+-- whose output has no plan; src/__tests__/supabaseSql.test.ts checks offline that each file
+-- calls plan() and finish(). The conventions every suite shares are here and in
+-- packages/supabase/docs/database.md (pgTAP workflow).
+--
+-- TRANSACTION: the whole file runs in BEGIN / ROLLBACK, so no state persists.
+--
 -- IMPERSONATION: auth.uid() reads request.jwt.claims ->> 'sub'. Use:
 --   set local "request.jwt.claims" to '{"sub":"<uuid>","role":"authenticated"}';
 --   set local role authenticated;
--- Then `reset role` to return to the session role (postgres) for teardown.
+-- Then `reset role` to return to the session role (postgres) for setup and teardown.
+--
+-- SEED: section 1 inserts the users into auth.users, their profiles and their grants as the
+-- session role, before any `set local role`, with fixed UUID literals so every run reads the
+-- same rows, and ON CONFLICT DO NOTHING so a database that already holds them still runs.
+--
+-- A BLOCKED WRITE: an UPDATE whose WHERE names a column also applies the SELECT policy, which
+-- may hide the row anyway. To prove a policy or a privilege blocks a write, write with no
+-- WHERE, then read the row back as the session role after `reset role`.
 
 begin;
 
@@ -22,15 +37,17 @@ begin;
 -- Plan
 -- =====================================================================
 -- Count assertions below and update this number when adding new tests.
-select plan(31);
+select plan(64);
 
 -- =====================================================================
 -- Section 1: seed test fixtures (as postgres, the session role)
 -- =====================================================================
 
+-- Carol has no profile: section 12 tries to move Bob's profile to her id.
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-000000000001', 'alice@example.com'),
-  ('00000000-0000-0000-0000-000000000002', 'bob@example.com')
+  ('00000000-0000-0000-0000-000000000002', 'bob@example.com'),
+  ('00000000-0000-0000-0000-000000000003', 'carol@example.com')
 on conflict (id) do nothing;
 
 insert into public.profile (id, email, display_name) values
@@ -265,6 +282,55 @@ select throws_ok(
   'audit_log DELETE raises immutability exception'
 );
 
+-- TRUNCATE fires no row trigger, so a statement trigger refuses it: for postgres, which owns
+-- the table, and for service_role, which keeps TRUNCATE.
+select throws_ok(
+  'truncate public.audit_log',
+  'audit_log is append-only: TRUNCATE is not permitted',
+  'audit_log TRUNCATE raises immutability exception'
+);
+
+set local role service_role;
+
+-- service_role holds UPDATE and bypasses row-level security, so only the row trigger stops it; the
+-- trigger runs its function although service_role may not execute it.
+select throws_ok(
+  $$update public.audit_log set target_table = 'hacked' where actor_id = '00000000-0000-0000-0000-000000000001'$$,
+  'audit_log is append-only: UPDATE and DELETE are not permitted',
+  'audit_log UPDATE by service_role raises immutability exception'
+);
+
+select throws_ok(
+  'truncate public.audit_log',
+  'audit_log is append-only: TRUNCATE is not permitted',
+  'audit_log TRUNCATE by service_role raises immutability exception'
+);
+
+-- One statement that truncates audit_log with another table is refused whole.
+select throws_ok(
+  'truncate public.profile, public.audit_log',
+  'audit_log is append-only: TRUNCATE is not permitted',
+  'a truncate naming audit_log among other tables is refused'
+);
+
+reset role;
+
+select is(
+  (select count(*)::int from public.audit_log
+   where actor_id = '00000000-0000-0000-0000-000000000001'),
+  1,
+  'the refused truncates leave the audit event in place'
+);
+
+-- A trigger runs its function without EXECUTE, so no API role needs it, and a role that held it
+-- could attach the function to a table of its own choosing.
+select ok(
+  not has_function_privilege('anon', 'auth_helpers.tg_audit_no_truncate()', 'execute')
+    and not has_function_privilege('authenticated', 'auth_helpers.tg_audit_no_truncate()', 'execute')
+    and not has_function_privilege('service_role', 'auth_helpers.tg_audit_no_truncate()', 'execute'),
+  'no API role may execute tg_audit_no_truncate'
+);
+
 -- =====================================================================
 -- Section 9: auth_helpers privileges — schema USAGE, and a helper added
 -- without a grant block of its own
@@ -314,6 +380,345 @@ select ok(
 select ok(
   has_function_privilege('public', 'extensions.test_function_with_default_grants()', 'execute'),
   'a function added to extensions keeps EXECUTE for PUBLIC'
+);
+
+-- =====================================================================
+-- Section 10: the privileged helpers are out of anon's reach, the public
+-- wrapper among them
+-- =====================================================================
+-- Supabase's default privileges give anon EXECUTE on every function postgres creates in
+-- public, so a SECURITY DEFINER function there needs a revoke from anon of its own.
+
+set local "request.jwt.claims" to '{"role":"anon"}';
+set local role anon;
+
+select throws_ok(
+  $$select public.has_capability('profile.manage'::public.app_capability)$$,
+  'permission denied for function has_capability',
+  'anon cannot execute the public has_capability wrapper'
+);
+
+reset role;
+
+select is(
+  (
+    select coalesce(array_agg(n.nspname || '.' || p.proname order by n.nspname, p.proname), '{}')
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname in ('public', 'auth_helpers')
+      and p.prosecdef
+      and has_function_privilege('anon', p.oid, 'execute')
+  ),
+  '{}'::text[],
+  'anon may execute no security definer function in public or auth_helpers'
+);
+
+set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}';
+set local role authenticated;
+
+select is(
+  (select public.has_capability('profile.manage'::public.app_capability)),
+  true,
+  'the public has_capability wrapper answers a signed-in admin'
+);
+
+reset role;
+
+-- =====================================================================
+-- Section 11: TRUNCATE is service_role's only, on every table in public
+-- =====================================================================
+-- TRUNCATE ignores row-level security and fires no row trigger, so the TRUNCATE Supabase's
+-- default privileges give anon and authenticated would let either empty any table.
+
+select is(
+  (
+    select coalesce(array_agg(c.relname::text order by c.relname), '{}')
+    from pg_class c
+    where c.relnamespace = 'public'::regnamespace
+      and c.relkind in ('r', 'p')
+      and has_table_privilege('anon', c.oid, 'truncate')
+  ),
+  '{}'::text[],
+  'anon holds TRUNCATE on no table in public'
+);
+
+select is(
+  (
+    select coalesce(array_agg(c.relname::text order by c.relname), '{}')
+    from pg_class c
+    where c.relnamespace = 'public'::regnamespace
+      and c.relkind in ('r', 'p')
+      and has_table_privilege('authenticated', c.oid, 'truncate')
+  ),
+  '{}'::text[],
+  'authenticated holds TRUNCATE on no table in public'
+);
+
+set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}';
+set local role authenticated;
+
+select throws_ok(
+  'truncate public.profile',
+  '42501',
+  'permission denied for table profile',
+  'a signed-in user cannot truncate a table'
+);
+
+reset role;
+
+select is(
+  (select count(*)::int from public.profile
+   where id in ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002')),
+  2,
+  'the refused truncate leaves every profile in place'
+);
+
+-- postgres adds a table to public with no grant of its own: the default privileges give the API
+-- roles what Supabase gives them, TRUNCATE for service_role only.
+set local role postgres;
+
+create table public.test_table_with_default_grants (id int);
+
+reset role;
+
+select ok(
+  not has_table_privilege('anon', 'public.test_table_with_default_grants', 'truncate')
+    and not has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'truncate'),
+  'a table added to public gives anon and authenticated no TRUNCATE'
+);
+
+select ok(
+  has_table_privilege('anon', 'public.test_table_with_default_grants', 'select')
+    and has_table_privilege('anon', 'public.test_table_with_default_grants', 'insert')
+    and has_table_privilege('anon', 'public.test_table_with_default_grants', 'update')
+    and has_table_privilege('anon', 'public.test_table_with_default_grants', 'delete')
+    and has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'select')
+    and has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'insert')
+    and has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'update')
+    and has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'delete')
+    and has_table_privilege('service_role', 'public.test_table_with_default_grants', 'truncate')
+    and has_table_privilege('service_role', 'public.test_table_with_default_grants', 'trigger')
+    and has_table_privilege('service_role', 'public.test_table_with_default_grants', 'references'),
+  'a table added to public keeps the other privileges Supabase gives the API roles'
+);
+
+-- =====================================================================
+-- Section 12: a user edits only the display name of their own profile,
+-- and grants themselves no role
+-- =====================================================================
+-- profile_update_self limits an update to the user's own row; column privileges decide which
+-- columns it may set. Each update has no WHERE, so only the update policy and the column
+-- privileges decide, and the row is read back as postgres.
+
+select is(
+  (
+    select coalesce(array_agg(a.attname::text order by a.attnum), '{}')
+    from pg_attribute a
+    where a.attrelid = 'public.profile'::regclass
+      and a.attnum > 0
+      and not a.attisdropped
+      and has_column_privilege('authenticated', a.attrelid, a.attnum, 'update')
+  ),
+  array['display_name'],
+  'authenticated may update only the display_name column of profile'
+);
+
+-- Bob's row as it is before the refused updates, whatever day a database seeded it.
+create temp table bob_before as
+  select id, email, status, credit_balance, created_at
+  from public.profile
+  where id = '00000000-0000-0000-0000-000000000002';
+
+set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}';
+set local role authenticated;
+
+select throws_ok(
+  $$update public.profile set status = 'suspended'$$,
+  '42501',
+  'permission denied for table profile',
+  'a user cannot set the status of their own profile'
+);
+
+select throws_ok(
+  $$update public.profile set credit_balance = 1000000$$,
+  '42501',
+  'permission denied for table profile',
+  'a user cannot set the credit balance of their own profile'
+);
+
+select throws_ok(
+  $$update public.profile set email = 'mallory@example.com'$$,
+  '42501',
+  'permission denied for table profile',
+  'a user cannot set the email of their own profile'
+);
+
+select throws_ok(
+  $$update public.profile set created_at = '2000-01-01', updated_at = '2000-01-01'$$,
+  '42501',
+  'permission denied for table profile',
+  'a user cannot set the timestamps of their own profile'
+);
+
+-- An upsert on the user's own row takes the ON CONFLICT path, which needs UPDATE on each column
+-- it sets.
+select throws_ok(
+  $$insert into public.profile (id, display_name) values ('00000000-0000-0000-0000-000000000002','x') on conflict (id) do update set credit_balance = 1000000$$,
+  '42501',
+  'permission denied for table profile',
+  'a user cannot set the credit balance through an upsert'
+);
+
+select throws_ok(
+  $$update public.profile set id = '00000000-0000-0000-0000-000000000003'$$,
+  '42501',
+  'permission denied for table profile',
+  'a user cannot set the id of their own profile'
+);
+
+reset role;
+
+select is(
+  (select row(id, email, status, credit_balance, created_at)::text
+   from public.profile
+   where id = '00000000-0000-0000-0000-000000000002'),
+  (select row(id, email, status, credit_balance, created_at)::text from bob_before),
+  'the refused updates leave the profile of the user unchanged'
+);
+
+-- Roles live in user_role_grant, whose writes are service_role's only.
+set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}';
+set local role authenticated;
+
+select throws_ok(
+  $$insert into public.user_role_grant (user_id, role) values ('00000000-0000-0000-0000-000000000002', 'admin')$$,
+  '42501',
+  'new row violates row-level security policy for table "user_role_grant"',
+  'a user cannot grant themselves a role'
+);
+
+reset role;
+
+select is(
+  (select count(*)::int from public.user_role_grant
+   where user_id = '00000000-0000-0000-0000-000000000002'),
+  0,
+  'the refused self-grant leaves the user with no role'
+);
+
+-- A profile row is the service path's to create: no API role but service_role holds INSERT on
+-- any of its columns, so a user cannot create a row with a credit_balance of their choosing.
+select ok(
+  not has_any_column_privilege('anon', 'public.profile', 'insert')
+    and not has_any_column_privilege('authenticated', 'public.profile', 'insert'),
+  'anon and authenticated may insert no profile column'
+);
+
+-- Carol, signed in, has no profile yet.
+set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000003","role":"authenticated"}';
+set local role authenticated;
+
+select throws_ok(
+  $$insert into public.profile (id, email, credit_balance) values ('00000000-0000-0000-0000-000000000003', 'carol@example.com', 1000000)$$,
+  '42501',
+  'permission denied for table profile',
+  'a user cannot create their own profile'
+);
+
+reset role;
+
+set local role service_role;
+
+insert into public.profile (id, email, display_name) values
+  ('00000000-0000-0000-0000-000000000003', 'carol@example.com', 'Carol')
+on conflict (id) do nothing;
+
+reset role;
+
+select is(
+  (select count(*)::int from public.profile
+   where id = '00000000-0000-0000-0000-000000000003'),
+  1,
+  'the service role still creates a profile'
+);
+
+-- =====================================================================
+-- Section 13: TRIGGER, REFERENCES and MAINTAIN are service_role's only,
+-- and no API role executes the audit log's trigger functions
+-- =====================================================================
+-- TRIGGER lets a role attach a trigger to a table, REFERENCES point a foreign key at it, and
+-- MAINTAIN (PostgreSQL 17 and later) VACUUM, ANALYZE, REINDEX, CLUSTER or LOCK it. MAINTAIN is
+-- read only where it exists, so the suite runs on PostgreSQL 15 too.
+
+select is(
+  (
+    select coalesce(array_agg(c.relname::text order by c.relname), '{}')
+    from pg_class c
+    where c.relnamespace = 'public'::regnamespace
+      and c.relkind in ('r', 'p')
+      and (
+        has_table_privilege('anon', c.oid, 'trigger')
+        or has_table_privilege('anon', c.oid, 'references')
+        or case when current_setting('server_version_num')::int >= 170000
+             then has_table_privilege('anon', c.oid, 'maintain') else false end
+      )
+  ),
+  '{}'::text[],
+  'anon holds no TRIGGER, REFERENCES or MAINTAIN on any table in public'
+);
+
+select is(
+  (
+    select coalesce(array_agg(c.relname::text order by c.relname), '{}')
+    from pg_class c
+    where c.relnamespace = 'public'::regnamespace
+      and c.relkind in ('r', 'p')
+      and (
+        has_table_privilege('authenticated', c.oid, 'trigger')
+        or has_table_privilege('authenticated', c.oid, 'references')
+        or case when current_setting('server_version_num')::int >= 170000
+             then has_table_privilege('authenticated', c.oid, 'maintain') else false end
+      )
+  ),
+  '{}'::text[],
+  'authenticated holds no TRIGGER, REFERENCES or MAINTAIN on any table in public'
+);
+
+-- Committed, this trigger would refuse every update and delete of every profile, and only the
+-- table owner could drop it.
+set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}';
+set local role authenticated;
+
+select throws_ok(
+  $$create trigger evil before update or delete on public.profile for each row execute function auth_helpers.tg_audit_immutable()$$,
+  '42501',
+  'permission denied for table profile',
+  'a signed-in user cannot create a trigger on a table'
+);
+
+reset role;
+
+select ok(
+  not has_table_privilege('anon', 'public.test_table_with_default_grants', 'trigger')
+    and not has_table_privilege('anon', 'public.test_table_with_default_grants', 'references')
+    and not has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'trigger')
+    and not has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'references')
+    -- CASE, not AND: SQL does not promise to evaluate AND left to right, and MAINTAIN does not
+    -- exist before PostgreSQL 17.
+    and not case
+      when current_setting('server_version_num')::int >= 170000 then
+        has_table_privilege('anon', 'public.test_table_with_default_grants', 'maintain')
+        or has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'maintain')
+      else false
+    end,
+  'a table added to public gives anon and authenticated no TRIGGER, REFERENCES or MAINTAIN'
+);
+
+select ok(
+  not has_function_privilege('anon', 'auth_helpers.tg_audit_immutable()', 'execute')
+    and not has_function_privilege('authenticated', 'auth_helpers.tg_audit_immutable()', 'execute')
+    and not has_function_privilege('service_role', 'auth_helpers.tg_audit_immutable()', 'execute'),
+  'no API role may execute tg_audit_immutable'
 );
 
 -- =====================================================================
