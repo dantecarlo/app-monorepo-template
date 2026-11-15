@@ -4,6 +4,7 @@ import {
   type UseQueryOptions,
   type UseQueryResult
 } from '@tanstack/react-query'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { resolveErrorMessage } from '@/lib/query/resolveErrorMessage.helper'
@@ -18,22 +19,28 @@ export const useAppQuery = <TData, TError extends Error = Error>({
 }: IAppQueryOptions<TData, TError>): UseQueryResult<TData, TError> => {
   const addToast = useToastStore((s) => s.add)
   const { i18n, t } = useTranslation()
+  // The errorUpdateCount of the last failure a toast was added for.
+  const toastedFailureRef = useRef(0)
 
   const result = useQuery<TData, TError>({
     ...queryOptions,
     ...(adapter ? { select: (raw: TData) => adapter(raw) } : {})
   } as UseQueryOptions<TData, TError, TData, QueryKey>)
 
-  if (result.isError && result.error) {
+  const { error, errorUpdateCount, isError } = result
+
+  useEffect(() => {
+    if (!isError || errorUpdateCount === toastedFailureRef.current) return
+    toastedFailureRef.current = errorUpdateCount
     const message = resolveErrorMessage({
-      error: result.error,
+      error,
       errorMessage,
       fallback: t(GENERIC_ERROR_KEY),
       hasKey: (key) => i18n.exists(key),
       translate: (key) => t(key)
     })
-    setTimeout(() => addToast({ message, variant: 'error' }), 0)
-  }
+    addToast({ message, variant: 'error' })
+  }, [addToast, error, errorMessage, errorUpdateCount, i18n, isError, t])
 
   return result
 }
