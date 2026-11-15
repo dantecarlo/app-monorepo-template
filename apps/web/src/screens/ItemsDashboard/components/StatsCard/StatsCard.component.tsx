@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl'
 
 import { Chip } from '@/components/ui/Chip'
 import { GlassCard } from '@/components/ui/GlassCard'
-import { TEXT } from '@/helpers/style.constant'
+import { Text } from '@/components/ui/Text'
 import { STATS_CARD } from '@/screens/ItemsDashboard/components/StatsCard/StatsCard.style'
 import type { IStatsCardProps } from '@/screens/ItemsDashboard/components/StatsCard/StatsCard.type'
 
@@ -25,7 +25,9 @@ export const StatsCard = ({
           {t('statsLive')}
         </Chip>
       </div>
-      <p className={TEXT.AMOUNT_HERO}>{isLoading ? '—' : totalCount}</p>
+      <Text as="p" variant="amountHero">
+        {isLoading ? '—' : totalCount}
+      </Text>
       <p className={STATS_CARD.TOTAL_LABEL}>{t('statsTotalItems')}</p>
       <div className={STATS_CARD.SUB_ROW}>
         <Chip variant="accent">

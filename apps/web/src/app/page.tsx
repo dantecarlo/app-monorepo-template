@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 
-import { LAYOUT } from '@/helpers/style.constant'
+import { LAYOUT } from '@/helpers/layout.style'
 import { ItemsDashboardScreen } from '@/screens/ItemsDashboard'
 import { ItemsSummaryScreen } from '@/screens/ItemsSummary'
 

@@ -72,7 +72,7 @@ const RootLayout = ({ children }: IRootLayoutProps) => {
           dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME_SCRIPT }}
         />
       </head>
-      <body className="aurora min-h-screen bg-bg-base font-body text-text-primary antialiased">
+      <body className="min-h-screen">
         <ThemeProvider>
           <SupabaseProviders messages={messages}>
             {children}

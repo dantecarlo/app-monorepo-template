@@ -24,7 +24,7 @@ export const Chip = ({
       {withDot === true && (
         <span
           aria-hidden="true"
-          className="h-[7px] w-[7px] rounded-full bg-current"
+          className="size-1.75 rounded-full bg-current"
         />
       )}
       {children}

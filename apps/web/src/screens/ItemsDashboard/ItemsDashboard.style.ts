@@ -1,4 +1,4 @@
-import { LAYOUT } from '@/helpers/style.constant'
+import { LAYOUT } from '@/helpers/layout.style'
 
 export const ITEMS_DASHBOARD = {
   MAIN: `${LAYOUT.MAX_WIDTH} ${LAYOUT.SCREEN_PADDING} pb-32 pt-12`,

@@ -1,7 +1,7 @@
 'use client'
 
 import { ErrorState } from '@/components/ui/ErrorState'
-import { LAYOUT } from '@/helpers/style.constant'
+import { LAYOUT } from '@/helpers/layout.style'
 
 interface IRouteErrorProps {
   error: Error & { digest?: string }

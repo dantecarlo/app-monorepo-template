@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server'
 
 import { GlassCard } from '@/components/ui/GlassCard'
+import { Text } from '@/components/ui/Text'
 import { ITEMS_SUMMARY } from '@/screens/ItemsSummary/ItemsSummary.style'
 import { loadItemsSummary } from '@/screens/ItemsSummary/loadItemsSummary.service'
 
@@ -10,33 +11,35 @@ const ItemsSummaryScreen = async () => {
 
   return (
     <GlassCard className={ITEMS_SUMMARY.CARD} padding="md" radius="lg">
-      <p className={ITEMS_SUMMARY.TITLE}>{t('title')}</p>
-      <div className={ITEMS_SUMMARY.ROW}>
+      <Text as="p" className={ITEMS_SUMMARY.TITLE} variant="eyebrow">
+        {t('title')}
+      </Text>
+      <Text as="div" className={ITEMS_SUMMARY.ROW} variant="small">
         <span>
-          <span className={ITEMS_SUMMARY.TOTAL_VALUE}>
+          <Text tone="primary" weight="semibold">
             {summary.totalCount}
-          </span>{' '}
-          <span className={ITEMS_SUMMARY.LABEL}>{t('total')}</span>
+          </Text>{' '}
+          <Text tone="secondary">{t('total')}</Text>
         </span>
         <span>
-          <span className={ITEMS_SUMMARY.ACTIVE_VALUE}>
+          <Text tone="success" weight="semibold">
             {summary.activeCount}
-          </span>{' '}
-          <span className={ITEMS_SUMMARY.LABEL}>{t('active')}</span>
+          </Text>{' '}
+          <Text tone="secondary">{t('active')}</Text>
         </span>
         <span>
-          <span className={ITEMS_SUMMARY.DRAFT_VALUE}>
+          <Text tone="tertiary" weight="semibold">
             {summary.draftCount}
-          </span>{' '}
-          <span className={ITEMS_SUMMARY.LABEL}>{t('draft')}</span>
+          </Text>{' '}
+          <Text tone="secondary">{t('draft')}</Text>
         </span>
         <span>
-          <span className={ITEMS_SUMMARY.DRAFT_VALUE}>
+          <Text tone="tertiary" weight="semibold">
             {summary.archivedCount}
-          </span>{' '}
-          <span className={ITEMS_SUMMARY.LABEL}>{t('archived')}</span>
+          </Text>{' '}
+          <Text tone="secondary">{t('archived')}</Text>
         </span>
-      </div>
+      </Text>
     </GlassCard>
   )
 }

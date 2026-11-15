@@ -15,4 +15,4 @@ export const AUTH_SHELL_TITLE_CLASS =
 export const AUTH_SHELL_SUBTITLE_CLASS =
   'mt-1 text-center text-body font-body text-text-secondary'
 
-export const AUTH_SHELL_FORM_CLASS = 'w-full max-w-[24rem]'
+export const AUTH_SHELL_FORM_CLASS = 'w-full max-w-narrow'

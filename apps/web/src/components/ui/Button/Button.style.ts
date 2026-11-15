@@ -9,8 +9,8 @@ export const buttonVariants = tv({
   base: [
     'inline-flex items-center justify-center gap-2',
     'rounded-full font-display text-button font-bold',
-    'transition-all duration-[120ms] ease-out',
-    'active:scale-[0.97]',
+    'transition-all duration-120 ease-out',
+    'active:scale-97',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
     'disabled:opacity-40 disabled:pointer-events-none',
     'cursor-pointer select-none'

@@ -15,7 +15,7 @@
  * Themed color values — the single light/dark source on web.
  * @theme maps every --color-* utility to a --c-* indirection var (below), so
  * flipping [data-theme] on <html> re-points every token at once. Utilities
- * (bg-bg-base, text-text-primary, .glass-card, .aurora, …) flip with zero
+ * (bg-bg-base, text-text-primary, .glass-card, the body aurora, …) flip with zero
  * selector changes because they all read through these vars.
  *
  * Keep these blocks in lockstep with packages/tokens themes.{dark,light} and
@@ -191,13 +191,16 @@
 }
 
 @layer utilities {
-  /* Aurora background — dual ambient glow effect */
-  .aurora {
+  /* The document body: the base surface, the body font and the aurora, a
+     dual ambient glow. It is the look of the document itself, which no
+     component renders, so the route layouts only position <body>. */
+  body {
     position: relative;
+    @apply bg-bg-base font-body text-text-primary antialiased;
   }
 
-  .aurora::before,
-  .aurora::after {
+  body::before,
+  body::after {
     content: '';
     position: fixed;
     border-radius: 9999px;
@@ -206,7 +209,7 @@
   }
 
   /* Accent glow — top-right */
-  .aurora::before {
+  body::before {
     width: 340px;
     height: 340px;
     top: -120px;
@@ -220,7 +223,7 @@
   }
 
   /* Cool glow — bottom-left */
-  .aurora::after {
+  body::after {
     width: 280px;
     height: 280px;
     bottom: -80px;

@@ -5,7 +5,7 @@ export const loadingSkeletonVariants = tv({
     rounded: 'md'
   },
   slots: {
-    root: 'relative overflow-hidden bg-white/[0.08]',
+    root: 'relative overflow-hidden bg-neutral-tint',
     shimmer: 'absolute inset-0 animate-shimmer'
   },
   variants: {

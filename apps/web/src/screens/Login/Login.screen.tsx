@@ -5,6 +5,8 @@ import type { JSX } from 'react'
 
 import { AuthField } from '@/components/ui/AuthField/AuthField.component'
 import { AuthShell } from '@/components/ui/AuthShell/AuthShell.component'
+import { Button } from '@/components/ui/Button'
+import { Divider } from '@/components/ui/Divider'
 import { SocialAuthButton } from '@/components/ui/SocialAuthButton/SocialAuthButton.component'
 import { useLoginForm } from '@/screens/Login/hooks/useLoginForm.hook'
 import { LOGIN_FIELD_ID } from '@/screens/Login/Login.constant'
@@ -61,20 +63,12 @@ export const LoginScreen = (): JSX.Element => {
           value={values.password}
         />
 
-        <button
-          className={LOGIN.SUBMIT}
-          disabled={isSubmitting}
-          type="submit"
-        >
+        <Button disabled={isSubmitting} fullWidth type="submit">
           {isSubmitting ? t('submitting') : t('cta')}
-        </button>
+        </Button>
       </form>
 
-      <div className={LOGIN.DIVIDER}>
-        <span className={LOGIN.DIVIDER_LINE} />
-        <span className={LOGIN.DIVIDER_TEXT}>{t('dividerOr')}</span>
-        <span className={LOGIN.DIVIDER_LINE} />
-      </div>
+      <Divider className={LOGIN.DIVIDER} label={t('dividerOr')} />
 
       <SocialAuthButton
         label={t('googleCta')}
