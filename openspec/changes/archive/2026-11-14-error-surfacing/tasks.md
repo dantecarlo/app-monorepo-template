@@ -6,7 +6,7 @@
 - [x] T4 — mobile `useAppQuery` adds one error toast per query failure, from an effect · Requirements: MOBILE-20 · Commit: 5db951b
 - [x] T5 — the mobile `react-native` test double renders accessible DOM elements; the mobile root layout mounts the `Toast` viewport, whose pill gains its background · Requirements: MOBILE-36 · Commit: e905045
 - [x] T6 — mobile `RootErrorBoundary`, exported by the root layout as its `ErrorBoundary`; `docs/architecture/mobile.md` and `docs/maps/global-map.md` say it ships · Requirements: MOBILE-37 · Commit: 5cc5333
-- [ ] T7 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-14-error-surfacing/` as the last commit · Requirements: none · Commit: —
+- [x] T7 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-14-error-surfacing/` as the last commit · Requirements: none · Commit: b010b65
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of

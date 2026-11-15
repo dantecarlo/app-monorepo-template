@@ -1,6 +1,6 @@
 # Proposal: show the error toasts and catch render crashes in both apps
 
-> **Status:** open
+> **Status:** archived — 2026-11-14
 
 ## Why
 
