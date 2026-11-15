@@ -37,7 +37,7 @@ begin;
 -- Plan
 -- =====================================================================
 -- Count assertions below and update this number when adding new tests.
-select plan(53);
+select plan(54);
 
 -- =====================================================================
 -- Section 1: seed test fixtures (as postgres, the session role)
@@ -296,6 +296,13 @@ select throws_ok(
   'truncate public.audit_log',
   'audit_log is append-only: TRUNCATE is not permitted',
   'audit_log TRUNCATE by service_role raises immutability exception'
+);
+
+-- One statement that truncates audit_log with another table is refused whole.
+select throws_ok(
+  'truncate public.profile, public.audit_log',
+  'audit_log is append-only: TRUNCATE is not permitted',
+  'a truncate naming audit_log among other tables is refused'
 );
 
 reset role;
