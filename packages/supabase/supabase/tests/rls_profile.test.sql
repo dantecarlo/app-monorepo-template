@@ -37,7 +37,7 @@ begin;
 -- Plan
 -- =====================================================================
 -- Count assertions below and update this number when adding new tests.
-select plan(40);
+select plan(43);
 
 -- =====================================================================
 -- Section 1: seed test fixtures (as postgres, the session role)
@@ -278,6 +278,31 @@ select throws_ok(
   $$delete from public.audit_log where actor_id = '00000000-0000-0000-0000-000000000001'$$,
   'audit_log is append-only: UPDATE and DELETE are not permitted',
   'audit_log DELETE raises immutability exception'
+);
+
+-- TRUNCATE fires no row trigger, so a statement trigger refuses it: for postgres, which owns
+-- the table, and for service_role, which keeps TRUNCATE.
+select throws_ok(
+  'truncate public.audit_log',
+  'audit_log is append-only: TRUNCATE is not permitted',
+  'audit_log TRUNCATE raises immutability exception'
+);
+
+set local role service_role;
+
+select throws_ok(
+  'truncate public.audit_log',
+  'audit_log is append-only: TRUNCATE is not permitted',
+  'audit_log TRUNCATE by service_role raises immutability exception'
+);
+
+reset role;
+
+select is(
+  (select count(*)::int from public.audit_log
+   where actor_id = '00000000-0000-0000-0000-000000000001'),
+  1,
+  'the refused truncates leave the audit event in place'
 );
 
 -- =====================================================================

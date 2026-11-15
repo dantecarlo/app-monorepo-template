@@ -314,6 +314,12 @@ in its own migration.
   (currently `profile_suspended`).
 - The `auth_helpers.tg_audit_immutable()` trigger raises an exception on any
   `UPDATE` or `DELETE`, making the table append-only at the DB level.
+- That trigger is a row trigger, and `TRUNCATE` fires none, so
+  `0012_audit_truncate.sql` adds `audit_log_no_truncate`, a statement trigger
+  before `TRUNCATE` that raises "audit_log is append-only: TRUNCATE is not
+  permitted". It stops every role that holds the privilege: `postgres`, which
+  owns the table, and `service_role`. A trigger function needs no EXECUTE grant
+  to fire, so `auth_helpers.tg_audit_no_truncate()` grants none.
 - `INSERT` is service-role only (see `0008_rls_policies.sql`).
 
 ---
