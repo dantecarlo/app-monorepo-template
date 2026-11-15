@@ -71,8 +71,8 @@ const readSignedParams = ({
     SIGNED_URL_SIGNATURE_QUERY_KEY
   )
   if (expiries.length !== 1 || signatures.length !== 1) return null
-  const [expiry] = expiries
-  const [signature] = signatures
+  const [expiry = ''] = expiries
+  const [signature = ''] = signatures
   if (!UNIX_SECONDS_PATTERN.test(expiry)) return null
   if (!HMAC_HEX_SIGNATURE_PATTERN.test(signature)) return null
   const seconds = Number(expiry)
