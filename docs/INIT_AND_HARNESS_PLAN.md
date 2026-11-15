@@ -78,11 +78,11 @@ Requested by the owner: everything below "Pending" and "Requested", in that orde
 **Done, merged into `main`:**
 - Stages 0 to 2.
 - Step 3.1: `AGENTS.md` is the router, with the LAWs, the Codex budget and `verify:instruction-entry` (#17).
+- Step 3.2 part A: the agent projector to four runtimes, with `projection-check` (#18).
 - The living specs (#13). F1 to F7 and F9 (#14, #15, #16).
 - In Certifipago: K1, K2, K4 to K7, K9 and K10 closed.
 
 **In progress:**
-- Step 3.2 part A, the agent projector (#18).
 - F.1, the styling pillar with the UI kit behind `components/ui`.
 - F.2, the Supabase hardening, in its correction batch.
 - F.3, the package follow-ups, in their review notes.
