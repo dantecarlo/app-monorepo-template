@@ -208,7 +208,8 @@ package barrel has no exception: it re-exports through `#src/`.
 > outside what it sees and holds by review. In a package's production files,
 > `package-src-alias` (`eslint-local-rules/index.mjs`) reads imports, re-exports
 > and `import()`, and its fix writes the `#src/` form from the file's own path,
-> whichever folder ESLint runs from. Test files sit outside both
+> whichever folder ESLint runs from, and only when that alias resolves back to
+> the same file through the package's `imports` map. Test files sit outside both
 > (`TEST_FILE_OVERRIDE` in `eslint.rules.mjs`).
 
 ---

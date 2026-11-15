@@ -4,14 +4,11 @@ import type {
   IImageDeliveryPort
 } from '@app/core'
 
-import { hmacHexSignature } from '#src/hmacHexSignature.helper'
 import {
   CLOUDFLARE_IMAGES_DEFAULT_VARIANT,
-  CLOUDFLARE_IMAGES_DELIVERY_BASE,
-  SECONDS_TO_MILLISECONDS,
-  SIGNED_URL_EXPIRY_QUERY_KEY,
-  SIGNED_URL_SIGNATURE_QUERY_KEY
+  CLOUDFLARE_IMAGES_DELIVERY_BASE
 } from '#src/imageDelivery.constant'
+import { signImageUrl } from '#src/signedImageUrl.helper'
 
 export interface ICreateCloudflareImagesDeliveryParams {
   accountHash?: string
@@ -34,27 +31,23 @@ export const createCloudflareImagesDelivery = ({
   accountHash = process.env.CLOUDFLARE_IMAGES_ACCOUNT_HASH,
   signingKey = process.env.CLOUDFLARE_IMAGES_SIGNING_KEY,
   variant = CLOUDFLARE_IMAGES_DEFAULT_VARIANT
-}: ICreateCloudflareImagesDeliveryParams = {}): IImageDeliveryPort => ({
-  buildImageUrl: ({ path }: IBuildImageUrlParams): string =>
-    accountHash ? buildPublicUrl({ accountHash, path, variant }) : path,
-  buildSignedImageUrl: async ({
-    expiresInSeconds,
-    path
-  }: IBuildSignedImageUrlParams): Promise<string> => {
-    if (!accountHash || !signingKey) return path
+}: ICreateCloudflareImagesDeliveryParams = {}): IImageDeliveryPort => {
+  const buildImageUrl = ({ path }: IBuildImageUrlParams): string =>
+    accountHash ? buildPublicUrl({ accountHash, path, variant }) : path
 
-    const publicUrl = buildPublicUrl({ accountHash, path, variant })
-    const url = new URL(publicUrl)
-    const expiry =
-      Math.floor(Date.now() / SECONDS_TO_MILLISECONDS) + expiresInSeconds
-    url.searchParams.set(SIGNED_URL_EXPIRY_QUERY_KEY, String(expiry))
+  return {
+    buildImageUrl,
+    buildSignedImageUrl: async ({
+      expiresInSeconds,
+      path
+    }: IBuildSignedImageUrlParams): Promise<string> => {
+      if (!accountHash || !signingKey) return buildImageUrl({ path })
 
-    const signature = await hmacHexSignature({
-      message: `${url.pathname}?${url.searchParams.toString()}`,
-      secret: signingKey
-    })
-    url.searchParams.set(SIGNED_URL_SIGNATURE_QUERY_KEY, signature)
-
-    return url.toString()
+      return signImageUrl({
+        expiresInSeconds,
+        secret: signingKey,
+        url: buildPublicUrl({ accountHash, path, variant })
+      })
+    }
   }
-})
+}

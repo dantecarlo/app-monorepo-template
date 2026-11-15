@@ -38,7 +38,9 @@ Then:
 
 ## Layer 2 — Signed URLs for private images (CODE)
 
-Private images use signed, expiring URLs so a leaked URL stops working.
+Private images use signed, expiring URLs so a leaked URL stops working where
+something checks it: Cloudflare Images checks its own, and an R2 bucket checks
+nothing (see "Verifying a signed URL" below).
 
 | Concern | Port (`@app/core`) | Default adapter (`@app/cloudflare`) | Default (built-in, core) | Composition root (`apps/web`) |
 |---|---|---|---|---|
@@ -49,9 +51,43 @@ Private images use signed, expiring URLs so a leaked URL stops working.
   `exp` and `sig` query param.
 - **Cloudflare Images** (`createCloudflareImagesDelivery`): signs the delivery
   URL with `CLOUDFLARE_IMAGES_SIGNING_KEY` (requireSignedURLs). Falls back to
-  public when the account hash or signing key is absent.
+  the public delivery URL when the signing key is absent, and to the bare path
+  when the account hash is, as `buildImageUrl` does.
 - **R2** (`createR2SignedDelivery`): signs against `R2_SECRET_ACCESS_KEY` and a
-  public base URL. Falls back to public when either is absent.
+  public base URL. Falls back to the public URL when either is absent.
+- Both sign through `signImageUrl`: `sig` is the HMAC-SHA256 hex, keyed by the
+  secret, of the URL path and its query with `exp` and without `sig`.
+
+### Verifying a signed URL
+
+`verifySignedImageUrl({ secret, url, nowInSeconds? })`, exported by
+`@app/cloudflare`, checks a URL either adapter signed, with the same secret
+and the same canonical string. It reads no environment variable and does no
+I/O, so it runs in the edge runtime and in a Worker. It compares the signature
+in constant time and returns a `SignedImageUrlVerificationType`:
+`{ valid: true }`, or `{ valid: false, reason }` with one of
+`SignedImageUrlRejectionEnum`:
+
+| Reason | When |
+|---|---|
+| `not_configured` | the secret is empty |
+| `malformed` | the URL cannot be parsed; `exp` or `sig` is missing or repeated; `exp` is not whole Unix seconds; `sig` is not 64 lowercase hex characters |
+| `signature_mismatch` | the path, the query, `exp` or `sig` changed, or another secret signed it |
+| `expired` | a genuine signature whose `exp` is now or past, or a clock that is not a finite number |
+
+Who checks what:
+
+- **Cloudflare Images** checks its own signed URLs: an image that requires
+  signed URLs "cannot be accessed without a token"
+  ([Cloudflare docs](https://developers.cloudflare.com/images/manage-images/serve-images/serve-private-images/)).
+  Nothing in the app needs to call the verifier.
+- **R2** checks nothing itself: a public bucket, or a custom domain on it,
+  serves any object to whoever has its path, signed or not. A private R2
+  object therefore lives in a bucket that is not public, and whatever serves
+  it (a Worker bound to the bucket, or an app route that reads it) calls
+  `verifySignedImageUrl` with `R2_SECRET_ACCESS_KEY` first and refuses the
+  request unless the result is valid. The template ships no such route: its composition root binds the
+  unsigned public delivery.
 
 ### Swapping the provider (one line)
 
@@ -63,7 +99,8 @@ export const imageDelivery: IImageDeliveryPort = createPublicImageDelivery() // 
 ```
 
 **Graceful degrade:** with no signing credentials the signed adapters return
-the plain public URL, so build and validate pass credential-free.
+the plain public URL (Cloudflare Images returns the bare path when even the
+account hash is missing), so build and validate pass credential-free.
 
 ---
 

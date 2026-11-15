@@ -27,13 +27,12 @@ test('verifyToken fails CLOSED when no secret is configured in production', asyn
   }
 })
 
-test('verifyToken does not throw an unhandled rejection on fetch failure', async () => {
-  vi.spyOn(globalThis, 'fetch').mockRejectedValue(
-    new Error('network down')
-  )
+test('verifyToken rejects with the fetch error when siteverify cannot be reached', async () => {
+  const networkError = new Error('network down')
+  vi.spyOn(globalThis, 'fetch').mockRejectedValue(networkError)
   const adapter = createTurnstileBotProtection({ secretKey: SECRET })
-  await expect(adapter.verifyToken({ token: 'tok' })).rejects.toThrow(
-    'network down'
+  await expect(adapter.verifyToken({ token: 'tok' })).rejects.toBe(
+    networkError
   )
 })
 

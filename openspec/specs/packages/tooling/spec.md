@@ -3,7 +3,7 @@
 > **Governs:** `packages/tooling/src`
 > **ID prefix:** `TOOLING`
 > **Derived from:** `docs/code-standards.md`, `docs/architecture/shared.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-14 at `9afce2d`
+> **Verified against the code:** 2026-11-15 at `a4334a6`
 
 ## Purpose
 
@@ -220,11 +220,15 @@ false on Windows, so a child spawned with it leads its own process group on POSI
 
 ### Requirement: TOOLING-12 — A child is ended with every process it started
 
-The tooling package SHALL end a child and its descendants from `signalProcessTree`: on POSIX by
-sending the signal to the child's process group, on Windows by `taskkill /pid <pid> /T /F`
-whatever the signal.
+The tooling package SHALL end a child and its descendants from `signalProcessTree` (on POSIX by
+sending the signal to the child's process group, which holds its descendants only when the child
+was spawned with `TREE_SPAWN_OPTIONS`, so a child spawned without them receives the signal alone;
+on Windows by `taskkill /pid <pid> /T /F` whatever the signal), and say in its declaration and
+its JSDoc that on POSIX the descendants are reached only for a child spawned with
+`TREE_SPAWN_OPTIONS`.
 
-**Evidence:** `packages/tooling/src/process-tree.mjs:43-61`
+**Evidence:** `packages/tooling/src/process-tree.mjs:47-65`,
+`packages/tooling/src/process-tree.d.mts:6-9`, `packages/tooling/src/process-tree.mjs:34-37`
 
 #### Scenario: a child that started a process
 
@@ -241,13 +245,21 @@ whatever the signal.
   started keeps running
 - **Test:** Not covered — no test spawns a child without the options.
 
+#### Scenario: the declaration names the condition
+
+- **GIVEN** the type declarations of `@app/tooling/process-tree`
+- **WHEN** a reader reads the documentation of `signalProcessTree`
+- **THEN** it says that on POSIX the descendants are reached only for a child spawned with
+  `TREE_SPAWN_OPTIONS`
+- **Test:** Not covered — the wording of a comment is read in review; no test reads it.
+
 ### Requirement: TOOLING-13 — Waiting on Windows
 
 The tooling package SHALL, on Windows, run taskkill to completion before `signalProcessTree`
 returns when `wait` is set, and start it in the background and return true at once when it is
 not.
 
-**Evidence:** `packages/tooling/src/process-tree.mjs:44-58`
+**Evidence:** `packages/tooling/src/process-tree.mjs:48-62`
 
 #### Scenario: with wait
 
@@ -270,8 +282,8 @@ The tooling package SHALL return false from `signalProcessTree` only when the tr
 signalled and the child is still running, and true for a child that never started or has already
 ended.
 
-**Evidence:** `packages/tooling/src/process-tree.mjs:42`,
-`packages/tooling/src/process-tree.mjs:55-57`, `packages/tooling/src/process-tree.mjs:62-64`
+**Evidence:** `packages/tooling/src/process-tree.mjs:46`,
+`packages/tooling/src/process-tree.mjs:59-61`, `packages/tooling/src/process-tree.mjs:66-68`
 
 #### Scenario: a tree that already ended
 
@@ -293,12 +305,3 @@ ended.
 - **WHEN** `signalProcessTree` signals it
 - **THEN** it returns false
 - **Test:** Not covered — no test holds a running process the caller is not allowed to signal.
-
-## Open questions
-
-- **Q1** — `packages/tooling/src/process-tree.d.mts:4` and
-  `packages/tooling/src/process-tree.mjs:33` say `signalProcessTree` signals the child and its
-  descendants, but on POSIX `packages/tooling/src/process-tree.mjs:60` falls back to signalling
-  the child alone when it does not lead its own process group, and still returns true: that holds
-  only for a child spawned with `TREE_SPAWN_OPTIONS`, which the declaration does not say. See
-  TOOLING-12.
