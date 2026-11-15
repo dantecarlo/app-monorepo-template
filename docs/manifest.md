@@ -168,6 +168,7 @@ adapter (blocker B4); a delete-only executor cannot close it.
 | `diagrams`            | `pnpm validate` still calls `docs:diagrams:check` (B2); the global map rows for `docs/diagrams/` and `build-diagrams` fail `verify:maps`            |
 | `sdd`                 | `pnpm validate` still calls `verify:specs`, `report:spec-drift` and their tests (B2); the global map rows for them and the skill fail `verify:maps` |
 | `english-artifacts`   | `pnpm validate` still calls `verify:english` and its test (B2); the global map rows for the gate fail `verify:maps`                                 |
+| any with a spec       | its spec under `openspec/specs/` goes, and its row in the `openspec/README.md` § 2.1 table stays                                                    |
 | `template-maintainer` | Never selected, so always absent: the global map rows for the plans and `docs/audits/`, and the plan citations in code-standards, go stale          |
 
 `copy` and `render` read from `templates/`, which does not exist yet; no
