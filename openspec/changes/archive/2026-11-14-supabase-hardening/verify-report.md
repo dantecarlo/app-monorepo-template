@@ -171,6 +171,9 @@ kept as `backup/supabase-hardening-v1`), each correction a task of its own, test
 - `ATL_TEMPLATE_SELF=1 pnpm validate`: exit 0, 2026-11-15, at `99b6eb5` (turbo 24 of 24 tasks,
   `@app/supabase` 33 of 33 tests; `verify:tests` 77 units; `verify:specs` PASS with this change
   open; `report:spec-drift` lists the supabase spec, which the archive re-verifies).
+- `ATL_TEMPLATE_SELF=1 pnpm validate`: exit 0, 2026-11-15, on the archive commit's tree, the delta
+  merged into the living spec (turbo 24 of 24 tasks; `verify:specs` PASS with 0 open changes;
+  `report:spec-drift` 0 of 8 specs behind their code).
 - The first version of the change, at `6ad399e`, also had a run that failed only on
   `@app/web#build`, which could not fetch the Google font of `next/font/google`; the web build then
   passed alone, and `pnpm validate` exited 0 at `6ad399e`.

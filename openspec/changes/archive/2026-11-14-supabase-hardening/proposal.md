@@ -1,6 +1,6 @@
 # Proposal: narrow the API roles' privileges and guard the Supabase test and type tooling
 
-> **Status:** open
+> **Status:** archived — 2026-11-15
 
 ## Why
 

@@ -14,7 +14,7 @@
 - [x] T13 — correction after the independent verification (N2d): `anon` and `authenticated` lose INSERT on `public.profile`, so only the service path creates a profile; pgTAP for the privilege, a user's own insert and the service role's · Requirements: SUPABASE-28 · Commit: 8e2579a
 - [x] T14 — F28, found by the independent verification: the 0013 migration revokes TRIGGER, REFERENCES and MAINTAIN from `anon` and `authenticated` on every table in `public` and in the default privileges of `postgres` there, and EXECUTE on `tg_audit_immutable` from every API role; pgTAP for each · Requirements: SUPABASE-26, SUPABASE-29, SUPABASE-19 · Commit: a1af3c1
 - [x] T15 — correction after the independent verification: the `## Supabase workflow` block of `AGENTS.md` regenerates the types through `pnpm --filter @app/supabase gen:types`, which keeps `src/types.ts` when the CLI fails · Requirements: none · Commit: 99b6eb5
-- [ ] T8 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-14-supabase-hardening/` as the last commit · Requirements: none · Commit: —
+- [x] T8 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-14-supabase-hardening/` as the last commit · Requirements: none · Commit: 3f6ed3e
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of
