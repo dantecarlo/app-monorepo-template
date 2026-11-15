@@ -136,7 +136,7 @@ copying a primitive into a screen to tweak it; rendering, in a view, a raw
 element or primitive that a `ui/` block already wraps; and creating in one app
 what the other already solved, without at least reading how.
 
-**Enforced by review** until its rules land (Stage 4). `knip` and
+**Enforced by review**: no lint rule or gate checks it yet. `knip` and
 `verify:maps` catch only the leftovers once a duplicate exists, and a duplicate
 under a different name has no import to detect.
 
