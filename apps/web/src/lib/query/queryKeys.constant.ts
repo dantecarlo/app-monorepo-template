@@ -11,7 +11,8 @@
  *
  * Build every hand-written segment from QueryKeySegmentEnum: an error report
  * keeps only its values (STRUCTURAL_QUERY_KEY_SEGMENTS) and redacts every other
- * segment, so a segment written as a bare string shows up as [redacted].
+ * segment, so a hand-written segment missing from the enum shows up as
+ * [redacted].
  */
 export enum QueryKeySegmentEnum {
   Items = 'items',

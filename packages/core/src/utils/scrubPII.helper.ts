@@ -15,12 +15,15 @@
  *   project treats "name" as PII, add it to PII_KEYS locally.
  * - A cycle is replaced with '[circular]' instead of throwing: an object or
  *   array becomes '[circular]' where the walk meets it again inside itself.
- *   One reached twice without a cycle is scrubbed in both places.
+ * - Each object or array is walked once. Every other place that reaches it
+ *   gets the same scrubbed copy, so a graph that shares objects (a React DOM
+ *   node in a console breadcrumb) costs one walk per object, not per path.
  * - Arrays are recursed element-by-element; primitives are returned as-is.
  */
 
 const REDACTED = '[redacted]'
 const CIRCULAR = '[circular]'
+const IN_PROGRESS: unique symbol = Symbol('scrubPII.inProgress')
 
 export const PII_KEYS: ReadonlySet<string> = new Set([
   'access_token',
@@ -60,31 +63,34 @@ const isSensitiveKey = (key: string): boolean =>
   NORMALIZED_PII_KEYS.has(normalizeKey(key))
 
 interface IScrubValueParams {
-  ancestors: WeakSet<object>
+  copies: WeakMap<object, unknown>
   value: unknown
 }
 
-// `ancestors` holds the objects and arrays above `value` on the current path,
-// so only a cycle meets one of them again. Each leaves the set once walked.
-const scrubValue = ({ ancestors, value }: IScrubValueParams): unknown => {
+// `copies` maps each object or array met so far to its scrubbed copy, or to
+// IN_PROGRESS while it is still being walked: meeting it then is a cycle.
+const scrubValue = ({ copies, value }: IScrubValueParams): unknown => {
   if (value === null || typeof value !== 'object') return value
-  if (ancestors.has(value)) return CIRCULAR
+  if (copies.has(value)) {
+    const copy = copies.get(value)
+    return copy === IN_PROGRESS ? CIRCULAR : copy
+  }
 
-  ancestors.add(value)
+  copies.set(value, IN_PROGRESS)
   const scrubbed = Array.isArray(value)
-    ? value.map((item) => scrubValue({ ancestors, value: item }))
+    ? value.map((item) => scrubValue({ copies, value: item }))
     : Object.fromEntries(
         Object.entries(value).map(([key, entry]) => [
           key,
           isSensitiveKey(key)
             ? REDACTED
-            : scrubValue({ ancestors, value: entry })
+            : scrubValue({ copies, value: entry })
         ])
       )
-  ancestors.delete(value)
+  copies.set(value, scrubbed)
 
   return scrubbed
 }
 
 export const scrubPII = <T>(input: T): T =>
-  scrubValue({ ancestors: new WeakSet(), value: input }) as T
+  scrubValue({ copies: new WeakMap(), value: input }) as T

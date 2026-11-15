@@ -314,8 +314,9 @@ Register all query keys in `@/lib/query/queryKeys.constant.ts` (never inline str
 Write every hand-written segment as a member of `QueryKeySegmentEnum`. When a
 query fails, the query client reports its key through `sanitizeQueryKey` from
 `@app/core`, which keeps only the values of that enum: an id, a search text or
-a segment written as a bare string shows up as `[redacted]`. Never pass a live
-key through `sanitizeQueryKey` yourself: every item would share one cache entry.
+a hand-written segment missing from the enum shows up as `[redacted]`. Never
+pass a live key through `sanitizeQueryKey` yourself: every item would share one
+cache entry.
 
 ---
 

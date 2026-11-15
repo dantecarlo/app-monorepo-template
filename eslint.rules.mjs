@@ -154,8 +154,8 @@ export const BASE_RULES = {
   // Single-object params (code-standards Rule 5). WARN, not error: the static
   // allow-list (event handlers / array callbacks / documented 3p callbacks)
   // cannot perfectly distinguish every legitimate positional signature (e.g.
-  // recursive accumulators like scrubPII(input, _seen)), and the gate must
-  // never go red. Surfaced as guidance, escalate per-project if desired.
+  // a recursive walk that threads its own state), and the gate must never go
+  // red. Surfaced as guidance, escalate per-project if desired.
   'local/single-object-params': 'warn',
 
   // import sorting — simple-import-sort owns order; turn off the built-in.

@@ -54,11 +54,11 @@ The core package SHALL keep a query-key segment only when it is a string the cal
 - **THEN** both become `[redacted]`, although they have the shape of a segment written by hand
 - **Test:** `packages/core/src/observability/sanitizeQueryKey.helper.test.ts` › "redacts a letters-only segment the caller did not register"
 
-### Requirement: CORE-23 — Only a cycle is marked circular
+### Requirement: CORE-23 — Only a cycle is marked circular, and each object is walked once
 
-The core package SHALL replace an object or array with `[circular]` where the scrub meets it
-again inside itself, directly or through what it contains, and scrub an object or array reached
-more than once without a cycle in every place it is reached.
+The core package SHALL walk each object or array once, replace it with `[circular]` where the
+scrub meets it again while still walking it, and give every other place that reaches it the same
+scrubbed copy.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -84,3 +84,11 @@ more than once without a cycle in every place it is reached.
 - **WHEN** it is scrubbed
 - **THEN** the result is an array whose element is `[circular]`, and nothing throws
 - **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "replaces an array that holds itself with "[circular]""
+
+#### Scenario: an object shared along many paths
+
+- **GIVEN** an object with a getter, at the bottom of a ladder of 16 levels where each level
+  holds the one below under two keys, so 65 536 paths reach it
+- **WHEN** the top of the ladder is scrubbed
+- **THEN** the getter is read once
+- **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "walks a shared object once however many paths reach it"

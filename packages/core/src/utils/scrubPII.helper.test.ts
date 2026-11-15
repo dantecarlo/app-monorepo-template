@@ -264,6 +264,23 @@ describe('scrubPII — circular references', () => {
     const scrubbed = { email: '[redacted]', id: 7 }
     expect(result).toEqual({ a: scrubbed, b: scrubbed })
   })
+
+  test('walks a shared object once however many paths reach it', () => {
+    const LADDER_LEVELS = 16
+    const ONE_READ = 1
+    let reads = 0
+    let node: Record<string, unknown> = {
+      get id() {
+        reads += 1
+        return ONE_READ
+      }
+    }
+    for (let level = 0; level < LADDER_LEVELS; level += 1) {
+      node = { left: node, right: node }
+    }
+    scrubPII(node)
+    expect(reads).toBe(ONE_READ)
+  })
 })
 
 // ---------------------------------------------------------------------------

@@ -23,10 +23,14 @@ No pattern can tell a segment written by hand, such as `list`, from a value such
 both have the same shape. Only the caller knows which segments it wrote, so the caller has to
 say.
 
-Certifipago, the project the template was taken from, already fixed the first defect: its
-`scrubValue` takes each object out of its visited set once it has walked it, so only an object
-met again while it is still being walked becomes `[circular]`. Its `sanitizeQueryKey` has the
-second defect too.
+Certifipago, the project the template was taken from, fixed the first defect by taking each
+object out of its visited set once it has walked it, so only an object met again while it is
+still being walked becomes `[circular]`. That alone walks a shared object again for every path
+that reaches it, which grows exponentially: the independent verification of this change
+measured a React DOM node logged to the console, which reaches `scrubPII` through the Sentry
+breadcrumb hook (`apps/web/sentry.client.config.ts:7`), running the tab out of memory. So the
+template keeps the scrubbed copy of each object it has walked. Certifipago's `sanitizeQueryKey`
+has the second defect too.
 
 The owner's words, verbatim:
 
@@ -35,12 +39,15 @@ The owner's words, verbatim:
 
 ## What changes
 
-- packages/core: `scrubPII` replaces an object or array with `[circular]` only where it holds
-  itself, directly or through what it contains, and scrubs an object reached more than once
-  without a cycle in every place it is reached. This is the behaviour of Certifipago's copy.
+- packages/core: `scrubPII` walks each object or array once. It becomes `[circular]` where the
+  scrub meets it again while still walking it, and every other place that reaches it gets the
+  same scrubbed copy. The exported `scrubPII` loses its undocumented second parameter `_seen`,
+  which no caller passes.
 - packages/core: `sanitizeQueryKey` takes `structuralSegments`, the segments the caller writes
   by hand, and keeps a segment only when it is one of them. A segment nobody registered is
   redacted, so a missing registration costs detail in an error report and never leaks a value.
+  The parameter is required, so a derived project that calls `sanitizeQueryKey({ queryKey })`
+  fails its typecheck until it passes its own set, as both apps here do.
 - apps/web and apps/mobile: `queryKeys.constant.ts` builds every key from the members of
   `QueryKeySegmentEnum` and exports `STRUCTURAL_QUERY_KEY_SEGMENTS`, the set of their values,
   which `createQueryClient` passes to `sanitizeQueryKey`. A segment added to the enum is
@@ -51,18 +58,16 @@ The owner's words, verbatim:
   instead that the query client sanitizes the key when it reports an error, and that a new
   segment goes in `QueryKeySegmentEnum`; `screen`, `service` and `feature` write the key of a
   new feature from that enum. `docs/maps/global-map.md` describes the sanitizer by what it now
-  keeps.
+  keeps, and the comment on `local/single-object-params` in `eslint.rules.mjs` stops citing
+  `scrubPII(input, _seen)`.
 
 ## Out of scope
 
-- Reusing one scrubbed copy for every place a shared object is reached. Each place is scrubbed
-  on its own, as in Certifipago's copy, which costs more only on a payload that shares one
-  object many times over.
 - Q4 of the packages/core spec, on the `messageKey` of `AppError`: it is not about either helper.
 - Splitting the helpers into `.constant.ts` and `.type.ts` files, or moving `scrubPII` under
   `observability/`, as Certifipago's copy does: a move fixes nothing here.
-- The same `sanitizeQueryKey` defect in Certifipago: it goes to Certifipago's Arquitecto session
-  as a row of the parity ledger.
+- Certifipago's copies of both helpers: the exponential walk and the kept letters-only segments
+  go to Certifipago's Arquitecto session as rows of the parity ledger.
 
 ## Affected specs
 
