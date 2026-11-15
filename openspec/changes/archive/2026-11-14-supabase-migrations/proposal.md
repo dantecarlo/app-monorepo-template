@@ -1,6 +1,6 @@
 # Proposal: fix the order, the grants and the profile policy of the Supabase migrations
 
-> **Status:** open
+> **Status:** archived — 2026-11-14
 
 ## Why
 

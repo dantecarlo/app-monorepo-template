@@ -8,7 +8,7 @@
 - [x] T7 — correction after the independent verification (B1): the assertion on another user's profile updates with no WHERE clause, so only the update policy decides which rows change, and it fails when that policy is weakened · Requirements: SUPABASE-12 · Commit: aa72e61
 - [x] T8 — correction after the independent verification (B2): the docs and test headers say `test:db` runs pg_prove in Docker against the linked project, outside the offline gate; the database guide's claims on which functions resolve names as their caller and on the `postgres` role are corrected · Requirements: none · Commit: 0d59a5a
 - [x] T9 — correction after the independent verification (C1): a function `postgres` creates in `auth_helpers` starts with no EXECUTE for any API role, so a helper added without its own revoke block stays out of reach; pgTAP assertions for that and for the schema USAGE of `service_role` and `anon` · Requirements: SUPABASE-23, SUPABASE-25 · Commit: 235457d
-- [ ] T6 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-14-supabase-migrations/` as the last commit · Requirements: none · Commit: —
+- [x] T6 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-14-supabase-migrations/` as the last commit · Requirements: none · Commit: f20ae7e
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of

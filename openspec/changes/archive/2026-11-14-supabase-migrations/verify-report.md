@@ -111,7 +111,7 @@ the change caused. Each was fixed in its own task, test first:
   2.109.1 (`supabase.exe`, read, not run) runs `create extension if not exists pgtap with schema
   extensions` on the target, drops `pgtap` afterwards when it was not installed before, and runs
   `pg_prove` in the `supabase/pg_prove:3.36` container for every target, `--linked` included.
-  The README, `docs/database.md` and both test headers now say that `test:db` needs Docker, runs
+  The README, `packages/supabase/docs/database.md` and both test headers now say that `test:db` needs Docker, runs
   against the linked project and stays out of the offline `pnpm validate` gate, so a person or a
   CI job with Docker runs it. The database guide and the migration comments also no longer say
   that a SECURITY INVOKER function always resolves names as its caller (a `BEGIN ATOMIC` function
@@ -149,6 +149,9 @@ migrations are on the linked project.
   `verify:maps`, `check:identity`, `init-project:test`, `verify:pairing`, `verify:structure`,
   `verify:security`, `verify:theme-sync`, `docs:diagrams:check`, `pnpm --filter @app/i18n test`
   and `knip`: exit 0 each. The same held at `9d16386`.
+- `ATL_TEMPLATE_SELF=1 pnpm validate`: exit 0, 2026-11-14, on the archive commit's tree, the delta
+  merged into the living spec (turbo 24 of 24 tasks; `verify:specs` PASS with 0 open changes;
+  `report:spec-drift` 0 of 8 specs behind their code).
 
 ## Not verified
 
