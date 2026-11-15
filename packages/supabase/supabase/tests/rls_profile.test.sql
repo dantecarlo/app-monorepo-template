@@ -91,12 +91,12 @@ select has_function('auth_helpers', 'is_staff', array[]::text[],
 set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}';
 set local role authenticated;
 
--- Bob (no role) tries to select Alice's profile by id.
+-- Bob (no role) tries to select Alice's profile by id: profile_select hides it.
 select is(
   (select count(*)::int from public.profile
    where id = '00000000-0000-0000-0000-000000000001'),
-  1,
-  'authenticated user can read any profile row (profile_select using true)'
+  0,
+  'authenticated user cannot read another user profile row'
 );
 
 -- Bob cannot update Alice's profile.
