@@ -1,6 +1,8 @@
 {
   "version": 1,
   "core": [
+    ".agents/agents/**",
+    ".agents/projection-manifest.json",
     ".claude/agents/**",
     ".claude/commands/**",
     ".claude/skill-registry.md",
@@ -61,6 +63,7 @@
     "packages/tooling/**",
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
+    "scripts/agent-harness/**",
     "scripts/check-identity.mjs",
     "scripts/codex-budget.test.mjs",
     "scripts/gate/**",

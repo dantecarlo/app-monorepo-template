@@ -6,6 +6,9 @@
     "node": ">=24.2.0"
   },
   "scripts": {
+    "agent-harness:generate": "node scripts/agent-harness/generate.mjs",
+    "agent-harness:projection-check": "node scripts/agent-harness/check.mjs",
+    "agent-harness:test": "node --test scripts/agent-harness/*.test.mjs",
     "build": "turbo run build",
     "check:identity": "node scripts/check-identity.mjs",
     "codex-budget:test": "node --test scripts/codex-budget.test.mjs",
