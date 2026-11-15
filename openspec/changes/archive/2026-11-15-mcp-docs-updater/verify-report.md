@@ -1,10 +1,11 @@
 # Verify report: 2026-11-15-mcp-docs-updater
 
-> **Verified:** 2026-11-15 at `c1c0224`
+> **Verified:** 2026-11-15 at `b88d592`
 
 ## Scenarios
 
-Every test ran green in `ATL_TEMPLATE_SELF=1 pnpm validate` at `c1c0224`: `mcp:docs:test` 6 of 6,
+Every test ran green in `ATL_TEMPLATE_SELF=1 pnpm validate` at `c1c0224`, and again over the
+archive on top of `b88d592` (which only rewords the gate's claim): `mcp:docs:test` 6 of 6,
 `verify:mcp-docs:test` 21 of 21.
 
 | Requirement | Scenario | Test | Result |

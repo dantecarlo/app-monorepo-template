@@ -5,7 +5,7 @@
 - [x] T3 — `docs/harness.md`, `docs/maps/global-map.md` and the "Key docs" table of `AGENTS.md` · Requirements: none · Commit: 5f1fa8d
 - [x] T6 — the shadcn entry runs the `shadcn` package as `npx -y shadcn mcp`, and the catalog rule takes `npx -y <package> [server args...]` (option A, decided 2026-11-15) · Requirements: MCP-01 · Commit: 29ceea0
 - [x] T5 — the generated block of `docs/mcp.md` from one real registry run, recorded in the verify report. The first run (in T1) found `@shadcn/mcp-server` absent from the registry (404) and wrote nothing, so the second run followed the shadcn entry's move (T6) · Requirements: MCP-03 · Commit: c1c0224
-- [ ] T4 — `verify-report.md`, then the archive: the living spec `openspec/specs/harness/mcp/spec.md`, its row in `openspec/README.md` § 2.1, and the folder moved to `openspec/changes/archive/2026-11-15-mcp-docs-updater/` · Requirements: MCP-01, MCP-02, MCP-03, MCP-04, MCP-05, MCP-06, MCP-07, MCP-08 · Commit: —
+- [x] T4 — `verify-report.md`, then the archive: the living spec `openspec/specs/harness/mcp/spec.md`, its row in `openspec/README.md` § 2.1, and the folder moved to `openspec/changes/archive/2026-11-15-mcp-docs-updater/` · Requirements: MCP-01, MCP-02, MCP-03, MCP-04, MCP-05, MCP-06, MCP-07, MCP-08 · Commit: ab6534c
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of

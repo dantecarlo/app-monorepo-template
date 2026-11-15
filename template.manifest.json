@@ -338,6 +338,7 @@
         ".claude/skills/sdd/**",
         "openspec/README.md",
         "openspec/config.yaml",
+        "openspec/specs/harness/mcp/spec.md",
         "openspec/specs/packages/core/spec.md",
         "openspec/specs/packages/tooling/spec.md",
         "openspec/templates/**",

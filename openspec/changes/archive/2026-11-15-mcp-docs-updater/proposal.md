@@ -1,6 +1,6 @@
 # Proposal: keep the MCP server docs current with `pnpm mcp:docs`
 
-> **Status:** open
+> **Status:** archived — 2026-11-15
 
 ## Why
 
