@@ -84,12 +84,13 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 - The rebuilt plan (#19).
 - F.3, the package follow-ups (#20).
 - F.1, the styling pillar (#22).
-- F.4, tests in `__tests__/` per block, with the strict `verify:tests` and the shipped codemod (this change).
+- F.4, tests in `__tests__/` per block, with the strict `verify:tests` and the shipped codemod (#24).
+- F30 and F31: the shared `tv` keeps the token font sizes, and the web fonts are self-hosted (this change).
 - F.2, the Supabase hardening (#21; the native review did not fit its context budget, and the owner chose to merge on the independent verifier).
 
 **In flight:** none.
 
-**Next:** F30 (the web `Button` font size) and F31 (self-hosted fonts), then F.5.
+**Next:** F.12 (generated token outputs), then F.5.
 
 **Pending, in order:**
 - F.5 to F.9 and F.11 of Stage F.
@@ -168,6 +169,7 @@ it says "small".
 | F.9  | The MCP documentation updater (decision 55): a command that reads the configured MCP servers, finds their latest releases and refreshes the documentation that names them | Template | — | the command and its test |
 | F.10 | Certifipago integrates F.1 to F.9 and the owner's Certifipago decisions: the isolated linker (decision 56), Sentry removed with PostHog the default (decision 53), K3 as the web does, the strict test-location gate now (decision 57) | Arquitecto | each template pull request | a parity row closed for each |
 | F.11 | The `/init` questions of decisions 53, 54 and 51: observability, backend, UI kit and the libraries behind adapters (sections 4 and 11 of the `/init` table) | Template | Stage 6 | the questions in the interview, each removing what the answer drops |
+| F.12 | Generated token outputs (decision 59): a generator writes the web `@theme` block and the `[data-theme]` vars, the NativeWind preset and the mobile `themeVars` from `packages/tokens/src/tokens.constant.ts`, each with one writer and a drift gate; the web drops the `@config` bridge; `verify:theme-sync` becomes the regenerate-and-diff check | Template, then Arquitecto | F30, F31 | the gate green; compiled web CSS values identical; a render check in both themes |
 
 **Every library behind an adapter (F.8).** The owner, 2026-11-15 (translated from Spanish):
 "every package that is not core must be decoupled and have an adapter, in ui as a wrapper for
@@ -465,8 +467,9 @@ defects behind them, for changes of their own.
 | F27 | harness | no gate checks that every Router row of `AGENTS.md` names a shipped skill and every skill has a row, so a project that drops `sdd` or `archify` at `/init` keeps their rows | step 3.2 (`verify:router-coverage`) |
 | F28 | packages/supabase | Supabase's default privileges give `anon` and `authenticated` TRIGGER, REFERENCES and MAINTAIN on every table; with TRIGGER, a signed-in user attaches `auth_helpers.tg_audit_immutable()` to a table and blocks its writes | in F.2 |
 | F29 | packages/supabase | the verifier of the signed image URL signs the path and query only, so one secret serving several hosts accepts a URL on any of them | design, recorded |
-| F30 | apps/web | `tailwind-merge`, which `tailwind-variants` runs by default, takes the token font sizes (`text-button`, `text-title`) for colours and drops them next to a text colour, so the web `Button` renders without `text-button`; `ui/Text`, `ui/Divider` and `ui/Avatar` already set `twMerge: false` | small; after #22 |
-| F31 | apps/web | `next/font/google` fetches the fonts at build time, so a network blip fails `validate` and CI (three times on 2026-11-14 and 15); self-hosting them with `next/font/local` removes the dependency | small |
+| F30 | apps/web | `tailwind-merge`, which `tailwind-variants` runs by default, takes the token font sizes (`text-button`, `text-title`) for colours and drops them next to a text colour, so the web `Button` renders without `text-button`; `ui/Text`, `ui/Divider` and `ui/Avatar` already set `twMerge: false` | done: this change |
+| F31 | apps/web | `next/font/google` fetches the fonts at build time, so a network blip fails `validate` and CI (three times on 2026-11-14 and 15); self-hosting them with `next/font/local` removes the dependency | done: this change |
+| F32 | apps/web | the self-hosted fonts are full-charset TTFs, about 1.6 MB, and `next/font/local` preloads all seven, where Google served small latin woff2 subsets; Montserrat 500 looks unused | small; subsetting needs a font tool |
 
 ---
 
@@ -526,6 +529,7 @@ init, markdown first, diagrams from specs). This plan adds:
 | 56 | **One linker for both repositories** (owner, 2026-11-15): pnpm's default isolated linker with the shared `publicHoistPattern`, because the hoisted linker duplicates nested packages in the mobile bundle whatever the project. |
 | 57 | **Tests in `__tests__/` inside each block** (owner, 2026-11-15), reversing D-S2: a unit's test lives in the `__tests__/` of the unit's own folder, with the unit's stem; shared infrastructure stays in `src/test/`; a strict gate checks it in both repositories, Certifipago now. |
 | 58 | **The follow-ups decided as recommended** (owner, 2026-11-14): F21 by column privileges, F23 with a trailing params object, F24 in UPPER_SNAKE_CASE, F25 by the error-channel table of `docs/code-standards.md`, F8 verified where a signed URL is served. |
+| 59 | **Token outputs are generated, never copied** (owner, 2026-11-15, relayed by the Certifipago - Arquitecto session, translated from Spanish: "we don't want to be tied to anything, everything must be adaptable, and that's why I like your third option"). One source, `packages/tokens/src/tokens.constant.ts`, and one generator write every token-derived output; each output has one writer and a drift gate (decision 15). The web reads its theme as CSS, with no JS-config bridge, so a new consumer gets a generator target and nothing else changes. Shadows and easings are literal values in the source; a composite look such as `glass-card` belongs to a `ui/` block (decision 50). |
 
 ---
 
