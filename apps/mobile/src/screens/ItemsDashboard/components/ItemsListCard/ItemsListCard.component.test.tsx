@@ -17,7 +17,6 @@ vi.mock('@/components/ui/EmptyState', () => ({
 }))
 
 vi.mock('@/screens/ItemsDashboard/components/ItemCard', () => ({
-  GRADIENT_BRAND_COLORS: ['#FF8A3D', '#FF6A1A'],
   ItemCard: () => null
 }))
 

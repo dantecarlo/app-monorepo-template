@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next'
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 
 import { GlassCard } from '@/components/ui/GlassCard'
-import { TEXT } from '@/helpers/style.constant'
+import { Text } from '@/components/ui/Text'
 import { STATS_CARD_STYLES as styles } from '@/screens/ItemsDashboard/components/StatsCard/StatsCard.style'
 import type { IStatsCardProps } from '@/screens/ItemsDashboard/components/StatsCard/StatsCard.type'
 
@@ -18,27 +18,27 @@ export const StatsCard = ({
   return (
     <GlassCard padding="lg" radius="xl">
       <View style={styles.headerRow}>
-        <Text style={TEXT.label}>{t('statsOverview')}</Text>
+        <Text variant="label">{t('statsOverview')}</Text>
         <View style={styles.livePill}>
           <View style={styles.liveDot} />
-          <Text style={[TEXT.caption, styles.livePillText]}>
+          <Text style={styles.livePillText} variant="caption">
             {t('statsLive')}
           </Text>
         </View>
       </View>
 
-      <Text style={TEXT.amountHero}>{isLoading ? '—' : totalCount}</Text>
-      <Text style={[TEXT.label, styles.statsLabel]}>
+      <Text variant="amountHero">{isLoading ? '—' : totalCount}</Text>
+      <Text style={styles.statsLabel} variant="label">
         {t('statsTotalItems')}
       </Text>
 
       <View style={styles.subRow}>
         <View style={styles.activePill}>
-          <Text style={[TEXT.caption, styles.activePillText]}>
+          <Text style={styles.activePillText} variant="caption">
             {isLoading ? '—' : activeCount} {t('statsActive')}
           </Text>
         </View>
-        <Text style={TEXT.caption}>· {t('statsUpdated')}</Text>
+        <Text variant="caption">· {t('statsUpdated')}</Text>
       </View>
     </GlassCard>
   )

@@ -49,7 +49,7 @@ apps/mobile/
     ├── hooks/                    # SHARED hooks (used across screens, e.g. useSession)
     ├── stores/                   # Zustand slices (auth, toast, ui) — shared by definition
     ├── lib/                      # framework wiring: i18n/, observability/, query/, supabase/, theme/
-    ├── helpers/                  # shared pure helpers + style.constant.ts
+    ├── helpers/                  # shared pure helpers + layout.style.ts (positioning only)
     ├── validation/               # shared zod schemas (or per-screen in the screen's models/)
     └── test/                     # test helper, setup, MSW and native-module mocks
 ```

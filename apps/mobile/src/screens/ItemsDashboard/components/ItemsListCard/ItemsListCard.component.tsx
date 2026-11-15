@@ -1,11 +1,11 @@
 import { colors } from '@app/tokens'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, Text, View } from 'react-native'
+import { ActivityIndicator, View } from 'react-native'
 
 import { EmptyState } from '@/components/ui/EmptyState'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { SearchBar } from '@/components/ui/SearchBar'
-import { TEXT } from '@/helpers/style.constant'
+import { Text } from '@/components/ui/Text'
 import { ItemCard } from '@/screens/ItemsDashboard/components/ItemCard'
 import { ITEMS_LIST_CARD_STYLES as styles } from '@/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.style'
 import type { IItemsListCardProps } from '@/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.type'
@@ -24,8 +24,8 @@ export const ItemsListCard = ({
     <GlassCard padding="none" radius="xl">
       <View style={[{ padding: 20 }, styles.cardHeader]}>
         <View style={styles.cardHeaderRow}>
-          <Text style={TEXT.title}>{t('listTitle')}</Text>
-          <Text style={TEXT.caption}>
+          <Text variant="title">{t('listTitle')}</Text>
+          <Text variant="caption">
             {isLoading
               ? '…'
               : `${items.length} ${t('listResults', { count: items.length })}`}
