@@ -4,14 +4,11 @@ import type {
   IImageDeliveryPort
 } from '@app/core'
 
-import { hmacHexSignature } from '#src/hmacHexSignature.helper'
 import {
   CLOUDFLARE_IMAGES_DEFAULT_VARIANT,
-  CLOUDFLARE_IMAGES_DELIVERY_BASE,
-  SECONDS_TO_MILLISECONDS,
-  SIGNED_URL_EXPIRY_QUERY_KEY,
-  SIGNED_URL_SIGNATURE_QUERY_KEY
+  CLOUDFLARE_IMAGES_DELIVERY_BASE
 } from '#src/imageDelivery.constant'
+import { signImageUrl } from '#src/signedImageUrl.helper'
 
 export interface ICreateCloudflareImagesDeliveryParams {
   accountHash?: string
@@ -43,18 +40,10 @@ export const createCloudflareImagesDelivery = ({
   }: IBuildSignedImageUrlParams): Promise<string> => {
     if (!accountHash || !signingKey) return path
 
-    const publicUrl = buildPublicUrl({ accountHash, path, variant })
-    const url = new URL(publicUrl)
-    const expiry =
-      Math.floor(Date.now() / SECONDS_TO_MILLISECONDS) + expiresInSeconds
-    url.searchParams.set(SIGNED_URL_EXPIRY_QUERY_KEY, String(expiry))
-
-    const signature = await hmacHexSignature({
-      message: `${url.pathname}?${url.searchParams.toString()}`,
-      secret: signingKey
+    return signImageUrl({
+      expiresInSeconds,
+      secret: signingKey,
+      url: buildPublicUrl({ accountHash, path, variant })
     })
-    url.searchParams.set(SIGNED_URL_SIGNATURE_QUERY_KEY, signature)
-
-    return url.toString()
   }
 })
