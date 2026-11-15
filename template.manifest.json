@@ -92,6 +92,8 @@
     "scripts/verify-manifest-coverage.mjs",
     "scripts/verify-manifest.mjs",
     "scripts/verify-maps.mjs",
+    "scripts/verify-mcp-docs.mjs",
+    "scripts/verify-mcp-docs.test.mjs",
     "scripts/verify-pairing.mjs",
     "scripts/verify-security-static.mjs",
     "scripts/verify-structure.mjs",

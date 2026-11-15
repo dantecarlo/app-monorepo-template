@@ -132,6 +132,14 @@ block differ from those of the catalog plus .mcp.json.
 - **THEN** it fails, naming the server
 - **Test:** `scripts/verify-mcp-docs.test.mjs` › "a .mcp.json server missing from the block fails"
 
+#### Scenario: a .mcp.json server the block already lists
+
+- **GIVEN** a .mcp.json with an npm server and a local script, both listed by the block the
+  updater wrote, under the capability `project`
+- **WHEN** `pnpm verify:mcp-docs` runs
+- **THEN** it passes
+- **Test:** `scripts/verify-mcp-docs.test.mjs` › "a .mcp.json server the block lists passes, on npm or not"
+
 #### Scenario: a package or a capability changed
 
 - **GIVEN** a catalog entry whose package, or whose capability, differs from its block row
@@ -169,6 +177,13 @@ is gone.
 - **THEN** it fails, saying the block was edited by hand
 - **Test:** `scripts/verify-mcp-docs.test.mjs` › "a line added by hand inside the block fails"
 
+#### Scenario: a block the updater never wrote
+
+- **GIVEN** a block whose end marker carries no digest, as the doc holds before its first run
+- **WHEN** `pnpm verify:mcp-docs` runs
+- **THEN** it fails, saying `pnpm mcp:docs` never wrote it
+- **Test:** `scripts/verify-mcp-docs.test.mjs` › "a block the updater never wrote fails"
+
 #### Scenario: the markers are gone
 
 - **GIVEN** a `docs/mcp.md` with no generated block
@@ -189,6 +204,13 @@ request and passes whatever versions the block records.
 - **WHEN** `pnpm verify:mcp-docs` runs
 - **THEN** it passes
 - **Test:** `scripts/verify-mcp-docs.test.mjs` › "a block the updater wrote passes, whatever versions it holds"
+
+#### Scenario: a Windows checkout
+
+- **GIVEN** a block the updater wrote, checked out with CRLF line endings
+- **WHEN** `pnpm verify:mcp-docs` runs
+- **THEN** it passes: the digest is taken over the lines, not their endings
+- **Test:** `scripts/verify-mcp-docs.test.mjs` › "a block checked out with CRLF line endings passes"
 
 #### Scenario: no request leaves the gate
 

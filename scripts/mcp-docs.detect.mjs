@@ -172,25 +172,26 @@ export const parseMcpConfig = ({ text }) => {
 const byName = (left, right) =>
   left.name < right.name ? -1 : Number(left.name > right.name)
 
-// Every server of the catalog and of .mcp.json, by name. A catalog server
-// keeps its capability and docs; .mcp.json, which is what the project runs,
-// decides its package. A server only in .mcp.json has no docs.
+// Every server of the catalog and of .mcp.json, by name, each saying which
+// of the two lists it. A catalog server keeps its capability and docs;
+// .mcp.json, which is what the project runs, decides its package. A server
+// only in .mcp.json has no docs.
 export const listServers = ({ catalog, config }) => {
   const configured = new Map(config.map((server) => [server.name, server]))
-  const listed = catalog.map((server) =>
-    configured.has(server.name)
-      ? {
-          ...server,
-          packageName: configured.get(server.name).packageName
-        }
-      : server
-  )
+  const listed = catalog.map((server) => ({
+    ...server,
+    inCatalog: true,
+    packageName: configured.has(server.name)
+      ? configured.get(server.name).packageName
+      : server.packageName
+  }))
   const known = new Set(catalog.map(({ name }) => name))
   const extra = config
     .filter(({ name }) => !known.has(name))
     .map(({ name, packageName }) => ({
       capability: PROJECT_CAPABILITY,
       docs: [],
+      inCatalog: false,
       name,
       packageName
     }))
