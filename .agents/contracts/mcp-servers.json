@@ -1,0 +1,45 @@
+{
+  "$comment": "The MCP servers the template can configure. /init writes .mcp.json from the entries whose capability the project selects; pnpm mcp:docs reads this file to refresh the generated block of docs/mcp.md, and verify:mcp-docs holds the block to it. Commands stay unpinned (decision 55): npx -y <package>, then the server's own arguments.",
+  "servers": [
+    {
+      "name": "next-devtools",
+      "capability": "web-next",
+      "package": "next-devtools-mcp",
+      "command": "npx",
+      "args": ["-y", "next-devtools-mcp"],
+      "docs": ["docs/mcp.md"]
+    },
+    {
+      "name": "shadcn",
+      "capability": "ui-kit-shadcn",
+      "package": "shadcn",
+      "command": "npx",
+      "args": ["-y", "shadcn", "mcp"],
+      "docs": ["docs/mcp.md"]
+    },
+    {
+      "name": "expo",
+      "capability": "mobile-expo",
+      "package": "expo-mcp",
+      "command": "npx",
+      "args": ["-y", "expo-mcp"],
+      "docs": ["docs/mcp.md"]
+    },
+    {
+      "name": "metro",
+      "capability": "mobile-expo",
+      "package": "metro-mcp",
+      "command": "npx",
+      "args": ["-y", "metro-mcp"],
+      "docs": ["docs/mcp.md"]
+    },
+    {
+      "name": "react-native-docs",
+      "capability": "mobile-expo",
+      "package": "react-native-docs-mcp",
+      "command": "npx",
+      "args": ["-y", "react-native-docs-mcp"],
+      "docs": ["docs/mcp.md"]
+    }
+  ]
+}

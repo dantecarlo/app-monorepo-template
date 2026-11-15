@@ -50,6 +50,7 @@ See `docs/memory.md` for the LOAD and CONTRIBUTE flow.
 | `docs/maps/global-map.md`              | Navigable index of every shared and global artifact                     |
 | `docs/memory.md`                       | Shared Engram memory — load at session start, contribute decisions back |
 | `docs/manifest.md`                     | Template manifest — file ownership and propagation                      |
+| `docs/mcp.md`                          | MCP servers — what each is for, unpinned; refresh with `pnpm mcp:docs`  |
 | `.agents/agents/validator.agent.md`    | Adversarial standards validator subagent (neutral source)               |
 | `.claude/skills/validate-all/SKILL.md` | Full validation harness                                                 |
 
