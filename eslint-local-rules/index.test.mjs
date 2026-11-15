@@ -334,6 +334,51 @@ test('the #src/ resolver judges own paths only, from the file it reads', () => {
   )
 })
 
+// A package whose package.json is missing, is not JSON or is not an object
+// names no `#src/` map: the specifier is reported with no fix, and the lint
+// run goes on.
+const UNREADABLE_MANIFESTS = { broken: '{ not json', nullish: 'null' }
+Object.entries(UNREADABLE_MANIFESTS).forEach(([name, content]) =>
+  writeFixture({ content, path: join('packages', name, 'package.json') })
+)
+;['broken', 'missing', 'nullish'].forEach((name) =>
+  writeFixture({ path: join('packages', name, 'src', 'a.helper.ts') })
+)
+
+ruleTester.run(
+  'package-src-alias without a readable map',
+  rules['package-src-alias'],
+  {
+    invalid: ['broken', 'missing', 'nullish'].map((name) =>
+      fixed({
+        code: "import { a } from './a.helper'",
+        filename: inPackage({ file: 'x.helper.ts', name }),
+        output: null
+      })
+    ),
+    valid: []
+  }
+)
+
+// The map is read once per package for the run: a package.json rewritten
+// after the first lookup does not change the next fix.
+test('the #src/ resolver reads each package map once per run', () => {
+  writeFixture({
+    content: JSON.stringify({ imports: SRC_IMPORTS }),
+    path: join('packages', 'cached', 'package.json')
+  })
+  writeFixture({ path: join('packages', 'cached', 'src', 'a.helper.ts') })
+  const filename = inPackage({ file: 'x.helper.ts', name: 'cached' })
+  const first = toSrcAlias({ filename, source: './a.helper' })
+  writeFixture({
+    content: JSON.stringify({ imports: {} }),
+    path: join('packages', 'cached', 'package.json')
+  })
+  const second = toSrcAlias({ filename, source: './a.helper' })
+  assert.deepEqual(first, { alias: '#src/a.helper' })
+  assert.deepEqual(second, first)
+})
+
 ruleTester.run('suffix-contract', rules['suffix-contract'], {
   invalid: [
     invalid({

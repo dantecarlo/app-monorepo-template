@@ -14,10 +14,11 @@
 // "imports" patterns and resolved back through the whole map the way Node
 // does: an exact key first, then the pattern with the longest prefix before
 // its `*`. It is written only when it lands on that same file. A path that
-// leaves the package's src, a file that does not exist, and a file no `#src/`
-// alias resolves back to are reported with no fix. Everything is computed from
-// the file's own path, so the fix is the same whichever folder ESLint runs
-// from.
+// leaves the package's src, a file that does not exist, a file no `#src/`
+// alias resolves back to, and a package whose package.json cannot be read as
+// an object are reported with no fix. Each package's map is read once per
+// run. Everything is computed from the file's own path, so the fix is the
+// same whichever folder ESLint runs from.
 // ---------------------------------------------------------------------------
 
 import { existsSync, readFileSync, statSync } from 'node:fs'
@@ -58,10 +59,36 @@ const resolveFile = ({ target }) =>
     ...INDEX_FILES.map((name) => join(target, name))
   ].find((path) => isFile({ path })) ?? null
 
-const readImports = ({ packageDir }) => {
-  const manifest = join(packageDir, PACKAGE_MANIFEST)
+const isPlainObject = ({ value }) =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+// The "imports" map of a package.json, or an empty map when the file is
+// missing, is not JSON, or holds no object map.
+const parseImports = ({ manifest }) => {
   if (!isFile({ path: manifest })) return {}
-  return JSON.parse(readFileSync(manifest, 'utf8')).imports ?? {}
+  try {
+    const parsed = JSON.parse(readFileSync(manifest, 'utf8'))
+    const imports = isPlainObject({ value: parsed })
+      ? parsed.imports
+      : null
+    return isPlainObject({ value: imports }) ? imports : {}
+  } catch {
+    return {}
+  }
+}
+
+// Each package's map is read once per lint run: the process that runs the
+// rule keeps it for every later specifier of that package.
+const importsByPackage = new Map()
+
+const readImports = ({ packageDir }) => {
+  if (!importsByPackage.has(packageDir)) {
+    importsByPackage.set(
+      packageDir,
+      parseImports({ manifest: join(packageDir, PACKAGE_MANIFEST) })
+    )
+  }
+  return importsByPackage.get(packageDir)
 }
 
 const isPatternKey = ({ key }) => key.split(PATTERN_WILDCARD).length === 2
