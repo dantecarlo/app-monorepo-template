@@ -1,6 +1,6 @@
 # Proposal: the `.agents/` neutral agent source, the four-runtime projector and `projection-check`
 
-> **Status:** open
+> **Status:** archived — 2026-11-15
 
 ## Why
 

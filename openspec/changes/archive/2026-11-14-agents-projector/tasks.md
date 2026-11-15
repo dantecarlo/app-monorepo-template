@@ -4,7 +4,7 @@
 - [x] T2 — the Codex adapter and the takeover of `.codex/config.toml` (budget above `[agents]`, `max_depth = 2`, `max_threads = 4`, the prompt escaped); `adapters.test.mjs` Codex cases, RED first; `codex-budget:test` still green · Requirements: none · Commit: 3f453a3
 - [x] T3 — the OpenCode and Copilot adapters, `opencode.json` with no `instructions` entry, the descriptions as double-quoted YAML; their `adapters.test.mjs` cases and `expressiveness.test.mjs`, RED first · Requirements: none · Commit: 5c535cd
 - [x] T4 — `sync` and `sync.test.mjs`, RED first; `agent-harness:sync`; `validate` starts with `agent-harness:projection-check` then `agent-harness:test`; `docs/harness.md`, `docs/maps/global-map.md` and the "Validation gate" prose of `AGENTS.md` name them · Requirements: none · Commit: 5c2c1a2
-- [ ] T5 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-14-agents-projector/` as the last commit · Requirements: none · Commit: —
+- [x] T5 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-14-agents-projector/` as the last commit · Requirements: none · Commit: 2bd0523
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of
