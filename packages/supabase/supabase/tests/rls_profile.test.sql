@@ -497,6 +497,12 @@ select is(
   'authenticated may update only the display_name column of profile'
 );
 
+-- Bob's row as it is before the refused updates, whatever day a database seeded it.
+create temp table bob_before as
+  select id, email, status, credit_balance, created_at
+  from public.profile
+  where id = '00000000-0000-0000-0000-000000000002';
+
 set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}';
 set local role authenticated;
 
@@ -537,12 +543,11 @@ select throws_ok(
 
 reset role;
 
--- created_at was set by the seed in this transaction, so it still equals now().
 select is(
-  (select format('%s|%s|%s|%s|%s', id, email, status, credit_balance, created_at = now())
+  (select row(id, email, status, credit_balance, created_at)::text
    from public.profile
    where id = '00000000-0000-0000-0000-000000000002'),
-  '00000000-0000-0000-0000-000000000002|bob@example.com|active|0.00|t',
+  (select row(id, email, status, credit_balance, created_at)::text from bob_before),
   'the refused updates leave the profile of the user unchanged'
 );
 
