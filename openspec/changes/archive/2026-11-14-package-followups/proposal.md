@@ -1,6 +1,6 @@
 # Proposal: verify signed image URLs, and close the package follow-ups F15 to F18
 
-> **Status:** open
+> **Status:** archived — 2026-11-15
 
 ## Why
 

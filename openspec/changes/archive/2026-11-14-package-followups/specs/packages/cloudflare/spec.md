@@ -6,15 +6,15 @@
 
 ### Requirement: CLOUDFLARE-20 — A signed image URL is verified before it is served
 
-The cloudflare package SHALL verify a signed image URL with `verifySignedImageUrl`, a function
-that reads no environment variable and does no I/O, given the signing secret: it SHALL accept the
-URL only when its `sig` equals, compared in constant time, the HMAC-SHA256 hex that the signer
-computes with that secret over the same canonical string (the URL path and its query without
-`sig`), and its `exp` is later than the current Unix time in seconds; and it SHALL reject every
-other URL with a reason: `not_configured` when the secret is empty, `malformed` when the URL
-cannot be parsed, `exp` or `sig` is missing or repeated, `exp` is not a whole number of seconds
-or `sig` is not 64 lowercase hexadecimal characters, `signature_mismatch` when the signature
-differs, and `expired` when a genuine signature has passed its `exp`.
+The cloudflare package SHALL accept a signed image URL in `verifySignedImageUrl`, a function
+that reads no environment variable and does no I/O, only when its `sig` equals, compared in
+constant time, the HMAC-SHA256 hex the signer computes with the given secret over the same
+canonical string (the URL path and its query without `sig`) and its `exp` is later than the
+current Unix time in seconds, and reject every other URL with its reason: `not_configured` when
+the secret is empty; `malformed` when the URL cannot be parsed, `exp` or `sig` is missing or
+repeated, `exp` is not a whole number of seconds or `sig` is not 64 lowercase hexadecimal
+characters; `signature_mismatch` when the signature differs; and `expired` when a genuine
+signature has passed its `exp`.
 
 **Evidence:** written at apply time, when the code exists.
 

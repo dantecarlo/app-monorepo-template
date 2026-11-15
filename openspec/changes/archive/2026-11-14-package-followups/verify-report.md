@@ -52,6 +52,9 @@ extension, a folder lost its index, and a missing file, a `.json` under `./src/*
 key, a null target and a conditional pattern each got a fix that resolves elsewhere), and every
 existing case passed before and after.
 
+At the archive, the statements of CLOUDFLARE-20 and TOOLING-12 were reworded to one SHALL each,
+as `openspec/templates/spec.md` asks; no scenario, test or behaviour changed.
+
 ## Gate
 
 - `ATL_TEMPLATE_SELF=1 pnpm validate`: exit 1, 2026-11-15, at `a4334a6`. Every step before

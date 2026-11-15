@@ -3,7 +3,7 @@
 > **Governs:** `packages/core/src`
 > **ID prefix:** `CORE`
 > **Derived from:** `AGENTS.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/maps/global-map.md`
-> **Verified against the code:** 2026-11-14 at `94cc114`
+> **Verified against the code:** 2026-11-15 at `a4334a6`
 
 ## Purpose
 
@@ -545,7 +545,7 @@ The core package SHALL export `PII_KEYS`, the field names it treats as sensitive
 refresh tokens, API keys, authorization, cookie and set-cookie, email, full name, JWT, password,
 payer name, phone and phone number, raw text, secret, session and token, without `name`.
 
-**Evidence:** `packages/core/src/utils/scrubPII.helper.ts:28-51`
+**Evidence:** `packages/core/src/utils/scrubPII.helper.ts:33-56`
 
 #### Scenario: personal and credential keys
 
@@ -575,8 +575,8 @@ The core package SHALL replace with `[redacted]` the whole value of every key th
 and stripped of every character that is not a letter or a digit, equals a `PII_KEYS` member
 normalized the same way.
 
-**Evidence:** `packages/core/src/utils/scrubPII.helper.ts:53-63`,
-`packages/core/src/utils/scrubPII.helper.ts:85`
+**Evidence:** `packages/core/src/utils/scrubPII.helper.ts:58-68`,
+`packages/core/src/utils/scrubPII.helper.ts:90`
 
 #### Scenario: an upper-case key
 
@@ -618,7 +618,7 @@ normalized the same way.
 The core package SHALL apply the redaction at every depth of nested objects and arrays, building
 new objects and arrays, and return primitives, null and undefined as they are.
 
-**Evidence:** `packages/core/src/utils/scrubPII.helper.ts:72-96`
+**Evidence:** `packages/core/src/utils/scrubPII.helper.ts:77-101`
 
 #### Scenario: a deep object
 
@@ -661,7 +661,16 @@ The core package SHALL walk each object or array once, replace it with `[circula
 scrub meets it again while still walking it, and give every other place that reaches it the same
 scrubbed copy, which keeps the `[circular]` markers of the place that made it.
 
-**Evidence:** `packages/core/src/utils/scrubPII.helper.ts:72-96`
+**Note:** the result therefore shares each scrubbed copy wherever the input shared the object: a
+graph, not a tree. A serializer with no depth limit writes a shared copy once per path that
+reaches it, so a sink that serializes the result needs a depth limit of its own. The Sentry
+configs of both apps leave `normalizeDepth` at Sentry's default of 3, and Sentry (`prepareEvent`
+in `@sentry/core` 10.61.0 for apps/web and 10.75.2 for apps/mobile) normalizes the data of every
+breadcrumb and the `user`, `contexts` and `extra` of an event to that depth before `beforeSend`
+runs, which covers every place the apps put a scrubbed value.
+
+**Evidence:** `packages/core/src/utils/scrubPII.helper.ts:77-101`,
+`packages/core/src/utils/scrubPII.helper.ts:18-25`
 
 #### Scenario: an object that holds itself
 

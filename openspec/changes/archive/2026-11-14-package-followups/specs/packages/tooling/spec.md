@@ -6,12 +6,12 @@
 
 ### Requirement: TOOLING-12 — A child is ended with every process it started
 
-The tooling package SHALL end a child and its descendants from `signalProcessTree`: on POSIX by
+The tooling package SHALL end a child and its descendants from `signalProcessTree` (on POSIX by
 sending the signal to the child's process group, which holds its descendants only when the child
 was spawned with `TREE_SPAWN_OPTIONS`, so a child spawned without them receives the signal alone;
-on Windows by `taskkill /pid <pid> /T /F` whatever the signal. The declaration of
-`signalProcessTree` and its JSDoc SHALL say that the descendants are reached on POSIX only for a
-child spawned with `TREE_SPAWN_OPTIONS`.
+on Windows by `taskkill /pid <pid> /T /F` whatever the signal), and say in its declaration and
+its JSDoc that on POSIX the descendants are reached only for a child spawned with
+`TREE_SPAWN_OPTIONS`.
 
 **Evidence:** written at apply time, when the code exists.
 
