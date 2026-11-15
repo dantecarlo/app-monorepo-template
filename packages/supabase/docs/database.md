@@ -330,12 +330,26 @@ reset role; -- return to the session role (postgres) for setup/teardown
 
 ### Test file structure
 
+`pg_prove` runs every `.sql` file in `supabase/tests/` as a suite of its own,
+and fails a file whose output holds no plan line or a count that differs from
+its plan. So a file there is always a suite, never a page of notes: the
+conventions every suite shares live in this section and in the header of
+`rls_profile.test.sql`. The offline test `src/__tests__/supabaseSql.test.ts`
+fails, in every `pnpm validate`, on a file there that never calls `plan()` or
+`finish()`.
+
 Every test file:
 
 1. Opens with `begin;`
-2. Seeds fixtures as the session role, `postgres` (before `set local role`)
+2. Seeds fixtures as the session role, `postgres` (before `set local role`),
+   with fixed UUID literals and `INSERT ... ON CONFLICT DO NOTHING`
 3. Calls `select plan(N)` with the exact assertion count
 4. Runs structural assertions, then behavioral assertions via impersonation
 5. Ends with `select * from finish(); rollback;`
+
+To prove that a policy or a privilege blocks a write, write with no `WHERE`:
+an `UPDATE` whose `WHERE` names a column also applies the `SELECT` policy,
+which may hide the row anyway. Then `reset role` and read the row back as the
+session role.
 
 See `supabase/tests/rls_profile.test.sql` for the full example.

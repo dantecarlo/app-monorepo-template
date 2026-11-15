@@ -11,10 +11,25 @@
 -- intentionally NOT in the offline pnpm validate gate; AGENTS.md forbids an
 -- agent to start Docker.
 --
+-- Every .sql file in this folder is a suite pg_prove runs on its own, and pg_prove fails one
+-- whose output has no plan; src/__tests__/supabaseSql.test.ts checks offline that each file
+-- calls plan() and finish(). The conventions every suite shares are here and in
+-- packages/supabase/docs/database.md (pgTAP workflow).
+--
+-- TRANSACTION: the whole file runs in BEGIN / ROLLBACK, so no state persists.
+--
 -- IMPERSONATION: auth.uid() reads request.jwt.claims ->> 'sub'. Use:
 --   set local "request.jwt.claims" to '{"sub":"<uuid>","role":"authenticated"}';
 --   set local role authenticated;
--- Then `reset role` to return to the session role (postgres) for teardown.
+-- Then `reset role` to return to the session role (postgres) for setup and teardown.
+--
+-- SEED: section 1 inserts the users into auth.users, their profiles and their grants as the
+-- session role, before any `set local role`, with fixed UUID literals so every run reads the
+-- same rows, and ON CONFLICT DO NOTHING so a database that already holds them still runs.
+--
+-- A BLOCKED WRITE: an UPDATE whose WHERE names a column also applies the SELECT policy, which
+-- may hide the row anyway. To prove a policy or a privilege blocks a write, write with no
+-- WHERE, then read the row back as the session role after `reset role`.
 
 begin;
 

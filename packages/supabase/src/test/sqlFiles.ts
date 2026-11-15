@@ -19,3 +19,11 @@ export const MIGRATION_FILES = toSqlFiles({
     query: '?raw'
   })
 })
+
+export const PGTAP_FILES = toSqlFiles({
+  files: import.meta.glob('../../supabase/tests/*.sql', {
+    eager: true,
+    import: 'default',
+    query: '?raw'
+  })
+})
