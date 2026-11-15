@@ -3,7 +3,7 @@
 > **Governs:** `packages/supabase/src`, `packages/supabase/supabase/migrations`, `packages/supabase/supabase/config.toml`
 > **ID prefix:** `SUPABASE`
 > **Derived from:** `packages/supabase/docs/database.md`, `AGENTS.md`, `docs/code-standards.md`
-> **Verified against the code:** 2026-11-14 at `9afce2d`
+> **Verified against the code:** 2026-11-14 at `235457d`
 
 ## Purpose
 
@@ -285,9 +285,9 @@ The supabase database SHALL enable and force row-level security on profile, role
 - **THEN** row-level security is forced
 - **Test:** Not covered — the pgTAP tests read relrowsecurity only, never relforcerowsecurity
 
-### Requirement: SUPABASE-11 — Every authenticated user reads every profile
+### Requirement: SUPABASE-11 — A user reads only their own profile
 
-The supabase database SHALL let any authenticated user read every profile row, their own and other users' alike.
+The supabase database SHALL let an authenticated user read a profile row only when its id is their own user id.
 
 **Evidence:** `packages/supabase/supabase/migrations/0008_rls_policies.sql:25`
 
@@ -295,8 +295,8 @@ The supabase database SHALL let any authenticated user read every profile row, t
 
 - **GIVEN** a user with no role, signed in
 - **WHEN** they select another user's profile by id
-- **THEN** one row comes back
-- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "authenticated user can read any profile row (profile_select using true)"
+- **THEN** no row comes back
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "authenticated user cannot read another user profile row"
 
 #### Scenario: the user's own profile
 
@@ -322,8 +322,8 @@ The supabase database SHALL let an authenticated user update a profile row only 
 
 - **GIVEN** a user, signed in
 - **WHEN** they update another user's profile
-- **THEN** that row stays unchanged
-- **Test:** Not covered — the pgTAP assertion for this case expects an exception, which a row filtered by an UPDATE policy does not raise (open question)
+- **THEN** the statement raises no error and that row stays unchanged
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "unauthorized user cannot update another user profile"
 
 ### Requirement: SUPABASE-13 — A user sees only their own role grants
 
@@ -368,7 +368,7 @@ The supabase database SHALL keep every policy on role_capability and user_role_g
 
 The supabase database SHALL resolve the caller's capabilities from their active role grants only, those with no revoked_at: has_capability is true when such a grant maps to the capability, and is_staff is true when such a grant maps to any capability.
 
-**Evidence:** `packages/supabase/supabase/migrations/0003_auth_helpers.sql:57`, `packages/supabase/supabase/migrations/0003_auth_helpers.sql:58`, `packages/supabase/supabase/migrations/0003_auth_helpers.sql:82`
+**Evidence:** `packages/supabase/supabase/migrations/0004_auth_helpers.sql:65`, `packages/supabase/supabase/migrations/0004_auth_helpers.sql:66`, `packages/supabase/supabase/migrations/0004_auth_helpers.sql:90`
 
 #### Scenario: a user with no grant
 
@@ -395,14 +395,14 @@ The supabase database SHALL resolve the caller's capabilities from their active 
 
 The supabase database SHALL let only authenticated and service_role execute the SECURITY DEFINER helpers, and keep the auth_helpers schema out of the schemas the API serves, exposing has_capability over the API only through its public wrapper.
 
-**Evidence:** `packages/supabase/supabase/migrations/0003_auth_helpers.sql:113`, `packages/supabase/supabase/migrations/0003_auth_helpers.sql:114`, `packages/supabase/supabase/migrations/0003_auth_helpers.sql:154`, `packages/supabase/supabase/config.toml:9`
+**Evidence:** `packages/supabase/supabase/migrations/0004_auth_helpers.sql:140`, `packages/supabase/supabase/migrations/0004_auth_helpers.sql:141`, `packages/supabase/supabase/migrations/0004_auth_helpers.sql:181`, `packages/supabase/supabase/config.toml:9`
 
 #### Scenario: an anonymous caller
 
 - **GIVEN** the anon role
 - **WHEN** it calls a helper
 - **THEN** execution is refused
-- **Test:** Not covered — no pgTAP assertion calls a helper as anon
+- **Test:** Not covered — the one assertion made as anon (SUPABASE-23) names an auth_helpers helper, refused at the schema; none calls public.has_capability as anon, which Q6 finds anon may execute
 
 #### Scenario: an API call into auth_helpers
 
@@ -415,7 +415,7 @@ The supabase database SHALL let only authenticated and service_role execute the 
 
 The supabase database SHALL reject a second active user_role_grant row for the same user and role.
 
-**Evidence:** `packages/supabase/supabase/migrations/0004_rbac.sql:82`, `packages/supabase/supabase/migrations/0004_rbac.sql:84`
+**Evidence:** `packages/supabase/supabase/migrations/0003_rbac.sql:85`, `packages/supabase/supabase/migrations/0003_rbac.sql:87`
 
 #### Scenario: the role is granted twice
 
@@ -468,7 +468,14 @@ The supabase database SHALL let an authenticated user read audit_log rows only w
 - **GIVEN** a user with no role grant, signed in, and an audit event
 - **WHEN** they select from audit_log
 - **THEN** no row comes back
-- **Test:** Not covered — no pgTAP assertion reads audit_log as an authenticated user
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "user who is not staff reads no audit event"
+
+#### Scenario: a staff user
+
+- **GIVEN** a user with an active admin grant, signed in, and an audit event
+- **WHEN** they select from audit_log
+- **THEN** the event comes back
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "staff user reads audit events"
 
 ### Requirement: SUPABASE-22 — The admin role holds profile.manage by default
 
@@ -490,32 +497,94 @@ The supabase database SHALL seed the role-capability map with admin mapped to pr
 - **THEN** the map still holds one such row
 - **Test:** Not covered — no pgTAP assertion reruns the seed
 
+### Requirement: SUPABASE-23 — Signed-in users and the service role reach the helpers schema
+
+The supabase database SHALL grant USAGE on the auth_helpers schema to authenticated and service_role and to no other API role, so a query, or a PL/pgSQL or string-body SQL function, running as authenticated or service_role can call the helpers that role may execute, and anon cannot name them.
+
+**Evidence:** `packages/supabase/supabase/migrations/0004_auth_helpers.sql:108`, `packages/supabase/supabase/migrations/0004_auth_helpers.sql:141`
+
+#### Scenario: a signed-in user calls a helper
+
+- **GIVEN** a user with no role grant, signed in
+- **WHEN** they call auth_helpers.is_staff in a query
+- **THEN** it answers false instead of refusing the schema
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "is_staff returns false for user with no active role grants"
+
+#### Scenario: the anon role names a helper
+
+- **GIVEN** the anon role
+- **WHEN** it calls auth_helpers.is_staff
+- **THEN** Postgres refuses it with "permission denied for schema auth_helpers"
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "anon cannot reach the auth_helpers schema"
+
+#### Scenario: the service role's schema privilege
+
+- **GIVEN** the migrations applied
+- **WHEN** the catalog is read for service_role on auth_helpers
+- **THEN** it holds USAGE
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "service_role has USAGE on the auth_helpers schema"
+
+#### Scenario: the anon role's schema privilege
+
+- **GIVEN** the migrations applied
+- **WHEN** the catalog is read for anon on auth_helpers
+- **THEN** it holds no USAGE
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "anon has no USAGE on the auth_helpers schema"
+
+### Requirement: SUPABASE-24 — The migrations apply in number order
+
+The supabase database SHALL create every type, table and function a migration uses in that migration or an earlier one, so migrations 0001 to 0009 apply in number order on an empty Supabase database.
+
+**Evidence:** `packages/supabase/supabase/migrations/0003_rbac.sql:42`, `packages/supabase/supabase/migrations/0003_rbac.sql:56`, `packages/supabase/supabase/migrations/0003_rbac.sql:70`, `packages/supabase/supabase/migrations/0004_auth_helpers.sql:53`, `packages/supabase/supabase/migrations/0004_auth_helpers.sql:62`, `packages/supabase/docs/database.md:35`
+
+#### Scenario: an empty database
+
+- **GIVEN** an empty database holding only what Supabase provides before a first migration
+- **WHEN** migrations 0001 to 0009 are applied in number order, each stopping on its first error
+- **THEN** every one of them applies
+- **Test:** Not covered — no gate has a database; the verify report records the run on a scratch PostgreSQL 18.4 with the Supabase pieces stubbed
+
+### Requirement: SUPABASE-25 — A helper added to auth_helpers starts out of reach
+
+The supabase database SHALL give a function postgres creates in the auth_helpers schema no EXECUTE for PUBLIC or any API role until a grant names its callers, while a function postgres creates in public or extensions keeps the EXECUTE Postgres gives PUBLIC.
+
+**Evidence:** `packages/supabase/supabase/migrations/0004_auth_helpers.sql:116`, `packages/supabase/supabase/migrations/0004_auth_helpers.sql:118`, `packages/supabase/supabase/migrations/0004_auth_helpers.sql:120`
+
+#### Scenario: a signed-in user and a helper with no grant block
+
+- **GIVEN** the migrations applied, and a function postgres adds to auth_helpers with no grant of its own
+- **WHEN** the catalog is read for authenticated on that function
+- **THEN** it may not execute it
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "a helper added without grants is not executable by authenticated"
+
+#### Scenario: the anon role and a helper with no grant block
+
+- **GIVEN** the migrations applied, and a function postgres adds to auth_helpers with no grant of its own
+- **WHEN** the catalog is read for anon on that function
+- **THEN** it may not execute it
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "a helper added without grants is not executable by anon"
+
+#### Scenario: a function added to public
+
+- **GIVEN** the migrations applied, and a function postgres adds to public with no grant of its own
+- **WHEN** the catalog is read for PUBLIC on that function
+- **THEN** PUBLIC may execute it
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "a function added to public keeps EXECUTE for PUBLIC"
+
+#### Scenario: a function added to extensions
+
+- **GIVEN** the migrations applied, and a function postgres adds to extensions with no grant of its own
+- **WHEN** the catalog is read for PUBLIC on that function
+- **THEN** PUBLIC may execute it
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "a function added to extensions keeps EXECUTE for PUBLIC"
+
 ## Open questions
 
-- **Q1** — Likely defect: `packages/supabase/supabase/migrations/0003_auth_helpers.sql:45`
-  declares a parameter of type `public.app_capability` and its body reads `public.user_role_grant`
-  (`packages/supabase/supabase/migrations/0003_auth_helpers.sql:54`), but the type is created only
-  at `packages/supabase/supabase/migrations/0004_rbac.sql:39` and the tables after it, so the
-  migrations applied in number order on an empty database should fail at 0003;
-  `packages/supabase/docs/database.md:147` describes the same order. Not checked against a live
-  database. The database requirements describe the state after all nine migrations.
-- **Q2** — Nothing grants `authenticated` USAGE on the `auth_helpers` schema that
-  `packages/supabase/supabase/migrations/0001_extensions.sql:20` creates, yet the audit-log policy
-  at `packages/supabase/supabase/migrations/0008_rls_policies.sql:49` calls
-  `auth_helpers.is_staff()` as that role, as do the tests at
-  `packages/supabase/supabase/tests/rls_profile.test.sql:146`; Postgres refuses a function call
-  without USAGE on its schema. Not checked against a live database.
-- **Q3** — The comment at `packages/supabase/supabase/migrations/0008_rls_policies.sql:20` says a
-  user reads their own profile, but the policy at
-  `packages/supabase/supabase/migrations/0008_rls_policies.sql:25` lets every signed-in user read
-  every profile; the test section header at
-  `packages/supabase/supabase/tests/rls_profile.test.sql:88` says "0 rows" while line 99 asserts
-  one. SUPABASE-11 states the code.
-- **Q4** — `packages/supabase/supabase/tests/rls_profile.test.sql:103` expects an error when a
-  user updates another user's profile, but Postgres skips the rows the policy at
-  `packages/supabase/supabase/migrations/0008_rls_policies.sql:31` filters out without raising
-  one, so that assertion should fail when it runs. SUPABASE-12 marks that scenario not covered.
-- **Q5** — `AGENTS.md:182` forbids the local stack and `AGENTS.md:205` generates types with
-  `--linked`, but `packages/supabase/package.json:22` uses `--local`; and
-  `packages/supabase/src/types.ts:13` is still the placeholder with no tables, although the
-  migrations define four.
+- **Q6** — With the default privileges a Supabase project gives `anon`, `authenticated` and
+  `service_role` on every function `postgres` creates in `public`, `anon` keeps EXECUTE on
+  `public.has_capability`: the revoke at
+  `packages/supabase/supabase/migrations/0004_auth_helpers.sql:180` removes the PUBLIC grant only,
+  not the explicit one the default privileges give `anon`. SUPABASE-17 says only authenticated and
+  service_role execute the helpers. Observed on a scratch PostgreSQL 18.4 with those default
+  privileges stubbed (`openspec/changes/archive/2026-11-14-supabase-migrations/verify-report.md`),
+  not on a Supabase project; as anon the call answers false, since `auth.uid()` is null.

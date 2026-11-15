@@ -4,8 +4,9 @@
 --
 -- NOTE: This file documents the setup conventions used by rls_profile.test.sql.
 -- It is not a standalone test — run the full suite with: pnpm --filter @app/supabase test:db
--- (which executes: supabase test db). DB tests require a running Postgres with
--- pgTAP installed; they are intentionally NOT part of pnpm validate.
+-- (which executes: supabase test db --linked). The CLI enables pgtap on the linked project,
+-- then runs pg_prove in a Docker container, so a person or a CI job with Docker runs it;
+-- DB tests are intentionally NOT part of the offline pnpm validate gate.
 --
 -- JWT IMPERSONATION PATTERN
 -- Supabase resolves auth.uid() from request.jwt.claims ->> 'sub'. To impersonate
@@ -14,7 +15,7 @@
 --   set local "request.jwt.claims" to '{"sub":"<uuid>","role":"authenticated"}';
 --   set local role authenticated;
 --   -- ... assertions as this user ...
---   reset role;   -- return to superuser for setup / teardown
+--   reset role;   -- return to the session role (postgres) for setup / teardown
 --
 -- The test wraps everything in BEGIN / ROLLBACK so no state persists.
 --
@@ -23,7 +24,7 @@
 -- using INSERT ... ON CONFLICT DO NOTHING. Use extensions.gen_random_uuid() for
 -- deterministic UUIDs so tests are reproducible.
 --
--- Example seed (run as superuser before setting role):
+-- Example seed (run as the session role, postgres, before setting role):
 --
 --   insert into auth.users (id, email) values
 --     ('00000000-0000-0000-0000-000000000001', 'alice@example.com'),

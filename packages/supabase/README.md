@@ -88,27 +88,48 @@ owning the equivalent configuration in the new adapter package.
 
 ## Prerequisites
 
+The template targets Supabase Cloud for development; there is no local Docker
+stack (`AGENTS.md`, Supabase workflow — Cloud only).
+
 - [Supabase CLI](https://supabase.com/docs/guides/cli) (`brew install supabase/tap/supabase`)
-- Docker running (for the local Supabase stack)
+- A Supabase Cloud project, and `packages/supabase/.env` (gitignored) holding
+  `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` and `SUPABASE_PROJECT_REF`
+- Docker, for `test:db` only (see below)
 
 ## Common workflows
 
+The CLI does not read `.env` on its own: load it in the shell first. Every
+script targets the linked project.
+
 ```bash
-# Start the local stack
-supabase start
+cd packages/supabase
+set -a; source .env; set +a
 
-# Reset the local DB (runs every migration in order, then seed.sql if present)
-pnpm --filter @app/supabase db:reset
+# Link the cloud project once per checkout
+supabase link --project-ref "$SUPABASE_PROJECT_REF"
 
-# Push migrations to a remote project
-pnpm --filter @app/supabase db:push
+# Apply the pending migrations, in number order
+pnpm db:push
 
-# Generate TypeScript types from the local DB into src/types.ts
-pnpm --filter @app/supabase gen:types
+# Generate TypeScript types from the linked project into src/types.ts
+pnpm gen:types
 
-# Run pgTAP tests (requires the local stack)
-pnpm --filter @app/supabase test:db
+# Run the pgTAP tests on the linked project (needs Docker, see below)
+pnpm test:db
 ```
+
+`test:db` (`supabase test db --linked`) first runs `create extension if not
+exists pgtap with schema extensions` on the linked project, then runs
+`pg_prove` in the `supabase/pg_prove:3.36` Docker container against it (CLI
+2.109.1 does so for every target, `--linked` included), and drops `pgtap`
+again when it was not installed before. Each test file runs in a transaction
+it rolls back. Because it needs Docker and a project, it is not part of the
+offline `pnpm validate` gate, and since `AGENTS.md` forbids an agent to start
+Docker, a person or a CI job with Docker runs it.
+
+There is no reset script: `supabase db reset --linked` rebuilds the linked
+project's database from the local migrations, and its data is lost. Run it by
+hand, and only on a disposable development project.
 
 ## Layout
 
@@ -118,13 +139,13 @@ pnpm --filter @app/supabase test:db
 - `src/mapSupabaseError.adapter.ts` — `mapSupabaseError`; implements `IServiceErrorMapper`
 - `src/buildSupabaseServiceError.helper.ts` — wired convenience: `buildServiceError` + `mapSupabaseError`
 - `src/types.ts` — generated `Database` type (placeholder until `gen:types`)
-- `supabase/config.toml` — local CLI config
-- `supabase/migrations/` — SQL migrations (empty skeleton; add yours here)
-- `supabase/tests/` — pgTAP tests (empty skeleton)
+- `supabase/config.toml` — CLI config (the API schemas and search path)
+- `supabase/migrations/` — SQL migrations, applied in number order; conventions in `docs/database.md`
+- `supabase/tests/` — pgTAP tests, run by `test:db`
 
 ## Notes
 
 - The **SERVICE ROLE** key bypasses RLS entirely — only use it server-side
   (Edge Functions, privileged writes). Never expose it to the client.
-- `src/types.ts` is a placeholder until you run `gen:types` against a DB with
-  migrations applied. Commit the generated file afterwards.
+- `src/types.ts` is a placeholder until you run `gen:types` against the linked
+  project with the migrations applied. Commit the generated file afterwards.

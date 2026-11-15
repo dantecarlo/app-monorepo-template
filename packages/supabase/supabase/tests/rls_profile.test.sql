@@ -4,16 +4,17 @@
 -- Source of truth: packages/supabase/docs/database.md (pgTAP workflow).
 --
 -- Run with: pnpm --filter @app/supabase test:db
---   (which executes: supabase test db)
+--   (which executes: supabase test db --linked)
 --
--- NOTE: DB tests require a running Postgres instance with pgTAP installed.
--- They are intentionally NOT in the pnpm validate chain (validate is pure
--- TypeScript; DB tests need a live stack). See AGENTS.md — no local Docker.
+-- NOTE: the CLI enables pgtap on the linked project, then runs pg_prove in a
+-- Docker container, so a person or a CI job with Docker runs this file. It is
+-- intentionally NOT in the offline pnpm validate gate; AGENTS.md forbids an
+-- agent to start Docker.
 --
 -- IMPERSONATION: auth.uid() reads request.jwt.claims ->> 'sub'. Use:
 --   set local "request.jwt.claims" to '{"sub":"<uuid>","role":"authenticated"}';
 --   set local role authenticated;
--- Then `reset role` to return to superuser for teardown.
+-- Then `reset role` to return to the session role (postgres) for teardown.
 
 begin;
 
@@ -21,10 +22,10 @@ begin;
 -- Plan
 -- =====================================================================
 -- Count assertions below and update this number when adding new tests.
-select plan(22);
+select plan(31);
 
 -- =====================================================================
--- Section 1: seed test fixtures (superuser context)
+-- Section 1: seed test fixtures (as postgres, the session role)
 -- =====================================================================
 
 insert into auth.users (id, email) values
@@ -91,22 +92,28 @@ select has_function('auth_helpers', 'is_staff', array[]::text[],
 set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}';
 set local role authenticated;
 
--- Bob (no role) tries to select Alice's profile by id.
+-- Bob (no role) tries to select Alice's profile by id: profile_select hides it.
 select is(
   (select count(*)::int from public.profile
    where id = '00000000-0000-0000-0000-000000000001'),
-  1,
-  'authenticated user can read any profile row (profile_select using true)'
+  0,
+  'authenticated user cannot read another user profile row'
 );
 
--- Bob cannot update Alice's profile.
-select throws_ok(
-  $$update public.profile set display_name = 'Hacked' where id = '00000000-0000-0000-0000-000000000001'$$,
-  'update on public.profile violates row-level security policy for table "profile"',
-  'unauthorized user cannot update another user profile'
-);
+-- Bob updates every profile row with no WHERE clause. A WHERE that names a column would
+-- also apply profile_select, which hides Alice's row anyway; with none, only the update
+-- policy decides which rows change. Postgres raises no error and changes his own row only
+-- (section 4 sets it again); read back as postgres, Alice's row is unchanged.
+update public.profile set display_name = 'Hacked';
 
 reset role;
+
+select is(
+  (select display_name from public.profile
+   where id = '00000000-0000-0000-0000-000000000001'),
+  'Alice',
+  'unauthorized user cannot update another user profile'
+);
 
 -- =====================================================================
 -- Section 4: policy grant — owner sees and updates their own profile
@@ -146,6 +153,18 @@ select is(
   (select auth_helpers.is_staff()),
   false,
   'is_staff returns false for user with no active role grants'
+);
+
+reset role;
+
+-- anon holds no USAGE on the auth_helpers schema, so it cannot name a helper.
+set local "request.jwt.claims" to '{"role":"anon"}';
+set local role anon;
+
+select throws_ok(
+  'select auth_helpers.is_staff()',
+  'permission denied for schema auth_helpers',
+  'anon cannot reach the auth_helpers schema'
 );
 
 reset role;
@@ -195,7 +214,7 @@ select is(
 -- Section 8: audit_log immutability
 -- =====================================================================
 
--- Insert an audit event as service_role (superuser context simulates service path).
+-- Insert an audit event as postgres, which bypasses RLS the way the service path does.
 insert into public.audit_log (actor_id, action, target_table, target_id, metadata)
 values (
   '00000000-0000-0000-0000-000000000001',
@@ -204,6 +223,33 @@ values (
   '00000000-0000-0000-0000-000000000002',
   '{}'
 );
+
+-- The audit-log policy, read as authenticated: Bob (no grant) reads no event, Alice (admin, so
+-- staff) reads it. The count is limited to Alice's events so a database with other events
+-- gives the same answer.
+set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}';
+set local role authenticated;
+
+select is(
+  (select count(*)::int from public.audit_log
+   where actor_id = '00000000-0000-0000-0000-000000000001'),
+  0,
+  'user who is not staff reads no audit event'
+);
+
+reset role;
+
+set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}';
+set local role authenticated;
+
+select is(
+  (select count(*)::int from public.audit_log
+   where actor_id = '00000000-0000-0000-0000-000000000001'),
+  1,
+  'staff user reads audit events'
+);
+
+reset role;
 
 -- Attempt to UPDATE the audit row must fail.
 select throws_ok(
@@ -217,6 +263,57 @@ select throws_ok(
   $$delete from public.audit_log where actor_id = '00000000-0000-0000-0000-000000000001'$$,
   'audit_log is append-only: UPDATE and DELETE are not permitted',
   'audit_log DELETE raises immutability exception'
+);
+
+-- =====================================================================
+-- Section 9: auth_helpers privileges — schema USAGE, and a helper added
+-- without a grant block of its own
+-- =====================================================================
+
+select ok(
+  has_schema_privilege('service_role', 'auth_helpers', 'usage'),
+  'service_role has USAGE on the auth_helpers schema'
+);
+
+select ok(
+  not has_schema_privilege('anon', 'auth_helpers', 'usage'),
+  'anon has no USAGE on the auth_helpers schema'
+);
+
+-- postgres adds one function to each schema, with no grant of its own. In auth_helpers no API
+-- role may execute it; in public and extensions it keeps the EXECUTE Postgres gives PUBLIC.
+set local role postgres;
+
+create function auth_helpers.test_helper_without_grants() returns boolean
+language sql stable security definer set search_path = public, auth_helpers
+as $$ select true $$;
+
+create function public.test_function_with_default_grants() returns boolean
+language sql stable as $$ select true $$;
+
+create function extensions.test_function_with_default_grants() returns boolean
+language sql stable as $$ select true $$;
+
+reset role;
+
+select ok(
+  not has_function_privilege('authenticated', 'auth_helpers.test_helper_without_grants()', 'execute'),
+  'a helper added without grants is not executable by authenticated'
+);
+
+select ok(
+  not has_function_privilege('anon', 'auth_helpers.test_helper_without_grants()', 'execute'),
+  'a helper added without grants is not executable by anon'
+);
+
+select ok(
+  has_function_privilege('public', 'public.test_function_with_default_grants()', 'execute'),
+  'a function added to public keeps EXECUTE for PUBLIC'
+);
+
+select ok(
+  has_function_privilege('public', 'extensions.test_function_with_default_grants()', 'execute'),
+  'a function added to extensions keeps EXECUTE for PUBLIC'
 );
 
 -- =====================================================================

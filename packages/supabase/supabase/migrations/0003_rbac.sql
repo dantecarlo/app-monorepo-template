@@ -1,4 +1,4 @@
--- 0004_rbac.sql
+-- 0003_rbac.sql
 -- Concern: DB-driven RBAC tables + RBAC-vocabulary enums.
 -- Source of truth: packages/supabase/docs/database.md (DB-driven RBAC).
 -- Idempotency: CREATE TABLE IF NOT EXISTS; CREATE INDEX IF NOT EXISTS;
@@ -12,7 +12,10 @@
 --   user_role     = ('member', 'admin')
 --   app_capability = ('profile.manage')
 --
--- ANTI-RECURSION: auth_helpers.has_capability / is_staff read these tables.
+-- Order: these enums and tables come before 0004_auth_helpers.sql, whose helpers
+-- take app_capability and read both tables.
+--
+-- ANTI-RECURSION: auth_helpers.has_capability / is_staff (0004) read these tables.
 -- Their own RLS policies (0008) must not call those helpers. See 0008.
 
 -- =====================================================================

@@ -30,6 +30,14 @@ unchanged.
 Files are named `NNNN_domain.sql` with zero-padded four-digit prefixes.
 One domain per file. Do not mix concerns.
 
+### Order
+
+Migrations apply in number order, so a migration uses only the types, tables
+and functions it or an earlier migration creates. Postgres checks a SQL
+function's argument types and body when the function is created, so the RBAC
+enums and tables (`0003_rbac.sql`) come before the helpers that take
+`app_capability` and read those tables (`0004_auth_helpers.sql`).
+
 ### Mandatory header block
 
 Every migration opens with a three-line comment block:
@@ -83,7 +91,7 @@ with `security definer`.
 
 ## 4. SECURITY DEFINER helper pattern
 
-All helpers follow the same recipe (from `0003_auth_helpers.sql`):
+All helpers follow the same recipe (from `0004_auth_helpers.sql`):
 
 ```sql
 create or replace function auth_helpers.my_helper(...)
@@ -100,6 +108,15 @@ $$;
 After creating the functions, apply the ownership / least-privilege block:
 
 ```sql
+grant usage on schema auth_helpers to authenticated, service_role;
+
+alter default privileges for role postgres
+  revoke execute on functions from public;
+alter default privileges for role postgres in schema public
+  grant execute on functions to public;
+alter default privileges for role postgres in schema extensions
+  grant execute on functions to public;
+
 do $$
 declare
   fn text;
@@ -116,9 +133,31 @@ end
 $$;
 ```
 
+**Why USAGE and EXECUTE:** USAGE on the schema lets a role resolve the
+names in it, and EXECUTE on a function lets it run that function. A policy, a
+view and a `BEGIN ATOMIC` SQL function resolve the names they use once, when
+they are created, so a policy that calls a helper works without USAGE. A
+query, a PL/pgSQL function and a SQL function with a string body resolve them
+each time they run, as the role running them (the caller, for a SECURITY
+INVOKER function), so `authenticated` and `service_role` need both. `anon`
+gets neither and cannot name a helper.
+
+**Why the default privileges:** Postgres gives PUBLIC EXECUTE on every new
+function, and USAGE on `auth_helpers` lets `authenticated` name any function
+there, so a helper added without its own grant block would be callable by
+every signed-in user. That PUBLIC grant is a global default, which a
+per-schema `REVOKE` cannot remove; the default is therefore revoked for every
+function `postgres` creates and granted back to PUBLIC in `public` and
+`extensions`. A new function in `auth_helpers` is executable by its owner
+only until its grant block names its callers. A schema a project adds later
+gets the same closed default: grant EXECUTE there on purpose, or add a
+per-schema default as above.
+
 **Why `owner = postgres`:** `SECURITY DEFINER` runs with the owner's
-privileges. Setting the owner to `postgres` (the Supabase superuser) lets the
-function bypass RLS where intended. This is the sanctioned privileged path.
+privileges. On Supabase `postgres` is not the superuser (`supabase_admin`
+is): it is a non-superuser role with `BYPASSRLS`, and that attribute is what
+lets the helpers read the RBAC tables past their row-level security. This is
+the sanctioned privileged path.
 
 **Note on non-Supabase Postgres:** the owner role name may differ. Replace
 `postgres` with the actual privileged migration role for your environment.
@@ -144,7 +183,7 @@ The logic stays in `auth_helpers`; only the entry point is exposed.
 
 ## 5. DB-driven RBAC
 
-Two tables (defined in `0004_rbac.sql`):
+Two tables (defined in `0003_rbac.sql`):
 
 | Table | Purpose |
 |---|---|
@@ -173,8 +212,8 @@ Defined in `0007_rls_enable.sql` and `0008_rls_policies.sql`.
   hole if a non-superuser ever owns a table.
 
 The sanctioned bypass paths are:
-- SECURITY DEFINER functions owned by `postgres` (superuser — FORCE does not
-  bind superusers).
+- SECURITY DEFINER functions owned by `postgres`, which has `BYPASSRLS`
+  (FORCE binds neither a role with `BYPASSRLS` nor a superuser).
 - `service_role` (which has `BYPASSRLS`).
 
 ### Explicit table list
@@ -248,17 +287,19 @@ silently overwrite hand-tuned values in production.
 
 ```bash
 pnpm --filter @app/supabase test:db
-# expands to: supabase test db
+# expands to: supabase test db --linked
 ```
 
-This requires a running Postgres instance with pgTAP installed. On Supabase
-Cloud, `supabase start` (local Docker) or a linked cloud project is needed.
+This runs against the linked Supabase Cloud project, with `.env` loaded in
+the shell (see the README), and it needs Docker: Supabase CLI 2.109.1 first
+runs `create extension if not exists pgtap with schema extensions` on the
+target, then runs `pg_prove` in the `supabase/pg_prove:3.36` Docker container
+for every target, `--linked` included. There is still no local Supabase stack.
 
 **DB tests are intentionally NOT part of `pnpm validate`.** The validation
-gate (`ATL_TEMPLATE_SELF=1 pnpm validate`) runs pure TypeScript checks that
-do not need a live database. Wiring `test:db` into validate would require a
-running stack in CI for every lint/typecheck run, which is not the convention
-here.
+gate (`ATL_TEMPLATE_SELF=1 pnpm validate`) is offline: it needs no database
+and no Docker. `AGENTS.md` forbids an agent to start Docker, so a person or a
+CI job with Docker runs `test:db`.
 
 ### JWT impersonation pattern
 
@@ -271,7 +312,7 @@ set local role authenticated;
 
 -- assertions here run as the impersonated user
 
-reset role; -- return to superuser for setup/teardown
+reset role; -- return to the session role (postgres) for setup/teardown
 ```
 
 ### Test file structure
@@ -279,7 +320,7 @@ reset role; -- return to superuser for setup/teardown
 Every test file:
 
 1. Opens with `begin;`
-2. Seeds fixtures as superuser (before `set local role`)
+2. Seeds fixtures as the session role, `postgres` (before `set local role`)
 3. Calls `select plan(N)` with the exact assertion count
 4. Runs structural assertions, then behavioral assertions via impersonation
 5. Ends with `select * from finish(); rollback;`

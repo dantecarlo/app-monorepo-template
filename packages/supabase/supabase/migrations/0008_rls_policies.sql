@@ -17,12 +17,12 @@
 -- Section 1: profile
 -- =====================================================================
 
--- Any authenticated user can read their own profile (or any profile once public
--- listing is needed — update this policy per project requirements).
+-- A user reads only their own profile row. A project that lists profiles
+-- publicly widens this policy on purpose, in a migration of its own.
 drop policy if exists profile_select on public.profile;
 create policy profile_select on public.profile
   for select to authenticated
-  using (true);
+  using (id = (select auth.uid()));
 
 -- Users may only update their own profile row.
 drop policy if exists profile_update_self on public.profile;
