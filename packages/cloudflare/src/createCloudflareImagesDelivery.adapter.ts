@@ -31,19 +31,23 @@ export const createCloudflareImagesDelivery = ({
   accountHash = process.env.CLOUDFLARE_IMAGES_ACCOUNT_HASH,
   signingKey = process.env.CLOUDFLARE_IMAGES_SIGNING_KEY,
   variant = CLOUDFLARE_IMAGES_DEFAULT_VARIANT
-}: ICreateCloudflareImagesDeliveryParams = {}): IImageDeliveryPort => ({
-  buildImageUrl: ({ path }: IBuildImageUrlParams): string =>
-    accountHash ? buildPublicUrl({ accountHash, path, variant }) : path,
-  buildSignedImageUrl: async ({
-    expiresInSeconds,
-    path
-  }: IBuildSignedImageUrlParams): Promise<string> => {
-    if (!accountHash || !signingKey) return path
+}: ICreateCloudflareImagesDeliveryParams = {}): IImageDeliveryPort => {
+  const buildImageUrl = ({ path }: IBuildImageUrlParams): string =>
+    accountHash ? buildPublicUrl({ accountHash, path, variant }) : path
 
-    return signImageUrl({
+  return {
+    buildImageUrl,
+    buildSignedImageUrl: async ({
       expiresInSeconds,
-      secret: signingKey,
-      url: buildPublicUrl({ accountHash, path, variant })
-    })
+      path
+    }: IBuildSignedImageUrlParams): Promise<string> => {
+      if (!accountHash || !signingKey) return buildImageUrl({ path })
+
+      return signImageUrl({
+        expiresInSeconds,
+        secret: signingKey,
+        url: buildPublicUrl({ accountHash, path, variant })
+      })
+    }
   }
-})
+}

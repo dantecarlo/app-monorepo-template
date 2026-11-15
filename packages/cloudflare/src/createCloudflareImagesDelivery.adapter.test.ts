@@ -37,9 +37,9 @@ test('buildSignedImageUrl falls back to public when no signing key is set', asyn
   })
   const url = await delivery.buildSignedImageUrl({
     expiresInSeconds: EXPIRES_IN_SECONDS,
-    path: 'img.png'
+    path: '/img.png'
   })
-  expect(url).not.toContain('sig=')
+  expect(url).toBe(PUBLIC_DELIVERY_URL)
 })
 
 test('buildSignedImageUrl appends exp and sig when credentials are present', async () => {
