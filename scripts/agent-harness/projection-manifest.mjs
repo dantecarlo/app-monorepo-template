@@ -11,6 +11,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { renderAdapterProjection } from './adapters.mjs'
 import {
   CLAUDE_AGENTS_DIRECTORY,
   renderClaudeProjection
@@ -21,9 +22,10 @@ import {
 // A target whose outputs sit beside files this harness does not own (`.github/`
 // holds workflows too) is scoped to its own subdirectory instead.
 const OWNED_DIRECTORIES = [
-  { directory: CLAUDE_AGENTS_DIRECTORY, extension: '.md' }
+  { directory: CLAUDE_AGENTS_DIRECTORY, extension: '.md' },
+  { directory: '.codex/agents', extension: '.toml' }
 ]
-const SINGLE_FILE_OUTPUTS = []
+const SINGLE_FILE_OUTPUTS = ['.codex/config.toml']
 
 export const MANIFEST_PATH = '.agents/projection-manifest.json'
 
@@ -44,7 +46,10 @@ export const readProjectedFile = ({ path, root }) =>
   readFileSync(join(root, path), 'utf8').replaceAll('\r\n', '\n')
 
 const renderProjection = ({ root }) =>
-  new Map([...renderClaudeProjection({ root })])
+  new Map([
+    ...renderClaudeProjection({ root }),
+    ...renderAdapterProjection({ root })
+  ])
 
 /**
  * The projection is compared as a COMPLETE tree, not file by file. A renderer

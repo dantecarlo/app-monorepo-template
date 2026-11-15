@@ -2,10 +2,12 @@
 // ---------------------------------------------------------------------------
 // Codex loads at most `project_doc_max_bytes` of the project's AGENTS.md
 // files and drops the rest without a word; its default is 32 KiB.
-// .codex/config.toml raises that budget, and these tests hold both ends of
-// it: the key sits at the top level of the file, before any table header,
-// since a key written after one belongs to that table; and AGENTS.md,
-// counted with CRLF line endings as a Windows checkout holds it, fits.
+// .codex/config.toml, which `pnpm agent-harness:generate` writes from
+// scripts/agent-harness/adapters.mjs, raises that budget, and these tests
+// hold both ends of it: the key sits at the top level of the file, before
+// any table header, since a key written after one belongs to that table;
+// and AGENTS.md, counted with CRLF line endings as a Windows checkout holds
+// it, fits.
 //
 // Usage:
 //   node --test scripts/codex-budget.test.mjs

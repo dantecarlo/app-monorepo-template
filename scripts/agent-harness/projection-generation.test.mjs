@@ -73,6 +73,9 @@ const runCheck = ({ root }) =>
     env: gitFreeEnv()
   })
 
+const readAll = ({ paths, root }) =>
+  paths.map((path) => readText({ path, root }))
+
 const sha256 = ({ value }) =>
   createHash('sha256').update(value).digest('hex')
 
@@ -121,19 +124,20 @@ test('the Claude projection is the neutral source, byte for byte', () => {
 test('given a generated projection, regenerating it changes nothing', () => {
   inScratch({
     use: ({ root }) => {
-      generateProjection({ root })
-      const afterFirst = readText({ path: OUTPUT_PATH, root })
-      const manifestAfterFirst = readText({ path: MANIFEST_PATH, root })
-      const written = generateProjection({ root })
+      const first = generateProjection({ root })
+      const afterFirst = readAll({ paths: first, root })
+      const second = generateProjection({ root })
 
-      assert.deepEqual(written, [OUTPUT_PATH, MANIFEST_PATH].sort())
-      assert.equal(readText({ path: OUTPUT_PATH, root }), afterFirst)
-      assert.equal(readText({ path: MANIFEST_PATH, root }), manifestAfterFirst)
+      assert.ok(first.includes(OUTPUT_PATH), first.join(', '))
+      assert.ok(first.includes(MANIFEST_PATH), first.join(', '))
+      assert.deepEqual(second, first)
+      assert.deepEqual(readAll({ paths: second, root }), afterFirst)
       assert.deepEqual(checkProjection({ root }).failures, [])
       assert.deepEqual(
-        readdirSync(join(root, '.claude', 'agents')).filter((entry) =>
-          entry.endsWith(TEMPORARY_SUFFIX)
-        ),
+        first
+          .map((path) => dirname(path))
+          .flatMap((directory) => readdirSync(join(root, directory)))
+          .filter((entry) => entry.endsWith(TEMPORARY_SUFFIX)),
         [],
         'an atomic write leaves no temporary file behind'
       )
@@ -144,13 +148,24 @@ test('given a generated projection, regenerating it changes nothing', () => {
 test('the manifest records the sha256 of every rendered output', () => {
   inScratch({
     use: ({ root }) => {
-      generateProjection({ root })
+      const written = generateProjection({ root })
       const manifest = JSON.parse(readText({ path: MANIFEST_PATH, root }))
+      const outputs = written.filter((path) => path !== MANIFEST_PATH)
 
-      assert.deepEqual(manifest, {
-        generatedBy: 'scripts/agent-harness/generate.mjs',
-        outputs: { [OUTPUT_PATH]: sha256({ value: SOURCE }) }
-      })
+      assert.equal(
+        manifest.generatedBy,
+        'scripts/agent-harness/generate.mjs'
+      )
+      assert.deepEqual(
+        manifest.outputs,
+        Object.fromEntries(
+          outputs.map((path) => [
+            path,
+            sha256({ value: readText({ path, root }) })
+          ])
+        )
+      )
+      assert.equal(manifest.outputs[OUTPUT_PATH], sha256({ value: SOURCE }))
     }
   })
 })
@@ -313,11 +328,12 @@ test('projection-check run over a repository whose output git does not list exit
     use: ({ root }) => {
       generateProjection({ root })
       git({ args: ['init', '-q'], root })
-      git({ args: ['add', '--', SOURCE_PATH, MANIFEST_PATH], root })
+      git({ args: ['add', '--all'], root })
+      git({ args: ['rm', '--cached', '-q', '--', OUTPUT_PATH], root })
       const result = runCheck({ root })
 
       assert.equal(result.status, EXIT_FAILURE, result.stdout)
-      assert.match(result.stderr, /1 deviation\(s\) across 1 projected output/)
+      assert.match(result.stderr, /: 1 deviation\(s\) across/)
       assert.match(
         result.stderr,
         new RegExp(`untracked: ${OUTPUT_PATH.replaceAll('.', '\\.')}`)
@@ -336,9 +352,12 @@ test('projection-check run over a repository with every output added exits 0', (
       const result = runCheck({ root })
 
       assert.equal(result.status, 0, result.stderr)
-      assert.match(
-        result.stdout,
-        /1 projected output\(s\) match their neutral sources/
+      assert.ok(
+        result.stdout.includes(
+          `${compareProjection({ root }).rendered.size} projected ` +
+            'output(s) match their neutral sources'
+        ),
+        result.stdout
       )
     }
   })

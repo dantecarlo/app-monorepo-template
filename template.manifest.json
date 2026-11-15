@@ -32,6 +32,7 @@
     ".claude/skills/store/**",
     ".claude/skills/test/**",
     ".claude/skills/validate-all/**",
+    ".codex/agents/**",
     ".codex/config.toml",
     ".gitattributes",
     ".github/workflows/ci.yml",
