@@ -4,7 +4,7 @@ Agent instructions for this template, read by every runtime (Claude Code,
 Cursor, Codex, Gemini CLI and others that read `AGENTS.md`). This is the single
 instruction file: there is no `CLAUDE.md`, and a tracked `CLAUDE.md`,
 `.claude/CLAUDE.md` or `CLAUDE.local.md` would stop Claude Code from reading
-this one.
+this one. `pnpm verify:instruction-entry` fails on one in any folder.
 
 ---
 
@@ -65,12 +65,15 @@ ATL_TEMPLATE_SELF=1 pnpm validate
 
 `pnpm validate` runs `turbo run lint typecheck test build format:check`, then
 `pnpm verify:tests`, the spec gates (`verify:specs`, and `report:spec-drift`, which
-only reports), `pnpm verify:english` and `pnpm verify:maps`. All must pass.
+only reports), `pnpm verify:english`, `pnpm verify:instruction-entry` and
+`pnpm verify:maps`. All must pass.
 
 The manifest gates run first (they are instant, so structural drift fails
 before anything expensive). `pnpm verify:tests` checks tests-per-unit presence
 and `pnpm verify:maps` checks architecture-map integrity and the magic-literal
-audit. Every failure is a blocker.
+audit. `pnpm verify:instruction-entry` checks that `AGENTS.md` and `README.md`
+exist and that no path git lists, tracked or not yet added, is a `CLAUDE.md` or
+`CLAUDE.local.md`. Every failure is a blocker.
 
 | Manifest gate                   | What it proves                                            |
 | ------------------------------- | --------------------------------------------------------- |

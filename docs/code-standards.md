@@ -716,6 +716,7 @@ This table exists so that difference is visible.
 | §20 Severity ratchet        | **none yet**  | needs `--max-warnings 0` + `reportUnusedDisableDirectives`          |
 | §21 This table              | review        | —                                                                   |
 | File ownership / init prune | script        | `verify:manifest` + `verify:manifest:coverage`                      |
+| One instruction entry       | script        | `verify:instruction-entry` — `AGENTS.md` present, no `CLAUDE.md`    |
 
 **Rows that read "none yet", "warn only" or "partial"** are not aspirations
 hidden in prose — they are named gaps with a named mechanism, tracked as
