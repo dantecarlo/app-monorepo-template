@@ -90,6 +90,8 @@ the pre-commit hook on staged files.
 | `verify:specs`        | Every living spec and change has its shape, and every test a scenario names exists        |
 | `report:spec-drift`   | Lists the living specs whose governed code moved past their verified commit; never blocks |
 | `verify:english`      | No tracked text outside the i18n catalogs holds a Spanish line, unless allowlisted        |
+| `verify:instruction-entry` | `AGENTS.md` and `README.md` exist, and no `CLAUDE.md` or `CLAUDE.local.md` in any folder makes Claude Code read it instead of `AGENTS.md` |
+| `codex-budget:test`   | `.codex/config.toml` sets `project_doc_max_bytes` above every table header, and `AGENTS.md`, counted with CRLF endings, fits it: Codex drops what is past the budget |
 | `check:identity`      | The template's default identity is gone (skipped on self)                                 |
 | `knip`                | No dead exports, no unlisted or unused dependencies                                       |
 
