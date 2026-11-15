@@ -1,8 +1,10 @@
--- 0003_auth_helpers.sql
+-- 0004_auth_helpers.sql
 -- Concern: SECURITY DEFINER helpers in the private auth_helpers schema.
 -- Source of truth: packages/supabase/docs/database.md (SECURITY DEFINER helper pattern).
 -- Idempotency: CREATE OR REPLACE for every function; owner/grant block is guarded
 --   by a do-loop that only alters if the function exists.
+-- Depends on: 0003_rbac.sql (the app_capability type and the two RBAC tables the
+--   helpers read).
 --
 -- auth_helpers is NOT listed in config.toml api.schemas, so PostgREST never
 -- exposes it directly. All helpers use:

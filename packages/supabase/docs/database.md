@@ -30,6 +30,14 @@ unchanged.
 Files are named `NNNN_domain.sql` with zero-padded four-digit prefixes.
 One domain per file. Do not mix concerns.
 
+### Order
+
+Migrations apply in number order, so a migration uses only the types, tables
+and functions it or an earlier migration creates. Postgres checks a SQL
+function's argument types and body when the function is created, so the RBAC
+enums and tables (`0003_rbac.sql`) come before the helpers that take
+`app_capability` and read those tables (`0004_auth_helpers.sql`).
+
 ### Mandatory header block
 
 Every migration opens with a three-line comment block:
@@ -83,7 +91,7 @@ with `security definer`.
 
 ## 4. SECURITY DEFINER helper pattern
 
-All helpers follow the same recipe (from `0003_auth_helpers.sql`):
+All helpers follow the same recipe (from `0004_auth_helpers.sql`):
 
 ```sql
 create or replace function auth_helpers.my_helper(...)
@@ -144,7 +152,7 @@ The logic stays in `auth_helpers`; only the entry point is exposed.
 
 ## 5. DB-driven RBAC
 
-Two tables (defined in `0004_rbac.sql`):
+Two tables (defined in `0003_rbac.sql`):
 
 | Table | Purpose |
 |---|---|
