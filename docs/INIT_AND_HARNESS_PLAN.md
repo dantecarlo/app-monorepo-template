@@ -157,8 +157,9 @@ side in step 2.0 and 2.3, and Certifipago its side through the conformance track
 | K6  | `openspec/README.md:9` stops calling Certifipago the template                                                                                               | closed: Certifipago #801 (`084e204fd`)                                       |
 | K7  | `claudeMdExcludes` covers the `.agents/skills` mirror                                                                                                       | closed, not a defect: Claude Code reads no file under a `.agents/` directory |
 | K8 | D-S2: tests move from `__tests__/` beside their units, `verify:test-location` adapted; D-S5: owner quotes in SDD artifacts translated into English and marked | decided 2026-11-13; asked of the Arquitecto, who sets the timing |
-| K9 | the 12 cross-workspace relative imports move to `@app/tooling` | asked of the Arquitecto when the tooling-package change merges |
+| K9 | the 12 cross-workspace relative imports move to `@app/tooling` | asked of the Arquitecto 2026-11-14 |
 | K10 | `package-src-alias`: package sources hold `#src/` over imports, re-exports and `import()`, fixed from the file's own path; `no-relative-import-paths` misses re-exports and its fix writes `@/` (template #10) | asked of the Arquitecto 2026-11-14 |
+| K11 | `scrubPII` keeps the scrubbed copy of each object it walks, so a shared object costs one walk, not one per path; `sanitizeQueryKey` takes `structuralSegments` and each app passes the values of its `QueryKeySegmentEnum` (template `2026-11-14-scrub-and-query-key`) | asked of the Arquitecto when the change merges |
 
 ## Next steps (2026-11-05, updated 2026-11-12)
 
@@ -255,6 +256,7 @@ master after these merges.
 | Video skills `ffmpeg-skill` and `earshot`, the `docs/video/` convention | #810 (`54c047373`) | none: the template carries no video app; a project that vendors them carries the ffmpeg-skill ledger fixes and the earshot listen-only overlay | not applicable | closed |
 | `impeccable.cmd` creates its temporary directory with an atomic `mkdir` instead of a `%RANDOM%` name                 | #790                | none until `impeccable` is vendored here                                                                                                                                    | Stage 5 (5.1), when vendored     | open   |
 | The pre-push runs the review skills a change owes (from `review-routing`), each in a clean session; a BLOCKER refuses the push unless adjudicated `refuted` or `owner-accepted`; the reviewer writes `.review-verdicts/<sha>.json` with provenance and `pnpm review:verdict` is read-only; without Codex, both reviews run through a read-only `claude -p` session | #803 (`c4143717c`) | the same pre-push step, once the template has the review verdict and the review routing | Stage 4 (4.1), Stage 5 (5.3) | open |
+| `scrubValue` marks only a cycle as `[circular]`, arrays included | master | `scrubPII` does the same and also keeps each walked object's scrubbed copy, since walking a shared object once per path is exponential | `2026-11-14-scrub-and-query-key` | closed by that change |
 
 **Template → Certifipago**
 
@@ -273,6 +275,7 @@ master after these merges.
 | The template is the reference (decision 47)                                          | this plan             | `openspec/README.md:9` still calls Certifipago the template                                                                         | Arquitecto, #801 (`084e204fd`) | closed |
 | `package-src-alias` holds `#src/` in package sources (T1c) | #10 | Certifipago runs `no-relative-import-paths` with `prefix: '@'` (`eslint.rules.mjs:456-458`), whose fix writes `@/` and which never sees a re-export | Arquitecto, K10 | open |
 | `init-project` renames under `scripts/`; the web smoke works on Windows | #9, this change | none: Certifipago has no `/init`, and its smoke scripts already use `process-tree` | not applicable | closed |
+| `scrubPII` walks each object once; `sanitizeQueryKey` keeps only the segments the caller registers (`2026-11-14-scrub-and-query-key`) | this change | Certifipago's `scrubValue` walks a shared object once per path, which ran a React DOM node in a console breadcrumb out of memory, and its `sanitizeQueryKey` keeps any letters-only segment | Arquitecto, K11 | open |
 
 ### Follow-ups the living specs found (2026-11-14)
 
@@ -286,8 +289,8 @@ defects behind them, for changes of their own.
 | F3 | packages/supabase | the profile select policy (`0008_rls_policies.sql:25`) lets every signed-in user read every profile, while its comment and its test section say a user reads their own | owner decides who may read a profile |
 | F4 | packages/supabase | `rls_profile.test.sql:103` expects an error Postgres does not raise on a filtered update; the pgTAP suite runs in no gate (it needs a live database) | with F1–F2 |
 | F5 | packages/supabase | `package.json:22` targets the local stack `AGENTS.md:182` forbids, and `src/types.ts` is still the placeholder with no tables | small |
-| F6 | packages/core | `scrubPII` overflows on an array that holds itself, and drops an object reached under two keys as `[circular]` (`scrubPII.helper.ts:62`, `:67`) | security; small |
-| F7 | packages/core | `sanitizeQueryKey` keeps any letters-only segment up to 24 characters, a username among them, against its own comment (`sanitizeQueryKey.helper.ts:21`) | security; small |
+| F6 | packages/core | `scrubPII` overflows on an array that holds itself, and drops an object reached under two keys as `[circular]` (`scrubPII.helper.ts:62`, `:67`) | done: `2026-11-14-scrub-and-query-key` |
+| F7 | packages/core | `sanitizeQueryKey` keeps any letters-only segment up to 24 characters, a username among them, against its own comment (`sanitizeQueryKey.helper.ts:21`) | done: `2026-11-14-scrub-and-query-key` |
 | F8 | packages/cloudflare | nothing checks the `exp` and `sig` of an R2 signed URL; the Cloudflare Images fallback returns the bare path where `docs/images.md` says the public URL | owner decides the R2 verification |
 | F9 | apps/web, apps/mobile | no `Toast` viewport is mounted, so every error toast stays in the store; no ErrorBoundary ships; mobile queues a new toast on every render while a query fails | error surfacing |
 | F10 | apps/web | client components are pinned to the default language and `lang="en"` is written in the layout, so the language switcher writes Spanish and cannot switch back | i18n |
@@ -1524,3 +1527,13 @@ validate` exits 0. Independent verifier: no blocker. Native review: the hooks
   as `2026-11-14-living-specs`: four writers wrote the eight specs from the code in parallel,
   174 requirements, and their open questions name sixteen defects, follow-ups F1 to F16, three of
   them (F1, F2, F6) likely to break a fresh database or an observability payload.
+- **L57 (2026-11-14, owner, translated from Spanish):** "Do this task here: “Fix scrubPII and
+  sanitizeQueryKey (F6, F7)”", then "Do this task here: “Fix Supabase migration order and grants
+  (F1–F5)”", "Do this task here: “Show error toasts and add an error boundary (F9)”" and "yes,
+  merge #13 when it is green"; answering "F3: who may read a user's profile in the template's
+  database?", the owner chose "Only its owner". Merged #13 (`e3e92fcaf`). F6 and F7 ran as
+  `2026-11-14-scrub-and-query-key`. Its independent verifier found that Certifipago's fix of
+  F6, taking each object out of the visited set once walked, walks a shared object once per
+  path, which ran a React DOM node in a console breadcrumb out of memory; the template keeps
+  each scrubbed copy instead, and K11 carries both helpers to Certifipago. F1 to F5 and F9 run
+  as their own changes, each built by a writer in its own worktree.

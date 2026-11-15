@@ -3,7 +3,7 @@
 > **Governs:** `apps/mobile/src`, `apps/mobile/app.json`
 > **ID prefix:** `MOBILE`
 > **Derived from:** `docs/architecture/mobile.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/observability.md`, `docs/e2e.md`, `docs/responsive.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-14 at `9afce2d`
+> **Verified against the code:** 2026-11-14 at `94cc114`
 
 ## Purpose
 
@@ -187,7 +187,7 @@ The mobile app SHALL load the dashboard items through useAppQuery under the item
 for the current search term, fetching at most 50 items from the items service and adapting them
 to view models.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:39-57`, `apps/mobile/src/lib/query/queryKeys.constant.ts:8-11`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:39-57`, `apps/mobile/src/lib/query/queryKeys.constant.ts:22-29`
 
 #### Scenario: the user types a search term
 
@@ -477,7 +477,7 @@ earlier when it is removed by its id.
 The mobile app SHALL treat query data as fresh for 30 seconds, retry a failed query once and
 never retry a failed mutation.
 
-**Evidence:** `apps/mobile/src/lib/query/createQueryClient.helper.ts:8`, `apps/mobile/src/lib/query/createQueryClient.helper.ts:20-24`
+**Evidence:** `apps/mobile/src/lib/query/createQueryClient.helper.ts:10`, `apps/mobile/src/lib/query/createQueryClient.helper.ts:22-26`
 
 #### Scenario: the stale time
 
@@ -502,11 +502,11 @@ never retry a failed mutation.
 
 ### Requirement: MOBILE-25 — Every failed query and mutation is captured
 
-The mobile app SHALL send every failed query, with its query key sanitized by packages/core, and
-every failed mutation to the observability port's captureError, tagged with the cache it came
-from.
+The mobile app SHALL send every failed query, with its query key sanitized by packages/core
+against the values of `QueryKeySegmentEnum`, and every failed mutation to the observability
+port's captureError, tagged with the cache it came from.
 
-**Evidence:** `apps/mobile/src/lib/query/createQueryClient.helper.ts:25-37`, `apps/mobile/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/mobile/src/app/_layout.tsx:34-36`
+**Evidence:** `apps/mobile/src/lib/query/createQueryClient.helper.ts:27-42`, `apps/mobile/src/lib/query/queryKeys.constant.ts:9-16`, `apps/mobile/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/mobile/src/app/_layout.tsx:34-36`
 
 #### Scenario: a query key holding an identifier
 
@@ -514,6 +514,13 @@ from.
 - **WHEN** the query fails
 - **THEN** the capture callback runs once with the error, the identifier replaced by [redacted] and the queryCache source
 - **Test:** `apps/mobile/src/lib/query/createQueryClient.helper.test.ts` › "calls onCaptureError with sanitized queryKey on query failure"
+
+#### Scenario: a query keyed by a search text
+
+- **GIVEN** a query keyed by `QueryKeys.items.list('alice')`
+- **WHEN** the query fails
+- **THEN** the capture callback receives the key `['items', 'list', '[redacted]']`
+- **Test:** `apps/mobile/src/lib/query/createQueryClient.helper.test.ts` › "redacts the search text of an items list key on query failure"
 
 #### Scenario: a failing mutation
 

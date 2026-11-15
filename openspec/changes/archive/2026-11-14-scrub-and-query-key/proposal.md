@@ -1,6 +1,6 @@
 # Proposal: Mark only a cycle as circular, and keep only registered query-key segments
 
-> **Status:** open
+> **Status:** archived — 2026-11-14
 
 ## Why
 
