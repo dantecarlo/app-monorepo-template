@@ -777,7 +777,7 @@ toast of the toast store as an alert with its message and a dismiss control that
 - **GIVEN** the root layout rendered with its fonts loaded
 - **WHEN** an error toast is added to the toast store
 - **THEN** its message is shown
-- **Test:** `apps/mobile/src/test/routes/rootLayout.test.tsx` › "shows a toast added to the store over the routes"
+- **Test:** `apps/mobile/src/app/__tests__/_layout.test.tsx` › "shows a toast added to the store over the routes"
 
 #### Scenario: the toast is dismissed
 
@@ -807,7 +807,7 @@ the theme background and a retry control that re-renders the route.
 - **GIVEN** the root layout module
 - **WHEN** Expo Router reads its exports
 - **THEN** its `ErrorBoundary` is the root error boundary
-- **Test:** `apps/mobile/src/test/routes/rootLayout.test.tsx` › "exports the root error boundary as its ErrorBoundary"
+- **Test:** `apps/mobile/src/app/__tests__/_layout.test.tsx` › "exports the root error boundary as its ErrorBoundary"
 
 ## Open questions
 
