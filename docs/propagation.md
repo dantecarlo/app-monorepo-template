@@ -75,7 +75,7 @@ git diff template/main -- tsconfig.base.json
 git diff template/main -- turbo.json scripts/
 
 # Agent context
-git diff template/main -- .claude/skills/ .claude/agents/ AGENTS.md
+git diff template/main -- .claude/skills/ .agents/agents/ AGENTS.md
 
 # Infrastructure docs
 git diff template/main -- docs/infrastructure.md docs/propagation.md
@@ -211,8 +211,9 @@ These categories should be synced proactively:
 - **Security hardening** — new middleware checks, header rules, origin-lock
   improvements.
 - **ESLint rules** — new or tightened rules keep all projects consistent.
-- **Agent skills and agents** — improvements to `.claude/skills/` and
-  `.claude/agents/` benefit every project that uses the same workflow.
+- **Agent skills and agents** — improvements to `.claude/skills/` and the
+  agent sources in `.agents/agents/` benefit every project that uses the same
+  workflow; `pnpm agent-harness:generate` writes each runtime's copy from them.
 - **Build scripts** — `verify-tests.mjs`, `verify-maps.mjs`,
   `check-identity.mjs`.
 

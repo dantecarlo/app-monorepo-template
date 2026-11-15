@@ -1,0 +1,295 @@
+#!/usr/bin/env node
+// ---------------------------------------------------------------------------
+// The adapters that reshape a neutral agent source for the runtimes whose
+// format differs from Claude Code's: Codex, OpenCode and Copilot. Each
+// renderer refuses a field it has no slot for, points the agent at
+// AGENTS.md, and renders the same bytes twice; the Codex config stays
+// repository-local, keeps the project-doc budget at its top level, and
+// registers each agent by a path Codex resolves; the YAML frontmatter holds
+// any description as one string.
+//
+// Usage:
+//   node --test scripts/agent-harness/adapters.test.mjs
+// ---------------------------------------------------------------------------
+
+import assert from 'node:assert/strict'
+import { readdirSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { test } from 'node:test'
+import { fileURLToPath } from 'node:url'
+
+import {
+  CODEX_PROJECT_DOC_MAX_BYTES,
+  renderAdapterProjection,
+  renderCodexAgent,
+  renderCodexConfig,
+  renderCopilotAgent,
+  renderOpenCodeAgent,
+  renderOpenCodeConfig
+} from './adapters.mjs'
+
+const CODEX_HOME = '.codex'
+const CONFIG_FILE_LINE = /^config_file = "(.+)"$/gm
+const LEAVES_ITS_ROOT = /^([a-z]:|[\\/]|\.\.[\\/])/i
+const TRIPLE_QUOTE = /"""/g
+const PROMPT_DELIMITERS = 2
+const DESCRIPTION_LINE = /^description: (.*)$/m
+
+const REPO_ROOT = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  '..'
+)
+
+const AGENT = {
+  body: '# Role\n\nDo the thing.',
+  fields: {
+    description: 'Does the thing.',
+    model: 'sonnet',
+    name: 'scratch',
+    tools: 'Read, Grep'
+  },
+  name: 'scratch'
+}
+
+const RENDERERS = [
+  { adapter: 'opencode', render: renderOpenCodeAgent },
+  { adapter: 'codex', render: renderCodexAgent },
+  { adapter: 'copilot', render: renderCopilotAgent }
+]
+
+const YAML_RENDERERS = RENDERERS.filter(({ adapter }) => adapter !== 'codex')
+
+const registeredAgentFiles = ({ projection }) =>
+  [
+    ...projection
+      .get(`${CODEX_HOME}/config.toml`)
+      .matchAll(CONFIG_FILE_LINE)
+  ].map(([, value]) => value)
+
+RENDERERS.forEach(({ adapter, render }) => {
+  test(`given a field no target maps, ${adapter} refuses to render`, () => {
+    assert.throws(
+      () =>
+        render({
+          ...AGENT,
+          fields: { ...AGENT.fields, sandbox: 'read-only' }
+        }),
+      new RegExp(`adapter=${adapter} field=sandbox`),
+      'an unmapped field must name the adapter AND the field, then stop'
+    )
+  })
+
+  test(`given the closed schema, ${adapter} points the agent at AGENTS.md first`, () => {
+    const rendered = render(AGENT)
+
+    assert.match(rendered, /Read `AGENTS\.md` before anything else\.\n\n# Role/)
+    assert.doesNotMatch(
+      rendered,
+      /project-context|report its version/,
+      'the template has no project-context file and AGENTS.md carries no ' +
+        'version to report'
+    )
+  })
+
+  test(`given the same source twice, ${adapter} renders identical bytes`, () => {
+    assert.equal(render(AGENT), render(AGENT))
+  })
+})
+
+// A plain YAML scalar cannot hold ": ", so a description such as
+// "Read-only: never edits files." makes the whole frontmatter fail to parse.
+// A JSON string is a valid YAML double-quoted scalar.
+YAML_RENDERERS.forEach(({ adapter, render }) => {
+  test(`given a description carrying a colon and a quote, ${adapter} writes it as one YAML string`, () => {
+    const description = 'Reviews "the" diff. Read-only: never edits files.'
+    const line = render({
+      ...AGENT,
+      fields: { ...AGENT.fields, description }
+    }).match(DESCRIPTION_LINE)
+
+    assert.ok(line, 'the frontmatter has no description line')
+    assert.equal(JSON.parse(line[1]), description)
+  })
+})
+
+test('the OpenCode agent is a subagent with each of its tools enabled', () => {
+  const rendered = renderOpenCodeAgent(AGENT)
+
+  assert.match(rendered, /^mode: subagent$/m)
+  assert.ok(
+    rendered.includes('\ntools:\n  Read: true\n  Grep: true\n'),
+    rendered
+  )
+  assert.doesNotMatch(
+    rendered,
+    /^name:/m,
+    'OpenCode keys an agent by its file name'
+  )
+})
+
+test('the Copilot agent names itself and lists its tools inline', () => {
+  const rendered = renderCopilotAgent(AGENT)
+
+  assert.match(rendered, /^name: scratch$/m)
+  assert.match(rendered, /^tools: \[Read, Grep\]$/m)
+})
+
+test('given an unmapped model, the OpenCode config omits it and names no instruction file', () => {
+  const config = JSON.parse(renderOpenCodeConfig({ agents: [AGENT] }))
+
+  assert.deepEqual(config, {
+    $schema: 'https://opencode.ai/config.json',
+    agent: { scratch: { mode: 'subagent' } }
+  })
+  assert.equal(
+    Object.hasOwn(config, 'instructions'),
+    false,
+    'OpenCode discovers AGENTS.md itself; naming it again adds it twice'
+  )
+})
+
+test('given a mapped model, the OpenCode config lists the mapped id', () => {
+  const config = JSON.parse(
+    renderOpenCodeConfig({
+      agents: [AGENT],
+      models: { sonnet: 'provider/model-id' }
+    })
+  )
+
+  assert.equal(config.agent.scratch.model, 'provider/model-id')
+})
+
+test('given an unmapped model, the Codex agent leaves it out', () => {
+  assert.doesNotMatch(renderCodexAgent(AGENT), /^model\s*=/m)
+})
+
+test('given a mapped model, the Codex agent renders the mapped id', () => {
+  assert.match(
+    renderCodexAgent({ ...AGENT, models: { sonnet: 'provider-model-id' } }),
+    /^model = "provider-model-id"$/m
+  )
+})
+
+test('given any agent, the Codex config stays repository-local', () => {
+  const config = renderCodexConfig({ agents: [AGENT] })
+
+  assert.match(config, /^max_depth = 2$/m)
+  assert.match(config, /^max_threads = 4$/m)
+  assert.doesNotMatch(
+    config,
+    /~[\\/]\.codex|\$HOME|%USERPROFILE%/,
+    'a generated file under the developer HOME configures the machine ' +
+      'rather than this checkout, and nothing in the repository could then ' +
+      'show what an agent actually ran with'
+  )
+})
+
+test('the Codex config raises the project-doc budget before any table', () => {
+  const config = renderCodexConfig({ agents: [AGENT] })
+  const line = `project_doc_max_bytes = ${CODEX_PROJECT_DOC_MAX_BYTES}`
+
+  assert.equal(CODEX_PROJECT_DOC_MAX_BYTES, 65_536)
+  assert.ok(config.split('\n').includes(line), config)
+  assert.ok(
+    config.indexOf(line) < config.indexOf('[agents]'),
+    'a key written after a table header belongs to that table, not the top level'
+  )
+})
+
+test('the Codex config says it is generated, and nothing says it is hand-written', () => {
+  const config = renderCodexConfig({ agents: [AGENT] })
+
+  assert.match(config, /^# Generated by pnpm agent-harness:generate/)
+  assert.doesNotMatch(config, /hand-written/i)
+})
+
+test('given an agent, the Codex config registers it as a named sub-table', () => {
+  const config = renderCodexConfig({ agents: [AGENT] })
+
+  assert.match(config, /^\[agents\.scratch\]$/m)
+  assert.match(config, /^description = "Does the thing\."$/m)
+  assert.match(config, /^config_file = "agents\/scratch\.toml"$/m)
+  assert.doesNotMatch(
+    config,
+    /\[\[agents\./,
+    'codex reads every key under [agents] as an agent name, so an ' +
+      'array-of-tables named `role` deserializes as an agent called `role` ' +
+      'holding a list and the CLI refuses the whole file'
+  )
+})
+
+// Codex resolves `config_file` only when a session starts, and a value it
+// cannot open costs the role a warning while the exit code stays at zero.
+// Resolution is arithmetic over strings the generator owns, so the gate does
+// it with no CLI present.
+test('given the projection, no registered path restates CODEX_HOME', () => {
+  const projection = renderAdapterProjection({ root: REPO_ROOT })
+  const registered = registeredAgentFiles({ projection })
+
+  assert.ok(
+    registered.length > 0,
+    'a config registering no agent satisfies every assertion below while ' +
+      'codex loads no sub-agent at all'
+  )
+  registered.forEach((value) => {
+    assert.notEqual(
+      value.split(/[\\/]/)[0],
+      CODEX_HOME,
+      `codex joins \`${value}\` onto CODEX_HOME, which IS the ` +
+        `${CODEX_HOME} directory — a value repeating that segment lands ` +
+        `at ${CODEX_HOME}/${CODEX_HOME}/, one level too deep`
+    )
+    assert.doesNotMatch(
+      value,
+      LEAVES_ITS_ROOT,
+      `\`${value}\` is absolute or climbs above CODEX_HOME, so what it ` +
+        'opens depends on where the checkout sits'
+    )
+  })
+})
+
+test('given the projection, every registered agent file resolves', () => {
+  const projection = renderAdapterProjection({ root: REPO_ROOT })
+
+  registeredAgentFiles({ projection }).forEach((value) =>
+    assert.ok(
+      projection.has(`${CODEX_HOME}/${value}`),
+      `codex opens ${CODEX_HOME}/${value}, and the projection renders no ` +
+        'such file — the role is dropped on a zero exit'
+    )
+  )
+})
+
+test('given the committed tree, no adapter output escapes into ~/.codex', () => {
+  const codexEntries = readdirSync(resolve(REPO_ROOT, '.codex'))
+
+  assert.deepEqual(
+    codexEntries.sort(),
+    ['agents', 'config.toml'],
+    'the Codex projection owns exactly its two repository-local outputs'
+  )
+})
+
+test('given a description carrying a quote, Codex escapes it', () => {
+  const rendered = renderCodexAgent({
+    ...AGENT,
+    fields: { ...AGENT.fields, description: 'Says "hello" and \\ ends' }
+  })
+
+  assert.match(rendered, /Says \\"hello\\" and \\\\ ends/)
+})
+
+test('given a prompt carrying a backslash and a triple quote, Codex keeps it one string', () => {
+  const rendered = renderCodexAgent({
+    ...AGENT,
+    body: 'Match \\d+ and quote """ here.'
+  })
+
+  assert.match(rendered, /Match \\\\d\+ and quote ""\\" here\./)
+  assert.equal(
+    rendered.match(TRIPLE_QUOTE).length,
+    PROMPT_DELIMITERS,
+    'a raw """ inside the prompt closes the TOML string early'
+  )
+})

@@ -20,3 +20,9 @@ docs/audits/*.json
 # Markdown is prose: Prettier broke two docs and realigns a whole table on a
 # one-cell edit. verify:maps checks the global map and verify:specs checks openspec/.
 *.md
+
+# Agent projections: `pnpm agent-harness:generate` is the one writer of their
+# bytes, and `pnpm agent-harness:projection-check` holds them to it. With
+# prettier as a second writer the two could demand different files.
+.agents/projection-manifest.json
+opencode.json

@@ -718,6 +718,7 @@ This table exists so that difference is visible.
 | File ownership / init prune | script        | `verify:manifest` + `verify:manifest:coverage`                      |
 | One instruction entry       | script        | `verify:instruction-entry` — `AGENTS.md` present, no `CLAUDE.md`    |
 | `AGENTS.md` fits Codex      | test          | `codex-budget:test` — CRLF bytes within `project_doc_max_bytes`     |
+| Agent projections in sync   | script        | `agent-harness:projection-check` — each projection equals its source |
 | `AGENTS.md` LAWs and Router | review        | — no gate reads a LAW, or checks that a skill has a router row      |
 
 **Rows that read "none yet", "warn only" or "partial"** are not aspirations

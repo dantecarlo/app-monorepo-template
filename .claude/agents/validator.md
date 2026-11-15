@@ -8,6 +8,7 @@ description: >
   findings list by severity plus a final PASS/FAIL verdict for the group.
   Read-only: never edits files.
 tools: Read, Grep, Glob, Bash
+model: fable
 ---
 
 # Validator — Adversarial Standards Review

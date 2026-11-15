@@ -50,7 +50,7 @@ See `docs/memory.md` for the LOAD and CONTRIBUTE flow.
 | `docs/maps/global-map.md`              | Navigable index of every shared and global artifact                     |
 | `docs/memory.md`                       | Shared Engram memory — load at session start, contribute decisions back |
 | `docs/manifest.md`                     | Template manifest — file ownership and propagation                      |
-| `.claude/agents/validator.md`          | Adversarial standards validator subagent                                |
+| `.agents/agents/validator.agent.md`    | Adversarial standards validator subagent (neutral source)               |
 | `.claude/skills/validate-all/SKILL.md` | Full validation harness                                                 |
 
 ---
@@ -63,13 +63,19 @@ Nothing is "done" until the validation gate is green:
 ATL_TEMPLATE_SELF=1 pnpm validate
 ```
 
-`pnpm validate` runs `turbo run lint typecheck test build format:check`, then
+`pnpm validate` starts with `pnpm agent-harness:projection-check` and
+`pnpm agent-harness:test`, runs `turbo run lint typecheck test build format:check`, then
 `pnpm verify:tests`, the spec gates (`verify:specs`, and `report:spec-drift`, which
 only reports), `pnpm verify:english`, `pnpm verify:instruction-entry`,
 `pnpm codex-budget:test` and `pnpm verify:maps`. All must pass.
 
-The manifest gates run first (they are instant, so structural drift fails
-before anything expensive). `pnpm verify:tests` checks tests-per-unit presence
+The projection check and the manifest gates run first (they are instant, so
+structural drift fails before anything expensive). An agent is written once, in
+`.agents/agents/<name>.agent.md`; `pnpm agent-harness:generate` writes what each
+runtime reads (`.claude/agents/`, `.codex/`, `.opencode/agents/`, `opencode.json`,
+`.github/agents/`), and `pnpm agent-harness:projection-check` fails when one of
+those files is missing, extra, edited by hand or not committed. Never edit them:
+edit the source and regenerate. `pnpm verify:tests` checks tests-per-unit presence
 and `pnpm verify:maps` checks architecture-map integrity and the magic-literal
 audit. `pnpm verify:instruction-entry` checks that `AGENTS.md` and `README.md`
 exist and that no path git lists, tracked or not yet added, is a `CLAUDE.md` or
