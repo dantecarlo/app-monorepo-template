@@ -99,14 +99,19 @@ select is(
   'authenticated user cannot read another user profile row'
 );
 
--- Bob cannot update Alice's profile.
-select throws_ok(
-  $$update public.profile set display_name = 'Hacked' where id = '00000000-0000-0000-0000-000000000001'$$,
-  'update on public.profile violates row-level security policy for table "profile"',
-  'unauthorized user cannot update another user profile'
-);
+-- Bob tries to update Alice's profile. The policies hide her row from him, so Postgres
+-- updates no row and raises no error; read back as superuser, her row is unchanged.
+update public.profile set display_name = 'Hacked'
+where id = '00000000-0000-0000-0000-000000000001';
 
 reset role;
+
+select is(
+  (select display_name from public.profile
+   where id = '00000000-0000-0000-0000-000000000001'),
+  'Alice',
+  'unauthorized user cannot update another user profile'
+);
 
 -- =====================================================================
 -- Section 4: policy grant — owner sees and updates their own profile
