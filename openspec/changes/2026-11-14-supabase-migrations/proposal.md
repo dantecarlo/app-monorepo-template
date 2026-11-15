@@ -56,6 +56,9 @@ The owner's words:
   `authenticated` and `service_role`, the roles it already grants EXECUTE to; `anon` gets none. A
   pgTAP assertion proves `anon` still cannot reach the schema, and two prove the audit-log policy
   as `authenticated`: a staff user reads an audit event, a user who is not staff reads none.
+  Since USAGE lets `authenticated` name any function in the schema, the default privileges of
+  `postgres` give a function it adds there later no EXECUTE for PUBLIC, while `public` and
+  `extensions` keep their default (added after the independent verification, C1).
 - **F3, the profile.** `profile_select` lets a signed-in user read only their own profile row
   (`id = (select auth.uid())`); its comment and its test say so.
 - **F4, the test.** The assertion on updating another user's profile checks what Postgres does:
@@ -80,7 +83,7 @@ The owner's words:
 ## Affected specs
 
 - `openspec/specs/packages/supabase/spec.md`: modifies SUPABASE-11, SUPABASE-12 and SUPABASE-21;
-  adds SUPABASE-23 and SUPABASE-24; resolves the open questions Q1 to Q5.
+  adds SUPABASE-23, SUPABASE-24 and SUPABASE-25; resolves the open questions Q1 to Q5.
 
 <!--
 Status is one of: open; archived — <date>; discarded — <date>, <reason>.

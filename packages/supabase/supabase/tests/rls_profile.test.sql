@@ -22,7 +22,7 @@ begin;
 -- Plan
 -- =====================================================================
 -- Count assertions below and update this number when adding new tests.
-select plan(25);
+select plan(31);
 
 -- =====================================================================
 -- Section 1: seed test fixtures (as postgres, the session role)
@@ -263,6 +263,57 @@ select throws_ok(
   $$delete from public.audit_log where actor_id = '00000000-0000-0000-0000-000000000001'$$,
   'audit_log is append-only: UPDATE and DELETE are not permitted',
   'audit_log DELETE raises immutability exception'
+);
+
+-- =====================================================================
+-- Section 9: auth_helpers privileges — schema USAGE, and a helper added
+-- without a grant block of its own
+-- =====================================================================
+
+select ok(
+  has_schema_privilege('service_role', 'auth_helpers', 'usage'),
+  'service_role has USAGE on the auth_helpers schema'
+);
+
+select ok(
+  not has_schema_privilege('anon', 'auth_helpers', 'usage'),
+  'anon has no USAGE on the auth_helpers schema'
+);
+
+-- postgres adds one function to each schema, with no grant of its own. In auth_helpers no API
+-- role may execute it; in public and extensions it keeps the EXECUTE Postgres gives PUBLIC.
+set local role postgres;
+
+create function auth_helpers.test_helper_without_grants() returns boolean
+language sql stable security definer set search_path = public, auth_helpers
+as $$ select true $$;
+
+create function public.test_function_with_default_grants() returns boolean
+language sql stable as $$ select true $$;
+
+create function extensions.test_function_with_default_grants() returns boolean
+language sql stable as $$ select true $$;
+
+reset role;
+
+select ok(
+  not has_function_privilege('authenticated', 'auth_helpers.test_helper_without_grants()', 'execute'),
+  'a helper added without grants is not executable by authenticated'
+);
+
+select ok(
+  not has_function_privilege('anon', 'auth_helpers.test_helper_without_grants()', 'execute'),
+  'a helper added without grants is not executable by anon'
+);
+
+select ok(
+  has_function_privilege('public', 'public.test_function_with_default_grants()', 'execute'),
+  'a function added to public keeps EXECUTE for PUBLIC'
+);
+
+select ok(
+  has_function_privilege('public', 'extensions.test_function_with_default_grants()', 'execute'),
+  'a function added to extensions keeps EXECUTE for PUBLIC'
 );
 
 -- =====================================================================

@@ -110,6 +110,13 @@ After creating the functions, apply the ownership / least-privilege block:
 ```sql
 grant usage on schema auth_helpers to authenticated, service_role;
 
+alter default privileges for role postgres
+  revoke execute on functions from public;
+alter default privileges for role postgres in schema public
+  grant execute on functions to public;
+alter default privileges for role postgres in schema extensions
+  grant execute on functions to public;
+
 do $$
 declare
   fn text;
@@ -134,6 +141,17 @@ query, a PL/pgSQL function and a SQL function with a string body resolve them
 each time they run, as the role running them (the caller, for a SECURITY
 INVOKER function), so `authenticated` and `service_role` need both. `anon`
 gets neither and cannot name a helper.
+
+**Why the default privileges:** Postgres gives PUBLIC EXECUTE on every new
+function, and USAGE on `auth_helpers` lets `authenticated` name any function
+there, so a helper added without its own grant block would be callable by
+every signed-in user. That PUBLIC grant is a global default, which a
+per-schema `REVOKE` cannot remove; the default is therefore revoked for every
+function `postgres` creates and granted back to PUBLIC in `public` and
+`extensions`. A new function in `auth_helpers` is executable by its owner
+only until its grant block names its callers. A schema a project adds later
+gets the same closed default: grant EXECUTE there on purpose, or add a
+per-schema default as above.
 
 **Why `owner = postgres`:** `SECURITY DEFINER` runs with the owner's
 privileges. On Supabase `postgres` is not the superuser (`supabase_admin`

@@ -24,6 +24,54 @@ The supabase database SHALL grant USAGE on the auth_helpers schema to authentica
 - **THEN** Postgres refuses it with "permission denied for schema auth_helpers"
 - **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "anon cannot reach the auth_helpers schema"
 
+#### Scenario: the service role's schema privilege
+
+- **GIVEN** the migrations applied
+- **WHEN** the catalog is read for service_role on auth_helpers
+- **THEN** it holds USAGE
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "service_role has USAGE on the auth_helpers schema"
+
+#### Scenario: the anon role's schema privilege
+
+- **GIVEN** the migrations applied
+- **WHEN** the catalog is read for anon on auth_helpers
+- **THEN** it holds no USAGE
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "anon has no USAGE on the auth_helpers schema"
+
+### Requirement: SUPABASE-25 — A helper added to auth_helpers starts out of reach
+
+The supabase database SHALL give a function postgres creates in the auth_helpers schema no EXECUTE for PUBLIC or any API role until a grant names its callers, while a function postgres creates in public or extensions keeps the EXECUTE Postgres gives PUBLIC.
+
+**Evidence:** written at apply time, when the code exists.
+
+#### Scenario: a signed-in user and a helper with no grant block
+
+- **GIVEN** the migrations applied, and a function postgres adds to auth_helpers with no grant of its own
+- **WHEN** the catalog is read for authenticated on that function
+- **THEN** it may not execute it
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "a helper added without grants is not executable by authenticated"
+
+#### Scenario: the anon role and a helper with no grant block
+
+- **GIVEN** the migrations applied, and a function postgres adds to auth_helpers with no grant of its own
+- **WHEN** the catalog is read for anon on that function
+- **THEN** it may not execute it
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "a helper added without grants is not executable by anon"
+
+#### Scenario: a function added to public
+
+- **GIVEN** the migrations applied, and a function postgres adds to public with no grant of its own
+- **WHEN** the catalog is read for PUBLIC on that function
+- **THEN** PUBLIC may execute it
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "a function added to public keeps EXECUTE for PUBLIC"
+
+#### Scenario: a function added to extensions
+
+- **GIVEN** the migrations applied, and a function postgres adds to extensions with no grant of its own
+- **WHEN** the catalog is read for PUBLIC on that function
+- **THEN** PUBLIC may execute it
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "a function added to extensions keeps EXECUTE for PUBLIC"
+
 ### Requirement: SUPABASE-24 — The migrations apply in number order
 
 The supabase database SHALL create every type, table and function a migration uses in that migration or an earlier one, so migrations 0001 to 0009 apply in number order on an empty Supabase database.

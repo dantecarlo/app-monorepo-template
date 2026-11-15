@@ -19,6 +19,9 @@
 --   3. grant execute to authenticated, service_role  → explicit callers only.
 --   4. grant usage on the schema to the same two roles  → they can name the
 --      helpers in a query or a PL/pgSQL or string-body SQL function; anon cannot.
+--   5. default privileges  → a function postgres adds to auth_helpers later
+--      starts with no EXECUTE for any API role, so a helper missing its own
+--      grant block stays out of reach.
 --
 -- ANTI-RECURSION CONTRACT:
 --   has_capability() and is_staff() read user_role_grant and role_capability
@@ -103,6 +106,19 @@ comment on function auth_helpers.is_staff() is
 -- when it is created; a query, a PL/pgSQL function or a string-body SQL
 -- function resolves them each time it runs, as the role running it.
 grant usage on schema auth_helpers to authenticated, service_role;
+
+-- Postgres gives PUBLIC EXECUTE on every new function by a global default,
+-- which a per-schema REVOKE cannot remove. So the default is revoked for every
+-- function postgres creates, and granted back to PUBLIC per schema in public
+-- and extensions, which keep the behaviour they had. In auth_helpers a new
+-- function is executable by its owner only, until its own grant block names
+-- the roles that may run it.
+alter default privileges for role postgres
+  revoke execute on functions from public;
+alter default privileges for role postgres in schema public
+  grant execute on functions to public;
+alter default privileges for role postgres in schema extensions
+  grant execute on functions to public;
 
 do $$
 declare
