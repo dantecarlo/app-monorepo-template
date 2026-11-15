@@ -49,8 +49,9 @@ The owner's words, verbatim:
   query key in `sanitizeQueryKey`. That call takes no `key` argument, and a sanitized key would
   give every item the same cache entry, so a screen would show another item's data. They say
   instead that the query client sanitizes the key when it reports an error, and that a new
-  segment goes in `QueryKeySegmentEnum`. `docs/maps/global-map.md` describes the sanitizer by
-  what it now keeps.
+  segment goes in `QueryKeySegmentEnum`; `screen`, `service` and `feature` write the key of a
+  new feature from that enum. `docs/maps/global-map.md` describes the sanitizer by what it now
+  keeps.
 
 ## Out of scope
 

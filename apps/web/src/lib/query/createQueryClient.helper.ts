@@ -5,6 +5,8 @@ import {
   QueryClient
 } from '@tanstack/react-query'
 
+import { STRUCTURAL_QUERY_KEY_SEGMENTS } from '@/lib/query/queryKeys.constant'
+
 const STALE_TIME_MS = 30_000
 
 export interface ICreateQueryClientParams {
@@ -36,7 +38,10 @@ export const createQueryClient = ({
     queryCache: new QueryCache({
       onError: (error, query) => {
         onCaptureError(error, {
-          queryKey: sanitizeQueryKey({ queryKey: query.queryKey }),
+          queryKey: sanitizeQueryKey({
+            queryKey: query.queryKey,
+            structuralSegments: STRUCTURAL_QUERY_KEY_SEGMENTS
+          }),
           source: 'queryCache'
         })
       }

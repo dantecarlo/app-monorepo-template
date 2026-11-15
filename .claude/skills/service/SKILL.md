@@ -64,20 +64,25 @@ src/services/<Domain>/            # PascalCase folder
 Add to `src/lib/query/queryKeys.constant.ts`:
 
 ```typescript
+export enum QueryKeySegmentEnum {
+  Items = 'items',
+  List = 'list',
+  {FeatureName} = '{featureName}' // the new feature's segment
+}
+
 {featureName}: {
-  all:    ['{featureName}'] as const,
-  list:   (contextId: string) => ['{featureName}', contextId, 'list'] as const,
-  detail: (id: string)        => ['{featureName}', id] as const,
+  all:    [QueryKeySegmentEnum.{FeatureName}] as const,
+  list:   (contextId: string) =>
+    [QueryKeySegmentEnum.{FeatureName}, contextId, QueryKeySegmentEnum.List] as const,
+  detail: (id: string) => [QueryKeySegmentEnum.{FeatureName}, id] as const,
 }
 ```
 
-Use `sanitizeQueryKey` from `@app/core` when any segment may contain PII:
-
-```typescript
-import { sanitizeQueryKey } from '@app/core'
-
-queryKey: sanitizeQueryKey({ key: QueryKeys.items.list(contextId) })
-```
+Write every hand-written segment as a member of `QueryKeySegmentEnum`. When a
+query fails, the query client reports its key through `sanitizeQueryKey` from
+`@app/core`, which keeps only the values of that enum: an id, a search text or
+a segment written as a bare string shows up as `[redacted]`. Never pass a live
+key through `sanitizeQueryKey` yourself: every item would share one cache entry.
 
 ---
 
@@ -275,4 +280,4 @@ export const useCreate{Domain} = () => {
 | Use `buildServiceError` for error mapping     | Throw raw `new Error(...)` strings         |
 | Access Supabase only via port/adapter         | Import Supabase SDK directly in features   |
 | Export service + adapter only from barrel     | Export constants or tests from the barrel  |
-| Use `sanitizeQueryKey` for PII-bearing keys   | Include PII (email, name) raw in query key |
+| Write key segments from `QueryKeySegmentEnum` | Wrap a live key in `sanitizeQueryKey`      |

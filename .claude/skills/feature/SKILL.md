@@ -185,13 +185,22 @@ Service + adapter exports only — never constants, types, or test utilities.
 Add to `src/lib/query/queryKeys.constant.ts`:
 
 ```typescript
+export enum QueryKeySegmentEnum {
+  Items = 'items',
+  List = 'list',
+  {FeatureName} = '{featureName}' // the new feature's segment
+}
+
 {featureName}: {
-  all:    ['{featureName}'] as const,
+  all:    [QueryKeySegmentEnum.{FeatureName}] as const,
   list:   (contextId: string) =>
-    ['{featureName}', contextId, 'list'] as const,
-  detail: (id: string) => ['{featureName}', id] as const
+    [QueryKeySegmentEnum.{FeatureName}, contextId, QueryKeySegmentEnum.List] as const,
+  detail: (id: string) => [QueryKeySegmentEnum.{FeatureName}, id] as const
 }
 ```
+
+Write every hand-written segment as a member of `QueryKeySegmentEnum`: an error
+report keeps only its values and shows every other segment as `[redacted]`.
 
 ---
 
