@@ -111,19 +111,220 @@ quoted in English, translated and marked when written in another language.
 
 ---
 
-## Agent skills
+## The LAWs
 
-Project-level skills live under `.claude/skills/`. Each skill provides a
-`SKILL.md` with its trigger contract.
+Binding on every agent, whichever runtime reads this file. Each LAW says what
+it applies to and what holds it.
 
-| Skill                     | Trigger                                                                                                                                                                                                                  |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `validate-all`            | After any multi-file change; before marking done                                                                                                                                                                         |
-| `propagate-from-template` | Syncing template improvements into a downstream project                                                                                                                                                                  |
-| `product-discovery`       | Structuring a raw product idea into a buildable plan                                                                                                                                                                     |
-| `fractal-verify`          | Auditing a single screen or component block                                                                                                                                                                              |
-| `security`                | Edge/DDoS/headers/Turnstile/origin-lock audit                                                                                                                                                                            |
-| `archify`                 | Diagram the architecture, a workflow, a request sequence, a data pipeline or a state machine — and the HTML counterpart every generated document ships. Spec in `docs/diagrams/*.json`, render with `pnpm docs:diagrams` |
+### Look in `ui/` before creating a component — LAW
+
+Applies to every app in the monorepo, each of which keeps its own
+`src/components/ui/`; an app added later brings its own.
+
+Before creating a component, **open that app's `ui/` and look**. Search for the
+concept, not only the name you had in mind: a `Tag` you were about to write may
+already exist as `Chip`. Query CodeGraph when the repository is indexed, and
+sweep by suffix when it is not (`docs/code-standards.md` §0). If the primitive
+is there, render it.
+
+**A same-named component outside `ui/` is legitimate in exactly one shape**: a
+container that renders the primitive and adds what the primitive must not know,
+such as the domain, the router or the data.
+
+**What this forbids**: re-implementing a `ui/` block under its own name;
+copying a primitive into a screen to tweak it; rendering, in a view, a raw
+element or primitive that a `ui/` block already wraps; and creating in one app
+what the other already solved, without at least reading how.
+
+**Enforced by review** until its rules land (Stage 4). `knip` and
+`verify:maps` catch only the leftovers once a duplicate exists, and a duplicate
+under a different name has no import to detect.
+
+### A rule is not edited to fit the work — LAW
+
+Applies to every skill, every gate, every allowlist, every row of the
+enforcement table (`docs/code-standards.md` §21), and every LAW in this file,
+including this one.
+
+**They change only when the owner asks for that change, in words, as the
+request.** Not as a step toward something else, not because a rule is in the
+way, not because a gate is red, not because a lint rule rejected a comment you
+liked. A rule discovered mid-task is a constraint on the task, never a
+candidate for edit.
+
+**What this forbids**, concretely: relaxing a threshold so a measurement
+passes; adding an entry to an allowlist so a gate goes green; widening a gate's
+`notCovered` clause so a finding stops applying; editing a skill's steps or
+contract because the files it emits were inconvenient; softening a LAW you were
+about to violate; and rewriting an enforcement row so it agrees with what you
+did.
+
+**When a rule looks wrong, say so and stop.** Name the rule, name what it cost
+you, and propose the change as a question. The owner decides. A rule that
+survives that conversation is stronger than one nobody questioned; a rule
+edited quietly is not a rule at all, it is a note-to-self the next agent
+inherits as fact.
+
+The one exception is the request itself: when the owner asks for a rule, a
+gate, a LAW or a skill to change, that IS the work, and it is done in full.
+
+The escape hatches of `docs/code-standards.md` §20 stay what they are: a
+justified inline disable, or a `verify:english` allowlist entry, each with its
+written reason, records a false positive. Reaching for one to silence a finding
+that is true is what this LAW forbids.
+
+**Enforced by review**: no gate can tell why a rule changed.
+
+### Every change is architectural — LAW
+
+Applies to every agent that touches this repository, and to every change,
+however small it looks. A one-line fix is still a change to a system.
+
+**Understand before editing.** Read the code around the change, its callers,
+its tests, and the docs that own the concern: `docs/code-standards.md` and its
+enforcement table (§21), `docs/architecture/`, the decision records in
+`docs/decisions/`, and the living spec of the unit in `openspec/specs/`. Look
+for an existing service, adapter, hook, component or screen before creating
+one, so it is reused rather than duplicated (`docs/code-standards.md` §0).
+
+**Fix the cause, at its altitude.** A change that makes one symptom go away
+while the mechanism behind it stands is not a fix; it is a second defect
+wearing the first one's clothes. Ask what else shares that mechanism, and say
+what the answer was.
+
+**Name the blast radius.** Before editing, state what else reads the thing you
+are changing: other callers, other tests, other agents' branches, the database,
+generated output. After editing, check those, not only the file you opened.
+
+**Leave the invariants intact.** A fixture, a gate, an allowlist and a
+generated file each exist because something was measured. Changing one without
+reading why it exists trades a known cost for an unknown one.
+
+**What this forbids**, concretely: editing a file because it is the one the
+error names; making a test pass by weakening what it asserts; adding a second
+spelling of something that already has an owner; changing generated output
+instead of its generator; and reporting a change as done without saying what
+it touched beyond the diff.
+
+The cost is real and accepted: this is slower per change. It is the trade the
+enforcement table and the validation gate already make, comprehension bought
+with time.
+
+**Enforced by review.**
+
+### Reply shape — LAW
+
+Applies to every reply addressed to a human in this repository. It does NOT
+apply where the output contract is machine-readable (a JSON envelope, a
+structured tool result, a commit message, a generated file), since prose
+appended there is malformed output, not a summary.
+
+1. **Be concise.** Say the finding, not the path taken to it. No narrating tool
+   calls, no restating what was just done, no reasoning out loud. Long output is
+   spam: it buries the one line that mattered. If a number, a file and a verdict
+   answer the question, that is the whole reply.
+2. **One question at a time**, and only when the answer changes what happens
+   next. It goes in the **Pending** section below, never buried in the body.
+3. **Close the WORK with two summaries, once.** They go at the end of the whole
+   exchange, not after each step of it. While work is still in flight (a
+   background job running, a gate pending, more steps queued), say so in one
+   line and stop; no summary yet. Two summaries inside one piece of work is the
+   spam this LAW exists against. They are the LAST content of that final turn,
+   clearly labelled, and in THIS order:
+   - **Non-technical** — first. What it means in plain language: what works now
+     that did not, what it costs, what is still open. No identifiers, no jargon.
+   - **Technical** — second. What changed: files, commands, shas, measurements,
+     gate results. Enough for another engineer to pick it up.
+   - **Pending** — last, and only when there IS something: an open question, a
+     decision waiting on the owner, work left undone. One line each. A turn that
+     leaves nothing open omits the section rather than padding it.
+
+The three labels follow the language of the reply: a reply written in another
+language writes them in that language.
+
+Evidence still outranks brevity: never drop a measurement, a caveat or a
+`Not covered` clause to make a reply shorter. Cut the narration, not the facts.
+
+**Enforced by review.**
+
+---
+
+## Router — natural language → skill → gate
+
+Resolve the task to a skill from these tables, one per phase of a change, in
+the order a change moves through them: understand, define, scaffold, build,
+test, review, operate, harness. Then **load that skill and follow it**: the
+skill holds its file set and its steps, and these tables do not restate them. A
+phase with no routed skill has no table. **Validated by** names the `pnpm`
+script that checks the result, or says `review` when no gate does. Every skill
+lives at `.claude/skills/<name>/SKILL.md`.
+
+### understand
+
+| If the task means…                                                                                                                                                  | Load skill | Validated by          |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------- |
+| architecture and conventions: "how do I name or structure X", which layer a thing belongs to, the folder tree                                                       | `arch`     | review                |
+| **diagram** the architecture, a workflow, a request sequence, a data pipeline or a state machine; the spec lives in `docs/diagrams/*.json`, rendered by `pnpm docs:diagrams` | `archify`  | `docs:diagrams:check` |
+
+### define
+
+| If the task means…                                                                                                                                                                                                                         | Load skill          | Validated by   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------- | -------------- |
+| run a **large change** as SDD, a new feature or any change to what a living spec states: propose, specify its deltas, plan, build test first, verify, archive; or **write, sync or discard** one living spec or change ("new feature", "run this as SDD", "update the spec of X", "archive the change") | `sdd`               | `verify:specs` |
+| structure a **raw product idea** into a buildable plan before any code: scope and MVP, screens, services, data and components in one map, launch readiness ("PRD", "MVP scope", "decompose the product")                                      | `product-discovery` | review         |
+| produce or refresh the **general plan**: what is done and pending, what is needed from the owner, the path to launch ("general plan", "what's pending", "refresh the plan")                                                                   | `general-plan`      | review         |
+
+### scaffold
+
+| If the task means…                                                                                                | Load skill  | Validated by                          |
+| ----------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------- |
+| create a **presentational component**, after checking the app's `ui/` (§ The LAWs)                                 | `component` | `verify:structure` · `verify:tests`   |
+| create a **screen, page or container** that owns its data fetching and its loading, error and empty states        | `screen`    | `verify:structure`                    |
+| add a **service or API call**: the client service and adapter pair of a domain, and its query hooks               | `service`   | `verify:pairing` · `verify:tests`     |
+| build a full **feature slice**: domain types, service, query hook, components, screen and route, in that order    | `feature`   | `verify:structure` · `verify:pairing` |
+| create a **Zustand store** for cross-feature state                                                                | `store`     | `lint`                                |
+| **wrap a third-party library** behind a project-internal API, so features never import the vendor directly       | `lib`       | `lint`                                |
+| add a **mock**: an MSW handler and the mock data of an HTTP endpoint                                              | `mock`      | review                                |
+
+### build
+
+| If the task means…                                                                                         | Load skill | Validated by |
+| ---------------------------------------------------------------------------------------------------------- | ---------- | ------------ |
+| **modify** an existing component or screen: add a prop, move logic into its hook, add a variant, refactor | `modify`   | `validate`   |
+
+### test
+
+| If the task means…                                                     | Load skill | Validated by   |
+| ---------------------------------------------------------------------- | ---------- | -------------- |
+| **write or expand tests** for a component, hook, helper or store       | `test`     | `verify:tests` |
+| **fix or migrate** an existing test to the current conventions         | `fix-test` | `verify:tests` |
+
+### review
+
+| If the task means…                                                                                                                  | Load skill       | Validated by       |
+| ----------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ------------------ |
+| **audit code quality** against `docs/code-standards.md`, finding by rule number; report only                                       | `quality`        | review             |
+| review a **staged diff before a commit**, beyond what lint and types decide                                                          | `pre-commit`     | review             |
+| review a component's or hook's **performance** ("perf review", "check re-renders", "why is it slow")                                 | `perf`           | review             |
+| **security** audit: edge and headers, origin lock, cache safety, rate limiting, row-level security in the adapters, **PII exposure** | `security`       | `verify:security`  |
+| audit a scope for **accessibility**: semantics and ARIA, keyboard, labels, WCAG 2.1 AA                                              | `a11y`           | `lint` (jsx-a11y)  |
+| check one block obeys the **fractal contract**: folder shape, logic in its hook, service and adapter pairing, tests                 | `fractal-verify` | `verify:structure` |
+| decide a change is **done**: the deterministic gate plus the grouped validator subagents, one verdict                               | `validate-all`   | `validate`         |
+
+### operate
+
+| If the task means…                                                              | Load skill       | Validated by                 |
+| ------------------------------------------------------------------------------- | ---------------- | ---------------------------- |
+| prove a change works **in the running app**, web and mobile, beyond its tests | `runtime-verify` | `smoke:web` · `smoke:mobile` |
+
+### harness
+
+| If the task means…                                                                                   | Load skill                | Validated by                 |
+| ---------------------------------------------------------------------------------------------------- | ------------------------- | ---------------------------- |
+| create a **new skill**                                                                               | `new-skill`               | review                       |
+| **audit or improve** an existing skill; nothing changes before the findings are shown and confirmed | `improve-skill`           | review                       |
+| build or refresh the **skill index**, `.claude/skill-registry.md`                                    | `registry`                | review                       |
+| **sync template improvements** into a downstream project                                             | `propagate-from-template` | `validate`, in that project |
 
 ---
 
