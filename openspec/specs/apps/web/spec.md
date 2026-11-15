@@ -354,7 +354,7 @@ The web app SHALL render every client component with the default language locale
 whatever the `NEXT_LOCALE` cookie holds, inside an html element whose language attribute is
 English.
 
-**Evidence:** `apps/web/src/app/layout.tsx:56`, `apps/web/src/app/layout.tsx:59-63`, `apps/web/src/app/providers.tsx:43-47`
+**Evidence:** `apps/web/src/app/layout.tsx:66`, `apps/web/src/app/layout.tsx:69-73`, `apps/web/src/app/providers.tsx:43-47`
 
 #### Scenario: the locale cookie names another language
 
@@ -398,7 +398,7 @@ The web app SHALL set the html `data-theme` attribute before first paint from th
 cookie when it holds light or dark, else from the `prefers-color-scheme` media query, and adopt
 that painted value into the theme store on mount.
 
-**Evidence:** `apps/web/src/lib/theme/noFlashTheme.constant.ts:17-25`, `apps/web/src/app/layout.tsx:71-73`, `apps/web/src/components/ThemeProvider/useThemeBootstrap.hook.ts:14-23`
+**Evidence:** `apps/web/src/lib/theme/noFlashTheme.constant.ts:17-25`, `apps/web/src/app/layout.tsx:81-83`, `apps/web/src/components/ThemeProvider/useThemeBootstrap.hook.ts:14-23`
 
 #### Scenario: the head script paints the theme
 
@@ -1089,7 +1089,7 @@ The web app SHALL import a UI kit, its headless primitives or its class helpers 
   `apps/web/src/components/ui/Toast/Toast.constant.ts:1`.
 - **Q6** — `docs/architecture/web.md:74` resolves the locale from the `NEXT_LOCALE` cookie, but only
   server components follow it: `apps/web/src/app/providers.tsx:43` and
-  `apps/web/src/app/layout.tsx:56` pin client components to the default language and
-  `apps/web/src/app/layout.tsx:62` writes `lang="en"`, so the language switcher
+  `apps/web/src/app/layout.tsx:66` pin client components to the default language and
+  `apps/web/src/app/layout.tsx:72` writes `lang="en"`, so the language switcher
   (`apps/web/src/components/ui/LanguageSwitcher/useLanguageSwitcher.hook.ts:37`) always writes the
   Spanish code and can never switch back (WEB-14 to WEB-16).

@@ -288,6 +288,7 @@ never calls `fetch` directly and never holds business logic in the view.
 | Mobile Tailwind | `apps/mobile/tailwind.config.js`                                                      | Extends the shared preset                         |
 | Layout classes | `apps/web/src/helpers/layout.style.ts`, `apps/mobile/src/helpers/layout.style.ts` | Positioning only; every look lives in a component block (`local/style-positions-only`) |
 | Web variants    | `apps/web/src/components/ui/variants.helper.ts`                               | The one `tv` every web ui style file builds with; registers the token font sizes of `@app/tokens` with tailwind-merge |
+| Web fonts       | `apps/web/src/app/fonts/`                                                             | Inter and Montserrat, self-hosted through `next/font/local` (copied from `@expo-google-fonts/*`), with `OFL.txt` |
 Inline literals (numbers/strings) belong in `*.constant.ts` or `*.style.ts`
 only — enforced by ESLint and by `node scripts/verify-maps.mjs`.
 

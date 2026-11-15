@@ -21,6 +21,7 @@ apps/web/
     ├── middleware.ts              # origin lock (originGuard adapter)
     ├── app/                       # Next App Router — ROUTING ONLY (RSC)
     │   ├── layout.tsx             # root layout: fonts, theme script, ThemeProvider, providers
+    │   ├── fonts/                 # Inter and Montserrat files + OFL.txt (next/font/local)
     │   ├── providers.tsx · SupabaseProviders.tsx   # NextIntl, QueryClient, AuthProvider, Toast
     │   ├── error.tsx              # root segment boundary: render crash → ErrorState + retry
     │   ├── global-error.tsx       # root layout crash: own html/body → ErrorState + retry
@@ -81,6 +82,17 @@ export default LoginPage
   `--c-*` variables (its `@theme` wins over the preset), the font families `next/font` injects,
   the shadows `.glass-card` reads, and the base look of `<body>`. `pnpm verify:theme-sync` keeps
   every colour of both themes equal to the tokens.
+- **Fonts are self-hosted.** `src/app/layout.tsx` loads Inter (400, 500) and Montserrat (400 to
+  800) with `next/font/local` from `src/app/fonts/`, as `--font-inter` and `--font-montserrat`
+  with `display: 'swap'`, so `next build` fetches nothing (`next/font/google` downloaded them at
+  build time, and a network blip failed the build). The files are copies of the ones
+  `@expo-google-fonts/inter` and `@expo-google-fonts/montserrat` ship, the packages the mobile app
+  loads; `src/app/fonts/OFL.txt` holds their licence. To update them, bump those packages in
+  `apps/mobile`, copy the same `*_<weight><Style>.ttf` files from
+  `node_modules/@expo-google-fonts/<family>/` over the ones in `src/app/fonts/`, and keep the
+  copyright lines of `OFL.txt` equal to each file's name record. A new weight is a new file there
+  and a new `src` entry in the layout. `src/app/__tests__/layout.test.tsx` checks that every file
+  the layout names exists and that nothing loads from Google Fonts.
 - **Styling lives in the components** (`AGENTS.md` LAW, `docs/code-standards.md` §22). A block
   under `components/ui/`, or a screen's own `components/`, owns its look; a screen, a route entry
   and a container only position, through their `*.style.ts` and `helpers/layout.style.ts`. Text
