@@ -265,11 +265,12 @@ silently overwrite hand-tuned values in production.
 
 ```bash
 pnpm --filter @app/supabase test:db
-# expands to: supabase test db
+# expands to: supabase test db --linked
 ```
 
-This requires a running Postgres instance with pgTAP installed. On Supabase
-Cloud, `supabase start` (local Docker) or a linked cloud project is needed.
+This runs on the linked Supabase Cloud project, with `.env` loaded in the
+shell (see the README); the CLI enables the `pgtap` extension first. There
+is no local Docker stack.
 
 **DB tests are intentionally NOT part of `pnpm validate`.** The validation
 gate (`ATL_TEMPLATE_SELF=1 pnpm validate`) runs pure TypeScript checks that

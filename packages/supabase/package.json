@@ -17,10 +17,9 @@
     "lint": "eslint .",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "db:reset": "supabase db reset",
-    "db:push": "supabase db push",
-    "gen:types": "supabase gen types typescript --local > src/types.ts",
-    "test:db": "supabase test db"
+    "db:push": "supabase db push --linked",
+    "gen:types": "supabase gen types typescript --linked > src/types.ts",
+    "test:db": "supabase test db --linked"
   },
   "dependencies": {
     "@app/core": "workspace:*",

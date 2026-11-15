@@ -4,11 +4,10 @@
 -- Source of truth: packages/supabase/docs/database.md (pgTAP workflow).
 --
 -- Run with: pnpm --filter @app/supabase test:db
---   (which executes: supabase test db)
+--   (which executes: supabase test db --linked, on the linked cloud project)
 --
--- NOTE: DB tests require a running Postgres instance with pgTAP installed.
--- They are intentionally NOT in the pnpm validate chain (validate is pure
--- TypeScript; DB tests need a live stack). See AGENTS.md — no local Docker.
+-- NOTE: DB tests need a database with pgTAP. They are intentionally NOT in the
+-- pnpm validate chain (validate needs no database). See AGENTS.md — no local Docker.
 --
 -- IMPERSONATION: auth.uid() reads request.jwt.claims ->> 'sub'. Use:
 --   set local "request.jwt.claims" to '{"sub":"<uuid>","role":"authenticated"}';

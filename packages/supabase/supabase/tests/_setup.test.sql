@@ -4,8 +4,8 @@
 --
 -- NOTE: This file documents the setup conventions used by rls_profile.test.sql.
 -- It is not a standalone test — run the full suite with: pnpm --filter @app/supabase test:db
--- (which executes: supabase test db). DB tests require a running Postgres with
--- pgTAP installed; they are intentionally NOT part of pnpm validate.
+-- (which executes: supabase test db --linked, on the linked cloud project). DB tests need a
+-- database with pgTAP; they are intentionally NOT part of pnpm validate.
 --
 -- JWT IMPERSONATION PATTERN
 -- Supabase resolves auth.uid() from request.jwt.claims ->> 'sub'. To impersonate
