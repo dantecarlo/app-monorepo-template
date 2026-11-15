@@ -61,7 +61,34 @@ The decisions the session applies, made before this change:
 **No applied history changes.** Migrations `0001` to `0009` may be applied on a project since #16
 merged, so they stay as they are and three new migrations carry the fixes: 0010_api_privileges.sql
 (F19, and F20's grants), 0011_profile_columns.sql (F21) and 0012_audit_truncate.sql (F20's
-trigger).
+trigger). This branch has not merged, so the corrections below may still edit 0011; F28 takes a
+migration of its own, 0013_table_privileges.sql.
+
+**After the independent verification.** The verifier found no blocker and five gaps, which the
+coordinator sent as one correction batch:
+
+- **N1, caused by the change.** On a database that already holds the seed rows from an earlier day,
+  the read-back of Bob's profile after the refused updates compared `created_at` to `now()` and
+  failed, while the suite's header says such a database still runs. The read-back now compares the
+  row with a snapshot taken before the updates.
+- **N2, mutations no test caught.** A user setting `credit_balance` through an upsert; a truncate
+  that names `audit_log` among other tables; EXECUTE on `tg_audit_no_truncate` for an API role;
+  and INSERT on every profile column for `authenticated`, which left only the missing insert
+  policy between a user and a profile row with a `credit_balance` of their choosing. `anon` and
+  `authenticated` lose INSERT on `public.profile`. No migration creates a profile row (0005 creates
+  the table, 0009 seeds `role_capability`), so the server-side path that creates one is
+  `service_role`, which keeps INSERT.
+- **F28, the same class as F20.** Supabase's default privileges also give `anon` and
+  `authenticated` TRIGGER, REFERENCES and, on PostgreSQL 17 and later, MAINTAIN on every table.
+  As `authenticated`, `create trigger ... on public.profile ... execute function
+  auth_helpers.tg_audit_immutable()` succeeds, because 0006 grants that function's EXECUTE to
+  `authenticated`; committed, it would refuse every write to the profile table for every user,
+  and only the owner could drop it. These privileges are revoked on every table in `public` and
+  in the default privileges of `postgres` there, and EXECUTE on `tg_audit_immutable` from every
+  API role: a trigger runs its function without that privilege.
+- **AGENTS.md.** Its Supabase workflow regenerated the types with `supabase gen types ... >
+  src/types.ts`, which empties the file when the CLI fails; it now runs `pnpm --filter
+  @app/supabase gen:types`.
 
 ## What changes
 
@@ -82,22 +109,29 @@ trigger).
   and `packages/supabase/docs/database.md`; two offline vitest tests check the migration order and
   the pgTAP plans in `pnpm validate`; `gen:types` replaces `src/types.ts` only on success. The
   README and the database guide describe each change.
+- **N1 and N2, packages/supabase.** The read-back of the refused profile updates compares with a
+  snapshot; pgTAP adds the upsert, the truncate naming two tables, EXECUTE on
+  `tg_audit_no_truncate`, and the profile insert privileges; 0011 also revokes INSERT on
+  `public.profile` from `anon` and `authenticated`.
+- **F28, packages/supabase.** 0013_table_privileges.sql revokes TRIGGER, REFERENCES and MAINTAIN
+  (the last only on PostgreSQL 17 and later, where it exists) from `anon` and `authenticated` on
+  every table in `public` and in the default privileges of `postgres` there, and EXECUTE on
+  `tg_audit_immutable` from every API role. pgTAP covers both roles, a signed-in user's trigger,
+  a table added later, and the audit trigger still firing for `service_role`.
+- **AGENTS.md.** The Supabase workflow block regenerates the types through `gen:types`.
 
 ## Out of scope
 
 - Running the pgTAP suite in a gate or against a Supabase project: no gate has a database, and
   this change may start no Docker and connect to no remote database. The verify report records
   the scratch run.
-- The other privileges Supabase's default privileges give `anon` and `authenticated` on every table
-  (REFERENCES, TRIGGER and, on PostgreSQL 17 and later, MAINTAIN), observed on the stubs and
-  reported as a follow-up, not decided here.
-- `AGENTS.md` and the root `README.md`, outside this change's files: the manual `supabase gen
-  types` line in `AGENTS.md` still redirects into `src/types.ts`.
+- The rest of `AGENTS.md` and the root `README.md`: only the Supabase workflow block of
+  `AGENTS.md` changes.
 - `docs/INIT_AND_HARNESS_PLAN.md`, which the session that merges this change updates.
 
 ## Affected specs
 
-- `openspec/specs/packages/supabase/spec.md`: adds SUPABASE-26 and SUPABASE-27; modifies
+- `openspec/specs/packages/supabase/spec.md`: adds SUPABASE-26 to SUPABASE-29; modifies
   SUPABASE-14, SUPABASE-17, SUPABASE-19 and SUPABASE-24; resolves the open question Q6.
 
 <!--

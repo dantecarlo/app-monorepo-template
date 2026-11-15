@@ -4,9 +4,9 @@
 
 ## ADDED Requirements
 
-### Requirement: SUPABASE-26 — Only the service role may truncate a table
+### Requirement: SUPABASE-26 — Only the service role holds the table privileges row-level security does not narrow
 
-The supabase database SHALL give anon and authenticated no TRUNCATE on any table in public, on those the migrations create and on those postgres creates there later, while the other privileges Supabase's default privileges give the API roles stay.
+The supabase database SHALL give anon and authenticated no TRUNCATE, TRIGGER, REFERENCES or MAINTAIN on any table in public, on those the migrations create and on those postgres creates there later, while SELECT, INSERT, UPDATE and DELETE, whose rows the policies narrow, stay on a table added later.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -49,8 +49,36 @@ The supabase database SHALL give anon and authenticated no TRUNCATE on any table
 
 - **GIVEN** the migrations applied, and a table postgres adds to public with no grant of its own
 - **WHEN** the catalog is read for the API roles on that table
-- **THEN** anon and authenticated still hold SELECT, INSERT, UPDATE and DELETE, and service_role still holds TRUNCATE
+- **THEN** anon and authenticated still hold SELECT, INSERT, UPDATE and DELETE, and service_role still holds TRUNCATE, TRIGGER and REFERENCES
 - **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "a table added to public keeps the other privileges Supabase gives the API roles"
+
+#### Scenario: the anon role's other privileges
+
+- **GIVEN** the migrations applied
+- **WHEN** the catalog is read for anon on every table in public
+- **THEN** it holds TRIGGER, REFERENCES and MAINTAIN on none
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "anon holds no TRIGGER, REFERENCES or MAINTAIN on any table in public"
+
+#### Scenario: the authenticated role's other privileges
+
+- **GIVEN** the migrations applied
+- **WHEN** the catalog is read for authenticated on every table in public
+- **THEN** it holds TRIGGER, REFERENCES and MAINTAIN on none
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "authenticated holds no TRIGGER, REFERENCES or MAINTAIN on any table in public"
+
+#### Scenario: a signed-in user creates a trigger
+
+- **GIVEN** a user, signed in
+- **WHEN** they create a trigger on profile that runs tg_audit_immutable
+- **THEN** Postgres refuses it with "permission denied for table profile"
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "a signed-in user cannot create a trigger on a table"
+
+#### Scenario: the other privileges of a table postgres adds later
+
+- **GIVEN** the migrations applied, and a table postgres adds to public with no grant of its own
+- **WHEN** the catalog is read for anon and authenticated on that table
+- **THEN** neither holds TRIGGER, REFERENCES or MAINTAIN
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "a table added to public gives anon and authenticated no TRIGGER, REFERENCES or MAINTAIN"
 
 ### Requirement: SUPABASE-27 — A user edits only the display name of their profile
 
@@ -100,11 +128,18 @@ The supabase database SHALL let authenticated update only the display_name colum
 - **THEN** Postgres refuses it with "permission denied for table profile"
 - **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "a user cannot set the timestamps of their own profile"
 
+#### Scenario: an upsert
+
+- **GIVEN** a user, signed in, with a profile
+- **WHEN** they insert their own profile with a credit_balance, on conflict updating it
+- **THEN** Postgres refuses it with "permission denied for table profile"
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "a user cannot set the credit balance through an upsert"
+
 #### Scenario: the row after the refused updates
 
 - **GIVEN** the refused updates
 - **WHEN** the user's profile is read as postgres
-- **THEN** its id, email, status, credit_balance and created_at are the ones it had
+- **THEN** its id, email, status, credit_balance and created_at equal a snapshot taken before the updates, however old the row
 - **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "the refused updates leave the profile of the user unchanged"
 
 #### Scenario: the display name
@@ -113,6 +148,60 @@ The supabase database SHALL let authenticated update only the display_name colum
 - **WHEN** they update their own display name
 - **THEN** the new value is stored
 - **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "authenticated user can update own profile row"
+
+### Requirement: SUPABASE-28 — Only the service path creates a profile
+
+The supabase database SHALL give anon and authenticated no INSERT on any column of profile, so a profile row is created by service_role only, never with values a user chose.
+
+**Evidence:** written at apply time, when the code exists.
+
+#### Scenario: the insert privileges
+
+- **GIVEN** the migrations applied
+- **WHEN** the catalog is read for anon and authenticated on every column of profile
+- **THEN** neither may insert any column
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "anon and authenticated may insert no profile column"
+
+#### Scenario: a user creates their own profile
+
+- **GIVEN** a user with no profile, signed in
+- **WHEN** they insert their own profile row with a credit_balance
+- **THEN** Postgres refuses it with "permission denied for table profile"
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "a user cannot create their own profile"
+
+#### Scenario: the service path
+
+- **GIVEN** service_role
+- **WHEN** it inserts a profile row
+- **THEN** the row is stored
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "the service role still creates a profile"
+
+### Requirement: SUPABASE-29 — No API role executes the audit log's trigger functions
+
+The supabase database SHALL let no API role execute tg_audit_immutable or tg_audit_no_truncate, so none can attach them to a table, while the triggers of audit_log still run them.
+
+**Evidence:** written at apply time, when the code exists.
+
+#### Scenario: tg_audit_immutable
+
+- **GIVEN** the migrations applied
+- **WHEN** the catalog is read for anon, authenticated and service_role on tg_audit_immutable
+- **THEN** none may execute it
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "no API role may execute tg_audit_immutable"
+
+#### Scenario: tg_audit_no_truncate
+
+- **GIVEN** the migrations applied
+- **WHEN** the catalog is read for anon, authenticated and service_role on tg_audit_no_truncate
+- **THEN** none may execute it
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "no API role may execute tg_audit_no_truncate"
+
+#### Scenario: the trigger still fires
+
+- **GIVEN** an audit event, and service_role, which may execute neither function
+- **WHEN** it updates the row
+- **THEN** the immutability exception is raised
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "audit_log UPDATE by service_role raises immutability exception"
 
 ## MODIFIED Requirements
 
@@ -203,6 +292,13 @@ The supabase database SHALL refuse every update, delete and truncate of audit_lo
 - **WHEN** it truncates the table
 - **THEN** the TRUNCATE exception is raised
 - **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "audit_log TRUNCATE by service_role raises immutability exception"
+
+#### Scenario: a truncate naming other tables too
+
+- **GIVEN** an audit event, and service_role
+- **WHEN** it truncates profile and audit_log in one statement
+- **THEN** the TRUNCATE exception is raised
+- **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "a truncate naming audit_log among other tables is refused"
 
 #### Scenario: the event after the refused truncates
 
