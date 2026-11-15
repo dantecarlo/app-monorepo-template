@@ -45,7 +45,9 @@ import {
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const REGISTRY = 'https://registry.npmjs.org'
-const REQUEST_TIMEOUT_MS = 20_000
+// A full packument (it holds every publish time) runs to megabytes for a
+// package that publishes often, such as shadcn.
+const REQUEST_TIMEOUT_MS = 60_000
 const DATE_LENGTH = 10
 const EXIT_FAILED = 1
 const EXIT_PASSED = 0
