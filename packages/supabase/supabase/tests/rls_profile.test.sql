@@ -98,10 +98,11 @@ select is(
   'authenticated user cannot read another user profile row'
 );
 
--- Bob tries to update Alice's profile. The policies hide her row from him, so Postgres
--- updates no row and raises no error; read back as superuser, her row is unchanged.
-update public.profile set display_name = 'Hacked'
-where id = '00000000-0000-0000-0000-000000000001';
+-- Bob updates every profile row with no WHERE clause. A WHERE that names a column would
+-- also apply profile_select, which hides Alice's row anyway; with none, only the update
+-- policy decides which rows change. Postgres raises no error and changes his own row only
+-- (section 4 sets it again); read back as postgres, Alice's row is unchanged.
+update public.profile set display_name = 'Hacked';
 
 reset role;
 
