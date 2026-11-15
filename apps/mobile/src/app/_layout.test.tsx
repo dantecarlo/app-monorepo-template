@@ -31,7 +31,8 @@ vi.mock('@app/supabase', () => ({
   })
 }))
 
-import RootLayout from '@/app/_layout'
+import RootLayout, { ErrorBoundary } from '@/app/_layout'
+import { RootErrorBoundary } from '@/components/RootErrorBoundary'
 
 describe('RootLayout', () => {
   afterEach(() => {
@@ -52,5 +53,9 @@ describe('RootLayout', () => {
         'Could not save the item'
       )
     ).toBeTruthy()
+  })
+
+  test('exports the root error boundary as its ErrorBoundary', () => {
+    expect(ErrorBoundary).toBe(RootErrorBoundary)
   })
 })

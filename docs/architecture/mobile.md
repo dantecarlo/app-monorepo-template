@@ -23,7 +23,8 @@ apps/mobile/
 ├── app.json · metro.config.js · babel.config.js · tailwind.config.js · global.css
 └── src/
     ├── app/                      # Expo Router routes ONLY (thin; delegate to a screen)
-    │   ├── _layout.tsx           # root Stack + providers (SafeArea, QueryClient, AuthProvider)
+    │   ├── _layout.tsx           # root Stack + providers (SafeArea, QueryClient, AuthProvider),
+    │   │                         # the Toast viewport and the root ErrorBoundary export
     │   ├── index.tsx             # /       → ItemsDashboardScreen
     │   └── login.tsx             # /login  → LoginScreen
     │
@@ -38,6 +39,7 @@ apps/mobile/
     │
     ├── components/               # SHARED UI (used across ≥2 screens)
     │   ├── AuthProvider/         # session bootstrap from the @app/core auth gateway
+    │   ├── RootErrorBoundary/    # render-crash fallback: ErrorState + retry on the theme background
     │   └── ui/                   # Button, Chip, GlassCard, ErrorState, EmptyState, …
     ├── services/                 # SHARED, transversal services — one folder per domain
     │   └── <Domain>/             # e.g. Items/
@@ -86,8 +88,10 @@ export default HomePage
 
 Expo Router resolves `src/app/` automatically (no root `app/`). The shipped routes are flat —
 `/` and `/login` under the root `Stack` in `_layout.tsx`, with no route guard. When an area needs
-shared chrome, add a route group (`(auth)`, `(tabs)`, …) with its own `_layout.tsx`; a route can
-also re-export an `ErrorBoundary` from its screen barrel (Expo Router convention, none ships).
+shared chrome, add a route group (`(auth)`, `(tabs)`, …) with its own `_layout.tsx`. The root
+`_layout.tsx` exports `RootErrorBoundary` as its `ErrorBoundary` (Expo Router convention), so a
+render crash in any route shows the `ErrorState` with a retry; a route can export its own
+`ErrorBoundary`, re-exported from its screen barrel, to catch its crashes closer.
 
 ## 5. Conventions
 

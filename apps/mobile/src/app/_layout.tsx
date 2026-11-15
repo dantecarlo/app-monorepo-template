@@ -30,6 +30,9 @@ import { createQueryClient } from '@/lib/query/createQueryClient.helper'
 import { supabase } from '@/lib/supabase/client.adapter'
 import { useRootTheme } from '@/lib/theme/useRootTheme.hook'
 
+// Expo Router wraps the root layout, and every route below it, in this boundary.
+export { RootErrorBoundary as ErrorBoundary } from '@/components/RootErrorBoundary'
+
 SplashScreen.preventAutoHideAsync()
 
 const queryClient = createQueryClient({
