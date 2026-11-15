@@ -83,16 +83,13 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 - F1 to F7 and F9 (#14, #15, #16).
 - The rebuilt plan (#19).
 - F.3, the package follow-ups (#20).
+- F.1, the styling pillar (#22).
 - F.2, the Supabase hardening (#21; the native review did not fit its context budget, and the owner chose to merge on the independent verifier).
 
-**In flight:**
-- F.1, the styling pillar: PR #22 on `feat/style-pillar`, worktree `style`.
-  - It is rebased onto `main` and its `validate` exits 0.
-  - CI is re-running after the web smoke marker moved from the `aurora` class to `data-theme=` (`3ee52a7`).
-  - Merge it when CI is green.
+**In flight:** F.4 (resumed 2026-11-15 at the owner's request).
 
 **Next:**
-- F.4, tests in `__tests__/` per block, after #22 merges.
+- F.4, tests in `__tests__/` per block.
   - A shipped codemod moves every unit test.
   - A strict `verify:tests`: the test sits in its own unit's folder's `__tests__/`, with the unit's stem.
   - Route tests are named `<route>.route.test.tsx`.
