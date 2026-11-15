@@ -4,15 +4,17 @@
 -- Source of truth: packages/supabase/docs/database.md (pgTAP workflow).
 --
 -- Run with: pnpm --filter @app/supabase test:db
---   (which executes: supabase test db --linked, on the linked cloud project)
+--   (which executes: supabase test db --linked)
 --
--- NOTE: DB tests need a database with pgTAP. They are intentionally NOT in the
--- pnpm validate chain (validate needs no database). See AGENTS.md — no local Docker.
+-- NOTE: the CLI enables pgtap on the linked project, then runs pg_prove in a
+-- Docker container, so a person or a CI job with Docker runs this file. It is
+-- intentionally NOT in the offline pnpm validate gate; AGENTS.md forbids an
+-- agent to start Docker.
 --
 -- IMPERSONATION: auth.uid() reads request.jwt.claims ->> 'sub'. Use:
 --   set local "request.jwt.claims" to '{"sub":"<uuid>","role":"authenticated"}';
 --   set local role authenticated;
--- Then `reset role` to return to superuser for teardown.
+-- Then `reset role` to return to the session role (postgres) for teardown.
 
 begin;
 
@@ -23,7 +25,7 @@ begin;
 select plan(25);
 
 -- =====================================================================
--- Section 1: seed test fixtures (superuser context)
+-- Section 1: seed test fixtures (as postgres, the session role)
 -- =====================================================================
 
 insert into auth.users (id, email) values
@@ -212,7 +214,7 @@ select is(
 -- Section 8: audit_log immutability
 -- =====================================================================
 
--- Insert an audit event as service_role (superuser context simulates service path).
+-- Insert an audit event as postgres, which bypasses RLS the way the service path does.
 insert into public.audit_log (actor_id, action, target_table, target_id, metadata)
 values (
   '00000000-0000-0000-0000-000000000001',

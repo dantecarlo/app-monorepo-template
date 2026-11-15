@@ -6,7 +6,7 @@
 
 ### Requirement: SUPABASE-23 — Signed-in users and the service role reach the helpers schema
 
-The supabase database SHALL grant USAGE on the auth_helpers schema to authenticated and service_role and to no other API role, so a query or a SECURITY INVOKER function running as authenticated or service_role can call the helpers that role may execute, and anon cannot name them.
+The supabase database SHALL grant USAGE on the auth_helpers schema to authenticated and service_role and to no other API role, so a query, or a PL/pgSQL or string-body SQL function, running as authenticated or service_role can call the helpers that role may execute, and anon cannot name them.
 
 **Evidence:** written at apply time, when the code exists.
 

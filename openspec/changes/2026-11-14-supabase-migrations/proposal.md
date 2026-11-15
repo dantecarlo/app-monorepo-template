@@ -21,7 +21,8 @@ them on the base `e3e92fc`:
   `ERROR:  permission denied for schema auth_helpers`. The audit-log policy itself works as
   `authenticated` (a user with no grant reads 0 audit rows, an admin reads 1): Postgres resolves a
   policy's function when the policy is created and checks only EXECUTE when it runs. What fails
-  is any query, and any SECURITY INVOKER function, that names a helper as that role.
+  is any query, and any PL/pgSQL or string-body SQL function, that names a helper as that
+  role.
 - **F3.** A user with no role reads another user's profile: 1 row, while the policy's comment and
   the test section say a user reads their own.
 - **F4.** The assertion "unauthorized user cannot update another user profile" fails with

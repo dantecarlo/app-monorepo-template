@@ -9,7 +9,7 @@
 --   ENABLE makes RLS apply to ordinary roles (authenticated, anon).
 --   FORCE makes RLS apply ALSO to the table owner, closing the silent-bypass
 --   hole if a non-superuser ever owns a table. The sanctioned privileged plane is:
---     - SECURITY DEFINER helpers owned by postgres (superuser, FORCE does not bind).
+--     - SECURITY DEFINER helpers owned by postgres (BYPASSRLS, FORCE does not bind).
 --     - service_role with BYPASSRLS for service-path writes.
 --
 -- The table list is EXPLICIT (not a pg_class catalog sweep) so that adding a

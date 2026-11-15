@@ -127,15 +127,19 @@ $$;
 ```
 
 **Why USAGE and EXECUTE:** USAGE on the schema lets a role resolve the
-names in it, and EXECUTE on a function lets it run that function. A policy
-resolves its functions once, when it is created, so a policy that calls a
-helper works without USAGE; a query or a SECURITY INVOKER function resolves
-them as its caller, so `authenticated` and `service_role` need both. `anon`
+names in it, and EXECUTE on a function lets it run that function. A policy, a
+view and a `BEGIN ATOMIC` SQL function resolve the names they use once, when
+they are created, so a policy that calls a helper works without USAGE. A
+query, a PL/pgSQL function and a SQL function with a string body resolve them
+each time they run, as the role running them (the caller, for a SECURITY
+INVOKER function), so `authenticated` and `service_role` need both. `anon`
 gets neither and cannot name a helper.
 
 **Why `owner = postgres`:** `SECURITY DEFINER` runs with the owner's
-privileges. Setting the owner to `postgres` (the Supabase superuser) lets the
-function bypass RLS where intended. This is the sanctioned privileged path.
+privileges. On Supabase `postgres` is not the superuser (`supabase_admin`
+is): it is a non-superuser role with `BYPASSRLS`, and that attribute is what
+lets the helpers read the RBAC tables past their row-level security. This is
+the sanctioned privileged path.
 
 **Note on non-Supabase Postgres:** the owner role name may differ. Replace
 `postgres` with the actual privileged migration role for your environment.
@@ -190,8 +194,8 @@ Defined in `0007_rls_enable.sql` and `0008_rls_policies.sql`.
   hole if a non-superuser ever owns a table.
 
 The sanctioned bypass paths are:
-- SECURITY DEFINER functions owned by `postgres` (superuser — FORCE does not
-  bind superusers).
+- SECURITY DEFINER functions owned by `postgres`, which has `BYPASSRLS`
+  (FORCE binds neither a role with `BYPASSRLS` nor a superuser).
 - `service_role` (which has `BYPASSRLS`).
 
 ### Explicit table list
@@ -268,15 +272,16 @@ pnpm --filter @app/supabase test:db
 # expands to: supabase test db --linked
 ```
 
-This runs on the linked Supabase Cloud project, with `.env` loaded in the
-shell (see the README); the CLI enables the `pgtap` extension first. There
-is no local Docker stack.
+This runs against the linked Supabase Cloud project, with `.env` loaded in
+the shell (see the README), and it needs Docker: Supabase CLI 2.109.1 first
+runs `create extension if not exists pgtap with schema extensions` on the
+target, then runs `pg_prove` in the `supabase/pg_prove:3.36` Docker container
+for every target, `--linked` included. There is still no local Supabase stack.
 
 **DB tests are intentionally NOT part of `pnpm validate`.** The validation
-gate (`ATL_TEMPLATE_SELF=1 pnpm validate`) runs pure TypeScript checks that
-do not need a live database. Wiring `test:db` into validate would require a
-running stack in CI for every lint/typecheck run, which is not the convention
-here.
+gate (`ATL_TEMPLATE_SELF=1 pnpm validate`) is offline: it needs no database
+and no Docker. `AGENTS.md` forbids an agent to start Docker, so a person or a
+CI job with Docker runs `test:db`.
 
 ### JWT impersonation pattern
 
@@ -289,7 +294,7 @@ set local role authenticated;
 
 -- assertions here run as the impersonated user
 
-reset role; -- return to superuser for setup/teardown
+reset role; -- return to the session role (postgres) for setup/teardown
 ```
 
 ### Test file structure
@@ -297,7 +302,7 @@ reset role; -- return to superuser for setup/teardown
 Every test file:
 
 1. Opens with `begin;`
-2. Seeds fixtures as superuser (before `set local role`)
+2. Seeds fixtures as the session role, `postgres` (before `set local role`)
 3. Calls `select plan(N)` with the exact assertion count
 4. Runs structural assertions, then behavioral assertions via impersonation
 5. Ends with `select * from finish(); rollback;`

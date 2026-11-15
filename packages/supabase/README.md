@@ -94,6 +94,7 @@ stack (`AGENTS.md`, Supabase workflow — Cloud only).
 - [Supabase CLI](https://supabase.com/docs/guides/cli) (`brew install supabase/tap/supabase`)
 - A Supabase Cloud project, and `packages/supabase/.env` (gitignored) holding
   `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` and `SUPABASE_PROJECT_REF`
+- Docker, for `test:db` only (see below)
 
 ## Common workflows
 
@@ -113,10 +114,18 @@ pnpm db:push
 # Generate TypeScript types from the linked project into src/types.ts
 pnpm gen:types
 
-# Run the pgTAP tests on the linked project (the CLI enables pgtap; each
-# test file runs in a transaction it rolls back)
+# Run the pgTAP tests on the linked project (needs Docker, see below)
 pnpm test:db
 ```
+
+`test:db` (`supabase test db --linked`) first runs `create extension if not
+exists pgtap with schema extensions` on the linked project, then runs
+`pg_prove` in the `supabase/pg_prove:3.36` Docker container against it (CLI
+2.109.1 does so for every target, `--linked` included), and drops `pgtap`
+again when it was not installed before. Each test file runs in a transaction
+it rolls back. Because it needs Docker and a project, it is not part of the
+offline `pnpm validate` gate, and since `AGENTS.md` forbids an agent to start
+Docker, a person or a CI job with Docker runs it.
 
 There is no reset script: `supabase db reset --linked` rebuilds the linked
 project's database from the local migrations, and its data is lost. Run it by

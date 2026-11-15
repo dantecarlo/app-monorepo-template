@@ -12,12 +12,13 @@
 --   set search_path = public, auth_helpers
 --
 -- Ownership / least-privilege pattern:
---   1. owner = postgres  → SECURITY DEFINER runs with superuser rights and
---      bypasses RLS where intended (the sanctioned privileged path).
+--   1. owner = postgres  → SECURITY DEFINER runs with the owner's rights;
+--      postgres has BYPASSRLS (on Supabase it is not the superuser), so the
+--      helpers bypass RLS where intended (the sanctioned privileged path).
 --   2. revoke all from public  → no implicit execute grant.
 --   3. grant execute to authenticated, service_role  → explicit callers only.
 --   4. grant usage on the schema to the same two roles  → they can name the
---      helpers in a query or a SECURITY INVOKER function; anon cannot.
+--      helpers in a query or a PL/pgSQL or string-body SQL function; anon cannot.
 --
 -- ANTI-RECURSION CONTRACT:
 --   has_capability() and is_staff() read user_role_grant and role_capability
@@ -98,8 +99,9 @@ comment on function auth_helpers.is_staff() is
 -- =====================================================================
 
 -- USAGE lets a role resolve names in the schema; EXECUTE, granted per function
--- below, lets it run one. A policy resolves its functions when it is created,
--- but a query or a SECURITY INVOKER function resolves them as its caller.
+-- below, lets it run one. A policy or a BEGIN ATOMIC function resolves names
+-- when it is created; a query, a PL/pgSQL function or a string-body SQL
+-- function resolves them each time it runs, as the role running it.
 grant usage on schema auth_helpers to authenticated, service_role;
 
 do $$
