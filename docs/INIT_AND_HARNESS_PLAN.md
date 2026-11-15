@@ -71,37 +71,51 @@ Owner rule of 2026-11-13, relayed by the Arquitecto (translated from Spanish): w
 finishes a harness or architecture change, it tells the template, which applies it too; each
 such report becomes a parity-ledger row.
 
-### Where things stand (2026-11-15)
+### Where things stand (2026-11-15, paused at the owner's request)
 
-Requested by the owner: everything below "Pending" and "Requested", in that order (L61).
+Requested by the owner: everything below "Next" and "Pending", in that order (L61, L62).
 
 **Done, merged into `main`:**
 - Stages 0 to 2.
-- Step 3.1: `AGENTS.md` is the router, with the LAWs, the Codex budget and `verify:instruction-entry` (#17).
-- Step 3.2 part A: the agent projector to four runtimes, with `projection-check` (#18).
-- The living specs (#13). F1 to F7 and F9 (#14, #15, #16).
-- In Certifipago: K1, K2, K4 to K7, K9 and K10 closed.
+- Step 3.1, `AGENTS.md` as the router (#17).
+- Step 3.2 part A, the agent projector (#18).
+- The living specs (#13).
+- F1 to F7 and F9 (#14, #15, #16).
+- The rebuilt plan (#19).
+- F.3, the package follow-ups (#20).
+- F.2, the Supabase hardening (#21; the native review did not fit its context budget, and the owner chose to merge on the independent verifier).
 
-**In progress:**
-- F.1, the styling pillar with the UI kit behind `components/ui`.
-- F.2, the Supabase hardening, in its correction batch.
-- F.3, the package follow-ups, in their review notes.
-- The dependency inventory behind F.8.
+**In flight:**
+- F.1, the styling pillar: PR #22 on `feat/style-pillar`, worktree `style`.
+  - It is rebased onto `main` and its `validate` exits 0.
+  - CI is re-running after the web smoke marker moved from the `aurora` class to `data-theme=` (`3ee52a7`).
+  - Merge it when CI is green.
+
+**Next:**
+- F.4, tests in `__tests__/` per block, after #22 merges.
+  - A shipped codemod moves every unit test.
+  - A strict `verify:tests`: the test sits in its own unit's folder's `__tests__/`, with the unit's stem.
+  - Route tests are named `<route>.route.test.tsx`.
+  - A unit outside `src/` is tested from the `__tests__/` of its own folder, with no exception.
+- Then F30, the web `Button` font size.
 
 **Pending, in order:**
-- F.4 to F.6 and F.8 of Stage F.
+- F.5 to F.9 and F.11 of Stage F.
 - Step 3.2 part B: `gradedBy`, `sdd-steward` and `verify:router-coverage` (F27).
 - Step 3.3, then Stages 4 to 7.
 
-**Requested and not started:**
-- F.7, PostHog by default.
-- F.9, the MCP documentation updater.
-- F.11, the `/init` questions of decisions 51, 53 and 54.
-
-**Waiting on Certifipago:**
-- F.10: the isolated linker, Sentry removed, K3, the strict test-location gate, and each template change as it merges.
-- K8, with its test-location half reverted.
-- K11, its pull request.
+**Waiting on Certifipago (F.10):**
+- Done there: #823 (the D-S2 revert), #824 (the strict `verify:test-location`, with 29 frozen tests) and #827 (the projector YAML and TOML fix).
+- When the template gates merge, it unfreezes its 5 tests of units outside `src/`, and adopts the F.8 registry.
+- `nodeLinker` waits until after App's release train, by the owner's timing.
+- K11 is pending as a pull request.
+- On #15:
+  - Mobile adopts it after the release train.
+  - Web already has it.
+- On #16:
+  - Backend adopted 1a.
+  - 1b (the anon EXECUTE sweep) and the profile column grants are proposals that wait on the owner.
+- Web has K3 adopted but not yet pushed.
 
 ### Stage 0 — land what is open
 
@@ -459,6 +473,7 @@ defects behind them, for changes of their own.
 | F27 | harness | no gate checks that every Router row of `AGENTS.md` names a shipped skill and every skill has a row, so a project that drops `sdd` or `archify` at `/init` keeps their rows | step 3.2 (`verify:router-coverage`) |
 | F28 | packages/supabase | Supabase's default privileges give `anon` and `authenticated` TRIGGER, REFERENCES and MAINTAIN on every table; with TRIGGER, a signed-in user attaches `auth_helpers.tg_audit_immutable()` to a table and blocks its writes | in F.2 |
 | F29 | packages/supabase | the verifier of the signed image URL signs the path and query only, so one secret serving several hosts accepts a URL on any of them | design, recorded |
+| F30 | apps/web | `tailwind-merge`, which `tailwind-variants` runs by default, takes the token font sizes (`text-button`, `text-title`) for colours and drops them next to a text colour, so the web `Button` renders without `text-button`; `ui/Text`, `ui/Divider` and `ui/Avatar` already set `twMerge: false` | small; after #22 |
 
 ---
 
@@ -1749,3 +1764,8 @@ validate` exits 0. Independent verifier: no blocker. Native review: the hooks
   decoupled and have an adapter..." (quoted whole in Stage F); "Let's rebuild the plan and update
   it at the same time; detail what needs to be done and with that start executing it". Recorded as
   decisions 50 to 58 and Stage F. The Arquitecto was told every Certifipago item the same day.
+- **L62 (2026-11-15, owner, relayed by the Certifipago - Arquitecto session, translated from
+  Spanish):** "it is time to shut the computer down ... have them pause what they are doing, make a
+  plan and note what they already did and what is done, and continue it tomorrow when we ask them
+  to. Include the template agent in this". Paused with nothing running: #18 to #21 merged, #22
+  in CI, F.4 next. The session continues only when the owner asks.
