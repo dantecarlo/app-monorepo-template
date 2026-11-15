@@ -37,7 +37,7 @@ begin;
 -- Plan
 -- =====================================================================
 -- Count assertions below and update this number when adding new tests.
-select plan(55);
+select plan(58);
 
 -- =====================================================================
 -- Section 1: seed test fixtures (as postgres, the session role)
@@ -594,6 +594,42 @@ select is(
    where user_id = '00000000-0000-0000-0000-000000000002'),
   0,
   'the refused self-grant leaves the user with no role'
+);
+
+-- A profile row is the service path's to create: no API role but service_role holds INSERT on
+-- any of its columns, so a user cannot create a row with a credit_balance of their choosing.
+select ok(
+  not has_any_column_privilege('anon', 'public.profile', 'insert')
+    and not has_any_column_privilege('authenticated', 'public.profile', 'insert'),
+  'anon and authenticated may insert no profile column'
+);
+
+-- Carol, signed in, has no profile yet.
+set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000003","role":"authenticated"}';
+set local role authenticated;
+
+select throws_ok(
+  $$insert into public.profile (id, email, credit_balance) values ('00000000-0000-0000-0000-000000000003', 'carol@example.com', 1000000)$$,
+  '42501',
+  'permission denied for table profile',
+  'a user cannot create their own profile'
+);
+
+reset role;
+
+set local role service_role;
+
+insert into public.profile (id, email, display_name) values
+  ('00000000-0000-0000-0000-000000000003', 'carol@example.com', 'Carol')
+on conflict (id) do nothing;
+
+reset role;
+
+select is(
+  (select count(*)::int from public.profile
+   where id = '00000000-0000-0000-0000-000000000003'),
+  1,
+  'the service role still creates a profile'
 );
 
 -- =====================================================================

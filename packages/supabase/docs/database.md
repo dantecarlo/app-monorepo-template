@@ -325,6 +325,13 @@ An app's update names only those columns: `update profile set display_name =
 ...` works, and an upsert or update that also sends `status` is refused with
 "permission denied for table profile".
 
+A profile row is created on the server only. `0011_profile_columns.sql` also
+revokes INSERT on `public.profile` from `anon` and `authenticated`, so a user
+cannot create their own row with a `credit_balance` of their choosing, whatever
+insert policy a project adds. No migration creates a profile row: the service
+path does, as `service_role` or in a function `postgres` owns (a trigger on
+`auth.users`, for instance), and both keep INSERT.
+
 ---
 
 ## 7. Append-only audit log
