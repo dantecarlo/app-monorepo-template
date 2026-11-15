@@ -61,13 +61,16 @@ The chain runs in cost order:
 
 | Gate                            | Proves                                                    |
 | ------------------------------- | --------------------------------------------------------- |
+| `pnpm agent-harness:projection-check` | Every projected agent file equals what its neutral source renders, and is committed (see 3e) |
+| `pnpm agent-harness:test`       | The projector's reader, adapters, writer, checker and sync still behave |
 | `pnpm verify:manifest`          | `template.manifest.json` is well formed                   |
 | `pnpm verify:manifest:coverage` | Every tracked file has exactly one owner, no stale claims |
 | `pnpm verify:manifest:test`     | The pure engine behind both still behaves                 |
 | `pnpm verify:lint-rules:test`   | The local ESLint rules still report what they must        |
 
 Structural drift fails here, before anything expensive builds. See
-[manifest.md](manifest.md).
+[manifest.md](manifest.md). The projection check is step 1 of the chain: an agent
+file edited by hand fails before anything else runs.
 
 ### 3b. Turbo — lint, typecheck, test, build
 
@@ -91,7 +94,7 @@ the pre-commit hook on staged files.
 | `report:spec-drift`   | Lists the living specs whose governed code moved past their verified commit; never blocks |
 | `verify:english`      | No tracked text outside the i18n catalogs holds a Spanish line, unless allowlisted        |
 | `verify:instruction-entry` | `AGENTS.md` and `README.md` exist, and no `CLAUDE.md` or `CLAUDE.local.md` in any folder makes Claude Code read it instead of `AGENTS.md` |
-| `codex-budget:test`   | `.codex/config.toml` sets `project_doc_max_bytes` above every table header, and `AGENTS.md`, counted with CRLF endings, fits it: Codex drops what is past the budget |
+| `codex-budget:test`   | The generated `.codex/config.toml` sets `project_doc_max_bytes` above every table header, and `AGENTS.md`, counted with CRLF endings, fits it: Codex drops what is past the budget |
 | `check:identity`      | The template's default identity is gone (skipped on self)                                 |
 | `knip`                | No dead exports, no unlisted or unused dependencies                                       |
 
@@ -105,6 +108,31 @@ pnpm test:e2e      # Playwright, needs a prior build
 pnpm smoke:web     # next build + a real HTTP probe
 pnpm smoke:mobile  # expo export + a Hermes bundle assertion
 ```
+
+### 3e. The agent projections
+
+An agent is written once, in `.agents/agents/<name>.agent.md`: a frontmatter of
+exactly `description`, `model`, `name` and `tools`, the file named after `name`,
+then the prompt. `pnpm agent-harness:generate` is the one writer of what each
+runtime reads, and `scripts/agent-harness/` holds the projector:
+
+| Output                              | Runtime     |
+| ----------------------------------- | ----------- |
+| `.claude/agents/<name>.md`          | Claude Code, identical to the source |
+| `.codex/agents/<name>.toml`, `.codex/config.toml` | Codex; the config also holds the `AGENTS.md` budget |
+| `.opencode/agents/<name>.md`, `opencode.json` | OpenCode |
+| `.github/agents/<name>.agent.md`    | Copilot     |
+| `.agents/projection-manifest.json`  | none: the sha256 of every output |
+
+To change an agent, edit its source, run `pnpm agent-harness:generate` (or
+`pnpm agent-harness:sync`, which then runs the checker over the result), review
+the diff and commit every file it wrote. Never edit an output: the projection
+check fails on a missing, extra, changed or uncommitted one, and on a stale
+manifest, and says to run the generator. A field a runtime has no slot for is
+declared in `EXPRESSIVENESS` with its reason (Codex cannot restrict tools), and
+the model reaches a runtime other than Claude Code only through `MODEL_MAP`,
+which is empty, so those agents run on the model of the session that starts
+them.
 
 ---
 
