@@ -244,7 +244,7 @@ The core package SHALL keep a query-key segment only when it is a string the cal
 The core package SHALL return one sanitized segment for each segment of an array query key, and
 the single segment `[redacted]` for a key that is not an array.
 
-**Evidence:** `packages/core/src/observability/sanitizeQueryKey.helper.ts:29-30`
+**Evidence:** `packages/core/src/observability/sanitizeQueryKey.helper.ts:29-34`
 
 #### Scenario: a key that is not an array
 

@@ -64,6 +64,7 @@ src/services/<Domain>/            # PascalCase folder
 Add to `src/lib/query/queryKeys.constant.ts`:
 
 ```typescript
+// The existing enum, with one member added for the new feature:
 export enum QueryKeySegmentEnum {
   Items = 'items',
   List = 'list',

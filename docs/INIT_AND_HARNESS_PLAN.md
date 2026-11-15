@@ -150,15 +150,15 @@ side in step 2.0 and 2.3, and Certifipago its side through the conformance track
 | #   | Item                                                                                                                                                        | Status                                                                       |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | K1  | `.gitattributes` pins `.husky/* text eol=lf`                                                                                                                | closed: Certifipago #801 (`084e204fd`)                                       |
-| K2  | hooks run `commitlint` and `lint-staged` through `pnpm exec`                                                                                                | Certifipago #785, waits on the owner                                         |
+| K2  | hooks run `commitlint` and `lint-staged` through `pnpm exec`                                                                                                | closed: Certifipago #785, merged 2026-11-14                                  |
 | K3  | `E2E_BASE_URL` falls back to localhost on an empty value, not only on an unset one (`playwright.config.ts:234`, `apps/web/e2e/fixtures/global-setup.ts:47`) | routed to Web                                                                |
 | K4  | `engines.node: ">=24.2.0"`                                                                                                                                  | closed: Certifipago #801 (`084e204fd`)                                       |
 | K5  | the alias rule names `#src/` (`openspec/config.yaml:70`, `.github/copilot-instructions.md:35-36`)                                                           | closed: Certifipago #801 (`084e204fd`)                                       |
 | K6  | `openspec/README.md:9` stops calling Certifipago the template                                                                                               | closed: Certifipago #801 (`084e204fd`)                                       |
 | K7  | `claudeMdExcludes` covers the `.agents/skills` mirror                                                                                                       | closed, not a defect: Claude Code reads no file under a `.agents/` directory |
 | K8 | D-S2: tests move from `__tests__/` beside their units, `verify:test-location` adapted; D-S5: owner quotes in SDD artifacts translated into English and marked | decided 2026-11-13; asked of the Arquitecto, who sets the timing |
-| K9 | the 12 cross-workspace relative imports move to `@app/tooling` | asked of the Arquitecto 2026-11-14 |
-| K10 | `package-src-alias`: package sources hold `#src/` over imports, re-exports and `import()`, fixed from the file's own path; `no-relative-import-paths` misses re-exports and its fix writes `@/` (template #10) | asked of the Arquitecto 2026-11-14 |
+| K9 | the 12 cross-workspace relative imports move to `@app/tooling` | closed: Certifipago #813 (`e365b35cf`) |
+| K10 | `package-src-alias`: package sources hold `#src/` over imports, re-exports and `import()`, fixed from the file's own path; `no-relative-import-paths` misses re-exports and its fix writes `@/` (template #10) | closed: Certifipago #814 (`b6203bd23`) |
 | K11 | `scrubPII` keeps the scrubbed copy of each object it walks, so a shared object costs one walk, not one per path; `sanitizeQueryKey` takes `structuralSegments` and each app passes the values of its `QueryKeySegmentEnum` (template `2026-11-14-scrub-and-query-key`) | asked of the Arquitecto when the change merges |
 
 ## Next steps (2026-11-05, updated 2026-11-12)
@@ -257,12 +257,13 @@ master after these merges.
 | `impeccable.cmd` creates its temporary directory with an atomic `mkdir` instead of a `%RANDOM%` name                 | #790                | none until `impeccable` is vendored here                                                                                                                                    | Stage 5 (5.1), when vendored     | open   |
 | The pre-push runs the review skills a change owes (from `review-routing`), each in a clean session; a BLOCKER refuses the push unless adjudicated `refuted` or `owner-accepted`; the reviewer writes `.review-verdicts/<sha>.json` with provenance and `pnpm review:verdict` is read-only; without Codex, both reviews run through a read-only `claude -p` session | #803 (`c4143717c`) | the same pre-push step, once the template has the review verdict and the review routing | Stage 4 (4.1), Stage 5 (5.3) | open |
 | `scrubValue` marks only a cycle as `[circular]`, arrays included | master | `scrubPII` does the same and also keeps each walked object's scrubbed copy, since walking a shared object once per path is exponential | `2026-11-14-scrub-and-query-key` | closed by that change |
+| `package-src-alias` resolves its fix back through the whole `imports` map, an exact key first, then the longest prefix (#814 hardening) | #814 (`b6203bd23`) | the template's `toSrcAlias` never reads the map, so it writes `#src/x.ts` for `./x.ts` and `#src/dir` for a folder index (F17) | F17 | open |
 
 **Template → Certifipago**
 
 | Template change                                                                      | Landed in             | Certifipago counterpart                                                                                                             | Carried by                     | Status |
 | ------------------------------------------------------------------------------------ | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ------ |
-| Hooks run `commitlint` and `lint-staged` through `pnpm exec` (P0 `08752d9`)          | `feat/p0-land-staged` | the same two lines in `.husky/commit-msg` and `.husky/pre-commit` (Certifipago still runs `pnpm commitlint` and `pnpm lint-staged`) | C5                             | open   |
+| Hooks run `commitlint` and `lint-staged` through `pnpm exec` (P0 `08752d9`)          | `feat/p0-land-staged` | the same two lines in `.husky/commit-msg` and `.husky/pre-commit` (Certifipago still runs `pnpm commitlint` and `pnpm lint-staged`) | C5                             | closed |
 | archify lock: a hash per file and the sigil patch recorded (P0 `e040feb`, `417ae5c`) | `feat/p0-land-staged` | Certifipago's `skills-lock.json` holds one hash per skill and no patch record; check whether its archify carries the sigil patch    | PD2 (one lock format)          | open   |
 | `.gitattributes`, with `.husky/* text eol=lf` (P0 `3d31c02`, `c7737fd`)              | #2                    | Certifipago's file lacks the `.husky` pin                                                                                           | Arquitecto, #801 (`084e204fd`) | closed |
 | Core console seam, suffix codemod, docs, capability manifest (P0)                    | `feat/p0-land-staged` | none: template code and template-only files                                                                                         | not applicable                 | closed |
@@ -273,7 +274,7 @@ master after these merges.
 | `E2E_BASE_URL` falls back to localhost on an empty value (P0 `699c6cd`)              | #2                    | two fallbacks that cover only an unset value                                                                                        | Web, via the Arquitecto (K3)   | open   |
 | `engines.node: ">=24.2.0"` (SDD-0)                                                   | #4                    | no `engines` field                                                                                                                  | Arquitecto, #801 (`084e204fd`) | closed |
 | The template is the reference (decision 47)                                          | this plan             | `openspec/README.md:9` still calls Certifipago the template                                                                         | Arquitecto, #801 (`084e204fd`) | closed |
-| `package-src-alias` holds `#src/` in package sources (T1c) | #10 | Certifipago runs `no-relative-import-paths` with `prefix: '@'` (`eslint.rules.mjs:456-458`), whose fix writes `@/` and which never sees a re-export | Arquitecto, K10 | open |
+| `package-src-alias` holds `#src/` in package sources (T1c) | #10 | Certifipago runs `no-relative-import-paths` with `prefix: '@'` (`eslint.rules.mjs:456-458`), whose fix writes `@/` and which never sees a re-export | Arquitecto, K10 | closed |
 | `init-project` renames under `scripts/`; the web smoke works on Windows | #9, this change | none: Certifipago has no `/init`, and its smoke scripts already use `process-tree` | not applicable | closed |
 | `scrubPII` walks each object once; `sanitizeQueryKey` keeps only the segments the caller registers (`2026-11-14-scrub-and-query-key`) | this change | Certifipago's `scrubValue` walks a shared object once per path, which ran a React DOM node in a console breadcrumb out of memory, and its `sanitizeQueryKey` keeps any letters-only segment | Arquitecto, K11 | open |
 
@@ -300,6 +301,8 @@ defects behind them, for changes of their own.
 | F14 | packages/i18n, apps | English copy is written in components and adapters on both apps, and the catalog key type comes from the Spanish catalog | i18n |
 | F15 | packages/cloudflare | a Turnstile test is titled "does not throw an unhandled rejection" and asserts that the call rejects | test title |
 | F16 | packages/tooling | the `signalProcessTree` declaration does not say it needs a child spawned with `TREE_SPAWN_OPTIONS` to reach the whole tree on POSIX | doc |
+| F17 | eslint-local-rules | `toSrcAlias` (`package-src-alias.detect.mjs:32-45`) keeps the specifier's extension and folder form, while every package maps `#src/*` to `./src/*.ts`: its fix turns `./x.ts` into `#src/x.ts`, which resolves to `./src/x.ts.ts`, and a folder import into `#src/dir`, which misses the folder's index; Certifipago #814 found and fixed both | small |
+| F18 | packages/core | `scrubPII` now returns a graph that shares each scrubbed copy where the input shared the object, so a serializer with no depth limit writes a shared copy once per path that reaches it (found by the scrub-and-query-key review, advisory) | small |
 
 ---
 
@@ -1537,3 +1540,10 @@ validate` exits 0. Independent verifier: no blocker. Native review: the hooks
   path, which ran a React DOM node in a console breadcrumb out of memory; the template keeps
   each scrubbed copy instead, and K11 carries both helpers to Certifipago. F1 to F5 and F9 run
   as their own changes, each built by a writer in its own worktree.
+- **L58 (2026-11-14, the Certifipago - Arquitecto session):** K2 closed with Certifipago #785,
+  K9 with #813 (`e365b35cf`, `@certifipago/tooling` keeps `fsModuleCache: false` on Vitest 4)
+  and K10 with #814 (`b6203bd23`), whose hardening found the two holes the template still has
+  as F17. It reported that F6 does not reproduce in Certifipago and that F7 does; the reply
+  sent the exponential-walk measurement behind K11 and the template's `structuralSegments`
+  design, so both copies take the same fix. The native review of scrub-and-query-key approved
+  the change with advisory notes only; F18 records the one about serialization.
