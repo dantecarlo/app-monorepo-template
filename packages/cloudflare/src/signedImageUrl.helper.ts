@@ -111,7 +111,8 @@ export const verifySignedImageUrl = async ({
       reason: SignedImageUrlRejectionEnum.SIGNATURE_MISMATCH
     })
   }
-  if (params.expiry <= nowInSeconds) {
+  // A clock that is not a finite number cannot prove the URL is unexpired.
+  if (!Number.isFinite(nowInSeconds) || params.expiry <= nowInSeconds) {
     return reject({ reason: SignedImageUrlRejectionEnum.EXPIRED })
   }
   return { valid: true }

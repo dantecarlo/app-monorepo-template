@@ -71,6 +71,16 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+test('verifySignedImageUrl rejects as expired when the clock is not a finite number', async () => {
+  const url = await signAtFixedNow()
+  const results = await Promise.all(
+    [Number.NaN, Number.POSITIVE_INFINITY].map((nowInSeconds) =>
+      verifySignedImageUrl({ nowInSeconds, secret: SECRET, url })
+    )
+  )
+  expect(results).toEqual([EXPIRED, EXPIRED])
+})
+
 test('signImageUrl keeps the query of the URL and signs it with exp', async () => {
   const url = await signAtFixedNow({ url: `${IMAGE_URL}?v=2` })
   expect(url).toBe(
