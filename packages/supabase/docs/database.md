@@ -38,6 +38,19 @@ function's argument types and body when the function is created, so the RBAC
 enums and tables (`0003_rbac.sql`) come before the helpers that take
 `app_capability` and read those tables (`0004_auth_helpers.sql`).
 
+An offline test guards the order in every `pnpm validate`:
+`src/__tests__/supabaseSql.test.ts` reads the migrations in name order, the
+order the CLI applies them, and fails when one names a `public.` type, table,
+view or function that only a later migration creates
+(`src/findMigrationOrderViolations.helper.ts`). It reads code only: a name in a
+comment or in a string literal outside a function body does not count. It
+checks schema-qualified `public.` names; an unqualified name, or one in
+another schema, is the migration author's to order.
+
+A migration a project may have applied is never edited: a change to an applied
+migration never runs again on that project. A fix goes in a new migration with
+the next number.
+
 ### Mandatory header block
 
 Every migration opens with a three-line comment block:
