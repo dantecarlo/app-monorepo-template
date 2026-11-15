@@ -37,15 +37,17 @@ begin;
 -- Plan
 -- =====================================================================
 -- Count assertions below and update this number when adding new tests.
-select plan(43);
+select plan(52);
 
 -- =====================================================================
 -- Section 1: seed test fixtures (as postgres, the session role)
 -- =====================================================================
 
+-- Carol has no profile: section 12 tries to move Bob's profile to her id.
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-000000000001', 'alice@example.com'),
-  ('00000000-0000-0000-0000-000000000002', 'bob@example.com')
+  ('00000000-0000-0000-0000-000000000002', 'bob@example.com'),
+  ('00000000-0000-0000-0000-000000000003', 'carol@example.com')
 on conflict (id) do nothing;
 
 insert into public.profile (id, email, display_name) values
@@ -472,6 +474,96 @@ select ok(
     and has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'delete')
     and has_table_privilege('service_role', 'public.test_table_with_default_grants', 'truncate'),
   'a table added to public keeps the other privileges Supabase gives the API roles'
+);
+
+-- =====================================================================
+-- Section 12: a user edits only the display name of their own profile,
+-- and grants themselves no role
+-- =====================================================================
+-- profile_update_self limits an update to the user's own row; column privileges decide which
+-- columns it may set. Each update has no WHERE, so only the update policy and the column
+-- privileges decide, and the row is read back as postgres.
+
+select is(
+  (
+    select coalesce(array_agg(a.attname::text order by a.attnum), '{}')
+    from pg_attribute a
+    where a.attrelid = 'public.profile'::regclass
+      and a.attnum > 0
+      and not a.attisdropped
+      and has_column_privilege('authenticated', a.attrelid, a.attnum, 'update')
+  ),
+  array['display_name'],
+  'authenticated may update only the display_name column of profile'
+);
+
+set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}';
+set local role authenticated;
+
+select throws_ok(
+  $$update public.profile set status = 'suspended'$$,
+  '42501',
+  'permission denied for table profile',
+  'a user cannot set the status of their own profile'
+);
+
+select throws_ok(
+  $$update public.profile set credit_balance = 1000000$$,
+  '42501',
+  'permission denied for table profile',
+  'a user cannot set the credit balance of their own profile'
+);
+
+select throws_ok(
+  $$update public.profile set email = 'mallory@example.com'$$,
+  '42501',
+  'permission denied for table profile',
+  'a user cannot set the email of their own profile'
+);
+
+select throws_ok(
+  $$update public.profile set created_at = '2000-01-01', updated_at = '2000-01-01'$$,
+  '42501',
+  'permission denied for table profile',
+  'a user cannot set the timestamps of their own profile'
+);
+
+select throws_ok(
+  $$update public.profile set id = '00000000-0000-0000-0000-000000000003'$$,
+  '42501',
+  'permission denied for table profile',
+  'a user cannot set the id of their own profile'
+);
+
+reset role;
+
+-- created_at was set by the seed in this transaction, so it still equals now().
+select is(
+  (select format('%s|%s|%s|%s|%s', id, email, status, credit_balance, created_at = now())
+   from public.profile
+   where id = '00000000-0000-0000-0000-000000000002'),
+  '00000000-0000-0000-0000-000000000002|bob@example.com|active|0.00|t',
+  'the refused updates leave the profile of the user unchanged'
+);
+
+-- Roles live in user_role_grant, whose writes are service_role's only.
+set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}';
+set local role authenticated;
+
+select throws_ok(
+  $$insert into public.user_role_grant (user_id, role) values ('00000000-0000-0000-0000-000000000002', 'admin')$$,
+  '42501',
+  'new row violates row-level security policy for table "user_role_grant"',
+  'a user cannot grant themselves a role'
+);
+
+reset role;
+
+select is(
+  (select count(*)::int from public.user_role_grant
+   where user_id = '00000000-0000-0000-0000-000000000002'),
+  0,
+  'the refused self-grant leaves the user with no role'
 );
 
 -- =====================================================================

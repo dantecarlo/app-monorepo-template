@@ -301,6 +301,30 @@ DELETE, REFERENCES, TRIGGER and, on PostgreSQL 17 and later, MAINTAIN): a
 policy decides the rows of the first four. A table that needs less grants less
 in its own migration.
 
+### Profile columns a user edits
+
+A policy limits the rows an `UPDATE` reaches, never the columns it sets:
+`profile_update_self` lets a user update their own profile row, and a column
+privilege decides what they may change in it. `0011_profile_columns.sql`
+revokes UPDATE on `public.profile` from `authenticated` and grants it back on
+`display_name` only, so a user never sets the row's `status` or
+`credit_balance` (the service path's), its `id`, `created_at` or `updated_at`
+(the database's), or its `email`, which mirrors the sign-in address that
+Supabase Auth changes only through its confirmed email-change flow. Roles live
+in `user_role_grant`, which only `service_role` writes.
+
+A column a project adds to `public.profile` is not updatable by
+`authenticated` until a grant names it. When users edit it, grant it in a
+migration of its own:
+
+```sql
+grant update (display_name, my_column) on table public.profile to authenticated;
+```
+
+An app's update names only those columns: `update profile set display_name =
+...` works, and an upsert or update that also sends `status` is refused with
+"permission denied for table profile".
+
 ---
 
 ## 7. Append-only audit log
