@@ -142,8 +142,9 @@ hand, and only on a disposable development project.
 - `src/buildSupabaseServiceError.helper.ts` — wired convenience: `buildServiceError` + `mapSupabaseError`
 - `src/types.ts` — generated `Database` type (placeholder until `gen:types`)
 - `src/findMigrationOrderViolations.helper.ts`, `src/sqlCode.helper.ts` — the offline order
-  check of the migrations; `src/__tests__/supabaseSql.test.ts` runs it, and the other offline
-  checks of the SQL files, in `pnpm validate` (`src/test/sqlFiles.ts` reads the files)
+  check of the migrations; `src/__tests__/findMigrationOrderViolations.helper.test.ts` runs it
+  over the migrations, and `src/__tests__/supabaseSql.test.ts` checks the pgTAP files, in
+  `pnpm validate` (`src/test/sqlFiles.ts` reads the files)
 - `supabase/config.toml` — CLI config (the API schemas and search path)
 - `supabase/migrations/` — SQL migrations, applied in number order; conventions in `docs/database.md`
 - `supabase/tests/` — pgTAP tests, run by `test:db`

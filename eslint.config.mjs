@@ -249,9 +249,10 @@ export default defineConfig([
       ...FILENAME_RULES,
       // PascalCase on component subfolders inside components/ui (shadcn keeps
       // ui/ itself lowercase by convention; this matches its CONTENTS only).
+      // A block's __tests__/ folder keeps its own name.
       'check-file/folder-naming-convention': [
         'error',
-        { 'apps/web/src/components/ui/**/': 'PASCAL_CASE' }
+        { 'apps/web/src/components/ui/**/!(__tests__)/': 'PASCAL_CASE' }
       ]
     },
     settings: { react: { version: 'detect' } }

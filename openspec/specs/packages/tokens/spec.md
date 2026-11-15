@@ -3,7 +3,7 @@
 > **Governs:** `packages/tokens/src`, `packages/tokens/tailwind-preset.cjs`
 > **ID prefix:** `TOKENS`
 > **Derived from:** `docs/architecture/shared.md`
-> **Verified against the code:** 2026-11-15 at `6c82909`
+> **Verified against the code:** 2026-11-15 at `00496d7`
 
 ## Purpose
 
@@ -25,7 +25,7 @@ The tokens package SHALL define two color themes, dark and light, keyed by Theme
 - **GIVEN** the dark and the light themes
 - **WHEN** their leaf key paths are collected and sorted
 - **THEN** the two lists are equal, so a consumer can read any key from either theme
-- **Test:** `packages/tokens/src/__tests__/themes.test.ts` › "dark and light themes expose an identical semantic key set"
+- **Test:** `packages/tokens/src/__tests__/tokens.constant.test.ts` › "dark and light themes expose an identical semantic key set"
 
 ### Requirement: TOKENS-02 — The default theme is dark
 
@@ -38,7 +38,7 @@ The tokens package SHALL name the dark theme as the default theme.
 - **GIVEN** DEFAULT_THEME
 - **WHEN** it is looked up in ThemeEnum and in themes
 - **THEN** it is a ThemeEnum value and themes holds an entry for it
-- **Test:** `packages/tokens/src/__tests__/themes.test.ts` › "default theme is a member of the theme enum"
+- **Test:** `packages/tokens/src/__tests__/tokens.constant.test.ts` › "default theme is a member of the theme enum"
 
 #### Scenario: the default is dark
 
@@ -58,7 +58,7 @@ The tokens package SHALL give the glass surface the fill rgba(24,27,34,0.42) and
 - **GIVEN** the dark and the light themes
 - **WHEN** their glass fill and stroke are read
 - **THEN** each equals its pinned value
-- **Test:** `packages/tokens/src/__tests__/themes.test.ts` › "glass recipe values are pinned per theme (drift anchor)"
+- **Test:** `packages/tokens/src/__tests__/tokens.constant.test.ts` › "glass recipe values are pinned per theme (drift anchor)"
 
 ### Requirement: TOKENS-04 — The flat colors alias is the dark theme
 
@@ -71,7 +71,7 @@ The tokens package SHALL export colors as the dark theme object itself.
 - **GIVEN** a consumer that imports colors
 - **WHEN** it compares it with themes.dark
 - **THEN** both are the same object
-- **Test:** `packages/tokens/src/__tests__/themes.test.ts` › "flat colors alias stays bound to the dark theme for back-compat"
+- **Test:** `packages/tokens/src/__tests__/tokens.constant.test.ts` › "flat colors alias stays bound to the dark theme for back-compat"
 
 ### Requirement: TOKENS-05 — The accent ramp is the same in both themes
 
@@ -184,7 +184,7 @@ load.
 - **GIVEN** the web app's Tailwind config and its CSS entry
 - **WHEN** they are read
 - **THEN** the config's only preset is the tokens preset, and the CSS entry loads the config
-- **Test:** `apps/web/src/app/globals.test.ts` › "loads the tokens preset through the CSS entry"
+- **Test:** `apps/web/src/app/__tests__/globals.test.ts` › "loads the tokens preset through the CSS entry"
 
 ### Requirement: TOKENS-13 — The Tailwind preset carries the scales as CSS lengths
 
@@ -199,7 +199,7 @@ radius and font-size utilities from the preset alone.
 - **GIVEN** a Tailwind config that requires the preset
 - **WHEN** it resolves a spacing utility such as p-lg
 - **THEN** the value is 16px, the lg spacing token
-- **Test:** `packages/tokens/src/__tests__/preset.test.ts` › "the preset carries every scale token as a CSS length"
+- **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset carries every scale token as a CSS length"
 
 ### Requirement: TOKENS-14 — Layout widths, glyph sizes and insets are tokens
 
@@ -215,7 +215,7 @@ Tailwind preset SHALL carry them as the `max-w-*`, `text-*` and spacing utilitie
 - **GIVEN** the tokens and the Tailwind preset
 - **WHEN** every layout width, glyph size and inset is read from both
 - **THEN** each preset entry is its token written as a CSS length
-- **Test:** `packages/tokens/src/__tests__/preset.test.ts` › "the preset carries every scale token as a CSS length"
+- **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset carries every scale token as a CSS length"
 
 ### Requirement: TOKENS-15 — The colour copies agree for every colour of both themes
 
@@ -245,6 +245,6 @@ included, and equal to the Tailwind preset for the dark theme.
   app loads the preset through `apps/web/tailwind.config.cjs` and `@config` (TOKENS-12).
 - **Q2** — Partly closed on 2026-11-15 by `openspec/changes/archive/2026-11-14-style-pillar/`: the
   theme-sync gate compares every colour of both themes, the accent ramp included (TOKENS-15), and
-  `packages/tokens/src/__tests__/preset.test.ts` compares the preset's spacing, radius and font
+  `packages/tokens/__tests__/tailwind-preset.test.ts` compares the preset's spacing, radius and font
   sizes with the tokens (TOKENS-13). The preset's shadows and font families are still compared
   with nothing.

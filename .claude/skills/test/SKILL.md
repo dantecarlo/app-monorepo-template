@@ -20,6 +20,28 @@ description: >
 
 ---
 
+## Where the test goes
+
+A unit's test sits in the `__tests__/` of the unit's own folder and carries its stem:
+`X/Y.<suffix>.tsx` is tested by `X/__tests__/Y.<suffix>.test.tsx` (`docs/code-standards.md`
+§ 9, checked by `pnpm verify:tests`).
+
+| Unit                                              | Its test                                                     |
+| ------------------------------------------------- | ------------------------------------------------------------ |
+| `components/ui/ErrorState/ErrorState.component.tsx` | `components/ui/ErrorState/__tests__/ErrorState.component.test.tsx` |
+| `lib/query/useAppQuery.hook.ts`                   | `lib/query/__tests__/useAppQuery.hook.test.ts`               |
+| `stores/auth.store.ts`                            | `stores/__tests__/auth.store.test.ts`                        |
+| `apps/mobile/src/app/_layout.tsx` (Expo Router)   | `apps/mobile/src/app/__tests__/layout.route.test.tsx`        |
+| `apps/web/next.config.ts` (outside `src/`)        | `apps/web/__tests__/next.config.test.ts`                     |
+
+- An Expo Router route test is named after its route file as `<route>.route.test.tsx`
+  (`index.tsx` by `index.route.test.tsx`).
+- The test reaches its unit through the alias (`@/stores/auth.store`), never `../`.
+- `src/test/` (setup, the test helper, MSW handlers and server, module mocks) and `__mocks__/`
+  are shared infrastructure, not unit tests.
+
+---
+
 ## Pre-flight Checklist
 
 Before writing ANY test:
@@ -44,7 +66,7 @@ Before writing ANY test:
 | 5   | Constants in domain files       | `const NAME = 'Item'` at top of test    | Import from MSW mocks → test constant → domain constant        |
 | 6   | Destructure inside test()       | `const { getByRole } = component` at describe level | Destructure inside each `test()` block            |
 | 7   | Global cleanup is global        | `vi.clearAllMocks()` in `beforeEach`     | Already in `afterEach` globally — do NOT add manually          |
-| 8   | One test file per domain        | `Button.render.test.tsx` + `Button.hook.test.tsx` | `Button.test.tsx`                                |
+| 8   | One test file per domain        | `Button.render.test.tsx` + `Button.hook.test.tsx` | `__tests__/Button.component.test.tsx`            |
 | 9   | axe as 2nd test                 | Component test with no a11y check        | `expect(await axe(container)).toHaveNoViolations()` 2nd test  |
 
 ---
@@ -249,3 +271,4 @@ When tests need data values:
 7. Multiple test files for one domain unit
 8. Missing axe accessibility assertion as second test in component describe blocks
 9. Using `it()` instead of `test()`
+10. A test beside its unit, in a higher `__tests__/`, or named after anything but its unit

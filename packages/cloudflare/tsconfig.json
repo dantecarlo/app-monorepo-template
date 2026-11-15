@@ -3,11 +3,11 @@
   "compilerOptions": {
     "lib": ["ES2022", "DOM"],
     "outDir": "dist",
+    "rootDir": ".",
     "paths": {
       "@/*": ["./src/*"]
     },
-    "rootDir": "src",
     "types": ["node"]
   },
-  "include": ["src"]
+  "include": ["src", "__tests__"]
 }

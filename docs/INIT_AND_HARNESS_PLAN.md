@@ -84,17 +84,12 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 - The rebuilt plan (#19).
 - F.3, the package follow-ups (#20).
 - F.1, the styling pillar (#22).
+- F.4, tests in `__tests__/` per block, with the strict `verify:tests` and the shipped codemod (this change).
 - F.2, the Supabase hardening (#21; the native review did not fit its context budget, and the owner chose to merge on the independent verifier).
 
-**In flight:** F.4 (resumed 2026-11-15 at the owner's request).
+**In flight:** none.
 
-**Next:**
-- F.4, tests in `__tests__/` per block.
-  - A shipped codemod moves every unit test.
-  - A strict `verify:tests`: the test sits in its own unit's folder's `__tests__/`, with the unit's stem.
-  - Route tests are named `<route>.route.test.tsx`.
-  - A unit outside `src/` is tested from the `__tests__/` of its own folder, with no exception.
-- Then F30, the web `Button` font size.
+**Next:** F30 (the web `Button` font size) and F31 (self-hosted fonts), then F.5.
 
 **Pending, in order:**
 - F.5 to F.9 and F.11 of Stage F.
@@ -412,7 +407,7 @@ master after these merges.
 | The pre-push runs the review skills a change owes (from `review-routing`), each in a clean session; a BLOCKER refuses the push unless adjudicated `refuted` or `owner-accepted`; the reviewer writes `.review-verdicts/<sha>.json` with provenance and `pnpm review:verdict` is read-only; without Codex, both reviews run through a read-only `claude -p` session | #803 (`c4143717c`) | the same pre-push step, once the template has the review verdict and the review routing | Stage 4 (4.1), Stage 5 (5.3) | open |
 | `scrubValue` marks only a cycle as `[circular]`, arrays included | master | `scrubPII` does the same and also keeps each walked object's scrubbed copy, since walking a shared object once per path is exponential | `2026-11-14-scrub-and-query-key` | closed by that change |
 | `package-src-alias` resolves its fix back through the whole `imports` map, an exact key first, then the longest prefix (#814 hardening) | #814 (`b6203bd23`) | the template's `toSrcAlias` never reads the map, so it writes `#src/x.ts` for `./x.ts` and `#src/dir` for a folder index (F17) | F17 | open |
-| Route tests sit in a `__tests__/` folder inside the Expo Router tree, which Metro's default `resolver.blockList` hides from the bundle (K8, #820) | #820 | `apps/mobile/src/app/__tests__/_layout.test.tsx`; `apps/mobile/metro.config.js` keeps the default list | #15 | closed |
+| Route tests sit in a `__tests__/` folder inside the Expo Router tree, which Metro's default `resolver.blockList` hides from the bundle (K8, #820) | #820 | `apps/mobile/src/app/__tests__/layout.route.test.tsx`; `apps/mobile/metro.config.js` keeps the default list | #15 | closed |
 
 **Template → Certifipago**
 
@@ -471,6 +466,7 @@ defects behind them, for changes of their own.
 | F28 | packages/supabase | Supabase's default privileges give `anon` and `authenticated` TRIGGER, REFERENCES and MAINTAIN on every table; with TRIGGER, a signed-in user attaches `auth_helpers.tg_audit_immutable()` to a table and blocks its writes | in F.2 |
 | F29 | packages/supabase | the verifier of the signed image URL signs the path and query only, so one secret serving several hosts accepts a URL on any of them | design, recorded |
 | F30 | apps/web | `tailwind-merge`, which `tailwind-variants` runs by default, takes the token font sizes (`text-button`, `text-title`) for colours and drops them next to a text colour, so the web `Button` renders without `text-button`; `ui/Text`, `ui/Divider` and `ui/Avatar` already set `twMerge: false` | small; after #22 |
+| F31 | apps/web | `next/font/google` fetches the fonts at build time, so a network blip fails `validate` and CI (three times on 2026-11-14 and 15); self-hosting them with `next/font/local` removes the dependency | small |
 
 ---
 

@@ -3,7 +3,7 @@
 > **Governs:** `packages/i18n/src`
 > **ID prefix:** `I18N`
 > **Derived from:** `docs/code-standards.md`, `docs/architecture/shared.md`
-> **Verified against the code:** 2026-11-14 at `9afce2d`
+> **Verified against the code:** 2026-11-15 at `00496d7`
 
 ## Purpose
 
@@ -19,14 +19,14 @@ map of packages/core.
 
 The i18n package SHALL keep the English and the Spanish catalogs on one identical set of dot-separated leaf keys.
 
-**Evidence:** `packages/i18n/src/__tests__/catalog-parity.test.ts:32`, `packages/i18n/src/locales/en.json:1`, `packages/i18n/src/locales/es.json:1`
+**Evidence:** `packages/i18n/src/locales/__tests__/resources.constant.test.ts:32`, `packages/i18n/src/locales/en.json:1`, `packages/i18n/src/locales/es.json:1`
 
 #### Scenario: a key is added to one catalog only
 
 - **GIVEN** the English and the Spanish catalogs
 - **WHEN** their leaf key paths are collected and sorted
 - **THEN** the two lists are equal, so a key present in one catalog alone fails the suite
-- **Test:** `packages/i18n/src/__tests__/catalog-parity.test.ts` › "es.json and en.json have identical key sets"
+- **Test:** `packages/i18n/src/locales/__tests__/resources.constant.test.ts` › "es.json and en.json have identical key sets"
 
 ### Requirement: I18N-02 — English and Spanish are the supported languages
 

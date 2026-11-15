@@ -40,7 +40,7 @@ app-monorepo-template/
 ├── scripts/
 │   ├── init-project.mjs    # renames @app/*, app-monorepo-template, and bundle ID to a real slug
 │   ├── check-identity.mjs  # fails if template-default identity tokens are still present
-│   ├── verify-tests.mjs    # fails if any unit lacks a sibling *.test.* (tests-per-unit gate)
+│   ├── verify-tests.mjs    # fails if a unit lacks a test in its own folder's __tests__/ (tests gate)
 │   └── verify-maps.mjs     # validates docs/maps refs + audits inline magic numbers (AST)
 ├── .prettierrc.json · .prettierignore · commitlint.config.js
 ├── .husky/{pre-commit,commit-msg}
@@ -119,7 +119,7 @@ Shared ICU **JSON** catalogs for web and mobile.
 - `locales/{en,es}.json` — translation catalogs.
 - `i18n.constant.ts` — locale constants (languages, default/fallback, `FORMATTING_LOCALE`).
 - `resources.constant.ts` — builds the i18next resources object.
-- `__tests__/catalog-parity.test.ts` — fails fast if `en` and `es` keys diverge.
+- `locales/__tests__/resources.constant.test.ts` — fails fast if `en` and `es` keys diverge.
 
 ### `@app/supabase`
 

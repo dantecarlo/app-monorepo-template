@@ -3,7 +3,7 @@
 > **Governs:** `apps/mobile/src`, `apps/mobile/app.json`
 > **ID prefix:** `MOBILE`
 > **Derived from:** `docs/architecture/mobile.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/observability.md`, `docs/e2e.md`, `docs/responsive.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-15 at `6c82909`
+> **Verified against the code:** 2026-11-15 at `8852663`
 
 ## Purpose
 
@@ -129,21 +129,21 @@ default language.
 - **GIVEN** no language is stored
 - **WHEN** the language is resolved from the tag en-US
 - **THEN** a supported language is returned
-- **Test:** `apps/mobile/src/lib/i18n/i18n.config.test.ts` › "normalizes BCP-47 tag to a supported language"
+- **Test:** `apps/mobile/src/lib/i18n/__tests__/i18n.config.test.ts` › "normalizes BCP-47 tag to a supported language"
 
 #### Scenario: an unsupported device language
 
 - **GIVEN** no language is stored
 - **WHEN** the language is resolved from an unsupported tag
 - **THEN** the default language is returned
-- **Test:** `apps/mobile/src/lib/i18n/i18n.config.test.ts` › "falls back to default for an unsupported language tag"
+- **Test:** `apps/mobile/src/lib/i18n/__tests__/i18n.config.test.ts` › "falls back to default for an unsupported language tag"
 
 #### Scenario: no device language at all
 
 - **GIVEN** no language is stored
 - **WHEN** the device reports no language code
 - **THEN** the default language is returned
-- **Test:** `apps/mobile/src/lib/i18n/i18n.config.test.ts` › "returns the default language for null input"
+- **Test:** `apps/mobile/src/lib/i18n/__tests__/i18n.config.test.ts` › "returns the default language for null input"
 
 #### Scenario: a stored language wins
 
@@ -208,14 +208,14 @@ simulated delay, returning at most the requested limit, 50 by default, with no n
 - **GIVEN** the sample list
 - **WHEN** the list is fetched with no search term
 - **THEN** the sample items resolve, the first being item_001
-- **Test:** `apps/mobile/src/services/Items/items.service.test.ts` › "getItems resolves the full list when no search is given"
+- **Test:** `apps/mobile/src/services/Items/__tests__/items.service.test.ts` › "getItems resolves the full list when no search is given"
 
 #### Scenario: a limit below the list size
 
 - **GIVEN** the sample list of five items
 - **WHEN** the list is fetched with a limit of 2
 - **THEN** exactly two items resolve
-- **Test:** `apps/mobile/src/services/Items/items.service.test.ts` › "getItems respects the limit"
+- **Test:** `apps/mobile/src/services/Items/__tests__/items.service.test.ts` › "getItems respects the limit"
 
 ### Requirement: MOBILE-11 — Case-insensitive search
 
@@ -229,7 +229,7 @@ search term, ignoring case.
 - **GIVEN** the sample list holds one item about dark mode
 - **WHEN** the list is fetched with the term DARK
 - **THEN** that one item resolves
-- **Test:** `apps/mobile/src/services/Items/items.service.test.ts` › "getItems filters by a case-insensitive search term"
+- **Test:** `apps/mobile/src/services/Items/__tests__/items.service.test.ts` › "getItems filters by a case-insensitive search term"
 
 ### Requirement: MOBILE-12 — One item by id
 
@@ -242,14 +242,14 @@ The mobile app SHALL return the sample item whose id matches, or null when no it
 - **GIVEN** the sample list
 - **WHEN** item_002 is fetched
 - **THEN** the item with that id resolves
-- **Test:** `apps/mobile/src/services/Items/items.service.test.ts` › "getItem returns the matching item by id"
+- **Test:** `apps/mobile/src/services/Items/__tests__/items.service.test.ts` › "getItem returns the matching item by id"
 
 #### Scenario: an unknown id
 
 - **GIVEN** the sample list
 - **WHEN** an id no item has is fetched
 - **THEN** null resolves
-- **Test:** `apps/mobile/src/services/Items/items.service.test.ts` › "getItem returns null for an unknown id (null-guard)"
+- **Test:** `apps/mobile/src/services/Items/__tests__/items.service.test.ts` › "getItem returns null for an unknown id (null-guard)"
 
 ### Requirement: MOBILE-13 — Item view model mapping
 
@@ -264,21 +264,21 @@ two words of the author name, or an empty label and a question mark when there i
 - **GIVEN** an item whose author is Alice Brown
 - **WHEN** it is adapted
 - **THEN** its initials are AB
-- **Test:** `apps/mobile/src/services/Items/Items.adapter.test.ts` › "builds initials from a two-word author name"
+- **Test:** `apps/mobile/src/services/Items/__tests__/Items.adapter.test.ts` › "builds initials from a two-word author name"
 
 #### Scenario: no author
 
 - **GIVEN** an item with no author name
 - **WHEN** it is adapted
 - **THEN** its initials are a question mark and its author label is empty
-- **Test:** `apps/mobile/src/services/Items/Items.adapter.test.ts` › "falls back to "?" initials when author_name is null (null-guard)"
+- **Test:** `apps/mobile/src/services/Items/__tests__/Items.adapter.test.ts` › "falls back to "?" initials when author_name is null (null-guard)"
 
 #### Scenario: several items
 
 - **GIVEN** two items in a given order
 - **WHEN** they are adapted together
 - **THEN** the view models keep that order
-- **Test:** `apps/mobile/src/services/Items/Items.adapter.test.ts` › "maps all DTOs preserving order"
+- **Test:** `apps/mobile/src/services/Items/__tests__/Items.adapter.test.ts` › "maps all DTOs preserving order"
 
 ### Requirement: MOBILE-14 — Relative creation time
 
@@ -378,21 +378,21 @@ while the query stays in error.
 - **GIVEN** a query whose function throws and whose caller passes an override message
 - **WHEN** the query settles in error
 - **THEN** an error toast with the override message is added
-- **Test:** `apps/mobile/src/lib/query/useAppQuery.hook.test.ts` › "fires an error toast with the override message on failure"
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "fires an error toast with the override message on failure"
 
 #### Scenario: a failed query re-renders
 
 - **GIVEN** a query that failed once and added its toast
 - **WHEN** its component renders again while the query stays in error
 - **THEN** no other toast is added
-- **Test:** `apps/mobile/src/lib/query/useAppQuery.hook.test.ts` › "adds one error toast per failure however often it re-renders"
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "adds one error toast per failure however often it re-renders"
 
 #### Scenario: the query fails again
 
 - **GIVEN** a query that failed once and added its toast
 - **WHEN** it is refetched and fails again
 - **THEN** a second error toast is added
-- **Test:** `apps/mobile/src/lib/query/useAppQuery.hook.test.ts` › "adds another error toast when the query fails again"
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "adds another error toast when the query fails again"
 
 #### Scenario: the dashboard fails to load
 
@@ -414,28 +414,28 @@ own message, and the helper.error.generic copy.
 - **GIVEN** an AppError with a known message key and an override message
 - **WHEN** the message is resolved
 - **THEN** the override is returned
-- **Test:** `apps/mobile/src/lib/query/resolveErrorMessage.helper.test.ts` › "prefers the explicit errorMessage override"
+- **Test:** `apps/mobile/src/lib/query/__tests__/resolveErrorMessage.helper.test.ts` › "prefers the explicit errorMessage override"
 
 #### Scenario: a known message key
 
 - **GIVEN** an AppError whose message key the catalog has, and no override
 - **WHEN** the message is resolved
 - **THEN** the translated copy is returned
-- **Test:** `apps/mobile/src/lib/query/resolveErrorMessage.helper.test.ts` › "resolves AppError.messageKey via i18n when no override"
+- **Test:** `apps/mobile/src/lib/query/__tests__/resolveErrorMessage.helper.test.ts` › "resolves AppError.messageKey via i18n when no override"
 
 #### Scenario: a message key the catalog lacks
 
 - **GIVEN** an AppError whose message key the catalog does not have
 - **WHEN** the message is resolved
 - **THEN** the error's own message is returned
-- **Test:** `apps/mobile/src/lib/query/resolveErrorMessage.helper.test.ts` › "falls back to error.message when the key is missing from catalog"
+- **Test:** `apps/mobile/src/lib/query/__tests__/resolveErrorMessage.helper.test.ts` › "falls back to error.message when the key is missing from catalog"
 
 #### Scenario: a thrown value that is not an Error
 
 - **GIVEN** a thrown string
 - **WHEN** the message is resolved
 - **THEN** the generic fallback is returned
-- **Test:** `apps/mobile/src/lib/query/resolveErrorMessage.helper.test.ts` › "uses the generic fallback for a non-Error value"
+- **Test:** `apps/mobile/src/lib/query/__tests__/resolveErrorMessage.helper.test.ts` › "uses the generic fallback for a non-Error value"
 
 ### Requirement: MOBILE-22 — Mutation toasts
 
@@ -450,21 +450,21 @@ run the caller's own callback.
 - **GIVEN** a mutation whose function throws and whose caller passes an override message
 - **WHEN** it runs
 - **THEN** an error toast with the override message is added
-- **Test:** `apps/mobile/src/lib/query/useAppMutation.hook.test.ts` › "shows an error toast with the override message on failure"
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "shows an error toast with the override message on failure"
 
 #### Scenario: a successful mutation with a success message
 
 - **GIVEN** a mutation that resolves and a success message
 - **WHEN** it runs
 - **THEN** a success toast with that message is added
-- **Test:** `apps/mobile/src/lib/query/useAppMutation.hook.test.ts` › "shows a success toast when successMessage is provided"
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "shows a success toast when successMessage is provided"
 
 #### Scenario: the caller's callback
 
 - **GIVEN** a mutation with its own success callback
 - **WHEN** it succeeds
 - **THEN** the callback runs once
-- **Test:** `apps/mobile/src/lib/query/useAppMutation.hook.test.ts` › "still runs the caller onSuccess callback"
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "still runs the caller onSuccess callback"
 
 ### Requirement: MOBILE-23 — Toast lifetime
 
@@ -478,14 +478,14 @@ earlier when it is removed by its id.
 - **GIVEN** a toast was just added
 - **WHEN** 4 seconds pass
 - **THEN** the toast store is empty
-- **Test:** `apps/mobile/src/stores/toast.store.test.ts` › "toast auto-dismisses after 4 seconds"
+- **Test:** `apps/mobile/src/stores/__tests__/toast.store.test.ts` › "toast auto-dismisses after 4 seconds"
 
 #### Scenario: the toast is removed by id
 
 - **GIVEN** one toast in the store
 - **WHEN** it is removed by its id
 - **THEN** the toast store is empty
-- **Test:** `apps/mobile/src/stores/toast.store.test.ts` › "remove removes a toast by id"
+- **Test:** `apps/mobile/src/stores/__tests__/toast.store.test.ts` › "remove removes a toast by id"
 
 ### Requirement: MOBILE-24 — Query client defaults
 
@@ -499,21 +499,21 @@ never retry a failed mutation.
 - **GIVEN** a query client built with the defaults
 - **WHEN** its query defaults are read
 - **THEN** the stale time is 30000 ms
-- **Test:** `apps/mobile/src/lib/query/createQueryClient.helper.test.ts` › "applies 30s stale time by default"
+- **Test:** `apps/mobile/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "applies 30s stale time by default"
 
 #### Scenario: query retries
 
 - **GIVEN** a query client built with the defaults
 - **WHEN** its query defaults are read
 - **THEN** a query retries once
-- **Test:** `apps/mobile/src/lib/query/createQueryClient.helper.test.ts` › "applies retry: 1 for queries"
+- **Test:** `apps/mobile/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "applies retry: 1 for queries"
 
 #### Scenario: mutation retries
 
 - **GIVEN** a query client built with the defaults
 - **WHEN** its mutation defaults are read
 - **THEN** a mutation never retries
-- **Test:** `apps/mobile/src/lib/query/createQueryClient.helper.test.ts` › "applies retry: 0 for mutations"
+- **Test:** `apps/mobile/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "applies retry: 0 for mutations"
 
 ### Requirement: MOBILE-25 — Every failed query and mutation is captured
 
@@ -528,28 +528,28 @@ port's captureError, tagged with the cache it came from.
 - **GIVEN** a query keyed by items, an account identifier and list
 - **WHEN** the query fails
 - **THEN** the capture callback runs once with the error, the identifier replaced by [redacted] and the queryCache source
-- **Test:** `apps/mobile/src/lib/query/createQueryClient.helper.test.ts` › "calls onCaptureError with sanitized queryKey on query failure"
+- **Test:** `apps/mobile/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "calls onCaptureError with sanitized queryKey on query failure"
 
 #### Scenario: a query keyed by a search text
 
 - **GIVEN** a query keyed by `QueryKeys.items.list('alice')`
 - **WHEN** the query fails
 - **THEN** the capture callback receives the key `['items', 'list', '[redacted]']`
-- **Test:** `apps/mobile/src/lib/query/createQueryClient.helper.test.ts` › "redacts the search text of an items list key on query failure"
+- **Test:** `apps/mobile/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "redacts the search text of an items list key on query failure"
 
 #### Scenario: a failing mutation
 
 - **GIVEN** a mutation whose function throws
 - **WHEN** it runs
 - **THEN** the capture callback runs with the error and the mutationCache source
-- **Test:** `apps/mobile/src/lib/query/createQueryClient.helper.test.ts` › "calls onCaptureError with mutationCache source on mutation failure"
+- **Test:** `apps/mobile/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "calls onCaptureError with mutationCache source on mutation failure"
 
 #### Scenario: the bridge to the port
 
 - **GIVEN** the capture bridge built over an observability port
 - **WHEN** it receives an error and its context
 - **THEN** the port's captureError receives both, once
-- **Test:** `apps/mobile/src/lib/observability/toCaptureError.helper.test.ts` › "forwards error and context to captureError"
+- **Test:** `apps/mobile/src/lib/observability/__tests__/toCaptureError.helper.test.ts` › "forwards error and context to captureError"
 
 ### Requirement: MOBILE-26 — PII scrubbed before Sentry
 
@@ -564,28 +564,28 @@ receives it.
 - **GIVEN** a configured DSN
 - **WHEN** an error is captured with a context holding an email and a screen name
 - **THEN** the context handed to the Sentry SDK has the email redacted and the screen name kept
-- **Test:** `apps/mobile/src/lib/observability/createSentryObservability.adapter.test.ts` › "captureError scrubs PII from the context"
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "captureError scrubs PII from the context"
 
 #### Scenario: the user payload
 
 - **GIVEN** a configured DSN
 - **WHEN** the user is set with an email and an id
 - **THEN** the user handed to the Sentry SDK has the email redacted and the id kept
-- **Test:** `apps/mobile/src/lib/observability/createSentryObservability.adapter.test.ts` › "setUser scrubs PII from the user payload"
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "setUser scrubs PII from the user payload"
 
 #### Scenario: an automatically captured event
 
 - **GIVEN** the Sentry SDK was initialised by the adapter
 - **WHEN** an event carrying Authorization and Cookie headers reaches its beforeSend hook
 - **THEN** both headers come back redacted
-- **Test:** `apps/mobile/src/lib/observability/createSentryObservability.adapter.test.ts` › "Sentry.init registers beforeSend that scrubs auto-captured events"
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "Sentry.init registers beforeSend that scrubs auto-captured events"
 
 #### Scenario: an automatically captured breadcrumb
 
 - **GIVEN** the Sentry SDK was initialised by the adapter
 - **WHEN** a breadcrumb with an email reaches its beforeBreadcrumb hook
 - **THEN** the email comes back redacted
-- **Test:** `apps/mobile/src/lib/observability/createSentryObservability.adapter.test.ts` › "Sentry.init registers beforeBreadcrumb that scrubs auto-captured breadcrumbs"
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "Sentry.init registers beforeBreadcrumb that scrubs auto-captured breadcrumbs"
 
 #### Scenario: delivery from a native build
 
@@ -606,7 +606,7 @@ EXPO_PUBLIC_SENTRY_DSN is unset, tagging events with EXPO_PUBLIC_APP_ENV, else d
 - **GIVEN** EXPO_PUBLIC_SENTRY_DSN is unset
 - **WHEN** an error is captured and a user is set
 - **THEN** the Sentry SDK receives neither
-- **Test:** `apps/mobile/src/lib/observability/createSentryObservability.adapter.test.ts` › "methods no-op when the DSN is absent"
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "methods no-op when the DSN is absent"
 
 #### Scenario: no environment tag
 
@@ -628,14 +628,14 @@ either is unset.
 - **GIVEN** both variables are set
 - **WHEN** the client module loads
 - **THEN** the client is created with them and no warning is logged
-- **Test:** `apps/mobile/src/lib/supabase/client.adapter.test.ts` › "creates the client with env credentials when present"
+- **Test:** `apps/mobile/src/lib/supabase/__tests__/client.adapter.test.ts` › "creates the client with env credentials when present"
 
 #### Scenario: no values set
 
 - **GIVEN** neither variable is set
 - **WHEN** the client module loads
 - **THEN** the client is created with the placeholder URL and key, and one warning is logged
-- **Test:** `apps/mobile/src/lib/supabase/client.adapter.test.ts` › "falls back to placeholders and warns when env is absent"
+- **Test:** `apps/mobile/src/lib/supabase/__tests__/client.adapter.test.ts` › "falls back to placeholders and warns when env is absent"
 
 ### Requirement: MOBILE-29 — Session bootstrap from the auth gateway
 
@@ -650,14 +650,14 @@ step with every later auth state change until unmount.
 - **GIVEN** the app has just launched
 - **WHEN** the auth store is read
 - **THEN** the status is loading and there is no session
-- **Test:** `apps/mobile/src/stores/auth.store.test.ts` › "starts in loading status with no session"
+- **Test:** `apps/mobile/src/stores/__tests__/auth.store.test.ts` › "starts in loading status with no session"
 
 #### Scenario: the provider starts the bootstrap
 
 - **GIVEN** an auth gateway
 - **WHEN** the auth provider renders with it
 - **THEN** the bootstrap runs with that gateway
-- **Test:** `apps/mobile/src/components/AuthProvider/AuthProvider.component.test.tsx` › "calls getSession on mount via bootstrap"
+- **Test:** `apps/mobile/src/components/AuthProvider/__tests__/AuthProvider.component.test.tsx` › "calls getSession on mount via bootstrap"
 
 #### Scenario: a stored session exists
 
@@ -777,14 +777,14 @@ toast of the toast store as an alert with its message and a dismiss control that
 - **GIVEN** the root layout rendered with its fonts loaded
 - **WHEN** an error toast is added to the toast store
 - **THEN** its message is shown
-- **Test:** `apps/mobile/src/app/__tests__/_layout.test.tsx` › "shows a toast added to the store over the routes"
+- **Test:** `apps/mobile/src/app/__tests__/layout.route.test.tsx` › "shows a toast added to the store over the routes"
 
 #### Scenario: the toast is dismissed
 
 - **GIVEN** one toast in the viewport
 - **WHEN** its dismiss control is pressed
 - **THEN** the toast is shown in an alert, and after the press it is gone
-- **Test:** `apps/mobile/src/components/ui/Toast/Toast.component.test.tsx` › "removes a toast when its dismiss control is pressed"
+- **Test:** `apps/mobile/src/components/ui/Toast/__tests__/Toast.component.test.tsx` › "removes a toast when its dismiss control is pressed"
 
 ### Requirement: MOBILE-37 — A render crash shows the error state
 
@@ -799,15 +799,15 @@ the theme background and a retry control that re-renders the route.
 - **GIVEN** a route throws while rendering
 - **WHEN** the root error boundary renders and its retry control is pressed
 - **THEN** the generic error title and message are shown in an alert, and the route is re-rendered once
-- **Test:** `apps/mobile/src/components/RootErrorBoundary/RootErrorBoundary.component.test.tsx` › "renders the generic error state for a render crash"
-- **Test:** `apps/mobile/src/components/RootErrorBoundary/RootErrorBoundary.component.test.tsx` › "calls retry when the retry control is pressed"
+- **Test:** `apps/mobile/src/components/RootErrorBoundary/__tests__/RootErrorBoundary.component.test.tsx` › "renders the generic error state for a render crash"
+- **Test:** `apps/mobile/src/components/RootErrorBoundary/__tests__/RootErrorBoundary.component.test.tsx` › "calls retry when the retry control is pressed"
 
 #### Scenario: the root layout exports the boundary
 
 - **GIVEN** the root layout module
 - **WHEN** Expo Router reads its exports
 - **THEN** its `ErrorBoundary` is the root error boundary
-- **Test:** `apps/mobile/src/app/__tests__/_layout.test.tsx` › "exports the root error boundary as its ErrorBoundary"
+- **Test:** `apps/mobile/src/app/__tests__/layout.route.test.tsx` › "exports the root error boundary as its ErrorBoundary"
 
 ### Requirement: MOBILE-38 — A screen or section only positions
 
@@ -861,21 +861,21 @@ background when it is themed.
 - **GIVEN** the `Text` block with the caption variant
 - **WHEN** it renders
 - **THEN** its style holds the caption size, line height and tertiary colour of the tokens
-- **Test:** `apps/mobile/src/components/ui/Text/Text.component.test.tsx` › "renders a variant's typography"
+- **Test:** `apps/mobile/src/components/ui/Text/__tests__/Text.component.test.tsx` › "renders a variant's typography"
 
 #### Scenario: a labelled divider renders
 
 - **GIVEN** the `Divider` block with a label
 - **WHEN** it renders
 - **THEN** the label is shown between two hairline rules
-- **Test:** `apps/mobile/src/components/ui/Divider/Divider.component.test.tsx` › "renders the label between two rules"
+- **Test:** `apps/mobile/src/components/ui/Divider/__tests__/Divider.component.test.tsx` › "renders the label between two rules"
 
 #### Scenario: a themed screen surface renders
 
 - **GIVEN** the `Screen` block, themed and not themed, under the light theme
 - **WHEN** it renders
 - **THEN** the themed surface paints the light base background and the other the dark one
-- **Test:** `apps/mobile/src/components/ui/Screen/Screen.component.test.tsx` › "paints the dark base, or the active theme's base when themed"
+- **Test:** `apps/mobile/src/components/ui/Screen/__tests__/Screen.component.test.tsx` › "paints the dark base, or the active theme's base when themed"
 
 ### Requirement: MOBILE-41 — Only the ui blocks import a UI kit
 
@@ -897,7 +897,7 @@ a block under `src/components/ui/`, so a kit is swapped by rewriting that folder
 - **GIVEN** the `AccentGradient` block around content
 - **WHEN** it renders
 - **THEN** it paints the light accent to the accent behind the content
-- **Test:** `apps/mobile/src/components/ui/AccentGradient/AccentGradient.component.test.tsx` › "paints the accent gradient behind its children"
+- **Test:** `apps/mobile/src/components/ui/AccentGradient/__tests__/AccentGradient.component.test.tsx` › "paints the accent gradient behind its children"
 
 ## Open questions
 

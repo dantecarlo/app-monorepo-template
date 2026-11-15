@@ -3,7 +3,7 @@
 > **Governs:** `packages/cloudflare/src`
 > **ID prefix:** `CLOUDFLARE`
 > **Derived from:** `docs/infrastructure.md`, `docs/images.md`, `docs/architecture/shared.md`
-> **Verified against the code:** 2026-11-15 at `7c580f3`
+> **Verified against the code:** 2026-11-15 at `8852663`
 
 ## Purpose
 
@@ -32,7 +32,7 @@ module is exported.
 - **WHEN** it imports from the package entry point
 - **THEN** exactly the four factories, verifySignedImageUrl and SignedImageUrlRejectionEnum are
   available
-- **Test:** `packages/cloudflare/src/index.test.ts` › "the entry point exposes the four adapter factories and the signed-URL verifier"
+- **Test:** `packages/cloudflare/src/__tests__/index.test.ts` › "the entry point exposes the four adapter factories and the signed-URL verifier"
 
 ### Requirement: CLOUDFLARE-02 — Configuration defaults to environment variables
 
@@ -58,7 +58,7 @@ The cloudflare package SHALL make the origin guard report a request as trusted, 
 - **GIVEN** an origin guard created with no origin secret
 - **WHEN** it checks a request that carries no origin header
 - **THEN** the result is trusted, with the reason NOT_CONFIGURED
-- **Test:** `packages/cloudflare/src/createCloudflareOriginGuard.adapter.test.ts` › "assertTrustedOrigin passes through when no secret is configured"
+- **Test:** `packages/cloudflare/src/__tests__/createCloudflareOriginGuard.adapter.test.ts` › "assertTrustedOrigin passes through when no secret is configured"
 
 ### Requirement: CLOUDFLARE-04 — The origin guard rejects a request without the origin header
 
@@ -71,7 +71,7 @@ The cloudflare package SHALL make the origin guard report a request as untrusted
 - **GIVEN** an origin guard created with an origin secret
 - **WHEN** it checks a request whose x-cf-origin-secret header is absent
 - **THEN** the result is untrusted, with the reason MISSING_HEADER
-- **Test:** `packages/cloudflare/src/createCloudflareOriginGuard.adapter.test.ts` › "assertTrustedOrigin rejects a missing header"
+- **Test:** `packages/cloudflare/src/__tests__/createCloudflareOriginGuard.adapter.test.ts` › "assertTrustedOrigin rejects a missing header"
 
 ### Requirement: CLOUDFLARE-05 — The origin guard rejects a header that differs from the secret
 
@@ -84,14 +84,14 @@ The cloudflare package SHALL make the origin guard report a request as untrusted
 - **GIVEN** an origin guard created with an origin secret
 - **WHEN** it checks a request whose header holds another value
 - **THEN** the result is untrusted, with the reason MISMATCH
-- **Test:** `packages/cloudflare/src/createCloudflareOriginGuard.adapter.test.ts` › "assertTrustedOrigin rejects a mismatched header"
+- **Test:** `packages/cloudflare/src/__tests__/createCloudflareOriginGuard.adapter.test.ts` › "assertTrustedOrigin rejects a mismatched header"
 
 #### Scenario: a prefix of the secret
 
 - **GIVEN** an origin guard created with an origin secret
 - **WHEN** it checks a request whose header holds the secret without its last character
 - **THEN** the result is untrusted, with the reason MISMATCH
-- **Test:** `packages/cloudflare/src/createCloudflareOriginGuard.adapter.test.ts` › "assertTrustedOrigin rejects a length-mismatch (prefix) header as untrusted"
+- **Test:** `packages/cloudflare/src/__tests__/createCloudflareOriginGuard.adapter.test.ts` › "assertTrustedOrigin rejects a length-mismatch (prefix) header as untrusted"
 
 ### Requirement: CLOUDFLARE-06 — The secret comparison runs over the whole secret
 
@@ -108,14 +108,14 @@ the signed-URL verifier both compare through this one function, isConstantTimeEq
 - **GIVEN** an origin guard created with an origin secret
 - **WHEN** it checks a header of the same length whose characters all differ
 - **THEN** the result is untrusted, with the reason MISMATCH
-- **Test:** `packages/cloudflare/src/createCloudflareOriginGuard.adapter.test.ts` › "assertTrustedOrigin rejects an equal-length mismatch via edge-safe constant-time compare"
+- **Test:** `packages/cloudflare/src/__tests__/createCloudflareOriginGuard.adapter.test.ts` › "assertTrustedOrigin rejects an equal-length mismatch via edge-safe constant-time compare"
 
 #### Scenario: only the last character differs
 
 - **GIVEN** an origin guard created with an origin secret
 - **WHEN** it checks a header equal to the secret except for its last character
 - **THEN** the result is untrusted, with the reason MISMATCH
-- **Test:** `packages/cloudflare/src/createCloudflareOriginGuard.adapter.test.ts` › "assertTrustedOrigin rejects a single trailing-character difference"
+- **Test:** `packages/cloudflare/src/__tests__/createCloudflareOriginGuard.adapter.test.ts` › "assertTrustedOrigin rejects a single trailing-character difference"
 
 #### Scenario: the comparison itself
 
@@ -123,7 +123,7 @@ the signed-URL verifier both compare through this one function, isConstantTimeEq
   last character, and strings one character shorter or longer
 - **WHEN** isConstantTimeEqual compares each against the first
 - **THEN** only the same string is equal
-- **Test:** `packages/cloudflare/src/constantTimeEqual.helper.test.ts` › "isConstantTimeEqual is true for the same string only"
+- **Test:** `packages/cloudflare/src/__tests__/constantTimeEqual.helper.test.ts` › "isConstantTimeEqual is true for the same string only"
 
 #### Scenario: the comparison time does not depend on where the secrets differ
 
@@ -145,7 +145,7 @@ The cloudflare package SHALL make the origin guard report a request as trusted, 
 - **GIVEN** an origin guard created with an origin secret
 - **WHEN** it checks a request whose header holds that secret
 - **THEN** the result is trusted and carries no reason
-- **Test:** `packages/cloudflare/src/createCloudflareOriginGuard.adapter.test.ts` › "assertTrustedOrigin trusts when the header matches the secret"
+- **Test:** `packages/cloudflare/src/__tests__/createCloudflareOriginGuard.adapter.test.ts` › "assertTrustedOrigin trusts when the header matches the secret"
 
 ### Requirement: CLOUDFLARE-08 — Bot protection passes every token outside production when no secret is set
 
@@ -158,7 +158,7 @@ The cloudflare package SHALL make bot protection resolve a verification as succe
 - **GIVEN** bot protection created with no secret, outside production
 - **WHEN** it verifies any token
 - **THEN** the result is successful
-- **Test:** `packages/cloudflare/src/createTurnstileBotProtection.adapter.test.ts` › "verifyToken no-ops to success when no secret is configured"
+- **Test:** `packages/cloudflare/src/__tests__/createTurnstileBotProtection.adapter.test.ts` › "verifyToken no-ops to success when no secret is configured"
 
 ### Requirement: CLOUDFLARE-09 — Bot protection fails closed in production when no secret is set
 
@@ -171,7 +171,7 @@ The cloudflare package SHALL make bot protection resolve a verification as unsuc
 - **GIVEN** bot protection created with no secret, and NODE_ENV set to production
 - **WHEN** it verifies any token
 - **THEN** the result is unsuccessful
-- **Test:** `packages/cloudflare/src/createTurnstileBotProtection.adapter.test.ts` › "verifyToken fails CLOSED when no secret is configured in production"
+- **Test:** `packages/cloudflare/src/__tests__/createTurnstileBotProtection.adapter.test.ts` › "verifyToken fails CLOSED when no secret is configured in production"
 
 #### Scenario: the failure names its cause
 
@@ -191,7 +191,7 @@ The cloudflare package SHALL verify a token, when a secret is configured, by a P
 - **GIVEN** bot protection created with a secret
 - **WHEN** it verifies a token and a remote IP
 - **THEN** the posted body holds the secret, the token as response and the IP as remoteip
-- **Test:** `packages/cloudflare/src/createTurnstileBotProtection.adapter.test.ts` › "verifyToken posts the secret and token to siteverify"
+- **Test:** `packages/cloudflare/src/__tests__/createTurnstileBotProtection.adapter.test.ts` › "verifyToken posts the secret and token to siteverify"
 
 #### Scenario: a token without a remote IP
 
@@ -211,14 +211,14 @@ The cloudflare package SHALL return the siteverify answer as the neutral bot-ver
 - **GIVEN** siteverify answers success with a hostname and a challenge timestamp
 - **WHEN** bot protection verifies a token
 - **THEN** it calls siteverify once and the result is successful, with that hostname and challengeTs
-- **Test:** `packages/cloudflare/src/createTurnstileBotProtection.adapter.test.ts` › "verifyToken maps a successful siteverify response"
+- **Test:** `packages/cloudflare/src/__tests__/createTurnstileBotProtection.adapter.test.ts` › "verifyToken maps a successful siteverify response"
 
 #### Scenario: a failed verification
 
 - **GIVEN** siteverify answers failure with error codes
 - **WHEN** bot protection verifies a token
 - **THEN** the result is unsuccessful and carries those error codes
-- **Test:** `packages/cloudflare/src/createTurnstileBotProtection.adapter.test.ts` › "verifyToken maps a failed siteverify response with error codes"
+- **Test:** `packages/cloudflare/src/__tests__/createTurnstileBotProtection.adapter.test.ts` › "verifyToken maps a failed siteverify response with error codes"
 
 ### Requirement: CLOUDFLARE-12 — A failed siteverify call rejects
 
@@ -232,7 +232,7 @@ verification with that error, never resolving it as successful.
 - **GIVEN** bot protection created with a secret, and a fetch that rejects
 - **WHEN** it verifies a token
 - **THEN** the verification rejects with the very error the fetch rejected with
-- **Test:** `packages/cloudflare/src/createTurnstileBotProtection.adapter.test.ts` › "verifyToken rejects with the fetch error when siteverify cannot be reached"
+- **Test:** `packages/cloudflare/src/__tests__/createTurnstileBotProtection.adapter.test.ts` › "verifyToken rejects with the fetch error when siteverify cannot be reached"
 
 ### Requirement: CLOUDFLARE-13 — Signatures are HMAC-SHA256 over Web Crypto
 
@@ -245,21 +245,21 @@ The cloudflare package SHALL sign a message with HMAC-SHA256 through Web Crypto 
 - **GIVEN** a fixed secret and message
 - **WHEN** the message is signed
 - **THEN** the signature equals the known HMAC-SHA256 hex digest
-- **Test:** `packages/cloudflare/src/hmacHexSignature.helper.test.ts` › "hmacHexSignature returns the HMAC-SHA256 hex digest of the message"
+- **Test:** `packages/cloudflare/src/__tests__/hmacHexSignature.helper.test.ts` › "hmacHexSignature returns the HMAC-SHA256 hex digest of the message"
 
 #### Scenario: the same input twice
 
 - **GIVEN** a fixed secret and message
 - **WHEN** the message is signed twice
 - **THEN** both signatures are equal
-- **Test:** `packages/cloudflare/src/hmacHexSignature.helper.test.ts` › "hmacHexSignature is deterministic for the same input"
+- **Test:** `packages/cloudflare/src/__tests__/hmacHexSignature.helper.test.ts` › "hmacHexSignature is deterministic for the same input"
 
 #### Scenario: the digest shape
 
 - **GIVEN** a fixed secret and message
 - **WHEN** the message is signed
 - **THEN** the signature is 64 lowercase hexadecimal characters
-- **Test:** `packages/cloudflare/src/hmacHexSignature.helper.test.ts` › "hmacHexSignature produces a 64-char lowercase hex string"
+- **Test:** `packages/cloudflare/src/__tests__/hmacHexSignature.helper.test.ts` › "hmacHexSignature produces a 64-char lowercase hex string"
 
 ### Requirement: CLOUDFLARE-14 — Cloudflare Images builds the public delivery URL
 
@@ -272,14 +272,14 @@ The cloudflare package SHALL build a Cloudflare Images URL as the imagedelivery.
 - **GIVEN** Cloudflare Images delivery created with an account hash
 - **WHEN** it builds the URL of a path
 - **THEN** the URL carries the account hash
-- **Test:** `packages/cloudflare/src/createCloudflareImagesDelivery.adapter.test.ts` › "buildImageUrl builds a delivery url when an account hash is set"
+- **Test:** `packages/cloudflare/src/__tests__/createCloudflareImagesDelivery.adapter.test.ts` › "buildImageUrl builds a delivery url when an account hash is set"
 
 #### Scenario: no account hash
 
 - **GIVEN** Cloudflare Images delivery created with no account hash
 - **WHEN** it builds the URL of a path
 - **THEN** the path comes back unchanged
-- **Test:** `packages/cloudflare/src/createCloudflareImagesDelivery.adapter.test.ts` › "buildImageUrl returns raw path when no account hash is configured"
+- **Test:** `packages/cloudflare/src/__tests__/createCloudflareImagesDelivery.adapter.test.ts` › "buildImageUrl returns raw path when no account hash is configured"
 
 #### Scenario: the full URL shape
 
@@ -303,7 +303,7 @@ key, through the signer the verifier of CLOUDFLARE-20 shares.
 - **GIVEN** Cloudflare Images delivery created with an account hash and a signing key
 - **WHEN** it builds a signed URL with a lifetime
 - **THEN** the URL carries exp and sig
-- **Test:** `packages/cloudflare/src/createCloudflareImagesDelivery.adapter.test.ts` › "buildSignedImageUrl appends exp and sig when credentials are present"
+- **Test:** `packages/cloudflare/src/__tests__/createCloudflareImagesDelivery.adapter.test.ts` › "buildSignedImageUrl appends exp and sig when credentials are present"
 
 #### Scenario: the exact signed URL
 
@@ -312,7 +312,7 @@ key, through the signer the verifier of CLOUDFLARE-20 shares.
 - **WHEN** it builds a URL of `img.png` signed for 300 seconds
 - **THEN** the URL is the public delivery URL with exp 1767225900 and the HMAC-SHA256 hex of its
   path and that query
-- **Test:** `packages/cloudflare/src/createCloudflareImagesDelivery.adapter.test.ts` › "buildSignedImageUrl signs the path and exp with the signing key, at a fixed time"
+- **Test:** `packages/cloudflare/src/__tests__/createCloudflareImagesDelivery.adapter.test.ts` › "buildSignedImageUrl signs the path and exp with the signing key, at a fixed time"
 
 ### Requirement: CLOUDFLARE-16 — Cloudflare Images returns the public URL when it cannot sign
 
@@ -327,14 +327,14 @@ hash is missing, as `buildImageUrl` does.
 - **GIVEN** Cloudflare Images delivery created with an account hash and no signing key
 - **WHEN** it builds a signed URL of a path
 - **THEN** the result is the public delivery URL of that path, with no exp and no sig
-- **Test:** `packages/cloudflare/src/createCloudflareImagesDelivery.adapter.test.ts` › "buildSignedImageUrl falls back to public when no signing key is set"
+- **Test:** `packages/cloudflare/src/__tests__/createCloudflareImagesDelivery.adapter.test.ts` › "buildSignedImageUrl falls back to public when no signing key is set"
 
 #### Scenario: no account hash
 
 - **GIVEN** Cloudflare Images delivery created with no account hash
 - **WHEN** it builds a signed URL of a path
 - **THEN** the path comes back unchanged
-- **Test:** `packages/cloudflare/src/createCloudflareImagesDelivery.adapter.test.ts` › "buildSignedImageUrl returns the raw path when no account hash is configured"
+- **Test:** `packages/cloudflare/src/__tests__/createCloudflareImagesDelivery.adapter.test.ts` › "buildSignedImageUrl returns the raw path when no account hash is configured"
 
 ### Requirement: CLOUDFLARE-17 — R2 joins the public base and the path
 
@@ -347,14 +347,14 @@ The cloudflare package SHALL build an R2 URL by joining the public base URL, wit
 - **GIVEN** R2 delivery created with a public base URL
 - **WHEN** it builds the URL of a path
 - **THEN** the URL is the base, a slash and the path
-- **Test:** `packages/cloudflare/src/createR2SignedDelivery.adapter.test.ts` › "buildImageUrl joins the public base and path"
+- **Test:** `packages/cloudflare/src/__tests__/createR2SignedDelivery.adapter.test.ts` › "buildImageUrl joins the public base and path"
 
 #### Scenario: no public base
 
 - **GIVEN** R2 delivery created with an empty public base
 - **WHEN** it builds the URL of a path
 - **THEN** the path comes back unchanged
-- **Test:** `packages/cloudflare/src/createR2SignedDelivery.adapter.test.ts` › "buildImageUrl returns raw path when no public base is configured"
+- **Test:** `packages/cloudflare/src/__tests__/createR2SignedDelivery.adapter.test.ts` › "buildImageUrl returns raw path when no public base is configured"
 
 ### Requirement: CLOUDFLARE-18 — R2 signs an expiring URL
 
@@ -371,7 +371,7 @@ signer the verifier of CLOUDFLARE-20 shares.
 - **GIVEN** R2 delivery created with a public base and a signing secret
 - **WHEN** it builds a signed URL with a lifetime
 - **THEN** the URL carries exp and sig
-- **Test:** `packages/cloudflare/src/createR2SignedDelivery.adapter.test.ts` › "buildSignedImageUrl appends exp and sig when credentials are present"
+- **Test:** `packages/cloudflare/src/__tests__/createR2SignedDelivery.adapter.test.ts` › "buildSignedImageUrl appends exp and sig when credentials are present"
 
 #### Scenario: the exact signed URL
 
@@ -380,7 +380,7 @@ signer the verifier of CLOUDFLARE-20 shares.
 - **WHEN** it builds a URL of `file.png` signed for 600 seconds
 - **THEN** the URL is the base and the path with exp 1767226200 and the HMAC-SHA256 hex of its
   path and that query
-- **Test:** `packages/cloudflare/src/createR2SignedDelivery.adapter.test.ts` › "buildSignedImageUrl signs the path and exp with the secret, at a fixed time"
+- **Test:** `packages/cloudflare/src/__tests__/createR2SignedDelivery.adapter.test.ts` › "buildSignedImageUrl signs the path and exp with the secret, at a fixed time"
 
 ### Requirement: CLOUDFLARE-19 — R2 returns the unsigned URL when it cannot sign
 
@@ -393,7 +393,7 @@ The cloudflare package SHALL return the unsigned R2 URL from a signed-URL reques
 - **GIVEN** R2 delivery created with a public base and no signing secret
 - **WHEN** it builds a signed URL
 - **THEN** the result carries no sig
-- **Test:** `packages/cloudflare/src/createR2SignedDelivery.adapter.test.ts` › "buildSignedImageUrl falls back to public when no secret is set"
+- **Test:** `packages/cloudflare/src/__tests__/createR2SignedDelivery.adapter.test.ts` › "buildSignedImageUrl falls back to public when no secret is set"
 
 ### Requirement: CLOUDFLARE-20 — A signed image URL is verified before it is served
 
@@ -421,14 +421,14 @@ result, `SignedImageUrlVerificationType`, is either
 - **GIVEN** a URL signed for 600 seconds with a secret
 - **WHEN** it is verified with that secret before the 600 seconds pass
 - **THEN** it is valid and carries no reason
-- **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl accepts a URL signImageUrl signed, before it expires"
+- **Test:** `packages/cloudflare/src/__tests__/signedImageUrl.helper.test.ts` › "verifySignedImageUrl accepts a URL signImageUrl signed, before it expires"
 
 #### Scenario: a URL that already had a query
 
 - **GIVEN** a URL with the query `?v=2`, signed for 600 seconds with a secret
 - **WHEN** it is verified with that secret before the 600 seconds pass
 - **THEN** it is valid
-- **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl accepts a URL that already had a query when it was signed"
+- **Test:** `packages/cloudflare/src/__tests__/signedImageUrl.helper.test.ts` › "verifySignedImageUrl accepts a URL that already had a query when it was signed"
 
 #### Scenario: a URL either adapter signed
 
@@ -436,28 +436,28 @@ result, `SignedImageUrlVerificationType`, is either
   Cloudflare Images adapter with its signing key
 - **WHEN** each is verified with the secret that signed it
 - **THEN** both are valid
-- **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl accepts a URL either adapter signed with its secret"
+- **Test:** `packages/cloudflare/src/__tests__/signedImageUrl.helper.test.ts` › "verifySignedImageUrl accepts a URL either adapter signed with its secret"
 
 #### Scenario: an expired URL
 
 - **GIVEN** a URL signed for 600 seconds
 - **WHEN** it is verified at its `exp`, and again later
 - **THEN** both times it is not valid, with the reason `expired`
-- **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects a URL whose exp has passed as expired"
+- **Test:** `packages/cloudflare/src/__tests__/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects a URL whose exp has passed as expired"
 
 #### Scenario: a clock that is not a finite number
 
 - **GIVEN** a URL signed for 600 seconds
 - **WHEN** it is verified against a clock of NaN, and against one of infinity
 - **THEN** both times it is not valid, with the reason `expired`
-- **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects as expired when the clock is not a finite number"
+- **Test:** `packages/cloudflare/src/__tests__/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects as expired when the clock is not a finite number"
 
 #### Scenario: a tampered signature
 
 - **GIVEN** a signed URL whose `sig` has one hexadecimal character changed
 - **WHEN** it is verified
 - **THEN** it is not valid, with the reason `signature_mismatch`
-- **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects a tampered signature as a signature mismatch"
+- **Test:** `packages/cloudflare/src/__tests__/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects a tampered signature as a signature mismatch"
 
 #### Scenario: a tampered path, query or expiry, or another secret
 
@@ -465,21 +465,21 @@ result, `SignedImageUrlVerificationType`, is either
   with a later `exp`, and one checked with another secret
 - **WHEN** each is verified
 - **THEN** none is valid, each with the reason `signature_mismatch`
-- **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects a changed path, an added query, a later exp and another secret as a signature mismatch"
+- **Test:** `packages/cloudflare/src/__tests__/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects a changed path, an added query, a later exp and another secret as a signature mismatch"
 
 #### Scenario: a missing parameter
 
 - **GIVEN** a signed URL with its `exp` removed, and one with its `sig` removed
 - **WHEN** each is verified
 - **THEN** neither is valid, each with the reason `malformed`
-- **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects a URL missing its exp or sig as malformed"
+- **Test:** `packages/cloudflare/src/__tests__/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects a URL missing its exp or sig as malformed"
 
 #### Scenario: a signature of the wrong length
 
 - **GIVEN** a signed URL whose `sig` lost its first character, and one with a character added
 - **WHEN** each is verified
 - **THEN** neither is valid, each with the reason `malformed`
-- **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects a signature of the wrong length as malformed"
+- **Test:** `packages/cloudflare/src/__tests__/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects a signature of the wrong length as malformed"
 
 #### Scenario: a repeated parameter, an exp that is not seconds, or no URL
 
@@ -487,14 +487,14 @@ result, `SignedImageUrlVerificationType`, is either
   whole number, one whose `sig` is upper-case, and a string that is not a URL
 - **WHEN** each is verified
 - **THEN** none is valid, each with the reason `malformed`
-- **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects a repeated parameter, an exp that is not seconds and a string that is not a URL as malformed"
+- **Test:** `packages/cloudflare/src/__tests__/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects a repeated parameter, an exp that is not seconds and a string that is not a URL as malformed"
 
 #### Scenario: no secret
 
 - **GIVEN** a signed URL
 - **WHEN** it is verified with an empty secret
 - **THEN** it is not valid, with the reason `not_configured`
-- **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects every URL when no secret is configured"
+- **Test:** `packages/cloudflare/src/__tests__/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects every URL when no secret is configured"
 
 #### Scenario: the result type
 
@@ -502,4 +502,4 @@ result, `SignedImageUrlVerificationType`, is either
 - **WHEN** a valid result is written with a reason, or a rejected one without one
 - **THEN** neither type-checks, while a valid result with no reason and a rejected one with its
   reason do
-- **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "a verification is either valid with no reason, or rejected with one"
+- **Test:** `packages/cloudflare/src/__tests__/signedImageUrl.helper.test.ts` › "a verification is either valid with no reason, or rejected with one"

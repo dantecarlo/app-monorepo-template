@@ -55,7 +55,8 @@ src/lib/{name}/
 ├── {name}.type.ts          # Project-specific types wrapping vendor types
 ├── use{Name}.hook.ts       # React hook wrapping vendor hook (if applicable)
 ├── {name}.helper.ts        # Pure utility functions
-└── index.ts                # Barrel export
+├── index.ts                # Barrel export
+└── __tests__/              # each unit's test, named after it ({name}.helper.test.ts, …)
 ```
 
 For cross-app vendor wrapping, the lib becomes a workspace package in `packages/{name}/`.

@@ -9,7 +9,7 @@
 // Keep this file in sync with src/tokens.constant.ts (themes.dark) and
 // apps/web/src/app/globals.css — scripts/verify-theme-sync.mjs compares every
 // color of both themes with globals.css, and the dark theme with this preset.
-// The scales below are not compared (src/__tests__/preset.test.ts reads them).
+// The scales below are not compared (__tests__/tailwind-preset.test.ts reads them).
 //
 // Loaded by both apps: apps/mobile/tailwind.config.js and
 // apps/web/tailwind.config.cjs, which apps/web/src/app/globals.css loads with

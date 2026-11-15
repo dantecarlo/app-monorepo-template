@@ -53,8 +53,9 @@ src/services/<Domain>/            # PascalCase folder
 ├── <Domain>.adapter.ts           # pure DTO → domain shape
 ├── <domain>.constant.ts          # optional domain constants (QueryKeys entry goes in lib/query)
 ├── index.ts                      # barrel: service + adapter exports ONLY
-├── <domain>.service.test.ts
-└── <Domain>.adapter.test.ts
+└── __tests__/                    # each unit's test, named after it
+    ├── <domain>.service.test.ts
+    └── <Domain>.adapter.test.ts
 ```
 
 ---

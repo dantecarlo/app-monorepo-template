@@ -81,8 +81,8 @@ A component folder MUST contain:
 | `*.style.ts`      | yes      | Tailwind class constants                       |
 | `index.ts`        | yes      | barrel — single public entry point             |
 
-A component MAY have a sibling `*.hook.ts(x)`, `*.type.ts`, and
-`*.test.tsx`.
+A component MAY have a sibling `*.hook.ts(x)` and `*.type.ts`, and a
+`__tests__/` folder holding the test of each unit of the block.
 
 **Findings**
 
@@ -183,23 +183,25 @@ done
 
 ## Step 5 — Tests per unit
 
-Every logic-bearing unit in the block MUST have a sibling test:
+Every logic-bearing unit in the block MUST have a test in the `__tests__/` of
+its own folder, carrying the unit's stem:
 
-- `*.component.tsx` → `*.test.tsx`
-- `use*.hook.ts(x)` → `*.hook.test.ts(x)` (or sibling `*.test.ts(x)`)
-- `*.service.ts` → `*.test.ts`
-- `*.adapter.ts` → `*.test.ts`
-- `*.helper.ts` → `*.test.ts`
+- `X/Name.component.tsx` → `X/__tests__/Name.component.test.tsx`
+- `X/useName.hook.ts` → `X/__tests__/useName.hook.test.ts`
+- `X/name.service.ts` → `X/__tests__/name.service.test.ts`
+- `X/Name.adapter.ts` → `X/__tests__/Name.adapter.test.ts`
+- `X/name.helper.ts` → `X/__tests__/name.helper.test.ts`
 
 A `*.screen.tsx` SHOULD have a test; missing screen test → **WARNING**.
 Any missing test for component / hook / service / adapter / helper →
-**BLOCKER** (mirrors `pnpm verify:tests`).
+**BLOCKER**, and so is a test beside its unit, in a higher `__tests__/`, or
+named after no unit of its folder (both mirror `pnpm verify:tests`).
 
 ```bash
 fd -t f '\.(component|hook|service|adapter|helper)\.tsx?$' <BLOCK_ROOT>
 ```
 
-For each hit, confirm a matching `*.test.*` sibling exists.
+For each hit, confirm `<its folder>/__tests__/<its stem>.test.*` exists.
 
 ---
 

@@ -26,6 +26,10 @@ description: >
 4. Check MSW handlers (`src/test/mocks/handlers.ts`) for API endpoints the source calls.
 5. Check MSW mock data files (`src/test/mocks/*.mock.ts`) for available data objects.
 6. Run the Mock Audit Flow (below).
+7. Check the test's place. It sits in the `__tests__/` of its unit's own folder and carries the
+   unit's stem: `X/Y.<suffix>.tsx` is tested by `X/__tests__/Y.<suffix>.test.tsx`
+   (`docs/code-standards.md` § 9, checked by `pnpm verify:tests`). A misplaced test moves with
+   `pnpm tests:into-blocks`, which rewrites its relative imports and the citations of its path.
 
 ---
 

@@ -228,7 +228,8 @@ export type { I{Name} } from './{Name}.type'
 
 - [ ] Import from the barrel in consuming files, not from the implementation file
 - [ ] Run `pnpm typecheck` — verify no type errors
-- [ ] Write tests: use `test` skill for `{Name}.test.tsx`
+- [ ] Write tests: use `test` skill for `__tests__/{Name}.component.test.tsx`, in the block's own
+      folder
 - [ ] Verify `aria-label` on all interactive elements without visible text
 - [ ] Run `pnpm lint:fix` — auto-sorts JSX props
 

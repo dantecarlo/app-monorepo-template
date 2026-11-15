@@ -54,6 +54,13 @@ apps/mobile/
     └── test/                     # test helper, setup, MSW and native-module mocks
 ```
 
+Every folder that holds a unit keeps that unit's test in its own `__tests__/`, named after it:
+`components/ui/Toast/__tests__/Toast.component.test.tsx`, `stores/__tests__/auth.store.test.ts`.
+A route test sits in the `__tests__/` of its route's folder and is named after its route file as
+`<route>.route.test.tsx`: `app/__tests__/layout.route.test.tsx` tests `app/_layout.tsx`. Metro's
+default `resolver.blockList` keeps `__tests__/` out of the bundle
+([code-standards § 9](../code-standards.md)).
+
 A shared `src/constants/` folder is created on first use; none ships today.
 
 ## 3. The decision rule (shared vs specific)

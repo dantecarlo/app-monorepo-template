@@ -43,8 +43,9 @@ src/services/<Domain>/
 ├── <Domain>.adapter.ts          # pure DTO → domain shape
 ├── <domain>.constant.ts         # optional domain constants
 ├── index.ts                     # barrel: service + adapter ONLY
-├── <domain>.service.test.ts
-└── <Domain>.adapter.test.ts
+└── __tests__/                   # each unit's test, named after it
+    ├── <domain>.service.test.ts
+    └── <Domain>.adapter.test.ts
 
 src/lib/query/queryKeys.constant.ts
 └── # add <domain>: { all, list, detail } entry
@@ -53,13 +54,16 @@ src/screens/<Name>/
 ├── <Name>.screen.tsx            # container — composes components, owns layout
 ├── <Name>.style.ts              # screen positioning only (local/style-positions-only)
 ├── index.ts                     # barrel
+├── __tests__/<Name>.screen.test.tsx
 ├── hooks/
-│   └── use<Name>.hook.ts        # useAppQuery wrapper
+│   ├── use<Name>.hook.ts        # useAppQuery wrapper
+│   └── __tests__/use<Name>.hook.test.ts
 └── components/                  # optional — private screen components
     └── <Name>Row/
         ├── <Name>Row.component.tsx
         ├── <Name>Row.style.ts
-        └── index.ts
+        ├── index.ts
+        └── __tests__/<Name>Row.component.test.tsx
 
 src/app/{route}/page.tsx         # Next.js App Router entry (web)
 app/(tabs)/{route}.tsx           # Expo Router entry (mobile)

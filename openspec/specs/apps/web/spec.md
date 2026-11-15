@@ -3,7 +3,7 @@
 > **Governs:** `apps/web/src`, `apps/web/next.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-15 at `6c82909`
+> **Verified against the code:** 2026-11-15 at `8852663`
 
 ## Purpose
 
@@ -30,9 +30,9 @@ boundary followed by the client items dashboard screen, inside the page's `main`
 - **GIVEN** the items service resolves the sample items
 - **WHEN** the items dashboard screen renders
 - **THEN** it shows the welcome text and title, the main navigation landmark and the View all items button
-- **Test:** `apps/web/src/screens/ItemsDashboard/ItemsDashboard.screen.test.tsx` › "renders the dashboard header"
-- **Test:** `apps/web/src/screens/ItemsDashboard/ItemsDashboard.screen.test.tsx` › "renders the nav bar"
-- **Test:** `apps/web/src/screens/ItemsDashboard/ItemsDashboard.screen.test.tsx` › "renders the view all button"
+- **Test:** `apps/web/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx` › "renders the dashboard header"
+- **Test:** `apps/web/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx` › "renders the nav bar"
+- **Test:** `apps/web/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx` › "renders the view all button"
 
 #### Scenario: the served home page shows a glass surface
 
@@ -60,14 +60,14 @@ item counts computed from the items service, labelled with the `items.summary` t
 - **GIVEN** the items service returns one active, one archived and one draft item
 - **WHEN** the summary service runs
 - **THEN** it returns a total of 3 and a count of 1 for each status
-- **Test:** `apps/web/src/services/ItemsSummary/itemsSummary.service.test.ts` › "returns summary counts that reflect the mocked item list"
+- **Test:** `apps/web/src/services/ItemsSummary/__tests__/itemsSummary.service.test.ts` › "returns summary counts that reflect the mocked item list"
 
 #### Scenario: the screen loader forwards the summary
 
 - **GIVEN** the summary service resolves a view model
 - **WHEN** the summary screen's loader runs
 - **THEN** it returns that view model unchanged
-- **Test:** `apps/web/src/screens/ItemsSummary/loadItemsSummary.service.test.ts` › "returns the summary view model from the domain service"
+- **Test:** `apps/web/src/screens/ItemsSummary/__tests__/loadItemsSummary.service.test.ts` › "returns the summary view model from the domain service"
 
 #### Scenario: the card renders the counts
 
@@ -102,15 +102,15 @@ the items list and a dash in place of each count on the stats card.
 - **GIVEN** the items service has not resolved
 - **WHEN** the dashboard renders
 - **THEN** at least one element with the status role is shown
-- **Test:** `apps/web/src/screens/ItemsDashboard/ItemsDashboard.screen.test.tsx` › "shows loading skeletons while fetching"
-- **Test:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.test.ts` › "is in loading state initially"
+- **Test:** `apps/web/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx` › "shows loading skeletons while fetching"
+- **Test:** `apps/web/src/screens/ItemsDashboard/hooks/__tests__/useItems.hook.test.ts` › "is in loading state initially"
 
 #### Scenario: the stats card shows dashes
 
 - **GIVEN** the stats card is told the items are loading
 - **WHEN** it renders
 - **THEN** it shows a dash in place of the counts
-- **Test:** `apps/web/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.test.tsx` › "shows dash placeholder when loading"
+- **Test:** `apps/web/src/screens/ItemsDashboard/components/StatsCard/__tests__/StatsCard.component.test.tsx` › "shows dash placeholder when loading"
 
 ### Requirement: WEB-05 — The dashboard lists the loaded items with their counts
 
@@ -124,22 +124,22 @@ list header, the total item count and the count of items whose status is active.
 - **GIVEN** the items service resolves the sample items
 - **WHEN** the dashboard finishes loading
 - **THEN** the item titles are shown
-- **Test:** `apps/web/src/screens/ItemsDashboard/ItemsDashboard.screen.test.tsx` › "renders item list after loading"
+- **Test:** `apps/web/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx` › "renders item list after loading"
 
 #### Scenario: the counts are derived from the items
 
 - **GIVEN** the items service resolves fixtures of which one is active
 - **WHEN** the dashboard hook settles
 - **THEN** it exposes one view model per item, a total equal to the item count and an active count of 1
-- **Test:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.test.ts` › "exposes adapted view models and derived counts on success"
+- **Test:** `apps/web/src/screens/ItemsDashboard/hooks/__tests__/useItems.hook.test.ts` › "exposes adapted view models and derived counts on success"
 
 #### Scenario: the cards show the counts
 
 - **GIVEN** loaded counts
 - **WHEN** the stats card and the list header render
 - **THEN** the stats card shows the total and the list header shows the result count
-- **Test:** `apps/web/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.test.tsx` › "renders stats when not loading"
-- **Test:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.test.tsx` › "renders the list title and item count"
+- **Test:** `apps/web/src/screens/ItemsDashboard/components/StatsCard/__tests__/StatsCard.component.test.tsx` › "renders stats when not loading"
+- **Test:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/__tests__/ItemsListCard.component.test.tsx` › "renders the list title and item count"
 
 ### Requirement: WEB-06 — The dashboard shows an empty state for no items
 
@@ -153,8 +153,8 @@ loaded item list is empty.
 - **GIVEN** the items service resolves an empty list
 - **WHEN** the dashboard finishes loading
 - **THEN** the empty-list message is shown
-- **Test:** `apps/web/src/screens/ItemsDashboard/ItemsDashboard.screen.test.tsx` › "shows empty-state message when items query returns an empty array"
-- **Test:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.test.tsx` › "renders empty state when items list is empty"
+- **Test:** `apps/web/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx` › "shows empty-state message when items query returns an empty array"
+- **Test:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/__tests__/ItemsListCard.component.test.tsx` › "renders empty state when items list is empty"
 
 ### Requirement: WEB-07 — A failed items load falls back to the empty list
 
@@ -183,21 +183,21 @@ default, under the query key `QueryKeys.items.list(search)`.
 - **GIVEN** the dashboard hook loaded with a limit of 10
 - **WHEN** the search text changes to a term
 - **THEN** the items service is called with that term and the limit
-- **Test:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.test.ts` › "forwards search and limit to the service when search changes"
+- **Test:** `apps/web/src/screens/ItemsDashboard/hooks/__tests__/useItems.hook.test.ts` › "forwards search and limit to the service when search changes"
 
 #### Scenario: the search box is labelled
 
 - **GIVEN** the items list card
 - **WHEN** it renders
 - **THEN** it shows a search box named by the `items.dashboard.searchLabel` message
-- **Test:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.test.tsx` › "renders the search bar"
+- **Test:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/__tests__/ItemsListCard.component.test.tsx` › "renders the search bar"
 
 #### Scenario: the sample service filters the items
 
 - **GIVEN** the in-memory sample items service
 - **WHEN** it is asked for a search term
 - **THEN** it keeps the items whose title, description or category contains the term, ignoring case, up to the limit
-- **Test:** Not covered — the hook and screen tests mock `getItems`, and `apps/web/src/services/Items/items.service.test.ts` covers only the HTTP variant `fetchItems`.
+- **Test:** Not covered — the hook and screen tests mock `getItems`, and `apps/web/src/services/Items/__tests__/items.service.test.ts` covers only the HTTP variant `fetchItems`.
 
 ### Requirement: WEB-09 — Each item card shows the item and its author
 
@@ -212,22 +212,22 @@ question mark when the item has no author.
 - **GIVEN** an item view model
 - **WHEN** its card renders
 - **THEN** the title, description, category and relative time are shown
-- **Test:** `apps/web/src/screens/ItemsDashboard/components/ItemCard/ItemCard.component.test.tsx` › "renders the title, description, category and time"
+- **Test:** `apps/web/src/screens/ItemsDashboard/components/ItemCard/__tests__/ItemCard.component.test.tsx` › "renders the title, description, category and time"
 
 #### Scenario: the initials of a named author
 
 - **GIVEN** an item whose author name has two words
 - **WHEN** it is adapted for display
 - **THEN** its initials are the first letter of each word
-- **Test:** `apps/web/src/services/Items/Items.adapter.test.ts` › "builds initials from a two-word author name"
+- **Test:** `apps/web/src/services/Items/__tests__/Items.adapter.test.ts` › "builds initials from a two-word author name"
 
 #### Scenario: an item with no author
 
 - **GIVEN** an item with no author name
 - **WHEN** it is adapted and rendered
 - **THEN** the initials are a question mark and no author name is shown
-- **Test:** `apps/web/src/services/Items/Items.adapter.test.ts` › "falls back to "?" initials when author_name is null"
-- **Test:** `apps/web/src/screens/ItemsDashboard/components/ItemCard/ItemCard.component.test.tsx` › "omits the author label when empty"
+- **Test:** `apps/web/src/services/Items/__tests__/Items.adapter.test.ts` › "falls back to "?" initials when author_name is null"
+- **Test:** `apps/web/src/screens/ItemsDashboard/components/ItemCard/__tests__/ItemCard.component.test.tsx` › "omits the author label when empty"
 
 ### Requirement: WEB-10 — The dashboard navigation marks the active tab
 
@@ -242,9 +242,9 @@ active tab as selected, home by default.
 - **GIVEN** the dashboard navigation with home active
 - **WHEN** it renders
 - **THEN** the four tab labels are shown and the home tab has `aria-selected` set to true
-- **Test:** `apps/web/src/screens/ItemsDashboard/components/DashboardNav/DashboardNav.component.test.tsx` › "renders all nav items"
-- **Test:** `apps/web/src/screens/ItemsDashboard/components/DashboardNav/DashboardNav.component.test.tsx` › "marks the active item as selected"
-- **Test:** `apps/web/src/screens/ItemsDashboard/ItemsDashboard.screen.test.tsx` › "renders the nav bar"
+- **Test:** `apps/web/src/screens/ItemsDashboard/components/DashboardNav/__tests__/DashboardNav.component.test.tsx` › "renders all nav items"
+- **Test:** `apps/web/src/screens/ItemsDashboard/components/DashboardNav/__tests__/DashboardNav.component.test.tsx` › "marks the active item as selected"
+- **Test:** `apps/web/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx` › "renders the nav bar"
 
 #### Scenario: a tab is pressed
 
@@ -266,14 +266,14 @@ and password fields, a submit button and a Google sign-in button.
 - **GIVEN** the login screen with its messages
 - **WHEN** it renders
 - **THEN** the app name, the title and the labelled email and password fields are shown
-- **Test:** `apps/web/src/screens/Login/Login.screen.test.tsx` › "renders the brand name, title, and field labels"
+- **Test:** `apps/web/src/screens/Login/__tests__/Login.screen.test.tsx` › "renders the brand name, title, and field labels"
 
 #### Scenario: the shell controls render
 
 - **GIVEN** the login screen
 - **WHEN** it renders
 - **THEN** a theme switch and a language button are shown
-- **Test:** `apps/web/src/screens/Login/Login.screen.test.tsx` › "mounts the theme and language controls"
+- **Test:** `apps/web/src/screens/Login/__tests__/Login.screen.test.tsx` › "mounts the theme and language controls"
 
 ### Requirement: WEB-12 — The login form validates its fields before submitting
 
@@ -288,14 +288,14 @@ password is shorter than 8 characters, and show the `auth.login.errors.email` or
 - **GIVEN** the login screen with empty fields
 - **WHEN** the submit button is pressed
 - **THEN** both field error messages are shown
-- **Test:** `apps/web/src/screens/Login/Login.screen.test.tsx` › "surfaces validation errors when submitting empty fields"
+- **Test:** `apps/web/src/screens/Login/__tests__/Login.screen.test.tsx` › "surfaces validation errors when submitting empty fields"
 
 #### Scenario: the form hook rejects an invalid submit
 
 - **GIVEN** the form hook with empty values
 - **WHEN** the form is submitted
 - **THEN** the default submit is prevented, both error keys are set and the form is not submitting
-- **Test:** `apps/web/src/screens/Login/hooks/useLoginForm.hook.test.ts` › "reports field error keys for an invalid submit"
+- **Test:** `apps/web/src/screens/Login/hooks/__tests__/useLoginForm.hook.test.ts` › "reports field error keys for an invalid submit"
 
 ### Requirement: WEB-13 — A valid login submit only enters the submitting state
 
@@ -310,7 +310,7 @@ form to its submitting state, which disables the submit button and shows the
 - **GIVEN** the form hook holding a valid email and an 8-character password
 - **WHEN** the form is submitted
 - **THEN** the errors are empty and the form is submitting
-- **Test:** `apps/web/src/screens/Login/hooks/useLoginForm.hook.test.ts` › "flips submitting on a valid submit and clears errors"
+- **Test:** `apps/web/src/screens/Login/hooks/__tests__/useLoginForm.hook.test.ts` › "flips submitting on a valid submit and clears errors"
 
 #### Scenario: the submit button reflects the submitting state
 
@@ -332,21 +332,21 @@ value, and load that locale's catalog with the UTC time zone.
 - **GIVEN** no `NEXT_LOCALE` cookie and no routing locale
 - **WHEN** the request config resolves
 - **THEN** the locale is the default language with its catalog and the UTC time zone
-- **Test:** `apps/web/src/i18n/request.config.test.ts` › "falls back to the default language when no cookie is set"
+- **Test:** `apps/web/src/i18n/__tests__/request.config.test.ts` › "falls back to the default language when no cookie is set"
 
 #### Scenario: the cookie names a supported language
 
 - **GIVEN** a `NEXT_LOCALE` cookie set to the Spanish language code
 - **WHEN** the request config resolves
 - **THEN** the locale and the catalog are the Spanish ones
-- **Test:** `apps/web/src/i18n/request.config.test.ts` › "resolves the locale from the NEXT_LOCALE cookie"
+- **Test:** `apps/web/src/i18n/__tests__/request.config.test.ts` › "resolves the locale from the NEXT_LOCALE cookie"
 
 #### Scenario: the cookie names an unsupported language
 
 - **GIVEN** a `NEXT_LOCALE` cookie set to a language the app does not support
 - **WHEN** the request config resolves
 - **THEN** the locale is the default language
-- **Test:** `apps/web/src/i18n/request.config.test.ts` › "ignores an unsupported cookie value"
+- **Test:** `apps/web/src/i18n/__tests__/request.config.test.ts` › "ignores an unsupported cookie value"
 
 ### Requirement: WEB-15 — Client components render in the default language
 
@@ -376,21 +376,21 @@ refresh the router; the button shows the client locale.
 - **GIVEN** the client locale is English
 - **WHEN** the language is cycled
 - **THEN** the cookie holds the Spanish code and the router refreshes once
-- **Test:** `apps/web/src/components/ui/LanguageSwitcher/useLanguageSwitcher.hook.test.ts` › "cycling from en advances to es and writes the cookie"
+- **Test:** `apps/web/src/components/ui/LanguageSwitcher/__tests__/useLanguageSwitcher.hook.test.ts` › "cycling from en advances to es and writes the cookie"
 
 #### Scenario: the cycle wraps around
 
 - **GIVEN** the client locale is Spanish
 - **WHEN** the language is cycled
 - **THEN** the cookie holds the English code
-- **Test:** `apps/web/src/components/ui/LanguageSwitcher/useLanguageSwitcher.hook.test.ts` › "cycling wraps from es back to en"
+- **Test:** `apps/web/src/components/ui/LanguageSwitcher/__tests__/useLanguageSwitcher.hook.test.ts` › "cycling wraps from es back to en"
 
 #### Scenario: the button label
 
 - **GIVEN** the client locale is English
 - **WHEN** the language button renders
 - **THEN** its text is the English code
-- **Test:** `apps/web/src/components/ui/LanguageSwitcher/LanguageSwitcher.component.test.tsx` › "renders the active locale label"
+- **Test:** `apps/web/src/components/ui/LanguageSwitcher/__tests__/LanguageSwitcher.component.test.tsx` › "renders the active locale label"
 
 ### Requirement: WEB-17 — The theme is resolved before first paint
 
@@ -412,15 +412,15 @@ that painted value into the theme store on mount.
 - **GIVEN** the html element painted with the light theme
 - **WHEN** the theme provider mounts
 - **THEN** the theme store holds the light theme
-- **Test:** `apps/web/src/components/ThemeProvider/ThemeProvider.component.test.tsx` › "adopts the painted theme attribute into the store on mount"
-- **Test:** `apps/web/src/components/ThemeProvider/useThemeBootstrap.hook.test.ts` › "adopts the theme already painted on the document element"
+- **Test:** `apps/web/src/components/ThemeProvider/__tests__/ThemeProvider.component.test.tsx` › "adopts the painted theme attribute into the store on mount"
+- **Test:** `apps/web/src/components/ThemeProvider/__tests__/useThemeBootstrap.hook.test.ts` › "adopts the theme already painted on the document element"
 
 #### Scenario: an unknown painted value
 
 - **GIVEN** the html element painted with a value that is not a theme
 - **WHEN** the theme bootstrap runs
 - **THEN** the theme store keeps its value
-- **Test:** `apps/web/src/components/ThemeProvider/useThemeBootstrap.hook.test.ts` › "leaves the store untouched when the painted value is not a theme"
+- **Test:** `apps/web/src/components/ThemeProvider/__tests__/useThemeBootstrap.hook.test.ts` › "leaves the store untouched when the painted value is not a theme"
 
 ### Requirement: WEB-18 — Changing the theme repaints and persists it
 
@@ -435,16 +435,16 @@ without a reload; the theme switch is on for the light theme.
 - **GIVEN** the dark theme is active
 - **WHEN** the theme is set to light
 - **THEN** the html element carries the light theme, the store holds it and the cookie names it
-- **Test:** `apps/web/src/components/ThemeProvider/useTheme.hook.test.ts` › "setTheme flips the data-theme attribute on the document element"
-- **Test:** `apps/web/src/components/ThemeProvider/useTheme.hook.test.ts` › "setTheme persists the choice to the NEXT_THEME cookie"
+- **Test:** `apps/web/src/components/ThemeProvider/__tests__/useTheme.hook.test.ts` › "setTheme flips the data-theme attribute on the document element"
+- **Test:** `apps/web/src/components/ThemeProvider/__tests__/useTheme.hook.test.ts` › "setTheme persists the choice to the NEXT_THEME cookie"
 
 #### Scenario: the theme switch is flipped on
 
 - **GIVEN** the dark theme is active
 - **WHEN** the theme switch is turned on
 - **THEN** the light theme is set, and the switch then reads as on
-- **Test:** `apps/web/src/components/ui/ThemeToggle/useThemeToggle.hook.test.ts` › "onValueChange(true) sets the light theme"
-- **Test:** `apps/web/src/components/ui/ThemeToggle/ThemeToggle.component.test.tsx` › "renders the switch as on when the theme is light"
+- **Test:** `apps/web/src/components/ui/ThemeToggle/__tests__/useThemeToggle.hook.test.ts` › "onValueChange(true) sets the light theme"
+- **Test:** `apps/web/src/components/ui/ThemeToggle/__tests__/ThemeToggle.component.test.tsx` › "renders the switch as on when the theme is light"
 
 ### Requirement: WEB-19 — The auth provider tracks the session from the gateway
 
@@ -459,22 +459,22 @@ unsubscribe from those changes on unmount.
 - **GIVEN** a gateway whose current session exists
 - **WHEN** the auth bootstrap runs
 - **THEN** the store holds that session with the authenticated status
-- **Test:** `apps/web/src/components/AuthProvider/useAuthBootstrap.hook.test.ts` › "sets status to authenticated after getSession resolves with a session"
+- **Test:** `apps/web/src/components/AuthProvider/__tests__/useAuthBootstrap.hook.test.ts` › "sets status to authenticated after getSession resolves with a session"
 
 #### Scenario: the gateway holds no session
 
 - **GIVEN** a gateway whose current session is empty
 - **WHEN** the auth bootstrap runs
 - **THEN** the status is unauthenticated
-- **Test:** `apps/web/src/components/AuthProvider/useAuthBootstrap.hook.test.ts` › "sets status to unauthenticated when getSession resolves with null"
+- **Test:** `apps/web/src/components/AuthProvider/__tests__/useAuthBootstrap.hook.test.ts` › "sets status to unauthenticated when getSession resolves with null"
 
 #### Scenario: the subscription lifecycle
 
 - **GIVEN** the auth provider mounted with a gateway
 - **WHEN** it mounts and later unmounts
 - **THEN** it subscribes to auth state changes once and unsubscribes once
-- **Test:** `apps/web/src/components/AuthProvider/useAuthBootstrap.hook.test.ts` › "subscribes to auth state changes"
-- **Test:** `apps/web/src/components/AuthProvider/useAuthBootstrap.hook.test.ts` › "calls unsubscribe on unmount"
+- **Test:** `apps/web/src/components/AuthProvider/__tests__/useAuthBootstrap.hook.test.ts` › "subscribes to auth state changes"
+- **Test:** `apps/web/src/components/AuthProvider/__tests__/useAuthBootstrap.hook.test.ts` › "calls unsubscribe on unmount"
 
 ### Requirement: WEB-20 — The auth gateway is a no-op without Supabase settings
 
@@ -504,15 +504,15 @@ both variables when either is missing.
 - **GIVEN** both public Supabase settings
 - **WHEN** the client is requested twice
 - **THEN** it is created once with those settings and the same client is returned both times
-- **Test:** `apps/web/src/lib/supabase/client.adapter.test.ts` › "creates the client lazily with the public env credentials"
-- **Test:** `apps/web/src/lib/supabase/client.adapter.test.ts` › "returns the same instance on subsequent calls"
+- **Test:** `apps/web/src/lib/supabase/__tests__/client.adapter.test.ts` › "creates the client lazily with the public env credentials"
+- **Test:** `apps/web/src/lib/supabase/__tests__/client.adapter.test.ts` › "returns the same instance on subsequent calls"
 
 #### Scenario: the settings are missing
 
 - **GIVEN** neither public Supabase setting
 - **WHEN** the client is requested
 - **THEN** it throws an error naming the missing settings
-- **Test:** `apps/web/src/lib/supabase/client.adapter.test.ts` › "throws a helpful error when env is missing"
+- **Test:** `apps/web/src/lib/supabase/__tests__/client.adapter.test.ts` › "throws a helpful error when env is missing"
 
 ### Requirement: WEB-22 — The server Supabase client reads the request cookies
 
@@ -526,14 +526,14 @@ store for reading and writing the session cookies.
 - **GIVEN** a request cookie store
 - **WHEN** the server client is created
 - **THEN** its cookie reader reads from that store
-- **Test:** `apps/web/src/lib/supabase/server.adapter.test.ts` › "awaits the cookie store and forwards a getAll passthrough"
+- **Test:** `apps/web/src/lib/supabase/__tests__/server.adapter.test.ts` › "awaits the cookie store and forwards a getAll passthrough"
 
 #### Scenario: two calls
 
 - **GIVEN** a request
 - **WHEN** the server client is created twice
 - **THEN** the factory runs twice
-- **Test:** `apps/web/src/lib/supabase/server.adapter.test.ts` › "returns a fresh client instance per call"
+- **Test:** `apps/web/src/lib/supabase/__tests__/server.adapter.test.ts` › "returns a fresh client instance per call"
 
 ### Requirement: WEB-23 — Queries and mutations share fixed retry and freshness defaults
 
@@ -547,9 +547,9 @@ and no retry for mutations.
 - **GIVEN** a query client created with no options
 - **WHEN** its default options are read
 - **THEN** the query stale time is 30 000 ms, queries retry once and mutations never retry
-- **Test:** `apps/web/src/lib/query/createQueryClient.helper.test.ts` › "applies 30s stale time by default"
-- **Test:** `apps/web/src/lib/query/createQueryClient.helper.test.ts` › "applies retry: 1 for queries"
-- **Test:** `apps/web/src/lib/query/createQueryClient.helper.test.ts` › "applies retry: 0 for mutations"
+- **Test:** `apps/web/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "applies 30s stale time by default"
+- **Test:** `apps/web/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "applies retry: 1 for queries"
+- **Test:** `apps/web/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "applies retry: 0 for mutations"
 
 ### Requirement: WEB-24 — Every failed query and mutation is reported once with a scrubbed key
 
@@ -565,28 +565,28 @@ segments.
 - **GIVEN** a query whose key holds an identifier
 - **WHEN** it fails
 - **THEN** the capture sink is called once, from the query cache, with the identifier redacted
-- **Test:** `apps/web/src/lib/query/createQueryClient.helper.test.ts` › "calls onCaptureError with sanitized queryKey on query failure"
+- **Test:** `apps/web/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "calls onCaptureError with sanitized queryKey on query failure"
 
 #### Scenario: a query keyed by a search text
 
 - **GIVEN** a query keyed by `QueryKeys.items.list('alice')`
 - **WHEN** it fails
 - **THEN** the capture sink receives the key `['items', 'list', '[redacted]']`
-- **Test:** `apps/web/src/lib/query/createQueryClient.helper.test.ts` › "redacts the search text of an items list key on query failure"
+- **Test:** `apps/web/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "redacts the search text of an items list key on query failure"
 
 #### Scenario: a mutation fails
 
 - **GIVEN** a mutation
 - **WHEN** it fails
 - **THEN** the capture sink is called from the mutation cache
-- **Test:** `apps/web/src/lib/query/createQueryClient.helper.test.ts` › "calls onCaptureError with mutationCache source on mutation failure"
+- **Test:** `apps/web/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "calls onCaptureError with mutationCache source on mutation failure"
 
 #### Scenario: the sink reaches the observability port
 
 - **GIVEN** the capture sink built over an observability port
 - **WHEN** it is called with an error and its context
 - **THEN** the port's error capture receives both, once
-- **Test:** `apps/web/src/lib/observability/toCaptureError.helper.test.ts` › "forwards error and context to captureError"
+- **Test:** `apps/web/src/lib/observability/__tests__/toCaptureError.helper.test.ts` › "forwards error and context to captureError"
 
 ### Requirement: WEB-25 — An error message is resolved by one precedence
 
@@ -601,29 +601,29 @@ and the `helper.error.generic` message.
 - **GIVEN** an override message and an application error with a known key
 - **WHEN** the message is resolved
 - **THEN** the override is returned
-- **Test:** `apps/web/src/lib/query/resolveErrorMessage.helper.test.ts` › "prefers the explicit errorMessage override"
+- **Test:** `apps/web/src/lib/query/__tests__/resolveErrorMessage.helper.test.ts` › "prefers the explicit errorMessage override"
 
 #### Scenario: an application error with a known key
 
 - **GIVEN** no override and an application error whose key the catalog holds
 - **WHEN** the message is resolved
 - **THEN** the translated key is returned
-- **Test:** `apps/web/src/lib/query/resolveErrorMessage.helper.test.ts` › "resolves AppError.messageKey via i18n when no override"
+- **Test:** `apps/web/src/lib/query/__tests__/resolveErrorMessage.helper.test.ts` › "resolves AppError.messageKey via i18n when no override"
 
 #### Scenario: the key or the error type falls through
 
 - **GIVEN** an application error whose key the catalog lacks, or a plain error
 - **WHEN** the message is resolved
 - **THEN** the error's own message is returned
-- **Test:** `apps/web/src/lib/query/resolveErrorMessage.helper.test.ts` › "falls back to error.message when the key is missing from catalog"
-- **Test:** `apps/web/src/lib/query/resolveErrorMessage.helper.test.ts` › "falls back to error.message for a plain Error"
+- **Test:** `apps/web/src/lib/query/__tests__/resolveErrorMessage.helper.test.ts` › "falls back to error.message when the key is missing from catalog"
+- **Test:** `apps/web/src/lib/query/__tests__/resolveErrorMessage.helper.test.ts` › "falls back to error.message for a plain Error"
 
 #### Scenario: the error is not an Error
 
 - **GIVEN** a thrown value that is not an error object
 - **WHEN** the message is resolved
 - **THEN** the generic fallback is returned
-- **Test:** `apps/web/src/lib/query/resolveErrorMessage.helper.test.ts` › "uses the generic fallback for a non-Error value"
+- **Test:** `apps/web/src/lib/query/__tests__/resolveErrorMessage.helper.test.ts` › "uses the generic fallback for a non-Error value"
 
 ### Requirement: WEB-26 — Query and mutation outcomes are queued as toasts
 
@@ -639,36 +639,36 @@ toast store, which drops each toast after 4 seconds.
 - **GIVEN** a query with an override message
 - **WHEN** it fails
 - **THEN** an error toast with the override message is queued
-- **Test:** `apps/web/src/lib/query/useAppQuery.hook.test.ts` › "fires an error toast with the override message on failure"
+- **Test:** `apps/web/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "fires an error toast with the override message on failure"
 
 #### Scenario: a failed query re-renders
 
 - **GIVEN** a query that failed once and queued its toast
 - **WHEN** its component renders again while the query stays in error
 - **THEN** no other toast is queued
-- **Test:** `apps/web/src/lib/query/useAppQuery.hook.test.ts` › "queues one error toast per failure however often it re-renders"
+- **Test:** `apps/web/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "queues one error toast per failure however often it re-renders"
 
 #### Scenario: the query fails again
 
 - **GIVEN** a query that failed once and queued its toast
 - **WHEN** it is refetched and fails again
 - **THEN** a second error toast is queued
-- **Test:** `apps/web/src/lib/query/useAppQuery.hook.test.ts` › "queues another error toast when the query fails again"
+- **Test:** `apps/web/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "queues another error toast when the query fails again"
 
 #### Scenario: a mutation fails or succeeds
 
 - **GIVEN** a mutation with an override message or a success message
 - **WHEN** it fails or succeeds
 - **THEN** an error toast or a success toast with that message is queued
-- **Test:** `apps/web/src/lib/query/useAppMutation.hook.test.ts` › "shows an error toast with the override message on failure"
-- **Test:** `apps/web/src/lib/query/useAppMutation.hook.test.ts` › "shows a success toast when successMessage is provided"
+- **Test:** `apps/web/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "shows an error toast with the override message on failure"
+- **Test:** `apps/web/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "shows a success toast when successMessage is provided"
 
 #### Scenario: a toast expires
 
 - **GIVEN** a queued toast
 - **WHEN** 4 seconds pass
 - **THEN** the toast store no longer holds it
-- **Test:** `apps/web/src/stores/toast.store.test.ts` › "toast auto-dismisses after 4 seconds"
+- **Test:** `apps/web/src/stores/__tests__/toast.store.test.ts` › "toast auto-dismisses after 4 seconds"
 
 ### Requirement: WEB-27 — The async boundary shows a loading status and a retryable error
 
@@ -683,23 +683,23 @@ value, and a Retry button that resets the boundary.
 - **GIVEN** children that neither suspend nor throw
 - **WHEN** the boundary renders
 - **THEN** the children are shown
-- **Test:** `apps/web/src/components/ui/AsyncBoundary/AsyncBoundary.component.test.tsx` › "renders its children when nothing suspends or throws"
+- **Test:** `apps/web/src/components/ui/AsyncBoundary/__tests__/AsyncBoundary.component.test.tsx` › "renders its children when nothing suspends or throws"
 
 #### Scenario: the loading fallback
 
 - **GIVEN** the default loading fallback
 - **WHEN** it renders
 - **THEN** a status region with a loading label is shown
-- **Test:** `apps/web/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultLoading.component.test.tsx` › "renders a status region with a loading label"
+- **Test:** `apps/web/src/components/ui/AsyncBoundary/__tests__/AsyncBoundaryDefaultLoading.component.test.tsx` › "renders a status region with a loading label"
 
 #### Scenario: the error fallback
 
 - **GIVEN** the default error fallback for a thrown error
 - **WHEN** Retry is pressed
 - **THEN** the error message was shown in an alert and the boundary is reset once
-- **Test:** `apps/web/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultError.component.test.tsx` › "renders the error message when error is an Error instance"
-- **Test:** `apps/web/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultError.component.test.tsx` › "calls resetErrorBoundary when Retry is clicked"
-- **Test:** `apps/web/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultError.component.test.tsx` › "has role=alert"
+- **Test:** `apps/web/src/components/ui/AsyncBoundary/__tests__/AsyncBoundaryDefaultError.component.test.tsx` › "renders the error message when error is an Error instance"
+- **Test:** `apps/web/src/components/ui/AsyncBoundary/__tests__/AsyncBoundaryDefaultError.component.test.tsx` › "calls resetErrorBoundary when Retry is clicked"
+- **Test:** `apps/web/src/components/ui/AsyncBoundary/__tests__/AsyncBoundaryDefaultError.component.test.tsx` › "has role=alert"
 
 ### Requirement: WEB-28 — The error state shows translated copy by error code
 
@@ -714,24 +714,24 @@ given, with a retry button only when a retry or reset handler is given.
 - **GIVEN** the error state with no code
 - **WHEN** it renders
 - **THEN** the generic title and message are shown in an alert
-- **Test:** `apps/web/src/components/ui/ErrorState/ErrorState.component.test.tsx` › "renders generic copy when no code"
-- **Test:** `apps/web/src/components/ui/ErrorState/ErrorState.component.test.tsx` › "has role=alert"
+- **Test:** `apps/web/src/components/ui/ErrorState/__tests__/ErrorState.component.test.tsx` › "renders generic copy when no code"
+- **Test:** `apps/web/src/components/ui/ErrorState/__tests__/ErrorState.component.test.tsx` › "has role=alert"
 
 #### Scenario: a not-found code
 
 - **GIVEN** the error state with the not-found code
 - **WHEN** it renders
 - **THEN** the not-found title is shown
-- **Test:** `apps/web/src/components/ui/ErrorState/ErrorState.component.test.tsx` › "renders code-specific copy for 404"
+- **Test:** `apps/web/src/components/ui/ErrorState/__tests__/ErrorState.component.test.tsx` › "renders code-specific copy for 404"
 
 #### Scenario: the retry button
 
 - **GIVEN** the error state with a retry handler, a reset handler, or neither
 - **WHEN** it renders and the retry button is pressed
 - **THEN** the handler runs once, and with neither handler no button is rendered
-- **Test:** `apps/web/src/components/ui/ErrorState/ErrorState.component.test.tsx` › "renders retry button and calls onRetry"
-- **Test:** `apps/web/src/components/ui/ErrorState/ErrorState.component.test.tsx` › "calls resetErrorBoundary as fallback retry"
-- **Test:** `apps/web/src/components/ui/ErrorState/ErrorState.component.test.tsx` › "does not render retry button when neither onRetry nor resetErrorBoundary given"
+- **Test:** `apps/web/src/components/ui/ErrorState/__tests__/ErrorState.component.test.tsx` › "renders retry button and calls onRetry"
+- **Test:** `apps/web/src/components/ui/ErrorState/__tests__/ErrorState.component.test.tsx` › "calls resetErrorBoundary as fallback retry"
+- **Test:** `apps/web/src/components/ui/ErrorState/__tests__/ErrorState.component.test.tsx` › "does not render retry button when neither onRetry nor resetErrorBoundary given"
 
 ### Requirement: WEB-29 — Observability scrubs PII and stays silent without a DSN
 
@@ -746,23 +746,23 @@ The web app SHALL send errors, messages, breadcrumbs and the user to Sentry only
 - **GIVEN** a DSN is set
 - **WHEN** an error is captured with a context holding an email
 - **THEN** Sentry receives the error with the email redacted
-- **Test:** `apps/web/src/lib/observability/createSentryObservability.adapter.test.ts` › "captureError forwards the exception to Sentry"
-- **Test:** `apps/web/src/lib/observability/createSentryObservability.adapter.test.ts` › "captureError scrubs PII from the context before sending"
+- **Test:** `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "captureError forwards the exception to Sentry"
+- **Test:** `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "captureError scrubs PII from the context before sending"
 
 #### Scenario: the user and breadcrumbs are scrubbed
 
 - **GIVEN** a DSN is set
 - **WHEN** a user or a breadcrumb holding an email is sent
 - **THEN** Sentry receives it with the email redacted
-- **Test:** `apps/web/src/lib/observability/createSentryObservability.adapter.test.ts` › "setUser scrubs PII from the user payload"
-- **Test:** `apps/web/src/lib/observability/createSentryObservability.adapter.test.ts` › "addBreadcrumb scrubs PII from breadcrumb data"
+- **Test:** `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "setUser scrubs PII from the user payload"
+- **Test:** `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "addBreadcrumb scrubs PII from breadcrumb data"
 
 #### Scenario: no DSN
 
 - **GIVEN** no DSN
 - **WHEN** every observability method is called
 - **THEN** Sentry receives nothing
-- **Test:** `apps/web/src/lib/observability/createSentryObservability.adapter.test.ts` › "all methods no-op when the DSN is absent"
+- **Test:** `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "all methods no-op when the DSN is absent"
 
 ### Requirement: WEB-30 — The Sentry SDK scrubs every event in every runtime
 
@@ -799,7 +799,7 @@ let it through otherwise.
 - **GIVEN** no `CF_ORIGIN_SECRET`
 - **WHEN** the origin guard checks a request with no origin header
 - **THEN** it reports the request trusted
-- **Test:** `apps/web/src/lib/origin-guard/originGuard.adapter.test.ts` › "assertTrustedOrigin passes through when no secret is configured"
+- **Test:** `apps/web/src/lib/origin-guard/__tests__/originGuard.adapter.test.ts` › "assertTrustedOrigin passes through when no secret is configured"
 
 #### Scenario: a static asset is requested
 
@@ -820,14 +820,14 @@ The web app SHALL answer a POST to the Turnstile verify route whose body is not 
 - **GIVEN** a POST with no body
 - **WHEN** the route handles it
 - **THEN** it answers 400, success false and no-store
-- **Test:** `apps/web/src/app/api/turnstile/verify/route.test.ts` › "POST returns 400 when the request body is empty"
+- **Test:** `apps/web/src/app/api/turnstile/verify/__tests__/route.test.ts` › "POST returns 400 when the request body is empty"
 
 #### Scenario: the body is not JSON
 
 - **GIVEN** a POST whose body is plain text
 - **WHEN** the route handles it
 - **THEN** it answers 400, success false and no-store
-- **Test:** `apps/web/src/app/api/turnstile/verify/route.test.ts` › "POST returns 400 when the request body is not valid JSON"
+- **Test:** `apps/web/src/app/api/turnstile/verify/__tests__/route.test.ts` › "POST returns 400 when the request body is not valid JSON"
 
 ### Requirement: WEB-33 — The Turnstile route answers with the verification verdict
 
@@ -843,7 +843,7 @@ true, both with `Cache-Control: no-store`.
 - **GIVEN** no `TURNSTILE_SECRET_KEY` outside production
 - **WHEN** the bot protection verifies any token
 - **THEN** it reports success
-- **Test:** `apps/web/src/lib/bot-protection/botProtection.adapter.test.ts` › "verifyToken degrades to success when no secret is configured"
+- **Test:** `apps/web/src/lib/bot-protection/__tests__/botProtection.adapter.test.ts` › "verifyToken degrades to success when no secret is configured"
 
 #### Scenario: verification fails
 
@@ -888,7 +888,7 @@ svg, jpg, jpeg, png, webp, avif, gif or ico extension.
 - **GIVEN** the image cache header constants
 - **WHEN** the image cache header is built
 - **THEN** it is a Cache-Control header whose value holds immutable and a one-year max-age
-- **Test:** `apps/web/src/lib/image-delivery/imageCacheHeaders.helper.test.ts` › "buildImageCacheHeaders returns a long immutable Cache-Control header"
+- **Test:** `apps/web/src/lib/image-delivery/__tests__/imageCacheHeaders.helper.test.ts` › "buildImageCacheHeaders returns a long immutable Cache-Control header"
 
 #### Scenario: an image path is served
 
@@ -909,7 +909,7 @@ which returns the requested path unchanged.
 - **GIVEN** the default image delivery
 - **WHEN** a URL is built for a public path
 - **THEN** the path is returned unchanged
-- **Test:** `apps/web/src/lib/image-delivery/imageDelivery.adapter.test.ts` › "buildImageUrl returns the raw public path by default"
+- **Test:** `apps/web/src/lib/image-delivery/__tests__/imageDelivery.adapter.test.ts` › "buildImageUrl returns the raw public path by default"
 
 ### Requirement: WEB-37 — The root providers show the toast viewport
 
@@ -923,14 +923,14 @@ toast store, with its message and a dismiss button that removes it, in a polite 
 - **GIVEN** the root providers render a page
 - **WHEN** an error toast is queued and its Dismiss button is then pressed
 - **THEN** the toast's message is shown, and after the press it is gone
-- **Test:** `apps/web/src/app/providers.test.tsx` › "shows a queued error toast and removes it when Dismiss is pressed"
+- **Test:** `apps/web/src/app/__tests__/providers.test.tsx` › "shows a queued error toast and removes it when Dismiss is pressed"
 
 #### Scenario: no toast is queued
 
 - **GIVEN** an empty toast store
 - **WHEN** the viewport renders
 - **THEN** it renders an empty status region
-- **Test:** `apps/web/src/components/ui/Toast/Toast.component.test.tsx` › "renders an empty live region when there are no toasts"
+- **Test:** `apps/web/src/components/ui/Toast/__tests__/Toast.component.test.tsx` › "renders an empty live region when there are no toasts"
 
 ### Requirement: WEB-38 — A render crash shows the error state
 
@@ -946,15 +946,15 @@ segment.
 - **GIVEN** a route below the root layout throws while rendering
 - **WHEN** the root error boundary renders and Try again is pressed
 - **THEN** the generic error title and message are shown in an alert, and the segment is retried once
-- **Test:** `apps/web/src/app/error.test.tsx` › "renders the generic error state for a render crash"
-- **Test:** `apps/web/src/app/error.test.tsx` › "retries the segment when Try again is pressed"
+- **Test:** `apps/web/src/app/__tests__/error.test.tsx` › "renders the generic error state for a render crash"
+- **Test:** `apps/web/src/app/__tests__/error.test.tsx` › "retries the segment when Try again is pressed"
 
 #### Scenario: the root layout crashes
 
 - **GIVEN** the root layout throws while rendering
 - **WHEN** the global error boundary renders
 - **THEN** it renders its own html and body, holding the generic error state
-- **Test:** `apps/web/src/app/global-error.test.tsx` › "renders the generic error state in its own document"
+- **Test:** `apps/web/src/app/__tests__/global-error.test.tsx` › "renders the generic error state in its own document"
 
 ### Requirement: WEB-39 — A screen or section only positions
 
@@ -1019,28 +1019,28 @@ surface through the `Screen` block, which fills the viewport and paints the base
 - **GIVEN** the `Text` block with the title variant on a paragraph
 - **WHEN** it renders
 - **THEN** the paragraph carries the display family, the title size, the semibold weight and the primary text colour
-- **Test:** `apps/web/src/components/ui/Text/Text.component.test.tsx` › "renders a variant's typography on the element it is given"
+- **Test:** `apps/web/src/components/ui/Text/__tests__/Text.component.test.tsx` › "renders a variant's typography on the element it is given"
 
 #### Scenario: a tone and a weight are set
 
 - **GIVEN** the `Text` block with the success tone and the semibold weight
 - **WHEN** it renders
 - **THEN** it carries the success text colour and the semibold weight, and no other typography
-- **Test:** `apps/web/src/components/ui/Text/Text.component.test.tsx` › "applies the tone and the weight on their own"
+- **Test:** `apps/web/src/components/ui/Text/__tests__/Text.component.test.tsx` › "applies the tone and the weight on their own"
 
 #### Scenario: a labelled divider renders
 
 - **GIVEN** the `Divider` block with a label
 - **WHEN** it renders
 - **THEN** the label sits between two divider rules hidden from assistive technology
-- **Test:** `apps/web/src/components/ui/Divider/Divider.component.test.tsx` › "renders the label between two rules"
+- **Test:** `apps/web/src/components/ui/Divider/__tests__/Divider.component.test.tsx` › "renders the label between two rules"
 
 #### Scenario: a screen surface renders
 
 - **GIVEN** the `Screen` block around content
 - **WHEN** it renders
 - **THEN** the content sits on a full-height surface painted with the base background
-- **Test:** `apps/web/src/components/ui/Screen/Screen.component.test.tsx` › "paints the base background behind its children"
+- **Test:** `apps/web/src/components/ui/Screen/__tests__/Screen.component.test.tsx` › "paints the base background behind its children"
 
 ### Requirement: WEB-42 — Only the ui blocks import a UI kit
 

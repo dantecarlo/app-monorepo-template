@@ -56,7 +56,12 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     globals: true,
-    include: ['src/**/*.test.{ts,tsx}'],
+    // A test sits in the __tests__/ of its unit's folder, in src/ or, for a
+    // unit at the app root such as a config file, in the root __tests__/.
+    include: [
+      'src/**/__tests__/*.test.{ts,tsx}',
+      '__tests__/*.test.{ts,tsx}'
+    ],
     sequence: testSequence({ packageDir: __dirname }),
     setupFiles: ['./src/test/setup.ts']
   }

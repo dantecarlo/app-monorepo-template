@@ -21,7 +21,7 @@ description: >
 1. Read the component file (`{Name}.component.tsx`)
 2. Read the hook file if it exists (`use{Name}.hook.ts`)
 3. Read the types file (`{Name}.type.ts`)
-4. Read the test file (`{Name}.test.tsx`)
+4. Read the test file (`__tests__/{Name}.component.test.tsx`, in the block's own folder)
 5. Read the styles file (`{Name}.style.ts`) if relevant to the change
 6. Run the Wrapper Detection Flow below
 

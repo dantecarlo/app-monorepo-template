@@ -167,6 +167,7 @@ const store = use{Name}Store()
 | Concern          | Convention                                                        |
 | ---------------- | ----------------------------------------------------------------- |
 | File             | `{name}.store.ts` (camelCase)                                     |
+| Test             | `src/stores/__tests__/{name}.store.test.ts`                       |
 | Hook             | `use{Name}Store`                                                  |
 | State interface  | `I{Name}State`                                                    |
 | Selector         | `select{Name}{Field}` (arrow const)                               |

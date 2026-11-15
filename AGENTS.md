@@ -75,8 +75,9 @@ structural drift fails before anything expensive). An agent is written once, in
 runtime reads (`.claude/agents/`, `.codex/`, `.opencode/agents/`, `opencode.json`,
 `.github/agents/`), and `pnpm agent-harness:projection-check` fails when one of
 those files is missing, extra, edited by hand or not committed. Never edit them:
-edit the source and regenerate. `pnpm verify:tests` checks tests-per-unit presence
-and `pnpm verify:maps` checks architecture-map integrity and the magic-literal
+edit the source and regenerate. `pnpm verify:tests` checks that every unit has a
+test, in the `__tests__/` of its own folder and named after it, and
+`pnpm verify:maps` checks architecture-map integrity and the magic-literal
 audit. `pnpm verify:instruction-entry` checks that `AGENTS.md` and `README.md`
 exist and that no path git lists, tracked or not yet added, is a `CLAUDE.md` or
 `CLAUDE.local.md`. `pnpm codex-budget:test` fails when this file, counted with

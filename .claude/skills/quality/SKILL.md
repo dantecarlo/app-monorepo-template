@@ -160,7 +160,7 @@ Orders/orders.service.ts → (no adapter found)    ❌
 | Styles     | `Name.style.ts`         |
 | Helpers    | `name.helper.ts`        |
 | Store      | `name.store.ts`         |
-| Test       | `Name.test.tsx`         |
+| Test       | `__tests__/<unit>.test.tsx`, named after its unit |
 
 ---
 

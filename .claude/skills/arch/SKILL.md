@@ -93,7 +93,7 @@ depend inward through ports/interfaces, never the reverse.
 | Tailwind class constants     | `Name.style.ts`          | `ItemCard.style.ts`          |
 | Helper / pure utility       | `name.helper.ts`         | `formatDate.helper.ts`       |
 | Zustand store               | `name.store.ts`          | `ui.store.ts`                |
-| Test file                   | `Name.test.tsx`          | `ItemCard.test.tsx`          |
+| Test file                   | `__tests__/<unit>.test.tsx` | `__tests__/ItemCard.component.test.tsx` |
 | Barrel export               | `index.ts`               |                              |
 
 ---
@@ -147,8 +147,9 @@ src/services/
     ├── Items.adapter.ts       # pure DTO → domain shape (no async, no I/O)
     ├── items.constant.ts      # optional domain constants
     ├── index.ts               # barrel: exports service + adapter ONLY
-    ├── items.service.test.ts
-    └── Items.adapter.test.ts
+    └── __tests__/             # each unit's test, named after it
+        ├── items.service.test.ts
+        └── Items.adapter.test.ts
 ```
 
 - The barrel (`index.ts`) exports service functions and adapter functions only.

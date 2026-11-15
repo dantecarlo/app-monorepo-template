@@ -3,7 +3,7 @@
 > **Governs:** `packages/tooling/src`
 > **ID prefix:** `TOOLING`
 > **Derived from:** `docs/code-standards.md`, `docs/architecture/shared.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-15 at `a4334a6`
+> **Verified against the code:** 2026-11-15 at `8852663`
 
 ## Purpose
 
@@ -45,7 +45,7 @@ The tooling package SHALL derive the shuffle seed from the first 12 hex digits o
 - **GIVEN** a 40-digit sha and a 64-digit sha that start with the same 12 hex digits
 - **WHEN** a seed is drawn from each
 - **THEN** both seeds are those 12 digits read in base 16
-- **Test:** `packages/tooling/src/vitest-sequence.test.mjs` › "the seed is the first 12 hex digits of the commit sha"
+- **Test:** `packages/tooling/src/__tests__/vitest-sequence.test.mjs` › "the seed is the first 12 hex digits of the commit sha"
 
 ### Requirement: TOOLING-03 — No commit, no shuffled run
 
@@ -62,7 +62,7 @@ unless the override is set.
 - **WHEN** a seed is drawn from it
 - **THEN** the draw throws an error that names `VITEST_SEQUENCE_SEED` and says it is not a
   commit sha
-- **Test:** `packages/tooling/src/vitest-sequence.test.mjs` › "a value that is not a commit sha is refused, naming the override"
+- **Test:** `packages/tooling/src/__tests__/vitest-sequence.test.mjs` › "a value that is not a commit sha is refused, naming the override"
 
 #### Scenario: git cannot resolve the commit
 
@@ -83,14 +83,14 @@ not blank, and from the commit when it is unset or blank.
 - **GIVEN** no override, or an override of blanks
 - **WHEN** the seed is resolved against a commit sha
 - **THEN** the seed comes from the commit and its source reads `the commit`
-- **Test:** `packages/tooling/src/vitest-sequence.test.mjs` › "the commit gives the seed unless the override is set"
+- **Test:** `packages/tooling/src/__tests__/vitest-sequence.test.mjs` › "the commit gives the seed unless the override is set"
 
 #### Scenario: the override is set and there is no commit
 
 - **GIVEN** the override `42` and an empty commit value
 - **WHEN** the seed is resolved
 - **THEN** the seed is 42 and its source is `VITEST_SEQUENCE_SEED`, and the commit is never read
-- **Test:** `packages/tooling/src/vitest-sequence.test.mjs` › "the commit gives the seed unless the override is set"
+- **Test:** `packages/tooling/src/__tests__/vitest-sequence.test.mjs` › "the commit gives the seed unless the override is set"
 
 ### Requirement: TOOLING-05 — The override must be an integer
 
@@ -104,7 +104,7 @@ it is not an integer.
 - **GIVEN** the override `abc` or the override `1.5`
 - **WHEN** the seed is resolved
 - **THEN** it throws an error saying the override is not an integer
-- **Test:** `packages/tooling/src/vitest-sequence.test.mjs` › "an override that is not an integer is refused"
+- **Test:** `packages/tooling/src/__tests__/vitest-sequence.test.mjs` › "an override that is not an integer is refused"
 
 ### Requirement: TOOLING-06 — A shuffled sequence block
 
@@ -118,7 +118,7 @@ The tooling package SHALL return from `testSequence` the Vitest `sequence` block
 - **GIVEN** the override `7`
 - **WHEN** `testSequence` runs for a package
 - **THEN** it returns the seed 7 with shuffle on
-- **Test:** `packages/tooling/src/vitest-sequence.test.mjs` › "testSequence shuffles with the resolved seed and prints how to replay it"
+- **Test:** `packages/tooling/src/__tests__/vitest-sequence.test.mjs` › "testSequence shuffles with the resolved seed and prints how to replay it"
 
 ### Requirement: TOOLING-07 — The run prints how to replay it
 
@@ -135,21 +135,21 @@ workspace from its `package.json`, the seed, its source and the command
 - **WHEN** the notice is written
 - **THEN** it says `seed 42, from the commit` and holds the command
   `VITEST_SEQUENCE_SEED=42 pnpm --filter @app/core test`
-- **Test:** `packages/tooling/src/vitest-sequence.test.mjs` › "the replay notice names the seed, its source and the command that replays it"
+- **Test:** `packages/tooling/src/__tests__/vitest-sequence.test.mjs` › "the replay notice names the seed, its source and the command that replays it"
 
 #### Scenario: the workspace name
 
 - **GIVEN** the folder of the tooling package
 - **WHEN** its workspace name is read
 - **THEN** the name is `@app/tooling`, taken from its `package.json`
-- **Test:** `packages/tooling/src/vitest-sequence.test.mjs` › "the workspace name comes from its package.json"
+- **Test:** `packages/tooling/src/__tests__/vitest-sequence.test.mjs` › "the workspace name comes from its package.json"
 
 #### Scenario: one notice per config load
 
 - **GIVEN** the override `7`
 - **WHEN** `testSequence` runs for the tooling package
 - **THEN** the console prints exactly one line, naming `@app/tooling` and the seed 7
-- **Test:** `packages/tooling/src/vitest-sequence.test.mjs` › "testSequence shuffles with the resolved seed and prints how to replay it"
+- **Test:** `packages/tooling/src/__tests__/vitest-sequence.test.mjs` › "testSequence shuffles with the resolved seed and prints how to replay it"
 
 ### Requirement: TOOLING-08 — The shared package test base
 
@@ -165,7 +165,7 @@ sequence.
 - **WHEN** `packageTestBase` builds the base for it
 - **THEN** `@` points at the folder's `src`, the environment is `node`, globals and `clearMocks`
   are on, and the sequence is shuffled with the override seed
-- **Test:** `packages/tooling/src/vitest-package-base.test.mjs` › "the base aliases @ onto the package src and runs a shuffled node suite"
+- **Test:** `packages/tooling/src/__tests__/vitest-package-base.test.mjs` › "the base aliases @ onto the package src and runs a shuffled node suite"
 
 ### Requirement: TOOLING-09 — Coverage defaults
 
@@ -180,7 +180,7 @@ The tooling package SHALL set v8 coverage in the base, reported as `text-summary
 - **GIVEN** the base of a package
 - **WHEN** its coverage block is read
 - **THEN** the provider is `v8` and the only exclusion is the `src` barrels
-- **Test:** `packages/tooling/src/vitest-package-base.test.mjs` › "the base aliases @ onto the package src and runs a shuffled node suite"
+- **Test:** `packages/tooling/src/__tests__/vitest-package-base.test.mjs` › "the base aliases @ onto the package src and runs a shuffled node suite"
 
 #### Scenario: reporters and folder
 
@@ -202,7 +202,7 @@ template runs Vitest 4.
 - **GIVEN** the base of a package
 - **WHEN** its `test` block is read
 - **THEN** it holds no `fsModuleCache` key
-- **Test:** `packages/tooling/src/vitest-package-base.test.mjs` › "the base sets no Vitest 5 option"
+- **Test:** `packages/tooling/src/__tests__/vitest-package-base.test.mjs` › "the base sets no Vitest 5 option"
 
 ### Requirement: TOOLING-11 — Spawn options that let a tree be ended
 
@@ -216,7 +216,7 @@ false on Windows, so a child spawned with it leads its own process group on POSI
 - **GIVEN** the platform the suite runs on
 - **WHEN** `TREE_SPAWN_OPTIONS` is read
 - **THEN** it equals `{ detached: !isWindows }` and is frozen
-- **Test:** `packages/tooling/src/process-tree.test.mjs` › "the spawn options detach the child on POSIX only, and cannot be changed"
+- **Test:** `packages/tooling/src/__tests__/process-tree.test.mjs` › "the spawn options detach the child on POSIX only, and cannot be changed"
 
 ### Requirement: TOOLING-12 — A child is ended with every process it started
 
@@ -235,7 +235,7 @@ its JSDoc that on POSIX the descendants are reached only for a child spawned wit
 - **GIVEN** a child spawned with `TREE_SPAWN_OPTIONS` that started a long-lived process of its own
 - **WHEN** `signalProcessTree` signals it with `SIGTERM` and `wait`
 - **THEN** it returns true, and both the child and the process it started end within ten seconds
-- **Test:** `packages/tooling/src/process-tree.test.mjs` › "signalProcessTree ends a child and the process it started"
+- **Test:** `packages/tooling/src/__tests__/process-tree.test.mjs` › "signalProcessTree ends a child and the process it started"
 
 #### Scenario: a POSIX child that leads no group
 
@@ -290,14 +290,14 @@ ended.
 - **GIVEN** a child whose tree was already ended
 - **WHEN** `signalProcessTree` signals it again with `wait`
 - **THEN** it returns true
-- **Test:** `packages/tooling/src/process-tree.test.mjs` › "a tree that already ended counts as ended"
+- **Test:** `packages/tooling/src/__tests__/process-tree.test.mjs` › "a tree that already ended counts as ended"
 
 #### Scenario: a child that never started
 
 - **GIVEN** a child with no pid
 - **WHEN** `signalProcessTree` signals it
 - **THEN** it returns true without signalling anything
-- **Test:** `packages/tooling/src/process-tree.test.mjs` › "a child that never started has nothing to end"
+- **Test:** `packages/tooling/src/__tests__/process-tree.test.mjs` › "a child that never started has nothing to end"
 
 #### Scenario: a tree the caller may not signal
 
