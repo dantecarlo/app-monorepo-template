@@ -63,6 +63,14 @@ const METRO = {
   packageName: 'metro-mcp'
 }
 
+const SHADCN = {
+  args: ['-y', 'shadcn', 'mcp'],
+  capability: 'ui-kit-shadcn',
+  docs: [MCP_DOC_PATH],
+  name: 'shadcn',
+  packageName: 'shadcn'
+}
+
 const entryOf = ({ args, capability, docs, name, packageName }) => ({
   args: args ?? ['-y', packageName],
   capability,
@@ -251,7 +259,34 @@ const CASES = [
     expected: 1,
     name: 'a catalog entry that pins its version is refused',
     pattern:
-      /expo runs npx -y expo-mcp@0\.2\.0; a catalog command is the unpinned `npx -y expo-mcp` \(decision 55\)/u
+      /expo runs npx -y expo-mcp@0\.2\.0; a catalog command is the unpinned `npx -y expo-mcp`, then the server's own arguments \(decision 55\)/u
+  },
+  {
+    context: walk({
+      catalog: [EXPO, NEXT, SHADCN],
+      doc: docOf({ rows: [EXPO, NEXT, SHADCN].map(rowOf) })
+    }),
+    expected: 0,
+    name: 'a catalog entry with server args after its package passes'
+  },
+  {
+    context: walk({
+      catalog: [{ ...SHADCN, args: ['-y', 'shadcn@4.23.0', 'mcp'] }],
+      doc: docOf({ rows: [SHADCN].map(rowOf) })
+    }),
+    expected: 1,
+    name: 'a catalog entry that pins its version before its server args is refused',
+    pattern: /shadcn runs npx -y shadcn@4\.23\.0 mcp; a catalog command/u
+  },
+  {
+    context: walk({
+      catalog: [{ ...SHADCN, args: ['-y', 'mcp'] }],
+      doc: docOf({ rows: [SHADCN].map(rowOf) })
+    }),
+    expected: 1,
+    name: 'a catalog entry that runs no package is refused',
+    pattern:
+      /shadcn runs npx -y mcp; a catalog command is the unpinned `npx -y shadcn`/u
   },
   {
     context: walk({

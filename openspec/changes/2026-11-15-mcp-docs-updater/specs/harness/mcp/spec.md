@@ -9,16 +9,38 @@
 
 The MCP catalog `.agents/contracts/mcp-servers.json` SHALL hold one entry per MCP server, with
 its name, the capability that selects it, its npm package, its command and args, unpinned as
-`npx -y <package>`, and the repository docs that describe it, each of which exists.
+`npx -y <package> [server args...]` with the package the first argument after `-y`, and the
+repository docs that describe it, each of which exists.
 
 **Evidence:** written at apply time, when the code exists.
 
 #### Scenario: an entry pins its version
 
-- **GIVEN** a catalog entry whose args run `next-devtools-mcp@0.3.0`
+- **GIVEN** a catalog entry whose args run `expo-mcp@0.2.0`
 - **WHEN** `pnpm verify:mcp-docs` runs
 - **THEN** it fails, naming the entry and the unpinned command it owes
 - **Test:** `scripts/verify-mcp-docs.test.mjs` › "a catalog entry that pins its version is refused"
+
+#### Scenario: an entry passes its own arguments to the server
+
+- **GIVEN** a catalog entry that runs `npx -y shadcn mcp`, listed by the block
+- **WHEN** `pnpm verify:mcp-docs` runs
+- **THEN** it passes
+- **Test:** `scripts/verify-mcp-docs.test.mjs` › "a catalog entry with server args after its package passes"
+
+#### Scenario: an entry pins its version before its arguments
+
+- **GIVEN** a catalog entry that runs `npx -y shadcn@4.23.0 mcp`
+- **WHEN** `pnpm verify:mcp-docs` runs
+- **THEN** it fails, naming the entry and the command it runs
+- **Test:** `scripts/verify-mcp-docs.test.mjs` › "a catalog entry that pins its version before its server args is refused"
+
+#### Scenario: an entry runs no package
+
+- **GIVEN** a catalog entry for `shadcn` whose args are `-y mcp`, so no package follows `-y`
+- **WHEN** `pnpm verify:mcp-docs` runs
+- **THEN** it fails, naming the entry and the unpinned command it owes
+- **Test:** `scripts/verify-mcp-docs.test.mjs` › "a catalog entry that runs no package is refused"
 
 #### Scenario: an entry names a doc that is gone
 

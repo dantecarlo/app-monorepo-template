@@ -26,12 +26,17 @@ The owner's words, verbatim:
 
 - **The catalog.** `.agents/contracts/mcp-servers.json` lists every MCP server the template can
   configure, one entry each: its name, the capability that selects it, its npm package, its
-  command and args, unpinned as `npx -y <package>`, and the repository docs that describe it. It
-  starts with Certifipago's five: `next-devtools` (`next-devtools-mcp`, `web-next`),
-  `shadcn-server` (`@shadcn/mcp-server`, `ui-kit-shadcn`), and `expo` (`expo-mcp`), `metro`
-  (`metro-mcp`) and `react-native-docs` (`react-native-docs-mcp`) for `mobile-expo`. Assumption:
-  no manifest capability carries the UI kit yet, so `ui-kit-shadcn` names the `shadcn` answer of
-  the `/init` UI kit question until F.11 lands it.
+  command and args, unpinned as `npx -y <package> [server args...]` (the package is the first
+  argument after `-y`), and the repository docs that describe it. It starts with the five servers
+  of Certifipago's `.mcp.json`: `next-devtools` (`next-devtools-mcp`, `web-next`), `shadcn`
+  (`ui-kit-shadcn`), and `expo` (`expo-mcp`), `metro` (`metro-mcp`) and `react-native-docs`
+  (`react-native-docs-mcp`) for `mobile-expo`.
+  - The shadcn entry runs the `shadcn` package as `npx -y shadcn mcp`, the CLI's own MCP server
+    over stdio. Certifipago's `.mcp.json` runs `@shadcn/mcp-server`, which the npm registry
+    answers with 404 (the first real run of the updater, then `npm view`, 2026-11-15; Q2).
+    Decided by the coordinator, 2026-11-15: option A, the `shadcn` package.
+  - Assumption: `ui-kit-shadcn` names the `shadcn` answer to the `/init` UI kit question until
+    F.11 defines the capabilities; no manifest capability carries the UI kit yet.
 - **The doc.** `docs/mcp.md` says what each server is for, which capability selects it, why the
   commands stay unpinned and how to refresh the doc. One block between markers is generated: per
   server, its name, capability, package, latest version, publish date and the date the version
@@ -49,7 +54,8 @@ The owner's words, verbatim:
 - **The gate.** `pnpm verify:mcp-docs` (`scripts/verify-mcp-docs.mjs`), offline, inside
   `validate`: it fails when the block's servers, packages or capabilities differ from the catalog
   plus `.mcp.json`, when the block differs from what the updater wrote, or when the catalog is
-  malformed (a missing field, a pinned version, a doc that does not exist). Versions are
+  malformed (a missing field, a pinned version, no package after `-y`, a doc that does not
+  exist). Versions are
   informational: the gate never judges them. The shared parsing and rendering is pure, in
   `scripts/mcp-docs.detect.mjs`.
 - **The tests.** `scripts/update-mcp-docs.test.mjs` injects the registry fetcher, and
@@ -80,6 +86,9 @@ The owner's words, verbatim:
   releases? It needs network in CI, a token that may open pull requests, and a schedule; the
   updater already exits non-zero on a registry failure and writes nothing when no server
   released, so the job would open a pull request only on a release.
+- **Q2** — Certifipago's `.mcp.json` (`origin/master`) runs `npx -y @shadcn/mcp-server`, a package
+  the npm registry does not have (404), so its shadcn server cannot start. The template catalogs
+  `npx -y shadcn mcp` instead. The coordinator relays the defect to the Arquitecto.
 
 <!--
 Status is one of: open; archived — <date>; discarded — <date>, <reason>.

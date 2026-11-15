@@ -1,5 +1,5 @@
 {
-  "$comment": "The MCP servers the template can configure. /init writes .mcp.json from the entries whose capability the project selects; pnpm mcp:docs reads this file to refresh the generated block of docs/mcp.md, and verify:mcp-docs holds the block to it. Commands stay unpinned (decision 55).",
+  "$comment": "The MCP servers the template can configure. /init writes .mcp.json from the entries whose capability the project selects; pnpm mcp:docs reads this file to refresh the generated block of docs/mcp.md, and verify:mcp-docs holds the block to it. Commands stay unpinned (decision 55): npx -y <package>, then the server's own arguments.",
   "servers": [
     {
       "name": "next-devtools",
@@ -10,11 +10,11 @@
       "docs": ["docs/mcp.md"]
     },
     {
-      "name": "shadcn-server",
+      "name": "shadcn",
       "capability": "ui-kit-shadcn",
-      "package": "@shadcn/mcp-server",
+      "package": "shadcn",
       "command": "npx",
-      "args": ["-y", "@shadcn/mcp-server"],
+      "args": ["-y", "shadcn", "mcp"],
       "docs": ["docs/mcp.md"]
     },
     {

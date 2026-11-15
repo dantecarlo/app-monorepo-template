@@ -68,7 +68,14 @@ export const npmPackageOf = ({ args, command }) => {
   return NPM_NAME.test(name) ? name : null
 }
 
-const unpinned = ({ packageName }) => ['-y', packageName]
+// `npx -y <package> [server args...]`: the package is the first argument
+// after `-y`, with no version, and the server's own arguments may follow.
+const isUnpinned = ({ args, command, packageName }) =>
+  command === 'npx' &&
+  Array.isArray(args) &&
+  args[0] === '-y' &&
+  args[1] === packageName &&
+  args.slice(2).every((arg) => isText(arg))
 
 const entryProblem = ({ entry, index }) => {
   const label = isText(entry?.name) ? entry.name : `entry ${index}`
@@ -81,14 +88,16 @@ const entryProblem = ({ entry, index }) => {
     return `${MCP_CATALOG_PATH}: ${label} has no ${missing.join(', ')}`
   if (!NPM_NAME.test(entry.package))
     return `${MCP_CATALOG_PATH}: ${label} names ${entry.package}, which is not an npm package name`
-  const expected = unpinned({ packageName: entry.package })
   if (
-    entry.command !== 'npx' ||
-    JSON.stringify(entry.args) !== JSON.stringify(expected)
+    !isUnpinned({
+      args: entry.args,
+      command: entry.command,
+      packageName: entry.package
+    })
   ) {
     return (
       `${MCP_CATALOG_PATH}: ${label} runs ${[entry.command, ...(Array.isArray(entry.args) ? entry.args : [])].join(' ')}; ` +
-      `a catalog command is the unpinned \`npx -y ${entry.package}\` (decision 55)`
+      `a catalog command is the unpinned \`npx -y ${entry.package}\`, then the server's own arguments (decision 55)`
     )
   }
   if (

@@ -8,25 +8,27 @@ the project selects (planned: the template ships no `.mcp.json`).
 
 ## The servers
 
-| Server              | Selected by     | What it is for                                                                          |
-| ------------------- | --------------- | --------------------------------------------------------------------------------------- |
-| `next-devtools`     | `web-next`      | Next.js development: the Next.js docs, and the errors, routes and logs of a `next dev` |
-| `shadcn-server`     | `ui-kit-shadcn` | The shadcn/ui component registry, for a web app whose UI kit is shadcn                  |
-| `expo`              | `mobile-expo`   | Expo: the SDK docs, and the running app through the Expo dev server                     |
-| `metro`             | `mobile-expo`   | The Metro bundler of the running mobile app: what it bundles, and its errors            |
-| `react-native-docs` | `mobile-expo`   | The React Native documentation                                                          |
+| Server              | Selected by     | What it is for                                                                           |
+| ------------------- | --------------- | ---------------------------------------------------------------------------------------- |
+| `next-devtools`     | `web-next`      | Next.js development: the Next.js docs, and the errors, routes and logs of a `next dev`   |
+| `shadcn`            | `ui-kit-shadcn` | The shadcn CLI's server (`shadcn mcp`): browse and add components from shadcn registries |
+| `expo`              | `mobile-expo`   | Expo: the SDK docs, and the running app through the Expo dev server                      |
+| `metro`             | `mobile-expo`   | The Metro bundler of the running mobile app: what it bundles, and its errors             |
+| `react-native-docs` | `mobile-expo`   | The React Native documentation                                                           |
 
-`ui-kit-shadcn` is the `shadcn` answer to the UI kit question of `/init`; no capability of
-`template.manifest.json` carries it yet. A server's own README lists its tools, and they change
-with its releases: that is why the updater below names this doc when a server releases.
+`ui-kit-shadcn` is an assumed name: the `shadcn` answer to the UI kit question of `/init`, kept
+until `/init` defines its capabilities; no capability of `template.manifest.json` carries it yet.
+A server's own README lists its tools, and they change with its releases: that is why the updater
+below names this doc when a server releases.
 
 ## Why the commands stay unpinned
 
-Every catalog command is `npx -y <package>`, with no version: a client runs the release npx
-resolves when it starts the server. An MCP server earns its place by knowing the framework release
-in front of it, and a pinned one falls behind the framework it describes. The cost is that a
-release can change a server's tools without a diff in this repository; `pnpm mcp:docs` makes that
-change visible. `pnpm verify:mcp-docs` refuses a catalog entry that pins a version.
+Every catalog command is `npx -y <package>`, then the server's own arguments when it takes any
+(`npx -y shadcn mcp`), with no version: a client runs the release npx resolves when it starts the
+server. An MCP server earns its place by knowing the framework release in front of it, and a
+pinned one falls behind the framework it describes. The cost is that a release can change a
+server's tools without a diff in this repository; `pnpm mcp:docs` makes that change visible.
+`pnpm verify:mcp-docs` refuses a catalog entry that pins a version or runs no package.
 
 ## Keeping this doc current
 
