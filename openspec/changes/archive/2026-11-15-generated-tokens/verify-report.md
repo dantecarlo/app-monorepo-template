@@ -95,6 +95,9 @@ Planted, run, then restored with `git checkout`:
   `verify:instruction-entry`, `codex-budget:test`, `verify:maps`, `check:identity`,
   `init-project:test`, `verify:pairing`, `verify:structure`, `verify:security`,
   `verify:theme-sync:test`, `verify:theme-sync`, `docs:diagrams:check`, the i18n tests and `knip`.
+- `ATL_TEMPLATE_SELF=1 pnpm validate`: exit 0, 2026-11-15, over the archive commit's tree (the
+  deltas merged into the living specs): turbo 24 of 24, `verify:specs` PASS over 8 living specs
+  and 0 open changes, `report:spec-drift` 0 of 8 specs behind their code, `knip` green.
 - `pnpm --filter @app/web build`: exit 0 at `06306df`.
 - `pnpm --filter @app/mobile export:web`: exit 0 at `06306df`; `apps/mobile/dist-web` deleted
   afterwards.

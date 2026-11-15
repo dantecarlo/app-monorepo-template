@@ -1,6 +1,6 @@
 # Proposal: generate every token output from one source
 
-> **Status:** open
+> **Status:** archived — 2026-11-15
 
 ## Why
 
