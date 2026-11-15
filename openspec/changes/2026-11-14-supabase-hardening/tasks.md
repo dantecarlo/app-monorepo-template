@@ -7,7 +7,7 @@
 - [x] T5 — F20: the 0012 migration adds a `before truncate` statement trigger on `audit_log` that raises; pgTAP for a truncate by the owner and by `service_role` · Requirements: SUPABASE-19 · Commit: 6df25c2
 - [x] T6 — F21: the 0011 migration lets `authenticated` update only `display_name` on `profile`; pgTAP for every other column, the unchanged row and a self-granted role; the database guide says how a project opens another column · Requirements: SUPABASE-27, SUPABASE-14 · Commit: 723eddd
 - [x] T7 — F22: `gen:types` writes to a temporary file and moves it over `src/types.ts` only when the command succeeds; the README and the `src/types.ts` header say so · Requirements: none · Commit: 6ad399e
-- [ ] T9 — correction after the independent verification (N1): the read-back of the profile after the refused updates compares against a snapshot taken before them, so a database whose seed rows are older still passes · Requirements: SUPABASE-27 · Commit: —
+- [x] T9 — correction after the independent verification (N1): the read-back of the profile after the refused updates compares against a snapshot taken before them, so a database whose seed rows are older still passes · Requirements: SUPABASE-27 · Commit: b034917
 - [ ] T10 — correction after the independent verification (N2a): pgTAP proves a user cannot set their credit balance through an upsert · Requirements: SUPABASE-27 · Commit: —
 - [ ] T11 — correction after the independent verification (N2b): pgTAP proves a truncate that names `audit_log` among other tables is refused · Requirements: SUPABASE-19 · Commit: —
 - [ ] T12 — correction after the independent verification (N2c): pgTAP proves no API role may execute `tg_audit_no_truncate` · Requirements: SUPABASE-29 · Commit: —

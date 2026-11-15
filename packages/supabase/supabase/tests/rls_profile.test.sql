@@ -37,7 +37,7 @@ begin;
 -- Plan
 -- =====================================================================
 -- Count assertions below and update this number when adding new tests.
-select plan(52);
+select plan(53);
 
 -- =====================================================================
 -- Section 1: seed test fixtures (as postgres, the session role)
@@ -532,6 +532,15 @@ select throws_ok(
   '42501',
   'permission denied for table profile',
   'a user cannot set the timestamps of their own profile'
+);
+
+-- An upsert on the user's own row takes the ON CONFLICT path, which needs UPDATE on each column
+-- it sets.
+select throws_ok(
+  $$insert into public.profile (id, display_name) values ('00000000-0000-0000-0000-000000000002','x') on conflict (id) do update set credit_balance = 1000000$$,
+  '42501',
+  'permission denied for table profile',
+  'a user cannot set the credit balance through an upsert'
 );
 
 select throws_ok(
