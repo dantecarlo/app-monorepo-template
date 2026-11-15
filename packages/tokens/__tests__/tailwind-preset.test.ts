@@ -13,9 +13,7 @@ import {
 
 // The preset is CommonJS, which a TypeScript module cannot import; both apps
 // load it with require(), as this test does.
-const { theme } = createRequire(import.meta.url)(
-  '../../tailwind-preset.cjs'
-)
+const { theme } = createRequire(import.meta.url)('../tailwind-preset.cjs')
 const { extend } = theme
 
 const px = (value: number) => `${value}px`

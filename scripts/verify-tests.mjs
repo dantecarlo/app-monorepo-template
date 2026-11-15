@@ -102,30 +102,14 @@ const EXEMPT_PREDICATES = [
 // reason, or one whose test now sits correctly or is gone, fails the gate, so
 // the list only shrinks. The goal is none.
 //
-// The three below name no unit of `src/`, and each has a home under the rule;
-// each waits on a file outside src that cites its present path.
+// The one below checks a folder of SQL tests as a whole, so no single file is
+// its unit.
 export const FROZEN = Object.freeze([
-  {
-    path: 'packages/i18n/src/__tests__/catalog-parity.test.ts',
-    reason:
-      'it checks the locale catalogs together, so it belongs at ' +
-      'src/locales/__tests__/resources.constant.test.ts; README.md cites ' +
-      'its present path'
-  },
   {
     path: 'packages/supabase/src/__tests__/supabaseSql.test.ts',
     reason:
-      'it reads the SQL files under supabase/, outside src: its migration ' +
-      'case belongs in the findMigrationOrderViolations.helper test, and ' +
-      'its pgTAP case has no single unit; packages/supabase/README.md and ' +
-      'packages/supabase/docs/database.md cite its present path'
-  },
-  {
-    path: 'packages/tokens/src/__tests__/preset.test.ts',
-    reason:
-      'its unit is tailwind-preset.cjs, outside src, so it belongs at ' +
-      'packages/tokens/__tests__/tailwind-preset.test.ts; a comment in ' +
-      'tailwind-preset.cjs cites its present path'
+      'checks every pgTAP file under `supabase/tests/` together; the unit is ' +
+      'the folder, not a file'
   }
 ])
 

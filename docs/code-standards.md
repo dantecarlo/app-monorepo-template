@@ -555,7 +555,7 @@ Every catalog value must be non-empty and keep its ICU MessageFormat braces
 so the structural check is brace balance, not a `{{` scan.
 
 > Status: **cross-locale key parity is enforced** by
-> `packages/i18n/src/__tests__/catalog-parity.test.ts` inside `pnpm validate`.
+> `packages/i18n/src/locales/__tests__/resources.constant.test.ts` inside `pnpm validate`.
 > Key **casing** and brace balance are not yet enforced. Tracked in §21.
 
 ---
@@ -737,7 +737,7 @@ This table exists so that difference is visible.
 | §14a Logic in hooks         | lint          | `local/logic-in-view` + `local/single-use-state`                    |
 | Core import boundary        | lint          | `local/core-import-boundary` on `packages/core/src/**`              |
 | §15 English everywhere      | script        | `verify:english` (allowlist: §20 exception); identifier lint `warn` |
-| §15.1 i18n catalogs         | test          | `catalog-parity.test.ts` — **parity only**, casing not yet          |
+| §15.1 i18n catalogs         | test          | `resources.constant.test.ts` — **parity only**, casing not yet      |
 | §16 Conventional commits    | hook          | `commitlint` on `commit-msg`                                        |
 | §17 Per-feature DoD         | review        | —                                                                   |
 | §18 Validation gate         | script        | the `pnpm validate` chain                                           |

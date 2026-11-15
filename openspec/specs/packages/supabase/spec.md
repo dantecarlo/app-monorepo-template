@@ -599,7 +599,7 @@ The supabase database SHALL create every type, table and function a migration us
 - **GIVEN** the migration files of the package
 - **WHEN** the order check reads them in name order
 - **THEN** none names a public type, table, view or function that only a later migration creates
-- **Test:** `packages/supabase/src/__tests__/supabaseSql.test.ts` › "the migrations name no public object that only a later migration creates"
+- **Test:** `packages/supabase/src/__tests__/findMigrationOrderViolations.helper.test.ts` › "the migrations name no public object that only a later migration creates"
 
 #### Scenario: a migration names a later table
 

@@ -93,7 +93,8 @@ List the GLOBAL things this screen consumes — verify each is in the
 ## Checklist (definition of done for this screen)
 
 - [ ] Every local unit (`.component.tsx` / `.hook.ts` / `.service.ts` /
-      `.adapter.ts` / `.helper.ts`) has a sibling `*.test.*`.
+      `.adapter.ts` / `.helper.ts`) has its test in the `__tests__/` of its own
+      folder, named after it (`X/Y.hook.ts` → `X/__tests__/Y.hook.test.ts`).
 - [ ] No inline magic numbers/strings — all in `*.constant.ts` / `*.style.ts`.
 - [ ] Loading / empty / error states handled; user-facing strings via i18n.
 - [ ] Imports use `@/*` / `@app/*` aliases — no `../`.

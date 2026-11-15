@@ -199,7 +199,7 @@ radius and font-size utilities from the preset alone.
 - **GIVEN** a Tailwind config that requires the preset
 - **WHEN** it resolves a spacing utility such as p-lg
 - **THEN** the value is 16px, the lg spacing token
-- **Test:** `packages/tokens/src/__tests__/preset.test.ts` › "the preset carries every scale token as a CSS length"
+- **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset carries every scale token as a CSS length"
 
 ### Requirement: TOKENS-14 — Layout widths, glyph sizes and insets are tokens
 
@@ -215,7 +215,7 @@ Tailwind preset SHALL carry them as the `max-w-*`, `text-*` and spacing utilitie
 - **GIVEN** the tokens and the Tailwind preset
 - **WHEN** every layout width, glyph size and inset is read from both
 - **THEN** each preset entry is its token written as a CSS length
-- **Test:** `packages/tokens/src/__tests__/preset.test.ts` › "the preset carries every scale token as a CSS length"
+- **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset carries every scale token as a CSS length"
 
 ### Requirement: TOKENS-15 — The colour copies agree for every colour of both themes
 
@@ -245,6 +245,6 @@ included, and equal to the Tailwind preset for the dark theme.
   app loads the preset through `apps/web/tailwind.config.cjs` and `@config` (TOKENS-12).
 - **Q2** — Partly closed on 2026-11-15 by `openspec/changes/archive/2026-11-14-style-pillar/`: the
   theme-sync gate compares every colour of both themes, the accent ramp included (TOKENS-15), and
-  `packages/tokens/src/__tests__/preset.test.ts` compares the preset's spacing, radius and font
+  `packages/tokens/__tests__/tailwind-preset.test.ts` compares the preset's spacing, radius and font
   sizes with the tokens (TOKENS-13). The preset's shadows and font families are still compared
   with nothing.
