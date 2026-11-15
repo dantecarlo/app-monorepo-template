@@ -20,7 +20,7 @@ export interface IVerifySignedImageUrlParams {
   url: string
 }
 
-export interface ISignedImageUrlVerification {
-  reason?: SignedImageUrlRejectionType
-  valid: boolean
-}
+// A valid URL carries no reason; a rejected one always names its reason.
+export type SignedImageUrlVerificationType =
+  | { reason: SignedImageUrlRejectionType; valid: false }
+  | { valid: true }

@@ -6,7 +6,10 @@ import {
   signImageUrl,
   verifySignedImageUrl
 } from '#src/signedImageUrl.helper'
-import { SignedImageUrlRejectionEnum } from '#src/signedImageUrl.type'
+import {
+  SignedImageUrlRejectionEnum,
+  type SignedImageUrlVerificationType
+} from '#src/signedImageUrl.type'
 
 const SECRET = 'r2-secret'
 const OTHER_SECRET = 'another-secret'
@@ -231,4 +234,32 @@ test('verifySignedImageUrl rejects every URL when no secret is configured', asyn
     reason: SignedImageUrlRejectionEnum.NOT_CONFIGURED,
     valid: false
   })
+})
+
+test('a verification is either valid with no reason, or rejected with one', () => {
+  const valid: SignedImageUrlVerificationType = { valid: true }
+  const rejected: SignedImageUrlVerificationType = {
+    reason: SignedImageUrlRejectionEnum.EXPIRED,
+    valid: false
+  }
+  const validWithReason: SignedImageUrlVerificationType = {
+    // @ts-expect-error a valid verification carries no reason
+    reason: SignedImageUrlRejectionEnum.EXPIRED,
+    valid: true
+  }
+  // @ts-expect-error a rejected verification names its reason
+  const rejectedWithoutReason: SignedImageUrlVerificationType = {
+    valid: false
+  }
+  expect([
+    valid,
+    rejected,
+    validWithReason,
+    rejectedWithoutReason
+  ]).toEqual([
+    VALID,
+    EXPIRED,
+    { reason: SignedImageUrlRejectionEnum.EXPIRED, valid: true },
+    { valid: false }
+  ])
 })

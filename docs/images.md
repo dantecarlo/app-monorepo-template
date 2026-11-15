@@ -64,8 +64,9 @@ nothing (see "Verifying a signed URL" below).
 `@app/cloudflare`, checks a URL either adapter signed, with the same secret
 and the same canonical string. It reads no environment variable and does no
 I/O, so it runs in the edge runtime and in a Worker. It compares the signature
-in constant time and returns `{ valid: true }`, or `{ valid: false, reason }`
-with one of `SignedImageUrlRejectionEnum`:
+in constant time and returns a `SignedImageUrlVerificationType`:
+`{ valid: true }`, or `{ valid: false, reason }` with one of
+`SignedImageUrlRejectionEnum`:
 
 | Reason | When |
 |---|---|

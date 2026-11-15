@@ -8,11 +8,11 @@ import {
   UNIX_SECONDS_PATTERN
 } from '#src/imageDelivery.constant'
 import {
-  type ISignedImageUrlVerification,
   type ISignImageUrlParams,
   type IVerifySignedImageUrlParams,
   SignedImageUrlRejectionEnum,
-  type SignedImageUrlRejectionType
+  type SignedImageUrlRejectionType,
+  type SignedImageUrlVerificationType
 } from '#src/signedImageUrl.type'
 
 // The string both adapters sign: the URL path and its query, `exp` included
@@ -49,7 +49,7 @@ const reject = ({
   reason
 }: {
   reason: SignedImageUrlRejectionType
-}): ISignedImageUrlVerification => ({ reason, valid: false })
+}): SignedImageUrlVerificationType => ({ reason, valid: false })
 
 const parseUrl = ({ url }: { url: string }): URL | null => {
   try {
@@ -85,13 +85,15 @@ const readSignedParams = ({
  * Verifies a URL `signImageUrl` signed: its `sig` must equal, compared in
  * constant time, the HMAC-SHA256 hex of the canonical message keyed by
  * `secret`, and its `exp` must be later than `nowInSeconds` (the current Unix
- * time by default). Reads no environment variable and does no I/O.
+ * time by default). Resolves `{ valid: true }`, or `{ valid: false, reason }`
+ * with a `SignedImageUrlRejectionEnum` value. Reads no environment variable
+ * and does no I/O.
  */
 export const verifySignedImageUrl = async ({
   nowInSeconds = currentUnixSeconds(),
   secret,
   url
-}: IVerifySignedImageUrlParams): Promise<ISignedImageUrlVerification> => {
+}: IVerifySignedImageUrlParams): Promise<SignedImageUrlVerificationType> => {
   if (!secret) {
     return reject({ reason: SignedImageUrlRejectionEnum.NOT_CONFIGURED })
   }

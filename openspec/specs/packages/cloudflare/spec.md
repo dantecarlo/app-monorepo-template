@@ -405,7 +405,8 @@ current Unix time in seconds, and reject every other URL with its reason: `not_c
 the secret is empty; `malformed` when the URL cannot be parsed, `exp` or `sig` is missing or
 repeated, `exp` is not a whole number of seconds or `sig` is not 64 lowercase hexadecimal
 characters; `signature_mismatch` when the signature differs; and `expired` when a genuine
-signature has passed its `exp`.
+signature has passed its `exp`. Its result, `SignedImageUrlVerificationType`, is either
+`{ valid: true }` or `{ valid: false, reason }`.
 
 **Evidence:** `packages/cloudflare/src/signedImageUrl.helper.ts:90`, `packages/cloudflare/src/signedImageUrl.helper.ts:95`,
 `packages/cloudflare/src/signedImageUrl.helper.ts:73`, `packages/cloudflare/src/signedImageUrl.helper.ts:76`, `packages/cloudflare/src/signedImageUrl.helper.ts:77`,
@@ -477,3 +478,11 @@ signature has passed its `exp`.
 - **WHEN** it is verified with an empty secret
 - **THEN** it is not valid, with the reason `not_configured`
 - **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects every URL when no secret is configured"
+
+#### Scenario: the result type
+
+- **GIVEN** `SignedImageUrlVerificationType`, the type of the result
+- **WHEN** a valid result is written with a reason, or a rejected one without one
+- **THEN** neither type-checks, while a valid result with no reason and a rejected one with its
+  reason do
+- **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "a verification is either valid with no reason, or rejected with one"
