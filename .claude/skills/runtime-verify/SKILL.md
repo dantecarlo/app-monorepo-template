@@ -94,8 +94,8 @@ pnpm --filter @app/web build && node scripts/smoke-web-render.mjs
 ```
 
 `scripts/smoke-web-render.mjs` starts `next start`, polls
-`http://localhost:3000` for HTTP 200, then confirms the `aurora` marker is
-present in the HTML body. The process exits non-zero on failure.
+`http://localhost:3000` for HTTP 200, then confirms the root layout's `data-theme=`
+marker is present in the HTML, which a Next error page lacks. The process exits non-zero on failure.
 
 Then run the responsive Playwright suite:
 

@@ -6,7 +6,8 @@ const PORT = 3000
 const BASE_URL = `http://localhost:${PORT}`
 const MAX_RETRIES = 30
 const RETRY_INTERVAL_MS = 1000
-const KNOWN_MARKER = 'aurora'
+// The root layout writes data-theme on <html>; a Next error page does not.
+const KNOWN_MARKER = 'data-theme='
 const IS_WINDOWS = process.platform === 'win32'
 const START_ARGS = ['--filter', '@app/web', 'start']
 const SERVER_OPTIONS = { ...TREE_SPAWN_OPTIONS, stdio: ['ignore', 'inherit', 'inherit'] }
