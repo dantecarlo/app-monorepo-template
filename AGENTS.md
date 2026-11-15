@@ -186,6 +186,10 @@ stack.
   `supabase` command.
 - Never print or paste the access token or DB password into chat or commits.
   Confirm a variable is loaded by its character count only.
+- A function `postgres` creates outside the `public` and `extensions` schemas is
+  executable by its owner only (`0004_auth_helpers.sql` revokes PUBLIC's default
+  EXECUTE). Grant EXECUTE to the roles that call it in the same migration, or the
+  call fails at run time. See `packages/supabase/docs/database.md`.
 
 ### `packages/supabase/.env` (gitignored)
 
