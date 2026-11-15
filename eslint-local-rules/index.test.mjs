@@ -9,9 +9,16 @@
 // ---------------------------------------------------------------------------
 
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { describe, test } from 'node:test'
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
+import { after, describe, test } from 'node:test'
 
 import { RuleTester } from 'eslint'
 import checkFile from 'eslint-plugin-check-file'
@@ -19,6 +26,7 @@ import tseslint from 'typescript-eslint'
 
 import { FILENAME_RULES } from '../eslint.rules.mjs'
 import localRules from './index.mjs'
+import { toSrcAlias } from './package-src-alias.detect.mjs'
 
 RuleTester.describe = describe
 RuleTester.it = test
@@ -119,9 +127,54 @@ for (const [name, expected] of Object.entries(EXPECTED_IMPORTS)) {
   })
 }
 
+// The packages on disk the rule resolves against: each template package with
+// the "imports" map the test above pins, and `shadow`, whose exact, null and
+// conditional entries win over `#src/*` for some specifiers.
+const SRC_ALIAS_FIXTURE = mkdtempSync(join(tmpdir(), 'package-src-alias-'))
+const FIXTURE_MANIFESTS = {
+  ...EXPECTED_IMPORTS,
+  shadow: {
+    ...SRC_IMPORTS,
+    '#src/cond/*': { default: './src/cond/*.ts' },
+    '#src/ports/b.constant': './src/other.ts',
+    '#src/ports/n': null
+  }
+}
+const FIXTURE_SOURCES = {
+  cloudflare: ['cloudflare.constant.ts'],
+  core: [
+    'a.helper.ts',
+    'data.json',
+    'ports/sub/index.ts',
+    'types/a.type.ts'
+  ],
+  i18n: ['data.json', 'locales/en.json'],
+  shadow: ['cond/k.ts', 'other.ts', 'ports/b.constant.ts', 'ports/n.ts'],
+  supabase: ['lazy.helper.ts'],
+  tokens: ['a.helper.ts', 'tokens.constant.ts']
+}
+const writeFixture = ({ content = '', path }) => {
+  const file = join(SRC_ALIAS_FIXTURE, path)
+  mkdirSync(dirname(file), { recursive: true })
+  writeFileSync(file, content)
+}
+Object.entries(FIXTURE_MANIFESTS).forEach(([name, imports]) =>
+  writeFixture({
+    content: JSON.stringify({ imports }),
+    path: join('packages', name, 'package.json')
+  })
+)
+Object.entries(FIXTURE_SOURCES).forEach(([name, files]) =>
+  files.forEach((file) =>
+    writeFixture({ path: join('packages', name, 'src', file) })
+  )
+)
+after(() => rmSync(SRC_ALIAS_FIXTURE, { force: true, recursive: true }))
+
 // Absolute paths as ESLint hands them to the rule; the fix depends on the
-// file's path only, never on the folder ESLint runs from.
-const inPackage = ({ name, file }) => `/repo/packages/${name}/src/${file}`
+// file's path and the files beside it, never on the folder ESLint runs from.
+const inPackage = ({ name, file }) =>
+  join(SRC_ALIAS_FIXTURE, 'packages', name, 'src', file)
 
 const fixed = ({ code, filename, output }) => ({
   code,
@@ -159,7 +212,10 @@ ruleTester.run('package-src-alias', rules['package-src-alias'], {
     }),
     fixed({
       code: "import { HEADER } from '@/cloudflare.constant'",
-      filename: inPackage({ file: 'hmac/hmac.helper.ts', name: 'cloudflare' }),
+      filename: inPackage({
+        file: 'hmac/hmac.helper.ts',
+        name: 'cloudflare'
+      }),
       output: "import { HEADER } from '#src/cloudflare.constant'"
     }),
     fixed({
@@ -182,6 +238,60 @@ ruleTester.run('package-src-alias', rules['package-src-alias'], {
       code: "import a from '.'",
       filename: inPackage({ file: 'a.helper.ts', name: 'core' }),
       output: null
+    }),
+    // An explicit extension, a folder and a `.json` resolve to the file they
+    // name, and the alias names that file through the package's map.
+    fixed({
+      code: "import { HEADER } from './cloudflare.constant.ts'",
+      filename: inPackage({ file: 'hmac.helper.ts', name: 'cloudflare' }),
+      output: "import { HEADER } from '#src/cloudflare.constant'"
+    }),
+    fixed({
+      code: "import { s } from './sub'",
+      filename: inPackage({ file: 'ports/x.helper.ts', name: 'core' }),
+      output: "import { s } from '#src/ports/sub/index'"
+    }),
+    fixed({
+      code: "import data from '../data.json'",
+      filename: inPackage({ file: 'locales/x.helper.ts', name: 'i18n' }),
+      output: "import data from '#src/data.json'"
+    }),
+    // An alias the fix cannot resolve back to the same file is not written:
+    // it would be a broken import, worse than the relative one.
+    fixed({
+      code: "import { m } from './missing'",
+      filename: inPackage({ file: 'x.helper.ts', name: 'core' }),
+      output: null
+    }),
+    // `#src/data.json` resolves to `./src/data.json.ts` under `./src/*.ts`.
+    fixed({
+      code: "import data from './data.json'",
+      filename: inPackage({ file: 'x.helper.ts', name: 'core' }),
+      output: null
+    }),
+    // An exact key sends `#src/ports/b.constant` to another file.
+    fixed({
+      code: "import { b } from './b.constant'",
+      filename: inPackage({ file: 'ports/x.helper.ts', name: 'shadow' }),
+      output: null
+    }),
+    // A null target leaves `#src/ports/n` unresolvable.
+    fixed({
+      code: "import { n } from './n'",
+      filename: inPackage({ file: 'ports/x.helper.ts', name: 'shadow' }),
+      output: null
+    }),
+    // A conditional pattern wins `#src/cond/k`; its target is not one path.
+    fixed({
+      code: "import { k } from '../cond/k'",
+      filename: inPackage({ file: 'ports/x.helper.ts', name: 'shadow' }),
+      output: null
+    }),
+    // Under the same map, a file no entry shadows keeps its fix.
+    fixed({
+      code: "import { o } from '../other'",
+      filename: inPackage({ file: 'ports/x.helper.ts', name: 'shadow' }),
+      output: "import { o } from '#src/other'"
     })
   ],
   valid: [
@@ -202,6 +312,26 @@ ruleTester.run('package-src-alias', rules['package-src-alias'], {
       filename: inPackage({ file: 'index.ts', name: 'core' })
     }
   ]
+})
+
+test('the #src/ resolver judges own paths only, from the file it reads', () => {
+  const file = inPackage({ file: 'ports/x.helper.ts', name: 'core' })
+  assert.deepEqual(toSrcAlias({ filename: file, source: '../..' }), {
+    alias: null
+  })
+  assert.equal(toSrcAlias({ filename: file, source: 'zod' }), null)
+  assert.equal(
+    toSrcAlias({ filename: file, source: '#src/ports/sub/index' }),
+    null
+  )
+  assert.equal(toSrcAlias({ filename: file, source: '@app/core' }), null)
+  assert.deepEqual(
+    toSrcAlias({
+      filename: join(SRC_ALIAS_FIXTURE, 'apps/web/src/lib/x.helper.ts'),
+      source: './y.helper'
+    }),
+    { alias: null }
+  )
 })
 
 ruleTester.run('suffix-contract', rules['suffix-contract'], {

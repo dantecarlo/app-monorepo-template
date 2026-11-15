@@ -549,9 +549,12 @@ const coreImportBoundary = {
 // A package source reaches its own modules through the `#src/` key of its
 // package.json, never by `./`, `../` or the `@/` alias, which resolves against
 // the consuming app's src. Imports, re-exports and `import()` with a literal
-// specifier are all judged. The fix writes the `#src/` form, computed from the
-// file's own path; a path that leaves the package's src is reported without
-// one. Scoped to the packages' production files in eslint.config.mjs.
+// specifier are all judged. The fix writes the `#src/` form of the file the
+// specifier resolves to, computed from the file's own path, and only when that
+// alias resolves back to the same file through the package's whole "imports"
+// map; a path that leaves the package's src, a missing file and a file no
+// alias reaches are reported without one. Scoped to the packages' production
+// files in eslint.config.mjs.
 // ---------------------------------------------------------------------------
 
 const packageSrcAlias = {
