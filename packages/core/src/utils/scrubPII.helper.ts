@@ -13,11 +13,14 @@
  * - The key "name" is intentionally NOT in the set. In many product domains
  *   "name" refers to a business or entity name, not a personal name. If your
  *   project treats "name" as PII, add it to PII_KEYS locally.
- * - Circular references are replaced with '[circular]' instead of throwing.
+ * - A cycle is replaced with '[circular]' instead of throwing: an object or
+ *   array becomes '[circular]' where the walk meets it again inside itself.
+ *   One reached twice without a cycle is scrubbed in both places.
  * - Arrays are recursed element-by-element; primitives are returned as-is.
  */
 
 const REDACTED = '[redacted]'
+const CIRCULAR = '[circular]'
 
 export const PII_KEYS: ReadonlySet<string> = new Set([
   'access_token',
@@ -56,26 +59,32 @@ const NORMALIZED_PII_KEYS: ReadonlySet<string> = new Set(
 const isSensitiveKey = (key: string): boolean =>
   NORMALIZED_PII_KEYS.has(normalizeKey(key))
 
-export const scrubPII = <T>(input: T, _seen = new WeakSet()): T => {
-  if (input === null || input === undefined) return input
-
-  if (Array.isArray(input)) {
-    return input.map((item) => scrubPII(item, _seen)) as unknown as T
-  }
-
-  if (typeof input === 'object') {
-    if (_seen.has(input as object)) return '[circular]' as unknown as T
-    _seen.add(input as object)
-
-    return Object.fromEntries(
-      Object.entries(input as Record<string, unknown>).map(
-        ([key, value]) => [
-          key,
-          isSensitiveKey(key) ? REDACTED : scrubPII(value, _seen)
-        ]
-      )
-    ) as unknown as T
-  }
-
-  return input
+interface IScrubValueParams {
+  ancestors: WeakSet<object>
+  value: unknown
 }
+
+// `ancestors` holds the objects and arrays above `value` on the current path,
+// so only a cycle meets one of them again. Each leaves the set once walked.
+const scrubValue = ({ ancestors, value }: IScrubValueParams): unknown => {
+  if (value === null || typeof value !== 'object') return value
+  if (ancestors.has(value)) return CIRCULAR
+
+  ancestors.add(value)
+  const scrubbed = Array.isArray(value)
+    ? value.map((item) => scrubValue({ ancestors, value: item }))
+    : Object.fromEntries(
+        Object.entries(value).map(([key, entry]) => [
+          key,
+          isSensitiveKey(key)
+            ? REDACTED
+            : scrubValue({ ancestors, value: entry })
+        ])
+      )
+  ancestors.delete(value)
+
+  return scrubbed
+}
+
+export const scrubPII = <T>(input: T): T =>
+  scrubValue({ ancestors: new WeakSet(), value: input }) as T

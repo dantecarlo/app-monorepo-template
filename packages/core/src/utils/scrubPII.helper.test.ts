@@ -251,6 +251,19 @@ describe('scrubPII — circular references', () => {
     expect(result.id).toBe(1)
     expect(result.self).toBe('[circular]')
   })
+
+  test('replaces an array that holds itself with "[circular]"', () => {
+    const list: unknown[] = []
+    list.push(list)
+    expect(scrubPII(list)).toEqual(['[circular]'])
+  })
+
+  test('scrubs an object reached under two keys in both places', () => {
+    const shared = { email: 'a@b.com', id: 7 }
+    const result = scrubPII({ a: shared, b: shared })
+    const scrubbed = { email: '[redacted]', id: 7 }
+    expect(result).toEqual({ a: scrubbed, b: scrubbed })
+  })
 })
 
 // ---------------------------------------------------------------------------
