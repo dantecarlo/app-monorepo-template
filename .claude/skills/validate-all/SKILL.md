@@ -32,7 +32,8 @@ require AI review:
 - **Page-level a11y** → `@axe-core/playwright` (`e2e/axe.e2e.ts`)
 - **Glass computed style** (backdrop-filter, colors, borders) →
   `e2e/glass.e2e.ts`
-- **Theme sync** → `pnpm verify:theme-sync`
+- **Generated token outputs** (web theme, NativeWind preset, mobile theme variables equal their
+  regeneration from `packages/tokens/src/tokens.constant.ts`) → `pnpm verify:theme-sync`
 - **Dead exports / unused imports** → `pnpm knip`
 - **Architecture map integrity + magic literals** → `pnpm verify:maps`
 
@@ -101,7 +102,8 @@ pnpm validate
    namespaces, required security headers present, `assertTrustedOrigin`
    wired in middleware, `scrubPII` wired at Sentry `beforeSend`.
    Any failure = **BLOCKER**.
-8. `pnpm verify:theme-sync` — design-token / theme synchronization check.
+8. `pnpm verify:theme-sync` — every generated token output equals its regeneration from the
+   token source; a hand edit or an un-regenerated source change fails.
 9. `pnpm --filter @app/i18n test` — i18n catalog parity tests.
 10. `pnpm knip` — dead exports and unused imports audit.
 

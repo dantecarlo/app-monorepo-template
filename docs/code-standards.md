@@ -753,7 +753,7 @@ This table exists so that difference is visible.
 | §22 Values are tokens       | lint+script   | `local/style-token-values` + `verify:allowlist-freshness`           |
 | §22 The kit behind `ui/`    | lint          | `local/ui-kit-boundary` on both apps                                |
 | §22 One `tv` on web         | test          | `variants.helper.test.ts` — no web ui style file imports the kit's  |
-| Colour copies in sync       | script        | `verify:theme-sync` (and `verify:theme-sync:test`), both themes     |
+| Token outputs generated     | script        | `verify:theme-sync` (and `:test`): each equals its regeneration     |
 
 **Rows that read "none yet", "warn only" or "partial"** are not aspirations
 hidden in prose — they are named gaps with a named mechanism, tracked as
@@ -775,11 +775,15 @@ The rule of the LAW of the same name in `AGENTS.md`, which quotes the owner's de
 | A block under `src/components/ui/`, or a screen's own `components/`  | Its look: colour, background, border, radius, typography, shadow, opacity, states and variants, in `*.style.ts` |
 | A screen, a route entry, a container under `src/components/<Name>/`  | Positioning only: flex and grid, gap, order, alignment, position and inset, z-index, placing size, spacing      |
 | `src/helpers/layout.style.ts`                                         | The positioning classes the screens share                                                                        |
-| `packages/tokens`                                                     | Every value: colours, scales, widths, glyph sizes, insets                                                        |
+| `packages/tokens/src/tokens.constant.ts`                              | Every value: colours, scales, widths, glyph sizes, insets, fonts, shadows, motion; the generated outputs follow |
 
 - **A value is a token** (`bg-accent`, `max-w-content`, `px-pill-x`, `colors.accent`) **or a step of
   Tailwind's scale** (`px-2.75`, `duration-120`). Never a raw colour, a palette colour
   (`bg-white/…`) or an arbitrary value (`max-w-[28rem]`).
+- **A new value goes in the token source**, `packages/tokens/src/tokens.constant.ts`; then
+  `pnpm --filter @app/tokens generate` writes the web theme, the NativeWind preset and the mobile
+  theme variables. A generated file is never edited by hand (`verify:theme-sync`), and
+  `apps/web/src/app/globals.css` declares no value of its own.
 - **The kit sits behind `ui/`.** A UI kit, its primitives and its class helpers are imported by a
   `ui/` block only, so the look and the kit are one replaceable layer.
 - **A different look** is a variant or a prop of a `ui/` block, never a class in the screen.

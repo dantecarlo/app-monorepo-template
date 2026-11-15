@@ -246,7 +246,14 @@ Constants describe purpose: `CONTAINER`, `AVATAR` — not `FLEX_ROW`, `ROUNDED`.
 | `components/ui/**`, a screen's own `components/**`  | The look: colour, type, border, radius, shadow, states | `local/style-token-values`   |
 | A screen, a route entry, `components/<Name>/`       | Positioning only                                       | `local/style-positions-only` |
 | `helpers/layout.style.ts`                           | The shared positioning classes                         | `local/style-positions-only` |
-| `packages/tokens` (preset + constants)              | Every value                                            | `verify:theme-sync`          |
+| `packages/tokens/src/tokens.constant.ts`            | Every value, the one source                            | `verify:theme-sync`          |
+
+**Adding a token.** Write the value in `packages/tokens/src/tokens.constant.ts`, run
+`pnpm --filter @app/tokens generate`, and commit the source with what it writes: `theme.css` (the
+web theme, which `apps/web/src/app/globals.css` imports), `tailwind-preset.cjs` (the NativeWind
+preset) and `src/themeVars.constant.ts` (the mobile theme variables). Never edit those three by
+hand: `verify:theme-sync` fails while one differs from its regeneration. The utility is the key in
+kebab case (`spacing.pillX` is `px-pill-x`); see `packages/tokens/README.md`.
 
 Only `components/ui/**` imports a UI kit or its helpers (`tailwind-variants`, Radix,
 `class-variance-authority`, `expo-linear-gradient`, `react-native-svg`): `local/ui-kit-boundary`.
