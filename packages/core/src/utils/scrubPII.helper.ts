@@ -18,6 +18,11 @@
  * - Each object or array is walked once. Every other place that reaches it
  *   gets the same scrubbed copy, so a graph that shares objects (a React DOM
  *   node in a console breadcrumb) costs one walk per object, not per path.
+ * - The result therefore shares each scrubbed copy wherever the input shared
+ *   the object. A serializer with no depth limit writes a shared copy once per
+ *   path that reaches it, so a sink needs a depth limit of its own; Sentry
+ *   normalizes breadcrumb data, user, contexts and extra to `normalizeDepth`
+ *   (default 3, which neither app changes) before `beforeSend`.
  * - Arrays are recursed element-by-element; primitives are returned as-is.
  */
 
