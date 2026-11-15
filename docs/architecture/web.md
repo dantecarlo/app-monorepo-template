@@ -21,7 +21,9 @@ apps/web/
     ├── middleware.ts              # origin lock (originGuard adapter)
     ├── app/                       # Next App Router — ROUTING ONLY (RSC)
     │   ├── layout.tsx             # root layout: fonts, theme script, ThemeProvider, providers
-    │   ├── providers.tsx · SupabaseProviders.tsx   # NextIntl, QueryClient, AuthProvider
+    │   ├── providers.tsx · SupabaseProviders.tsx   # NextIntl, QueryClient, AuthProvider, Toast
+    │   ├── error.tsx              # root segment boundary: render crash → ErrorState + retry
+    │   ├── global-error.tsx       # root layout crash: own html/body → ErrorState + retry
     │   ├── globals.css            # Tailwind CSS 4 entry + @theme tokens
     │   ├── page.tsx               # / → ItemsSummaryScreen (RSC, in Suspense) + ItemsDashboardScreen
     │   ├── login/page.tsx         # /login → LoginScreen
@@ -56,8 +58,10 @@ export default LoginPage
   `loadItemsSummary.service.ts` — or a `'use client'` screen for heavy interactivity
   (`ItemsDashboardScreen`, `LoginScreen`).
 - **Boundaries**: `page.tsx` wraps the async screen in `<Suspense>`; the `AsyncBoundary` client
-  primitive wraps client islands. Next's `error.tsx`, `global-error.tsx` and `loading.tsx`
-  conventions are available per segment; none ships today.
+  primitive wraps client islands. A render crash below the root layout lands in `app/error.tsx`,
+  and a crash of the root layout in `app/global-error.tsx`, which renders its own document; both
+  show the `ErrorState` with a retry. A segment can add its own `error.tsx` or `loading.tsx`;
+  none ships below the root.
 - **Route segments**: organize by logical area (e.g. `/dashboard`, `/profile`, `/settings`) with
   server layouts. `src/middleware.ts` only enforces the origin lock today; it gates no route.
 
