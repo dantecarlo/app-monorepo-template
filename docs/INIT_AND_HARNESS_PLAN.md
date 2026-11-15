@@ -170,7 +170,83 @@ less does it, but evaluate and analyze and put it in the plan". The analysis of 
 of the template, its importers and Certifipago's approach is the table that follows; it is filled
 by the inventory of 2026-11-15.
 
-PER-PACKAGE-STRATEGY-PLACEHOLDER
+Inventory of `origin/main` at `e8a4489`, read as git objects. Today `no-restricted-imports` guards only
+`@supabase/*`, `@stripe/*` and `@sentry/*`, so nothing guards i18n, query, state, UI or Expo packages.
+In the table, **Direct** counts the non-test files that import the package outside its target seam.
+
+| Package | Category | Direct | Target seam | Effort |
+| --- | --- | --- | --- | --- |
+| `react`, `react-dom`, `next`, `react-native`, `expo`, `expo-router`, `typescript`, `@app/core`, `@app/i18n`, `@app/tokens` | core | — | used directly (`next/cache`, `next/navigation`, `next/image` and the `expo-router` hooks narrowed, below) | — |
+| `tailwindcss`, `nativewind` | styling engine, core: screens only position, and the look lives in `ui/`, so a UI kit swap rewrites `ui/` | 0 | `lib/theme` and the config files | — |
+| `next-intl` | infra | 21 | `apps/web/src/lib/i18n/` | medium |
+| `react-i18next` | infra | 18 | `apps/mobile/src/lib/i18n/` | medium |
+| `i18next`, `i18next-icu`, `@formatjs/intl-pluralrules`, `expo-localization` | infra | 0 | `apps/mobile/src/lib/i18n/` | small |
+| `@tanstack/react-query` | infra | 2, and its option and result types leak through `useAppQuery` | `apps/*/src/lib/query/` with project-owned option and result types, `AppQueryProvider`, `useInvalidateAppQuery` | medium |
+| `zustand` | infra | 7 stores | `apps/*/src/lib/store/createAppStore.helper.ts` | small |
+| `zod` | infra | 0 | `apps/*/src/validation/`, returning a project validation result | small |
+| `@react-native-async-storage/async-storage` | infra | 2 | `apps/mobile/src/lib/storage/keyValueStorage.adapter.ts` behind an `IKeyValueStoragePort` in `@app/core` | small |
+| `expo-splash-screen`, `@expo-google-fonts/*` | infra | 1 each | `apps/mobile/src/lib/bootstrap/` | small |
+| `tailwind-variants` (`tailwind-merge` its peer) | ui | 0, and 9 ui types leak `VariantProps` | `lib/styles/variants.helper.ts`; explicit variant unions in `*.constant.ts` | medium |
+| `react-error-boundary` | ui | 0, and its `FallbackProps` leak | `components/ui/AsyncBoundary` with its own fallback props | small |
+| `expo-linear-gradient` | ui | 2 | a new `components/ui/Gradient` | small |
+| `expo-blur`, `react-native-svg`, `react-native-reanimated` | ui | 0 | their existing `ui/` blocks | small |
+| `react-native-safe-area-context` | ui | 1 app root | `ui/AuthShell` and `lib/bootstrap` | small |
+| `expo-status-bar` | ui | 2, and its `StatusBarStyle` leaks | a new `components/ui/StatusBar` with its own style type | small |
+| `@sentry/nextjs`, `@sentry/react-native` | vendor | 0 | `lib/observability/*.adapter.ts` and the framework config files (optional capability, decision 53) | small |
+| PostHog | vendor | — | `lib/observability/*.adapter.ts`, the default adapter (F.7) | medium |
+| `@supabase/supabase-js`, `@supabase/ssr` | vendor | 0, and `SupabaseClient<Database>` leaks into the apps | `packages/supabase/src/*.adapter.ts`, the client typed opaquely behind `IBackendClientProvider` | medium |
+| `@app/supabase`, `@app/cloudflare` | vendor packages | 2 app roots, 0 | `apps/*/src/lib/supabase/`, `apps/web/src/lib/{bot-protection,origin-guard}` | small |
+| `next/cache`, `next/navigation`, `next/image` | core, narrowed | 1, 1, 1 | `lib/cache`, `lib/routing`, `components/ui/Image` | small |
+| `react-native` primitives that have a `ui/` wrapper (`Text`, `Pressable`, `TextInput`) | core, narrowed | 14 | `components/ui/*`; `View` and layout primitives stay direct | medium |
+
+Rows outside scope: build and dev packages (ESLint, Vitest, MSW, Testing Library, Playwright, Turbo) and the framework
+peers never imported (`react-native-screens`, `react-native-web`, `react-native-worklets`, `expo-constants`, `expo-font`,
+`expo-linking`, `@expo/metro-runtime`).
+
+**Enforcement.**
+- **Registry.** `.agents/contracts/dependencies.json` names the core packages, the peers, and each other package's category and seam globs.
+- **Rule.** `local/dependency-seam` applies to `apps/*/**` and `packages/*/**` by pattern, so a new app inherits it. It reads static and dynamic imports, re-exports, `require` and `vi.mock`, and type-only imports too. A registered package passes only inside its seam; an unregistered one fails, closed. It replaces the `@supabase`/`@stripe`/`@sentry` patterns, because `no-restricted-imports` is replace-not-merge across config blocks.
+- **Gate.** `verify:dependency-seams` checks that every dependency of every `package.json` is registered, that no entry is stale, that every seam glob matches a file, and the config files ESLint ignores.
+- **Tests.** A test inherits its unit's seam. `src/test/**` is the test-infrastructure seam. Tests mock `@/lib/*` and `@/components/ui/*`, not the vendor.
+- **Migration.** Existing imports are frozen in an allowlist that only shrinks, as Certifipago does.
+
+**Certifipago, evaluated.**
+- **What works there:**
+  - `local/view-import-boundary` fails closed on unknown packages in views;
+  - the `ui/`-only category;
+  - wrapper detection reads the `ui/` blocks from disk;
+  - the raw TanStack hooks are banned;
+  - one `lib/` adapter per Expo capability;
+  - a name-registry `Icon`;
+  - centralized seam mocks.
+- **What is missing there:**
+  - the boundary covers views only, so hooks, services, stores and packages escape it;
+  - `next-intl`, `react-i18next`, `expo-*` and `react-native-*` pass as platform, so about 200 files import i18n directly;
+  - type-only imports are exempt;
+  - there is no single registry and no `package.json` check;
+  - tests mock the vendors.
+
+The template adopts what works and closes those gaps.
+
+**Decided as recommended (decision 58):**
+- the class dialect of Tailwind and NativeWind is core;
+- type-only imports are governed too;
+- `react-native` primitives that have a wrapper, and the `expo-router` hooks, go through `ui/` and `lib/routing`;
+- one i18n API for both apps (`IAppTranslator` in `@app/i18n`);
+- zod schemas stay per app until one is shared;
+- the apps drop the `@supabase/*` dependencies they never import;
+- a new dependency fails closed at once.
+
+F.8 work units, in order:
+1. the registry, the rule and the gate, with the frozen allowlist;
+2. the i18n seam in both apps;
+3. the query seam's own types and provider;
+4. `createAppStore` and the key-value storage port;
+5. the `ui/` leaks (AsyncBoundary, variant unions, Gradient, StatusBar, Image);
+6. `lib/bootstrap`, `lib/cache` and `lib/routing`;
+7. the opaque Supabase client;
+8. the primitive-wrapper rule;
+9. an empty allowlist and the docs, ADR and `lib` skill, then the parity hand-off to Certifipago.
 
 ### Stage 3 — the harness core (T2: P1–P2)
 
