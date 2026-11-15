@@ -58,7 +58,7 @@ The core package SHALL keep a query-key segment only when it is a string the cal
 
 The core package SHALL walk each object or array once, replace it with `[circular]` where the
 scrub meets it again while still walking it, and give every other place that reaches it the same
-scrubbed copy.
+scrubbed copy, which keeps the `[circular]` markers of the place that made it.
 
 **Evidence:** written at apply time, when the code exists.
 
