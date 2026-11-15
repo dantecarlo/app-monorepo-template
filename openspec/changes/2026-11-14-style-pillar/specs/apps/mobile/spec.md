@@ -72,6 +72,28 @@ background when it is themed.
 - **THEN** the themed surface paints the light base background and the other the dark one
 - **Test:** `apps/mobile/src/components/ui/Screen/Screen.component.test.tsx` › "paints the dark base, or the active theme's base when themed"
 
+### Requirement: MOBILE-41 — Only the ui blocks import a UI kit
+
+The mobile app SHALL import a UI kit or the drawing primitives the blocks wrap
+(`expo-linear-gradient`, `expo-blur`, `react-native-svg`, a future `react-native-paper`) only from
+a block under `src/components/ui/`, so a kit is swapped by rewriting that folder alone.
+
+**Evidence:** written at apply time, when the code exists.
+
+#### Scenario: a screen-local component imports the gradient
+
+- **GIVEN** a screen's own component that imports `expo-linear-gradient`
+- **WHEN** it is linted
+- **THEN** `local/ui-kit-boundary` reports the import
+- **Test:** `eslint-local-rules/index.test.mjs` › "import { LinearGradient } from 'expo-linear-gradient'"
+
+#### Scenario: the gradient renders through its block
+
+- **GIVEN** the `AccentGradient` block around content
+- **WHEN** it renders
+- **THEN** it paints the light accent to the accent behind the content
+- **Test:** `apps/mobile/src/components/ui/AccentGradient/AccentGradient.component.test.tsx` › "paints the accent gradient behind its children"
+
 ## MODIFIED Requirements
 
 ### Requirement: MOBILE-05 — The root frame follows the theme

@@ -17,6 +17,10 @@ The owner's words, verbatim:
   the other styles, but everything centralized in styles and the tokens. Fix everything you
   mention applying what is recommended, and once everything is fixed tell the Arquitecto to
   integrate it and fix everything"
+- 2026-11-15 (translated from Spanish): "and always think, when building something, that
+  everything should be adaptable: if for example tomorrow shadcn is not used and Material UI or
+  another is wanted, the change should be relatively decoupled and 'easy' to make", and "the same
+  for everything that is not core, always decoupled and adapted"
 
 ## What changes
 
@@ -26,6 +30,12 @@ The owner's words, verbatim:
   `local/style-token-values`: every style file and view of both apps takes its values from the
   tokens, with no raw colour, no Tailwind palette colour and no arbitrary value. Both read one
   scope and one detection, `eslint-local-rules/style-positioning.detect.mjs`.
+- **The UI kit sits behind `components/ui`** (the owner's decision of 2026-11-15):
+  `local/ui-kit-boundary` refuses, outside `components/ui/**` of both apps, an import of a UI kit,
+  its headless primitives or its class helpers (`@radix-ui/*`, `class-variance-authority`,
+  `tailwind-variants`, `@mui/*`, `expo-linear-gradient`, `react-native-svg`, …), so swapping the
+  kit rewrites `components/ui` and nothing else. The one import that broke it, the mobile
+  dashboard header's gradient, moves into the new `AccentGradient` block.
 - **The list that only shrinks.** `eslint-style-positioning-allowlist.json` is seeded with every
   file that breaks a rule when the rules land; `verify:allowlist-freshness` fails an entry whose
   file no longer breaks its rule and a violation the list does not carry. The change ends with
@@ -55,8 +65,8 @@ The owner's words, verbatim:
 
 ## Affected specs
 
-- `openspec/specs/apps/web/spec.md`: adds WEB-39, WEB-40 and WEB-41
-- `openspec/specs/apps/mobile/spec.md`: adds MOBILE-38, MOBILE-39 and MOBILE-40; modifies
+- `openspec/specs/apps/web/spec.md`: adds WEB-39, WEB-40, WEB-41 and WEB-42
+- `openspec/specs/apps/mobile/spec.md`: adds MOBILE-38, MOBILE-39, MOBILE-40 and MOBILE-41; modifies
   MOBILE-05, MOBILE-33 and MOBILE-37, whose evidence moves
 - `openspec/specs/packages/tokens/spec.md`: adds TOKENS-14 and TOKENS-15; modifies TOKENS-12 and
   TOKENS-13

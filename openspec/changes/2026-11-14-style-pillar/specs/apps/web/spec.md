@@ -54,6 +54,28 @@ Tailwind's scale: no raw colour, no Tailwind palette colour and no arbitrary val
 - **THEN** the arbitrary overlay and the palette scrim are each reported
 - **Test:** `eslint-local-rules/index.test.mjs` › "export const X = { DOT: 'bg-white/[0.08]', SCRIM: 'bg-black/60' }"
 
+### Requirement: WEB-42 — Only the ui blocks import a UI kit
+
+The web app SHALL import a UI kit, its headless primitives or its class helpers (shadcn's
+`class-variance-authority`, Radix, `tailwind-variants`, a future `@mui/*`) only from a block under
+`src/components/ui/`, so a kit is swapped by rewriting that folder alone.
+
+**Evidence:** written at apply time, when the code exists.
+
+#### Scenario: a screen imports a kit primitive
+
+- **GIVEN** a web screen that imports a Radix primitive
+- **WHEN** it is linted
+- **THEN** `local/ui-kit-boundary` reports the import
+- **Test:** `eslint-local-rules/index.test.mjs` › "import * as Dialog from '@radix-ui/react-dialog'"
+
+#### Scenario: a ui block wraps the kit
+
+- **GIVEN** a `components/ui` style file that imports `tailwind-variants` and a Radix primitive
+- **WHEN** it is linted
+- **THEN** nothing is reported
+- **Test:** `eslint-local-rules/index.test.mjs` › "import { tv } from 'tailwind-variants'\nimport * as Dialog from '@radix-ui/react-dialog'"
+
 ### Requirement: WEB-41 — Text, Divider and Screen carry the look screens used to hold
 
 The web app SHALL render text in a screen through the `Text` block, whose variant, tone and weight

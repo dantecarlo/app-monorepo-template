@@ -33,6 +33,7 @@ import {
   STYLE_RULE,
   tokenValuesScope
 } from './style-positioning.detect.mjs'
+import { isOutsideUiKit, isUiKitSource } from './ui-kit.detect.mjs'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -842,6 +843,51 @@ const styleTokenValues = styleRule({
   scopeOf: tokenValuesScope
 })
 
+// ---------------------------------------------------------------------------
+// Rule: ui-kit-boundary (AGENTS.md § Styling lives in the components)
+// Only a block under components/ui imports a UI kit: a component library, its
+// headless primitives or the class helpers it brings (./ui-kit.detect.mjs).
+// Screens, sections and screen-local components import the ui blocks, so a
+// kit is swapped by rewriting components/ui alone. Imports, re-exports and
+// `import()` with a literal specifier are judged; the rule scopes itself from
+// the file's path, like the two style rules.
+// ---------------------------------------------------------------------------
+
+const uiKitBoundary = {
+  create(context) {
+    if (!isOutsideUiKit(context.filename ?? context.getFilename()))
+      return {}
+    const check = (node) => {
+      const source = literalSource({ node })?.value
+      if (typeof source !== 'string' || !isUiKitSource(source)) return
+      context.report({
+        data: { source },
+        messageId: 'kitOutsideUi',
+        node: node.source
+      })
+    }
+
+    return {
+      ExportAllDeclaration: check,
+      ExportNamedDeclaration: check,
+      ImportDeclaration: check,
+      ImportExpression: check
+    }
+  },
+  meta: {
+    docs: {
+      description:
+        'Only a components/ui block imports a UI kit, so the look and the kit live in one replaceable layer.'
+    },
+    messages: {
+      kitOutsideUi:
+        "'{{source}}' is a UI kit, and only a components/ui block may import one: the look and the kit live in one replaceable layer. Render the ui block that wraps it, or add that wrapper to components/ui (AGENTS.md § Styling lives in the components)."
+    },
+    schema: [],
+    type: 'problem'
+  }
+}
+
 const plugin = {
   meta: { name: 'local', version: '1.0.0' },
   rules: {
@@ -856,7 +902,8 @@ const plugin = {
     'single-use-state': singleUseState,
     'style-positions-only': stylePositionsOnly,
     'style-token-values': styleTokenValues,
-    'suffix-contract': suffixContract
+    'suffix-contract': suffixContract,
+    'ui-kit-boundary': uiKitBoundary
   }
 }
 

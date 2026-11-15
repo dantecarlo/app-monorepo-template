@@ -652,7 +652,7 @@ viewTester.run('style-positions-only', rules['style-positions-only'], {
     reports({
       app: 'mobile',
       code: 'const B = () => <View style={{ backgroundColor: bg, flex: 1 }} />',
-      file: 'components/RootErrorBoundary/RootErrorBoundary.component.tsx',
+      file: 'components/ErrorFrame/ErrorFrame.component.tsx',
       messageIds: ['styleKey']
     })
   ],
@@ -876,4 +876,86 @@ describe('style pillar scope', () => {
       [true, false, false]
     )
   })
+})
+
+// The UI kit sits behind components/ui: only a ui block imports a kit, so
+// swapping the kit rewrites components/ui and nothing else.
+viewTester.run('ui-kit-boundary', rules['ui-kit-boundary'], {
+  invalid: [
+    reports({
+      app: 'web',
+      code: "import * as Dialog from '@radix-ui/react-dialog'",
+      file: 'screens/X/X.screen.tsx',
+      messageIds: ['kitOutsideUi']
+    }),
+    reports({
+      app: 'web',
+      code: "import { cva } from 'class-variance-authority'",
+      file: 'screens/X/components/Card/Card.style.ts',
+      messageIds: ['kitOutsideUi']
+    }),
+    reports({
+      app: 'web',
+      code: "import { tv } from 'tailwind-variants'",
+      file: 'screens/X/X.style.ts',
+      messageIds: ['kitOutsideUi']
+    }),
+    reports({
+      app: 'web',
+      code: "export { default as Button } from '@mui/material/Button'",
+      file: 'components/AuthProvider/AuthProvider.component.tsx',
+      messageIds: ['kitOutsideUi']
+    }),
+    reports({
+      app: 'web',
+      code: "const kit = import('@mui/material')",
+      file: 'app/page.tsx',
+      messageIds: ['kitOutsideUi']
+    }),
+    reports({
+      app: 'mobile',
+      code: "import { LinearGradient } from 'expo-linear-gradient'",
+      file: 'screens/X/components/Header/Header.component.tsx',
+      messageIds: ['kitOutsideUi']
+    }),
+    reports({
+      app: 'mobile',
+      code: "import Svg from 'react-native-svg'",
+      file: 'app/index.tsx',
+      messageIds: ['kitOutsideUi']
+    })
+  ],
+  valid: [
+    silent({
+      app: 'web',
+      code: "import { tv } from 'tailwind-variants'\nimport * as Dialog from '@radix-ui/react-dialog'",
+      file: 'components/ui/Modal/Modal.style.ts'
+    }),
+    silent({
+      app: 'mobile',
+      code: "import { LinearGradient } from 'expo-linear-gradient'",
+      file: 'components/ui/AccentGradient/AccentGradient.component.tsx'
+    }),
+    silent({
+      app: 'web',
+      code: "import { Button } from '@/components/ui/Button'\nimport { useTranslations } from 'next-intl'",
+      file: 'screens/X/X.screen.tsx'
+    }),
+    // A package whose name only starts like a kit's is another package.
+    silent({
+      app: 'web',
+      code: "import x from 'clsx-extra'\nimport y from 'tailwind-variants-utils'",
+      file: 'screens/X/X.screen.tsx'
+    }),
+    silent({
+      app: 'mobile',
+      code: "import { colorScheme } from 'nativewind'",
+      file: 'lib/theme/theme.config.ts'
+    }),
+    silent({
+      app: 'web',
+      code: "import { tv } from 'tailwind-variants'",
+      file: 'screens/X/X.screen.test.tsx'
+    })
+  ]
 })

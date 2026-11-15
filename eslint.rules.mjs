@@ -690,12 +690,14 @@ export const PURE_DOMAIN_ADAPTER_OVERRIDE = {
 // rules read their scope from the file's path in
 // eslint-local-rules/style-positioning.detect.mjs, the definition the
 // allowlist freshness gate also reads, so the lint and the gate cannot judge
-// a different set of files.
+// a different set of files. local/ui-kit-boundary keeps every UI kit import
+// inside components/ui, the layer a kit swap rewrites.
 // ---------------------------------------------------------------------------
 export const STYLE_PILLAR_OVERRIDE = {
   files: ['apps/web/src/**/*.{ts,tsx}', 'apps/mobile/src/**/*.{ts,tsx}'],
   rules: {
     'local/style-positions-only': 'error',
-    'local/style-token-values': 'error'
+    'local/style-token-values': 'error',
+    'local/ui-kit-boundary': 'error'
   }
 }
