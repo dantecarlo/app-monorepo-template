@@ -106,6 +106,11 @@ test('verifySignedImageUrl accepts a URL signImageUrl signed, before it expires'
   )
 })
 
+test('verifySignedImageUrl accepts a URL that already had a query when it was signed', async () => {
+  const url = await signAtFixedNow({ url: `${IMAGE_URL}?v=2` })
+  expect(await verifyBeforeExpiry({ url })).toEqual(VALID)
+})
+
 test('verifySignedImageUrl accepts a URL either adapter signed with its secret', async () => {
   vi.spyOn(Date, 'now').mockReturnValue(FIXED_NOW_MS)
   const r2Url = await createR2SignedDelivery({

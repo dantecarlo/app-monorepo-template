@@ -420,6 +420,13 @@ signature has passed its `exp`. Its result, `SignedImageUrlVerificationType`, is
 - **THEN** it is valid and carries no reason
 - **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl accepts a URL signImageUrl signed, before it expires"
 
+#### Scenario: a URL that already had a query
+
+- **GIVEN** a URL with the query `?v=2`, signed for 600 seconds with a secret
+- **WHEN** it is verified with that secret before the 600 seconds pass
+- **THEN** it is valid
+- **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl accepts a URL that already had a query when it was signed"
+
 #### Scenario: a URL either adapter signed
 
 - **GIVEN** a URL signed by the R2 adapter with its signing secret, and one signed by the
