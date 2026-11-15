@@ -77,8 +77,9 @@ The owner's words:
 - Applying the migrations to a Supabase Cloud project, or regenerating the types against one: no
   project is linked here, and this change may not connect to one.
 - Editing `0001` or `0002`, which a database may have applied.
-- `docs/INIT_AND_HARNESS_PLAN.md` and `AGENTS.md`, which the session that merges this change
-  updates.
+- `docs/INIT_AND_HARNESS_PLAN.md`, which the session that merges this change updates. That
+  session also added one line to the Supabase directives of `AGENTS.md` (`1ad4fc2`): a function
+  `postgres` creates outside `public` and `extensions` needs its own EXECUTE grant.
 
 ## Affected specs
 
