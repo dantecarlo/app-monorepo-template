@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-import { renderHook, waitFor } from '@/test/test.helper'
+import { act, renderHook, waitFor } from '@/test/test.helper'
 
 // ---------------------------------------------------------------------------
 // Mock the toast store — useAppQuery fires an error toast on failure.
@@ -40,6 +40,12 @@ const makeWrapper = () => {
     )
   return Wrapper
 }
+
+// Resolves after every timer already scheduled with no delay has run.
+const flushPendingTimers = (): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve)
+  })
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -107,5 +113,51 @@ describe('useAppQuery', () => {
         })
       )
     )
+  })
+
+  test('queues one error toast per failure however often it re-renders', async () => {
+    const { rerender, result } = renderHook(
+      () =>
+        useAppQuery<number>({
+          errorMessage: 'Could not load',
+          queryOptions: {
+            queryFn: async () => {
+              throw new Error('network down')
+            },
+            queryKey: ['boom-once']
+          }
+        }),
+      { wrapper: makeWrapper() }
+    )
+
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    rerender()
+    rerender()
+    await act(flushPendingTimers)
+
+    expect(mockAddToast).toHaveBeenCalledOnce()
+  })
+
+  test('queues another error toast when the query fails again', async () => {
+    const { result } = renderHook(
+      () =>
+        useAppQuery<number>({
+          errorMessage: 'Could not load',
+          queryOptions: {
+            queryFn: async () => {
+              throw new Error('network down')
+            },
+            queryKey: ['boom-twice']
+          }
+        }),
+      { wrapper: makeWrapper() }
+    )
+
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    await act(async () => {
+      await result.current.refetch()
+    })
+
+    await waitFor(() => expect(mockAddToast).toHaveBeenCalledTimes(2))
   })
 })
