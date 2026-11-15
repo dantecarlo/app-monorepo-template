@@ -752,6 +752,7 @@ This table exists so that difference is visible.
 | §22 Screens only position   | lint+script   | `local/style-positions-only` + `verify:allowlist-freshness`         |
 | §22 Values are tokens       | lint+script   | `local/style-token-values` + `verify:allowlist-freshness`           |
 | §22 The kit behind `ui/`    | lint          | `local/ui-kit-boundary` on both apps                                |
+| §22 One `tv` on web         | test          | `variants.helper.test.ts` — no web ui style file imports the kit's  |
 | Colour copies in sync       | script        | `verify:theme-sync` (and `verify:theme-sync:test`), both themes     |
 
 **Rows that read "none yet", "warn only" or "partial"** are not aspirations
@@ -782,9 +783,12 @@ The rule of the LAW of the same name in `AGENTS.md`, which quotes the owner's de
 - **The kit sits behind `ui/`.** A UI kit, its primitives and its class helpers are imported by a
   `ui/` block only, so the look and the kit are one replaceable layer.
 - **A different look** is a variant or a prop of a `ui/` block, never a class in the screen.
-- **A `tailwind-variants` config that holds a token font size** (`text-title`) sets
-  `{ twMerge: false }`: tailwind-merge reads the token as a colour and drops it next to a text
-  colour (`ui/Text`, `ui/Avatar`, `ui/Divider`).
+- **A web `ui/` style file builds its variants with the shared `tv`**
+  (`apps/web/src/components/ui/variants.helper.ts`), never the kit's own. tailwind-merge,
+  which `tailwind-variants` runs on every call, reads a token font size (`text-title`) as a colour
+  and drops it next to a text colour; the shared `tv` registers every font size and glyph size of
+  `@app/tokens` as a font size, so a new size token needs no code change. `ui/Text` alone keeps
+  `{ twMerge: false }`, so a tone or a weight set beside a variant keeps both classes.
 
 ```ts
 // WRONG — a screen style holds a look

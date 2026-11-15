@@ -1,4 +1,4 @@
-import { tv } from 'tailwind-variants'
+import { tv } from '@/components/ui/variants.helper'
 
 export const MODAL_CLOSE_BTN =
   'absolute right-4 top-4 rounded-full p-1 text-text-secondary ' +

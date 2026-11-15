@@ -1,4 +1,4 @@
-import { tv } from 'tailwind-variants'
+import { tv } from '@/components/ui/variants.helper'
 
 export const CONFIRM_DIALOG_ACTIONS = 'flex justify-end gap-3 pt-2'
 

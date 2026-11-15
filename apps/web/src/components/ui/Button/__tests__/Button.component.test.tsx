@@ -32,6 +32,23 @@ describe('Button', () => {
     expect(onClick).toHaveBeenCalledTimes(1)
   })
 
+  test('keeps its token font size beside its text colour', () => {
+    render(<Button>Save</Button>)
+
+    expect(screen.getByRole('button', { name: 'Save' })).toHaveClass(
+      'text-button',
+      'text-accent-ink'
+    )
+  })
+
+  test('takes the font size of its size variant', () => {
+    render(<Button size="lg">Save</Button>)
+    const button = screen.getByRole('button', { name: 'Save' })
+
+    expect(button).toHaveClass('text-heading', 'text-accent-ink')
+    expect(button).not.toHaveClass('text-button')
+  })
+
   test('does not fire onClick when disabled', () => {
     const onClick = vi.fn()
     render(

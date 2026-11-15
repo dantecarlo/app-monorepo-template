@@ -21,6 +21,7 @@ apps/web/
     ├── middleware.ts              # origin lock (originGuard adapter)
     ├── app/                       # Next App Router — ROUTING ONLY (RSC)
     │   ├── layout.tsx             # root layout: fonts, theme script, ThemeProvider, providers
+    │   ├── fonts/                 # Inter and Montserrat files + OFL.txt (next/font/local)
     │   ├── providers.tsx · SupabaseProviders.tsx   # NextIntl, QueryClient, AuthProvider, Toast
     │   ├── error.tsx              # root segment boundary: render crash → ErrorState + retry
     │   ├── global-error.tsx       # root layout crash: own html/body → ErrorState + retry
@@ -33,6 +34,7 @@ apps/web/
     │   ├── <ScreenName>.screen.tsx · .style.ts · components/ · hooks/ · models/ · index.ts
     │
     ├── components/                # SHARED UI — AuthProvider/, ThemeProvider/, ui/{Button,Text,Divider,Screen,…}
+    │                              # ui/variants.helper.ts: the one tv the ui blocks build with
     ├── services/<Domain>/         # SHARED transversal services — service + adapter + barrel
     ├── lib/                       # bot-protection, image-delivery, observability, origin-guard,
     │                              # query, supabase, theme
@@ -80,13 +82,26 @@ export default LoginPage
   `--c-*` variables (its `@theme` wins over the preset), the font families `next/font` injects,
   the shadows `.glass-card` reads, and the base look of `<body>`. `pnpm verify:theme-sync` keeps
   every colour of both themes equal to the tokens.
+- **Fonts are self-hosted.** `src/app/layout.tsx` loads Inter (400, 500) and Montserrat (400 to
+  800) with `next/font/local` from `src/app/fonts/`, as `--font-inter` and `--font-montserrat`
+  with `display: 'swap'`, so `next build` fetches nothing (`next/font/google` downloaded them at
+  build time, and a network blip failed the build). The files are copies of the ones
+  `@expo-google-fonts/inter` and `@expo-google-fonts/montserrat` ship, the packages the mobile app
+  loads; `src/app/fonts/OFL.txt` holds their licence. To update them, bump those packages in
+  `apps/mobile`, copy the same `*_<weight><Style>.ttf` files from
+  `node_modules/@expo-google-fonts/<family>/` over the ones in `src/app/fonts/`, and keep the
+  copyright lines of `OFL.txt` equal to each file's name record. A new weight is a new file there
+  and a new `src` entry in the layout. `src/app/__tests__/layout.test.tsx` checks that every file
+  the layout names exists and that nothing loads from Google Fonts.
 - **Styling lives in the components** (`AGENTS.md` LAW, `docs/code-standards.md` §22). A block
   under `components/ui/`, or a screen's own `components/`, owns its look; a screen, a route entry
   and a container only position, through their `*.style.ts` and `helpers/layout.style.ts`. Text
   is `ui/Text` (a variant, or a tone and a weight), a labelled rule is `ui/Divider`, and a
   screen's surface is `ui/Screen`. Every value is a token or a step of Tailwind's scale, and only
   `ui/` imports a UI kit or `tailwind-variants`. `local/style-positions-only`,
-  `local/style-token-values` and `local/ui-kit-boundary` hold it.
+  `local/style-token-values` and `local/ui-kit-boundary` hold it. Every block builds its variants
+  with the shared `tv` of `components/ui/variants.helper.ts`, which tells tailwind-merge
+  that the token sizes (`text-button`, `text-initials-sm`) are font sizes, not colours.
 - **i18n: `next-intl`** reading the shared `@app/i18n` ICU catalogs — same keys as mobile,
   different adapter. `src/i18n/request.config.ts` resolves the locale from the `NEXT_LOCALE`
   cookie; there is no locale middleware.
