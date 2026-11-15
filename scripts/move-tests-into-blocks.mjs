@@ -281,7 +281,8 @@ const main = () => {
   if (moves.length === 0) {
     console.log(
       unplaced.length === 0
-        ? `${ID}: nothing to move — every test sits in its unit's __tests__/.`
+        ? `${ID}: nothing to move — every test sits in its unit's __tests__/ ` +
+            'or is a frozen exception of verify-tests.'
         : `${ID}: nothing to move.`
     )
     printUnplaced({ unplaced })
@@ -304,6 +305,12 @@ const main = () => {
       `citation(s) in ${report.docs} doc(s).`
   )
   moves.forEach(({ from, to }) => console.log(`  ${from} → ${to}`))
+  if (report.specifiers > 0) {
+    console.log(
+      "  run the linter's autofix over the moved tests: a specifier that " +
+        'became an alias can change their import order.'
+    )
+  }
   if (report.review.length > 0) {
     console.log(
       `  review ${report.review.length} moved test(s) that build a path from ` +

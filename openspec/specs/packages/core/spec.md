@@ -30,21 +30,21 @@ The core package SHALL build an `AppError` as an `Error` named `AppError` whose 
 - **GIVEN** the code `NETWORK_ERROR`
 - **WHEN** an `AppError` is built with it
 - **THEN** its `message` is `NETWORK_ERROR`
-- **Test:** `packages/core/src/errors/AppError.helper.test.ts` › "message equals the code string"
+- **Test:** `packages/core/src/errors/__tests__/AppError.helper.test.ts` › "message equals the code string"
 
 #### Scenario: the name is fixed
 
 - **GIVEN** any code
 - **WHEN** an `AppError` is built with it
 - **THEN** its `name` is `AppError`
-- **Test:** `packages/core/src/errors/AppError.helper.test.ts` › "name is always "AppError""
+- **Test:** `packages/core/src/errors/__tests__/AppError.helper.test.ts` › "name is always "AppError""
 
 #### Scenario: no message key is given
 
 - **GIVEN** a code and no `messageKey`
 - **WHEN** an `AppError` is built with them
 - **THEN** its `messageKey` is undefined
-- **Test:** `packages/core/src/errors/AppError.helper.test.ts` › "messageKey is undefined when not provided"
+- **Test:** `packages/core/src/errors/__tests__/AppError.helper.test.ts` › "messageKey is undefined when not provided"
 
 ### Requirement: CORE-02 — The cause is kept only when given
 
@@ -57,14 +57,14 @@ The core package SHALL set `cause` on an `AppError` only when the caller passes 
 - **GIVEN** an original `Error`
 - **WHEN** an `AppError` is built with it as `cause`
 - **THEN** the `cause` of the `AppError` is that same `Error`
-- **Test:** `packages/core/src/errors/AppError.helper.test.ts` › "cause is attached when provided"
+- **Test:** `packages/core/src/errors/__tests__/AppError.helper.test.ts` › "cause is attached when provided"
 
 #### Scenario: no cause is passed
 
 - **GIVEN** a code alone
 - **WHEN** an `AppError` is built with it
 - **THEN** its `cause` is undefined
-- **Test:** `packages/core/src/errors/AppError.helper.test.ts` › "cause is not set when omitted"
+- **Test:** `packages/core/src/errors/__tests__/AppError.helper.test.ts` › "cause is not set when omitted"
 
 ### Requirement: CORE-03 — An AppError narrows by instanceof
 
@@ -78,14 +78,14 @@ The core package SHALL keep `AppError` on the prototype chain of every instance,
 - **GIVEN** an `AppError`
 - **WHEN** it is tested with `instanceof Error`
 - **THEN** the test holds
-- **Test:** `packages/core/src/errors/AppError.helper.test.ts` › "is instanceof Error (prototype chain fix)"
+- **Test:** `packages/core/src/errors/__tests__/AppError.helper.test.ts` › "is instanceof Error (prototype chain fix)"
 
 #### Scenario: a caught AppError is narrowed
 
 - **GIVEN** a thrown `AppError` with a code and a message key
 - **WHEN** a `catch` narrows it with `instanceof AppError`
 - **THEN** the narrowed value exposes that code and that message key
-- **Test:** `packages/core/src/errors/AppError.helper.test.ts` › "can be caught and narrowed by instanceof AppError"
+- **Test:** `packages/core/src/errors/__tests__/AppError.helper.test.ts` › "can be caught and narrowed by instanceof AppError"
 
 ### Requirement: CORE-04 — An AppError passes through unchanged
 
@@ -99,7 +99,7 @@ before any mapper is consulted.
 - **GIVEN** an `AppError` with the code `FORBIDDEN`
 - **WHEN** `buildServiceError` receives it
 - **THEN** it returns that same instance
-- **Test:** `packages/core/src/errors/buildServiceError.helper.test.ts` › "passes an existing AppError through unchanged"
+- **Test:** `packages/core/src/errors/__tests__/buildServiceError.helper.test.ts` › "passes an existing AppError through unchanged"
 
 #### Scenario: an AppError with a mapper
 
@@ -122,14 +122,14 @@ with the mapper's code, the message key of that code and the raw error as `cause
 - **WHEN** `buildServiceError` receives an `Error` and that mapper
 - **THEN** the mapper is called with the error, and the result has the code `FORBIDDEN` and the
   message key `helper.error.forbidden`
-- **Test:** `packages/core/src/errors/buildServiceError.helper.test.ts` › "delegates to the injected mapper when provided"
+- **Test:** `packages/core/src/errors/__tests__/buildServiceError.helper.test.ts` › "delegates to the injected mapper when provided"
 
 #### Scenario: the raw error is kept
 
 - **GIVEN** a mapper that returns `SERVER_ERROR` for a provider error
 - **WHEN** `buildServiceError` receives that error and that mapper
 - **THEN** the `cause` of the result is the provider error itself
-- **Test:** `packages/core/src/errors/buildServiceError.helper.test.ts` › "attaches the raw error as cause when the mapper maps it"
+- **Test:** `packages/core/src/errors/__tests__/buildServiceError.helper.test.ts` › "attaches the raw error as cause when the mapper maps it"
 
 ### Requirement: CORE-06 — An unmapped error becomes UNKNOWN
 
@@ -144,14 +144,14 @@ value as `cause`.
 - **GIVEN** the thrown value `'boom'` and no mapper
 - **WHEN** `buildServiceError` receives it
 - **THEN** the result has the code `UNKNOWN` and the message key `helper.error.generic`
-- **Test:** `packages/core/src/errors/buildServiceError.helper.test.ts` › "maps an unknown thrown value to UNKNOWN"
+- **Test:** `packages/core/src/errors/__tests__/buildServiceError.helper.test.ts` › "maps an unknown thrown value to UNKNOWN"
 
 #### Scenario: the mapper does not recognize the error
 
 - **GIVEN** a mapper that returns null
 - **WHEN** `buildServiceError` receives an `Error` and that mapper
 - **THEN** the result has the code `UNKNOWN`
-- **Test:** `packages/core/src/errors/buildServiceError.helper.test.ts` › "falls back to UNKNOWN when the mapper returns null"
+- **Test:** `packages/core/src/errors/__tests__/buildServiceError.helper.test.ts` › "falls back to UNKNOWN when the mapper returns null"
 
 #### Scenario: the unmapped value is kept
 
@@ -173,14 +173,14 @@ The core package SHALL define the service error codes `FORBIDDEN`, `NETWORK_ERRO
 - **GIVEN** the codes of `ServiceErrorCodeEnum`
 - **WHEN** each is looked up in `SERVICE_ERROR_MESSAGE_KEY_BY_CODE`
 - **THEN** every code has a non-empty message key
-- **Test:** `packages/core/src/errors/buildServiceError.helper.test.ts` › "exposes a message key for every service error code"
+- **Test:** `packages/core/src/errors/__tests__/buildServiceError.helper.test.ts` › "exposes a message key for every service error code"
 
 #### Scenario: the key follows the mapped code
 
 - **GIVEN** a mapper that returns `NOT_FOUND`
 - **WHEN** `buildServiceError` receives a value and that mapper
 - **THEN** the result has the message key `helper.error.notFound`
-- **Test:** `packages/core/src/errors/buildServiceError.helper.test.ts` › "uses the mapper-returned code to look up the message key"
+- **Test:** `packages/core/src/errors/__tests__/buildServiceError.helper.test.ts` › "uses the mapper-returned code to look up the message key"
 
 #### Scenario: the keys exist in the catalogs
 
@@ -201,35 +201,35 @@ The core package SHALL keep a query-key segment only when it is a string the cal
 - **GIVEN** the key `['items', 'list']`, with `items` and `list` registered
 - **WHEN** it is sanitized
 - **THEN** both segments are kept
-- **Test:** `packages/core/src/observability/sanitizeQueryKey.helper.test.ts` › "keeps the segments the caller registers"
+- **Test:** `packages/core/src/observability/__tests__/sanitizeQueryKey.helper.test.ts` › "keeps the segments the caller registers"
 
 #### Scenario: an id segment
 
 - **GIVEN** a key holding a uuid between two registered segments
 - **WHEN** it is sanitized
 - **THEN** the uuid becomes `[redacted]` and the registered segments stay
-- **Test:** `packages/core/src/observability/sanitizeQueryKey.helper.test.ts` › "redacts a uuid-like dynamic segment"
+- **Test:** `packages/core/src/observability/__tests__/sanitizeQueryKey.helper.test.ts` › "redacts a uuid-like dynamic segment"
 
 #### Scenario: a segment with digits
 
 - **GIVEN** the key `['users', 'abc123']`, with `users` registered
 - **WHEN** it is sanitized
 - **THEN** `abc123` becomes `[redacted]`
-- **Test:** `packages/core/src/observability/sanitizeQueryKey.helper.test.ts` › "redacts segments containing digits"
+- **Test:** `packages/core/src/observability/__tests__/sanitizeQueryKey.helper.test.ts` › "redacts segments containing digits"
 
 #### Scenario: a filter object
 
 - **GIVEN** a key holding the object `{ role: 'admin' }`
 - **WHEN** it is sanitized
 - **THEN** the object becomes `[redacted]`
-- **Test:** `packages/core/src/observability/sanitizeQueryKey.helper.test.ts` › "redacts object filter segments"
+- **Test:** `packages/core/src/observability/__tests__/sanitizeQueryKey.helper.test.ts` › "redacts object filter segments"
 
 #### Scenario: a number segment
 
 - **GIVEN** the key `['page', 0]`, with `page` registered
 - **WHEN** it is sanitized
 - **THEN** the number becomes `[redacted]`
-- **Test:** `packages/core/src/observability/sanitizeQueryKey.helper.test.ts` › "redacts numeric segments"
+- **Test:** `packages/core/src/observability/__tests__/sanitizeQueryKey.helper.test.ts` › "redacts numeric segments"
 
 #### Scenario: a letters-only value
 
@@ -237,7 +237,7 @@ The core package SHALL keep a query-key segment only when it is a string the cal
   neither of them registered
 - **WHEN** they are sanitized
 - **THEN** both become `[redacted]`, although they have the shape of a segment written by hand
-- **Test:** `packages/core/src/observability/sanitizeQueryKey.helper.test.ts` › "redacts a letters-only segment the caller did not register"
+- **Test:** `packages/core/src/observability/__tests__/sanitizeQueryKey.helper.test.ts` › "redacts a letters-only segment the caller did not register"
 
 ### Requirement: CORE-09 — The shape of a sanitized key
 
@@ -251,14 +251,14 @@ the single segment `[redacted]` for a key that is not an array.
 - **GIVEN** the key `'items'`
 - **WHEN** it is sanitized
 - **THEN** the result is `['[redacted]']`
-- **Test:** `packages/core/src/observability/sanitizeQueryKey.helper.test.ts` › "returns a single redacted segment for a non-array key"
+- **Test:** `packages/core/src/observability/__tests__/sanitizeQueryKey.helper.test.ts` › "returns a single redacted segment for a non-array key"
 
 #### Scenario: an empty key
 
 - **GIVEN** the key `[]`
 - **WHEN** it is sanitized
 - **THEN** the result is `[]`
-- **Test:** `packages/core/src/observability/sanitizeQueryKey.helper.test.ts` › "handles an empty key"
+- **Test:** `packages/core/src/observability/__tests__/sanitizeQueryKey.helper.test.ts` › "handles an empty key"
 
 ### Requirement: CORE-10 — The auth gateway port
 
@@ -305,14 +305,14 @@ The core package SHALL provide `createPermissiveBotProtection`, whose `verifyTok
 - **GIVEN** the permissive adapter
 - **WHEN** it verifies the token `'anything'`
 - **THEN** the result has `success` true
-- **Test:** `packages/core/src/ports/bot-protection/createPermissiveBotProtection.helper.test.ts` › "verifyToken resolves success regardless of the token"
+- **Test:** `packages/core/src/ports/bot-protection/__tests__/createPermissiveBotProtection.helper.test.ts` › "verifyToken resolves success regardless of the token"
 
 #### Scenario: an empty token
 
 - **GIVEN** the permissive adapter
 - **WHEN** it verifies an empty token
 - **THEN** the result has `success` true
-- **Test:** `packages/core/src/ports/bot-protection/createPermissiveBotProtection.helper.test.ts` › "verifyToken resolves success even with an empty token"
+- **Test:** `packages/core/src/ports/bot-protection/__tests__/createPermissiveBotProtection.helper.test.ts` › "verifyToken resolves success even with an empty token"
 
 ### Requirement: CORE-13 — A public image-delivery default
 
@@ -328,21 +328,21 @@ no `baseUrl` is set.
 - **GIVEN** an adapter built with no `baseUrl`
 - **WHEN** it builds the URL of `/img.png`
 - **THEN** the URL is `/img.png`
-- **Test:** `packages/core/src/ports/image-delivery/createPublicImageDelivery.helper.test.ts` › "buildImageUrl returns the raw path when no baseUrl is configured"
+- **Test:** `packages/core/src/ports/image-delivery/__tests__/createPublicImageDelivery.helper.test.ts` › "buildImageUrl returns the raw path when no baseUrl is configured"
 
 #### Scenario: slashes on both sides
 
 - **GIVEN** an adapter built with the base URL `https://cdn.test/`
 - **WHEN** it builds the URL of `/img.png`
 - **THEN** the URL is `https://cdn.test/img.png`
-- **Test:** `packages/core/src/ports/image-delivery/createPublicImageDelivery.helper.test.ts` › "buildImageUrl joins baseUrl and path without duplicate slashes"
+- **Test:** `packages/core/src/ports/image-delivery/__tests__/createPublicImageDelivery.helper.test.ts` › "buildImageUrl joins baseUrl and path without duplicate slashes"
 
 #### Scenario: a signed URL is asked for
 
 - **GIVEN** an adapter built with the base URL `https://cdn.test`
 - **WHEN** it builds a signed URL of `img.png` that expires in 300 seconds
 - **THEN** the URL is the unsigned `https://cdn.test/img.png`
-- **Test:** `packages/core/src/ports/image-delivery/createPublicImageDelivery.helper.test.ts` › "buildSignedImageUrl returns the public url unsigned"
+- **Test:** `packages/core/src/ports/image-delivery/__tests__/createPublicImageDelivery.helper.test.ts` › "buildSignedImageUrl returns the public url unsigned"
 
 ### Requirement: CORE-14 — A passthrough origin-guard default
 
@@ -357,14 +357,14 @@ The core package SHALL provide `createPassthroughOriginGuard`, whose `assertTrus
 - **GIVEN** headers that hold no value
 - **WHEN** the passthrough guard asserts the origin
 - **THEN** the result has `trusted` true
-- **Test:** `packages/core/src/ports/origin-guard/createPassthroughOriginGuard.helper.test.ts` › "assertTrustedOrigin always trusts regardless of headers"
+- **Test:** `packages/core/src/ports/origin-guard/__tests__/createPassthroughOriginGuard.helper.test.ts` › "assertTrustedOrigin always trusts regardless of headers"
 
 #### Scenario: the reason is reported
 
 - **GIVEN** headers that hold any value
 - **WHEN** the passthrough guard asserts the origin
 - **THEN** the result has the reason `OriginGuardReasonEnum.NOT_CONFIGURED`
-- **Test:** `packages/core/src/ports/origin-guard/createPassthroughOriginGuard.helper.test.ts` › "assertTrustedOrigin reports the NOT_CONFIGURED reason"
+- **Test:** `packages/core/src/ports/origin-guard/__tests__/createPassthroughOriginGuard.helper.test.ts` › "assertTrustedOrigin reports the NOT_CONFIGURED reason"
 
 ### Requirement: CORE-15 — A no-op observability default
 
@@ -378,21 +378,21 @@ record nothing and return `undefined`.
 - **GIVEN** the no-op adapter
 - **WHEN** it captures an `Error`
 - **THEN** the call returns `undefined`
-- **Test:** `packages/core/src/ports/observability/createNoopObservability.helper.test.ts` › "captureError is callable and returns undefined"
+- **Test:** `packages/core/src/ports/observability/__tests__/createNoopObservability.helper.test.ts` › "captureError is callable and returns undefined"
 
 #### Scenario: a message is captured
 
 - **GIVEN** the no-op adapter
 - **WHEN** it captures a message
 - **THEN** the call returns `undefined`
-- **Test:** `packages/core/src/ports/observability/createNoopObservability.helper.test.ts` › "captureMessage is callable and returns undefined"
+- **Test:** `packages/core/src/ports/observability/__tests__/createNoopObservability.helper.test.ts` › "captureMessage is callable and returns undefined"
 
 #### Scenario: an error with context
 
 - **GIVEN** the no-op adapter
 - **WHEN** it captures an `Error` with a context
 - **THEN** the call does not throw
-- **Test:** `packages/core/src/ports/observability/createNoopObservability.helper.test.ts` › "captureError does not throw with context"
+- **Test:** `packages/core/src/ports/observability/__tests__/createNoopObservability.helper.test.ts` › "captureError does not throw with context"
 
 #### Scenario: a user and a breadcrumb
 
@@ -416,28 +416,28 @@ The core package SHALL pass every context, user and breadcrumb payload that
 - **GIVEN** an error context holding an `email` and a `source`
 - **WHEN** the console adapter captures the error
 - **THEN** the logged `email` is `[redacted]` and the `source` is kept
-- **Test:** `packages/core/src/ports/observability/createConsoleObservability.helper.test.ts` › "captureError scrubs PII fields from context"
+- **Test:** `packages/core/src/ports/observability/__tests__/createConsoleObservability.helper.test.ts` › "captureError scrubs PII fields from context"
 
 #### Scenario: a message context
 
 - **GIVEN** a message context holding a `token` and a `userId`
 - **WHEN** the console adapter captures the message
 - **THEN** the logged `token` is `[redacted]` and the `userId` is kept
-- **Test:** `packages/core/src/ports/observability/createConsoleObservability.helper.test.ts` › "captureMessage scrubs PII from context"
+- **Test:** `packages/core/src/ports/observability/__tests__/createConsoleObservability.helper.test.ts` › "captureMessage scrubs PII from context"
 
 #### Scenario: a user
 
 - **GIVEN** a user with an `email` and an `id`
 - **WHEN** the console adapter sets it
 - **THEN** the logged `email` is `[redacted]` and the `id` is kept
-- **Test:** `packages/core/src/ports/observability/createConsoleObservability.helper.test.ts` › "setUser scrubs PII from the user payload"
+- **Test:** `packages/core/src/ports/observability/__tests__/createConsoleObservability.helper.test.ts` › "setUser scrubs PII from the user payload"
 
 #### Scenario: breadcrumb data
 
 - **GIVEN** breadcrumb data holding an `email` and a `route`
 - **WHEN** the console adapter adds the breadcrumb
 - **THEN** the logged `email` is `[redacted]` and the `route` is kept
-- **Test:** `packages/core/src/ports/observability/createConsoleObservability.helper.test.ts` › "addBreadcrumb scrubs PII from breadcrumb data"
+- **Test:** `packages/core/src/ports/observability/__tests__/createConsoleObservability.helper.test.ts` › "addBreadcrumb scrubs PII from breadcrumb data"
 
 ### Requirement: CORE-17 — The console adapter logs an error by name and message
 
@@ -478,21 +478,21 @@ The core package SHALL write `captureError`, and `captureMessage` at the level `
 - **GIVEN** the console adapter
 - **WHEN** it captures an `Error`
 - **THEN** `hostConsole.error` is called once
-- **Test:** `packages/core/src/ports/observability/createConsoleObservability.helper.test.ts` › "captureError calls console.error"
+- **Test:** `packages/core/src/ports/observability/__tests__/createConsoleObservability.helper.test.ts` › "captureError calls console.error"
 
 #### Scenario: a message at the error level
 
 - **GIVEN** the console adapter
 - **WHEN** it captures a message at `ObservabilityLevelEnum.ERROR`
 - **THEN** `hostConsole.error` is called once and `hostConsole.warn` is not
-- **Test:** `packages/core/src/ports/observability/createConsoleObservability.helper.test.ts` › "captureMessage with ERROR level calls console.error"
+- **Test:** `packages/core/src/ports/observability/__tests__/createConsoleObservability.helper.test.ts` › "captureMessage with ERROR level calls console.error"
 
 #### Scenario: a message at the info level
 
 - **GIVEN** the console adapter
 - **WHEN** it captures a message at `ObservabilityLevelEnum.INFO`
 - **THEN** `hostConsole.warn` is called once and `hostConsole.error` is not
-- **Test:** `packages/core/src/ports/observability/createConsoleObservability.helper.test.ts` › "captureMessage with INFO level calls console.warn"
+- **Test:** `packages/core/src/ports/observability/__tests__/createConsoleObservability.helper.test.ts` › "captureMessage with INFO level calls console.warn"
 
 #### Scenario: a message at the fatal level
 
@@ -516,28 +516,28 @@ false return without writing to the console.
 - **GIVEN** a console adapter built with `isEnabled` false
 - **WHEN** it captures an `Error`
 - **THEN** `hostConsole.error` is not called
-- **Test:** `packages/core/src/ports/observability/createConsoleObservability.helper.test.ts` › "captureError is suppressed when isEnabled is false"
+- **Test:** `packages/core/src/ports/observability/__tests__/createConsoleObservability.helper.test.ts` › "captureError is suppressed when isEnabled is false"
 
 #### Scenario: a message while disabled
 
 - **GIVEN** a console adapter built with `isEnabled` false
 - **WHEN** it captures a message
 - **THEN** neither `hostConsole.warn` nor `hostConsole.error` is called
-- **Test:** `packages/core/src/ports/observability/createConsoleObservability.helper.test.ts` › "captureMessage is suppressed when isEnabled is false"
+- **Test:** `packages/core/src/ports/observability/__tests__/createConsoleObservability.helper.test.ts` › "captureMessage is suppressed when isEnabled is false"
 
 #### Scenario: a user while disabled
 
 - **GIVEN** a console adapter built with `isEnabled` false
 - **WHEN** it sets the user to null
 - **THEN** `hostConsole.warn` is not called
-- **Test:** `packages/core/src/ports/observability/createConsoleObservability.helper.test.ts` › "setUser with null is suppressed when isEnabled is false"
+- **Test:** `packages/core/src/ports/observability/__tests__/createConsoleObservability.helper.test.ts` › "setUser with null is suppressed when isEnabled is false"
 
 #### Scenario: a breadcrumb while disabled
 
 - **GIVEN** a console adapter built with `isEnabled` false
 - **WHEN** it adds a breadcrumb
 - **THEN** `hostConsole.warn` is not called
-- **Test:** `packages/core/src/ports/observability/createConsoleObservability.helper.test.ts` › "addBreadcrumb is suppressed when isEnabled is false"
+- **Test:** `packages/core/src/ports/observability/__tests__/createConsoleObservability.helper.test.ts` › "addBreadcrumb is suppressed when isEnabled is false"
 
 ### Requirement: CORE-20 — The set of sensitive keys
 
@@ -553,21 +553,21 @@ payer name, phone and phone number, raw text, secret, session and token, without
 - **WHEN** it is asked for `email`, `password`, `token`, `phone`, `secret`, `access_token`,
   `refresh_token`, `payer_name`, `full_name` and `raw_text`
 - **THEN** it holds each of them
-- **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "contains expected sensitive keys"
+- **Test:** `packages/core/src/utils/__tests__/scrubPII.helper.test.ts` › "contains expected sensitive keys"
 
 #### Scenario: transport keys
 
 - **GIVEN** `PII_KEYS`
 - **WHEN** it is asked for `authorization`, `cookie`, `set-cookie`, `apikey`, `jwt` and `session`
 - **THEN** it holds each of them
-- **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "contains transport-header and cookie keys"
+- **Test:** `packages/core/src/utils/__tests__/scrubPII.helper.test.ts` › "contains transport-header and cookie keys"
 
 #### Scenario: a business name
 
 - **GIVEN** `PII_KEYS`
 - **WHEN** it is asked for `name`
 - **THEN** it does not hold it
-- **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "does NOT contain "name" (business name is not PII by default)"
+- **Test:** `packages/core/src/utils/__tests__/scrubPII.helper.test.ts` › "does NOT contain "name" (business name is not PII by default)"
 
 ### Requirement: CORE-21 — Redaction matches the normalized key exactly
 
@@ -583,28 +583,28 @@ normalized the same way.
 - **GIVEN** the object `{ EMAIL: 'user@example.com' }`
 - **WHEN** it is scrubbed
 - **THEN** `EMAIL` holds `[redacted]`
-- **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "redacts "EMAIL" (UPPER_CASE)"
+- **Test:** `packages/core/src/utils/__tests__/scrubPII.helper.test.ts` › "redacts "EMAIL" (UPPER_CASE)"
 
 #### Scenario: hyphenated header names
 
 - **GIVEN** the keys `access-token` and `set-cookie`
 - **WHEN** they are scrubbed
 - **THEN** both hold `[redacted]`
-- **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "redacts hyphenated header variants ("access-token", "set-cookie")"
+- **Test:** `packages/core/src/utils/__tests__/scrubPII.helper.test.ts` › "redacts hyphenated header variants ("access-token", "set-cookie")"
 
 #### Scenario: a bearer token in request headers
 
 - **GIVEN** an event whose `request.headers.Authorization` holds a bearer token
 - **WHEN** it is scrubbed
 - **THEN** the header holds `[redacted]`
-- **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "redacts request.headers.Authorization (Bearer token)"
+- **Test:** `packages/core/src/utils/__tests__/scrubPII.helper.test.ts` › "redacts request.headers.Authorization (Bearer token)"
 
 #### Scenario: a key that only contains a sensitive word
 
 - **GIVEN** the keys `tokenCount` and `apikeyLabel`
 - **WHEN** they are scrubbed
 - **THEN** both keep their values
-- **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "does NOT over-redact substring matches like "tokenCount""
+- **Test:** `packages/core/src/utils/__tests__/scrubPII.helper.test.ts` › "does NOT over-redact substring matches like "tokenCount""
 
 #### Scenario: a sensitive key that holds an object
 
@@ -625,21 +625,21 @@ new objects and arrays, and return primitives, null and undefined as they are.
 - **GIVEN** an `email` two objects deep beside an `id`
 - **WHEN** the object is scrubbed
 - **THEN** the `email` holds `[redacted]` and the `id` is kept
-- **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "redacts PII at multiple nesting levels"
+- **Test:** `packages/core/src/utils/__tests__/scrubPII.helper.test.ts` › "redacts PII at multiple nesting levels"
 
 #### Scenario: an array of records
 
 - **GIVEN** an array of two objects that each hold an `email` and an `id`
 - **WHEN** the array is scrubbed
 - **THEN** both `email` values hold `[redacted]` and the first `id` is kept
-- **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "recurses into arrays"
+- **Test:** `packages/core/src/utils/__tests__/scrubPII.helper.test.ts` › "recurses into arrays"
 
 #### Scenario: null
 
 - **GIVEN** the value null
 - **WHEN** it is scrubbed
 - **THEN** the result is null
-- **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "returns null as-is"
+- **Test:** `packages/core/src/utils/__tests__/scrubPII.helper.test.ts` › "returns null as-is"
 
 #### Scenario: the input is left alone
 
@@ -677,7 +677,7 @@ runs, which covers every place the apps put a scrubbed value.
 - **GIVEN** an object whose `self` key holds the object itself
 - **WHEN** it is scrubbed
 - **THEN** `self` holds `[circular]` and the other keys are kept
-- **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "replaces circular reference with "[circular]""
+- **Test:** `packages/core/src/utils/__tests__/scrubPII.helper.test.ts` › "replaces circular reference with "[circular]""
 
 #### Scenario: one object under two keys
 
@@ -686,14 +686,14 @@ runs, which covers every place the apps put a scrubbed value.
 - **WHEN** it is scrubbed
 - **THEN** `a` and `b` both hold the scrubbed inner object: the `email` redacted and the `id`
   kept
-- **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "scrubs an object reached under two keys in both places"
+- **Test:** `packages/core/src/utils/__tests__/scrubPII.helper.test.ts` › "scrubs an object reached under two keys in both places"
 
 #### Scenario: an array that holds itself
 
 - **GIVEN** an array whose only element is the array itself
 - **WHEN** it is scrubbed
 - **THEN** the result is an array whose element is `[circular]`, and nothing throws
-- **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "replaces an array that holds itself with "[circular]""
+- **Test:** `packages/core/src/utils/__tests__/scrubPII.helper.test.ts` › "replaces an array that holds itself with "[circular]""
 
 #### Scenario: an object shared along many paths
 
@@ -701,7 +701,7 @@ runs, which covers every place the apps put a scrubbed value.
   holds the one below under two keys, so 65 536 paths reach it
 - **WHEN** the top of the ladder is scrubbed
 - **THEN** the getter is read once
-- **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "walks a shared object once however many paths reach it"
+- **Test:** `packages/core/src/utils/__tests__/scrubPII.helper.test.ts` › "walks a shared object once however many paths reach it"
 
 ### Requirement: CORE-24 — The host console seam
 
@@ -715,7 +715,7 @@ The core package SHALL reach the host console only through `hostConsole`, which 
 - **GIVEN** the runtime the suite runs in
 - **WHEN** `hostConsole` is read
 - **THEN** its `error` and `warn` members are functions
-- **Test:** `packages/core/src/utils/hostConsole.helper.test.ts` › "hostConsole exposes the members the package depends on"
+- **Test:** `packages/core/src/utils/__tests__/hostConsole.helper.test.ts` › "hostConsole exposes the members the package depends on"
 
 #### Scenario: a host API without a seam
 

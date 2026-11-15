@@ -153,6 +153,10 @@ test('a moved test reaches its unit through the @/ alias its workspace maps onto
         result.stdout,
         /rewrote 5 specifier\(s\) in 1 test\(s\)/u
       )
+      assert.match(
+        result.stdout,
+        /run the linter's autofix over the moved tests/u
+      )
     }
   })
 })

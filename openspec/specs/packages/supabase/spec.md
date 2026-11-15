@@ -60,42 +60,42 @@ The supabase package SHALL map an error of the Postgrest shape (a string message
 - **GIVEN** a Postgrest error with status 403
 - **WHEN** it is mapped
 - **THEN** the code is FORBIDDEN
-- **Test:** `packages/supabase/src/mapSupabaseError.adapter.test.ts` › "maps a 403 Postgrest error to FORBIDDEN"
+- **Test:** `packages/supabase/src/__tests__/mapSupabaseError.adapter.test.ts` › "maps a 403 Postgrest error to FORBIDDEN"
 
 #### Scenario: status 404
 
 - **GIVEN** a Postgrest error with status 404
 - **WHEN** it is mapped
 - **THEN** the code is NOT_FOUND
-- **Test:** `packages/supabase/src/mapSupabaseError.adapter.test.ts` › "maps a 404 Postgrest error to NOT_FOUND"
+- **Test:** `packages/supabase/src/__tests__/mapSupabaseError.adapter.test.ts` › "maps a 404 Postgrest error to NOT_FOUND"
 
 #### Scenario: status 500
 
 - **GIVEN** a Postgrest error with status 500
 - **WHEN** it is mapped
 - **THEN** the code is SERVER_ERROR
-- **Test:** `packages/supabase/src/mapSupabaseError.adapter.test.ts` › "maps a 500 Postgrest error to SERVER_ERROR"
+- **Test:** `packages/supabase/src/__tests__/mapSupabaseError.adapter.test.ts` › "maps a 500 Postgrest error to SERVER_ERROR"
 
 #### Scenario: another 5xx status
 
 - **GIVEN** a Postgrest error with status 502
 - **WHEN** it is mapped
 - **THEN** the code is SERVER_ERROR
-- **Test:** `packages/supabase/src/mapSupabaseError.adapter.test.ts` › "maps any 5xx Postgrest error to SERVER_ERROR"
+- **Test:** `packages/supabase/src/__tests__/mapSupabaseError.adapter.test.ts` › "maps any 5xx Postgrest error to SERVER_ERROR"
 
 #### Scenario: another 4xx status
 
 - **GIVEN** a Postgrest error with status 400
 - **WHEN** it is mapped
 - **THEN** the code is UNKNOWN
-- **Test:** `packages/supabase/src/mapSupabaseError.adapter.test.ts` › "maps an unrecognised 4xx Postgrest error to UNKNOWN"
+- **Test:** `packages/supabase/src/__tests__/mapSupabaseError.adapter.test.ts` › "maps an unrecognised 4xx Postgrest error to UNKNOWN"
 
 #### Scenario: no status
 
 - **GIVEN** a Postgrest error with no status
 - **WHEN** it is mapped
 - **THEN** the code is UNKNOWN
-- **Test:** `packages/supabase/src/mapSupabaseError.adapter.test.ts` › "maps a Postgrest error without a status to UNKNOWN"
+- **Test:** `packages/supabase/src/__tests__/mapSupabaseError.adapter.test.ts` › "maps a Postgrest error without a status to UNKNOWN"
 
 ### Requirement: SUPABASE-04 — A value of another shape is left unmapped
 
@@ -108,21 +108,21 @@ The supabase package SHALL return null from the error mapper for any value that 
 - **GIVEN** a plain Error
 - **WHEN** it is mapped
 - **THEN** the mapper returns null
-- **Test:** `packages/supabase/src/mapSupabaseError.adapter.test.ts` › "returns null for a plain Error"
+- **Test:** `packages/supabase/src/__tests__/mapSupabaseError.adapter.test.ts` › "returns null for a plain Error"
 
 #### Scenario: a string
 
 - **GIVEN** a thrown string
 - **WHEN** it is mapped
 - **THEN** the mapper returns null
-- **Test:** `packages/supabase/src/mapSupabaseError.adapter.test.ts` › "returns null for a string"
+- **Test:** `packages/supabase/src/__tests__/mapSupabaseError.adapter.test.ts` › "returns null for a string"
 
 #### Scenario: null
 
 - **GIVEN** a null error
 - **WHEN** it is mapped
 - **THEN** the mapper returns null
-- **Test:** `packages/supabase/src/mapSupabaseError.adapter.test.ts` › "returns null for null"
+- **Test:** `packages/supabase/src/__tests__/mapSupabaseError.adapter.test.ts` › "returns null for null"
 
 ### Requirement: SUPABASE-05 — Any thrown value becomes an AppError
 
@@ -135,28 +135,28 @@ The supabase package SHALL turn any thrown value into an AppError through the se
 - **GIVEN** a Postgrest error with status 403
 - **WHEN** it is built into a service error
 - **THEN** the AppError has the code FORBIDDEN and the message key helper.error.forbidden
-- **Test:** `packages/supabase/src/buildSupabaseServiceError.helper.test.ts` › "maps a Postgrest 403 to FORBIDDEN via the injected mapper"
+- **Test:** `packages/supabase/src/__tests__/buildSupabaseServiceError.helper.test.ts` › "maps a Postgrest 403 to FORBIDDEN via the injected mapper"
 
 #### Scenario: an AppError already
 
 - **GIVEN** an AppError
 - **WHEN** it is built into a service error
 - **THEN** the same instance comes back
-- **Test:** `packages/supabase/src/buildSupabaseServiceError.helper.test.ts` › "passes an AppError through unchanged"
+- **Test:** `packages/supabase/src/__tests__/buildSupabaseServiceError.helper.test.ts` › "passes an AppError through unchanged"
 
 #### Scenario: an unrecognised error
 
 - **GIVEN** a plain Error
 - **WHEN** it is built into a service error
 - **THEN** the AppError has the code UNKNOWN
-- **Test:** `packages/supabase/src/buildSupabaseServiceError.helper.test.ts` › "maps an unrecognised error to UNKNOWN"
+- **Test:** `packages/supabase/src/__tests__/buildSupabaseServiceError.helper.test.ts` › "maps an unrecognised error to UNKNOWN"
 
 #### Scenario: null
 
 - **GIVEN** a null error
 - **WHEN** it is built into a service error
 - **THEN** the result is an AppError
-- **Test:** `packages/supabase/src/buildSupabaseServiceError.helper.test.ts` › "always returns an AppError instance"
+- **Test:** `packages/supabase/src/__tests__/buildSupabaseServiceError.helper.test.ts` › "always returns an AppError instance"
 
 ### Requirement: SUPABASE-06 — getSession returns the neutral session or null
 
@@ -169,14 +169,14 @@ The supabase package SHALL make the auth gateway's getSession return the SDK ses
 - **GIVEN** an SDK client whose session is null
 - **WHEN** the gateway's getSession runs
 - **THEN** it returns null
-- **Test:** `packages/supabase/src/supabaseAuth.adapter.test.ts` › "getSession returns null when the SDK session is null"
+- **Test:** `packages/supabase/src/__tests__/supabaseAuth.adapter.test.ts` › "getSession returns null when the SDK session is null"
 
 #### Scenario: a session
 
 - **GIVEN** an SDK client with a session
 - **WHEN** the gateway's getSession runs
 - **THEN** it returns the access token, the expiry and the user id under the neutral names
-- **Test:** `packages/supabase/src/supabaseAuth.adapter.test.ts` › "getSession maps the SDK session to IAuthSession"
+- **Test:** `packages/supabase/src/__tests__/supabaseAuth.adapter.test.ts` › "getSession maps the SDK session to IAuthSession"
 
 #### Scenario: a session with no expiry
 
@@ -196,14 +196,14 @@ The supabase package SHALL make the auth gateway's signIn sign in with email and
 - **GIVEN** an SDK client that signs the user in
 - **WHEN** the gateway's signIn runs with an email and a password
 - **THEN** it resolves the neutral session
-- **Test:** `packages/supabase/src/supabaseAuth.adapter.test.ts` › "signIn maps the returned session to IAuthSession"
+- **Test:** `packages/supabase/src/__tests__/supabaseAuth.adapter.test.ts` › "signIn maps the returned session to IAuthSession"
 
 #### Scenario: the SDK reports an error
 
 - **GIVEN** an SDK client that answers sign-in with an error
 - **WHEN** the gateway's signIn runs
 - **THEN** it rejects with that error
-- **Test:** `packages/supabase/src/supabaseAuth.adapter.test.ts` › "signIn throws when the SDK returns an error"
+- **Test:** `packages/supabase/src/__tests__/supabaseAuth.adapter.test.ts` › "signIn throws when the SDK returns an error"
 
 ### Requirement: SUPABASE-08 — Auth changes reach the subscriber until it unsubscribes
 
@@ -216,21 +216,21 @@ The supabase package SHALL relay every SDK auth change to the subscriber of onAu
 - **GIVEN** a subscriber of onAuthStateChange
 - **WHEN** the SDK reports a sign-in with a session
 - **THEN** the subscriber receives the neutral session
-- **Test:** `packages/supabase/src/supabaseAuth.adapter.test.ts` › "onAuthStateChange calls onChange with a mapped session"
+- **Test:** `packages/supabase/src/__tests__/supabaseAuth.adapter.test.ts` › "onAuthStateChange calls onChange with a mapped session"
 
 #### Scenario: a sign-out event
 
 - **GIVEN** a subscriber of onAuthStateChange
 - **WHEN** the SDK reports a sign-out with no session
 - **THEN** the subscriber receives a null session
-- **Test:** `packages/supabase/src/supabaseAuth.adapter.test.ts` › "onAuthStateChange calls onChange with null on sign-out"
+- **Test:** `packages/supabase/src/__tests__/supabaseAuth.adapter.test.ts` › "onAuthStateChange calls onChange with null on sign-out"
 
 #### Scenario: the subscriber unsubscribes
 
 - **GIVEN** a subscription returned by onAuthStateChange
 - **WHEN** its unsubscribe is called
 - **THEN** the SDK subscription is unsubscribed once
-- **Test:** `packages/supabase/src/supabaseAuth.adapter.test.ts` › "unsubscribe delegates to the SDK subscription"
+- **Test:** `packages/supabase/src/__tests__/supabaseAuth.adapter.test.ts` › "unsubscribe delegates to the SDK subscription"
 
 ### Requirement: SUPABASE-09 — signOut signs out through the SDK
 
@@ -243,7 +243,7 @@ The supabase package SHALL make the auth gateway's signOut call the SDK's sign-o
 - **GIVEN** an auth gateway over an SDK client
 - **WHEN** its signOut runs
 - **THEN** the SDK's sign-out is called once
-- **Test:** `packages/supabase/src/supabaseAuth.adapter.test.ts` › "signOut delegates to the SDK"
+- **Test:** `packages/supabase/src/__tests__/supabaseAuth.adapter.test.ts` › "signOut delegates to the SDK"
 
 ### Requirement: SUPABASE-10 — Row-level security is enabled and forced on every table
 
@@ -606,7 +606,7 @@ The supabase database SHALL create every type, table and function a migration us
 - **GIVEN** two migrations, the first naming a public table that the second creates
 - **WHEN** the order check reads them
 - **THEN** it reports the first migration, the table and the migration that creates it
-- **Test:** `packages/supabase/src/findMigrationOrderViolations.helper.test.ts` › "reports a table a migration names before the migration that creates it"
+- **Test:** `packages/supabase/src/__tests__/findMigrationOrderViolations.helper.test.ts` › "reports a table a migration names before the migration that creates it"
 
 ### Requirement: SUPABASE-25 — A helper added to auth_helpers starts out of reach
 

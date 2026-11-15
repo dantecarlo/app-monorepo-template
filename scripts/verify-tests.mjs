@@ -101,7 +101,33 @@ const EXEMPT_PREDICATES = [
 // entry names its path and the reason it cannot move yet; an entry without a
 // reason, or one whose test now sits correctly or is gone, fails the gate, so
 // the list only shrinks. The goal is none.
-export const FROZEN = Object.freeze([])
+//
+// The three below name no unit of `src/`, and each has a home under the rule;
+// each waits on a file outside src that cites its present path.
+export const FROZEN = Object.freeze([
+  {
+    path: 'packages/i18n/src/__tests__/catalog-parity.test.ts',
+    reason:
+      'it checks the locale catalogs together, so it belongs at ' +
+      'src/locales/__tests__/resources.constant.test.ts; README.md cites ' +
+      'its present path'
+  },
+  {
+    path: 'packages/supabase/src/__tests__/supabaseSql.test.ts',
+    reason:
+      'it reads the SQL files under supabase/, outside src: its migration ' +
+      'case belongs in the findMigrationOrderViolations.helper test, and ' +
+      'its pgTAP case has no single unit; packages/supabase/README.md and ' +
+      'packages/supabase/docs/database.md cite its present path'
+  },
+  {
+    path: 'packages/tokens/src/__tests__/preset.test.ts',
+    reason:
+      'its unit is tailwind-preset.cjs, outside src, so it belongs at ' +
+      'packages/tokens/__tests__/tailwind-preset.test.ts; a comment in ' +
+      'tailwind-preset.cjs cites its present path'
+  }
+])
 
 export const FINDING_KIND = Object.freeze({
   beside: 'beside',
@@ -519,7 +545,12 @@ export const routeTreesOf = ({ root, workspaces }) =>
     )
     .filter((tree) => tree !== undefined)
 
-export const collectContext = ({ frozen = FROZEN, root }) => {
+// FROZEN names paths of this repository, so a run over another root (a
+// scratch tree, through --root) starts with no frozen exception.
+const frozenFor = ({ root }) =>
+  resolve(root).toLowerCase() === REPO_ROOT.toLowerCase() ? FROZEN : []
+
+export const collectContext = ({ frozen, root }) => {
   const workspaces = workspacesOf({ root })
   const files = workspaces
     .flatMap((workspace) =>
@@ -533,7 +564,7 @@ export const collectContext = ({ frozen = FROZEN, root }) => {
     .sort()
   return {
     files,
-    frozen,
+    frozen: frozen ?? frozenFor({ root }),
     routeTrees: routeTreesOf({ root, workspaces }),
     workspaces
   }
