@@ -71,6 +71,38 @@ Owner rule of 2026-11-13, relayed by the Arquitecto (translated from Spanish): w
 finishes a harness or architecture change, it tells the template, which applies it too; each
 such report becomes a parity-ledger row.
 
+### Where things stand (2026-11-15)
+
+Requested by the owner: everything below "Pending" and "Requested", in that order (L61).
+
+**Done, merged into `main`:**
+- Stages 0 to 2.
+- Step 3.1: `AGENTS.md` is the router, with the LAWs, the Codex budget and `verify:instruction-entry` (#17).
+- Step 3.2 part A: the agent projector to four runtimes, with `projection-check` (#18).
+- The living specs (#13). F1 to F7 and F9 (#14, #15, #16).
+- In Certifipago: K1, K2, K4 to K7, K9 and K10 closed.
+
+**In progress:**
+- F.1, the styling pillar with the UI kit behind `components/ui`.
+- F.2, the Supabase hardening, in its correction batch.
+- F.3, the package follow-ups, in their review notes.
+- The dependency inventory behind F.8.
+
+**Pending, in order:**
+- F.4 to F.6 and F.8 of Stage F.
+- Step 3.2 part B: `gradedBy`, `sdd-steward` and `verify:router-coverage` (F27).
+- Step 3.3, then Stages 4 to 7.
+
+**Requested and not started:**
+- F.7, PostHog by default.
+- F.9, the MCP documentation updater.
+- F.11, the `/init` questions of decisions 51, 53 and 54.
+
+**Waiting on Certifipago:**
+- F.10: the isolated linker, Sentry removed, K3, the strict test-location gate, and each template change as it merges.
+- K8, with its test-location half reverted.
+- K11, its pull request.
+
 ### Stage 0 — land what is open
 
 | #   | Step                                                                                    | Who          | Waits on                                                        | Done when                                          |
@@ -104,6 +136,117 @@ side in step 2.0 and 2.3, and Certifipago its side through the conformance track
 | 2.2 | T1d `@app/tooling` (decision 46); then the Arquitecto replaces Certifipago's 12 cross-workspace relative imports | Template, then Arquitecto | 2.1 | no workspace imports a root script by path; a change to a tooling script or a root config changes the hash of every cached task that reads it (`test` is not cached) |
 | 2.3 | T1e pnpm 11.9.0 (D-S6, decided): `packageManager`, lockfile, CI and `.npmrc` follow Certifipago's proven setup | Template | 2.0 | `validate` green on the new pnpm; `packageManager` and lockfile updated |
 | 2.4 | T1b living specs, one per app and package, verified against a commit                                             | Template                  | 2.1, 2.2 | every spec passes `verify:specs`; `report:spec-drift` empty                               |
+
+### Stage F — the follow-ups and the owner's decisions of 2026-11-14 and 2026-11-15
+
+Owner, 2026-11-14 (translated from Spanish): "move everything to ui, that rule is a pillar. The
+screen or section files must contain only positioning, and the components are what must hold the
+other styles, but everything centralized in styles and the tokens. Fix everything you mention
+applying what is recommended, and once everything is fixed tell the Arquitecto to integrate it
+and fix everything". Owner, 2026-11-15 (translated from Spanish): "Let's rebuild the plan and
+update it at the same time; detail what needs to be done and with that start executing it". The
+rest of the owner's words of these two days are in L61. Stage F runs before the rest of Stage 3,
+except where a step touches no app (3.2), and every template step is an OpenSpec change unless
+it says "small".
+
+| #    | Step | Who | Waits on | Done when |
+| ---- | ---- | --- | -------- | --------- |
+| F.1  | The styling pillar (decision 50) and the UI kit behind `components/ui` (decision 51): `local/style-positions-only` for both apps, an allowlist that only shrinks with `verify:allowlist-freshness`, every visual class moved into components, values from tokens; F13 (the web loads the tokens' preset, `verify-theme-sync` compares light colours) | Template | — | the rule and its gate green, the allowlist empty, both apps build |
+| F.2  | Supabase hardening, F19 to F22 and F28: no EXECUTE for anon on `has_capability`; no TRUNCATE, TRIGGER, REFERENCES or MAINTAIN for the API roles; an append-only audit log; a user updates only `display_name`; an offline migration-order check; `gen:types` never empties `types.ts` | Template | — | the independent verifier and the native review pass |
+| F.3  | Package follow-ups F8, F15 to F18: `verifySignedImageUrl` (signature, expiry, constant time), the Cloudflare Images fallback, the Turnstile test title, the `signalProcessTree` contract, `package-src-alias` fixes only what resolves back, the `scrubPII` shared-copy note | Template | — | the independent verifier and the native review pass |
+| F.4  | Tests in `__tests__/` inside each block (decision 57): a codemod moves every unit test, `verify:tests` requires the test in the unit's own folder's `__tests__/` with the unit's stem, and the docs, skills and living-spec citations follow | Template, then Arquitecto | F.1 to F.3 merged | no unit test outside its block's `__tests__/`; the gate proven by planted violations |
+| F.5  | App behaviour, decided as recommended (decision 58): F11 (sign-in calls the auth gateway; the origin guard tested), F12 (mobile fixes), F23 (dynamic query-key values in a trailing params object), F24 (enum members in UPPER_SNAKE_CASE, with a lint selector), F25 (a failed query shows the screen's `ErrorState`, a mutation the toast, a boundary crash is reported once) | Template | F.4 | `validate` green; both apps build and export |
+| F.6  | i18n, F10 and F14: the active locale in client components and `<html lang>`; every user-facing string from the catalogs; the key type from the default locale; a missing-key test | Template | F.5 | `validate` green |
+| F.7  | Observability (decision 53): PostHog as the default adapter behind the observability port in both apps; Sentry an optional capability with an install guide | Template | F.5 | `/init` can drop Sentry; both adapters satisfy the same port tests |
+| F.8  | One rule set and every library behind an adapter (decisions 51 and 52): the per-package strategy below, a registry of allowed import sites, a rule that fails closed on an unregistered package, one configuration applied to `apps/*` and `packages/*` by pattern, and a fixture app proving a new app inherits every rule | Template | F.6, F.7 | the rule and its registry green; the fixture app inherits every gate |
+| F.9  | The MCP documentation updater (decision 55): a command that reads the configured MCP servers, finds their latest releases and refreshes the documentation that names them | Template | — | the command and its test |
+| F.10 | Certifipago integrates F.1 to F.9 and the owner's Certifipago decisions: the isolated linker (decision 56), Sentry removed with PostHog the default (decision 53), K3 as the web does, the strict test-location gate now (decision 57) | Arquitecto | each template pull request | a parity row closed for each |
+| F.11 | The `/init` questions of decisions 53, 54 and 51: observability, backend, UI kit and the libraries behind adapters (sections 4 and 11 of the `/init` table) | Template | Stage 6 | the questions in the interview, each removing what the answer drops |
+
+**Every library behind an adapter (F.8).** The owner, 2026-11-15 (translated from Spanish):
+"every package that is not core must be decoupled and have an adapter, in ui as a wrapper for
+example, and so think a strategy for each one; currently the Certifipago project already more or
+less does it, but evaluate and analyze and put it in the plan". The analysis of every dependency
+of the template, its importers and Certifipago's approach is the table that follows; it is filled
+by the inventory of 2026-11-15.
+
+Inventory of `origin/main` at `e8a4489`, read as git objects. Today `no-restricted-imports` guards only
+`@supabase/*`, `@stripe/*` and `@sentry/*`, so nothing guards i18n, query, state, UI or Expo packages.
+In the table, **Direct** counts the non-test files that import the package outside its target seam.
+
+| Package | Category | Direct | Target seam | Effort |
+| --- | --- | --- | --- | --- |
+| `react`, `react-dom`, `next`, `react-native`, `expo`, `expo-router`, `typescript`, `@app/core`, `@app/i18n`, `@app/tokens` | core | — | used directly (`next/cache`, `next/navigation`, `next/image` and the `expo-router` hooks narrowed, below) | — |
+| `tailwindcss`, `nativewind` | styling engine, core: screens only position, and the look lives in `ui/`, so a UI kit swap rewrites `ui/` | 0 | `lib/theme` and the config files | — |
+| `next-intl` | infra | 21 | `apps/web/src/lib/i18n/` | medium |
+| `react-i18next` | infra | 18 | `apps/mobile/src/lib/i18n/` | medium |
+| `i18next`, `i18next-icu`, `@formatjs/intl-pluralrules`, `expo-localization` | infra | 0 | `apps/mobile/src/lib/i18n/` | small |
+| `@tanstack/react-query` | infra | 2, and its option and result types leak through `useAppQuery` | `apps/*/src/lib/query/` with project-owned option and result types, `AppQueryProvider`, `useInvalidateAppQuery` | medium |
+| `zustand` | infra | 7 stores | `apps/*/src/lib/store/createAppStore.helper.ts` | small |
+| `zod` | infra | 0 | `apps/*/src/validation/`, returning a project validation result | small |
+| `@react-native-async-storage/async-storage` | infra | 2 | `apps/mobile/src/lib/storage/keyValueStorage.adapter.ts` behind an `IKeyValueStoragePort` in `@app/core` | small |
+| `expo-splash-screen`, `@expo-google-fonts/*` | infra | 1 each | `apps/mobile/src/lib/bootstrap/` | small |
+| `tailwind-variants` (`tailwind-merge` its peer) | ui | 0, and 9 ui types leak `VariantProps` | `lib/styles/variants.helper.ts`; explicit variant unions in `*.constant.ts` | medium |
+| `react-error-boundary` | ui | 0, and its `FallbackProps` leak | `components/ui/AsyncBoundary` with its own fallback props | small |
+| `expo-linear-gradient` | ui | 2 | a new `components/ui/Gradient` | small |
+| `expo-blur`, `react-native-svg`, `react-native-reanimated` | ui | 0 | their existing `ui/` blocks | small |
+| `react-native-safe-area-context` | ui | 1 app root | `ui/AuthShell` and `lib/bootstrap` | small |
+| `expo-status-bar` | ui | 2, and its `StatusBarStyle` leaks | a new `components/ui/StatusBar` with its own style type | small |
+| `@sentry/nextjs`, `@sentry/react-native` | vendor | 0 | `lib/observability/*.adapter.ts` and the framework config files (optional capability, decision 53) | small |
+| PostHog | vendor | — | `lib/observability/*.adapter.ts`, the default adapter (F.7) | medium |
+| `@supabase/supabase-js`, `@supabase/ssr` | vendor | 0, and `SupabaseClient<Database>` leaks into the apps | `packages/supabase/src/*.adapter.ts`, the client typed opaquely behind `IBackendClientProvider` | medium |
+| `@app/supabase`, `@app/cloudflare` | vendor packages | 2 app roots, 0 | `apps/*/src/lib/supabase/`, `apps/web/src/lib/{bot-protection,origin-guard}` | small |
+| `next/cache`, `next/navigation`, `next/image` | core, narrowed | 1, 1, 1 | `lib/cache`, `lib/routing`, `components/ui/Image` | small |
+| `react-native` primitives that have a `ui/` wrapper (`Text`, `Pressable`, `TextInput`) | core, narrowed | 14 | `components/ui/*`; `View` and layout primitives stay direct | medium |
+
+Rows outside scope: build and dev packages (ESLint, Vitest, MSW, Testing Library, Playwright, Turbo) and the framework
+peers never imported (`react-native-screens`, `react-native-web`, `react-native-worklets`, `expo-constants`, `expo-font`,
+`expo-linking`, `@expo/metro-runtime`).
+
+**Enforcement.**
+- **Registry.** `.agents/contracts/dependencies.json` names the core packages, the peers, and each other package's category and seam globs.
+- **Rule.** `local/dependency-seam` applies to `apps/*/**` and `packages/*/**` by pattern, so a new app inherits it. It reads static and dynamic imports, re-exports, `require` and `vi.mock`, and type-only imports too. A registered package passes only inside its seam; an unregistered one fails, closed. It replaces the `@supabase`/`@stripe`/`@sentry` patterns, because `no-restricted-imports` is replace-not-merge across config blocks.
+- **Gate.** `verify:dependency-seams` checks that every dependency of every `package.json` is registered, that no entry is stale, that every seam glob matches a file, and the config files ESLint ignores.
+- **Tests.** A test inherits its unit's seam. `src/test/**` is the test-infrastructure seam. Tests mock `@/lib/*` and `@/components/ui/*`, not the vendor.
+- **Migration.** Existing imports are frozen in an allowlist that only shrinks, as Certifipago does.
+
+**Certifipago, evaluated.**
+- **What works there:**
+  - `local/view-import-boundary` fails closed on unknown packages in views;
+  - the `ui/`-only category;
+  - wrapper detection reads the `ui/` blocks from disk;
+  - the raw TanStack hooks are banned;
+  - one `lib/` adapter per Expo capability;
+  - a name-registry `Icon`;
+  - centralized seam mocks.
+- **What is missing there:**
+  - the boundary covers views only, so hooks, services, stores and packages escape it;
+  - `next-intl`, `react-i18next`, `expo-*` and `react-native-*` pass as platform, so about 200 files import i18n directly;
+  - type-only imports are exempt;
+  - there is no single registry and no `package.json` check;
+  - tests mock the vendors.
+
+The template adopts what works and closes those gaps.
+
+**Decided as recommended (decision 58):**
+- the class dialect of Tailwind and NativeWind is core;
+- type-only imports are governed too;
+- `react-native` primitives that have a wrapper, and the `expo-router` hooks, go through `ui/` and `lib/routing`;
+- one i18n API for both apps (`IAppTranslator` in `@app/i18n`);
+- zod schemas stay per app until one is shared;
+- the apps drop the `@supabase/*` dependencies they never import;
+- a new dependency fails closed at once.
+
+F.8 work units, in order:
+1. the registry, the rule and the gate, with the frozen allowlist;
+2. the i18n seam in both apps;
+3. the query seam's own types and provider;
+4. `createAppStore` and the key-value storage port;
+5. the `ui/` leaks (AsyncBoundary, variant unions, Gradient, StatusBar, Image);
+6. `lib/bootstrap`, `lib/cache` and `lib/routing`;
+7. the opaque Supabase client;
+8. the primitive-wrapper rule;
+9. an empty allowlist and the docs, ADR and `lib` skill, then the parity hand-off to Certifipago.
 
 ### Stage 3 — the harness core (T2: P1–P2)
 
@@ -314,6 +457,8 @@ defects behind them, for changes of their own.
 | F25 | apps/web, apps/mobile | left open by the error-surfacing change: whether a failed query shows the screen's `ErrorState` instead of a toast (web Q3, mobile Q1), whether a crash a boundary catches is reported to observability, and that every component watching one failing query queues its own toast | owner decides |
 | F26 | apps/web, apps/mobile | Certifipago's styling LAW (only `ui/` blocks own their look; everything else only positions) is false here: screen-local `*.style.ts` files hold colour and type classes, and both apps hold arbitrary values and raw hex in style files | owner decides: move the look into `ui/` and add the rule, or keep the template's convention |
 | F27 | harness | no gate checks that every Router row of `AGENTS.md` names a shipped skill and every skill has a row, so a project that drops `sdd` or `archify` at `/init` keeps their rows | step 3.2 (`verify:router-coverage`) |
+| F28 | packages/supabase | Supabase's default privileges give `anon` and `authenticated` TRIGGER, REFERENCES and MAINTAIN on every table; with TRIGGER, a signed-in user attaches `auth_helpers.tg_audit_immutable()` to a table and blocks its writes | in F.2 |
+| F29 | packages/supabase | the verifier of the signed image URL signs the path and query only, so one secret serving several hosts accepts a URL on any of them | design, recorded |
 
 ---
 
@@ -364,6 +509,15 @@ init, markdown first, diagrams from specs). This plan adds:
 | 47  | The template is the reference standard (owner, 2026-11-13). A project starts from it; an improvement proven in a derived project is adopted here adapted to the template's standards (English-only, its code standards, an OpenSpec change); then the derived project is asked to conform, Certifipago through its Arquitecto session, others through `propagate-from-template`. It extends decision 18, which made the template the upstream of the harness core: the template now also owns the conventions. Where the two repositories differ on a convention, the owner decides once (Roadmap, Stage 1) and both follow.                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | 48  | `/init` asks the artifact language — specs, docs, code comments, commit and pull request text — with English as the default, separately from the conversation language (owner, 2026-11-13). The template itself stays English-only. `/init` writes the choice where the SDD artifacts and the skills read it (`openspec/config.yaml` and the `AGENTS.md` rule), so a project that chooses another language quotes and writes in it. When the owner picks another artifact language, `/init` drops the `english-artifacts` capability, so `verify:english` does not hold the project to English.                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | 49 | `/init` asks what runs before a push, from the cheapest up (owner, 2026-11-13): **husky only** (the default: `pre-commit` runs lint-staged, `commit-msg` runs commitlint, and CI runs `validate`); **pre-push gate** (refuse a push to the protected branch, check the commit author when the host deploys by author, run the database tests when SQL changed, `validate`, mutation on changed lines); **peer review** (each pushed commit reviewed by Codex, or by a read-only `claude -p` session when Codex is absent, with one adjudication record per finding); **review skills owed** (the skills the review routing says the changed paths owe, each in a clean session; Certifipago #803). Each extra adds minutes to every push; Certifipago runs all four. |
+| 50 | **The styling pillar** (owner, 2026-11-14). In every app, a screen or section file only positions: its `*.style.ts` holds layout classes and nothing else. Every visual style lives in the components that own the look, in their `*.style.ts`, with values from the tokens. A lint rule and an allowlist that only shrinks enforce it. |
+| 51 | **Every library outside the core stack sits behind one adapter of the template** (owner, 2026-11-15). The core stack is the language and the framework runtime the template is built on, and the workspace's own `@app/*` packages. A UI kit is wrapped in `components/ui`, a vendor SDK sits behind a port and a `*.adapter.ts`, and an infrastructure library behind a `src/lib` wrapper. The rest of the code imports only the template's module, so replacing a library rewrites its adapter. A registry of allowed import sites drives one rule, which fails closed on a package nobody registered. |
+| 52 | **One rule set for every app** (owner, 2026-11-15). Lint rules, gates, conventions and docs apply to `apps/*` and `packages/*` by pattern; an app declares only what its framework forces (Next.js and Expo Router files), so a new app, plain React for example, inherits every rule. |
+| 53 | **Observability defaults to PostHog** (owner, 2026-11-15). PostHog is the default adapter behind the observability port; Sentry becomes an optional capability with an install guide; `/init` asks which the project uses. Certifipago removes Sentry. |
+| 54 | **`/init` asks the backend** (owner, 2026-11-15): front-end only, a new backend, an existing structure, or the default, Supabase. |
+| 55 | **MCP servers stay unpinned** (owner, 2026-11-15), and an updater refreshes the documentation when they release. This replaces the pinning in decision 44. |
+| 56 | **One linker for both repositories** (owner, 2026-11-15): pnpm's default isolated linker with the shared `publicHoistPattern`, because the hoisted linker duplicates nested packages in the mobile bundle whatever the project. |
+| 57 | **Tests in `__tests__/` inside each block** (owner, 2026-11-15), reversing D-S2: a unit's test lives in the `__tests__/` of the unit's own folder, with the unit's stem; shared infrastructure stays in `src/test/`; a strict gate checks it in both repositories, Certifipago now. |
+| 58 | **The follow-ups decided as recommended** (owner, 2026-11-14): F21 by column privileges, F23 with a trailing params object, F24 in UPPER_SNAKE_CASE, F25 by the error-channel table of `docs/code-standards.md`, F8 verified where a signed URL is served. |
 
 ---
 
@@ -1076,13 +1230,14 @@ a `CLAUDE.md` from scratch, so `verify:instruction-entry` fails any tracked
 | 1   | Identity          | product name, slug, package scope, bundle id, owner, license                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `project.config.json` identity; renders package names, `app.json`, i18n `app.name`                                           |
 | 2   | Product           | what the project does, users, value; business model canvas → PRD → product digest                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `docs/product/*`, `PRODUCT.md` (via `product-discovery`)                                                                     |
 | 3   | Stack fit         | do the template technologies fit? web, mobile, both, React SPA, none; alternatives when not                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | capability set or preset; `contracts/architecture.json` and the `docs/architecture` folder tables                            |
-| 4   | Backend and data  | backend (Supabase / other / none); tables and entities to start with; auth providers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | `contracts/data.json`, `docs/data-model.md`, first migration stub                                                            |
+| 4   | Backend and data  | backend: front-end only, a new backend, an existing structure, or the default Supabase (decision 54); tables and entities to start with; auth providers | `contracts/data.json`, `docs/data-model.md`, first migration stub                                                            |
 | 5   | Design system     | does one exist? source: Figma, URL, package, tokens file, none; **destination folder** for the copy                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | copied source, `docs/design-system.md`, tokens data → generated tokens, `contracts/design.json`                              |
 | 6   | Flows and screens | main user flows; screen list per app                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | `docs/user-flows.md`, screen map, scaffolded screens and routes                                                              |
 | 7   | Team workflow     | branch strategy, PR policy, merge vs rebase, protected branch, commit convention, board (Notion / Jira / Linear / none); owners and reviewers per area (default: the repository owner), written as `CODEOWNERS` only where GitHub honours it (a public repository, or Pro or Team for a private one), otherwise kept in the project config for review routing                                                                                                                                                                                                                                       | `contracts/workflow.json`, `contracts/board.json`, hooks, commitlint; the merge policy, `manual` or `low-risk` (decision 38) |
 | 8   | Harness           | runtimes (Claude Code, Codex, OpenCode, Copilot); skill packs (proposed from sections 2–4: marketing or product work, web, mobile, backend; the owner confirms); shared memory (repo URL or none); the artifact language for specs, docs, comments, commits and pull requests, English by default, and the conversation language (decision 48); the workflow: SDD (default) or ODD (decision 40); the toolchain: the latest gentle-ai and each MCP server, connector or plugin not vendored, listed with source and version, installed on the owner's yes and pinned (decision 44)                  | `project.config.json` harness block; projections; pruned skill packs                                                         |
 | 9 | Quality profile | gate profile (strict / standard), coverage floor, budgets, mutation on push, review policy; what runs before a push: husky only (default), the pre-push gate, peer review, review skills owed (decision 49) | `contracts/budgets.json`, `contracts/review.json`, registry entries |
 | 10  | Docs and diagrams | which doc families to keep; which are generated from code and which hand-kept; diagrams on or off; stack picture on or off                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | pruned `docs/`, `docs/diagrams/`                                                                                             |
+| 11  | Providers and libraries | observability: PostHog (the default), Sentry, another or none (decision 53); the UI kit behind `components/ui`; every non-core library behind its adapter (decision 51) |
 
 ### Everything that is or should be configurable
 
@@ -1213,7 +1368,7 @@ GENERALIZATION_PLAN.md) and a green `ATL_TEMPLATE_SELF=1 pnpm validate`.
 | D-D  | Default branch strategy                                 | **Decided 2026-11-04:** feature branches into a protected `main`, merged by PR with merge commits                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | D-E  | PR peer reviewer                                        | **Decided 2026-11-04:** `/init` asks. Default: a different provider from the one that writes the code when its CLI is installed (`codex review --base <base>`, or `codex exec -s read-only --output-schema` for structured findings); otherwise the same provider in a fresh session (`claude -p "/code-review high <base>...HEAD"`). Runs at pre-push by default; PR-time CI and hosted reviewers (Codex cloud, Claude Code Review, Copilot review) are opt-in and plan-gated; ultrareview is opt-in because it bills. One file per finding under `.reviews/<branch>/<reviewer>/` with a verdict field; advisory by default, optionally blocking on P0/P1. |
 | D-S1 | Style-constant suffix | **Decided 2026-11-13, as recommended.** **`.style.ts`**: every other binding suffix is singular (`.type.ts`, `.constant.ts`, `.hook.ts`, `.service.ts`, `.adapter.ts`); Certifipago already uses it in 156 files, the template in far fewer, so the template renames. |
-| D-S2 | Test location | **Decided 2026-11-13, as recommended.** **Beside the unit**, the template's rule: `verify:tests` already proves a sibling test per unit; Certifipago moves its `__tests__/` folders when it converges (PD2), with a codemod, and adapts `verify:test-location`. The cost sits in Certifipago, so the owner may prefer the opposite. |
+| D-S2 | Test location | **Reversed 2026-11-15 (decision 57).** Each block keeps its tests in its own `__tests__/` folder, and a strict gate checks that the folder is the unit's own. The earlier choice, beside the unit, was decided 2026-11-13 as recommended. |
 | D-S3 | Markdown formatted by Prettier | **Decided 2026-11-13, as recommended.** **No**, Certifipago's rule (`.prettierignore`: Markdown is prose). Evidence: Prettier broke template docs twice (code-standards §14a and a `global-map.md` glob, both in the 2026-11-04 audit), and it realigns a whole table when one cell changes, so a five-row plan edit shows as +170/−45. Links and shape stay held by `verify:maps` and `verify:specs`. The template drops Markdown from Prettier; Certifipago keeps its rule. Changed from "yes" on 2026-11-13, when the owner asked whether formatting Markdown was right. |
 | D-S4 | Folder of decision records | **Decided 2026-11-13, as recommended.** **`docs/decisions/`**, Certifipago's: several of its ten records are product or security decisions (checkout mock payment, manual billing, accepted hardening risks), not architecture, so the general folder fits; the template moves its single record (`0001-pluggable-providers.md`) and the references to it. Changed from `docs/architecture/decisions/` on 2026-11-13. |
 | D-S5 | Language of owner quotes in Certifipago's SDD artifacts | **Decided 2026-11-13, as recommended.** **Its artifact language** (decision 48): Certifipago writes its artifacts in English, so its quotes are translated and marked, as here. |
@@ -1573,3 +1728,24 @@ validate` exits 0. Independent verifier: no blocker. Native review: the hooks
   keeps colour and type classes in screen-local style files (F26). `.codex/config.toml` sets
   `project_doc_max_bytes = 65536`, and a test holds `AGENTS.md`, counted with CRLF, under it.
   `verify:instruction-entry` refuses any `CLAUDE.md` or `CLAUDE.local.md`, tracked or not ignored.
+- **L61 (2026-11-14 and 2026-11-15, owner, translated from Spanish):** "move everything to ui, that
+  rule is a pillar..." (quoted whole in Stage F); "__tests__ inside each block, and tell the
+  Arquitecto"; "yes, I confirm, but have it adopt it now"; "tell the Arquitecto everything that has
+  to be updated. nodeLinker, wouldn't it be better to have it the same for both, because if it uses
+  the libraries the same problem would happen, and while at it, ask in init whether it has some
+  logger or uses the default, which is PostHog. And Sentry should be removed from Certifipago.
+  Although in the template there should be some documentation on how to install it if needed, and
+  offer it as an option in init. Don't pin the versions; rather we need a kind of updater for our
+  documentation, and update it if the MCPs update. K3: do the same as web. And something
+  important: web and app and any other project must be standardized, that is, they must always
+  follow the same rules, and centralize it if possible, because if later plain React is added, for
+  example, it should follow the same rules"; "The backend should also be asked in the init, in
+  case the project is front-end only, whether a backend is wanted, whether it has some structure,
+  or whether they use the default we have today, which is Supabase"; "And always think, when
+  building something, that everything should be adaptable: if for example tomorrow shadcn is not
+  used and Material UI or another is wanted, the change should be relatively decoupled and 'easy'
+  to make"; "the same for everything that is not core, always decoupled and adapted"; "Not only the
+  UI libraries, but all the libraries themselves"; "every package that is not core must be
+  decoupled and have an adapter..." (quoted whole in Stage F); "Let's rebuild the plan and update
+  it at the same time; detail what needs to be done and with that start executing it". Recorded as
+  decisions 50 to 58 and Stage F. The Arquitecto was told every Certifipago item the same day.
