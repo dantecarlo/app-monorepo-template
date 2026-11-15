@@ -35,7 +35,7 @@
     "test:e2e:visual": "E2E_VISUAL=1 pnpm exec playwright test --project=visual",
     "test:e2e:visual:update": "E2E_VISUAL=1 pnpm exec playwright test --project=visual --update-snapshots",
     "typecheck": "turbo run typecheck",
-    "validate": "pnpm agent-harness:projection-check && pnpm agent-harness:test && pnpm verify:manifest && pnpm verify:manifest:coverage && pnpm verify:manifest:test && pnpm verify:lint-rules:test && pnpm verify:allowlist-freshness:test && pnpm verify:allowlist-freshness && turbo run lint typecheck test build format:check && pnpm verify:tests && pnpm verify:specs:test && pnpm verify:specs && pnpm git-free-env:test && pnpm report:spec-drift:test && pnpm report:spec-drift && pnpm verify:english:test && pnpm verify:english && pnpm verify:instruction-entry:test && pnpm verify:instruction-entry && pnpm codex-budget:test && pnpm verify:maps && pnpm check:identity && pnpm init-project:test && pnpm verify:pairing && pnpm verify:structure && pnpm verify:security && pnpm verify:theme-sync:test && pnpm verify:theme-sync && pnpm docs:diagrams:check && pnpm --filter @app/i18n test && pnpm knip",
+    "validate": "pnpm agent-harness:projection-check && pnpm agent-harness:test && pnpm verify:manifest && pnpm verify:manifest:coverage && pnpm verify:manifest:test && pnpm verify:lint-rules:test && pnpm verify:allowlist-freshness:test && pnpm verify:allowlist-freshness && turbo run lint typecheck test build format:check && pnpm verify:tests:test && pnpm verify:tests && pnpm verify:specs:test && pnpm verify:specs && pnpm git-free-env:test && pnpm report:spec-drift:test && pnpm report:spec-drift && pnpm verify:english:test && pnpm verify:english && pnpm verify:instruction-entry:test && pnpm verify:instruction-entry && pnpm codex-budget:test && pnpm verify:maps && pnpm check:identity && pnpm init-project:test && pnpm verify:pairing && pnpm verify:structure && pnpm verify:security && pnpm verify:theme-sync:test && pnpm verify:theme-sync && pnpm docs:diagrams:check && pnpm --filter @app/i18n test && pnpm knip",
     "verify:allowlist-freshness": "node scripts/verify-allowlist-freshness.mjs",
     "verify:allowlist-freshness:test": "node --test scripts/verify-allowlist-freshness.test.mjs",
     "verify:english": "node scripts/verify-english.mjs",
@@ -54,6 +54,7 @@
     "verify:specs:test": "node --test scripts/verify-specs.test.mjs",
     "verify:structure": "node scripts/verify-structure.mjs",
     "verify:tests": "node scripts/verify-tests.mjs",
+    "verify:tests:test": "node --test scripts/verify-tests.test.mjs",
     "verify:theme-sync": "node scripts/verify-theme-sync.mjs",
     "verify:theme-sync:test": "node --test scripts/verify-theme-sync.test.mjs"
   },

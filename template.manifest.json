@@ -89,6 +89,7 @@
     "scripts/verify-security-static.mjs",
     "scripts/verify-structure.mjs",
     "scripts/verify-tests.mjs",
+    "scripts/verify-tests.test.mjs",
     "scripts/verify-theme-sync.mjs",
     "scripts/verify-theme-sync.test.mjs",
     "template.manifest.json",
