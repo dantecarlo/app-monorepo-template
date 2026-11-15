@@ -192,6 +192,20 @@ $$;
 
 The logic stays in `auth_helpers`; only the entry point is exposed.
 
+A wrapper needs a revoke from `anon` by name. A Supabase project's default
+privileges give `anon`, `authenticated` and `service_role` an explicit EXECUTE
+on every function `postgres` creates in `public`, which `revoke ... from
+public` does not remove:
+
+```sql
+revoke execute on function public.my_helper(...) from public, anon;
+grant execute on function public.my_helper(...) to authenticated, service_role;
+```
+
+`0010_api_privileges.sql` does this for `public.has_capability`, and
+`rls_profile.test.sql` fails when `anon` may execute any SECURITY DEFINER
+function in `public` or `auth_helpers`.
+
 ---
 
 ## 5. DB-driven RBAC

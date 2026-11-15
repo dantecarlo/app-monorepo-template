@@ -1,7 +1,7 @@
 # Tasks: 2026-11-14-supabase-hardening
 
 - [x] T1 — F22: an offline vitest test reads the migrations in name order and fails when one names a public type, table, view or function that only a later migration creates; the database guide says it guards the order · Requirements: SUPABASE-24 · Commit: 35aa956
-- [ ] T2 — F22: `_setup.test.sql` is folded into `rls_profile.test.sql` and the database guide, and an offline vitest test fails when a pgTAP file declares no plan or never calls finish · Requirements: none · Commit: —
+- [x] T2 — F22: `_setup.test.sql` is folded into `rls_profile.test.sql` and the database guide, and an offline vitest test fails when a pgTAP file declares no plan or never calls finish · Requirements: none · Commit: eadc47c
 - [ ] T3 — F19: the 0010 migration revokes EXECUTE on `public.has_capability` from `anon`; pgTAP for `anon`, for every SECURITY DEFINER function in `public` and `auth_helpers`, and for a signed-in admin; the wrapper convention of the database guide revokes from `anon` too · Requirements: SUPABASE-17 · Commit: —
 - [ ] T4 — F20: the 0010 migration revokes TRUNCATE from `anon` and `authenticated` on every table in `public`, and in the default privileges of `postgres` there; pgTAP for both roles, a refused truncate and a table added later · Requirements: SUPABASE-26 · Commit: —
 - [ ] T5 — F20: the 0012 migration adds a `before truncate` statement trigger on `audit_log` that raises; pgTAP for a truncate by the owner and by `service_role` · Requirements: SUPABASE-19 · Commit: —

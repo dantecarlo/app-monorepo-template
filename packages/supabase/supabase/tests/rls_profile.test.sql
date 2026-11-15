@@ -37,7 +37,7 @@ begin;
 -- Plan
 -- =====================================================================
 -- Count assertions below and update this number when adding new tests.
-select plan(31);
+select plan(34);
 
 -- =====================================================================
 -- Section 1: seed test fixtures (as postgres, the session role)
@@ -330,6 +330,48 @@ select ok(
   has_function_privilege('public', 'extensions.test_function_with_default_grants()', 'execute'),
   'a function added to extensions keeps EXECUTE for PUBLIC'
 );
+
+-- =====================================================================
+-- Section 10: the privileged helpers are out of anon's reach, the public
+-- wrapper among them
+-- =====================================================================
+-- Supabase's default privileges give anon EXECUTE on every function postgres creates in
+-- public, so a SECURITY DEFINER function there needs a revoke from anon of its own.
+
+set local "request.jwt.claims" to '{"role":"anon"}';
+set local role anon;
+
+select throws_ok(
+  $$select public.has_capability('profile.manage'::public.app_capability)$$,
+  'permission denied for function has_capability',
+  'anon cannot execute the public has_capability wrapper'
+);
+
+reset role;
+
+select is(
+  (
+    select coalesce(array_agg(n.nspname || '.' || p.proname order by 1), '{}')
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname in ('public', 'auth_helpers')
+      and p.prosecdef
+      and has_function_privilege('anon', p.oid, 'execute')
+  ),
+  '{}'::text[],
+  'anon may execute no security definer function in public or auth_helpers'
+);
+
+set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}';
+set local role authenticated;
+
+select is(
+  (select public.has_capability('profile.manage'::public.app_capability)),
+  true,
+  'the public has_capability wrapper answers a signed-in admin'
+);
+
+reset role;
 
 -- =====================================================================
 -- Finish
