@@ -100,6 +100,18 @@ file suffixes (`.screen.tsx`/`.component.tsx`/`.hook.ts`/`.service.ts`/`.adapter
 `.style.ts`/`.constant.ts`), `I{Name}`/`{Name}Type`/`{Name}Enum`, single-object params, UI
 strings via i18n, screens handle loading/empty/error states.
 
+**Styling lives in the components** (`AGENTS.md` LAW, `docs/code-standards.md` §22). A block under
+`src/components/ui/`, or a screen's own `components/`, owns its look, in NativeWind classes or a
+StyleSheet built from `@app/tokens`. A screen, a route file and a container under
+`src/components/<Name>/` only position: their StyleSheet entries and style props carry flex,
+gap, alignment, position, size and spacing, never a colour, a font or a radius. Text is
+`ui/Text`, a labelled rule `ui/Divider`, a screen's surface `ui/Screen` (dark by default, the
+active theme when `themed`) and the accent gradient `ui/AccentGradient`; the navigator's themed
+background comes from `useRootTheme`. Only `ui/` imports a UI kit or a drawing primitive
+(`expo-linear-gradient`, `react-native-svg`). `local/style-positions-only`,
+`local/style-token-values` and `local/ui-kit-boundary` hold it; a number in a StyleSheet is not
+read.
+
 ## 6. The shipped sample
 
 There is no `src/features/` folder; the sample code already follows the layout above.

@@ -38,7 +38,7 @@ description: >
 ```
 src/screens/{Name}/
 ├── {Name}.screen.tsx        # mandatory — container, composes components
-├── {Name}.style.ts          # mandatory — Tailwind class constants for the screen layout
+├── {Name}.style.ts          # mandatory — positioning classes only (local/style-positions-only)
 ├── index.ts                 # mandatory — barrel
 ├── components/              # optional — private components of this screen
 │   └── {Name}Row/
@@ -142,6 +142,17 @@ export const {NAME}_SCREEN = {
 } as const
 ```
 
+The styling pillar (`AGENTS.md` § Styling lives in the components,
+`docs/code-standards.md` §22): a `ui/` block, or a block in a screen's own `components/`, owns its
+look; a screen, a route entry and a container only position. So this file holds flex and grid, gap,
+alignment, position, z-index, placing size and spacing, and nothing else:
+`local/style-positions-only` fails a colour, a type size or weight, a border, a radius, a shadow
+or an opacity here, and the same in an inline `style` or a `*Style` constant of the screen. The
+look comes from the blocks the screen renders: `ui/Text` for text, `ui/Screen` for the surface,
+`ui/Divider`, `ui/Button`, `ui/GlassCard`, or a block in the screen's own `components/`. A look no
+block has becomes a variant of the `ui/` block (`modify`) or a new block (`component`). The screen
+imports no UI kit (`local/ui-kit-boundary`).
+
 ---
 
 ## Step 5 — Screen (`{Name}.screen.tsx`)
@@ -240,5 +251,6 @@ keeps a named export.
 | Direct `fetch()` or service call in the screen      | Use a hook that wraps `useAppQuery`              |
 | Missing loading / error / empty guard               | Always all three, in that order                  |
 | Inline Tailwind class strings                       | Extract to `{Name}.style.ts`                     |
+| A colour, type or radius class in the screen style  | Render the `ui/` block that owns it (`ui/Text`, `ui/Screen`) |
 | `function {Name}Screen(...)` keyword               | Arrow const: `const {Name}Screen = () => ...`   |
 | Default export on the screen component              | Named export on screen; default only for route page |

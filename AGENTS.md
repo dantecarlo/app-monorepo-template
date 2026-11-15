@@ -146,6 +146,57 @@ what the other already solved, without at least reading how.
 `verify:maps` catch only the leftovers once a duplicate exists, and a duplicate
 under a different name has no import to detect.
 
+### Styling lives in the components — LAW
+
+Applies to `apps/web` and `apps/mobile`, and to every app added later. The
+owner decided it on 2026-11-14 (translated from Spanish): "move everything to
+ui, that rule is a pillar. The screen or section files must contain only
+positioning, and the components are what must hold the other styles, but
+everything centralized in styles and the tokens." And, for the kit behind it,
+on 2026-11-15 (translated from Spanish): "if for example tomorrow shadcn is
+not used and Material UI or another is wanted, the change should be
+relatively decoupled and 'easy' to make".
+
+**A component block owns its look**: a block under `src/components/ui/`, or
+under a screen's own `components/` for a look only that screen has. Its
+`*.style.ts` holds colour, background, border, radius, typography, shadow,
+opacity, states and variants. **Every other file only positions**: a screen,
+a section (a route entry under `src/app/`, a container under
+`src/components/<Name>/`) and `src/helpers/layout.style.ts`. Its classes,
+StyleSheet entries and style props hold flex and grid, gap, order,
+alignment, position and inset, z-index, the size that places a block, and the
+space between blocks.
+
+**Every value comes from the tokens**: `packages/tokens`, through the Tailwind
+and NativeWind presets or the token constants, or a step of Tailwind's own
+scale. No raw colour, no Tailwind palette colour, no arbitrary value (`[…]`),
+no inline style object with a visual key. A value no token carries becomes a
+token in `packages/tokens`.
+
+**The look and the kit live in one replaceable layer.** Only a `ui/` block
+imports a UI kit, its primitives or its class helpers: shadcn's
+`class-variance-authority`, Radix, `tailwind-variants`, a future `@mui/*`, and
+`expo-linear-gradient` or `react-native-svg` on mobile. Screens, sections and
+screen-local components import the `ui/` blocks, so swapping the kit rewrites
+`ui/` and nothing else.
+
+**A different look is a change to the block**, as a variant or a prop of an
+existing `ui/` block, or a new block when none fits (the LAW above); never a
+class added in the screen. The document's own base, `html` and `body`, lives
+in the base styles of `apps/web/src/app/globals.css`.
+
+**What this forbids**: a colour, size, weight or radius in a screen's or a
+route's style; a hex or an arbitrary value in any style file; restyling a
+`ui/` block from outside through `className` or `style`; importing a kit
+primitive outside `ui/`.
+
+**Backed by** three ESLint rules at `error`, `local/style-positions-only`,
+`local/style-token-values` and `local/ui-kit-boundary`, and by
+`verify:allowlist-freshness`, which keeps `eslint-style-positioning-allowlist.json`
+shrinking: it ships empty, an entry names its file, its rule and why the value
+cannot move, and the gate fails an entry whose file no longer breaks its rule.
+`docs/code-standards.md` §22 says what they do not see.
+
 ### A rule is not edited to fit the work — LAW
 
 Applies to every skill, every gate, every allowlist, every row of the
@@ -351,6 +402,8 @@ lives at `.claude/skills/<name>/SKILL.md`.
 - No magic numbers or strings — enums and constants always.
 - Max 500 lines per file.
 - Tests: `test()` not `it()`; semantic queries; no `data-testid`.
+- A screen or section only positions; the look lives in `components/ui/**` (or a screen's own
+  `components/`), every value comes from the tokens, and only `ui/` imports a UI kit (LAW above).
 - English everywhere — identifiers, comments, docs. UI strings via i18n catalogs, the only
   place Spanish may appear; `pnpm verify:english` fails on a Spanish line anywhere else.
 

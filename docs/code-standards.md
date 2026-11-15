@@ -660,11 +660,15 @@ self-cleaning**.
 > the code is fixed, or the rule does not land. See `docs/GENERALIZATION_PLAN.md`
 > decision 1.
 >
-> **The one exception** is `scripts/verify-english.allow.json`, the allowlist
-> of `verify:english` (§15). It cannot hold a backlog: it ships empty, each
-> entry names its file, its line (the text or a pattern) and the reason the
-> line keeps that text, and the gate fails an entry that excuses no line, so a
-> stale one cannot stay. See `docs/harness.md`.
+> **Two exceptions.** `scripts/verify-english.allow.json`, the allowlist of
+> `verify:english` (§15), cannot hold a backlog: it ships empty, each entry
+> names its file, its line (the text or a pattern) and the reason the line keeps
+> that text, and the gate fails an entry that excuses no line, so a stale one
+> cannot stay. `eslint-style-positioning-allowlist.json`, read by the styling
+> rules (§22), is held the same way: it ships empty, an entry names its file,
+> its rule and why the value cannot move, and `verify:allowlist-freshness` fails
+> an entry whose file no longer breaks its rule. The owner asked for it with
+> the styling pillar (2026-11-14). See `docs/harness.md`.
 
 > Status: **not in place.** Packages lint with `eslint .` — no
 > `--max-warnings 0`, no `reportUnusedDisableDirectives`. Tracked in §21.
@@ -721,14 +725,58 @@ This table exists so that difference is visible.
 | `AGENTS.md` fits Codex      | test          | `codex-budget:test` — CRLF bytes within `project_doc_max_bytes`     |
 | Agent projections in sync   | script        | `agent-harness:projection-check` — each projection equals its source |
 | `AGENTS.md` LAWs and Router | review        | — no gate reads a LAW, or checks that a skill has a router row      |
+| §22 Screens only position   | lint+script   | `local/style-positions-only` + `verify:allowlist-freshness`         |
+| §22 Values are tokens       | lint+script   | `local/style-token-values` + `verify:allowlist-freshness`           |
+| §22 The kit behind `ui/`    | lint          | `local/ui-kit-boundary` on both apps                                |
+| Colour copies in sync       | script        | `verify:theme-sync` (and `verify:theme-sync:test`), both themes     |
 
 **Rows that read "none yet", "warn only" or "partial"** are not aspirations
 hidden in prose — they are named gaps with a named mechanism, tracked as
 harvest work in
 `docs/GENERALIZATION_PLAN.md` phases 2 and 3. A row moves to a real method only
 when the mechanism lands **and passes clean with no exemption file**; the
-`verify:english` allowlist is the one exception, and §20 says how it stays
-honest.
+`verify:english` and styling allowlists are the two exceptions, and §20 says
+how they stay honest.
+
+---
+
+## 22. Styling Lives in the Components
+
+The rule of the LAW of the same name in `AGENTS.md`, which quotes the owner's decisions of
+2026-11-14 and 2026-11-15.
+
+| Who                                                                   | Holds                                                                                                            |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| A block under `src/components/ui/`, or a screen's own `components/`  | Its look: colour, background, border, radius, typography, shadow, opacity, states and variants, in `*.style.ts` |
+| A screen, a route entry, a container under `src/components/<Name>/`  | Positioning only: flex and grid, gap, order, alignment, position and inset, z-index, placing size, spacing      |
+| `src/helpers/layout.style.ts`                                         | The positioning classes the screens share                                                                        |
+| `packages/tokens`                                                     | Every value: colours, scales, widths, glyph sizes, insets                                                        |
+
+- **A value is a token** (`bg-accent`, `max-w-content`, `px-pill-x`, `colors.accent`) **or a step of
+  Tailwind's scale** (`px-2.75`, `duration-120`). Never a raw colour, a palette colour
+  (`bg-white/…`) or an arbitrary value (`max-w-[28rem]`).
+- **The kit sits behind `ui/`.** A UI kit, its primitives and its class helpers are imported by a
+  `ui/` block only, so the look and the kit are one replaceable layer.
+- **A different look** is a variant or a prop of a `ui/` block, never a class in the screen.
+- **A `tailwind-variants` config that holds a token font size** (`text-title`) sets
+  `{ twMerge: false }`: tailwind-merge reads the token as a colour and drops it next to a text
+  colour (`ui/Text`, `ui/Avatar`, `ui/Divider`).
+
+```ts
+// WRONG — a screen style holds a look
+export const LOGIN = { SUBMIT: 'h-12 rounded-full bg-accent-gradient text-accent-ink' }
+
+// RIGHT — the screen positions the block that owns the look
+export const LOGIN = { DIVIDER: 'my-6', FORM: 'flex flex-col gap-4' }
+// <Button fullWidth type="submit">…</Button> · <Divider className={LOGIN.DIVIDER} label={…} />
+```
+
+> Status: **lint + script.** `local/style-positions-only`, `local/style-token-values` and
+> `local/ui-kit-boundary` (`eslint-local-rules/`, `error` over both apps), and
+> `verify:allowlist-freshness`. **Not covered:** a number in a React Native style
+> (`borderRadius: 18`); a class string in a `*.constant.ts`; a class a variable hides
+> (`cn(STYLE.X, tone)`), judged where it is defined only if that file is a style file; and whether
+> a `ui/` block's look is right, which is review.
 
 ---
 
