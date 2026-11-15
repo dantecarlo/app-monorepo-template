@@ -53,12 +53,14 @@ requirements in several specs, each linking to its neighbour by ID.
 | [packages/tooling](specs/packages/tooling/spec.md) | `TOOLING` | `packages/tooling/src` |
 | [apps/web](specs/apps/web/spec.md) | `WEB` | `apps/web/src`, `apps/web/next.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts` |
 | [apps/mobile](specs/apps/mobile/spec.md) | `MOBILE` | `apps/mobile/src`, `apps/mobile/app.json` |
+| [harness/mcp](specs/harness/mcp/spec.md) | `MCP` | `.agents/contracts/mcp-servers.json`, `scripts/mcp-docs.detect.mjs`, `scripts/update-mcp-docs.mjs`, `scripts/verify-mcp-docs.mjs` |
 
 A new spec adds its row here when it is written.
 
-Not specified: the agent harness and the validation gates, whose rules
+Not specified yet: the rest of the agent harness and the validation gates, whose rules
 [docs/code-standards.md](../docs/code-standards.md) § 21 maps one by one to the check that backs
-each.
+each. The MCP catalog, its updater and its gate (harness/mcp) are the first harness unit with a
+spec.
 
 ### 2.2 What a spec holds
 

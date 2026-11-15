@@ -91,6 +91,7 @@ the pre-commit hook on staged files.
 | `verify:structure`    | Screen and component folders satisfy the block contract                                   |
 | `verify:security`     | The static security posture holds                                                         |
 | `verify:theme-sync`   | Every generated token output (the web `theme.css`, the NativeWind preset, the mobile `themeVars`) equals its regeneration from `tokens.constant.ts`; `verify:theme-sync:test` plants a hand edit in each and an un-regenerated source change |
+| `verify:mcp-docs`     | The generated block of `docs/mcp.md` is what `pnpm mcp:docs` wrote and lists every server, package and capability of `.agents/contracts/mcp-servers.json` plus `.mcp.json`; offline, and it never judges a version. `verify:mcp-docs:test` plants each drift; `mcp:docs:test` drives the updater with an injected registry |
 | `docs:diagrams:check` | Every committed diagram matches its spec and the tokens                                   |
 | `verify:specs`        | Every living spec and change has its shape, and every test a scenario names exists        |
 | `report:spec-drift`   | Lists the living specs whose governed code moved past their verified commit; never blocks |
@@ -110,6 +111,10 @@ pnpm test:e2e      # Playwright, needs a prior build
 pnpm smoke:web     # next build + a real HTTP probe
 pnpm smoke:mobile  # expo export + a Hermes bundle assertion
 ```
+
+`pnpm mcp:docs` is not in `pnpm validate` either: it asks the npm registry for the
+latest release of each MCP server and rewrites the generated block of
+[mcp.md](mcp.md). The gate only checks that block offline (`verify:mcp-docs`).
 
 ### 3e. The agent projections
 

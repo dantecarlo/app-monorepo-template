@@ -71,9 +71,9 @@ Owner rule of 2026-11-13, relayed by the Arquitecto (translated from Spanish): w
 finishes a harness or architecture change, it tells the template, which applies it too; each
 such report becomes a parity-ledger row.
 
-### Where things stand (2026-11-15, paused at the owner's request)
+### Where things stand (2026-11-15)
 
-Requested by the owner: everything below "Next" and "Pending", in that order (L61, L62).
+Requested by the owner: everything below "Next" and "Pending", in that order (L61 to L63).
 
 **Done, merged into `main`:**
 - Stages 0 to 2.
@@ -85,15 +85,17 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 - F.3, the package follow-ups (#20).
 - F.1, the styling pillar (#22).
 - F.4, tests in `__tests__/` per block, with the strict `verify:tests` and the shipped codemod (#24).
-- F30 and F31: the shared `tv` keeps the token font sizes, and the web fonts are self-hosted (this change).
+- F30 and F31: the shared `tv` keeps the token font sizes, and the web fonts are self-hosted (#25).
+- F.9, the MCP documentation updater: the catalog `.agents/contracts/mcp-servers.json`, `pnpm mcp:docs` and the offline `verify:mcp-docs` (this change).
 - F.2, the Supabase hardening (#21; the native review did not fit its context budget, and the owner chose to merge on the independent verifier).
 
-**In flight:** none.
+**In flight:** F.12, the generated token outputs, on `feat/generated-tokens` (worktree `gentokens`).
 
-**Next:** F.12 (generated token outputs), then F.5.
+**Next:** F32 with Certifipago's Latin woff2 fonts once F.12 merges, then F.5.
 
 **Pending, in order:**
-- F.5 to F.9 and F.11 of Stage F.
+- F.5 to F.8 and F.11 of Stage F.
+- F33, when the owner decides it.
 - Step 3.2 part B: `gradedBy`, `sdd-steward` and `verify:router-coverage` (F27).
 - Step 3.3, then Stages 4 to 7.
 
@@ -109,6 +111,8 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
   - Backend adopted 1a.
   - 1b (the anon EXECUTE sweep) and the profile column grants are proposals that wait on the owner.
 - Web has K3 adopted but not yet pushed.
+- Its `.mcp.json` runs `npx -y @shadcn/mcp-server`, which npm answers with 404; the fix is `npx -y shadcn mcp` (told 2026-11-15).
+- F30 was already there (`apps/web/src/lib/tv.helper.ts`); a raw `tv` import leaked in its `ui/Stepper`, and Web is fixing it.
 
 ### Stage 0 — land what is open
 
@@ -194,7 +198,7 @@ In the table, **Direct** counts the non-test files that import the package outsi
 | `zod` | infra | 0 | `apps/*/src/validation/`, returning a project validation result | small |
 | `@react-native-async-storage/async-storage` | infra | 2 | `apps/mobile/src/lib/storage/keyValueStorage.adapter.ts` behind an `IKeyValueStoragePort` in `@app/core` | small |
 | `expo-splash-screen`, `@expo-google-fonts/*` | infra | 1 each | `apps/mobile/src/lib/bootstrap/` | small |
-| `tailwind-variants` (`tailwind-merge` its peer) | ui | 0, and 9 ui types leak `VariantProps` | `lib/styles/variants.helper.ts`; explicit variant unions in `*.constant.ts` | medium |
+| `tailwind-variants` (`tailwind-merge` its peer) | ui | 0, and 9 ui types leak `VariantProps` | `apps/web/src/components/ui/variants.helper.ts` (F30) as the one value-import site, enforced by lint on every file (today a test covers only `*.style.ts`; Certifipago's `ui/Stepper` leaked a raw `tv`); explicit variant unions in `*.constant.ts` | medium |
 | `react-error-boundary` | ui | 0, and its `FallbackProps` leak | `components/ui/AsyncBoundary` with its own fallback props | small |
 | `expo-linear-gradient` | ui | 2 | a new `components/ui/Gradient` | small |
 | `expo-blur`, `react-native-svg`, `react-native-reanimated` | ui | 0 | their existing `ui/` blocks | small |
@@ -469,7 +473,8 @@ defects behind them, for changes of their own.
 | F29 | packages/supabase | the verifier of the signed image URL signs the path and query only, so one secret serving several hosts accepts a URL on any of them | design, recorded |
 | F30 | apps/web | `tailwind-merge`, which `tailwind-variants` runs by default, takes the token font sizes (`text-button`, `text-title`) for colours and drops them next to a text colour, so the web `Button` renders without `text-button`; `ui/Text`, `ui/Divider` and `ui/Avatar` already set `twMerge: false` | done: this change |
 | F31 | apps/web | `next/font/google` fetches the fonts at build time, so a network blip fails `validate` and CI (three times on 2026-11-14 and 15); self-hosting them with `next/font/local` removes the dependency | done: this change |
-| F32 | apps/web | the self-hosted fonts are full-charset TTFs, about 1.6 MB, and `next/font/local` preloads all seven, where Google served small latin woff2 subsets; Montserrat 500 looks unused | small; subsetting needs a font tool |
+| F32 | apps/web | the self-hosted fonts are full-charset TTFs, about 1.6 MB, and `next/font/local` preloads all seven, where Google served small latin woff2 subsets; Montserrat 500 looks unused | small; after F.12: copy Certifipago's Latin variable woff2 files and their OFL texts from its commit 70f653001 (about 84 KB in all), through git objects |
+| F33 | harness | a scheduled CI job that runs `pnpm mcp:docs` and opens a pull request when an MCP server releases (Q1 of `2026-11-15-mcp-docs-updater`) | waits on the owner: CI is high-risk item 5 |
 
 ---
 
@@ -1766,3 +1771,8 @@ validate` exits 0. Independent verifier: no blocker. Native review: the hooks
   plan and note what they already did and what is done, and continue it tomorrow when we ask them
   to. Include the template agent in this". Paused with nothing running: #18 to #21 merged, #22
   in CI, F.4 next. The session continues only when the owner asks.
+- **L63 (2026-11-15, owner, translated from Spanish):** the resume, relayed by the Certifipago -
+  Arquitecto session: "Tell the sessions to continue what they were doing and finish the plan";
+  then "merge and continue with the plan". #24 and #25 merged; F.12 and F.9 ran in parallel
+  writers. F.9 found that `@shadcn/mcp-server` is not on npm, so the catalog runs
+  `npx -y shadcn mcp`, the command shadcn documents.
