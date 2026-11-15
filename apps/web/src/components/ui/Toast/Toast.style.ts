@@ -1,5 +1,4 @@
-import { tv } from 'tailwind-variants'
-
+import { tv } from '@/components/ui/variants.helper'
 import type { ToastVariantType } from '@/stores/toast.store'
 
 export const TOAST_VIEWPORT =

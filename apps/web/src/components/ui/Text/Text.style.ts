@@ -1,11 +1,12 @@
-import { tv } from 'tailwind-variants'
+import { tv } from '@/components/ui/variants.helper'
 
 // The typography scale of the web app. A variant is a whole recipe (family,
 // size, weight and colour); a tone and a weight style a text that takes its
 // size from its parent, such as a count inside a row.
 //
-// Class merging is off: tailwind-merge reads a token font size (text-title)
-// as a colour, so merging would drop it next to text-text-primary.
+// Class merging stays off, though the shared tv knows the token font sizes:
+// a tone or a weight set beside a variant keeps both classes, as it always
+// has, where merging would drop the tone's colour or the variant's weight.
 export const textVariants = tv(
   {
     variants: {

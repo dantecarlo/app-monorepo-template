@@ -33,6 +33,7 @@ apps/web/
     │   ├── <ScreenName>.screen.tsx · .style.ts · components/ · hooks/ · models/ · index.ts
     │
     ├── components/                # SHARED UI — AuthProvider/, ThemeProvider/, ui/{Button,Text,Divider,Screen,…}
+    │                              # ui/variants.helper.ts: the one tv the ui blocks build with
     ├── services/<Domain>/         # SHARED transversal services — service + adapter + barrel
     ├── lib/                       # bot-protection, image-delivery, observability, origin-guard,
     │                              # query, supabase, theme
@@ -86,7 +87,9 @@ export default LoginPage
   is `ui/Text` (a variant, or a tone and a weight), a labelled rule is `ui/Divider`, and a
   screen's surface is `ui/Screen`. Every value is a token or a step of Tailwind's scale, and only
   `ui/` imports a UI kit or `tailwind-variants`. `local/style-positions-only`,
-  `local/style-token-values` and `local/ui-kit-boundary` hold it.
+  `local/style-token-values` and `local/ui-kit-boundary` hold it. Every block builds its variants
+  with the shared `tv` of `components/ui/variants.helper.ts`, which tells tailwind-merge
+  that the token sizes (`text-button`, `text-initials-sm`) are font sizes, not colours.
 - **i18n: `next-intl`** reading the shared `@app/i18n` ICU catalogs — same keys as mobile,
   different adapter. `src/i18n/request.config.ts` resolves the locale from the `NEXT_LOCALE`
   cookie; there is no locale middleware.

@@ -1,4 +1,4 @@
-import { tv } from 'tailwind-variants'
+import { tv } from '@/components/ui/variants.helper'
 
 export const statusBadgeVariants = tv({
   base: 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-caption font-body',

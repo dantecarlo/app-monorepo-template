@@ -45,6 +45,24 @@ describe('Text', () => {
     expect(classesOf(text)).toEqual(['font-semibold', 'text-success-text'])
   })
 
+  test('keeps both colours when a tone is set beside a variant', () => {
+    render(
+      <Text tone="success" variant="title">
+        Paid
+      </Text>
+    )
+
+    expect(classesOf(screen.getByText('Paid'))).toEqual(
+      [
+        'font-display',
+        'font-semibold',
+        'text-success-text',
+        'text-text-primary',
+        'text-title'
+      ].sort()
+    )
+  })
+
   test('keeps every class of a variant whose size is a token', () => {
     render(<Text variant="amountHero">42</Text>)
 

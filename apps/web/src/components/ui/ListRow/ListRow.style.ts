@@ -1,4 +1,4 @@
-import { tv } from 'tailwind-variants'
+import { tv } from '@/components/ui/variants.helper'
 
 export const listRowVariants = tv({
   base: 'flex items-center gap-3 px-4 py-3 border-t border-divider first:border-t-0'

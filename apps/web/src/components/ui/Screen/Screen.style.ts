@@ -1,4 +1,4 @@
-import { tv } from 'tailwind-variants'
+import { tv } from '@/components/ui/variants.helper'
 
 // The surface a screen renders on: it fills the viewport and paints the base
 // background, which flips with the theme.

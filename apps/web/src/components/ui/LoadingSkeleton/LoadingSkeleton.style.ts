@@ -1,4 +1,4 @@
-import { tv } from 'tailwind-variants'
+import { tv } from '@/components/ui/variants.helper'
 
 export const loadingSkeletonVariants = tv({
   defaultVariants: {
