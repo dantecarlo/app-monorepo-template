@@ -4,7 +4,7 @@
 - [x] T2 — `scripts/move-tests-into-blocks.mjs` and `pnpm tests:into-blocks`: `git mv` into the own `__tests__/`, the Expo route rename, the relative specifiers of a moved test and the citations of its old path rewritten, the unplaceable listed, a second run moving nothing; `scripts/move-tests-into-blocks.test.mjs`, RED first · Requirements: none · Commit: 0f9af9e
 - [x] T3 — the codemod run over the template; the tests it cannot place moved or frozen by hand; the Vitest, ESLint, knip and package configs follow; every suite runs the same tests before and after · Requirements: none · Commit: 2c2c185
 - [x] T4 — the rule taught: `docs/code-standards.md` § 6 and § 9, the skills, `docs/architecture/web.md`, `docs/architecture/mobile.md`, `docs/maps/global-map.md`, `docs/harness.md`, `docs/e2e.md` and `AGENTS.md` · Requirements: none · Commit: 34c562a
-- [ ] T5 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-15-tests-in-blocks/` as the last commit · Requirements: none · Commit: —
+- [x] T5 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-15-tests-in-blocks/` as the last commit · Requirements: none · Commit: 8852663
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of

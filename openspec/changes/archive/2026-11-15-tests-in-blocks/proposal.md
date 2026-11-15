@@ -1,6 +1,6 @@
 # Proposal: keep each unit's test in its own folder's `__tests__/`
 
-> **Status:** open
+> **Status:** archived — 2026-11-15
 
 ## Why
 
