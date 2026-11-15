@@ -37,7 +37,7 @@ begin;
 -- Plan
 -- =====================================================================
 -- Count assertions below and update this number when adding new tests.
-select plan(54);
+select plan(55);
 
 -- =====================================================================
 -- Section 1: seed test fixtures (as postgres, the session role)
@@ -312,6 +312,15 @@ select is(
    where actor_id = '00000000-0000-0000-0000-000000000001'),
   1,
   'the refused truncates leave the audit event in place'
+);
+
+-- A trigger runs its function without EXECUTE, so no API role needs it, and a role that held it
+-- could attach the function to a table of its own choosing.
+select ok(
+  not has_function_privilege('anon', 'auth_helpers.tg_audit_no_truncate()', 'execute')
+    and not has_function_privilege('authenticated', 'auth_helpers.tg_audit_no_truncate()', 'execute')
+    and not has_function_privilege('service_role', 'auth_helpers.tg_audit_no_truncate()', 'execute'),
+  'no API role may execute tg_audit_no_truncate'
 );
 
 -- =====================================================================
