@@ -31,6 +31,10 @@ const isRunning = ({ pid }) => {
 
 /**
  * Signals `child` and its descendants; Windows ends them whatever `signal`.
+ * On POSIX it signals the child's process group, which holds the descendants
+ * only when `child` was spawned with `TREE_SPAWN_OPTIONS`: a child spawned
+ * without them receives `signal` alone, and a descendant that left the group
+ * is not reached.
  * With `wait`, the call returns once Windows' taskkill has, and the tree has
  * ended; without it, taskkill runs in the background. An `exit` handler
  * completes only synchronous work.
