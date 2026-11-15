@@ -703,13 +703,14 @@ select ok(
     and not has_table_privilege('anon', 'public.test_table_with_default_grants', 'references')
     and not has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'trigger')
     and not has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'references')
-    and not (
-      current_setting('server_version_num')::int >= 170000
-      and (
+    -- CASE, not AND: SQL does not promise to evaluate AND left to right, and MAINTAIN does not
+    -- exist before PostgreSQL 17.
+    and not case
+      when current_setting('server_version_num')::int >= 170000 then
         has_table_privilege('anon', 'public.test_table_with_default_grants', 'maintain')
         or has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'maintain')
-      )
-    ),
+      else false
+    end,
   'a table added to public gives anon and authenticated no TRIGGER, REFERENCES or MAINTAIN'
 );
 
