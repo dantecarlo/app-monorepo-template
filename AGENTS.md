@@ -65,15 +65,18 @@ ATL_TEMPLATE_SELF=1 pnpm validate
 
 `pnpm validate` runs `turbo run lint typecheck test build format:check`, then
 `pnpm verify:tests`, the spec gates (`verify:specs`, and `report:spec-drift`, which
-only reports), `pnpm verify:english`, `pnpm verify:instruction-entry` and
-`pnpm verify:maps`. All must pass.
+only reports), `pnpm verify:english`, `pnpm verify:instruction-entry`,
+`pnpm codex-budget:test` and `pnpm verify:maps`. All must pass.
 
 The manifest gates run first (they are instant, so structural drift fails
 before anything expensive). `pnpm verify:tests` checks tests-per-unit presence
 and `pnpm verify:maps` checks architecture-map integrity and the magic-literal
 audit. `pnpm verify:instruction-entry` checks that `AGENTS.md` and `README.md`
 exist and that no path git lists, tracked or not yet added, is a `CLAUDE.md` or
-`CLAUDE.local.md`. Every failure is a blocker.
+`CLAUDE.local.md`. `pnpm codex-budget:test` fails when this file, counted with
+CRLF endings, outgrows the `project_doc_max_bytes` that `.codex/config.toml`
+sets: Codex loads only that many bytes of it and drops the rest. Every failure
+is a blocker.
 
 | Manifest gate                   | What it proves                                            |
 | ------------------------------- | --------------------------------------------------------- |

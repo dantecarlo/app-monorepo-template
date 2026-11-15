@@ -1,0 +1,10 @@
+# Codex project configuration. Repository-local only: a file under the
+# developer's home directory would configure the machine, not this checkout.
+# Hand-written for now; step 3.2's projector will generate it.
+
+# Codex loads at most this many bytes of the project's AGENTS.md files and
+# drops the rest without a word (its default is 32 KiB). Keep this key above
+# every table header: a key written after one belongs to that table.
+# `pnpm codex-budget:test` fails when AGENTS.md, counted with CRLF line
+# endings, outgrows it.
+project_doc_max_bytes = 65536

@@ -717,6 +717,7 @@ This table exists so that difference is visible.
 | §21 This table              | review        | —                                                                   |
 | File ownership / init prune | script        | `verify:manifest` + `verify:manifest:coverage`                      |
 | One instruction entry       | script        | `verify:instruction-entry` — `AGENTS.md` present, no `CLAUDE.md`    |
+| `AGENTS.md` fits Codex      | test          | `codex-budget:test` — CRLF bytes within `project_doc_max_bytes`     |
 
 **Rows that read "none yet", "warn only" or "partial"** are not aspirations
 hidden in prose — they are named gaps with a named mechanism, tracked as
