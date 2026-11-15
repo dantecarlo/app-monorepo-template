@@ -164,7 +164,7 @@ test('verifySignedImageUrl rejects a tampered signature as a signature mismatch'
   expect(await verifyBeforeExpiry({ url: tampered })).toEqual(MISMATCH)
 })
 
-test('verifySignedImageUrl rejects a tampered path as a signature mismatch', async () => {
+test('verifySignedImageUrl rejects a changed path, an added query, a later exp and another secret as a signature mismatch', async () => {
   const url = await signAtFixedNow()
   const otherFile = url.replace('/file.png', '/other.png')
   const addedQuery = edit({

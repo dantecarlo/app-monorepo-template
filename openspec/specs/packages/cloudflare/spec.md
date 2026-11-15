@@ -449,13 +449,13 @@ signature has passed its `exp`. Its result, `SignedImageUrlVerificationType`, is
 - **THEN** it is not valid, with the reason `signature_mismatch`
 - **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects a tampered signature as a signature mismatch"
 
-#### Scenario: a tampered path, query or expiry
+#### Scenario: a tampered path, query or expiry, or another secret
 
 - **GIVEN** a signed URL whose path names another file, one with a query parameter added, one
   with a later `exp`, and one checked with another secret
 - **WHEN** each is verified
 - **THEN** none is valid, each with the reason `signature_mismatch`
-- **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects a tampered path as a signature mismatch"
+- **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects a changed path, an added query, a later exp and another secret as a signature mismatch"
 
 #### Scenario: a missing parameter
 
@@ -466,7 +466,7 @@ signature has passed its `exp`. Its result, `SignedImageUrlVerificationType`, is
 
 #### Scenario: a signature of the wrong length
 
-- **GIVEN** a signed URL whose `sig` lost its last character, and one with a character added
+- **GIVEN** a signed URL whose `sig` lost its first character, and one with a character added
 - **WHEN** each is verified
 - **THEN** neither is valid, each with the reason `malformed`
 - **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects a signature of the wrong length as malformed"
