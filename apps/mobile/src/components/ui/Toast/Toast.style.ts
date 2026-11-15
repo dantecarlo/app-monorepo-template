@@ -7,6 +7,12 @@ import {
 } from '@/components/ui/Toast/Toast.constant'
 
 export const TOAST_STYLES = StyleSheet.create({
+  dismissGlyph: {
+    color: colors.text.secondary,
+    fontFamily: fontFamily.body,
+    fontSize: fontSize.body.size,
+    lineHeight: fontSize.body.lineHeight
+  },
   dot: {
     borderRadius: radius.full,
     height: TOAST_DOT_SIZE,
@@ -21,6 +27,10 @@ export const TOAST_STYLES = StyleSheet.create({
   },
   pill: {
     alignItems: 'center',
+    backgroundColor: colors.bg.raised,
+    borderColor: colors.glass.stroke,
+    borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
     gap: spacing.md,
     paddingHorizontal: spacing.lg,

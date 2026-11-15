@@ -40,7 +40,7 @@ export const Toast = () => {
             accessibilityRole="button"
             onPress={() => remove(toast.id)}
           >
-            <Text>×</Text>
+            <Text style={TOAST_STYLES.dismissGlyph}>×</Text>
           </Pressable>
         </View>
       ))}

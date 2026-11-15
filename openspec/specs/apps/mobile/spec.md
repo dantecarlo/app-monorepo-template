@@ -3,7 +3,7 @@
 > **Governs:** `apps/mobile/src`, `apps/mobile/app.json`
 > **ID prefix:** `MOBILE`
 > **Derived from:** `docs/architecture/mobile.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/observability.md`, `docs/e2e.md`, `docs/responsive.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-14 at `94cc114`
+> **Verified against the code:** 2026-11-14 at `58733aa`
 
 ## Purpose
 
@@ -23,7 +23,7 @@ and the web counterpart to apps/web.
 The mobile app SHALL render the items dashboard at the root route (/) and the login screen at
 /login, under one root stack that checks no session before either renders.
 
-**Evidence:** `apps/mobile/src/app/index.tsx:7`, `apps/mobile/src/app/login.tsx:7`, `apps/mobile/src/app/_layout.tsx:64-72`
+**Evidence:** `apps/mobile/src/app/index.tsx:7`, `apps/mobile/src/app/login.tsx:7`, `apps/mobile/src/app/_layout.tsx:68-76`
 
 #### Scenario: the root route shows the dashboard
 
@@ -51,7 +51,7 @@ The mobile app SHALL render the items dashboard at the root route (/) and the lo
 The mobile app SHALL keep the native splash screen up and render no route until the Inter and
 Montserrat fonts have loaded or failed to load.
 
-**Evidence:** `apps/mobile/src/app/_layout.tsx:32`, `apps/mobile/src/app/_layout.tsx:51-59`
+**Evidence:** `apps/mobile/src/app/_layout.tsx:36`, `apps/mobile/src/app/_layout.tsx:55-63`
 
 #### Scenario: fonts still loading
 
@@ -107,7 +107,7 @@ store the matching theme under the app.theme key and apply it to the NativeWind 
 The mobile app SHALL paint the navigator background with the active theme's base background and
 show dark status bar glyphs under the light theme and light glyphs under the dark one.
 
-**Evidence:** `apps/mobile/src/lib/theme/useRootTheme.hook.ts:14-17`, `apps/mobile/src/app/_layout.tsx:65-69`
+**Evidence:** `apps/mobile/src/lib/theme/useRootTheme.hook.ts:14-17`, `apps/mobile/src/app/_layout.tsx:69-73`
 
 #### Scenario: the light theme is active
 
@@ -365,12 +365,13 @@ home tab selected on mount, and mark a pressed tab as selected without navigatin
 - **THEN** the search tab reports itself selected and the route stays the same
 - **Test:** Not covered — the DashboardNav test mocks the nav bar away and asserts only a non-null return
 
-### Requirement: MOBILE-20 — A failed query raises an error toast
+### Requirement: MOBILE-20 — A failed query raises one error toast per failure
 
-The mobile app SHALL add an error toast with the resolved message to the toast store whenever a
-query made through useAppQuery is in its error state.
+The mobile app SHALL add one error toast with the resolved message to the toast store each time a
+query made through useAppQuery fails, however often the component that runs the query re-renders
+while the query stays in error.
 
-**Evidence:** `apps/mobile/src/lib/query/useAppQuery.hook.ts:27-36`
+**Evidence:** `apps/mobile/src/lib/query/useAppQuery.hook.ts:30-43`
 
 #### Scenario: a failing query with an override message
 
@@ -378,6 +379,20 @@ query made through useAppQuery is in its error state.
 - **WHEN** the query settles in error
 - **THEN** an error toast with the override message is added
 - **Test:** `apps/mobile/src/lib/query/useAppQuery.hook.test.ts` › "fires an error toast with the override message on failure"
+
+#### Scenario: a failed query re-renders
+
+- **GIVEN** a query that failed once and added its toast
+- **WHEN** its component renders again while the query stays in error
+- **THEN** no other toast is added
+- **Test:** `apps/mobile/src/lib/query/useAppQuery.hook.test.ts` › "adds one error toast per failure however often it re-renders"
+
+#### Scenario: the query fails again
+
+- **GIVEN** a query that failed once and added its toast
+- **WHEN** it is refetched and fails again
+- **THEN** a second error toast is added
+- **Test:** `apps/mobile/src/lib/query/useAppQuery.hook.test.ts` › "adds another error toast when the query fails again"
 
 #### Scenario: the dashboard fails to load
 
@@ -506,7 +521,7 @@ The mobile app SHALL send every failed query, with its query key sanitized by pa
 against the values of `QueryKeySegmentEnum`, and every failed mutation to the observability
 port's captureError, tagged with the cache it came from.
 
-**Evidence:** `apps/mobile/src/lib/query/createQueryClient.helper.ts:27-42`, `apps/mobile/src/lib/query/queryKeys.constant.ts:9-16`, `apps/mobile/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/mobile/src/app/_layout.tsx:34-36`
+**Evidence:** `apps/mobile/src/lib/query/createQueryClient.helper.ts:27-42`, `apps/mobile/src/lib/query/queryKeys.constant.ts:9-16`, `apps/mobile/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/mobile/src/app/_layout.tsx:38-40`
 
 #### Scenario: a query key holding an identifier
 
@@ -628,7 +643,7 @@ The mobile app SHALL set the auth status to loading on mount, then store the ses
 Supabase auth gateway returns with the status authenticated or unauthenticated, and keep both in
 step with every later auth state change until unmount.
 
-**Evidence:** `apps/mobile/src/components/AuthProvider/useAuthBootstrap.hook.ts:12-30`, `apps/mobile/src/app/_layout.tsx:37`, `apps/mobile/src/app/_layout.tsx:64`
+**Evidence:** `apps/mobile/src/components/AuthProvider/useAuthBootstrap.hook.ts:12-30`, `apps/mobile/src/app/_layout.tsx:41`, `apps/mobile/src/app/_layout.tsx:68`
 
 #### Scenario: before the gateway answers
 
@@ -750,20 +765,63 @@ Android adaptive icon on the #0A0B0D background.
 - **THEN** the splash screen shows on the #0A0B0D background
 - **Test:** Not covered — the native shell applies only in a native build, and no test reads the Expo config
 
+### Requirement: MOBILE-36 — The root layout shows the toast viewport
+
+The mobile app SHALL mount the toast viewport in the root layout, over every route, rendering each
+toast of the toast store as an alert with its message and a dismiss control that removes it.
+
+**Evidence:** `apps/mobile/src/app/_layout.tsx:77`, `apps/mobile/src/components/ui/Toast/Toast.component.tsx:14-49`
+
+#### Scenario: a toast is added while a route is shown
+
+- **GIVEN** the root layout rendered with its fonts loaded
+- **WHEN** an error toast is added to the toast store
+- **THEN** its message is shown
+- **Test:** `apps/mobile/src/app/__tests__/_layout.test.tsx` › "shows a toast added to the store over the routes"
+
+#### Scenario: the toast is dismissed
+
+- **GIVEN** one toast in the viewport
+- **WHEN** its dismiss control is pressed
+- **THEN** the toast is shown in an alert, and after the press it is gone
+- **Test:** `apps/mobile/src/components/ui/Toast/Toast.component.test.tsx` › "removes a toast when its dismiss control is pressed"
+
+### Requirement: MOBILE-37 — A render crash shows the error state
+
+The mobile app SHALL export an `ErrorBoundary` from the root layout, which Expo Router wraps
+around the layout and every route below it, rendering the error state with its generic copy on
+the theme background and a retry control that re-renders the route.
+
+**Evidence:** `apps/mobile/src/app/_layout.tsx:33-34`, `apps/mobile/src/components/RootErrorBoundary/RootErrorBoundary.component.tsx:8-18`, `apps/mobile/src/components/ui/ErrorState/ErrorState.component.tsx:16-47`
+
+#### Scenario: a route crashes while rendering
+
+- **GIVEN** a route throws while rendering
+- **WHEN** the root error boundary renders and its retry control is pressed
+- **THEN** the generic error title and message are shown in an alert, and the route is re-rendered once
+- **Test:** `apps/mobile/src/components/RootErrorBoundary/RootErrorBoundary.component.test.tsx` › "renders the generic error state for a render crash"
+- **Test:** `apps/mobile/src/components/RootErrorBoundary/RootErrorBoundary.component.test.tsx` › "calls retry when the retry control is pressed"
+
+#### Scenario: the root layout exports the boundary
+
+- **GIVEN** the root layout module
+- **WHEN** Expo Router reads its exports
+- **THEN** its `ErrorBoundary` is the root error boundary
+- **Test:** `apps/mobile/src/app/__tests__/_layout.test.tsx` › "exports the root error boundary as its ErrorBoundary"
+
 ## Open questions
 
 - **Q1** — Where a query error shows: `docs/code-standards.md:616` puts it in a per-screen
-  ErrorState or AsyncBoundary, and `docs/architecture/mobile.md:97` and
+  ErrorState or AsyncBoundary, and `docs/architecture/mobile.md:101` and
   `docs/architecture/shared.md:55` say every screen handles its error state. In the code,
-  `apps/mobile/src/lib/query/useAppQuery.hook.ts:35` only raises a toast, and
+  `apps/mobile/src/lib/query/useAppQuery.hook.ts:42` only raises a toast, and
   `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:43`
   has loading, empty and list branches and no error branch; no screen uses AsyncBoundary or
   ErrorState.
-- **Q2** — `docs/code-standards.md:615` shows a mutation error as a global toast, but
-  `apps/mobile/src/app/_layout.tsx:61` mounts no Toast and nothing renders
-  `apps/mobile/src/components/ui/Toast/Toast.component.tsx`: the toasts reach the store only.
-- **Q3** — `docs/code-standards.md:617` asks for a global ErrorBoundary rendering an ErrorState;
-  `apps/mobile/src/app/_layout.tsx:61` mounts none, as `docs/architecture/mobile.md:90` says.
+- **Q2** — Closed on 2026-11-14 by `openspec/changes/archive/2026-11-14-error-surfacing/`: the
+  root layout mounts the toast viewport (MOBILE-36).
+- **Q3** — Closed on 2026-11-14 by `openspec/changes/archive/2026-11-14-error-surfacing/`: the
+  root layout exports `RootErrorBoundary` as its `ErrorBoundary` (MOBILE-37).
 - **Q4** — `docs/code-standards.md:513` and `docs/architecture/shared.md:54` route UI strings
   through i18n, but English text is written in the code: the relative time in
   `apps/mobile/src/services/Items/Items.adapter.ts:27`, the toast dismiss label in

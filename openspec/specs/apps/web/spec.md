@@ -3,7 +3,7 @@
 > **Governs:** `apps/web/src`, `apps/web/next.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-14 at `94cc114`
+> **Verified against the code:** 2026-11-14 at `58733aa`
 
 ## Purpose
 
@@ -162,7 +162,7 @@ The web app SHALL, when the items query fails, queue an error toast carrying the
 override message the dashboard hook passes, and render the items list as empty, with no error
 state on the screen.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:46-49`, `apps/web/src/lib/query/useAppQuery.hook.ts:33-42`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:54-55`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:46-49`, `apps/web/src/lib/query/useAppQuery.hook.ts:36-49`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:54-55`
 
 #### Scenario: the items service rejects
 
@@ -354,7 +354,7 @@ The web app SHALL render every client component with the default language locale
 whatever the `NEXT_LOCALE` cookie holds, inside an html element whose language attribute is
 English.
 
-**Evidence:** `apps/web/src/app/layout.tsx:56`, `apps/web/src/app/layout.tsx:59-63`, `apps/web/src/app/providers.tsx:42-46`
+**Evidence:** `apps/web/src/app/layout.tsx:56`, `apps/web/src/app/layout.tsx:59-63`, `apps/web/src/app/providers.tsx:43-47`
 
 #### Scenario: the locale cookie names another language
 
@@ -452,7 +452,7 @@ The web app SHALL set the auth status to loading on mount, then to authenticated
 unauthenticated from the auth gateway's current session and from every auth state change, and
 unsubscribe from those changes on unmount.
 
-**Evidence:** `apps/web/src/components/AuthProvider/useAuthBootstrap.hook.ts:8-33`, `apps/web/src/app/providers.tsx:48`
+**Evidence:** `apps/web/src/components/AuthProvider/useAuthBootstrap.hook.ts:8-33`, `apps/web/src/app/providers.tsx:49`
 
 #### Scenario: the gateway holds a session
 
@@ -540,7 +540,7 @@ store for reading and writing the session cookies.
 The web app SHALL create its query client with a 30-second stale time and one retry for queries,
 and no retry for mutations.
 
-**Evidence:** `apps/web/src/lib/query/createQueryClient.helper.ts:10`, `apps/web/src/lib/query/createQueryClient.helper.ts:22-32`, `apps/web/src/app/providers.tsx:19-26`
+**Evidence:** `apps/web/src/lib/query/createQueryClient.helper.ts:10`, `apps/web/src/lib/query/createQueryClient.helper.ts:22-32`, `apps/web/src/app/providers.tsx:20-27`
 
 #### Scenario: the defaults of a new client
 
@@ -558,7 +558,7 @@ cache error handlers, to the observability port, passing the query key through
 `sanitizeQueryKey` from packages/core with the values of `QueryKeySegmentEnum` as its structural
 segments.
 
-**Evidence:** `apps/web/src/lib/query/createQueryClient.helper.ts:33-48`, `apps/web/src/lib/query/queryKeys.constant.ts:17-24`, `apps/web/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/web/src/app/providers.tsx:19-26`
+**Evidence:** `apps/web/src/lib/query/createQueryClient.helper.ts:33-48`, `apps/web/src/lib/query/queryKeys.constant.ts:17-24`, `apps/web/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/web/src/app/providers.tsx:20-27`
 
 #### Scenario: a query fails
 
@@ -627,11 +627,12 @@ and the `helper.error.generic` message.
 
 ### Requirement: WEB-26 — Query and mutation outcomes are queued as toasts
 
-The web app SHALL queue a failed query or mutation as an error toast with the resolved message,
-and a mutation's success message as a success toast, in the toast store, which drops each toast
-after 4 seconds.
+The web app SHALL queue each failure of a query as one error toast with the resolved message,
+however often the component that runs the query re-renders, each failed mutation as an error
+toast with the resolved message, and a mutation's success message as a success toast, in the
+toast store, which drops each toast after 4 seconds.
 
-**Evidence:** `apps/web/src/lib/query/useAppQuery.hook.ts:33-42`, `apps/web/src/lib/query/useAppMutation.hook.ts:29-45`, `apps/web/src/stores/toast.store.ts:36-48`
+**Evidence:** `apps/web/src/lib/query/useAppQuery.hook.ts:36-49`, `apps/web/src/lib/query/useAppMutation.hook.ts:29-45`, `apps/web/src/stores/toast.store.ts:36-48`
 
 #### Scenario: a query fails
 
@@ -639,6 +640,20 @@ after 4 seconds.
 - **WHEN** it fails
 - **THEN** an error toast with the override message is queued
 - **Test:** `apps/web/src/lib/query/useAppQuery.hook.test.ts` › "fires an error toast with the override message on failure"
+
+#### Scenario: a failed query re-renders
+
+- **GIVEN** a query that failed once and queued its toast
+- **WHEN** its component renders again while the query stays in error
+- **THEN** no other toast is queued
+- **Test:** `apps/web/src/lib/query/useAppQuery.hook.test.ts` › "queues one error toast per failure however often it re-renders"
+
+#### Scenario: the query fails again
+
+- **GIVEN** a query that failed once and queued its toast
+- **WHEN** it is refetched and fails again
+- **THEN** a second error toast is queued
+- **Test:** `apps/web/src/lib/query/useAppQuery.hook.test.ts` › "queues another error toast when the query fails again"
 
 #### Scenario: a mutation fails or succeeds
 
@@ -896,6 +911,51 @@ which returns the requested path unchanged.
 - **THEN** the path is returned unchanged
 - **Test:** `apps/web/src/lib/image-delivery/imageDelivery.adapter.test.ts` › "buildImageUrl returns the raw public path by default"
 
+### Requirement: WEB-37 — The root providers show the toast viewport
+
+The web app SHALL mount the toast viewport inside the root providers, rendering every toast of the
+toast store, with its message and a dismiss button that removes it, in a polite status region.
+
+**Evidence:** `apps/web/src/app/providers.tsx:50`, `apps/web/src/components/ui/Toast/Toast.component.tsx:20-45`
+
+#### Scenario: a queued error toast is shown and dismissed
+
+- **GIVEN** the root providers render a page
+- **WHEN** an error toast is queued and its Dismiss button is then pressed
+- **THEN** the toast's message is shown, and after the press it is gone
+- **Test:** `apps/web/src/app/providers.test.tsx` › "shows a queued error toast and removes it when Dismiss is pressed"
+
+#### Scenario: no toast is queued
+
+- **GIVEN** an empty toast store
+- **WHEN** the viewport renders
+- **THEN** it renders an empty status region
+- **Test:** `apps/web/src/components/ui/Toast/Toast.component.test.tsx` › "renders an empty live region when there are no toasts"
+
+### Requirement: WEB-38 — A render crash shows the error state
+
+The web app SHALL catch a render crash below the root layout with the root `error.tsx` boundary,
+and a crash of the root layout itself with `global-error.tsx`, which renders its own document;
+each SHALL show the error state with its generic copy and a Try again button that retries the
+segment.
+
+**Evidence:** `apps/web/src/app/error.tsx:13-17`, `apps/web/src/app/global-error.tsx:18-34`, `apps/web/src/components/ui/ErrorState/ErrorState.component.tsx:27-49`
+
+#### Scenario: a route crashes while rendering
+
+- **GIVEN** a route below the root layout throws while rendering
+- **WHEN** the root error boundary renders and Try again is pressed
+- **THEN** the generic error title and message are shown in an alert, and the segment is retried once
+- **Test:** `apps/web/src/app/error.test.tsx` › "renders the generic error state for a render crash"
+- **Test:** `apps/web/src/app/error.test.tsx` › "retries the segment when Try again is pressed"
+
+#### Scenario: the root layout crashes
+
+- **GIVEN** the root layout throws while rendering
+- **WHEN** the global error boundary renders
+- **THEN** it renders its own html and body, holding the generic error state
+- **Test:** `apps/web/src/app/global-error.test.tsx` › "renders the generic error state in its own document"
+
 ## Open questions
 
 - **Q1** — `docs/infrastructure.md:109` and `docs/infrastructure.md:111` list `X-XSS-Protection`
@@ -906,22 +966,21 @@ which returns the requested path unchanged.
   image delivery, but `apps/web/src/lib/image-delivery/imageDelivery.adapter.ts:4` defaults to the
   public delivery (WEB-36).
 - **Q3** — `docs/code-standards.md:616` sends query errors to a per-screen `ErrorState` or
-  `AsyncBoundary`, but `apps/web/src/lib/query/useAppQuery.hook.ts:33` queues a toast for every
+  `AsyncBoundary`, but `apps/web/src/lib/query/useAppQuery.hook.ts:48` queues a toast for every
   failed query, and the dashboard
   (`apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:46`) shows the empty-list message
   instead of an error state (WEB-07).
-- **Q4** — `docs/code-standards.md:615` and `docs/code-standards.md:617` promise a global toast for
-  mutations and a global `ErrorBoundary` for render crashes, but no `Toast` viewport is mounted in
-  `apps/web/src/app/layout.tsx:75` or `apps/web/src/app/providers.tsx:41`, and no ErrorBoundary,
-  error.tsx or global-error.tsx route file ships, so a queued toast never reaches the screen.
+- **Q4** — Closed on 2026-11-14 by `openspec/changes/archive/2026-11-14-error-surfacing/`: the
+  root providers mount the toast viewport (WEB-37), and `error.tsx` and `global-error.tsx` catch
+  render crashes (WEB-38).
 - **Q5** — `docs/code-standards.md:603`, `docs/code-standards.md:607` and `AGENTS.md:141` route
   user-facing copy through the catalogs and ask a reason for an override, but English copy is
   written in `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:49` (an override with no
   comment), `apps/web/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultError.component.tsx:11`,
   `apps/web/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultLoading.component.tsx:12` and
   `apps/web/src/components/ui/Toast/Toast.constant.ts:1`.
-- **Q6** — `docs/architecture/web.md:70` resolves the locale from the `NEXT_LOCALE` cookie, but only
-  server components follow it: `apps/web/src/app/providers.tsx:42` and
+- **Q6** — `docs/architecture/web.md:74` resolves the locale from the `NEXT_LOCALE` cookie, but only
+  server components follow it: `apps/web/src/app/providers.tsx:43` and
   `apps/web/src/app/layout.tsx:56` pin client components to the default language and
   `apps/web/src/app/layout.tsx:62` writes `lang="en"`, so the language switcher
   (`apps/web/src/components/ui/LanguageSwitcher/useLanguageSwitcher.hook.ts:37`) always writes the

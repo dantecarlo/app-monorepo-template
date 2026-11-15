@@ -8,6 +8,7 @@ import type { ComponentProps } from 'react'
 import { useState } from 'react'
 
 import { AuthProvider } from '@/components/AuthProvider'
+import { Toast } from '@/components/ui/Toast'
 import { observability } from '@/lib/observability/observability.adapter'
 import { toCaptureError } from '@/lib/observability/toCaptureError.helper'
 import { createQueryClient } from '@/lib/query/createQueryClient.helper'
@@ -46,6 +47,7 @@ export const Providers = ({
     >
       <QueryClientProvider client={queryClient}>
         <AuthProvider gateway={gateway}>{children}</AuthProvider>
+        <Toast />
       </QueryClientProvider>
     </NextIntlClientProvider>
   )

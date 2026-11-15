@@ -23,11 +23,15 @@ import { useEffect } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { AuthProvider } from '@/components/AuthProvider'
+import { Toast } from '@/components/ui/Toast'
 import { observability } from '@/lib/observability/observability.adapter'
 import { toCaptureError } from '@/lib/observability/toCaptureError.helper'
 import { createQueryClient } from '@/lib/query/createQueryClient.helper'
 import { supabase } from '@/lib/supabase/client.adapter'
 import { useRootTheme } from '@/lib/theme/useRootTheme.hook'
+
+// Expo Router wraps the root layout, and every route below it, in this boundary.
+export { RootErrorBoundary as ErrorBoundary } from '@/components/RootErrorBoundary'
 
 SplashScreen.preventAutoHideAsync()
 
@@ -70,6 +74,7 @@ const RootLayout = () => {
               headerShown: false
             }}
           />
+          <Toast />
         </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
