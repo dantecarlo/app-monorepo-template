@@ -1,6 +1,6 @@
 # Proposal: make `AGENTS.md` the router, with the LAWs, the Codex budget and `verify:instruction-entry`
 
-> **Status:** open
+> **Status:** archived — 2026-11-14
 
 ## Why
 
