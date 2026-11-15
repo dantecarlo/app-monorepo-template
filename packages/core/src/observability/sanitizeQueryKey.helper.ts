@@ -3,42 +3,33 @@
  * it is attached to an error report.
  *
  * Query keys mix static structure (e.g. `'items'`, `'list'`) with dynamic
- * identifiers (ids, tokens) and sometimes filter objects. The dynamic parts
- * can be user-identifying, so we keep only the structural string segments and
- * redact everything else:
+ * values (ids, search text, filter objects), which can identify a user. No
+ * pattern tells a hand-written `'list'` from a typed `'alice'`, so the caller
+ * names its structural segments and every other segment is redacted:
  *
  *   ['items', '8f3c…uuid', 'list']   → ['items', '[redacted]', 'list']
+ *   ['items', 'list', 'alice']       → ['items', 'list', '[redacted]']
  *   ['users', { role: 'admin' }]     → ['users', '[redacted]']
  *
- * A string segment is treated as structural (kept) only when it is a short
- * lowercase token (a hand-written key segment). Anything that looks like an
- * id — uuid, long token, contains digits or separators — is redacted.
+ * A segment the caller forgot to register is redacted too: a missing entry
+ * costs detail in the report, never a leaked value.
  */
 
 export const REDACTED_SEGMENT = '[redacted]'
 
-const MAX_STRUCTURAL_LENGTH = 24
-const STRUCTURAL_SEGMENT_PATTERN = /^[a-z][a-zA-Z]*$/
-
-const isStructuralSegment = (segment: string): boolean =>
-  segment.length > 0 &&
-  segment.length <= MAX_STRUCTURAL_LENGTH &&
-  STRUCTURAL_SEGMENT_PATTERN.test(segment)
-
-const sanitizeSegment = (segment: unknown): string => {
-  if (typeof segment === 'string' && isStructuralSegment(segment)) {
-    return segment
-  }
-  return REDACTED_SEGMENT
-}
-
 export interface ISanitizeQueryKeyParams {
   queryKey: unknown
+  structuralSegments: ReadonlySet<string>
 }
 
 export const sanitizeQueryKey = ({
-  queryKey
+  queryKey,
+  structuralSegments
 }: ISanitizeQueryKeyParams): string[] => {
   if (!Array.isArray(queryKey)) return [REDACTED_SEGMENT]
-  return queryKey.map(sanitizeSegment)
+  return queryKey.map((segment: unknown) =>
+    typeof segment === 'string' && structuralSegments.has(segment)
+      ? segment
+      : REDACTED_SEGMENT
+  )
 }

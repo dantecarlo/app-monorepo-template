@@ -3,7 +3,7 @@
 > **Governs:** `packages/core/src`
 > **ID prefix:** `CORE`
 > **Derived from:** `AGENTS.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/maps/global-map.md`
-> **Verified against the code:** 2026-11-14 at `9afce2d`
+> **Verified against the code:** 2026-11-14 at `94cc114`
 
 ## Purpose
 
@@ -189,30 +189,30 @@ The core package SHALL define the service error codes `FORBIDDEN`, `NETWORK_ERRO
 - **THEN** every catalog holds the key
 - **Test:** Not covered — no test reads this table against the catalogs of packages/i18n.
 
-### Requirement: CORE-08 — Only structural query-key segments survive
+### Requirement: CORE-08 — Only registered query-key segments survive
 
-The core package SHALL keep a query-key segment only when it is a string of 1 to 24 letters that
-starts with a lowercase letter, and replace every other segment with `[redacted]`.
+The core package SHALL keep a query-key segment only when it is a string the caller lists in
+`structuralSegments`, and replace every other segment with `[redacted]`.
 
-**Evidence:** `packages/core/src/observability/sanitizeQueryKey.helper.ts:20-33`
+**Evidence:** `packages/core/src/observability/sanitizeQueryKey.helper.ts:25-35`
 
-#### Scenario: structural segments
+#### Scenario: registered segments
 
-- **GIVEN** the key `['items', 'list']`
+- **GIVEN** the key `['items', 'list']`, with `items` and `list` registered
 - **WHEN** it is sanitized
 - **THEN** both segments are kept
-- **Test:** `packages/core/src/observability/sanitizeQueryKey.helper.test.ts` › "keeps short lowercase structural segments"
+- **Test:** `packages/core/src/observability/sanitizeQueryKey.helper.test.ts` › "keeps the segments the caller registers"
 
 #### Scenario: an id segment
 
-- **GIVEN** a key holding a uuid between two structural segments
+- **GIVEN** a key holding a uuid between two registered segments
 - **WHEN** it is sanitized
-- **THEN** the uuid becomes `[redacted]` and the structural segments stay
+- **THEN** the uuid becomes `[redacted]` and the registered segments stay
 - **Test:** `packages/core/src/observability/sanitizeQueryKey.helper.test.ts` › "redacts a uuid-like dynamic segment"
 
 #### Scenario: a segment with digits
 
-- **GIVEN** the key `['users', 'abc123']`
+- **GIVEN** the key `['users', 'abc123']`, with `users` registered
 - **WHEN** it is sanitized
 - **THEN** `abc123` becomes `[redacted]`
 - **Test:** `packages/core/src/observability/sanitizeQueryKey.helper.test.ts` › "redacts segments containing digits"
@@ -224,33 +224,27 @@ starts with a lowercase letter, and replace every other segment with `[redacted]
 - **THEN** the object becomes `[redacted]`
 - **Test:** `packages/core/src/observability/sanitizeQueryKey.helper.test.ts` › "redacts object filter segments"
 
-#### Scenario: a segment over the length limit
-
-- **GIVEN** a segment of 40 lowercase letters
-- **WHEN** it is sanitized
-- **THEN** it becomes `[redacted]`
-- **Test:** `packages/core/src/observability/sanitizeQueryKey.helper.test.ts` › "redacts segments that exceed the structural length limit"
-
 #### Scenario: a number segment
 
-- **GIVEN** the key `['page', 0]`
+- **GIVEN** the key `['page', 0]`, with `page` registered
 - **WHEN** it is sanitized
 - **THEN** the number becomes `[redacted]`
 - **Test:** `packages/core/src/observability/sanitizeQueryKey.helper.test.ts` › "redacts numeric segments"
 
 #### Scenario: a letters-only value
 
-- **GIVEN** a segment such as `itemDetail` or a lowercase username such as `alice`
-- **WHEN** it is sanitized
-- **THEN** it is kept, since it has the shape of a structural segment
-- **Test:** Not covered — no test sanitizes a camelCase or letters-only dynamic value.
+- **GIVEN** a lowercase username such as `alice` and a camelCase value such as `itemDetail`,
+  neither of them registered
+- **WHEN** they are sanitized
+- **THEN** both become `[redacted]`, although they have the shape of a segment written by hand
+- **Test:** `packages/core/src/observability/sanitizeQueryKey.helper.test.ts` › "redacts a letters-only segment the caller did not register"
 
 ### Requirement: CORE-09 — The shape of a sanitized key
 
 The core package SHALL return one sanitized segment for each segment of an array query key, and
 the single segment `[redacted]` for a key that is not an array.
 
-**Evidence:** `packages/core/src/observability/sanitizeQueryKey.helper.ts:42-43`
+**Evidence:** `packages/core/src/observability/sanitizeQueryKey.helper.ts:29-34`
 
 #### Scenario: a key that is not an array
 
@@ -551,7 +545,7 @@ The core package SHALL export `PII_KEYS`, the field names it treats as sensitive
 refresh tokens, API keys, authorization, cookie and set-cookie, email, full name, JWT, password,
 payer name, phone and phone number, raw text, secret, session and token, without `name`.
 
-**Evidence:** `packages/core/src/utils/scrubPII.helper.ts:22-45`
+**Evidence:** `packages/core/src/utils/scrubPII.helper.ts:28-51`
 
 #### Scenario: personal and credential keys
 
@@ -581,8 +575,8 @@ The core package SHALL replace with `[redacted]` the whole value of every key th
 and stripped of every character that is not a letter or a digit, equals a `PII_KEYS` member
 normalized the same way.
 
-**Evidence:** `packages/core/src/utils/scrubPII.helper.ts:47-57`,
-`packages/core/src/utils/scrubPII.helper.ts:74`
+**Evidence:** `packages/core/src/utils/scrubPII.helper.ts:53-63`,
+`packages/core/src/utils/scrubPII.helper.ts:85`
 
 #### Scenario: an upper-case key
 
@@ -624,7 +618,7 @@ normalized the same way.
 The core package SHALL apply the redaction at every depth of nested objects and arrays, building
 new objects and arrays, and return primitives, null and undefined as they are.
 
-**Evidence:** `packages/core/src/utils/scrubPII.helper.ts:59-81`
+**Evidence:** `packages/core/src/utils/scrubPII.helper.ts:72-96`
 
 #### Scenario: a deep object
 
@@ -661,12 +655,13 @@ new objects and arrays, and return primitives, null and undefined as they are.
 - **THEN** the `Error` becomes an empty object, since its fields are not enumerable
 - **Test:** Not covered — no test scrubs an `Error` instance.
 
-### Requirement: CORE-23 — An object met twice is marked circular
+### Requirement: CORE-23 — Only a cycle is marked circular, and each object is walked once
 
-The core package SHALL replace an object that one scrub meets a second time with `[circular]`
-instead of walking it again.
+The core package SHALL walk each object or array once, replace it with `[circular]` where the
+scrub meets it again while still walking it, and give every other place that reaches it the same
+scrubbed copy, which keeps the `[circular]` markers of the place that made it.
 
-**Evidence:** `packages/core/src/utils/scrubPII.helper.ts:67-68`
+**Evidence:** `packages/core/src/utils/scrubPII.helper.ts:72-96`
 
 #### Scenario: an object that holds itself
 
@@ -677,18 +672,27 @@ instead of walking it again.
 
 #### Scenario: one object under two keys
 
-- **GIVEN** an object whose keys `a` and `b` hold the same inner object, with no cycle
+- **GIVEN** an object whose keys `a` and `b` hold the same inner object, which holds an `email`
+  and an `id`, with no cycle
 - **WHEN** it is scrubbed
-- **THEN** `a` holds the scrubbed inner object and `b` holds `[circular]`
-- **Test:** Not covered — no test shares one object between two keys.
+- **THEN** `a` and `b` both hold the scrubbed inner object: the `email` redacted and the `id`
+  kept
+- **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "scrubs an object reached under two keys in both places"
 
 #### Scenario: an array that holds itself
 
-- **GIVEN** an array that holds itself
+- **GIVEN** an array whose only element is the array itself
 - **WHEN** it is scrubbed
-- **THEN** the scrub recurses until it throws a `RangeError`, since arrays never enter the set of
-  objects already met
-- **Test:** Not covered — no test scrubs a cyclic array.
+- **THEN** the result is an array whose element is `[circular]`, and nothing throws
+- **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "replaces an array that holds itself with "[circular]""
+
+#### Scenario: an object shared along many paths
+
+- **GIVEN** an object with a getter, at the bottom of a ladder of 16 levels where each level
+  holds the one below under two keys, so 65 536 paths reach it
+- **WHEN** the top of the ladder is scrubbed
+- **THEN** the getter is read once
+- **Test:** `packages/core/src/utils/scrubPII.helper.test.ts` › "walks a shared object once however many paths reach it"
 
 ### Requirement: CORE-24 — The host console seam
 
@@ -756,18 +760,6 @@ package, no `@/` alias, no `#` key but `#src/`, and no `node:` builtin.
 
 ## Open questions
 
-- **Q1** — `packages/core/src/utils/scrubPII.helper.ts:16` says circular references become
-  `[circular]` instead of throwing, but `packages/core/src/utils/scrubPII.helper.ts:62` walks
-  arrays without the visited check, so an array that holds itself throws `RangeError`. See
-  CORE-23.
-- **Q2** — The same comment speaks of circular references only, but
-  `packages/core/src/utils/scrubPII.helper.ts:67` never releases the visited set, so one object
-  reached under two keys, with no cycle, becomes `[circular]` the second time and its data drops
-  out of the payload. See CORE-23.
-- **Q3** — `packages/core/src/observability/sanitizeQueryKey.helper.ts:13` keeps a segment only
-  when it is a "short lowercase token", but the pattern at
-  `packages/core/src/observability/sanitizeQueryKey.helper.ts:21` also keeps camelCase segments
-  and any letters-only value up to 24 characters, such as a username. See CORE-08.
 - **Q4** — `docs/code-standards.md:601` has services throw an `AppError` with a `messageKey`, a
   `code` and an optional `cause`, but `packages/core/src/errors/AppError.helper.ts:4` makes
   `messageKey` optional too. See CORE-01.

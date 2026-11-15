@@ -3,7 +3,7 @@
 > **Governs:** `apps/web/src`, `apps/web/next.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-14 at `9afce2d`
+> **Verified against the code:** 2026-11-14 at `94cc114`
 
 ## Purpose
 
@@ -176,7 +176,7 @@ state on the screen.
 The web app SHALL re-run the items query with the typed search text and the item limit, 50 by
 default, under the query key `QueryKeys.items.list(search)`.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:40-57`, `apps/web/src/lib/query/queryKeys.constant.ts:16-19`, `apps/web/src/services/Items/items.service.ts:96-116`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:40-57`, `apps/web/src/lib/query/queryKeys.constant.ts:30-37`, `apps/web/src/services/Items/items.service.ts:96-116`
 
 #### Scenario: a search term is typed
 
@@ -540,7 +540,7 @@ store for reading and writing the session cookies.
 The web app SHALL create its query client with a 30-second stale time and one retry for queries,
 and no retry for mutations.
 
-**Evidence:** `apps/web/src/lib/query/createQueryClient.helper.ts:8`, `apps/web/src/lib/query/createQueryClient.helper.ts:20-30`, `apps/web/src/app/providers.tsx:19-26`
+**Evidence:** `apps/web/src/lib/query/createQueryClient.helper.ts:10`, `apps/web/src/lib/query/createQueryClient.helper.ts:22-32`, `apps/web/src/app/providers.tsx:19-26`
 
 #### Scenario: the defaults of a new client
 
@@ -555,9 +555,10 @@ and no retry for mutations.
 
 The web app SHALL report every failed query and mutation once, from the query cache and mutation
 cache error handlers, to the observability port, passing the query key through
-`sanitizeQueryKey` from packages/core.
+`sanitizeQueryKey` from packages/core with the values of `QueryKeySegmentEnum` as its structural
+segments.
 
-**Evidence:** `apps/web/src/lib/query/createQueryClient.helper.ts:31-43`, `apps/web/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/web/src/app/providers.tsx:19-26`
+**Evidence:** `apps/web/src/lib/query/createQueryClient.helper.ts:33-48`, `apps/web/src/lib/query/queryKeys.constant.ts:17-24`, `apps/web/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/web/src/app/providers.tsx:19-26`
 
 #### Scenario: a query fails
 
@@ -565,6 +566,13 @@ cache error handlers, to the observability port, passing the query key through
 - **WHEN** it fails
 - **THEN** the capture sink is called once, from the query cache, with the identifier redacted
 - **Test:** `apps/web/src/lib/query/createQueryClient.helper.test.ts` › "calls onCaptureError with sanitized queryKey on query failure"
+
+#### Scenario: a query keyed by a search text
+
+- **GIVEN** a query keyed by `QueryKeys.items.list('alice')`
+- **WHEN** it fails
+- **THEN** the capture sink receives the key `['items', 'list', '[redacted]']`
+- **Test:** `apps/web/src/lib/query/createQueryClient.helper.test.ts` › "redacts the search text of an items list key on query failure"
 
 #### Scenario: a mutation fails
 

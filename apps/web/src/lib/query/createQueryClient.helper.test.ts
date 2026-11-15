@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 
 import { createQueryClient } from '@/lib/query/createQueryClient.helper'
+import { QueryKeys } from '@/lib/query/queryKeys.constant'
 
 describe('createQueryClient', () => {
   test('returns a QueryClient instance', () => {
@@ -47,6 +48,30 @@ describe('createQueryClient', () => {
       error,
       expect.objectContaining({
         queryKey: ['items', '[redacted]', 'list'],
+        source: 'queryCache'
+      })
+    )
+  })
+
+  test('redacts the search text of an items list key on query failure', async () => {
+    const spy = vi.fn()
+    const client = createQueryClient({ onCaptureError: spy })
+    const error = new Error('search boom')
+
+    await client
+      .fetchQuery({
+        queryFn: async () => {
+          throw error
+        },
+        queryKey: QueryKeys.items.list('alice'),
+        retry: false
+      })
+      .catch(() => undefined)
+
+    expect(spy).toHaveBeenCalledWith(
+      error,
+      expect.objectContaining({
+        queryKey: ['items', 'list', '[redacted]'],
         source: 'queryCache'
       })
     )

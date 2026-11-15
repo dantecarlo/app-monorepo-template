@@ -79,13 +79,17 @@ What to look for:
 The template provides `scrubPII`, `PII_KEYS`, and `sanitizeQueryKey` from `@app/core`.
 
 ```typescript
-// ❌ Email in a query key — logged by TanStack Query DevTools and error reporters
+// ❌ Email in a query key — shown by TanStack Query DevTools
 queryKey: ['user', userEmail]
 
-// ✅ Sanitized
-import { sanitizeQueryKey } from '@app/core'
-queryKey: sanitizeQueryKey({ key: ['user', userEmail] })
+// ✅ An opaque id; the query client reports it as [redacted]
+queryKey: QueryKeys.user.detail(userId)
 ```
+
+The query client passes a failed key through `sanitizeQueryKey`, which keeps
+only the values of `QueryKeySegmentEnum` in `@/lib/query/queryKeys.constant.ts`.
+Flag a call that wraps a live key in `sanitizeQueryKey`: every item would share
+one cache entry.
 
 What to look for:
 - `rg -n 'queryKey:' --glob '*.hook.ts'` — check for raw email, name, phone

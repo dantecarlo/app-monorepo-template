@@ -299,9 +299,7 @@ Use `useAppQuery` and `useAppMutation` from `@/lib/query`. Never call
 const useItemList = ({ contextId }: IUseItemList) => {
   return useAppQuery<IItemViewModel[]>({
     queryOptions: {
-      queryKey: sanitizeQueryKey({
-        key: QueryKeys.items.list(contextId)
-      }),
+      queryKey: QueryKeys.items.list(contextId),
       queryFn: async () => {
         const dtos = await getItems({ contextId })
         return adaptItems(dtos)
@@ -313,7 +311,12 @@ const useItemList = ({ contextId }: IUseItemList) => {
 ```
 
 Register all query keys in `@/lib/query/queryKeys.constant.ts` (never inline strings).
-Use `sanitizeQueryKey` from `@app/core` to scrub PII from query keys.
+Write every hand-written segment as a member of `QueryKeySegmentEnum`. When a
+query fails, the query client reports its key through `sanitizeQueryKey` from
+`@app/core`, which keeps only the values of that enum: an id, a search text or
+a hand-written segment missing from the enum shows up as `[redacted]`. Never
+pass a live key through `sanitizeQueryKey` yourself: every item would share one
+cache entry.
 
 ---
 
@@ -356,7 +359,7 @@ import type { IBackendClientProvider } from '@app/core'
 // Error handling
 import { AppError, buildServiceError } from '@app/core'
 
-// PII scrubbing (use before any logging or query key)
+// PII scrubbing (before any logging; the query client sanitizes failed keys)
 import { scrubPII, PII_KEYS, sanitizeQueryKey } from '@app/core'
 ```
 
