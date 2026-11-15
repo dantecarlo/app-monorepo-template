@@ -8,7 +8,9 @@
  * a fully-typed client:
  *
  *   pnpm --filter @app/supabase gen:types
- *   # runs: supabase gen types typescript --linked > src/types.ts
+ *   # runs: supabase gen types typescript --linked > src/types.ts.tmp, and moves
+ *   # src/types.ts.tmp over this file only when the CLI succeeds; a failed run
+ *   # leaves this file as it was, removes the temporary file and exits 1.
  *
  * Commit the generated file so apps pick up the typed schema via @app/supabase.
  */

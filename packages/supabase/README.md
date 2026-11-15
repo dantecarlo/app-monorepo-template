@@ -112,6 +112,8 @@ supabase link --project-ref "$SUPABASE_PROJECT_REF"
 pnpm db:push
 
 # Generate TypeScript types from the linked project into src/types.ts
+# (written to src/types.ts.tmp first, and moved over src/types.ts only when the
+# CLI succeeds: a failed run leaves src/types.ts as it was and exits 1)
 pnpm gen:types
 
 # Run the pgTAP tests on the linked project (needs Docker, see below)
