@@ -49,7 +49,7 @@ requirements in several specs, each linking to its neighbour by ID.
 | [packages/cloudflare](specs/packages/cloudflare/spec.md) | `CLOUDFLARE` | `packages/cloudflare/src` |
 | [packages/i18n](specs/packages/i18n/spec.md) | `I18N` | `packages/i18n/src` |
 | [packages/supabase](specs/packages/supabase/spec.md) | `SUPABASE` | `packages/supabase/src`, `packages/supabase/supabase/migrations`, `packages/supabase/supabase/config.toml` |
-| [packages/tokens](specs/packages/tokens/spec.md) | `TOKENS` | `packages/tokens/src`, `packages/tokens/tailwind-preset.cjs` |
+| [packages/tokens](specs/packages/tokens/spec.md) | `TOKENS` | `packages/tokens/src`, `packages/tokens/scripts`, `packages/tokens/theme.css`, `packages/tokens/tailwind-preset.cjs` |
 | [packages/tooling](specs/packages/tooling/spec.md) | `TOOLING` | `packages/tooling/src` |
 | [apps/web](specs/apps/web/spec.md) | `WEB` | `apps/web/src`, `apps/web/next.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts` |
 | [apps/mobile](specs/apps/mobile/spec.md) | `MOBILE` | `apps/mobile/src`, `apps/mobile/app.json` |
