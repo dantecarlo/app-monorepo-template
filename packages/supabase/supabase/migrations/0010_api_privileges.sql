@@ -28,3 +28,16 @@ begin
   end if;
 end
 $$;
+
+-- =====================================================================
+-- Section 2: TRUNCATE — none for anon and authenticated in public
+-- =====================================================================
+
+-- TRUNCATE ignores row-level security and fires no row trigger, so a role that holds it
+-- empties a table whatever its policies and its row triggers say. service_role keeps it.
+revoke truncate on all tables in schema public from anon, authenticated;
+
+-- The tables postgres creates in public later. Supabase's grant is a per-schema default to
+-- these named roles, so a per-schema revoke from the same roles removes it from that default.
+alter default privileges for role postgres in schema public
+  revoke truncate on tables from anon, authenticated;

@@ -280,6 +280,27 @@ Use direct `auth.uid()` checks or `service_role` policies only on those two
 tables. Violating this rule produces infinite recursion or a planner error at
 query time.
 
+### API role privileges
+
+A Supabase project's default privileges give `anon`, `authenticated` and
+`service_role` ALL on every table, function and sequence `postgres` creates in
+`public`. Row-level security narrows the rows a table privilege reaches, not
+every privilege, so `0010_api_privileges.sql` revokes the ones that reach past
+it:
+
+- **TRUNCATE.** It ignores row-level security and fires no row trigger, so a
+  role holding it empties a table whatever its policies say. `anon` and
+  `authenticated` hold it on no table in `public`: it is revoked on the
+  existing tables and in the default privileges of `postgres` there, so a table
+  added later starts without it. `service_role` keeps it.
+- **EXECUTE on a SECURITY DEFINER function in `public`.** See the public
+  wrapper convention in section 4: `anon` loses it by name.
+
+The other privileges the default privileges give stay (SELECT, INSERT, UPDATE,
+DELETE, REFERENCES, TRIGGER and, on PostgreSQL 17 and later, MAINTAIN): a
+policy decides the rows of the first four. A table that needs less grants less
+in its own migration.
+
 ---
 
 ## 7. Append-only audit log

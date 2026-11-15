@@ -37,7 +37,7 @@ begin;
 -- Plan
 -- =====================================================================
 -- Count assertions below and update this number when adding new tests.
-select plan(34);
+select plan(40);
 
 -- =====================================================================
 -- Section 1: seed test fixtures (as postgres, the session role)
@@ -351,7 +351,7 @@ reset role;
 
 select is(
   (
-    select coalesce(array_agg(n.nspname || '.' || p.proname order by 1), '{}')
+    select coalesce(array_agg(n.nspname || '.' || p.proname order by n.nspname, p.proname), '{}')
     from pg_proc p
     join pg_namespace n on n.oid = p.pronamespace
     where n.nspname in ('public', 'auth_helpers')
@@ -372,6 +372,82 @@ select is(
 );
 
 reset role;
+
+-- =====================================================================
+-- Section 11: TRUNCATE is service_role's only, on every table in public
+-- =====================================================================
+-- TRUNCATE ignores row-level security and fires no row trigger, so the TRUNCATE Supabase's
+-- default privileges give anon and authenticated would let either empty any table.
+
+select is(
+  (
+    select coalesce(array_agg(c.relname::text order by c.relname), '{}')
+    from pg_class c
+    where c.relnamespace = 'public'::regnamespace
+      and c.relkind in ('r', 'p')
+      and has_table_privilege('anon', c.oid, 'truncate')
+  ),
+  '{}'::text[],
+  'anon holds TRUNCATE on no table in public'
+);
+
+select is(
+  (
+    select coalesce(array_agg(c.relname::text order by c.relname), '{}')
+    from pg_class c
+    where c.relnamespace = 'public'::regnamespace
+      and c.relkind in ('r', 'p')
+      and has_table_privilege('authenticated', c.oid, 'truncate')
+  ),
+  '{}'::text[],
+  'authenticated holds TRUNCATE on no table in public'
+);
+
+set local "request.jwt.claims" to '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}';
+set local role authenticated;
+
+select throws_ok(
+  'truncate public.profile',
+  '42501',
+  'permission denied for table profile',
+  'a signed-in user cannot truncate a table'
+);
+
+reset role;
+
+select is(
+  (select count(*)::int from public.profile
+   where id in ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002')),
+  2,
+  'the refused truncate leaves every profile in place'
+);
+
+-- postgres adds a table to public with no grant of its own: the default privileges give the API
+-- roles what Supabase gives them, TRUNCATE for service_role only.
+set local role postgres;
+
+create table public.test_table_with_default_grants (id int);
+
+reset role;
+
+select ok(
+  not has_table_privilege('anon', 'public.test_table_with_default_grants', 'truncate')
+    and not has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'truncate'),
+  'a table added to public gives anon and authenticated no TRUNCATE'
+);
+
+select ok(
+  has_table_privilege('anon', 'public.test_table_with_default_grants', 'select')
+    and has_table_privilege('anon', 'public.test_table_with_default_grants', 'insert')
+    and has_table_privilege('anon', 'public.test_table_with_default_grants', 'update')
+    and has_table_privilege('anon', 'public.test_table_with_default_grants', 'delete')
+    and has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'select')
+    and has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'insert')
+    and has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'update')
+    and has_table_privilege('authenticated', 'public.test_table_with_default_grants', 'delete')
+    and has_table_privilege('service_role', 'public.test_table_with_default_grants', 'truncate'),
+  'a table added to public keeps the other privileges Supabase gives the API roles'
+);
 
 -- =====================================================================
 -- Finish
