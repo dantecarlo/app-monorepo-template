@@ -683,3 +683,19 @@ export const PURE_DOMAIN_ADAPTER_OVERRIDE = {
   files: ['**/src/services/**/*.adapter.ts'],
   rules: { 'local/pure-domain-adapter': 'error' }
 }
+
+// ---------------------------------------------------------------------------
+// The styling pillar (AGENTS.md § Styling lives in the components;
+// code-standards §22). Wired over every source file of both apps: the two
+// rules read their scope from the file's path in
+// eslint-local-rules/style-positioning.detect.mjs, the definition the
+// allowlist freshness gate also reads, so the lint and the gate cannot judge
+// a different set of files.
+// ---------------------------------------------------------------------------
+export const STYLE_PILLAR_OVERRIDE = {
+  files: ['apps/web/src/**/*.{ts,tsx}', 'apps/mobile/src/**/*.{ts,tsx}'],
+  rules: {
+    'local/style-positions-only': 'error',
+    'local/style-token-values': 'error'
+  }
+}

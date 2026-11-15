@@ -1,0 +1,117 @@
+[
+  {
+    "path": "apps/mobile/src/app/_layout.tsx",
+    "reason": "Seeded when the rule landed: the look moves into its component block in this change.",
+    "rule": "style-positions-only"
+  },
+  {
+    "path": "apps/mobile/src/components/RootErrorBoundary/RootErrorBoundary.component.tsx",
+    "reason": "Seeded when the rule landed: the look moves into its component block in this change.",
+    "rule": "style-positions-only"
+  },
+  {
+    "path": "apps/mobile/src/components/ui/Chip/Chip.style.ts",
+    "reason": "Seeded when the rule landed: the value moves to a token in this change.",
+    "rule": "style-token-values"
+  },
+  {
+    "path": "apps/mobile/src/components/ui/OfflineBanner/OfflineBanner.style.ts",
+    "reason": "Seeded when the rule landed: the value moves to a token in this change.",
+    "rule": "style-token-values"
+  },
+  {
+    "path": "apps/mobile/src/screens/ItemsDashboard/ItemsDashboard.screen.tsx",
+    "reason": "Seeded when the rule landed: the look moves into its component block in this change.",
+    "rule": "style-positions-only"
+  },
+  {
+    "path": "apps/mobile/src/screens/ItemsDashboard/components/ItemCard/ItemCard.style.ts",
+    "reason": "Seeded when the rule landed: the value moves to a token in this change.",
+    "rule": "style-token-values"
+  },
+  {
+    "path": "apps/mobile/src/screens/Login/Login.style.ts",
+    "reason": "Seeded when the rule landed: the look moves into its component block in this change.",
+    "rule": "style-positions-only"
+  },
+  {
+    "path": "apps/web/src/app/global-error.tsx",
+    "reason": "Seeded when the rule landed: the look moves into its component block in this change.",
+    "rule": "style-positions-only"
+  },
+  {
+    "path": "apps/web/src/app/layout.tsx",
+    "reason": "Seeded when the rule landed: the look moves into its component block in this change.",
+    "rule": "style-positions-only"
+  },
+  {
+    "path": "apps/web/src/components/ui/Avatar/Avatar.style.ts",
+    "reason": "Seeded when the rule landed: the value moves to a token in this change.",
+    "rule": "style-token-values"
+  },
+  {
+    "path": "apps/web/src/components/ui/Button/Button.style.ts",
+    "reason": "Seeded when the rule landed: the value moves to a token in this change.",
+    "rule": "style-token-values"
+  },
+  {
+    "path": "apps/web/src/components/ui/Chip/Chip.component.tsx",
+    "reason": "Seeded when the rule landed: the value moves to a token in this change.",
+    "rule": "style-token-values"
+  },
+  {
+    "path": "apps/web/src/components/ui/Chip/Chip.style.ts",
+    "reason": "Seeded when the rule landed: the value moves to a token in this change.",
+    "rule": "style-token-values"
+  },
+  {
+    "path": "apps/web/src/components/ui/ConfirmDialog/ConfirmDialog.style.ts",
+    "reason": "Seeded when the rule landed: the value moves to a token in this change.",
+    "rule": "style-token-values"
+  },
+  {
+    "path": "apps/web/src/components/ui/LanguageSwitcher/LanguageSwitcher.style.ts",
+    "reason": "Seeded when the rule landed: the value moves to a token in this change.",
+    "rule": "style-token-values"
+  },
+  {
+    "path": "apps/web/src/components/ui/LoadingSkeleton/LoadingSkeleton.style.ts",
+    "reason": "Seeded when the rule landed: the value moves to a token in this change.",
+    "rule": "style-token-values"
+  },
+  {
+    "path": "apps/web/src/components/ui/Modal/Modal.style.ts",
+    "reason": "Seeded when the rule landed: the value moves to a token in this change.",
+    "rule": "style-token-values"
+  },
+  {
+    "path": "apps/web/src/components/ui/NavBar/NavBar.component.tsx",
+    "reason": "Seeded when the rule landed: the value moves to a token in this change.",
+    "rule": "style-token-values"
+  },
+  {
+    "path": "apps/web/src/components/ui/OfflineBanner/OfflineBanner.style.ts",
+    "reason": "Seeded when the rule landed: the value moves to a token in this change.",
+    "rule": "style-token-values"
+  },
+  {
+    "path": "apps/web/src/components/ui/Toast/Toast.style.ts",
+    "reason": "Seeded when the rule landed: the value moves to a token in this change.",
+    "rule": "style-token-values"
+  },
+  {
+    "path": "apps/web/src/screens/ItemsDashboard/components/ItemCard/ItemCard.style.ts",
+    "reason": "Seeded when the rule landed: the value moves to a token in this change.",
+    "rule": "style-token-values"
+  },
+  {
+    "path": "apps/web/src/screens/ItemsSummary/ItemsSummary.style.ts",
+    "reason": "Seeded when the rule landed: the look moves into its component block in this change.",
+    "rule": "style-positions-only"
+  },
+  {
+    "path": "apps/web/src/screens/Login/Login.style.ts",
+    "reason": "Seeded when the rule landed: the look moves into its component block in this change.",
+    "rule": "style-positions-only"
+  }
+]
