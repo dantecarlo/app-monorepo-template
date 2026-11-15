@@ -6,8 +6,8 @@
 // It reads the catalog (.agents/contracts/mcp-servers.json), .mcp.json when
 // one exists, and docs/mcp.md, and fails:
 //   - a malformed catalog: an entry without its fields, a command that is
-//     not the unpinned `npx -y <package>` (decision 55), a doc that does
-//     not exist; or a .mcp.json that does not parse;
+//     not the unpinned `npx -y <package> [server args...]` (decision 55),
+//     a doc that does not exist; or a .mcp.json that does not parse;
 //   - a block that is missing, or that differs from what the updater wrote:
 //     its end marker carries a digest of its lines, so a value or a line
 //     typed by hand fails; `pnpm mcp:docs` rewrites it;
@@ -115,7 +115,7 @@ export const gate = defineGate({
     `the generated block of ${MCP_DOC_PATH} is the one \`pnpm mcp:docs\` ` +
     `wrote, and lists every server, package and capability of ${MCP_CATALOG_PATH} ` +
     `plus ${MCP_CONFIG_PATH} and no other; every catalog entry is the ` +
-    'unpinned `npx -y <package>` and names docs that exist.',
+    'unpinned `npx -y <package> [server args...]` and names docs that exist.',
   id: 'verify-mcp-docs',
   notCovered:
     'whether a recorded version is still the latest, which only ' +
