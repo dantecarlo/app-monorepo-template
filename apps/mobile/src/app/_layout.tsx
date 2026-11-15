@@ -23,6 +23,7 @@ import { useEffect } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { AuthProvider } from '@/components/AuthProvider'
+import { Toast } from '@/components/ui/Toast'
 import { observability } from '@/lib/observability/observability.adapter'
 import { toCaptureError } from '@/lib/observability/toCaptureError.helper'
 import { createQueryClient } from '@/lib/query/createQueryClient.helper'
@@ -70,6 +71,7 @@ const RootLayout = () => {
               headerShown: false
             }}
           />
+          <Toast />
         </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
