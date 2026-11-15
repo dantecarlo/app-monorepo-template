@@ -35,7 +35,7 @@
         "src/screens/*/models/*.type.ts",
         "src/services/**/{index,index}.ts",
         "src/stores/*.store.ts",
-        "src/helpers/*.constant.ts",
+        "src/helpers/*.style.ts",
         "src/validation/*.schema.ts"
       ],
       "project": ["src/**/*.{ts,tsx}"],
@@ -59,7 +59,7 @@
         "src/screens/*/models/*.type.ts",
         "src/services/**/{index,index}.ts",
         "src/hooks/*.hook.ts",
-        "src/helpers/*.constant.ts",
+        "src/helpers/*.style.ts",
         "src/validation/*.schema.ts"
       ],
       "project": ["src/**/*.{ts,tsx}"],
