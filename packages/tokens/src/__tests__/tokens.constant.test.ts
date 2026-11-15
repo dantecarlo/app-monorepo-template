@@ -3,8 +3,12 @@ import { describe, expect, test } from 'vitest'
 import {
   colors,
   DEFAULT_THEME,
+  fontFallback,
+  motion,
+  sharedColors,
   ThemeEnum,
-  themes
+  themes,
+  webFontVariable
 } from '@/tokens.constant'
 
 // Collect every dot-separated leaf path of a nested object.
@@ -49,5 +53,31 @@ describe('theme tokens', () => {
   test('default theme is a member of the theme enum', () => {
     expect(Object.values(ThemeEnum)).toContain(DEFAULT_THEME)
     expect(themes[DEFAULT_THEME]).toBeDefined()
+  })
+
+  test('both themes carry the shared colours', () => {
+    expect(sharedColors).toEqual({
+      accent: '#FF6A1A',
+      accentInk: '#2A1402',
+      accentLight: '#FF8A3D',
+      accentTint: 'rgba(255,106,26,0.16)',
+      coolGlow: '#5B6CFF'
+    })
+    for (const [key, value] of Object.entries(sharedColors)) {
+      expect(themes.dark).toHaveProperty(key, value)
+      expect(themes.light).toHaveProperty(key, value)
+    }
+  })
+
+  test('the font fallback, the web font variables and the shimmer motion are tokens', () => {
+    expect(fontFallback).toBe('sans-serif')
+    expect(webFontVariable).toEqual({
+      body: '--font-inter',
+      display: '--font-montserrat'
+    })
+    expect(motion).toEqual({
+      duration: { shimmer: 1600 },
+      easing: { shimmer: 'linear' }
+    })
   })
 })

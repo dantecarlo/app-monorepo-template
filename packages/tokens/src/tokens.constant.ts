@@ -1,7 +1,12 @@
-// Source of truth for the glass design system — now light + dark.
-// These are stack-agnostic plain TS objects — no framework imports.
-// Consumed through tailwind-preset.cjs by Tailwind on web and NativeWind on mobile,
-// and imported directly by React Native styles.
+// The one source of every design-token value, light and dark: stack-agnostic
+// plain TS objects, with no framework imports.
+//
+// scripts/generate.mjs writes every token output from this file alone:
+// theme.css (the web theme), tailwind-preset.cjs (the NativeWind preset) and
+// src/themeVars.constant.ts (the mobile theme variables). React Native styles
+// import it directly. Change a value here, then run
+// `pnpm --filter @app/tokens generate`; `pnpm verify:theme-sync` fails while an
+// output differs from its regeneration.
 
 // ---------------------------------------------------------------------------
 // Theme identity
@@ -17,14 +22,17 @@ export type ThemeEnumType = (typeof ThemeEnum)[keyof typeof ThemeEnum]
 export const DEFAULT_THEME: ThemeEnumType = ThemeEnum.DARK
 
 // ---------------------------------------------------------------------------
-// Accent ramp — theme-invariant brand color (shared across themes)
+// Shared colours — theme-invariant: the brand accent ramp and the cool glow,
+// one value spread into both themes. The web theme writes each once, as a
+// literal; every other colour is themed and flips with [data-theme].
 // ---------------------------------------------------------------------------
 
-const accentRamp = {
+export const sharedColors = {
   accent: '#FF6A1A',
   accentInk: '#2A1402',
   accentLight: '#FF8A3D',
-  accentTint: 'rgba(255,106,26,0.16)'
+  accentTint: 'rgba(255,106,26,0.16)',
+  coolGlow: '#5B6CFF'
 } as const
 
 // ---------------------------------------------------------------------------
@@ -34,7 +42,7 @@ const accentRamp = {
 // ---------------------------------------------------------------------------
 
 const darkColors = {
-  ...accentRamp,
+  ...sharedColors,
   accentSurface: '#241A12',
   // Foreground variant of the brand accent for small TEXT (links, captions,
   // active nav, ghost-button labels) — distinct from the brand `accent` fill
@@ -44,7 +52,6 @@ const darkColors = {
     base: '#0A0B0D',
     raised: '#101216'
   },
-  coolGlow: '#5B6CFF',
   danger: '#EF4444',
   // Foreground variant of `danger` for text on danger-tint surfaces (AA).
   dangerText: '#F36A6A',
@@ -79,7 +86,7 @@ const darkColors = {
 } as const
 
 const lightColors = {
-  ...accentRamp,
+  ...sharedColors,
   accentSurface: '#FFF1E6',
   // Foreground variant of the brand accent for small TEXT (links, captions,
   // active nav, ghost-button labels) — distinct from the brand `accent` fill
@@ -89,7 +96,6 @@ const lightColors = {
     base: '#F4F5F7',
     raised: '#FFFFFF'
   },
-  coolGlow: '#5B6CFF',
   danger: '#DC2626',
   // Foreground variant of `danger` for text on danger-tint surfaces (AA).
   dangerText: '#BE1B1B',
@@ -158,7 +164,7 @@ export const spacing = {
 // ---------------------------------------------------------------------------
 
 export const inset = {
-  knob: 2.5,
+  knobInset: 2.5,
   pillX: 11,
   pillY: 5
 } as const
@@ -194,6 +200,18 @@ export const radius = {
 export const fontFamily = {
   body: 'Inter',
   display: 'Montserrat'
+} as const
+
+/** The generic family every font family falls back to. */
+export const fontFallback = 'sans-serif'
+
+/**
+ * The CSS variable the web app's font loader sets for each family (next/font
+ * in apps/web/src/app/layout.tsx); the web theme reads it before the family.
+ */
+export const webFontVariable = {
+  body: '--font-inter',
+  display: '--font-montserrat'
 } as const
 
 /** Each entry: { size: number (px), lineHeight: number (px) } */
@@ -261,6 +279,16 @@ export const rnShadows = {
     shadowOpacity: 0.6,
     shadowRadius: 4
   }
+} as const
+
+// ---------------------------------------------------------------------------
+// Motion — the duration (ms) and the easing of each animation: the web
+// loading skeleton's shimmer sweep.
+// ---------------------------------------------------------------------------
+
+export const motion = {
+  duration: { shimmer: 1600 },
+  easing: { shimmer: 'linear' }
 } as const
 
 // ---------------------------------------------------------------------------

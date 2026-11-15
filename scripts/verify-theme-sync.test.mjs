@@ -89,13 +89,16 @@ export const CASES = [
     name: 'the shipped copies agree'
   },
   {
+    // The cool glow is shared, so a drift of it reaches both themes: the
+    // CSS copy of each, and the preset for the dark one.
     context: walk(
-      plantInLight({
+      plant({
+        file: SOURCES.tokens,
         from: "coolGlow: '#5B6CFF'",
         to: "coolGlow: '#5B6CFE'"
       })
     ),
-    expected: 1,
+    expected: 3,
     name: 'a light-theme drift of a theme-invariant colour is caught'
   },
   {
@@ -173,14 +176,14 @@ const checks = [
       const [finding] = gate.run(
         walk(
           plantInLight({
-            from: "coolGlow: '#5B6CFF'",
-            to: "coolGlow: '#5B6CFE'"
+            from: "base: '#F4F5F7'",
+            to: "base: '#F4F5F8'"
           })
         )()
       )
-      assert.match(finding, /^CSS drift \[light\.coolGlow\]/u)
-      assert.match(finding, /tokens="#5B6CFE"/u)
-      assert.match(finding, /globals\.css --color-cool-glow="#5b6cff"/u)
+      assert.match(finding, /^CSS drift \[light\.bg\.base\]/u)
+      assert.match(finding, /tokens="#F4F5F8"/u)
+      assert.match(finding, /globals\.css --c-bg-base="#f4f5f7"/u)
     }
   },
   {
@@ -188,13 +191,13 @@ const checks = [
     run: () => {
       const result = runGate(
         plantInLight({
-          from: "coolGlow: '#5B6CFF'",
-          to: "coolGlow: '#5B6CFE'"
+          from: "base: '#F4F5F7'",
+          to: "base: '#F4F5F8'"
         })
       )
       assert.equal(result.status, FAILED, result.stderr)
       assert.match(result.stderr, /verify-theme-sync: 1 problem/u)
-      assert.match(result.stderr, /light\.coolGlow/u)
+      assert.match(result.stderr, /light\.bg\.base/u)
     }
   },
   {

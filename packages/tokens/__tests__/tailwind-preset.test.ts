@@ -39,9 +39,7 @@ describe('tailwind preset', () => {
   test('the preset carries every scale token as a CSS length', () => {
     expect(extend.spacing).toEqual({
       ...mapValues({ format: px, scale: spacing }),
-      'knob-inset': px(inset.knob),
-      'pill-x': px(inset.pillX),
-      'pill-y': px(inset.pillY)
+      ...mapValues({ format: px, scale: inset })
     })
     expect(extend.borderRadius).toEqual(
       mapValues({ format: px, scale: radius })
