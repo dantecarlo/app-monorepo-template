@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 // ---------------------------------------------------------------------------
 // The adapters that reshape a neutral agent source for the runtimes whose
-// format differs from Claude Code's. Each renderer refuses a field it has no
-// slot for, points the agent at AGENTS.md, and renders the same bytes twice;
-// the Codex config stays repository-local, keeps the project-doc budget at
-// its top level, and registers each agent by a path Codex resolves.
+// format differs from Claude Code's: Codex, OpenCode and Copilot. Each
+// renderer refuses a field it has no slot for, points the agent at
+// AGENTS.md, and renders the same bytes twice; the Codex config stays
+// repository-local, keeps the project-doc budget at its top level, and
+// registers each agent by a path Codex resolves; the YAML frontmatter holds
+// any description as one string.
 //
 // Usage:
 //   node --test scripts/agent-harness/adapters.test.mjs
@@ -20,7 +22,10 @@ import {
   CODEX_PROJECT_DOC_MAX_BYTES,
   renderAdapterProjection,
   renderCodexAgent,
-  renderCodexConfig
+  renderCodexConfig,
+  renderCopilotAgent,
+  renderOpenCodeAgent,
+  renderOpenCodeConfig
 } from './adapters.mjs'
 
 const CODEX_HOME = '.codex'
@@ -28,6 +33,7 @@ const CONFIG_FILE_LINE = /^config_file = "(.+)"$/gm
 const LEAVES_ITS_ROOT = /^([a-z]:|[\\/]|\.\.[\\/])/i
 const TRIPLE_QUOTE = /"""/g
 const PROMPT_DELIMITERS = 2
+const DESCRIPTION_LINE = /^description: (.*)$/m
 
 const REPO_ROOT = resolve(
   dirname(fileURLToPath(import.meta.url)),
@@ -46,7 +52,13 @@ const AGENT = {
   name: 'scratch'
 }
 
-const RENDERERS = [{ adapter: 'codex', render: renderCodexAgent }]
+const RENDERERS = [
+  { adapter: 'opencode', render: renderOpenCodeAgent },
+  { adapter: 'codex', render: renderCodexAgent },
+  { adapter: 'copilot', render: renderCopilotAgent }
+]
+
+const YAML_RENDERERS = RENDERERS.filter(({ adapter }) => adapter !== 'codex')
 
 const registeredAgentFiles = ({ projection }) =>
   [
@@ -83,6 +95,69 @@ RENDERERS.forEach(({ adapter, render }) => {
   test(`given the same source twice, ${adapter} renders identical bytes`, () => {
     assert.equal(render(AGENT), render(AGENT))
   })
+})
+
+// A plain YAML scalar cannot hold ": ", so a description such as
+// "Read-only: never edits files." makes the whole frontmatter fail to parse.
+// A JSON string is a valid YAML double-quoted scalar.
+YAML_RENDERERS.forEach(({ adapter, render }) => {
+  test(`given a description carrying a colon and a quote, ${adapter} writes it as one YAML string`, () => {
+    const description = 'Reviews "the" diff. Read-only: never edits files.'
+    const line = render({
+      ...AGENT,
+      fields: { ...AGENT.fields, description }
+    }).match(DESCRIPTION_LINE)
+
+    assert.ok(line, 'the frontmatter has no description line')
+    assert.equal(JSON.parse(line[1]), description)
+  })
+})
+
+test('the OpenCode agent is a subagent with each of its tools enabled', () => {
+  const rendered = renderOpenCodeAgent(AGENT)
+
+  assert.match(rendered, /^mode: subagent$/m)
+  assert.ok(
+    rendered.includes('\ntools:\n  Read: true\n  Grep: true\n'),
+    rendered
+  )
+  assert.doesNotMatch(
+    rendered,
+    /^name:/m,
+    'OpenCode keys an agent by its file name'
+  )
+})
+
+test('the Copilot agent names itself and lists its tools inline', () => {
+  const rendered = renderCopilotAgent(AGENT)
+
+  assert.match(rendered, /^name: scratch$/m)
+  assert.match(rendered, /^tools: \[Read, Grep\]$/m)
+})
+
+test('given an unmapped model, the OpenCode config omits it and names no instruction file', () => {
+  const config = JSON.parse(renderOpenCodeConfig({ agents: [AGENT] }))
+
+  assert.deepEqual(config, {
+    $schema: 'https://opencode.ai/config.json',
+    agent: { scratch: { mode: 'subagent' } }
+  })
+  assert.equal(
+    Object.hasOwn(config, 'instructions'),
+    false,
+    'OpenCode discovers AGENTS.md itself; naming it again adds it twice'
+  )
+})
+
+test('given a mapped model, the OpenCode config lists the mapped id', () => {
+  const config = JSON.parse(
+    renderOpenCodeConfig({
+      agents: [AGENT],
+      models: { sonnet: 'provider/model-id' }
+    })
+  )
+
+  assert.equal(config.agent.scratch.model, 'provider/model-id')
 })
 
 test('given an unmapped model, the Codex agent leaves it out', () => {

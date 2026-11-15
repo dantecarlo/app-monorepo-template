@@ -23,9 +23,11 @@ import {
 // holds workflows too) is scoped to its own subdirectory instead.
 const OWNED_DIRECTORIES = [
   { directory: CLAUDE_AGENTS_DIRECTORY, extension: '.md' },
-  { directory: '.codex/agents', extension: '.toml' }
+  { directory: '.opencode/agents', extension: '.md' },
+  { directory: '.codex/agents', extension: '.toml' },
+  { directory: '.github/agents', extension: '.md' }
 ]
-const SINGLE_FILE_OUTPUTS = ['.codex/config.toml']
+const SINGLE_FILE_OUTPUTS = ['opencode.json', '.codex/config.toml']
 
 export const MANIFEST_PATH = '.agents/projection-manifest.json'
 

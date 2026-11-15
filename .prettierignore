@@ -25,3 +25,4 @@ docs/audits/*.json
 # bytes, and `pnpm agent-harness:projection-check` holds them to it. With
 # prettier as a second writer the two could demand different files.
 .agents/projection-manifest.json
+opencode.json

@@ -1,16 +1,21 @@
 // ---------------------------------------------------------------------------
-// adapters — the projections whose format differs from Claude Code's: Codex
-// (`.codex/agents/<name>.toml` and `.codex/config.toml`).
+// adapters — the projections whose format differs from Claude Code's:
+// OpenCode (`.opencode/agents/<name>.md` and `opencode.json`), Codex
+// (`.codex/agents/<name>.toml` and `.codex/config.toml`) and Copilot
+// (`.github/agents/<name>.agent.md`).
 //
-// Ported from Certifipago's scripts/agent-harness/adapters.mjs. Two changes:
-// the prelude points at AGENTS.md, which every runtime reads, and the Codex
-// prompt escapes what a TOML multi-line string would otherwise end on.
+// Ported from Certifipago's scripts/agent-harness/adapters.mjs, with four
+// changes: the prelude points at AGENTS.md, which every runtime reads;
+// opencode.json names no instruction file, since OpenCode discovers AGENTS.md
+// itself; a YAML description is written as a double-quoted string; and the
+// Codex prompt escapes what a TOML multi-line string would otherwise end on.
 // ---------------------------------------------------------------------------
 
 import { readNeutralAgents } from './neutral-source.mjs'
 
 const NEUTRAL_AGENTS_DIRECTORY = '.agents/agents'
 const SHARED_CONTEXT = 'AGENTS.md'
+const JSON_INDENT = 2
 
 // Every adapter maps the SAME closed schema. A field is either CARRIED into
 // the output or DECLARED unexpressible with its reason; one that is neither
@@ -36,7 +41,9 @@ const MAPPED_MODEL =
 // The target's own model id for each Claude alias. Empty on purpose: an
 // entry is added only for an id that target accepts, verified against it.
 export const MODEL_MAP = {
-  codex: {}
+  codex: {},
+  copilot: {},
+  opencode: {}
 }
 
 const mappedModel = ({ model, models }) =>
@@ -65,6 +72,18 @@ export const EXPRESSIVENESS = {
         'description and developer_instructions only. An agent declared ' +
         'read-only is unrestricted here, held by its prompt alone.'
     }
+  },
+  copilot: {
+    mapped: { model: MAPPED_MODEL },
+    supported: ['description', 'name', 'tools'],
+    unexpressible: {}
+  },
+  opencode: {
+    mapped: { model: MAPPED_MODEL },
+    supported: ['description', 'tools'],
+    unexpressible: {
+      name: 'the agent file name is the identity; a name key would be a second spelling'
+    }
   }
 }
 
@@ -87,6 +106,17 @@ const assertMappable = ({ adapter, fields, supported }) => {
   }
 }
 
+const toolList = ({ tools }) =>
+  tools
+    .split(',')
+    .map((tool) => tool.trim())
+    .filter(Boolean)
+
+// A plain YAML scalar cannot hold ": " or open with a quote, so a description
+// such as "Read-only: never edits files." would make the whole frontmatter
+// fail to parse. A JSON string is a valid YAML double-quoted scalar.
+const yamlString = ({ value }) => JSON.stringify(value)
+
 // Every prelude names the shared context by its exact path, so a target that
 // loads an agent without it still sends the model to the project's rules.
 const preludeFor = ({ body }) =>
@@ -97,6 +127,62 @@ const modelLines = ({ format, model, models }) => {
   const id = mappedModel({ model, models })
   return id === null ? [] : [format({ id })]
 }
+
+// OpenCode keys its agents by FILENAME, so the name is not a frontmatter
+// field here the way it is for Codex and Copilot.
+export const renderOpenCodeAgent = ({
+  body,
+  fields,
+  models = MODEL_MAP.opencode
+}) => {
+  assertMappable({
+    adapter: 'opencode',
+    fields,
+    supported: EXPRESSIVENESS.opencode.supported
+  })
+  return [
+    '---',
+    `description: ${yamlString({ value: fields.description })}`,
+    'mode: subagent',
+    ...modelLines({
+      format: ({ id }) => `model: ${id}`,
+      model: fields.model,
+      models
+    }),
+    'tools:',
+    ...toolList({ tools: fields.tools }).map((tool) => `  ${tool}: true`),
+    '---',
+    '',
+    preludeFor({ body: body.trim() }),
+    ''
+  ].join('\n')
+}
+
+// No `instructions` entry: OpenCode loads the AGENTS.md it discovers, and the
+// configured instructions load alongside it, so naming AGENTS.md there would
+// add it a second time.
+export const renderOpenCodeConfig = ({
+  agents,
+  models = MODEL_MAP.opencode
+}) =>
+  `${JSON.stringify(
+    {
+      $schema: 'https://opencode.ai/config.json',
+      agent: Object.fromEntries(
+        agents.map(({ fields, name }) => {
+          const id = mappedModel({ model: fields.model, models })
+          return [
+            name,
+            id === null
+              ? { mode: 'subagent' }
+              : { mode: 'subagent', model: id }
+          ]
+        })
+      )
+    },
+    null,
+    JSON_INDENT
+  )}\n`
 
 // TOML, hand-rendered: the only values that reach it are a name, a model and a
 // prompt, and adding a serializer dependency to write three keys would put a
@@ -183,6 +269,34 @@ export const renderCodexConfig = ({ agents }) =>
     ])
   ].join('\n')
 
+export const renderCopilotAgent = ({
+  body,
+  fields,
+  models = MODEL_MAP.copilot,
+  name
+}) => {
+  assertMappable({
+    adapter: 'copilot',
+    fields,
+    supported: EXPRESSIVENESS.copilot.supported
+  })
+  return [
+    '---',
+    `name: ${name}`,
+    `description: ${yamlString({ value: fields.description })}`,
+    ...modelLines({
+      format: ({ id }) => `model: ${id}`,
+      model: fields.model,
+      models
+    }),
+    `tools: [${toolList({ tools: fields.tools }).join(', ')}]`,
+    '---',
+    '',
+    preludeFor({ body: body.trim() }),
+    ''
+  ].join('\n')
+}
+
 export const renderAdapterProjection = ({ root }) => {
   const agents = readNeutralAgents({
     directory: `${root}/${NEUTRAL_AGENTS_DIRECTORY}`
@@ -190,9 +304,18 @@ export const renderAdapterProjection = ({ root }) => {
 
   return new Map([
     ...agents.map((agent) => [
+      `.opencode/agents/${agent.name}.md`,
+      renderOpenCodeAgent(agent)
+    ]),
+    ['opencode.json', renderOpenCodeConfig({ agents })],
+    ...agents.map((agent) => [
       `${CODEX_HOME}/${codexAgentFile({ name: agent.name })}`,
       renderCodexAgent(agent)
     ]),
-    [`${CODEX_HOME}/config.toml`, renderCodexConfig({ agents })]
+    [`${CODEX_HOME}/config.toml`, renderCodexConfig({ agents })],
+    ...agents.map((agent) => [
+      `.github/agents/${agent.name}.agent.md`,
+      renderCopilotAgent(agent)
+    ])
   ])
 }
