@@ -64,7 +64,7 @@ load.
 - **GIVEN** the web app's Tailwind config and its CSS entry
 - **WHEN** they are read
 - **THEN** the config's only preset is the tokens preset, and the CSS entry loads the config
-- **Test:** `apps/web/src/app/__tests__/tailwind.config.test.ts` › "loads the tokens preset through the CSS entry"
+- **Test:** `apps/web/src/app/globals.test.ts` › "loads the tokens preset through the CSS entry"
 
 ### Requirement: TOKENS-13 — The Tailwind preset carries the scales as CSS lengths
 

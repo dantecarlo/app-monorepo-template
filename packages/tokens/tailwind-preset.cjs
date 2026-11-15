@@ -1,4 +1,4 @@
-// Tailwind CSS preset for the shared glass design system (mobile / NativeWind).
+// Tailwind CSS preset for the shared glass design system (web and mobile).
 // Token values are inlined here (duplicated from src/tokens.constant.ts) because
 // CommonJS Tailwind config cannot require() TypeScript source directly.
 //
@@ -7,10 +7,16 @@
 // consumers read themes[active]); the preset itself stays single-valued.
 //
 // Keep this file in sync with src/tokens.constant.ts (themes.dark) and
-// apps/web/src/app/globals.css — scripts/verify-theme-sync.mjs guards drift
-// across all three copies for both dark and light.
+// apps/web/src/app/globals.css — scripts/verify-theme-sync.mjs compares every
+// color of both themes with globals.css, and the dark theme with this preset.
+// The scales below are not compared (src/__tests__/preset.test.ts reads them).
 //
-// Usage in tailwind.config.js / tailwind.config.ts:
+// Loaded by both apps: apps/mobile/tailwind.config.js and
+// apps/web/tailwind.config.cjs, which apps/web/src/app/globals.css loads with
+// @config. On web the CSS @theme wins for a key both define, so the colors
+// flip per theme there, and the scales come from this file alone.
+//
+// Usage in tailwind.config.js:
 //   presets: [require('@app/tokens/tailwind-preset.cjs')]
 
 /** @type {import('tailwindcss').Config} */
@@ -57,6 +63,7 @@ module.exports = {
           // Foreground variant of `warning` for text on tint surfaces (AA).
           text: '#EBB13A',
           tint: 'rgba(224,160,17,0.16)',
+          stroke: 'rgba(224,160,17,0.30)',
         },
         danger: {
           DEFAULT: '#EF4444',
@@ -86,6 +93,20 @@ module.exports = {
         xl: '20px',
         '2xl': '24px',
         '3xl': '32px',
+        // Insets off the scale (inset in tokens.constant.ts).
+        'knob-inset': '2.5px',
+        'pill-x': '11px',
+        'pill-y': '5px',
+      },
+
+      // -----------------------------------------------------------------
+      // Layout widths (layoutWidth in tokens.constant.ts) — max-w-content
+      // -----------------------------------------------------------------
+      maxWidth: {
+        narrow: '24rem',
+        content: '28rem',
+        dialog: '32rem',
+        wide: '42rem',
       },
 
       // -----------------------------------------------------------------
@@ -120,6 +141,11 @@ module.exports = {
         label:         ['13px', { lineHeight: '18px' }],
         body:          ['14px', { lineHeight: '20px' }],
         caption:       ['12px', { lineHeight: '15px' }],
+        // Glyph sizes: a font size with no line height (glyphSize).
+        'initials-sm': '10px',
+        'initials-md': '13px',
+        'initials-lg': '16px',
+        'nav-icon':    '22px',
       },
 
       // -----------------------------------------------------------------

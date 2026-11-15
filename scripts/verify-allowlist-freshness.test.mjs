@@ -44,9 +44,11 @@ const MOBILE_SCREEN = 'apps/mobile/src/screens/Login/Login.screen.tsx'
 const POSITIONS_ONLY = 'style-positions-only'
 const TOKEN_VALUES = 'style-token-values'
 
-const LOOK_IN_SCREEN = "export const LOGIN = { TITLE: 'mt-lg text-accent' }"
+const LOOK_IN_SCREEN =
+  "export const LOGIN = { TITLE: 'mt-lg text-accent' }"
 const POSITIONS_IN_SCREEN = "export const LOGIN = { FORM: 'flex gap-lg' }"
-const ARBITRARY_IN_UI = "export const CHIP = { ROOT: 'px-[11px] rounded-full' }"
+const ARBITRARY_IN_UI =
+  "export const CHIP = { ROOT: 'px-[11px] rounded-full' }"
 const TOKENS_IN_UI = "export const CHIP = { ROOT: 'px-3 rounded-full' }"
 
 const entry = ({ path, reason = 'cannot move yet', rule }) => ({
@@ -220,8 +222,14 @@ const checks = [
       )
       assert.equal(finding.kind, FINDING_KIND.stale)
       assert.equal(finding.path, SCREEN_STYLE)
-      assert.match(finding.detail, /no longer breaks style-positions-only/u)
-      assert.match(finding.detail, /remove the entry, the list only shrinks/u)
+      assert.match(
+        finding.detail,
+        /no longer breaks style-positions-only/u
+      )
+      assert.match(
+        finding.detail,
+        /remove the entry, the list only shrinks/u
+      )
     }
   },
   {

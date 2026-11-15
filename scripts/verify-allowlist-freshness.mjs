@@ -110,7 +110,9 @@ const collectViolations = ({ paths, root }) =>
 
 const readEntries = ({ root }) => {
   try {
-    return JSON.parse(readFileSync(join(root, STYLE_ALLOWLIST_FILE), 'utf8'))
+    return JSON.parse(
+      readFileSync(join(root, STYLE_ALLOWLIST_FILE), 'utf8')
+    )
   } catch (error) {
     return { unreadable: error.message }
   }
@@ -128,7 +130,8 @@ export const collectContext = ({ root }) => {
 const isText = (value) => typeof value === 'string' && value.trim() !== ''
 
 const entryProblem = (entry) => {
-  if (entry === null || typeof entry !== 'object') return 'is not an object'
+  if (entry === null || typeof entry !== 'object')
+    return 'is not an object'
   if (!isText(entry.path)) return 'has no path'
   if (!Object.hasOwn(RULES, entry.rule)) {
     return `names the rule ${JSON.stringify(entry.rule)}, which is neither ${Object.keys(RULES).join(' nor ')}`
@@ -198,7 +201,8 @@ export const gate = defineGate({
         .filter((entry) => !violating.has(keyOf(entry)))
         .filter(
           (entry, index, all) =>
-            all.findIndex((other) => keyOf(other) === keyOf(entry)) === index
+            all.findIndex((other) => keyOf(other) === keyOf(entry)) ===
+            index
         )
         .map(({ path, rule }) => ({
           detail:
@@ -226,7 +230,9 @@ const main = () => {
     options: { root: { default: REPO_ROOT, type: 'string' } }
   })
   const context = collectContext({ root: resolve(values.root) })
-  const listed = Array.isArray(context.entries) ? context.entries.length : 0
+  const listed = Array.isArray(context.entries)
+    ? context.entries.length
+    : 0
   reportGate({
     context,
     denominator:

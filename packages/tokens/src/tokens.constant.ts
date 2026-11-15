@@ -1,6 +1,7 @@
 // Source of truth for the glass design system — now light + dark.
 // These are stack-agnostic plain TS objects — no framework imports.
-// Consumed by Tailwind (web) via tailwind-preset.cjs and by NativeWind (mobile) directly.
+// Consumed through tailwind-preset.cjs by Tailwind on web and NativeWind on mobile,
+// and imported directly by React Native styles.
 
 // ---------------------------------------------------------------------------
 // Theme identity
@@ -70,6 +71,8 @@ const darkColors = {
     tertiary: '#9A9CA6'
   },
   warning: '#E0A011',
+  // Edge of a warning surface: the warning color at 30% (offline banner).
+  warningStroke: 'rgba(224,160,17,0.30)',
   // Foreground variant of `warning` for text on warning-tint surfaces (AA).
   warningText: '#EBB13A',
   warningTint: 'rgba(224,160,17,0.16)'
@@ -113,6 +116,8 @@ const lightColors = {
     tertiary: '#525560'
   },
   warning: '#B7791F',
+  // Edge of a warning surface: the warning color at 30% (offline banner).
+  warningStroke: 'rgba(183,121,31,0.30)',
   // Foreground variant of `warning` for text on warning-tint surfaces (AA).
   warningText: '#7E520F',
   warningTint: 'rgba(183,121,31,0.14)'
@@ -148,6 +153,29 @@ export const spacing = {
 } as const
 
 // ---------------------------------------------------------------------------
+// Insets — the component paddings and offsets that sit off the spacing scale,
+// in px: the toggle knob's inset in its track, a pill's padding.
+// ---------------------------------------------------------------------------
+
+export const inset = {
+  knob: 2.5,
+  pillX: 11,
+  pillY: 5
+} as const
+
+// ---------------------------------------------------------------------------
+// Layout widths — the max width of a column, in rem: a narrow form or toast,
+// the content column, a dialog and a wide dialog.
+// ---------------------------------------------------------------------------
+
+export const layoutWidth = {
+  content: 28,
+  dialog: 32,
+  narrow: 24,
+  wide: 42
+} as const
+
+// ---------------------------------------------------------------------------
 // Border radius
 // ---------------------------------------------------------------------------
 
@@ -179,6 +207,17 @@ export const fontSize = {
   heading: { lineHeight: 22, size: 18 },
   label: { lineHeight: 18, size: 13 },
   title: { lineHeight: 20, size: 15 }
+} as const
+
+/**
+ * Glyph sizes, in px: a font size with no line height, for the initials of an
+ * avatar and the glyph of a navigation icon.
+ */
+export const glyphSize = {
+  initialsLg: 16,
+  initialsMd: 13,
+  initialsSm: 10,
+  navIcon: 22
 } as const
 
 // ---------------------------------------------------------------------------
