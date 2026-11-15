@@ -1,6 +1,6 @@
 # Proposal: the styling pillar, and the web app on the tokens preset
 
-> **Status:** open
+> **Status:** archived — 2026-11-15
 
 ## Why
 

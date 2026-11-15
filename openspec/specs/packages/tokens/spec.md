@@ -3,7 +3,7 @@
 > **Governs:** `packages/tokens/src`, `packages/tokens/tailwind-preset.cjs`
 > **ID prefix:** `TOKENS`
 > **Derived from:** `docs/architecture/shared.md`
-> **Verified against the code:** 2026-11-14 at `9afce2d`
+> **Verified against the code:** 2026-11-15 at `77e3bc7`
 
 ## Purpose
 
@@ -166,36 +166,85 @@ The tokens package SHALL expose every token group as a named export from its ent
 
 ### Requirement: TOKENS-12 — The Tailwind preset carries the dark theme's colors
 
-The tokens package SHALL ship a Tailwind preset, exported as tailwind-preset.cjs, whose theme.extend.colors hold the values of the dark theme.
+The tokens package SHALL ship a Tailwind preset, exported as tailwind-preset.cjs, whose
+theme.extend.colors hold the values of the dark theme, and which the Tailwind configs of both apps
+load.
 
-**Evidence:** `packages/tokens/tailwind-preset.cjs:23`, `packages/tokens/package.json:9`
+**Evidence:** `packages/tokens/tailwind-preset.cjs:29`, `packages/tokens/package.json:9`, `apps/web/tailwind.config.cjs:9`, `apps/web/src/app/globals.css:2`, `apps/mobile/tailwind.config.js:7`
 
 #### Scenario: a Tailwind config loads the preset
 
 - **GIVEN** a Tailwind config that requires the preset
 - **WHEN** it resolves a color utility such as bg-base
 - **THEN** the value is the dark theme's
-- **Test:** Not covered — no test reads the preset; the `scripts/verify-theme-sync.mjs` gate in pnpm validate compares its theme-variant colors with the dark theme, not its accent ramp
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "the shipped copies agree"
+
+#### Scenario: the web app loads the preset
+
+- **GIVEN** the web app's Tailwind config and its CSS entry
+- **WHEN** they are read
+- **THEN** the config's only preset is the tokens preset, and the CSS entry loads the config
+- **Test:** `apps/web/src/app/globals.test.ts` › "loads the tokens preset through the CSS entry"
 
 ### Requirement: TOKENS-13 — The Tailwind preset carries the scales as CSS lengths
 
-The tokens package SHALL give the Tailwind preset the spacing, radius, font family, font size and shadow tokens, the numeric ones written as pixel lengths.
+The tokens package SHALL give the Tailwind preset the spacing, radius, font family, font size and
+shadow tokens, the numeric ones written as pixel lengths, and the web app SHALL take its spacing,
+radius and font-size utilities from the preset alone.
 
-**Evidence:** `packages/tokens/tailwind-preset.cjs:81`, `packages/tokens/tailwind-preset.cjs:94`, `packages/tokens/tailwind-preset.cjs:105`, `packages/tokens/tailwind-preset.cjs:113`, `packages/tokens/tailwind-preset.cjs:128`
+**Evidence:** `packages/tokens/tailwind-preset.cjs:88`, `packages/tokens/tailwind-preset.cjs:115`, `packages/tokens/tailwind-preset.cjs:126`, `packages/tokens/tailwind-preset.cjs:134`, `packages/tokens/tailwind-preset.cjs:154`, `apps/web/src/app/globals.css:101`
 
 #### Scenario: a Tailwind config resolves a spacing utility
 
 - **GIVEN** a Tailwind config that requires the preset
 - **WHEN** it resolves a spacing utility such as p-lg
 - **THEN** the value is 16px, the lg spacing token
-- **Test:** Not covered — no test reads the preset, and the theme-sync gate compares colors only
+- **Test:** `packages/tokens/src/__tests__/preset.test.ts` › "the preset carries every scale token as a CSS length"
+
+### Requirement: TOKENS-14 — Layout widths, glyph sizes and insets are tokens
+
+The tokens package SHALL define the layout widths narrow 24, content 28, dialog 32 and wide 42, in
+rem; the glyph sizes, a font size with no line height, initialsSm 10, initialsMd 13, initialsLg
+16 and navIcon 22, in pixels; and the insets knob 2.5, pillX 11 and pillY 5, in pixels; and the
+Tailwind preset SHALL carry them as the `max-w-*`, `text-*` and spacing utilities.
+
+**Evidence:** `packages/tokens/src/tokens.constant.ts:160`, `packages/tokens/src/tokens.constant.ts:171`, `packages/tokens/src/tokens.constant.ts:216`, `packages/tokens/tailwind-preset.cjs:97`, `packages/tokens/tailwind-preset.cjs:105`, `packages/tokens/tailwind-preset.cjs:145`
+
+#### Scenario: the preset carries the new scales
+
+- **GIVEN** the tokens and the Tailwind preset
+- **WHEN** every layout width, glyph size and inset is read from both
+- **THEN** each preset entry is its token written as a CSS length
+- **Test:** `packages/tokens/src/__tests__/preset.test.ts` › "the preset carries every scale token as a CSS length"
+
+### Requirement: TOKENS-15 — The colour copies agree for every colour of both themes
+
+The tokens package SHALL keep the colours of `tokens.constant.ts` equal to their copy in
+`apps/web/src/app/globals.css` for both themes, the theme-invariant accent ramp and cool glow
+included, and equal to the Tailwind preset for the dark theme.
+
+**Evidence:** `scripts/verify-theme-sync.mjs:48`, `scripts/verify-theme-sync.mjs:145`, `scripts/verify-theme-sync.mjs:349`
+
+#### Scenario: a theme-invariant colour drifts in the light theme
+
+- **GIVEN** the three copies, with the light theme's cool glow changed in `tokens.constant.ts` only
+- **WHEN** the theme-sync gate compares them
+- **THEN** it reports the light cool glow against its `globals.css` copy
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "a light-theme drift of a theme-invariant colour is caught"
+
+#### Scenario: a themed colour drifts in the light theme
+
+- **GIVEN** the three copies, with the light theme's base background changed in `globals.css` only
+- **WHEN** the theme-sync gate compares them
+- **THEN** it reports the light base background
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "a light-theme drift of a themed colour is caught"
 
 ## Open questions
 
-- **Q1** — `packages/tokens/src/tokens.constant.ts:3` and `docs/architecture/shared.md:41` say
-  the web app's Tailwind uses the preset, but only `apps/mobile/tailwind.config.js:7` loads it,
-  and the web app keeps its own copy of the colors in `apps/web/src/app/globals.css:16`.
-- **Q2** — The comment at `packages/tokens/tailwind-preset.cjs:10` says the theme-sync gate checks
-  drift for both dark and light, but `scripts/verify-theme-sync.mjs:48` compares the preset with
-  the dark theme only and skips the accent ramp; it reads colors only, so drift in the preset's
-  spacing, radius, font sizes and shadows goes unnoticed.
+- **Q1** — Closed on 2026-11-15 by `openspec/changes/archive/2026-11-14-style-pillar/`: the web
+  app loads the preset through `apps/web/tailwind.config.cjs` and `@config` (TOKENS-12).
+- **Q2** — Partly closed on 2026-11-15 by `openspec/changes/archive/2026-11-14-style-pillar/`: the
+  theme-sync gate compares every colour of both themes, the accent ramp included (TOKENS-15), and
+  `packages/tokens/src/__tests__/preset.test.ts` compares the preset's spacing, radius and font
+  sizes with the tokens (TOKENS-13). The preset's shadows and font families are still compared
+  with nothing.
