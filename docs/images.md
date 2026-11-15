@@ -73,7 +73,7 @@ in constant time and returns a `SignedImageUrlVerificationType`:
 | `not_configured` | the secret is empty |
 | `malformed` | the URL cannot be parsed; `exp` or `sig` is missing or repeated; `exp` is not whole Unix seconds; `sig` is not 64 lowercase hex characters |
 | `signature_mismatch` | the path, the query, `exp` or `sig` changed, or another secret signed it |
-| `expired` | a genuine signature whose `exp` is now or past |
+| `expired` | a genuine signature whose `exp` is now or past, or a clock that is not a finite number |
 
 Who checks what:
 

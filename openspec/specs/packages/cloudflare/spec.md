@@ -3,7 +3,7 @@
 > **Governs:** `packages/cloudflare/src`
 > **ID prefix:** `CLOUDFLARE`
 > **Derived from:** `docs/infrastructure.md`, `docs/images.md`, `docs/architecture/shared.md`
-> **Verified against the code:** 2026-11-15 at `a4334a6`
+> **Verified against the code:** 2026-11-15 at `7c580f3`
 
 ## Purpose
 
@@ -101,7 +101,7 @@ at the first, with no node:crypto or Buffer so it runs in the edge runtime; the 
 the signed-URL verifier both compare through this one function, isConstantTimeEqual.
 
 **Evidence:** `packages/cloudflare/src/constantTimeEqual.helper.ts:21`, `packages/cloudflare/src/constantTimeEqual.helper.ts:22`,
-`packages/cloudflare/src/createCloudflareOriginGuard.adapter.ts:36`, `packages/cloudflare/src/signedImageUrl.helper.ts:109`
+`packages/cloudflare/src/createCloudflareOriginGuard.adapter.ts:36`, `packages/cloudflare/src/signedImageUrl.helper.ts:111`
 
 #### Scenario: a wrong secret of the same length
 
@@ -405,13 +405,16 @@ current Unix time in seconds, and reject every other URL with its reason: `not_c
 the secret is empty; `malformed` when the URL cannot be parsed, `exp` or `sig` is missing or
 repeated, `exp` is not a whole number of seconds or `sig` is not 64 lowercase hexadecimal
 characters; `signature_mismatch` when the signature differs; and `expired` when a genuine
-signature has passed its `exp`. Its result, `SignedImageUrlVerificationType`, is either
+signature has passed its `exp`, or the clock it is checked against is not a finite number. Its
+result, `SignedImageUrlVerificationType`, is either
 `{ valid: true }` or `{ valid: false, reason }`.
 
-**Evidence:** `packages/cloudflare/src/signedImageUrl.helper.ts:90`, `packages/cloudflare/src/signedImageUrl.helper.ts:95`,
-`packages/cloudflare/src/signedImageUrl.helper.ts:73`, `packages/cloudflare/src/signedImageUrl.helper.ts:76`, `packages/cloudflare/src/signedImageUrl.helper.ts:77`,
-`packages/cloudflare/src/signedImageUrl.helper.ts:104`, `packages/cloudflare/src/signedImageUrl.helper.ts:109`, `packages/cloudflare/src/signedImageUrl.helper.ts:114`,
-`packages/cloudflare/src/imageDelivery.constant.ts:11`, `packages/cloudflare/src/imageDelivery.constant.ts:13`
+**Evidence:** `packages/cloudflare/src/signedImageUrl.helper.ts:92`,
+`packages/cloudflare/src/signedImageUrl.helper.ts:97`, `packages/cloudflare/src/signedImageUrl.helper.ts:73`,
+`packages/cloudflare/src/signedImageUrl.helper.ts:76`, `packages/cloudflare/src/signedImageUrl.helper.ts:77`,
+`packages/cloudflare/src/signedImageUrl.helper.ts:106`, `packages/cloudflare/src/signedImageUrl.helper.ts:111`,
+`packages/cloudflare/src/signedImageUrl.helper.ts:117`, `packages/cloudflare/src/imageDelivery.constant.ts:11`,
+`packages/cloudflare/src/imageDelivery.constant.ts:13`, `packages/cloudflare/src/signedImageUrl.type.ts:24-26`
 
 #### Scenario: a URL signed with the secret, before it expires
 
@@ -441,6 +444,13 @@ signature has passed its `exp`. Its result, `SignedImageUrlVerificationType`, is
 - **WHEN** it is verified at its `exp`, and again later
 - **THEN** both times it is not valid, with the reason `expired`
 - **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects a URL whose exp has passed as expired"
+
+#### Scenario: a clock that is not a finite number
+
+- **GIVEN** a URL signed for 600 seconds
+- **WHEN** it is verified against a clock of NaN, and against one of infinity
+- **THEN** both times it is not valid, with the reason `expired`
+- **Test:** `packages/cloudflare/src/signedImageUrl.helper.test.ts` › "verifySignedImageUrl rejects as expired when the clock is not a finite number"
 
 #### Scenario: a tampered signature
 
