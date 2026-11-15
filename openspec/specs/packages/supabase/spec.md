@@ -3,7 +3,7 @@
 > **Governs:** `packages/supabase/src`, `packages/supabase/supabase/migrations`, `packages/supabase/supabase/config.toml`
 > **ID prefix:** `SUPABASE`
 > **Derived from:** `packages/supabase/docs/database.md`, `AGENTS.md`, `docs/code-standards.md`
-> **Verified against the code:** 2026-11-15 at `8852663`
+> **Verified against the code:** 2026-11-15 at `00496d7`
 
 ## Purpose
 
