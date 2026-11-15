@@ -39,6 +39,12 @@ apps/web/
     └── stores/  helpers/ (layout.style.ts: positioning only)  validation/  i18n/  test/
 ```
 
+Every folder that holds a unit keeps that unit's test in its own `__tests__/`, named after it:
+`components/ui/Button/__tests__/Button.component.test.tsx`, `stores/__tests__/auth.store.test.ts`,
+`app/__tests__/error.test.tsx` (Next treats a folder that starts with `_` as private, outside the
+routes). `src/test/` holds the shared setup, test helper and MSW mocks
+([code-standards § 9](../code-standards.md)).
+
 A shared `src/hooks/` folder is created on first use; none ships on web today.
 
 ## 3. Routing — Next App Router (the key difference)

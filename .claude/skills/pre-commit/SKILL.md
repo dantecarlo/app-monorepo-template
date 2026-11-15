@@ -45,7 +45,7 @@ changed, stop — nothing to review.
 | `**/hooks/*.hook.ts`               | React patterns, naming                           |
 | `**/services/*.service.ts`         | service+adapter pairing, naming                  |
 | `**/services/*.adapter.ts`         | service+adapter pairing, naming                  |
-| `**/*.test.tsx`                    | test conventions                                 |
+| `**/__tests__/*.test.ts(x)`        | test conventions, test location (§ 9)            |
 | `**/*.constant.ts`                 | naming, magic values                             |
 | `**/*.type.ts`                     | naming (I-prefix, Type suffix, Enum suffix)      |
 | `**/stores/*.store.ts`             | naming, selector export                          |

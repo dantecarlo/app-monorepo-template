@@ -226,7 +226,7 @@ package barrel has no exception: it re-exports through `#src/`.
 | Type/Interface | `Name.type.ts`       | `Item.type.ts`           |
 | Constant       | `Name.constant.ts`   | `queryKeys.constant.ts`  |
 | Style          | `Name.style.ts`      | `ItemCard.style.ts`      |
-| Test           | `Name.test.tsx`      | `ItemCard.test.tsx`      |
+| Test           | `__tests__/<unit>.test.tsx` | `__tests__/ItemCard.component.test.tsx` (§ 9) |
 
 ---
 
@@ -322,8 +322,9 @@ src/services/
     ├── <Domain>.adapter.ts
     ├── <domain>.constant.ts    # optional
     ├── index.ts                # barrel: re-exports public API only
-    ├── <domain>.service.test.ts
-    └── <Domain>.adapter.test.ts
+    └── __tests__/              # each unit's test, named after it (§ 9)
+        ├── <domain>.service.test.ts
+        └── <Domain>.adapter.test.ts
 ```
 
 - Folder name: PascalCase matching the domain (e.g. `Items/`, `Payments/`).
@@ -374,6 +375,29 @@ screen.getByRole('heading', { name: /item title/i })
 - Semantic queries only: `getByRole`, `getByText`, `getByLabelText`
 - No `data-testid`, no `container`, no `getByTestId`
 - One test file per component/hook
+- **A unit's test lives in the `__tests__/` of the unit's own folder and carries the unit's
+  stem**: `X/Y.<suffix>.tsx` is tested by `X/__tests__/Y.<suffix>.test.tsx`. That holds in a
+  block folder (`components/ui/ErrorState/__tests__/ErrorState.component.test.tsx`), a hook's
+  own folder, a folder of plain units (`lib/query/__tests__/useAppQuery.hook.test.ts`), a
+  package's `src/` folders, and for a unit outside `src/`: `apps/web/next.config.ts` is tested by
+  `apps/web/__tests__/next.config.test.ts`. An index file is a unit like any other. Owner
+  decision 57 (2026-11-15) chose this over a test beside its unit.
+- An Expo Router route test is named after its route file as `<route>.route.test.tsx`, in the
+  `__tests__/` of the route's folder: `src/app/_layout.tsx` is tested by
+  `src/app/__tests__/layout.route.test.tsx`, `src/app/index.tsx` by
+  `src/app/__tests__/index.route.test.tsx`. Metro's default `resolver.blockList` keeps every
+  `__tests__/` out of the bundle, so Expo Router never reads a route test as a route.
+- A test imports a unit under `src/` through the alias (`@/lib/query/useAppQuery.hook`), never
+  `../`; `@app/tooling`, plain `.mjs` with no alias, is the one workspace that uses `../`.
+- `src/test/` (setup, the test helper, MSW handlers and server, module mocks) and `__mocks__/`
+  are shared test infrastructure, not unit tests, and no rule judges where they sit.
+- `pnpm verify:tests` fails a test beside its unit, one in a higher `__tests__/`, one whose stem
+  names no unit of the folder that holds its `__tests__/`, and a `__tests__/` inside another; a
+  frozen exception in `scripts/verify-tests.mjs` carries its reason and fails once it exempts
+  nothing. `pnpm tests:into-blocks` moves every test it can place with `git mv`, rewriting the
+  test's relative imports and every citation of its old path in `openspec/specs/` and `docs/`;
+  a project that adopts the rule runs it once. The Vitest configs read `src/**/__tests__/` and
+  the workspace's root `__tests__/`.
 - Every Vitest suite runs shuffled. `@app/tooling/vitest-sequence` seeds the order of the tests
   inside each file from the commit, so a test that passes only after another one can fail on the
   next commit. A checkout with no commit fails to load the config unless `VITEST_SEQUENCE_SEED`
@@ -704,7 +728,7 @@ This table exists so that difference is visible.
 | §6 Adapter purity           | lint          | `local/pure-domain-adapter` on `src/services/**/*.adapter.ts`       |
 | §7 No magic values          | lint+script   | `no-magic-numbers` + `verify:maps` literal audit                    |
 | §8 Max 500 lines            | lint          | `max-lines`                                                         |
-| §9 Tests per unit           | script        | `verify:tests`                                                      |
+| §9 Tests per unit, in place | script        | `verify:tests` (and `verify:tests:test`) — presence and location    |
 | §10 Auto-sort               | lint          | `simple-import-sort/*`, `perfectionist/sort-*`, `sort-keys`         |
 | §11 No JSX prop spreading   | lint          | `react/jsx-props-no-spreading`                                      |
 | §12 Component folder casing | script        | `verify:structure`                                                  |

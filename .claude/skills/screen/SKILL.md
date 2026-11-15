@@ -238,7 +238,8 @@ keeps a named export.
 - [ ] Register the new `{Name}` folder in `docs/maps/global-map.md` — `pnpm validate` (verify-maps check D) will fail if it's missing.
 - [ ] Run `pnpm typecheck`
 - [ ] Run `pnpm lint:fix`
-- [ ] Write tests with the `test` skill
+- [ ] Write tests with the `test` skill: `__tests__/{Name}.screen.test.tsx` in the screen folder,
+      and each sub-block's test in its own folder's `__tests__/`
 - [ ] Verify loading, empty, and error states are implemented (Rule 17 DoD)
 
 ---

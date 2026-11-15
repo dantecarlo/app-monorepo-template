@@ -176,8 +176,9 @@ not a calendar date. See [docs/responsive.md](./responsive.md) for the
 ## File naming convention
 
 E2E spec files use the `.e2e.ts` suffix to distinguish them from unit tests
-(`*.test.ts`) and the verify scripts. The suffix is not tracked by
-`scripts/verify-tests.mjs`, so no sibling test is required for e2e specs.
+(`*.test.ts`, each in the `__tests__/` of its unit's folder) and the verify
+scripts. `scripts/verify-tests.mjs` neither tracks the suffix nor judges where
+an e2e spec sits, so an e2e spec needs no unit test and keeps its own layout.
 
 ---
 

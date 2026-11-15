@@ -81,8 +81,10 @@ pnpm validate
    test depends on `^build`.
 2. `pnpm verify:tests` (`scripts/verify-tests.mjs`) — fails if any
    `*.component.tsx` / `*.hook.ts` / `*.helper.ts` / `*.service.ts` /
-   `*.adapter.ts` unit lacks a sibling `*.test.*` file. A missing test
-   is a **BLOCKER**.
+   `*.adapter.ts` unit lacks a test, or any test sits outside the
+   `__tests__/` of its own unit's folder or is named after no unit there
+   (`X/Y.helper.ts` is tested by `X/__tests__/Y.helper.test.ts`). Either is
+   a **BLOCKER**; `pnpm tests:into-blocks` moves a misplaced test.
 3. `pnpm verify:maps` (`scripts/verify-maps.mjs`) — (A) every repo path
    referenced in `docs/maps/global-map.md` must still resolve (dead
    reference = **BLOCKER**); (B) whole-tree magic-number audit — any

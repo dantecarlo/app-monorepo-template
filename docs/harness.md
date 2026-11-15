@@ -85,7 +85,7 @@ the pre-commit hook on staged files.
 
 | Gate                  | Proves                                                                                    |
 | --------------------- | ----------------------------------------------------------------------------------------- |
-| `verify:tests`        | Every unit has a sibling test                                                             |
+| `verify:tests`        | Every unit has a test, in the `__tests__/` of its own folder and named after it           |
 | `verify:maps`         | The global map resolves, and no stray magic literals                                      |
 | `verify:pairing`      | A service has its adapter and vice versa                                                  |
 | `verify:structure`    | Screen and component folders satisfy the block contract                                   |
