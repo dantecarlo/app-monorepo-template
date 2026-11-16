@@ -1,6 +1,6 @@
 # Proposal: tailwind-merge knows every token name
 
-> **Status:** open
+> **Status:** archived — 2026-11-16
 
 ## Why
 
