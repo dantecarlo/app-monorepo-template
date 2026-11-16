@@ -1,12 +1,36 @@
+import {
+  SERVICE_ERROR_MESSAGE_KEY_BY_CODE,
+  ServiceErrorCodeEnum
+} from '@app/core'
+import { resources } from '@app/i18n'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
-const { mockCreateSupabaseAuthGateway, mockGetSupabaseClient } =
-  vi.hoisted(() => ({
+import {
+  SIGN_IN_FAILURE_MESSAGE_KEY,
+  SignInFailureEnum,
+  SUPABASE_UNREACHABLE_ERROR_NAME
+} from '@/lib/supabase/authGateway.constant'
+
+const {
+  mockCreateSupabaseAuthGateway,
+  mockGetSession,
+  mockGetSupabaseClient,
+  mockSignIn
+} = vi.hoisted(() => {
+  const getSession = vi.fn()
+  const signIn = vi.fn()
+  return {
     mockCreateSupabaseAuthGateway: vi.fn(() => ({
-      tag: 'supabase-gateway'
+      getSession,
+      onAuthStateChange: vi.fn(),
+      signIn,
+      signOut: vi.fn()
     })),
-    mockGetSupabaseClient: vi.fn(() => ({ tag: 'client' }))
-  }))
+    mockGetSession: getSession,
+    mockGetSupabaseClient: vi.fn(() => ({ tag: 'client' })),
+    mockSignIn: signIn
+  }
+})
 
 vi.mock('@app/supabase', () => ({
   createSupabaseAuthGateway: mockCreateSupabaseAuthGateway
@@ -21,8 +45,69 @@ const ENV = {
   NEXT_PUBLIC_SUPABASE_URL: 'https://demo.supabase.co'
 }
 
+const CREDENTIALS = { email: 'user@example.com', password: 'secret-pass' }
+
+const BAD_REQUEST_STATUS = 400
+
+const TOO_MANY_REQUESTS_STATUS = 429
+
+// The class name supabase-js gives an error the auth server answered with.
+const SUPABASE_API_ERROR_NAME = 'AuthApiError'
+
+interface ISupabaseAuthErrorParams {
+  code?: string
+  message: string
+  name: string
+  status: number
+}
+
+// An error of the shape supabase-js rejects a sign-in with: its class name,
+// the HTTP status and, from the auth server, the error code.
+const supabaseAuthError = ({
+  code,
+  message,
+  name,
+  status
+}: ISupabaseAuthErrorParams): Error =>
+  Object.assign(new Error(message), { code, name, status })
+
 const loadAdapter = async () =>
   import('@/lib/supabase/authGateway.adapter')
+
+// The AppError class of the module registry the adapter was loaded into:
+// each test resets the modules, so the adapter's @app/core is a fresh one.
+const loadAppError = async () => (await import('@app/core')).AppError
+
+const withSupabaseSettings = (): void => {
+  process.env.NEXT_PUBLIC_SUPABASE_URL = ENV.NEXT_PUBLIC_SUPABASE_URL
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY =
+    ENV.NEXT_PUBLIC_SUPABASE_ANON_KEY
+}
+
+const signInRejection = async (): Promise<unknown> => {
+  const { getAuthGateway } = await loadAdapter()
+  return getAuthGateway()
+    .signIn(CREDENTIALS)
+    .catch((error: unknown) => error)
+}
+
+// The value a dot-separated key names in a catalog, if any.
+const messageAt = ({
+  catalog,
+  key
+}: {
+  catalog: object
+  key: string
+}): unknown =>
+  key
+    .split('.')
+    .reduce<unknown>(
+      (node, segment) =>
+        node !== null && typeof node === 'object'
+          ? (node as Record<string, unknown>)[segment]
+          : undefined,
+      catalog
+    )
 
 describe('auth gateway adapter', () => {
   beforeEach(() => {
@@ -40,30 +125,134 @@ describe('auth gateway adapter', () => {
     const gateway = getAuthGateway()
 
     await expect(gateway.getSession()).resolves.toBeNull()
-    await expect(
-      gateway.signIn({
-        email: 'user@example.com',
-        password: 'secret-pass'
-      })
-    ).rejects.toThrow(Error)
+    await expect(gateway.signIn(CREDENTIALS)).rejects.toThrow(Error)
     expect(mockCreateSupabaseAuthGateway).not.toHaveBeenCalled()
     expect(mockGetSupabaseClient).not.toHaveBeenCalled()
   })
 
+  test('rejects a sign-in with the not-configured failure without the Supabase settings', async () => {
+    const rejection = await signInRejection()
+
+    expect(rejection).toBeInstanceOf(await loadAppError())
+    expect(rejection).toMatchObject({
+      code: SignInFailureEnum.NOT_CONFIGURED,
+      messageKey: 'auth.error.notConfigured'
+    })
+  })
+
   test('creates one Supabase auth gateway per browser with the settings', async () => {
-    process.env.NEXT_PUBLIC_SUPABASE_URL = ENV.NEXT_PUBLIC_SUPABASE_URL
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY =
-      ENV.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    withSupabaseSettings()
+    mockGetSession.mockResolvedValue(null)
     const { getAuthGateway } = await loadAdapter()
 
     const first = getAuthGateway()
     const second = getAuthGateway()
 
-    expect(first).toEqual({ tag: 'supabase-gateway' })
     expect(second).toBe(first)
     expect(mockCreateSupabaseAuthGateway).toHaveBeenCalledOnce()
     expect(mockCreateSupabaseAuthGateway).toHaveBeenCalledWith({
       client: { tag: 'client' }
     })
+    await expect(first.getSession()).resolves.toBeNull()
+    expect(mockGetSession).toHaveBeenCalledOnce()
+  })
+
+  test('names the failure of each Supabase Auth code a sign-in rejects with', async () => {
+    withSupabaseSettings()
+    const cases = [
+      {
+        cause: supabaseAuthError({
+          code: 'invalid_credentials',
+          message: 'Invalid login credentials',
+          name: SUPABASE_API_ERROR_NAME,
+          status: BAD_REQUEST_STATUS
+        }),
+        failure: SignInFailureEnum.INVALID_CREDENTIALS,
+        messageKey: 'auth.error.invalidCredentials'
+      },
+      {
+        cause: supabaseAuthError({
+          code: 'email_not_confirmed',
+          message: 'Email not confirmed',
+          name: SUPABASE_API_ERROR_NAME,
+          status: BAD_REQUEST_STATUS
+        }),
+        failure: SignInFailureEnum.EMAIL_NOT_CONFIRMED,
+        messageKey: 'auth.error.emailNotConfirmed'
+      },
+      {
+        cause: supabaseAuthError({
+          code: 'over_request_rate_limit',
+          message: 'Request rate limit reached',
+          name: SUPABASE_API_ERROR_NAME,
+          status: TOO_MANY_REQUESTS_STATUS
+        }),
+        failure: SignInFailureEnum.RATE_LIMITED,
+        messageKey: 'auth.error.rateLimited'
+      }
+    ]
+
+    for (const { cause, failure, messageKey } of cases) {
+      mockSignIn.mockRejectedValueOnce(cause)
+
+      const rejection = await signInRejection()
+
+      expect(rejection).toBeInstanceOf(await loadAppError())
+      expect(rejection).toMatchObject({ cause, code: failure, messageKey })
+    }
+    expect(mockSignIn).toHaveBeenCalledTimes(cases.length)
+    expect(mockSignIn).toHaveBeenCalledWith(CREDENTIALS)
+  })
+
+  test('names a network failure when Supabase cannot be reached', async () => {
+    withSupabaseSettings()
+    const cause = supabaseAuthError({
+      message: 'Failed to fetch',
+      name: SUPABASE_UNREACHABLE_ERROR_NAME,
+      status: 0
+    })
+    mockSignIn.mockRejectedValueOnce(cause)
+
+    const rejection = await signInRejection()
+
+    expect(rejection).toBeInstanceOf(await loadAppError())
+    expect(rejection).toMatchObject({
+      cause,
+      code: ServiceErrorCodeEnum.NETWORK_ERROR,
+      messageKey:
+        SERVICE_ERROR_MESSAGE_KEY_BY_CODE[
+          ServiceErrorCodeEnum.NETWORK_ERROR
+        ]
+    })
+  })
+
+  test('passes any other sign-in rejection through', async () => {
+    withSupabaseSettings()
+    const banned = supabaseAuthError({
+      code: 'user_banned',
+      message: 'User is banned',
+      name: SUPABASE_API_ERROR_NAME,
+      status: BAD_REQUEST_STATUS
+    })
+    const plain = new Error('Unexpected')
+    mockSignIn.mockRejectedValueOnce(banned).mockRejectedValueOnce(plain)
+
+    expect(await signInRejection()).toBe(banned)
+    expect(await signInRejection()).toBe(plain)
+  })
+
+  test('names a message every catalog holds for each sign-in failure', () => {
+    const keys = Object.values(SignInFailureEnum).map(
+      (failure) => SIGN_IN_FAILURE_MESSAGE_KEY[failure]
+    )
+
+    expect(keys).toHaveLength(Object.keys(SignInFailureEnum).length)
+    for (const { translation } of Object.values(resources)) {
+      for (const key of keys) {
+        expect(typeof messageAt({ catalog: translation, key }), key).toBe(
+          'string'
+        )
+      }
+    }
   })
 })

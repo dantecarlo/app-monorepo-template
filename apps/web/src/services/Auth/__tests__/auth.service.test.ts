@@ -42,4 +42,14 @@ describe('signInWithPassword', () => {
     expect((rejection as AppError).messageKey).toBe('helper.error.generic')
     expect((rejection as AppError & { cause: unknown }).cause).toBe(cause)
   })
+
+  test('keeps the failure the gateway names', async () => {
+    const failure = new AppError({
+      code: 'INVALID_CREDENTIALS',
+      messageKey: 'auth.error.invalidCredentials'
+    })
+    mockSignIn.mockRejectedValue(failure)
+
+    await expect(signInWithPassword(CREDENTIALS)).rejects.toBe(failure)
+  })
 })
