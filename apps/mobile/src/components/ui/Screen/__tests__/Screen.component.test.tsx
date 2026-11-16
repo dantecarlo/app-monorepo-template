@@ -27,24 +27,24 @@ describe('Screen', () => {
     colorScheme.set('dark')
   })
 
-  test("paints the dark base, or the active theme's base when themed", () => {
+  test("paints the active theme's base background", () => {
     colorScheme.set('light')
     render(
       <>
         <Screen>
-          <span>fixed</span>
+          <span>plain</span>
         </Screen>
-        <Screen style={{ justifyContent: 'center' }} themed>
-          <span>themed</span>
+        <Screen style={{ justifyContent: 'center' }}>
+          <span>centred</span>
         </Screen>
       </>
     )
 
-    expect(styleOf(surfaceOf('fixed'))).toEqual({
-      backgroundColor: themes.dark.bg.base,
+    expect(styleOf(surfaceOf('plain'))).toEqual({
+      backgroundColor: themes.light.bg.base,
       flex: 1
     })
-    expect(styleOf(surfaceOf('themed'))).toEqual({
+    expect(styleOf(surfaceOf('centred'))).toEqual({
       backgroundColor: themes.light.bg.base,
       flex: 1,
       justifyContent: 'center'

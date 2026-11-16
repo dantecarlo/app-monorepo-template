@@ -3,9 +3,10 @@ import { Pressable, Text, View } from 'react-native'
 import { Icon } from '@/components/ui/Icon/Icon.component'
 import {
   SETTING_ROW_CHEVRON_SIZE,
-  SETTING_ROW_STYLES as styles
+  SETTING_ROW_STYLES
 } from '@/components/ui/SettingRow/SettingRow.style'
 import type { ISettingRowProps } from '@/components/ui/SettingRow/SettingRow.type'
+import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 
 /**
  * Settings list row: leading slot + label/subtitle + trailing value/control
@@ -21,6 +22,8 @@ export const SettingRow = ({
   subtitle,
   value
 }: ISettingRowProps) => {
+  const styles = useThemedStyles({ styles: SETTING_ROW_STYLES })
+
   const containerStyle = [
     styles.container,
     isFirst ? undefined : styles.divider

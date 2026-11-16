@@ -3,10 +3,11 @@ import { Animated, Pressable } from 'react-native'
 
 import {
   GRADIENT_COLORS,
-  TOGGLE_STYLES as styles
+  TOGGLE_STYLES
 } from '@/components/ui/Toggle/Toggle.style'
 import type { IToggleProps } from '@/components/ui/Toggle/Toggle.type'
 import { useToggleKnob } from '@/components/ui/Toggle/useToggleKnob.hook'
+import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 
 export const Toggle = ({
   accessibilityLabel,
@@ -14,6 +15,8 @@ export const Toggle = ({
   onValueChange,
   value
 }: IToggleProps) => {
+  const styles = useThemedStyles({ styles: TOGGLE_STYLES })
+
   const { translateX } = useToggleKnob(value)
 
   return (

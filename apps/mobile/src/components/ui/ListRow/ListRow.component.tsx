@@ -1,7 +1,8 @@
 import { Pressable, Text, View } from 'react-native'
 
-import { LIST_ROW_STYLES as styles } from '@/components/ui/ListRow/ListRow.style'
+import { LIST_ROW_STYLES } from '@/components/ui/ListRow/ListRow.style'
 import type { IListRowProps } from '@/components/ui/ListRow/ListRow.type'
+import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 
 /** Generic list item with optional leading/trailing slots and divider. */
 export const ListRow = ({
@@ -12,6 +13,8 @@ export const ListRow = ({
   title,
   trailing
 }: IListRowProps) => {
+  const styles = useThemedStyles({ styles: LIST_ROW_STYLES })
+
   const containerStyle = [
     styles.container,
     isFirst ? undefined : styles.divider

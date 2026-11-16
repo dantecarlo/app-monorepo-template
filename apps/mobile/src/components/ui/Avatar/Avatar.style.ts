@@ -1,21 +1,27 @@
-import { colors, radius } from '@app/tokens'
+import { radius } from '@app/tokens'
 
-export const AVATAR_VARIANT_COLORS = {
-  accent: {
-    backgroundColor: colors.accentTint,
-    textColor: colors.accent
-  },
-  glass: {
-    backgroundColor: colors.glass.fill,
-    textColor: colors.text.secondary
-  },
-  neutral: {
-    backgroundColor: colors.neutralTint,
-    textColor: colors.text.secondary
-  }
-} as const
+import { createThemedValues } from '@/lib/theme/createThemedStyles.helper'
 
-export type AvatarVariantType = keyof typeof AVATAR_VARIANT_COLORS
+export const AVATAR_VARIANT_COLORS = createThemedValues({
+  build: (palette) =>
+    ({
+      accent: {
+        backgroundColor: palette.accentTint,
+        textColor: palette.accent
+      },
+      glass: {
+        backgroundColor: palette.glass.fill,
+        textColor: palette.text.secondary
+      },
+      neutral: {
+        backgroundColor: palette.neutralTint,
+        textColor: palette.text.secondary
+      }
+    }) as const
+})
+
+export type AvatarVariantType =
+  keyof (typeof AVATAR_VARIANT_COLORS)['dark']
 
 export const AVATAR_BORDER_RADIUS: Record<28 | 36 | 44, number> = {
   28: radius.full,

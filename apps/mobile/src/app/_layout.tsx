@@ -20,6 +20,7 @@ import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
+import { View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { AuthProvider } from '@/components/AuthProvider'
@@ -41,7 +42,7 @@ const queryClient = createQueryClient({
 const authGateway = createSupabaseAuthGateway({ client: supabase })
 
 const RootLayout = () => {
-  const { contentStyle, statusBarStyle } = useRootTheme()
+  const { contentStyle, statusBarStyle, themeStyle } = useRootTheme()
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -66,15 +67,17 @@ const RootLayout = () => {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider gateway={authGateway}>
-          <StatusBar style={statusBarStyle} />
-          <Stack
-            screenOptions={{
-              animation: 'fade',
-              contentStyle,
-              headerShown: false
-            }}
-          />
-          <Toast />
+          <View style={themeStyle}>
+            <StatusBar style={statusBarStyle} />
+            <Stack
+              screenOptions={{
+                animation: 'fade',
+                contentStyle,
+                headerShown: false
+              }}
+            />
+            <Toast />
+          </View>
         </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

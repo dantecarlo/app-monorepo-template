@@ -1,8 +1,9 @@
 import { Text, View } from 'react-native'
 
 import { IconButton } from '@/components/ui/IconButton/IconButton.component'
-import { SCREEN_HEADER_STYLES as styles } from '@/components/ui/ScreenHeader/ScreenHeader.style'
+import { SCREEN_HEADER_STYLES } from '@/components/ui/ScreenHeader/ScreenHeader.style'
 import type { IScreenHeaderProps } from '@/components/ui/ScreenHeader/ScreenHeader.type'
+import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 
 /**
  * Fixed header with symmetric slots: back button (left) + title (center) +
@@ -17,6 +18,8 @@ export const ScreenHeader = ({
   onBack,
   title
 }: IScreenHeaderProps) => {
+  const styles = useThemedStyles({ styles: SCREEN_HEADER_STYLES })
+
   const hasAction =
     actionName !== undefined &&
     actionLabel !== undefined &&

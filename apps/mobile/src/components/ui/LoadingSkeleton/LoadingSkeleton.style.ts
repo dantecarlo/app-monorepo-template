@@ -1,10 +1,18 @@
-import { colors, radius } from '@app/tokens'
+import { radius } from '@app/tokens'
 import { StyleSheet } from 'react-native'
 
-export const SKELETON_PLACEHOLDER_COLOR = colors.glass.fill
+import {
+  createThemedStyles,
+  createThemedValues
+} from '@/lib/theme/createThemedStyles.helper'
+
 export const SKELETON_SHIMMER_START = 'transparent'
-export const SKELETON_SHIMMER_MID = colors.glass.stroke
 export const SKELETON_SHIMMER_END = 'transparent'
+
+// The highlight that sweeps across the placeholder, per theme.
+export const SKELETON_SHIMMER_MID = createThemedValues({
+  build: (palette) => palette.glass.stroke
+})
 
 export const SHIMMER_DURATION = 1200
 export const SHIMMER_TRANSLATE_RANGE = 200
@@ -20,11 +28,16 @@ export const ROUNDED_BY_VARIANT = {
 
 export type SkeletonRoundedType = keyof typeof ROUNDED_BY_VARIANT
 
-export const LOADING_SKELETON_STYLES = StyleSheet.create({
-  root: {
-    backgroundColor: SKELETON_PLACEHOLDER_COLOR,
-    overflow: 'hidden'
-  },
+export const LOADING_SKELETON_STYLES = createThemedStyles({
+  build: (palette) => ({
+    root: {
+      backgroundColor: palette.glass.fill,
+      overflow: 'hidden'
+    }
+  })
+})
+
+export const SKELETON_SHIMMER_STYLES = StyleSheet.create({
   shimmer: {
     bottom: 0,
     left: 0,

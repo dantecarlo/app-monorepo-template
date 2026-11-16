@@ -7,8 +7,9 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { SearchBar } from '@/components/ui/SearchBar'
 import { Text } from '@/components/ui/Text'
+import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 import { ItemCard } from '@/screens/ItemsDashboard/components/ItemCard'
-import { ITEMS_LIST_CARD_STYLES as styles } from '@/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.style'
+import { ITEMS_LIST_CARD_STYLES } from '@/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.style'
 import type { IItemsListCardProps } from '@/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.type'
 
 export const ItemsListCard = ({
@@ -19,6 +20,8 @@ export const ItemsListCard = ({
   onSearchChange,
   search
 }: IItemsListCardProps) => {
+  const styles = useThemedStyles({ styles: ITEMS_LIST_CARD_STYLES })
+
   const { t } = useTranslation('translation', {
     keyPrefix: 'items.dashboard'
   })

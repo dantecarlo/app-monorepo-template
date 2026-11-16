@@ -1,4 +1,3 @@
-import { colors } from '@app/tokens'
 import { Platform } from 'react-native'
 import Svg, { Path } from 'react-native-svg'
 
@@ -8,16 +7,18 @@ import {
   STROKE_WIDTH
 } from '@/components/ui/Icon/Icon.constant'
 import type { IIconProps } from '@/components/ui/Icon/Icon.type'
+import { useThemeTokens } from '@/lib/theme/useThemeTokens.hook'
 
 export type { IconNameType } from '@/components/ui/Icon/Icon.constant'
 
 export const Icon = ({
-  color = colors.text.primary,
+  color,
   decorative = true,
   label,
   name,
   size = DEFAULT_ICON_SIZE
 }: IIconProps) => {
+  const { colors: palette } = useThemeTokens()
   const path = ICON_PATHS[name]
 
   const a11yProps =
@@ -35,7 +36,7 @@ export const Icon = ({
     <Svg
       fill="none"
       height={size}
-      stroke={color}
+      stroke={color ?? palette.text.primary}
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={STROKE_WIDTH}

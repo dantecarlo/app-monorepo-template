@@ -3,7 +3,8 @@ import { View } from 'react-native'
 
 import { GlassCard } from '@/components/ui/GlassCard'
 import { Text } from '@/components/ui/Text'
-import { STATS_CARD_STYLES as styles } from '@/screens/ItemsDashboard/components/StatsCard/StatsCard.style'
+import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
+import { STATS_CARD_STYLES } from '@/screens/ItemsDashboard/components/StatsCard/StatsCard.style'
 import type { IStatsCardProps } from '@/screens/ItemsDashboard/components/StatsCard/StatsCard.type'
 
 export const StatsCard = ({
@@ -11,6 +12,8 @@ export const StatsCard = ({
   isLoading,
   totalCount
 }: IStatsCardProps) => {
+  const styles = useThemedStyles({ styles: STATS_CARD_STYLES })
+
   const { t } = useTranslation('translation', {
     keyPrefix: 'items.dashboard'
   })

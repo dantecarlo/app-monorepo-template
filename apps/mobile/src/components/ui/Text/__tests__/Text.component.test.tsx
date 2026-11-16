@@ -1,5 +1,6 @@
-import { colors, fontFamily, fontSize } from '@app/tokens'
-import { describe, expect, test } from 'vitest'
+import { colors, fontFamily, fontSize, themes } from '@app/tokens'
+import { colorScheme } from 'nativewind'
+import { afterEach, describe, expect, test } from 'vitest'
 
 import { Text } from '@/components/ui/Text/Text.component'
 import { render, screen } from '@/test/test.helper'
@@ -19,6 +20,10 @@ const styleOf = (node: unknown) =>
   JSON.parse(host(node).getAttribute('data-style') ?? '{}')
 
 describe('Text', () => {
+  afterEach(() => {
+    colorScheme.set('dark')
+  })
+
   test("renders a variant's typography", () => {
     render(<Text variant="caption">Updated</Text>)
 
@@ -49,6 +54,18 @@ describe('Text', () => {
     })
     expect(styleOf(screen.getByText('A'))).toEqual({
       color: colors.accentInk
+    })
+  })
+
+  test("paints a variant in the active theme's colour", () => {
+    colorScheme.set('light')
+    render(<Text variant="caption">Updated</Text>)
+
+    expect(styleOf(screen.getByText('Updated'))).toEqual({
+      color: themes.light.text.tertiary,
+      fontFamily: `${fontFamily.body}_400Regular`,
+      fontSize: fontSize.caption.size,
+      lineHeight: fontSize.caption.lineHeight
     })
   })
 })

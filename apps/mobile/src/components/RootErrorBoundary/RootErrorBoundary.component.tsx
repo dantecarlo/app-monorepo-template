@@ -14,7 +14,7 @@ export const RootErrorBoundary = ({
   useReportBoundaryError({ error })
 
   return (
-    <Screen style={styles.screen} themed>
+    <Screen style={styles.screen}>
       <ErrorState onRetry={retry} />
     </Screen>
   )
