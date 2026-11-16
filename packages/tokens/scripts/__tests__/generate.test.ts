@@ -109,7 +109,7 @@ describe('token generator', () => {
 
     const first = runGenerator(packageDir)
     expect(first.status, first.stderr).toBe(0)
-    expect(first.stdout).toContain('3 written')
+    expect(first.stdout).toContain('4 written')
 
     const expected = renderOutputs({ tokens })
     expect(expected.map(({ path }) => path).sort()).toEqual(
@@ -147,6 +147,9 @@ describe('token generator', () => {
     expect(
       contentOf({ outputs, path: OUTPUTS.nativewindPreset })
     ).toContain("'4xl': '40px'")
+    expect(contentOf({ outputs, path: OUTPUTS.themeNames })).toMatch(
+      /spacing: \[[^\]]*'4xl'/
+    )
     expect(contentOf({ outputs, path: OUTPUTS.themeVars })).toBe(
       contentOf({ outputs: shipped, path: OUTPUTS.themeVars })
     )

@@ -2,7 +2,7 @@
 // ---------------------------------------------------------------------------
 // Companion for verify-theme-sync. The shipped outputs equal their
 // regeneration, so the cases are the only evidence the gate can go red. Each
-// case copies the token source and the three generated outputs into a
+// case copies the token source and every generated output into a
 // throwaway tree in the OS temp directory, plants one edit with a string
 // replacement, and drives the gate's own collector over it. The checks then
 // run the gate as a process over a planted edit, and re-run every failing
@@ -112,6 +112,17 @@ export const CASES = [
     name: 'a planted edit in the mobile theme variables is caught'
   },
   {
+    context: walk(
+      plant({
+        file: SOURCES.themeNames,
+        from: "'pill-x'",
+        to: "'pill-z'"
+      })
+    ),
+    expected: 1,
+    name: 'a planted edit in the theme names is caught'
+  },
+  {
     // The dark raised background reaches all three outputs.
     context: walk(
       plant({
@@ -134,6 +145,19 @@ export const CASES = [
     ),
     expected: 2,
     name: 'a light-theme source change is caught in the web theme and the mobile variables'
+  },
+  {
+    // A name, not a colour: it reaches the web theme, the preset and the
+    // theme names, and not the mobile variables.
+    context: walk(
+      plant({
+        file: SOURCES.tokens,
+        from: 'pillY: 5',
+        to: 'pillZ: 5'
+      })
+    ),
+    expected: 3,
+    name: 'a renamed token that was not regenerated is caught in the theme names too'
   },
   {
     context: walk(without(SOURCES.webTheme)),
