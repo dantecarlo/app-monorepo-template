@@ -341,6 +341,12 @@ a hand-written segment missing from the enum shows up as `[redacted]`. Never
 pass a live key through `sanitizeQueryKey` yourself: every item would share one
 cache entry.
 
+Put every dynamic value of a key, an id, a search text or a filter, in one trailing
+params object, never as a bare segment: `sanitizeQueryKey` redacts the object whole,
+while a bare value equal to a registered word (`list('list')`) would survive it. The
+feature's `all` key stays the prefix of each of its keys, so invalidating it reaches
+them all; `pnpm validate` runs a test that walks every factory of `QueryKeys`.
+
 ---
 
 ## 12. Zustand State

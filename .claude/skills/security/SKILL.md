@@ -82,12 +82,15 @@ The template provides `scrubPII`, `PII_KEYS`, and `sanitizeQueryKey` from `@app/
 // ❌ Email in a query key — shown by TanStack Query DevTools
 queryKey: ['user', userEmail]
 
-// ✅ An opaque id; the query client reports it as [redacted]
-queryKey: QueryKeys.user.detail(userId)
+// ✅ An opaque id in the trailing params object; reported as [redacted]
+queryKey: QueryKeys.user.detail(userId) // ['user', 'detail', { id }]
 ```
 
 The query client passes a failed key through `sanitizeQueryKey`, which keeps
-only the values of `QueryKeySegmentEnum` in `@/lib/query/queryKeys.constant.ts`.
+only the values of `QueryKeySegmentEnum` in `@/lib/query/queryKeys.constant.ts`
+and redacts the trailing params object that holds every dynamic value. Flag a
+factory that writes a dynamic value as a bare segment: a value equal to a
+registered word would survive the sanitizer.
 Flag a call that wraps a live key in `sanitizeQueryKey`: every item would share
 one cache entry.
 

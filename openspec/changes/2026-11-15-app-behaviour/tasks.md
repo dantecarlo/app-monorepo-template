@@ -1,6 +1,6 @@
 # Tasks: 2026-11-15-app-behaviour
 
-- [ ] T1 — enum members in UPPER_SNAKE_CASE: the `enumMember` selector of `@typescript-eslint/naming-convention`, every enum member of both apps renamed with its usages, the naming table of `docs/code-standards.md` § 4 and the skill snippets (F24) · Requirements: none · Commit: —
+- [x] T1 — enum members in UPPER_SNAKE_CASE: the `enumMember` selector of `@typescript-eslint/naming-convention`, every enum member of both apps renamed with its usages, the naming table of `docs/code-standards.md` § 4 and the skill snippets (F24) · Requirements: none · Commit: 234e2b8
 - [ ] T2 — query keys hold their dynamic values in a trailing params object, in both apps, with the factory walk, the prefix invalidation and the redaction tests; the skills and docs that show key factories (F23) · Requirements: WEB-24, WEB-44, MOBILE-25, MOBILE-43 · Commit: —
 - [ ] T3 — web: `useAppQuery` queues no toast; the dashboard shows the `ErrorState` with a retry when the items query fails; `error.tsx` and `global-error.tsx` report the crash once through `reportBoundaryError` (F25) · Requirements: WEB-07, WEB-26, WEB-38 · Commit: —
 - [ ] T4 — mobile: `useAppQuery` adds no toast; the dashboard shows the `ErrorState` with a retry when the items query fails; `RootErrorBoundary` reports the crash once through `reportBoundaryError` (F25) · Requirements: MOBILE-20, MOBILE-37 · Commit: —

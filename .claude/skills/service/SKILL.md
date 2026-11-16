@@ -67,16 +67,18 @@ Add to `src/lib/query/queryKeys.constant.ts`:
 ```typescript
 // The existing enum, with one member added for the new feature:
 export enum QueryKeySegmentEnum {
+  DETAIL = 'detail',
+  {FEATURE_NAME} = '{featureName}', // the new feature's segment
   ITEMS = 'items',
-  LIST = 'list',
-  {FEATURE_NAME} = '{featureName}' // the new feature's segment
+  LIST = 'list'
 }
 
 {featureName}: {
   all:    [QueryKeySegmentEnum.{FEATURE_NAME}] as const,
   list:   (contextId: string) =>
-    [QueryKeySegmentEnum.{FEATURE_NAME}, contextId, QueryKeySegmentEnum.LIST] as const,
-  detail: (id: string) => [QueryKeySegmentEnum.{FEATURE_NAME}, id] as const,
+    [QueryKeySegmentEnum.{FEATURE_NAME}, QueryKeySegmentEnum.LIST, { contextId }] as const,
+  detail: (id: string) =>
+    [QueryKeySegmentEnum.{FEATURE_NAME}, QueryKeySegmentEnum.DETAIL, { id }] as const,
 }
 ```
 
@@ -86,6 +88,12 @@ query fails, the query client reports its key through `sanitizeQueryKey` from
 a hand-written segment missing from the enum shows up as `[redacted]`. Never
 pass a live key through `sanitizeQueryKey` yourself: every item would share one
 cache entry.
+
+Put every dynamic value of a key, an id, a search text or a filter, in one trailing
+params object, never as a bare segment: `sanitizeQueryKey` redacts the object whole,
+while a bare value equal to a registered word (`list('list')`) would survive it. The
+feature's `all` key stays the prefix of each of its keys, so invalidating it reaches
+them all; `pnpm validate` runs a test that walks every factory of `QueryKeys`.
 
 ---
 
