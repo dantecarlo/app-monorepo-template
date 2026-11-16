@@ -39,7 +39,7 @@ Ready to merge conditions and the release stage, beside two templates in its fol
 #### Scenario: the contract of the repository
 
 - **GIVEN** the repository's seven ticket skills
-- **WHEN** `pnpm verify:ticket-branch:test` runs
+- **WHEN** `pnpm verify:skills:test` runs
 - **THEN** the structural check finds nothing
 - **Test:** `scripts/verify-skills.test.mjs` › "the seven ticket skills of the repository pass"
 

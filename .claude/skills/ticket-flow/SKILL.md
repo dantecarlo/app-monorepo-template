@@ -286,7 +286,7 @@ ships:
   - .claude/skills/ticket-flow/release.template.md
 read_first_by: [po-ticket, refine-ticket, dev-ticket, qa-ticket, release-ticket, process-intake]
 board_operations: [create, read, move, comment, link]
-validated_by: verify:ticket-branch:test # scripts/verify-skills.mjs judges the structure only
+validated_by: verify:skills:test # scripts/verify-skills.mjs judges the structure only
 done_when: the session knows its role, its adapter and the next state of its ticket
 ```
 

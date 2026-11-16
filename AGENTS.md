@@ -392,7 +392,7 @@ Every role loads `ticket-flow` first; with no `docs/process/ticket-flow.md`, run
 
 | If the task means…                                                                                                  | Load skill       | Validated by                                |
 | ------------------------------------------------------------------------------------------------------------------- | ---------------- | ------------------------------------------- |
-| the **ticket flow** itself: the states, the board operations, the messages, the rules a role follows               | `ticket-flow`    | `verify:ticket-branch:test`                 |
+| the **ticket flow** itself: the states, the board operations, the messages, the rules a role follows               | `ticket-flow`    | `verify:skills:test`                        |
 | **PO**: a client requirement becomes a ticket with its target version; a scope or version change; the plan on close | `po-ticket`      | review                                      |
 | **architect**: refine a ticket into specs and a plan, dispatch every ready state, group a release                   | `refine-ticket`  | `verify:specs`                              |
 | **dev**: build a ticket test first in its own worktree, up to Ready for QA                                          | `dev-ticket`     | `validate` · `verify:ticket-branch`         |
