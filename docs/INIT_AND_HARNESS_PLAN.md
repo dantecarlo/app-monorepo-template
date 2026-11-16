@@ -485,6 +485,7 @@ defects behind them, for changes of their own.
 | F36 | apps/web, security | the origin-guard matcher exempts any path that only starts with an exempt name: `/imagesadmin`, `/fonts-private/x`, `/favicon.icox` and `/_next/staticfoo` skip the guard; anchor the pattern (`images/`, `fonts/`, `favicon.ico$`); found by the F.5 verifier, there before it | done: this change |
 | F37 | both apps | when the items query fails, the caption shows "0 results" beside the `ErrorState` | small |
 | F38 | both apps | `useItems` keys its query by `search` only, but its `queryFn` also reads `limit`, so two limits share one cache entry | small |
+| F39 | apps/web, packages/tokens | a custom property resolves its `var()` where it is declared, and the generated theme declares on `:root`: a token that must follow an element-scoped or `@property`-animated variable has to be read with `--theme(<token> inline)`, and a nested `[data-theme]` scope would not re-resolve the `@theme` colours; tailwind-merge reads the hand-written `bg-accent-gradient` as a colour, so a later `bg-<colour>` drops it. Neither bites today (no `@property`, the theme on `html` only, no block combines the gradient with a colour); found by Certifipago #853 | note; a guard test when the first `@property` arrives |
 
 ---
 
