@@ -16,18 +16,26 @@ const EXEMPT_URLS = [
   'https://app.example.com/_next/image?url=%2Fimages%2Fa.png&w=64&q=75',
   'https://app.example.com/favicon.ico',
   'https://app.example.com/images/logo.png',
-  'https://app.example.com/fonts/Inter_400Regular.ttf'
+  'https://app.example.com/images/',
+  'https://app.example.com/fonts/Inter_400Regular.ttf',
+  // Where next/font/local serves the web fonts.
+  'https://app.example.com/_next/static/media/inter-latin.woff2'
 ]
 
 // Paths that only start like an exempt one: each is a route, so the guard runs.
 const LOOKALIKE_URLS = [
   'https://app.example.com/imagesadmin',
   'https://app.example.com/images',
+  'https://app.example.com/images%2Fa.png',
+  'https://app.example.com/IMAGES/a.png',
+  'https://app.example.com/fonts',
   'https://app.example.com/fonts-private/x',
   'https://app.example.com/favicon.icox',
+  'https://app.example.com/favicon.ico/',
   'https://app.example.com/faviconXico',
   'https://app.example.com/_next/staticfoo',
-  'https://app.example.com/_next/imagefoo'
+  'https://app.example.com/_next/imagefoo',
+  'https://app.example.com/_next/image/x'
 ]
 
 const loadMiddleware = async () => import('@/middleware')
@@ -88,12 +96,11 @@ describe('middleware', () => {
   test('runs for a path that only starts like an exempt one', async () => {
     const { config } = await loadMiddleware()
 
-    LOOKALIKE_URLS.forEach((url) => {
-      expect({
-        matched: unstable_doesMiddlewareMatch({ config, url }),
-        url
-      }).toEqual({ matched: true, url })
-    })
+    const skipped = LOOKALIKE_URLS.filter(
+      (url) => !unstable_doesMiddlewareMatch({ config, url })
+    )
+
+    expect(skipped).toEqual([])
   })
 
   test('runs for a page route', async () => {
