@@ -11,11 +11,12 @@
 sections: a pre-flight that reads docs/process/ticket-flow.md and sends a team with no board
 adapter to `process-intake`, the board operations with their GitHub Issues mapping, the states and
 transitions naming each of the thirteen states (the ten of the build and the three of the
-release), the architect as dispatcher, the messages, the roles naming each of the six (the CI/CD
+release), the seven board operations (`read version` and `set version` among them), the
+architect as dispatcher, the messages, the roles naming each of the six (the CI/CD
 role included), the rules every role follows, the ticket identity, what a ticket carries, the
 Ready to merge conditions and the release stage, beside two templates in its folder:
-`ticket.template.md`, the body a ticket is written from, and `release.template.md`, the body of a
-release ticket.
+`ticket.template.md`, the body a ticket is written from, with its target version, and
+`release.template.md`, the body of a release ticket, with the one version it ships.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -53,6 +54,20 @@ release ticket.
 - **WHEN** the structural check runs
 - **THEN** it reports the missing file
 - **Test:** `scripts/verify-skills.test.mjs` › "a ticket-flow without its ticket template is refused"
+
+#### Scenario: the ticket has no target version
+
+- **GIVEN** a `ticket.template.md` with no target version section
+- **WHEN** the structural check runs
+- **THEN** it reports the missing section
+- **Test:** `scripts/verify-skills.test.mjs` › "a ticket template without its target version is refused"
+
+#### Scenario: the board cannot set a target version
+
+- **GIVEN** a `ticket-flow` whose board operations table has no `set version` row
+- **WHEN** the structural check runs
+- **THEN** it reports one finding, naming the operation
+- **Test:** `scripts/verify-skills.test.mjs` › "a ticket-flow whose board operations cannot set the target version is refused"
 
 #### Scenario: the CI/CD role is dropped
 
@@ -144,7 +159,7 @@ whose description holds `USE WHEN:` and `DO NOT USE:`, and which has a `## CONTR
 
 - **GIVEN** a tree with no `dev-ticket` folder
 - **WHEN** the structural check runs
-- **THEN** it reports the missing `SKILL.md`, rather than judging five skills green
+- **THEN** it reports the missing `SKILL.md`, rather than judging six skills green
 - **Test:** `scripts/verify-skills.test.mjs` › "a missing ticket skill is caught, not skipped"
 
 #### Scenario: the check as a process
@@ -159,7 +174,8 @@ whose description holds `USE WHEN:` and `DO NOT USE:`, and which has a `## CONTR
 
 `.claude/skills/process-intake/` SHALL hold `ticket-flow.template.md`, the template of a
 project's docs/process/ticket-flow.md, with sections for the board adapter (its kind and a row
-for each of the five operations: create, read, move, comment and link), the states, the roles and
+for each of the seven operations: create, read, move, comment, link, read version and set
+version), the states, the roles and
 sessions, the approvals, the merge policy, the ticket identity, the branch check in CI, the deploy
 targets (a table of each target's kind, trigger, order, check, rollback and secret store) and the
 branching model.
@@ -420,8 +436,8 @@ Done tickets into a release ticket.
 
 ### Requirement: TICKET-15 — A release enters Ready for prod only when its batch is proven
 
-`refine-ticket` SHALL move a release ticket to Ready for prod only when every ticket it lists is
-Done, the default branch's CI is green, and the QA of each area the batch touches has checked it
+`refine-ticket` SHALL move the release ticket of a version V to Ready for prod only when it lists
+every ticket whose target version is V and each one is Done, the default branch's CI is green, and the QA of each area the batch touches has checked it
 on staging or preview, with evidence on the release ticket.
 
 **Evidence:** written at apply time, when the code exists.
@@ -466,5 +482,38 @@ running against the new schema, and declare a migration's rollback as a forward 
 - **WHEN** the CI/CD role reads the release ticket
 - **THEN** it stops, comments that the drop needs its own later release, and messages the
   architect
+- **Test:** Not covered — the rule is a procedure a CI/CD session follows; no runner drives a
+  session
+
+### Requirement: TICKET-18 — A target version moves only through the PO
+
+`po-ticket` SHALL set a ticket's target version when it creates the ticket, and move it only once
+the PO confirms the architect's proposal on the ticket, refreshing the general plan.
+
+**Evidence:** written at apply time, when the code exists.
+
+#### Scenario: the plan cannot meet the version
+
+- **GIVEN** a ticket aimed at 1.4 whose plan needs two more weeks
+- **WHEN** the architect refines it
+- **THEN** the architect proposes 1.5 on the ticket and messages the PO, and the version stays
+  1.4 until the PO sets it
+- **Test:** Not covered — the rule is a procedure the architect and PO sessions follow; no runner
+  drives a session
+
+### Requirement: TICKET-19 — A merged ticket aimed at a later version is settled before a release
+
+`release-ticket` SHALL flag, before a release enters In release, every ticket merged since the
+last release whose target version is later than the release's, and go on only once each one sits
+behind a feature flag the architect names or its target version has moved to the release's.
+
+**Evidence:** written at apply time, when the code exists.
+
+#### Scenario: a 1.5 feature merged before the 1.4 release
+
+- **GIVEN** a release of 1.4 and a merged ticket aimed at 1.5 with no feature flag
+- **WHEN** the CI/CD session reads the release
+- **THEN** it flags the ticket on the release ticket, messages the architect, and asks the owner
+  nothing until the ticket is settled
 - **Test:** Not covered — the rule is a procedure a CI/CD session follows; no runner drives a
   session

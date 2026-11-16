@@ -31,11 +31,15 @@ The owner's words, verbatim:
   launch the deploy ... we also need a strategy, which must also be adaptable, for the web
   deployment. It can be a branching"; and, approving § 8b as written (translated from Spanish):
   "I approve it"
+- 2026-11-16 at 12:52, the target version (translated from Spanish): "that the PO and the
+  architect put, in some field of the ticket, which version the ticket they create is aimed at.
+  That way the CI/CD will know which tickets to deploy"
 
 Two corrections from Certifipago's Arquitecto, accepted by the coordinator on 2026-11-16, are
 applied below: the board adapter has three kinds of filler, and Ready to merge requires the
 default branch's current tip. The release stage the owner approved at 12:38 is § 8b of the same
-file, copied with it, and built here with the template's changes to it.
+file, copied with it, and built here with the template's changes to it; the target version the
+owner asked for at 12:52 is not in the source, and is built here as changes to it.
 
 ## What changes
 
@@ -43,8 +47,8 @@ file, copied with it, and built here with the template's changes to it.
   sets (frontmatter, USE WHEN and DO NOT USE, a CONTRACT and an Output):
   - `ticket-flow`, the contract every role reads first: the pre-flight, the board operations and
     their GitHub Issues mapping, the states and transitions, the architect as dispatcher, the
-    one-line messages, the roles, the rules, the ticket identity, what a ticket carries, the Ready
-    to merge conditions, the release stage, and two templates: `ticket.template.md`, the body a
+    one-line messages, the roles, the rules, the ticket identity, the target version, what a
+    ticket carries, the Ready to merge conditions, the release stage, and two templates: `ticket.template.md`, the body a
     ticket is written from, and `release.template.md`, the body of a release ticket;
   - five role procedures, `po-ticket`, `refine-ticket`, `dev-ticket`, `qa-ticket` and
     `release-ticket` (the CI/CD role), each opening with "read `ticket-flow` first" and never
@@ -72,7 +76,7 @@ The template's answers to the source's § 9, and every change it makes to the so
 
 1. § 9, one skill or five: the six skills § 7 lists, plus `release-ticket` for § 8b; the five role skills are procedures that open with "read `ticket-flow` first" and never restate it.
 2. Skills, not subagents: a role is played by a whole long-lived session, so the unit is a skill that session loads; a session may still use subagents for its own subtasks, under § 5 rule 3.
-3. The board is a declared interface of five operations (create a ticket, read it, move its state, comment, link a branch or PR), and the skills speak only in those operations (decision 51).
+3. The board is a declared interface of operations (create a ticket, read it, move its state, comment, link a branch or PR, and the two of item 48), and the skills speak only in those operations (decision 51).
 4. A project fills the board interface with one of three kinds: (a) `gh`, GitHub Issues, the template's default; (b) an MCP connector (Notion, Jira or Linear); (c) the project's own scripts.
 5. The project layer names the adapter kind and, for each operation, the command or tool call that performs it.
 6. Example of kind (c), not shipped by the template: Certifipago's scripts/board/board-client.mjs, board-config.mjs and board-check.mjs, driven by .agents/board.config.json and a Notion REST token with the state field `Estado`, with a plan-to-board sync and a `verify:board-config` gate.
@@ -106,13 +110,20 @@ The template's answers to the source's § 9, and every change it makes to the so
 34. A migration has no rollback beyond a forward fix, and its target says so.
 35. The release ticket carries the listed tickets, the version per target, the migrations, the changelog, the rollback per target, the staging evidence and the owner's go for each irreversible step, recorded on the ticket; `ticket-flow` ships it as `release.template.md`.
 36. Credentials stay out of tickets: deploy secrets live in the host or CI secret store the target names, and a ticket never holds one.
-37. A failed target runs that target's declared rollback and stops the release; the CI/CD role comments on the release ticket and messages the architect `<release-id> <target> failed`.
+37. A failed target runs that target's declared rollback and stops the release: the release ticket goes back to Refinement with a comment, and the CI/CD role messages the architect `<release-id> <target> failed`.
 38. Every deploy and every merge to `production` stays the owner's word (§ 5 rule 4), per release and per irreversible step, given in the CI/CD session and recorded on the release ticket.
 39. A hotfix is a ticket of type `fix` on a branch from `production`; it goes through QA like any other ticket, its Ready to merge asks for `production`'s current tip instead of the default branch's, and after it ships `production` merges back into the default branch on the owner's word.
 40. The default branching of § 8b is the recommended one and the tags-only alternative is described beside it, both in `release-ticket`; the template ships no `production` branch of its own, it is the default a project's layer adopts.
 41. With a release stage, the architect closes the tickets a release lists once it is Released and messages the PO `<release-id> released`; a project with no deploy targets closes a ticket after Done, as § 3 says.
 42. A release ticket has the type `release` and no branch of its own; the release pull request, from the default branch to `production`, is merged and never rebased, and a project's branch check in CI skips it.
 43. `process-intake` asks for the deploy targets and the branching model, and the process-layer template has a section for each.
+44. A plan that spans several areas is split by the architect into one ticket per area, linked by their dependencies, so each ticket has one dev session, one branch and one QA session.
+45. The ticket's target version: a ticket carries the version it is aimed at, the PO proposes it when creating the ticket (`po-ticket`), the architect confirms or corrects it during refinement (`refine-ticket`), and § 6 lists it among a ticket's contents.
+46. A release is one version: the release ticket for version V lists every ticket whose target is V, and reaches Ready for prod only when all of them are Done, on top of the earlier Ready for prod conditions.
+47. A merged ticket aimed at a later version: a release ships everything merged since the last one, so before In release `release-ticket` flags every merged ticket whose target is a later version, and each one sits behind a feature flag or its target moves; this holds for a tag on the default branch as well as for the `production` branch.
+48. Moving a target version changes a commitment, so it goes through the PO: the architect proposes the move on the ticket and messages the PO `<id> version change`; the PO confirms it, sets it, updates the plan and messages the architect `<id> version set`; a correction during refinement is such a move.
+49. The board adapter's operations gain `read version` and `set version`; in the GitHub Issues default the target version is the issue's milestone (`gh issue edit --milestone`), a release version is a milestone, and the release ticket lists the milestone's issues.
+50. Example only, not shipped: Certifipago's script adapter maps the target version to a Notion select named Versi&oacute;n.
 
 ## Out of scope
 
@@ -130,7 +141,7 @@ The template's answers to the source's § 9, and every change it makes to the so
 
 ## Affected specs
 
-- `openspec/specs/harness/ticket-flow/spec.md` (new): added TICKET-01 to TICKET-17.
+- `openspec/specs/harness/ticket-flow/spec.md` (new): added TICKET-01 to TICKET-19.
 
 ## Open questions
 
