@@ -5,6 +5,7 @@ import {
   TOAST_DOT_COLOR
 } from '@/components/ui/Toast/Toast.constant'
 import { TOAST_STYLES } from '@/components/ui/Toast/Toast.style'
+import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 import {
   selectRemoveToast,
   selectToasts,
@@ -12,6 +13,9 @@ import {
 } from '@/stores/toast.store'
 
 export const Toast = () => {
+  const dotColors = useThemedStyles({ styles: TOAST_DOT_COLOR })
+  const styles = useThemedStyles({ styles: TOAST_STYLES })
+
   const toasts = useToastStore(selectToasts)
   const remove = useToastStore(selectRemoveToast)
 
@@ -20,27 +24,27 @@ export const Toast = () => {
   }
 
   return (
-    <View pointerEvents="box-none" style={TOAST_STYLES.viewport}>
+    <View pointerEvents="box-none" style={styles.viewport}>
       {toasts.map((toast) => (
         <View
           accessibilityLabel={toast.message}
           accessibilityRole="alert"
           key={toast.id}
-          style={TOAST_STYLES.pill}
+          style={styles.pill}
         >
           <View
             style={[
-              TOAST_STYLES.dot,
-              { backgroundColor: TOAST_DOT_COLOR[toast.variant] }
+              styles.dot,
+              { backgroundColor: dotColors[toast.variant] }
             ]}
           />
-          <Text style={TOAST_STYLES.message}>{toast.message}</Text>
+          <Text style={styles.message}>{toast.message}</Text>
           <Pressable
             accessibilityLabel={TOAST_DISMISS_LABEL}
             accessibilityRole="button"
             onPress={() => remove(toast.id)}
           >
-            <Text style={TOAST_STYLES.dismissGlyph}>×</Text>
+            <Text style={styles.dismissGlyph}>×</Text>
           </Pressable>
         </View>
       ))}

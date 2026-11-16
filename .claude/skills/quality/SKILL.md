@@ -71,11 +71,12 @@ Exception: `index.ts` barrel files may use `'./{Name}'` for local re-exports.
 interface ItemProps { ... }          // missing I prefix
 type Status = 'active' | 'archived'  // missing Type suffix
 enum ItemStatus { ... }              // missing Enum suffix
+enum ItemStatusEnum { Active = 'active' } // member not UPPER_SNAKE_CASE
 
 // ✅
 interface IItemCard { ... }
 type StatusType = 'active' | 'archived'
-enum ItemStatusEnum { ... }
+enum ItemStatusEnum { ACTIVE = 'active' }
 ```
 
 ---

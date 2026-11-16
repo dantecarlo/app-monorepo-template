@@ -34,7 +34,7 @@ An output names a token by its key path in kebab case: `themes.dark.bg.base` is 
 
 | Source group                                    | Web theme (`theme.css`)                                         | NativeWind preset              |
 | ----------------------------------------------- | --------------------------------------------------------------- | ------------------------------ |
-| themed colour                                   | `--c-<name>` per theme, `--color-<name>: var(--c-<name>)`       | `colors`, the dark value       |
+| themed colour                                   | `--c-<name>` per theme, `--color-<name>: var(--c-<name>)`       | `colors`, `var(--c-<name>)`    |
 | `sharedColors`                                  | `--color-<name>`, a literal                                     | `colors`                       |
 | `spacing`, `inset`                              | `--spacing-<name>` in `@theme inline`                           | `spacing`                      |
 | `layoutWidth`                                   | `--container-<name>` in `@theme inline` (`max-w-<name>`)        | `maxWidth`                     |
@@ -45,9 +45,9 @@ An output names a token by its key path in kebab case: `themes.dark.bg.base` is 
 | `motion`                                        | `--duration-<name>`, `--ease-<name>`                            | —                              |
 
 The themed colours also reach `themeVars`, `{ dark: { '--c-<name>': value }, light: … }`, the map
-NativeWind's `vars()` takes. The preset still carries the dark colours as literals, so the mobile
-app renders exactly as before; pointing them at the `--c-*` variables and injecting `themeVars`
-on a root view is the mobile light-theme work that follows.
+NativeWind's `vars()` takes. The preset writes each themed colour as `var(--c-<name>)`, and the
+mobile root layout declares the active theme's variables through `vars(themeVars[theme])`, so a
+NativeWind class follows the theme; a colour both themes share stays a literal.
 
 ## The theme names
 

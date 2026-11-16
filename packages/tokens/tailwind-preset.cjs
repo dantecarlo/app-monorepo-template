@@ -3,10 +3,11 @@
 // source, then run `pnpm --filter @app/tokens generate`.
 // `pnpm verify:theme-sync` fails while it differs from its regeneration.
 //
-// The NativeWind preset apps/mobile/tailwind.config.js loads. Its colours
-// are the dark theme's (themes.dark): mobile flips to light at runtime
-// through useThemeTokens and its StyleSheet consumers. The web reads
-// theme.css instead and loads no JavaScript config.
+// The NativeWind preset apps/mobile/tailwind.config.js loads. A themed
+// colour reads its --c-* variable, which the mobile root view declares
+// for the active theme (themeVars through NativeWind's vars()), so a class
+// follows the theme; a colour both themes share is written as itself. The
+// web reads theme.css instead and loads no JavaScript config.
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -18,39 +19,39 @@ module.exports = {
         'accent-light': '#FF8A3D',
         'accent-tint': 'rgba(255,106,26,0.16)',
         'cool-glow': '#5B6CFF',
-        'accent-surface': '#241A12',
-        'accent-text': '#FF8A3D',
+        'accent-surface': 'var(--c-accent-surface)',
+        'accent-text': 'var(--c-accent-text)',
         bg: {
-          base: '#0A0B0D',
-          raised: '#101216'
+          base: 'var(--c-bg-base)',
+          raised: 'var(--c-bg-raised)'
         },
-        danger: '#EF4444',
-        'danger-text': '#F36A6A',
-        'danger-tint': 'rgba(239,68,68,0.16)',
-        divider: 'rgba(255,255,255,0.06)',
+        danger: 'var(--c-danger)',
+        'danger-text': 'var(--c-danger-text)',
+        'danger-tint': 'var(--c-danger-tint)',
+        divider: 'var(--c-divider)',
         glass: {
-          fill: 'rgba(24,27,34,0.42)',
-          stroke: 'rgba(255,255,255,0.10)'
+          fill: 'var(--c-glass-fill)',
+          stroke: 'var(--c-glass-stroke)'
         },
         knob: {
-          off: '#80828B',
-          on: '#FFFFFF'
+          off: 'var(--c-knob-off)',
+          on: 'var(--c-knob-on)'
         },
-        'neutral-tint': 'rgba(255,255,255,0.08)',
-        scrim: 'rgba(0,0,0,0.60)',
-        success: '#34C759',
-        'success-text': '#3DD168',
-        'success-tint': 'rgba(52,199,89,0.16)',
+        'neutral-tint': 'var(--c-neutral-tint)',
+        scrim: 'var(--c-scrim)',
+        success: 'var(--c-success)',
+        'success-text': 'var(--c-success-text)',
+        'success-tint': 'var(--c-success-tint)',
         text: {
-          disabled: 'rgba(255,255,255,0.25)',
-          primary: '#F7F8FA',
-          secondary: 'rgba(255,255,255,0.55)',
-          tertiary: '#9A9CA6'
+          disabled: 'var(--c-text-disabled)',
+          primary: 'var(--c-text-primary)',
+          secondary: 'var(--c-text-secondary)',
+          tertiary: 'var(--c-text-tertiary)'
         },
-        warning: '#E0A011',
-        'warning-stroke': 'rgba(224,160,17,0.30)',
-        'warning-text': '#EBB13A',
-        'warning-tint': 'rgba(224,160,17,0.16)'
+        warning: 'var(--c-warning)',
+        'warning-stroke': 'var(--c-warning-stroke)',
+        'warning-text': 'var(--c-warning-text)',
+        'warning-tint': 'var(--c-warning-tint)'
       },
       spacing: {
         '2xl': '24px',

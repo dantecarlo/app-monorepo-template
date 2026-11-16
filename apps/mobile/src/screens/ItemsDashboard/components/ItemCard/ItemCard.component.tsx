@@ -1,6 +1,7 @@
 import { View } from 'react-native'
 
 import { Text } from '@/components/ui/Text'
+import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 import {
   ITEM_CARD,
   STATUS_COLOR
@@ -16,29 +17,32 @@ import type { IItemCardProps } from '@/screens/ItemsDashboard/components/ItemCar
 // ---------------------------------------------------------------------------
 
 export const ItemCard = ({ isLast = false, item }: IItemCardProps) => {
+  const styles = useThemedStyles({ styles: ITEM_CARD })
+  const statusColors = useThemedStyles({ styles: STATUS_COLOR })
+
   return (
-    <View style={[ITEM_CARD.row, !isLast && ITEM_CARD.divider]}>
+    <View style={[styles.row, !isLast && styles.divider]}>
       {/* Author avatar */}
-      <View style={ITEM_CARD.avatar}>
-        <Text style={ITEM_CARD.avatarText} variant="label">
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText} variant="label">
           {item.authorInitials}
         </Text>
       </View>
 
       {/* Main content */}
-      <View style={ITEM_CARD.middle}>
+      <View style={styles.middle}>
         <Text numberOfLines={1} variant="body">
           {item.title}
         </Text>
         <Text
           numberOfLines={1}
-          style={ITEM_CARD.description}
+          style={styles.description}
           variant="caption"
         >
           {item.description}
         </Text>
-        <View style={ITEM_CARD.meta}>
-          <View style={ITEM_CARD.categoryBadge}>
+        <View style={styles.meta}>
+          <View style={styles.categoryBadge}>
             <Text variant="caption">{item.category}</Text>
           </View>
           {item.authorLabel ? (
@@ -48,10 +52,10 @@ export const ItemCard = ({ isLast = false, item }: IItemCardProps) => {
       </View>
 
       {/* Time + status */}
-      <View style={ITEM_CARD.right}>
+      <View style={styles.right}>
         <Text variant="caption">{item.timeDisplay}</Text>
         <Text
-          style={{ color: STATUS_COLOR[item.status] }}
+          style={{ color: statusColors[item.status] }}
           variant="caption"
         >
           {item.status}

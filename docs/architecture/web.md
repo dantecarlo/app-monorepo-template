@@ -23,8 +23,8 @@ apps/web/
     │   ├── layout.tsx             # root layout: fonts, theme script, ThemeProvider, providers
     │   ├── fonts/                 # Inter and Montserrat woff2 + their OFL texts (next/font/local)
     │   ├── providers.tsx · SupabaseProviders.tsx   # NextIntl, QueryClient, AuthProvider, Toast
-    │   ├── error.tsx              # root segment boundary: render crash → ErrorState + retry
-    │   ├── global-error.tsx       # root layout crash: own html/body → ErrorState + retry
+    │   ├── error.tsx              # root segment boundary: render crash → ErrorState + retry, reported once
+    │   ├── global-error.tsx       # root layout crash: own html/body → ErrorState + retry, reported once
     │   ├── globals.css            # Tailwind CSS 4 entry: imports the generated @app/tokens/theme.css
     │   ├── page.tsx               # / → ItemsSummaryScreen (RSC, in Suspense) + ItemsDashboardScreen
     │   ├── login/page.tsx         # /login → LoginScreen
@@ -36,6 +36,7 @@ apps/web/
     ├── components/                # SHARED UI — AuthProvider/, ThemeProvider/, ui/{Button,Text,Divider,Screen,…}
     │                              # ui/variants.helper.ts: the one tv the ui blocks build with
     ├── services/<Domain>/         # SHARED transversal services — service + adapter + barrel
+    │                              # (Items, ItemsSummary, Auth: sign-in through IAuthGateway)
     ├── lib/                       # bot-protection, image-delivery, observability, origin-guard,
     │                              # query, supabase, theme
     └── stores/  helpers/ (layout.style.ts: positioning only)  validation/  i18n/  test/
@@ -68,8 +69,20 @@ export default LoginPage
 - **Boundaries**: `page.tsx` wraps the async screen in `<Suspense>`; the `AsyncBoundary` client
   primitive wraps client islands. A render crash below the root layout lands in `app/error.tsx`,
   and a crash of the root layout in `app/global-error.tsx`, which renders its own document; both
-  show the `ErrorState` with a retry. A segment can add its own `error.tsx` or `loading.tsx`;
-  none ships below the root.
+  show the `ErrorState` with a retry, and report the crash to observability once through
+  `useReportBoundaryError` and `reportBoundaryError` in `src/lib/observability/`. A segment can add
+  its own `error.tsx` or `loading.tsx`; none ships below the root.
+- **Where an error shows** ([code-standards § 19](../code-standards.md)): a failed query queues no
+  toast; the screen shows its `ErrorState`, as the dashboard's items list does with a Try again
+  that refetches. A failed mutation is the toast, from its error's `messageKey`.
+- **Sign-in**: a valid login submit runs the `useSignIn` mutation, which calls the auth gateway
+  port through `src/services/Auth/` and replaces the route with `/`; a rejection is the mutation
+  toast, never a field error. The browser gateway lives in
+  `src/lib/supabase/authGateway.adapter.ts`, shared by the auth provider and the auth service: a
+  no-op during server rendering and without the Supabase settings.
+- **Query keys**: `src/lib/query/queryKeys.constant.ts` builds every key from
+  `QueryKeySegmentEnum` and puts its dynamic values in one trailing params object
+  (`['items', 'list', { filter }]`), which the error report always redacts.
 - **Route segments**: organize by logical area (e.g. `/dashboard`, `/profile`, `/settings`) with
   server layouts. `src/middleware.ts` only enforces the origin lock today; it gates no route.
 
@@ -139,3 +152,4 @@ There is no `src/features/` folder; the sample code already follows the layout a
 | Items summary (async Server Component)               | `screens/ItemsSummary/`                             |
 | Login form                                           | `screens/Login/`                                    |
 | Items and items-summary data access                  | `src/services/Items/`, `src/services/ItemsSummary/` |
+| Sign-in through the auth gateway                     | `src/services/Auth/`, `screens/Login/hooks/`        |

@@ -1,9 +1,11 @@
+import { themeVars } from '@app/tokens'
+import { colorScheme } from 'nativewind'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
 import { useToastStore } from '@/stores/toast.store'
 import { act, render, screen, within } from '@/test/test.helper'
 
-vi.mock('expo-router', () => ({ Stack: () => null }))
+vi.mock('expo-router', () => ({ Stack: () => 'routes' }))
 vi.mock('expo-splash-screen', () => ({
   hideAsync: vi.fn(),
   preventAutoHideAsync: vi.fn()
@@ -37,6 +39,7 @@ import { RootErrorBoundary } from '@/components/RootErrorBoundary'
 describe('RootLayout', () => {
   afterEach(() => {
     useToastStore.getState().clear()
+    colorScheme.set('dark')
   })
 
   test('shows a toast added to the store over the routes', () => {
@@ -57,5 +60,21 @@ describe('RootLayout', () => {
 
   test('exports the root error boundary as its ErrorBoundary', () => {
     expect(ErrorBoundary).toBe(RootErrorBoundary)
+  })
+
+  test('wraps the routes in the variables of the active theme', () => {
+    colorScheme.set('light')
+    render(<RootLayout />)
+
+    const frame = (
+      screen.getByText('routes') as unknown as {
+        getAttribute: (name: string) => string | null
+      }
+    ).getAttribute('data-style')
+
+    expect(JSON.parse(frame ?? '{}')).toEqual({
+      ...themeVars.light,
+      flex: 1
+    })
   })
 })

@@ -2,11 +2,12 @@ import { useTranslation } from 'react-i18next'
 import { Pressable, Text, View } from 'react-native'
 
 import {
-  CONFIRM_DIALOG_STYLES as styles,
+  CONFIRM_DIALOG_STYLES,
   CONFIRM_PRESSED_OPACITY
 } from '@/components/ui/ConfirmDialog/ConfirmDialog.style'
 import type { IConfirmDialogProps } from '@/components/ui/ConfirmDialog/ConfirmDialog.type'
 import { Modal } from '@/components/ui/Modal/Modal.component'
+import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 
 export const ConfirmDialog = ({
   cancelLabel,
@@ -17,6 +18,8 @@ export const ConfirmDialog = ({
   onConfirm,
   title
 }: IConfirmDialogProps) => {
+  const styles = useThemedStyles({ styles: CONFIRM_DIALOG_STYLES })
+
   const { t } = useTranslation()
 
   return (

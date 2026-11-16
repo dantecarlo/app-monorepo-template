@@ -3,6 +3,7 @@
 import type { ChangeEvent, FormEvent } from 'react'
 import { useCallback, useState } from 'react'
 
+import { useSignIn } from '@/screens/Login/hooks/useSignIn.hook'
 import {
   EMPTY_VALUES,
   LOGIN_EMAIL_PATTERN,
@@ -34,12 +35,14 @@ const validate = ({
 /**
  * Owns all LoginScreen form behaviour — field state, validation, and submit
  * handling — so the view stays render-only (code-standards: logic-in-hook).
- * Returns translation KEYS for errors; the view localises them.
+ * Returns translation KEYS for errors; the view localises them. A valid
+ * submit signs in through useSignIn; a failed sign-in is its toast, never a
+ * field error (code-standards §19).
  */
 export const useLoginForm = (): IUseLoginFormResult => {
   const [values, setValues] = useState<ILoginFormValues>(EMPTY_VALUES)
   const [errors, setErrors] = useState<ILoginFormErrors>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { isPending: isSubmitting, mutate: signIn } = useSignIn()
 
   const onEmailChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
@@ -63,9 +66,9 @@ export const useLoginForm = (): IUseLoginFormResult => {
       const nextErrors = validate(values)
       setErrors(nextErrors)
       if (Object.keys(nextErrors).length > 0) return
-      setIsSubmitting(true)
+      signIn(values)
     },
-    [values]
+    [signIn, values]
   )
 
   return {

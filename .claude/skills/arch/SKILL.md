@@ -109,7 +109,7 @@ interface IUseItems { ... }
 type ItemRowType = { ... }
 type StatusType = 'active' | 'inactive'
 
-// Enums — Enum suffix, ALL_CAPS values
+// Enums — Enum suffix, UPPER_SNAKE_CASE members
 enum ItemStatusEnum {
   ACTIVE = 'active',
   ARCHIVED = 'archived',
@@ -328,11 +328,14 @@ const useItemList = ({ contextId }: IUseItemList) => {
         const dtos = await getItems({ contextId })
         return adaptItems(dtos)
       }
-    },
-    errorMessage: 'Could not load items.'
+    }
   })
 }
 ```
+
+A failed query queues no toast (`docs/code-standards.md` § 19): the screen reads
+`isError` and renders `ErrorState`, or wraps the block in `AsyncBoundary`, with the
+query's `refetch` as its retry. Only a mutation's failure is a toast.
 
 Register all query keys in `@/lib/query/queryKeys.constant.ts` (never inline strings).
 Write every hand-written segment as a member of `QueryKeySegmentEnum`. When a
@@ -341,6 +344,12 @@ query fails, the query client reports its key through `sanitizeQueryKey` from
 a hand-written segment missing from the enum shows up as `[redacted]`. Never
 pass a live key through `sanitizeQueryKey` yourself: every item would share one
 cache entry.
+
+Put every dynamic value of a key, an id, a search text or a filter, in one trailing
+params object, never as a bare segment: `sanitizeQueryKey` redacts the object whole,
+while a bare value equal to a registered word (`list('list')`) would survive it. The
+feature's `all` key stays the prefix of each of its keys, so invalidating it reaches
+them all; `pnpm validate` runs a test that walks every factory of `QueryKeys`.
 
 ---
 

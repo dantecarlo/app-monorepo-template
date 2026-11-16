@@ -56,9 +56,11 @@ export interface IUseItemsParams {
 export interface IUseItemsResult {
   activeCount: number
   activeNav: string
+  isError: boolean
   isLoading: boolean
   items: IItemViewModel[]
   onNavChange: (id: string) => void
+  onRetry: () => void
   onSearchChange: (value: string) => void
   search: string
   totalCount: number

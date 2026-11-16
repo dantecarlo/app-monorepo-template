@@ -3,7 +3,7 @@
 > **Governs:** `apps/web/src`, `apps/web/next.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-16 at `6fc9c27`
+> **Verified against the code:** 2026-11-16 at `427b81d`
 
 ## Purpose
 
@@ -95,7 +95,7 @@ profile under the `items-summary` cache tag.
 The web app SHALL, while the items query is loading, render skeleton rows with the status role in
 the items list and a dash in place of each count on the stats card.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:43-53`, `apps/web/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.tsx:28-32`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:46-56`, `apps/web/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.tsx:28-32`
 
 #### Scenario: the list shows skeletons
 
@@ -117,7 +117,7 @@ the items list and a dash in place of each count on the stats card.
 The web app SHALL, once the items load, render one item card per item, the result count in the
 list header, the total item count and the count of items whose status is active.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:59-65`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:30-32`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:56-57`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:64-70`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:33-35`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:61-62`
 
 #### Scenario: the item cards appear
 
@@ -146,7 +146,7 @@ list header, the total item count and the count of items whose status is active.
 The web app SHALL render the empty state with the `items.dashboard.listEmpty` message when the
 loaded item list is empty.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:54-55`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:59-60`
 
 #### Scenario: the service returns no items
 
@@ -156,27 +156,41 @@ loaded item list is empty.
 - **Test:** `apps/web/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx` › "shows empty-state message when items query returns an empty array"
 - **Test:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/__tests__/ItemsListCard.component.test.tsx` › "renders empty state when items list is empty"
 
-### Requirement: WEB-07 — A failed items load falls back to the empty list
+### Requirement: WEB-07 — A failed items load shows the error state
 
-The web app SHALL, when the items query fails, queue an error toast carrying the fixed English
-override message the dashboard hook passes, and render the items list as empty, with no error
-state on the screen.
+The web app SHALL, when the items query fails, render the error state with its generic copy in
+the items list, in place of the items and the empty state, with a Try again button that runs the
+items query again, and queue no toast.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:46-49`, `apps/web/src/lib/query/useAppQuery.hook.ts:36-49`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:54-55`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:51`, `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:79-81`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:57-58`, `apps/web/src/lib/query/useAppQuery.hook.ts:21`
 
 #### Scenario: the items service rejects
 
 - **GIVEN** the items service rejects
 - **WHEN** the dashboard settles
-- **THEN** an error toast is queued and the empty-list message is shown
-- **Test:** Not covered — no test makes the items query fail on the dashboard; the toast path alone is covered under WEB-26.
+- **THEN** the list shows the error state alert with its generic title, no empty-list message, and the toast store holds no toast
+- **Test:** `apps/web/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx` › "shows the error state and queues no toast when the items query fails"
+
+#### Scenario: Try again after a failure
+
+- **GIVEN** the dashboard showing the error state, and an items service that now resolves
+- **WHEN** Try again is pressed
+- **THEN** the items service is called again and the items are listed
+- **Test:** `apps/web/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx` › "loads the items again when Try again is pressed after a failure"
+
+#### Scenario: the hook reports the failure
+
+- **GIVEN** the items service rejects
+- **WHEN** the dashboard hook settles
+- **THEN** it reports the failure and an empty item list, and its retry calls the items service again
+- **Test:** `apps/web/src/screens/ItemsDashboard/hooks/__tests__/useItems.hook.test.ts` › "reports the failure and runs the query again on retry"
 
 ### Requirement: WEB-08 — The dashboard search re-queries the items
 
 The web app SHALL re-run the items query with the typed search text and the item limit, 50 by
 default, under the query key `QueryKeys.items.list(search)`.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:40-57`, `apps/web/src/lib/query/queryKeys.constant.ts:30-37`, `apps/web/src/services/Items/items.service.ts:96-116`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:43-62`, `apps/web/src/lib/query/queryKeys.constant.ts:40-47`, `apps/web/src/services/Items/items.service.ts:96-116`
 
 #### Scenario: a search term is typed
 
@@ -235,7 +249,7 @@ The web app SHALL render the dashboard's bottom navigation as a landmark labelle
 `items.dashboard.nav.ariaLabel` message, with home, items, search and settings tabs, marking the
 active tab as selected, home by default.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/components/DashboardNav/DashboardNav.component.tsx:17-53`, `apps/web/src/screens/ItemsDashboard/hooks/useItems.constant.ts:9`, `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:44`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/components/DashboardNav/DashboardNav.component.tsx:17-46`, `apps/web/src/screens/ItemsDashboard/hooks/useItems.constant.ts:9`, `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:47`
 
 #### Scenario: the navigation renders its tabs
 
@@ -259,7 +273,7 @@ The web app SHALL render, at the login route, the login screen inside the auth s
 and language controls, the logo and app name, the `auth.login` title and subtitle, labelled email
 and password fields, a submit button and a Google sign-in button.
 
-**Evidence:** `apps/web/src/app/login/page.tsx:3`, `apps/web/src/components/ui/AuthShell/AuthShell.component.tsx:30-47`, `apps/web/src/screens/Login/Login.screen.tsx:25-84`
+**Evidence:** `apps/web/src/app/login/page.tsx:3`, `apps/web/src/components/ui/AuthShell/AuthShell.component.tsx:30-47`, `apps/web/src/screens/Login/Login.screen.tsx:27-78`
 
 #### Scenario: the login screen renders
 
@@ -281,7 +295,7 @@ The web app SHALL reject a login submit whose email does not match the email pat
 password is shorter than 8 characters, and show the `auth.login.errors.email` or
 `auth.login.errors.password` message on the offending field.
 
-**Evidence:** `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:18-32`, `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:60-65`, `apps/web/src/screens/Login/Login.constant.ts:4-7`, `apps/web/src/screens/Login/Login.screen.tsx:34-39`
+**Evidence:** `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:19-33`, `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:63-68`, `apps/web/src/screens/Login/Login.constant.ts:4-7`, `apps/web/src/screens/Login/Login.screen.tsx:34-39`
 
 #### Scenario: empty fields are submitted
 
@@ -297,27 +311,59 @@ password is shorter than 8 characters, and show the `auth.login.errors.email` or
 - **THEN** the default submit is prevented, both error keys are set and the form is not submitting
 - **Test:** `apps/web/src/screens/Login/hooks/__tests__/useLoginForm.hook.test.ts` › "reports field error keys for an invalid submit"
 
-### Requirement: WEB-13 — A valid login submit only enters the submitting state
+### Requirement: WEB-13 — A valid login submit signs in through the auth gateway
 
-The web app SHALL, on a login submit that passes validation, clear the field errors and switch the
-form to its submitting state, which disables the submit button and shows the
-`auth.login.submitting` label, without calling the auth gateway.
+The web app SHALL, on a login submit that passes validation, clear the field errors and send the
+email and password to the auth gateway's `signIn`, through the auth service, showing the
+submitting state while the request runs; when it resolves it SHALL replace the route with `/`,
+and when it rejects it SHALL queue an error toast with the message resolved from the error's
+`messageKey`, set no field error and leave the route unchanged. The sign-in result the screen
+keeps holds the user id and not the access token.
 
-**Evidence:** `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:60-69`, `apps/web/src/screens/Login/Login.screen.tsx:64-70`
+**Evidence:** `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:45`, `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:69`, `apps/web/src/screens/Login/hooks/useSignIn.hook.ts:33-45`, `apps/web/src/services/Auth/auth.service.ts:19-21`, `apps/web/src/services/Auth/Auth.adapter.ts:10`, `apps/web/src/screens/Login/Login.constant.ts:22`, `apps/web/src/lib/query/useAppMutation.hook.ts:37`
 
-#### Scenario: a valid email and password are submitted
+#### Scenario: the gateway accepts the credentials
+
+- **GIVEN** the login screen and a gateway that resolves a session
+- **WHEN** a valid email and password are submitted
+- **THEN** the gateway's `signIn` receives them once and the route is replaced with `/`
+- **Test:** `apps/web/src/screens/Login/__tests__/Login.screen.test.tsx` › "signs in through the auth gateway and replaces the route with the home page"
+
+#### Scenario: the sign-in is running
+
+- **GIVEN** the login screen and a gateway that has not answered
+- **WHEN** a valid email and password are submitted
+- **THEN** the submit button is disabled and shows the submitting label
+- **Test:** `apps/web/src/screens/Login/__tests__/Login.screen.test.tsx` › "disables the submit button while the sign-in runs"
+
+#### Scenario: the gateway rejects the credentials
+
+- **GIVEN** the login screen and a gateway that rejects
+- **WHEN** a valid email and password are submitted
+- **THEN** an error toast with the generic message is queued, no field error is shown, and the route is not replaced
+- **Test:** `apps/web/src/screens/Login/__tests__/Login.screen.test.tsx` › "queues the error toast and sets no field error when the sign-in fails"
+
+#### Scenario: the form hook hands the values to the sign-in
 
 - **GIVEN** the form hook holding a valid email and an 8-character password
 - **WHEN** the form is submitted
-- **THEN** the errors are empty and the form is submitting
-- **Test:** `apps/web/src/screens/Login/hooks/__tests__/useLoginForm.hook.test.ts` › "flips submitting on a valid submit and clears errors"
+- **THEN** the errors are empty and the gateway receives the values
+- **Test:** `apps/web/src/screens/Login/hooks/__tests__/useLoginForm.hook.test.ts` › "sends the values to the sign-in on a valid submit and clears errors"
 
-#### Scenario: the submit button reflects the submitting state
+#### Scenario: the service maps a rejection
 
-- **GIVEN** the login screen after a valid submit
-- **WHEN** it re-renders
-- **THEN** the submit button is disabled, shows the submitting label, and no sign-in request is made
-- **Test:** Not covered — no test submits valid values on the screen or asserts that the auth gateway stays untouched.
+- **GIVEN** a gateway whose `signIn` rejects with a plain error, or resolves a session
+- **WHEN** the auth service signs in
+- **THEN** it rejects with an `AppError` carrying a message key, or resolves that session
+- **Test:** `apps/web/src/services/Auth/__tests__/auth.service.test.ts` › "rejects with an AppError carrying a message key when the gateway rejects"
+- **Test:** `apps/web/src/services/Auth/__tests__/auth.service.test.ts` › "resolves the session the gateway returns"
+
+#### Scenario: the adapter drops the token
+
+- **GIVEN** a session holding an access token
+- **WHEN** it is adapted for the screen
+- **THEN** the result holds the user id and no access token
+- **Test:** `apps/web/src/services/Auth/__tests__/Auth.adapter.test.ts` › "keeps the user id and drops the access token"
 
 ### Requirement: WEB-14 — Server-rendered translations follow the locale cookie
 
@@ -478,18 +524,33 @@ unsubscribe from those changes on unmount.
 
 ### Requirement: WEB-20 — The auth gateway is a no-op without Supabase settings
 
-The web app SHALL give the auth provider a no-op gateway during server rendering and in a browser
-where `NEXT_PUBLIC_SUPABASE_URL` or `NEXT_PUBLIC_SUPABASE_ANON_KEY` is unset, so the session
-resolves to none and a sign-in rejects; otherwise one Supabase auth gateway per browser.
+The web app SHALL give the auth provider and the auth service one gateway: a no-op gateway during
+server rendering and in a browser where `NEXT_PUBLIC_SUPABASE_URL` or
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` is unset, so the session resolves to none and a sign-in rejects;
+otherwise one Supabase auth gateway per browser.
 
-**Evidence:** `apps/web/src/app/SupabaseProviders.tsx:16-36`, `apps/web/src/app/SupabaseProviders.tsx:42-44`
+**Evidence:** `apps/web/src/lib/supabase/authGateway.adapter.ts:15`, `apps/web/src/lib/supabase/authGateway.adapter.ts:31-38`, `apps/web/src/app/SupabaseProviders.tsx:21`
 
 #### Scenario: the Supabase settings are missing
 
-- **GIVEN** a browser build with no Supabase URL or anon key
+- **GIVEN** a browser with no Supabase URL or anon key
+- **WHEN** the gateway is requested
+- **THEN** its session resolves to none, its sign-in rejects, and no Supabase gateway is created
+- **Test:** `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "returns a no-op gateway without the Supabase settings"
+
+#### Scenario: the Supabase settings are present
+
+- **GIVEN** a browser with both public Supabase settings
+- **WHEN** the gateway is requested twice
+- **THEN** one Supabase auth gateway is created and returned both times
+- **Test:** `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "creates one Supabase auth gateway per browser with the settings"
+
+#### Scenario: the page is rendered on the server
+
+- **GIVEN** server rendering
 - **WHEN** the providers mount
-- **THEN** the auth status settles as unauthenticated and no Supabase client is created
-- **Test:** Not covered — no test renders `apps/web/src/app/SupabaseProviders.tsx`.
+- **THEN** the auth provider receives the no-op gateway
+- **Test:** Not covered — happy-dom always defines `window`, so no test renders the server branch.
 
 ### Requirement: WEB-21 — The browser Supabase client is created once from the public settings
 
@@ -556,9 +617,9 @@ and no retry for mutations.
 The web app SHALL report every failed query and mutation once, from the query cache and mutation
 cache error handlers, to the observability port, passing the query key through
 `sanitizeQueryKey` from packages/core with the values of `QueryKeySegmentEnum` as its structural
-segments.
+segments, so the trailing params object of a key (WEB-45) is always redacted, whatever it holds.
 
-**Evidence:** `apps/web/src/lib/query/createQueryClient.helper.ts:33-48`, `apps/web/src/lib/query/queryKeys.constant.ts:17-24`, `apps/web/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/web/src/app/providers.tsx:20-27`
+**Evidence:** `apps/web/src/lib/query/createQueryClient.helper.ts:41`, `apps/web/src/lib/query/queryKeys.constant.ts:34-47`, `apps/web/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/web/src/app/providers.tsx:20-27`
 
 #### Scenario: a query fails
 
@@ -573,6 +634,13 @@ segments.
 - **WHEN** it fails
 - **THEN** the capture sink receives the key `['items', 'list', '[redacted]']`
 - **Test:** `apps/web/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "redacts the search text of an items list key on query failure"
+
+#### Scenario: a typed value equal to a registered word
+
+- **GIVEN** a query keyed by `QueryKeys.items.list('list')`
+- **WHEN** it fails
+- **THEN** the capture sink receives the key `['items', 'list', '[redacted]']`
+- **Test:** `apps/web/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "redacts a list filter that equals a registered segment on query failure"
 
 #### Scenario: a mutation fails
 
@@ -625,35 +693,20 @@ and the `helper.error.generic` message.
 - **THEN** the generic fallback is returned
 - **Test:** `apps/web/src/lib/query/__tests__/resolveErrorMessage.helper.test.ts` › "uses the generic fallback for a non-Error value"
 
-### Requirement: WEB-26 — Query and mutation outcomes are queued as toasts
+### Requirement: WEB-26 — Mutation outcomes are queued as toasts, query failures are not
 
-The web app SHALL queue each failure of a query as one error toast with the resolved message,
-however often the component that runs the query re-renders, each failed mutation as an error
-toast with the resolved message, and a mutation's success message as a success toast, in the
-toast store, which drops each toast after 4 seconds.
+The web app SHALL queue each failed mutation as an error toast with the resolved message, and a
+mutation's success message as a success toast, in the toast store, which drops each toast after 4
+seconds; a failed query SHALL queue no toast, however many components observe it.
 
-**Evidence:** `apps/web/src/lib/query/useAppQuery.hook.ts:36-49`, `apps/web/src/lib/query/useAppMutation.hook.ts:29-45`, `apps/web/src/stores/toast.store.ts:36-48`
+**Evidence:** `apps/web/src/lib/query/useAppQuery.hook.ts:21`, `apps/web/src/lib/query/useAppMutation.hook.ts:37`, `apps/web/src/lib/query/useAppMutation.hook.ts:42`, `apps/web/src/stores/toast.store.ts:36-48`
 
 #### Scenario: a query fails
 
-- **GIVEN** a query with an override message
-- **WHEN** it fails
-- **THEN** an error toast with the override message is queued
-- **Test:** `apps/web/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "fires an error toast with the override message on failure"
-
-#### Scenario: a failed query re-renders
-
-- **GIVEN** a query that failed once and queued its toast
-- **WHEN** its component renders again while the query stays in error
-- **THEN** no other toast is queued
-- **Test:** `apps/web/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "queues one error toast per failure however often it re-renders"
-
-#### Scenario: the query fails again
-
-- **GIVEN** a query that failed once and queued its toast
-- **WHEN** it is refetched and fails again
-- **THEN** a second error toast is queued
-- **Test:** `apps/web/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "queues another error toast when the query fails again"
+- **GIVEN** two components observing one query
+- **WHEN** the query fails
+- **THEN** no toast is queued
+- **Test:** `apps/web/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "queues no toast when the query fails, however many components observe it"
 
 #### Scenario: a mutation fails or succeeds
 
@@ -785,14 +838,22 @@ The web app SHALL answer 403 with an empty body to every request outside `_next/
 `_next/image`, the favicon, `images` and `fonts` when the origin guard reports it untrusted, and
 let it through otherwise.
 
-**Evidence:** `apps/web/src/middleware.ts:5-23`, `apps/web/src/lib/origin-guard/originGuard.adapter.ts:4`
+**Evidence:** `apps/web/src/middleware.ts:8`, `apps/web/src/middleware.ts:14-15`, `apps/web/src/middleware.ts:22`, `apps/web/src/lib/origin-guard/originGuard.adapter.ts:4`
 
-#### Scenario: the origin secret is wrong
+#### Scenario: the origin secret is right
 
-- **GIVEN** a configured origin secret and a request whose origin header does not match it
+- **GIVEN** a configured origin secret and a request whose origin header matches it
+- **WHEN** the middleware runs
+- **THEN** the request continues to the route
+- **Test:** `apps/web/src/__tests__/middleware.test.ts` › "lets a request with the configured origin secret through"
+
+#### Scenario: the origin secret is missing or wrong
+
+- **GIVEN** a configured origin secret and a request with no origin header, or one that does not match it
 - **WHEN** the middleware runs
 - **THEN** the response is 403 with an empty body
-- **Test:** Not covered — no test drives `apps/web/src/middleware.ts`; the guard's verdict belongs to packages/cloudflare.
+- **Test:** `apps/web/src/__tests__/middleware.test.ts` › "answers 403 with an empty body when the origin secret header is missing"
+- **Test:** `apps/web/src/__tests__/middleware.test.ts` › "answers 403 with an empty body when the origin secret header is wrong"
 
 #### Scenario: no origin secret is configured
 
@@ -801,12 +862,13 @@ let it through otherwise.
 - **THEN** it reports the request trusted
 - **Test:** `apps/web/src/lib/origin-guard/__tests__/originGuard.adapter.test.ts` › "assertTrustedOrigin passes through when no secret is configured"
 
-#### Scenario: a static asset is requested
+#### Scenario: an exempt path is requested
 
-- **GIVEN** a configured origin secret
-- **WHEN** a request for a built static asset arrives without the origin header
-- **THEN** the middleware does not run for it
-- **Test:** Not covered — no test exercises the middleware matcher.
+- **GIVEN** the middleware matcher
+- **WHEN** a built static asset, an optimised image, the favicon, an image or a font is requested, and then a page
+- **THEN** the middleware does not run for the first five, and runs for the page
+- **Test:** `apps/web/src/__tests__/middleware.test.ts` › "does not run for the paths the guard exempts"
+- **Test:** `apps/web/src/__tests__/middleware.test.ts` › "runs for a page route"
 
 ### Requirement: WEB-32 — The Turnstile route rejects an unreadable body
 
@@ -932,14 +994,15 @@ toast store, with its message and a dismiss button that removes it, in a polite 
 - **THEN** it renders an empty status region
 - **Test:** `apps/web/src/components/ui/Toast/__tests__/Toast.component.test.tsx` › "renders an empty live region when there are no toasts"
 
-### Requirement: WEB-38 — A render crash shows the error state
+### Requirement: WEB-38 — A render crash shows the error state and is reported once
 
 The web app SHALL catch a render crash below the root layout with the root `error.tsx` boundary,
 and a crash of the root layout itself with `global-error.tsx`, which renders its own document;
 each SHALL show the error state with its generic copy and a Try again button that retries the
-segment.
+segment, and report the error it caught to the observability port once, through
+`reportBoundaryError` under `src/lib/observability/`, however often the boundary renders.
 
-**Evidence:** `apps/web/src/app/error.tsx:13-17`, `apps/web/src/app/global-error.tsx:18-34`, `apps/web/src/components/ui/ErrorState/ErrorState.component.tsx:27-49`
+**Evidence:** `apps/web/src/app/error.tsx:19`, `apps/web/src/app/global-error.tsx:30`, `apps/web/src/lib/observability/useReportBoundaryError.hook.ts:13`, `apps/web/src/lib/observability/reportBoundaryError.helper.ts:23`, `apps/web/src/lib/observability/reportBoundaryError.helper.ts:26`, `apps/web/src/components/ui/ErrorState/ErrorState.component.tsx:27-49`
 
 #### Scenario: a route crashes while rendering
 
@@ -956,13 +1019,29 @@ segment.
 - **THEN** it renders its own html and body, holding the generic error state
 - **Test:** `apps/web/src/app/__tests__/global-error.test.tsx` › "renders the generic error state in its own document"
 
+#### Scenario: the crash is reported
+
+- **GIVEN** a boundary holding a caught error
+- **WHEN** it renders, and renders again with the same error
+- **THEN** the observability port captures that error once, with the boundary source
+- **Test:** `apps/web/src/app/__tests__/error.test.tsx` › "reports the crash to observability once"
+- **Test:** `apps/web/src/app/__tests__/global-error.test.tsx` › "reports the root layout crash to observability once"
+
+#### Scenario: the report helper
+
+- **GIVEN** the boundary report helper over an observability port
+- **WHEN** one error is reported twice and another once
+- **THEN** the port captures each error once
+- **Test:** `apps/web/src/lib/observability/__tests__/reportBoundaryError.helper.test.ts` › "captures an error once however often it is reported"
+- **Test:** `apps/web/src/lib/observability/__tests__/reportBoundaryError.helper.test.ts` › "captures each distinct error"
+
 ### Requirement: WEB-39 — A screen or section only positions
 
 The web app SHALL keep the look of a screen, a route entry and a container outside the component
 blocks in a component block (`src/components/ui/`, or a screen's own `components/`): their class
 strings and style props carry only layout, spacing, size, position, overflow and visibility.
 
-**Evidence:** `eslint-local-rules/style-positioning.detect.mjs:342`, `eslint.rules.mjs:696`, `apps/web/src/helpers/layout.style.ts:5`, `apps/web/src/screens/Login/Login.style.ts:1`, `eslint-style-positioning-allowlist.json:1`
+**Evidence:** `eslint-local-rules/style-positioning.detect.mjs:342`, `eslint.rules.mjs:702`, `apps/web/src/helpers/layout.style.ts:5`, `apps/web/src/screens/Login/Login.style.ts:1`, `eslint-style-positioning-allowlist.json:1`
 
 #### Scenario: a screen style carries a colour
 
@@ -1175,6 +1254,37 @@ The web app SHALL build the variants of every `ui/` style file with the shared `
 - **Test:** Not covered — no committed test records every block's strings; the verify report
   records a one-off comparison before and after the change
 
+### Requirement: WEB-45 — A query key keeps its dynamic values in a trailing params object
+
+The web app SHALL build every key of `QueryKeys` from `QueryKeySegmentEnum` values followed, when
+the key carries a dynamic value, by one trailing params object that holds every such value, so
+that no string segment of a key is a value the user typed or the data supplied, and a feature's
+`all` key is a prefix of each of its keys.
+
+**Evidence:** `apps/web/src/lib/query/queryKeys.constant.ts:22`, `apps/web/src/lib/query/queryKeys.constant.ts:33`, `apps/web/src/lib/query/queryKeys.constant.ts:34-38`, `apps/web/src/lib/query/queryKeys.constant.ts:40-47`
+
+#### Scenario: every factory is walked
+
+- **GIVEN** every entry of `QueryKeys`, each factory called with a probe value
+- **WHEN** the string segments of the keys they return are read
+- **THEN** each one is a value of `QueryKeySegmentEnum`
+- **Test:** `apps/web/src/lib/query/__tests__/queryKeys.constant.test.ts` › "builds every string segment of every key factory from QueryKeySegmentEnum"
+
+#### Scenario: the list filter and the detail id
+
+- **GIVEN** a list filter and an item id
+- **WHEN** the list and detail keys are built
+- **THEN** they are `['items', 'list', { filter }]` and `['items', 'detail', { id }]`, and the list key with no filter stays `['items', 'list']`
+- **Test:** `apps/web/src/lib/query/__tests__/queryKeys.constant.test.ts` › "puts the list filter and the detail id in a trailing params object"
+- **Test:** `apps/web/src/lib/query/__tests__/queryKeys.constant.test.ts` › "keeps the bare list key when no filter is given"
+
+#### Scenario: the items prefix is invalidated
+
+- **GIVEN** a cached list query and a cached detail query of the items
+- **WHEN** the query client invalidates `QueryKeys.items.all`
+- **THEN** both queries are invalidated
+- **Test:** `apps/web/src/lib/query/__tests__/queryKeys.constant.test.ts` › "invalidates every items query through the items all key"
+
 ## Open questions
 
 - **Q1** — `docs/infrastructure.md:109` and `docs/infrastructure.md:111` list `X-XSS-Protection`
@@ -1184,18 +1294,14 @@ The web app SHALL build the variants of every `ui/` style file with the shared `
 - **Q2** — `docs/infrastructure.md:136` names the Cloudflare Images or R2 adapters as the default
   image delivery, but `apps/web/src/lib/image-delivery/imageDelivery.adapter.ts:4` defaults to the
   public delivery (WEB-36).
-- **Q3** — `docs/code-standards.md:616` sends query errors to a per-screen `ErrorState` or
-  `AsyncBoundary`, but `apps/web/src/lib/query/useAppQuery.hook.ts:48` queues a toast for every
-  failed query, and the dashboard
-  (`apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:46`) shows the empty-list message
-  instead of an error state (WEB-07).
+- **Q3** — Closed on 2026-11-16 by `openspec/changes/archive/2026-11-15-app-behaviour/`: a
+  failed query queues no toast and the dashboard shows its error state (WEB-07, WEB-26).
 - **Q4** — Closed on 2026-11-14 by `openspec/changes/archive/2026-11-14-error-surfacing/`: the
   root providers mount the toast viewport (WEB-37), and `error.tsx` and `global-error.tsx` catch
   render crashes (WEB-38).
 - **Q5** — `docs/code-standards.md:603`, `docs/code-standards.md:607` and `AGENTS.md:141` route
   user-facing copy through the catalogs and ask a reason for an override, but English copy is
-  written in `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:49` (an override with no
-  comment), `apps/web/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultError.component.tsx:11`,
+  written in `apps/web/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultError.component.tsx:11`,
   `apps/web/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultLoading.component.tsx:12` and
   `apps/web/src/components/ui/Toast/Toast.constant.ts:1`.
 - **Q6** — `docs/architecture/web.md:74` resolves the locale from the `NEXT_LOCALE` cookie, but only

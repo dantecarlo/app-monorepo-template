@@ -1,0 +1,85 @@
+# Delta: packages/tokens
+
+> **Change:** `2026-11-15-app-behaviour`
+
+## MODIFIED Requirements
+
+### Requirement: TOKENS-12 — The NativeWind preset reads each themed colour from its variable
+
+The tokens package SHALL ship the generated Tailwind preset, exported as tailwind-preset.cjs,
+whose theme.extend.colors hold, in the dark theme's shape, each themed colour as a read of its
+`--c-*` variable, under the name `themeVars` and the web theme declare it, and each colour the
+themes share as its literal value, and which the mobile Tailwind config loads; the web app SHALL
+load no Tailwind JavaScript config.
+
+**Evidence:** written at apply time, when the code exists.
+
+#### Scenario: a themed colour is resolved
+
+- **GIVEN** the preset and the mobile theme variables
+- **WHEN** its colours are flattened to utility names, as Tailwind does
+- **THEN** every themed colour reads `var(--c-<name>)`, and the variable is declared in both the dark and the light theme variables
+- **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset reads every themed colour from its --c- variable, declared in both themes"
+
+#### Scenario: the dark theme is unchanged
+
+- **GIVEN** the preset
+- **WHEN** each of its colours is resolved through the dark theme variables
+- **THEN** every colour of the dark theme is there under the kebab case of its key path, with its dark value
+- **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset resolves to the dark theme's colours under the dark variables"
+
+#### Scenario: a shared colour
+
+- **GIVEN** the preset
+- **WHEN** a colour both themes share is read
+- **THEN** it is the literal value of the shared colour
+- **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset writes every shared colour as a literal"
+
+#### Scenario: the web app loads no JavaScript config
+
+- **GIVEN** the web app's CSS entry
+- **WHEN** it is read
+- **THEN** it imports the generated theme, holds no `@config` and no `tailwind.config.cjs` exists
+- **Test:** `apps/web/src/app/__tests__/globals.test.ts` › "imports the generated theme and loads no JS config"
+
+### Requirement: TOKENS-15 — Every generated output equals its regeneration
+
+The repository SHALL fail `pnpm verify:theme-sync` when a generated token output differs from what
+the generator writes from the current source, or is missing, naming the file, its first differing
+line and the command that regenerates it.
+
+**Evidence:** written at apply time, when the code exists.
+
+#### Scenario: a generated file is edited by hand
+
+- **GIVEN** the committed outputs, with one value of one output edited by hand
+- **WHEN** the theme-sync gate regenerates in memory and compares
+- **THEN** it reports that output, and only it
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "a planted edit in the web theme is caught"
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "a planted edit in the preset is caught"
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "a planted edit in the mobile theme variables is caught"
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "a planted edit in the theme names is caught"
+
+#### Scenario: the source changes and nobody regenerates
+
+- **GIVEN** the committed outputs, with a dark colour changed in the source only
+- **WHEN** the theme-sync gate compares
+- **THEN** it reports the web theme and the mobile theme variables, every output that carries the
+  themed colour values; the preset names the colour's variable and does not change
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "a source change that was not regenerated is caught in every output it reaches"
+
+#### Scenario: a token is renamed and nobody regenerates
+
+- **GIVEN** the committed outputs, with a token key renamed in the source only
+- **WHEN** the theme-sync gate compares
+- **THEN** it reports the web theme, the preset and the theme names, every output that names the
+  token
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "a renamed token that was not regenerated is caught in the theme names too"
+
+#### Scenario: the outputs are current
+
+- **GIVEN** the committed outputs as the generator writes them
+- **WHEN** the theme-sync gate runs as a process
+- **THEN** it exits 0
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "the shipped outputs equal their regeneration"
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "the gate exits 0 over the shipped outputs"

@@ -1,4 +1,3 @@
-import { colors } from '@app/tokens'
 import { Pressable } from 'react-native'
 
 import { Icon } from '@/components/ui/Icon/Icon.component'
@@ -11,6 +10,8 @@ import {
   ICON_BUTTON_VARIANT
 } from '@/components/ui/IconButton/IconButton.style'
 import type { IIconButtonProps } from '@/components/ui/IconButton/IconButton.type'
+import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
+import { useThemeTokens } from '@/lib/theme/useThemeTokens.hook'
 
 export const IconButton = ({
   accessibilityLabel,
@@ -18,8 +19,11 @@ export const IconButton = ({
   onPress,
   variant = 'glass'
 }: IIconButtonProps) => {
+  const { colors: palette } = useThemeTokens()
+  const variantStyles = useThemedStyles({ styles: ICON_BUTTON_VARIANT })
+
   const iconColor =
-    variant === 'accent' ? colors.accentInk : colors.text.secondary
+    variant === 'accent' ? palette.accentInk : palette.text.secondary
 
   return (
     <Pressable
@@ -28,7 +32,7 @@ export const IconButton = ({
       onPress={onPress}
       style={({ pressed }) => [
         styles.container,
-        ICON_BUTTON_VARIANT[variant],
+        variantStyles[variant],
         pressed && { transform: [{ scale: PRESS_SCALE }] }
       ]}
     >

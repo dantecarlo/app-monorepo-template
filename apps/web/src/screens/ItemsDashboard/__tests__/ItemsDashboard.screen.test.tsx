@@ -3,8 +3,9 @@ import { NextIntlClientProvider } from 'next-intl'
 import React from 'react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
+import { useToastStore } from '@/stores/toast.store'
 import { MOCK_ITEM_DTOS } from '@/test/mocks/items.mock'
-import { render, screen, waitFor } from '@/test/test.helper'
+import { fireEvent, render, screen, waitFor } from '@/test/test.helper'
 
 const { mockGetItems } = vi.hoisted(() => ({
   mockGetItems: vi.fn()
@@ -25,6 +26,11 @@ const messages = {
     emptyState: {
       message: 'There is nothing here yet.',
       title: 'No results'
+    },
+    errorState: {
+      message: 'Something went wrong. Please try again.',
+      retry: 'Try again',
+      title: 'An error occurred'
     }
   },
   items: {
@@ -71,6 +77,7 @@ const createWrapper = () => {
 describe('ItemsDashboardScreen', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    useToastStore.getState().clear()
   })
 
   test('renders the dashboard header', async () => {
@@ -118,5 +125,31 @@ describe('ItemsDashboardScreen', () => {
     await waitFor(() =>
       expect(screen.getByText('No items found.')).toBeInTheDocument()
     )
+  })
+
+  test('shows the error state and queues no toast when the items query fails', async () => {
+    mockGetItems.mockRejectedValue(new Error('items down'))
+    render(<ItemsDashboardScreen />, { wrapper: createWrapper() })
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('An error occurred')
+    expect(screen.queryByText('No items found.')).not.toBeInTheDocument()
+    expect(useToastStore.getState().toasts).toEqual([])
+  })
+
+  test('loads the items again when Try again is pressed after a failure', async () => {
+    mockGetItems.mockRejectedValueOnce(new Error('items down'))
+    mockGetItems.mockResolvedValueOnce(MOCK_ITEM_DTOS)
+    render(<ItemsDashboardScreen />, { wrapper: createWrapper() })
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Try again' })
+    )
+
+    expect(
+      await screen.findByText('Improve onboarding flow')
+    ).toBeInTheDocument()
+    expect(mockGetItems).toHaveBeenCalledTimes(2)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

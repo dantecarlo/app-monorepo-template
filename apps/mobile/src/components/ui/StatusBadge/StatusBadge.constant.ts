@@ -1,4 +1,4 @@
-import { colors } from '@app/tokens'
+import { createThemedValues } from '@/lib/theme/createThemedStyles.helper'
 
 export const STATUS_BADGE_DOT_SIZE = 6
 export const STATUS_BADGE_H_PADDING = 10
@@ -10,28 +10,32 @@ export type StatusBadgeToneType =
   | 'success'
   | 'warning'
 
-export const STATUS_BADGE_TONE_COLORS: Record<
-  StatusBadgeToneType,
-  { bg: string; dot: string; text: string }
-> = {
-  danger: {
-    bg: colors.dangerTint,
-    dot: colors.danger,
-    text: colors.danger
-  },
-  neutral: {
-    bg: colors.neutralTint,
-    dot: colors.text.secondary,
-    text: colors.text.secondary
-  },
-  success: {
-    bg: colors.successTint,
-    dot: colors.success,
-    text: colors.success
-  },
-  warning: {
-    bg: colors.warningTint,
-    dot: colors.warning,
-    text: colors.warning
-  }
-}
+export const STATUS_BADGE_TONE_COLORS = createThemedValues({
+  build: (
+    palette
+  ): Record<
+    StatusBadgeToneType,
+    { bg: string; dot: string; text: string }
+  > => ({
+    danger: {
+      bg: palette.dangerTint,
+      dot: palette.danger,
+      text: palette.danger
+    },
+    neutral: {
+      bg: palette.neutralTint,
+      dot: palette.text.secondary,
+      text: palette.text.secondary
+    },
+    success: {
+      bg: palette.successTint,
+      dot: palette.success,
+      text: palette.success
+    },
+    warning: {
+      bg: palette.warningTint,
+      dot: palette.warning,
+      text: palette.warning
+    }
+  })
+})

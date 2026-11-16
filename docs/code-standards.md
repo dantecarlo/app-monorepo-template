@@ -266,7 +266,12 @@ Where a type is **declared** follows one rule:
 | Interface                | `I{Name}`                                  | `IItemCard`, `IUseItems`              |
 | Type alias               | `{Name}Type`                               | `ItemRowType`, `StatusType`           |
 | Enum                     | `{Name}Enum`                               | `ItemStatusEnum`, `CategoryEnum`      |
+| Enum member              | `UPPER_SNAKE_CASE`                         | `ItemStatusEnum.PAST_DUE`             |
 | Const (object/primitive) | `ALL_CAPS_SNAKE_CASE` named by **purpose** | `MAX_RETRY_ATTEMPTS`, `DEFAULT_LIMIT` |
+
+An enum member is written like any `ALL_CAPS` constant, whatever its value:
+`ErrorStateCodeEnum.NOT_FOUND = '404'`, `QueryKeySegmentEnum.ITEMS = 'items'`. The
+`enumMember` selector of `@typescript-eslint/naming-convention` holds it.
 
 **Name constants by functionality, not value.**
 
@@ -651,8 +656,12 @@ Errors flow through **one** path. Screens and hooks must not bypass it.
   catalogs, or the toast silently degrades to the raw technical message.
 
 > Status: the ports and helpers exist (`AppError`, `buildServiceError`,
-> `scrubPII`, `sanitizeQueryKey`). The **mechanical** contract check is not yet
-> here. Tracked in §21.
+> `scrubPII`, `sanitizeQueryKey`), and both apps follow the table: `useAppQuery`
+> queues no toast and the dashboards show their `ErrorState`, `useAppMutation`
+> queues the toast, and the error boundaries report a crash once through
+> `reportBoundaryError` in `src/lib/observability/`. A query key holds its
+> dynamic values in a trailing params object, which `sanitizeQueryKey` always
+> redacts. The **mechanical** contract check is not yet here. Tracked in §21.
 
 ---
 

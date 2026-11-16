@@ -3,14 +3,16 @@ import { View } from 'react-native'
 import Animated from 'react-native-reanimated'
 
 import {
-  LOADING_SKELETON_STYLES as styles,
+  LOADING_SKELETON_STYLES,
   ROUNDED_BY_VARIANT,
   SKELETON_SHIMMER_END,
   SKELETON_SHIMMER_MID,
-  SKELETON_SHIMMER_START
+  SKELETON_SHIMMER_START,
+  SKELETON_SHIMMER_STYLES
 } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.style'
 import type { ILoadingSkeletonProps } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.type'
 import { useShimmer } from '@/components/ui/LoadingSkeleton/useShimmer.hook'
+import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 
 export const LoadingSkeleton = ({
   height,
@@ -18,6 +20,8 @@ export const LoadingSkeleton = ({
   width = '100%'
 }: ILoadingSkeletonProps) => {
   const { animatedStyle } = useShimmer()
+  const styles = useThemedStyles({ styles: LOADING_SKELETON_STYLES })
+  const shimmerMid = useThemedStyles({ styles: SKELETON_SHIMMER_MID })
 
   return (
     <View
@@ -28,16 +32,18 @@ export const LoadingSkeleton = ({
         { borderRadius: ROUNDED_BY_VARIANT[rounded], height, width }
       ]}
     >
-      <Animated.View style={[styles.shimmer, animatedStyle]}>
+      <Animated.View
+        style={[SKELETON_SHIMMER_STYLES.shimmer, animatedStyle]}
+      >
         <LinearGradient
           colors={[
             SKELETON_SHIMMER_START,
-            SKELETON_SHIMMER_MID,
+            shimmerMid,
             SKELETON_SHIMMER_END
           ]}
           end={{ x: 1, y: 0 }}
           start={{ x: 0, y: 0 }}
-          style={styles.shimmer}
+          style={SKELETON_SHIMMER_STYLES.shimmer}
         />
       </Animated.View>
     </View>

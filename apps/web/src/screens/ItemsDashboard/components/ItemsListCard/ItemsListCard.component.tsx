@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl'
 
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
 import { SearchBar } from '@/components/ui/SearchBar'
@@ -15,8 +16,10 @@ import {
 import type { IItemsListCardProps } from '@/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.type'
 
 export const ItemsListCard = ({
+  isError = false,
   isLoading,
   items = [],
+  onRetry,
   onSearchChange,
   search
 }: IItemsListCardProps) => {
@@ -51,6 +54,8 @@ export const ItemsListCard = ({
               <LoadingSkeleton height={16} width={48} />
             </div>
           ))
+        ) : isError ? (
+          <ErrorState onRetry={onRetry} />
         ) : items.length === 0 ? (
           <EmptyState message={t('listEmpty')} />
         ) : (

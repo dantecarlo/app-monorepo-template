@@ -1,8 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import { Pressable, Text, View } from 'react-native'
 
-import { ERROR_STATE_STYLES as styles } from '@/components/ui/ErrorState/ErrorState.style'
+import { ERROR_STATE_STYLES } from '@/components/ui/ErrorState/ErrorState.style'
 import type { IErrorStateProps } from '@/components/ui/ErrorState/ErrorState.type'
+import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 
 export const ErrorState = ({
   code,
@@ -11,6 +12,8 @@ export const ErrorState = ({
   resetErrorBoundary,
   title
 }: IErrorStateProps) => {
+  const styles = useThemedStyles({ styles: ERROR_STATE_STYLES })
+
   const { t } = useTranslation()
 
   const resolvedTitle =

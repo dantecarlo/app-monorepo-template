@@ -21,3 +21,15 @@ export const useColorScheme = () => ({
   },
   toggleColorScheme: noop
 })
+
+// NativeWind's web vars(): the style that declares CSS variables for every
+// descendant, as a map of `--name` to value.
+export const vars = (
+  variables: Record<string, string | number>
+): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries(variables).map(([key, value]) => [
+      key.startsWith('--') ? key : `--${key}`,
+      String(value)
+    ])
+  )

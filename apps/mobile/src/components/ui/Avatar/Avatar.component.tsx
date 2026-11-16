@@ -10,13 +10,16 @@ import {
   AVATAR_VARIANT_COLORS
 } from '@/components/ui/Avatar/Avatar.style'
 import type { IAvatarProps } from '@/components/ui/Avatar/Avatar.type'
+import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 
 export const Avatar = ({
   initials,
   size = AVATAR_DEFAULT_SIZE,
   variant = 'neutral'
 }: IAvatarProps) => {
-  const { backgroundColor, textColor } = AVATAR_VARIANT_COLORS[variant]
+  const variantColors = useThemedStyles({ styles: AVATAR_VARIANT_COLORS })
+
+  const { backgroundColor, textColor } = variantColors[variant]
   const fontSize = AVATAR_FONT_SIZES[size]
   const borderRadius = AVATAR_BORDER_RADIUS[size]
 

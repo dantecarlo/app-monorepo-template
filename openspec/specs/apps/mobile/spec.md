@@ -3,14 +3,15 @@
 > **Governs:** `apps/mobile/src`, `apps/mobile/app.json`
 > **ID prefix:** `MOBILE`
 > **Derived from:** `docs/architecture/mobile.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/observability.md`, `docs/e2e.md`, `docs/responsive.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-15 at `8852663`
+> **Verified against the code:** 2026-11-16 at `427b81d`
 
 ## Purpose
 
 The mobile app is the Expo Router client of the template. It owns two routes with no guard: the
 items dashboard, backed by a sample service, and a sign-in form that validates its fields but
-signs no one in. It also owns the theme and language controls and their persistence, a query
-layer that turns failures into toasts and captures them through the observability port, and the
+signs no one in. It also owns the theme and language controls and their persistence, the
+light and dark themes painted from the root, a query layer that shows a failed query on its
+screen, toasts a failed mutation and captures both through the observability port, and the
 environment wiring of Supabase and Sentry. It leaves the error, PII-scrubbing, query-key and
 auth-gateway contracts to packages/core, the catalogs and language constants to packages/i18n,
 the Supabase client and auth gateway to packages/supabase, the theme values to packages/tokens,
@@ -23,7 +24,7 @@ and the web counterpart to apps/web.
 The mobile app SHALL render the items dashboard at the root route (/) and the login screen at
 /login, under one root stack that checks no session before either renders.
 
-**Evidence:** `apps/mobile/src/app/index.tsx:7`, `apps/mobile/src/app/login.tsx:7`, `apps/mobile/src/app/_layout.tsx:68-76`
+**Evidence:** `apps/mobile/src/app/index.tsx:7`, `apps/mobile/src/app/login.tsx:7`, `apps/mobile/src/app/_layout.tsx:69-78`
 
 #### Scenario: the root route shows the dashboard
 
@@ -51,7 +52,7 @@ The mobile app SHALL render the items dashboard at the root route (/) and the lo
 The mobile app SHALL keep the native splash screen up and render no route until the Inter and
 Montserrat fonts have loaded or failed to load.
 
-**Evidence:** `apps/mobile/src/app/_layout.tsx:36`, `apps/mobile/src/app/_layout.tsx:55-63`
+**Evidence:** `apps/mobile/src/app/_layout.tsx:37`, `apps/mobile/src/app/_layout.tsx:56-64`
 
 #### Scenario: fonts still loading
 
@@ -104,17 +105,26 @@ store the matching theme under the app.theme key and apply it to the NativeWind 
 
 ### Requirement: MOBILE-05 — The root frame follows the theme
 
-The mobile app SHALL paint the navigator background with the active theme's base background and
-show dark status bar glyphs under the light theme and light glyphs under the dark one.
+The mobile app SHALL paint the navigator background with the active theme's base background, show
+dark status bar glyphs under the light theme and light glyphs under the dark one, and wrap the
+routes in a view that carries the active theme's `themeVars` from packages/tokens, through
+NativeWind's `vars()`.
 
-**Evidence:** `apps/mobile/src/lib/theme/useRootTheme.hook.ts:16-20`, `apps/mobile/src/app/_layout.tsx:69-73`
+**Evidence:** `apps/mobile/src/lib/theme/useRootTheme.hook.ts:17`, `apps/mobile/src/lib/theme/useRootTheme.hook.ts:24`, `apps/mobile/src/app/_layout.tsx:45`, `apps/mobile/src/app/_layout.tsx:70`
 
 #### Scenario: the light theme is active
 
 - **GIVEN** the NativeWind color scheme is light
+- **WHEN** the root theme is derived
+- **THEN** the status bar style is dark, the content background is the light base colour, and the theme style carries the light theme's variables
+- **Test:** `apps/mobile/src/lib/theme/__tests__/useRootTheme.hook.test.ts` › "derives the light base, dark glyphs and the light variables under the light theme"
+
+#### Scenario: the root layout renders
+
+- **GIVEN** the light theme is active and the fonts have loaded
 - **WHEN** the root layout renders
-- **THEN** the status bar style is dark and the content background is the light base color
-- **Test:** Not covered — no test calls useRootTheme or renders the root layout
+- **THEN** the routes sit inside a view whose style holds the light theme's variables
+- **Test:** `apps/mobile/src/app/__tests__/layout.route.test.tsx` › "wraps the routes in the variables of the active theme"
 
 ### Requirement: MOBILE-06 — Initial language from storage, then the device
 
@@ -187,7 +197,7 @@ The mobile app SHALL load the dashboard items through useAppQuery under the item
 for the current search term, fetching at most 50 items from the items service and adapting them
 to view models.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:39-57`, `apps/mobile/src/lib/query/queryKeys.constant.ts:22-29`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:41-60`, `apps/mobile/src/lib/query/queryKeys.constant.ts:32-39`
 
 #### Scenario: the user types a search term
 
@@ -299,7 +309,7 @@ hours or days followed by m ago, h ago or d ago.
 The mobile app SHALL show on the stats card the number of loaded items and the number of them
 whose status is active, and a dash in place of each number while loading.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:59-65`, `apps/mobile/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.tsx:30-38`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:62-68`, `apps/mobile/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.tsx:33-41`
 
 #### Scenario: the sample list has loaded
 
@@ -313,7 +323,7 @@ whose status is active, and a dash in place of each number while loading.
 The mobile app SHALL show an activity indicator in the items list, and an ellipsis in place of
 the result count, while the items query is loading.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:28-47`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:34-51`
 
 #### Scenario: the first load
 
@@ -327,7 +337,7 @@ the result count, while the items query is loading.
 The mobile app SHALL show the shared empty state, with the components.emptyState title and
 message from the catalogs, when the items query resolves no items.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:48-49`, `apps/mobile/src/components/ui/EmptyState/EmptyState.component.tsx:15-20`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:54-55`, `apps/mobile/src/components/ui/EmptyState/EmptyState.component.tsx:18-23`
 
 #### Scenario: a search with no match
 
@@ -340,9 +350,9 @@ message from the catalogs, when the items query resolves no items.
 
 The mobile app SHALL render one item card per loaded item, in order, each with the author
 initials, title, description, category, author label, time display and status, under a caption
-holding the item count followed by the items.dashboard.listResults message for that count.
+holding the items.dashboard.listResults message for the item count, which states the count once.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:28-31`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:51-57`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:35`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:57`
 
 #### Scenario: items have loaded
 
@@ -351,12 +361,19 @@ holding the item count followed by the items.dashboard.listResults message for t
 - **THEN** five item cards show in order, under the count caption
 - **Test:** Not covered — "renders without returning null with items" mocks the item card away and asserts only a non-null return
 
+#### Scenario: the count caption
+
+- **GIVEN** two loaded items
+- **WHEN** the list card renders
+- **THEN** the caption is the listResults message for two, with the count written once
+- **Test:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/__tests__/ItemsListCard.component.test.tsx` › "shows the result count once"
+
 ### Requirement: MOBILE-19 — Dashboard bottom navigation
 
 The mobile app SHALL show a bottom tab bar with the home, items, search and settings tabs, the
 home tab selected on mount, and mark a pressed tab as selected without navigating.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/DashboardNav/DashboardNav.component.tsx:15-28`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:43`, `apps/mobile/src/components/ui/NavBar/NavBar.component.tsx:33-43`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/DashboardNav/DashboardNav.component.tsx:15-28`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:45`, `apps/mobile/src/components/ui/NavBar/NavBar.component.tsx:39-53`
 
 #### Scenario: the user presses the search tab
 
@@ -365,41 +382,35 @@ home tab selected on mount, and mark a pressed tab as selected without navigatin
 - **THEN** the search tab reports itself selected and the route stays the same
 - **Test:** Not covered — the DashboardNav test mocks the nav bar away and asserts only a non-null return
 
-### Requirement: MOBILE-20 — A failed query raises one error toast per failure
+### Requirement: MOBILE-20 — A failed query shows the error state and raises no toast
 
-The mobile app SHALL add one error toast with the resolved message to the toast store each time a
-query made through useAppQuery fails, however often the component that runs the query re-renders
-while the query stays in error.
+The mobile app SHALL add no toast when a query made through useAppQuery fails, however many
+components observe it; the dashboard SHALL show the error state with its generic copy in the
+items list, in place of the items and the empty state, with a retry control that runs the items
+query again.
 
-**Evidence:** `apps/mobile/src/lib/query/useAppQuery.hook.ts:30-43`
+**Evidence:** `apps/mobile/src/lib/query/useAppQuery.hook.ts:19`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:49`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:77-79`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:52-53`
 
-#### Scenario: a failing query with an override message
+#### Scenario: a failing query
 
-- **GIVEN** a query whose function throws and whose caller passes an override message
+- **GIVEN** two components observing one query whose function throws
 - **WHEN** the query settles in error
-- **THEN** an error toast with the override message is added
-- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "fires an error toast with the override message on failure"
-
-#### Scenario: a failed query re-renders
-
-- **GIVEN** a query that failed once and added its toast
-- **WHEN** its component renders again while the query stays in error
-- **THEN** no other toast is added
-- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "adds one error toast per failure however often it re-renders"
-
-#### Scenario: the query fails again
-
-- **GIVEN** a query that failed once and added its toast
-- **WHEN** it is refetched and fails again
-- **THEN** a second error toast is added
-- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "adds another error toast when the query fails again"
+- **THEN** no toast is added
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "adds no toast when the query fails, however many components observe it"
 
 #### Scenario: the dashboard fails to load
 
 - **GIVEN** the items service rejects
-- **WHEN** the dashboard query settles in error
-- **THEN** an error toast with the items.errorMessage copy is added
-- **Test:** Not covered — the only useItems test asserts that the export is a function, and the sample service never rejects
+- **WHEN** the dashboard hook settles
+- **THEN** it reports the failure and an empty item list, and its retry calls the items service again
+- **Test:** `apps/mobile/src/screens/ItemsDashboard/hooks/__tests__/useItems.hook.test.ts` › "reports the failure and runs the query again on retry"
+
+#### Scenario: the list shows the failure
+
+- **GIVEN** the list card told the items failed to load
+- **WHEN** it renders and its retry control is pressed
+- **THEN** it shows the error state alert, no empty state, and the retry handler runs once
+- **Test:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/__tests__/ItemsListCard.component.test.tsx` › "shows the error state with a retry when the items failed to load"
 
 ### Requirement: MOBILE-21 — Error message precedence
 
@@ -518,10 +529,11 @@ never retry a failed mutation.
 ### Requirement: MOBILE-25 — Every failed query and mutation is captured
 
 The mobile app SHALL send every failed query, with its query key sanitized by packages/core
-against the values of `QueryKeySegmentEnum`, and every failed mutation to the observability
-port's captureError, tagged with the cache it came from.
+against the values of `QueryKeySegmentEnum`, so the trailing params object of a key (MOBILE-43)
+is always redacted, and every failed mutation to the observability port's captureError, tagged
+with the cache it came from.
 
-**Evidence:** `apps/mobile/src/lib/query/createQueryClient.helper.ts:27-42`, `apps/mobile/src/lib/query/queryKeys.constant.ts:9-16`, `apps/mobile/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/mobile/src/app/_layout.tsx:38-40`
+**Evidence:** `apps/mobile/src/lib/query/createQueryClient.helper.ts:35`, `apps/mobile/src/lib/query/queryKeys.constant.ts:26-39`, `apps/mobile/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/mobile/src/app/_layout.tsx:39`
 
 #### Scenario: a query key holding an identifier
 
@@ -536,6 +548,13 @@ port's captureError, tagged with the cache it came from.
 - **WHEN** the query fails
 - **THEN** the capture callback receives the key `['items', 'list', '[redacted]']`
 - **Test:** `apps/mobile/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "redacts the search text of an items list key on query failure"
+
+#### Scenario: a typed value equal to a registered word
+
+- **GIVEN** a query keyed by `QueryKeys.items.list('list')`
+- **WHEN** the query fails
+- **THEN** the capture callback receives the key `['items', 'list', '[redacted]']`
+- **Test:** `apps/mobile/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "redacts a list filter that equals a registered segment on query failure"
 
 #### Scenario: a failing mutation
 
@@ -643,7 +662,7 @@ The mobile app SHALL set the auth status to loading on mount, then store the ses
 Supabase auth gateway returns with the status authenticated or unauthenticated, and keep both in
 step with every later auth state change until unmount.
 
-**Evidence:** `apps/mobile/src/components/AuthProvider/useAuthBootstrap.hook.ts:12-30`, `apps/mobile/src/app/_layout.tsx:41`, `apps/mobile/src/app/_layout.tsx:68`
+**Evidence:** `apps/mobile/src/components/AuthProvider/useAuthBootstrap.hook.ts:12-30`, `apps/mobile/src/app/_layout.tsx:42`, `apps/mobile/src/app/_layout.tsx:69`
 
 #### Scenario: before the gateway answers
 
@@ -678,7 +697,7 @@ step with every later auth state change until unmount.
 The mobile app SHALL, on submit, reject an email that does not match the address pattern and a
 password shorter than 8 characters, showing each field's catalog error under that field.
 
-**Evidence:** `apps/mobile/src/screens/Login/hooks/useLoginForm.hook.ts:15-29`, `apps/mobile/src/screens/Login/Login.constant.ts:4-13`, `apps/mobile/src/screens/Login/Login.screen.tsx:33-37`
+**Evidence:** `apps/mobile/src/screens/Login/hooks/useLoginForm.hook.ts:15-29`, `apps/mobile/src/screens/Login/Login.constant.ts:4-13`, `apps/mobile/src/screens/Login/Login.screen.tsx:31-35`
 
 #### Scenario: a short password
 
@@ -690,9 +709,10 @@ password shorter than 8 characters, showing each field's catalog error under tha
 ### Requirement: MOBILE-31 — The login screen signs no one in
 
 The mobile app SHALL make no authentication request from the login screen: a valid submit only
-puts the sign-in button in its loading state, and the Google button has no action.
+puts the sign-in button in its loading state, and the screen offers no social sign-in button,
+since the template has no provider for it.
 
-**Evidence:** `apps/mobile/src/screens/Login/hooks/useLoginForm.hook.ts:49-54`, `apps/mobile/src/screens/Login/Login.screen.tsx:62-79`
+**Evidence:** `apps/mobile/src/screens/Login/hooks/useLoginForm.hook.ts:49-53`, `apps/mobile/src/screens/Login/Login.screen.tsx:23`, `apps/mobile/src/screens/Login/Login.screen.tsx:61`
 
 #### Scenario: a valid submit
 
@@ -701,12 +721,19 @@ puts the sign-in button in its loading state, and the Google button has no actio
 - **THEN** the button shows its loading indicator and no gateway call is made
 - **Test:** Not covered — no test calls useLoginForm
 
+#### Scenario: the login screen renders
+
+- **GIVEN** the login screen
+- **WHEN** it renders
+- **THEN** no Google sign-in button and no "or" divider are shown
+- **Test:** `apps/mobile/src/screens/Login/__tests__/Login.screen.test.tsx` › "renders no social sign-in button"
+
 ### Requirement: MOBILE-32 — Password reveal toggle
 
 The mobile app SHALL mask the password field's entry and show a reveal button labelled with the
 show-password copy, switching to plain entry and the hide-password label on each press.
 
-**Evidence:** `apps/mobile/src/components/ui/AuthField/useAuthField.hook.ts:35-39`, `apps/mobile/src/components/ui/AuthField/AuthField.component.tsx:41-56`
+**Evidence:** `apps/mobile/src/components/ui/AuthField/useAuthField.hook.ts:38-42`, `apps/mobile/src/components/ui/AuthField/AuthField.component.tsx:45-60`
 
 #### Scenario: revealing the password
 
@@ -721,7 +748,7 @@ The mobile app's web export SHALL render the root route in a centred column at m
 with no horizontal overflow and every interactive control that is not fixed or sticky inside the
 viewport, at 390, 768, 1280 and 1920 px wide.
 
-**Evidence:** `apps/mobile/src/helpers/layout.style.ts:12-16`, `apps/mobile/src/screens/ItemsDashboard/ItemsDashboard.screen.tsx:48-55`
+**Evidence:** `apps/mobile/src/helpers/layout.style.ts:12-16`, `apps/mobile/src/screens/ItemsDashboard/ItemsDashboard.screen.tsx:37-44`
 
 #### Scenario: the four viewport widths
 
@@ -770,7 +797,7 @@ Android adaptive icon on the #0A0B0D background.
 The mobile app SHALL mount the toast viewport in the root layout, over every route, rendering each
 toast of the toast store as an alert with its message and a dismiss control that removes it.
 
-**Evidence:** `apps/mobile/src/app/_layout.tsx:77`, `apps/mobile/src/components/ui/Toast/Toast.component.tsx:14-49`
+**Evidence:** `apps/mobile/src/app/_layout.tsx:79`, `apps/mobile/src/components/ui/Toast/Toast.component.tsx:15-53`
 
 #### Scenario: a toast is added while a route is shown
 
@@ -786,13 +813,15 @@ toast of the toast store as an alert with its message and a dismiss control that
 - **THEN** the toast is shown in an alert, and after the press it is gone
 - **Test:** `apps/mobile/src/components/ui/Toast/__tests__/Toast.component.test.tsx` › "removes a toast when its dismiss control is pressed"
 
-### Requirement: MOBILE-37 — A render crash shows the error state
+### Requirement: MOBILE-37 — A render crash shows the error state and is reported once
 
 The mobile app SHALL export an `ErrorBoundary` from the root layout, which Expo Router wraps
 around the layout and every route below it, rendering the error state with its generic copy on
-the theme background and a retry control that re-renders the route.
+the theme background and a retry control that re-renders the route, and reporting the error it
+caught to the observability port once, through `reportBoundaryError` under
+`src/lib/observability/`, however often it renders.
 
-**Evidence:** `apps/mobile/src/app/_layout.tsx:34`, `apps/mobile/src/components/RootErrorBoundary/RootErrorBoundary.component.tsx:7-11`, `apps/mobile/src/components/ui/Screen/Screen.component.tsx:10`, `apps/mobile/src/components/ui/ErrorState/ErrorState.component.tsx:16-47`
+**Evidence:** `apps/mobile/src/app/_layout.tsx:35`, `apps/mobile/src/components/RootErrorBoundary/RootErrorBoundary.component.tsx:14`, `apps/mobile/src/lib/observability/reportBoundaryError.helper.ts:23`, `apps/mobile/src/lib/observability/reportBoundaryError.helper.ts:26`, `apps/mobile/src/components/ui/Screen/Screen.component.tsx:16`
 
 #### Scenario: a route crashes while rendering
 
@@ -801,6 +830,21 @@ the theme background and a retry control that re-renders the route.
 - **THEN** the generic error title and message are shown in an alert, and the route is re-rendered once
 - **Test:** `apps/mobile/src/components/RootErrorBoundary/__tests__/RootErrorBoundary.component.test.tsx` › "renders the generic error state for a render crash"
 - **Test:** `apps/mobile/src/components/RootErrorBoundary/__tests__/RootErrorBoundary.component.test.tsx` › "calls retry when the retry control is pressed"
+
+#### Scenario: the crash is reported
+
+- **GIVEN** the root error boundary holding a caught error
+- **WHEN** it renders, and renders again with the same error
+- **THEN** the observability port captures that error once, with the boundary source
+- **Test:** `apps/mobile/src/components/RootErrorBoundary/__tests__/RootErrorBoundary.component.test.tsx` › "reports the crash to observability once"
+
+#### Scenario: the report helper
+
+- **GIVEN** the boundary report helper over an observability port
+- **WHEN** one error is reported twice and another once
+- **THEN** the port captures each error once
+- **Test:** `apps/mobile/src/lib/observability/__tests__/reportBoundaryError.helper.test.ts` › "captures an error once however often it is reported"
+- **Test:** `apps/mobile/src/lib/observability/__tests__/reportBoundaryError.helper.test.ts` › "captures each distinct error"
 
 #### Scenario: the root layout exports the boundary
 
@@ -816,7 +860,7 @@ component blocks in a component block (`src/components/ui/`, or a screen's own `
 their NativeWind classes, StyleSheet entries and style slots carry only layout, spacing, size,
 position, overflow and visibility.
 
-**Evidence:** `eslint-local-rules/style-positioning.detect.mjs:342`, `eslint.rules.mjs:696`, `apps/mobile/src/helpers/layout.style.ts:8`, `apps/mobile/src/components/RootErrorBoundary/RootErrorBoundary.component.tsx:7`
+**Evidence:** `eslint-local-rules/style-positioning.detect.mjs:342`, `eslint.rules.mjs:702`, `apps/mobile/src/helpers/layout.style.ts:8`, `apps/mobile/src/components/RootErrorBoundary/RootErrorBoundary.component.tsx:10`
 
 #### Scenario: a screen StyleSheet entry carries a colour
 
@@ -851,10 +895,9 @@ palette colour and no arbitrary value.
 
 The mobile app SHALL render text through the `Text` block, whose variant sets its typography and
 colour, a labelled rule through the `Divider` block, and a screen's surface through the `Screen`
-block, which fills its parent and paints the dark base background, or the active theme's base
-background when it is themed.
+block, which fills its parent and paints the active theme's base background.
 
-**Evidence:** `apps/mobile/src/components/ui/Text/Text.style.ts:8`, `apps/mobile/src/components/ui/Divider/Divider.component.tsx:6`, `apps/mobile/src/components/ui/Screen/Screen.component.tsx:10`
+**Evidence:** `apps/mobile/src/components/ui/Text/Text.style.ts:9`, `apps/mobile/src/components/ui/Divider/Divider.component.tsx:7`, `apps/mobile/src/components/ui/Screen/Screen.component.tsx:16`
 
 #### Scenario: a text variant renders
 
@@ -870,12 +913,12 @@ background when it is themed.
 - **THEN** the label is shown between two hairline rules
 - **Test:** `apps/mobile/src/components/ui/Divider/__tests__/Divider.component.test.tsx` › "renders the label between two rules"
 
-#### Scenario: a themed screen surface renders
+#### Scenario: a screen surface renders
 
-- **GIVEN** the `Screen` block, themed and not themed, under the light theme
+- **GIVEN** the `Screen` block under the light theme, with and without a positioning style
 - **WHEN** it renders
-- **THEN** the themed surface paints the light base background and the other the dark one
-- **Test:** `apps/mobile/src/components/ui/Screen/__tests__/Screen.component.test.tsx` › "paints the dark base, or the active theme's base when themed"
+- **THEN** both surfaces paint the light base background and keep the style they were given
+- **Test:** `apps/mobile/src/components/ui/Screen/__tests__/Screen.component.test.tsx` › "paints the active theme's base background"
 
 ### Requirement: MOBILE-41 — Only the ui blocks import a UI kit
 
@@ -899,15 +942,127 @@ a block under `src/components/ui/`, so a kit is swapped by rewriting that folder
 - **THEN** it paints the light accent to the accent behind the content
 - **Test:** `apps/mobile/src/components/ui/AccentGradient/__tests__/AccentGradient.component.test.tsx` › "paints the accent gradient behind its children"
 
+### Requirement: MOBILE-42 — Every block paints the active theme
+
+The mobile app SHALL paint every themed colour of its blocks, the text, surfaces, borders, icons
+and indicators of `src/components/ui/` and of a screen's own `components/`, from the active
+theme: a StyleSheet through `createThemedStyles` and `useThemedStyles`, a view through
+`useThemeTokens`, and a NativeWind colour class through the preset's `var(--c-*)` read of the
+variable the root frame declares (MOBILE-05, TOKENS-12), so switching to the light theme repaints
+the whole app; a colour the tokens share between the themes MAY still be read from the static
+palette.
+
+**Evidence:** `apps/mobile/src/lib/theme/createThemedStyles.helper.ts:16`, `apps/mobile/src/lib/theme/createThemedStyles.helper.ts:24`, `apps/mobile/src/lib/theme/useThemedStyles.hook.ts:7`, `apps/mobile/src/components/ui/Text/Text.component.tsx:13`, `apps/mobile/src/components/ui/Icon/Icon.component.tsx:21`, `packages/tokens/tailwind-preset.cjs:22`, `apps/mobile/src/lib/theme/useRootTheme.hook.ts:24`
+
+#### Scenario: a text variant under the light theme
+
+- **GIVEN** the light theme is active
+- **WHEN** the `Text` block renders the caption variant
+- **THEN** its colour is the light theme's tertiary text colour
+- **Test:** `apps/mobile/src/components/ui/Text/__tests__/Text.component.test.tsx` › "paints a variant in the active theme's colour"
+
+#### Scenario: a class-styled block under the light theme
+
+- **GIVEN** the light theme is active
+- **WHEN** a block paints through a NativeWind colour class, such as the secondary `Button`'s `text-text-primary`
+- **THEN** the class reads `var(--c-text-primary)` from the preset, and the root frame declares that variable with the light value
+- **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset reads every themed colour from its --c- variable, declared in both themes"
+- **Test:** `apps/mobile/src/app/__tests__/layout.route.test.tsx` › "wraps the routes in the variables of the active theme"
+
+#### Scenario: a themed style sheet
+
+- **GIVEN** a style builder over a palette
+- **WHEN** it is turned into themed styles and read under each theme
+- **THEN** each theme's sheet holds that theme's colours, and the hook returns the active one
+- **Test:** `apps/mobile/src/lib/theme/__tests__/createThemedStyles.helper.test.ts` › "builds one style sheet per theme from its palette"
+- **Test:** `apps/mobile/src/lib/theme/__tests__/useThemedStyles.hook.test.ts` › "returns the sheet of the active theme"
+
+#### Scenario: no block reads the static dark palette
+
+- **GIVEN** every style file, constant file and view under `src/components/ui/` and under the screens' `components/`
+- **WHEN** their reads of the static `colors` palette are listed
+- **THEN** none of them reads a themed colour
+- **Test:** `apps/mobile/src/lib/theme/__tests__/createThemedStyles.helper.test.ts` › "leaves no block reading a themed colour from the static dark palette"
+
+### Requirement: MOBILE-43 — A query key keeps its dynamic values in a trailing params object
+
+The mobile app SHALL build every key of `QueryKeys` from `QueryKeySegmentEnum` values followed,
+when the key carries a dynamic value, by one trailing params object that holds every such value,
+so that no string segment of a key is a value the user typed or the data supplied, and a
+feature's `all` key is a prefix of each of its keys.
+
+**Evidence:** `apps/mobile/src/lib/query/queryKeys.constant.ts:14`, `apps/mobile/src/lib/query/queryKeys.constant.ts:25`, `apps/mobile/src/lib/query/queryKeys.constant.ts:26-30`, `apps/mobile/src/lib/query/queryKeys.constant.ts:32-39`
+
+#### Scenario: every factory is walked
+
+- **GIVEN** every entry of `QueryKeys`, each factory called with a probe value
+- **WHEN** the string segments of the keys they return are read
+- **THEN** each one is a value of `QueryKeySegmentEnum`
+- **Test:** `apps/mobile/src/lib/query/__tests__/queryKeys.constant.test.ts` › "builds every string segment of every key factory from QueryKeySegmentEnum"
+
+#### Scenario: the list filter and the detail id
+
+- **GIVEN** a list filter and an item id
+- **WHEN** the list and detail keys are built
+- **THEN** they are `['items', 'list', { filter }]` and `['items', 'detail', { id }]`, and the list key with no filter stays `['items', 'list']`
+- **Test:** `apps/mobile/src/lib/query/__tests__/queryKeys.constant.test.ts` › "puts the list filter and the detail id in a trailing params object"
+- **Test:** `apps/mobile/src/lib/query/__tests__/queryKeys.constant.test.ts` › "keeps the bare list key when no filter is given"
+
+#### Scenario: the items prefix is invalidated
+
+- **GIVEN** a cached list query and a cached detail query of the items
+- **WHEN** the query client invalidates `QueryKeys.items.all`
+- **THEN** both queries are invalidated
+- **Test:** `apps/mobile/src/lib/query/__tests__/queryKeys.constant.test.ts` › "invalidates every items query through the items all key"
+
+### Requirement: MOBILE-44 — The session hook returns one object while the session is unchanged
+
+The mobile app SHALL return, from `useSession`, the same object on every read while the session
+and the auth status of the auth store are unchanged, and a new object holding them after either
+changes.
+
+**Evidence:** `apps/mobile/src/hooks/useSession.hook.ts:7-10`
+
+#### Scenario: a component re-renders
+
+- **GIVEN** a component reading `useSession`
+- **WHEN** it renders again with the store unchanged
+- **THEN** it reads the same object both times
+- **Test:** `apps/mobile/src/hooks/__tests__/useSession.hook.test.ts` › "returns the same object across renders while the session is unchanged"
+
+#### Scenario: the session changes
+
+- **GIVEN** a component reading `useSession` while signed out
+- **WHEN** the store receives a session with the authenticated status
+- **THEN** it reads a new object holding that session and status
+- **Test:** `apps/mobile/src/hooks/__tests__/useSession.hook.test.ts` › "returns a new object holding the new session after a change"
+
+### Requirement: MOBILE-45 — The dashboard shows no control without an action
+
+The mobile app SHALL show on the dashboard only controls with an action: no View all button under
+the list and no settings button in the header, since the template has no screen for either; the
+search bar and the navigation tabs remain.
+
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/ItemsDashboard.screen.tsx:49-66`, `apps/mobile/src/screens/ItemsDashboard/components/DashboardHeader/DashboardHeader.component.tsx:19`
+
+#### Scenario: the dashboard renders
+
+- **GIVEN** the dashboard screen
+- **WHEN** it renders
+- **THEN** no View all button is shown
+- **Test:** `apps/mobile/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx` › "shows no View all button"
+
+#### Scenario: the header renders
+
+- **GIVEN** the dashboard header
+- **WHEN** it renders
+- **THEN** it shows the welcome text and the title, and no settings button
+- **Test:** `apps/mobile/src/screens/ItemsDashboard/components/DashboardHeader/__tests__/DashboardHeader.component.test.tsx` › "shows no settings button"
+
 ## Open questions
 
-- **Q1** — Where a query error shows: `docs/code-standards.md:616` puts it in a per-screen
-  ErrorState or AsyncBoundary, and `docs/architecture/mobile.md:101` and
-  `docs/architecture/shared.md:55` say every screen handles its error state. In the code,
-  `apps/mobile/src/lib/query/useAppQuery.hook.ts:42` only raises a toast, and
-  `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:43`
-  has loading, empty and list branches and no error branch; no screen uses AsyncBoundary or
-  ErrorState.
+- **Q1** — Closed on 2026-11-16 by `openspec/changes/archive/2026-11-15-app-behaviour/`: a
+  failed query adds no toast and the dashboard shows its error state (MOBILE-20).
 - **Q2** — Closed on 2026-11-14 by `openspec/changes/archive/2026-11-14-error-surfacing/`: the
   root layout mounts the toast viewport (MOBILE-36).
 - **Q3** — Closed on 2026-11-14 by `openspec/changes/archive/2026-11-14-error-surfacing/`: the
@@ -915,10 +1070,9 @@ a block under `src/components/ui/`, so a kit is swapped by rewriting that folder
 - **Q4** — `docs/code-standards.md:513` and `docs/architecture/shared.md:54` route UI strings
   through i18n, but English text is written in the code: the relative time in
   `apps/mobile/src/services/Items/Items.adapter.ts:27`, the toast dismiss label in
-  `apps/mobile/src/components/ui/Toast/Toast.constant.ts:7`, the retry label in
+  `apps/mobile/src/components/ui/Toast/Toast.constant.ts:6`, the retry label in
   `apps/mobile/src/components/ui/AsyncBoundary/AsyncBoundary.constant.ts:1`, the loading label in
   `apps/mobile/src/components/ui/Button/Button.component.tsx:56`, and the raw status in
-  `apps/mobile/src/screens/ItemsDashboard/components/ItemCard/ItemCard.component.tsx:53`.
-- **Q5** — `docs/code-standards.md:607` calls an override message a rare exception that needs a
-  comment saying why; `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:49` passes
-  one with no comment.
+  `apps/mobile/src/screens/ItemsDashboard/components/ItemCard/ItemCard.component.tsx:61`.
+- **Q5** — Closed on 2026-11-16 by `openspec/changes/archive/2026-11-15-app-behaviour/`: the
+  dashboard hook passes no override message (MOBILE-20).

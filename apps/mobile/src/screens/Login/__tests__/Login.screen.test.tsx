@@ -1,5 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 
+import { render, screen } from '@/test/test.helper'
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key })
 }))
@@ -15,13 +17,6 @@ vi.mock('@/components/ui/AuthField/AuthField.component', () => ({
 vi.mock('@/components/ui/Button/Button.component', () => ({
   Button: () => null
 }))
-
-vi.mock(
-  '@/components/ui/SocialAuthButton/SocialAuthButton.component',
-  () => ({
-    SocialAuthButton: () => null
-  })
-)
 
 vi.mock('@/screens/Login/hooks/useLoginForm.hook', () => ({
   useLoginForm: () => ({
@@ -40,5 +35,12 @@ describe('LoginScreen (mobile)', () => {
   test('renders without returning null', () => {
     const result = LoginScreen()
     expect(result).not.toBeNull()
+  })
+
+  test('renders no social sign-in button', () => {
+    render(<LoginScreen />)
+
+    expect(screen.queryByText('googleCta')).toBeNull()
+    expect(screen.queryByText('dividerOr')).toBeNull()
   })
 })

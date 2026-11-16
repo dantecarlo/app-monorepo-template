@@ -93,8 +93,8 @@ export const CASES = [
     context: walk(
       plant({
         file: SOURCES.nativewindPreset,
-        from: "raised: '#101216'",
-        to: "raised: '#101217'"
+        from: "raised: 'var(--c-bg-raised)'",
+        to: "raised: 'var(--c-bg-raised-x)'"
       })
     ),
     expected: 1,
@@ -123,7 +123,8 @@ export const CASES = [
     name: 'a planted edit in the theme names is caught'
   },
   {
-    // The dark raised background reaches all three outputs.
+    // The dark raised background reaches the web theme and the mobile
+    // variables; the preset names its variable.
     context: walk(
       plant({
         file: SOURCES.tokens,
@@ -131,11 +132,11 @@ export const CASES = [
         to: "raised: '#101217'"
       })
     ),
-    expected: 3,
+    expected: 2,
     name: 'a source change that was not regenerated is caught in every output it reaches'
   },
   {
-    // The preset carries the dark colours only.
+    // The preset carries no themed value.
     context: walk(
       plant({
         file: SOURCES.tokens,

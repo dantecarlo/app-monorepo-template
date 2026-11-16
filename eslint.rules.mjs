@@ -128,6 +128,12 @@ export const BASE_RULES = {
       format: ['PascalCase'],
       selector: 'enum',
       suffix: ['Enum']
+    },
+    // Enum members are UPPER_SNAKE_CASE, like every ALL_CAPS constant
+    // (code-standards §4): `ErrorStateCodeEnum.NOT_FOUND`.
+    {
+      format: ['UPPER_CASE'],
+      selector: 'enumMember'
     }
   ],
   '@typescript-eslint/no-empty-object-type': [

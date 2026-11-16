@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { AccentGradient } from '@/components/ui/AccentGradient'
-import { IconButton } from '@/components/ui/IconButton'
 import { Text } from '@/components/ui/Text'
 import { DASHBOARD_HEADER_STYLES as styles } from '@/screens/ItemsDashboard/components/DashboardHeader/DashboardHeader.style'
 
@@ -27,12 +26,6 @@ export const DashboardHeader = () => {
           <Text variant="title">{t('title')}</Text>
         </View>
       </View>
-
-      <IconButton
-        accessibilityLabel={t('settingsLabel')}
-        name="settings"
-        onPress={() => undefined}
-      />
     </View>
   )
 }

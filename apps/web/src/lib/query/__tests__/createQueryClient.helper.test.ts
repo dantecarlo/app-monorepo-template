@@ -1,7 +1,10 @@
 import { describe, expect, test, vi } from 'vitest'
 
 import { createQueryClient } from '@/lib/query/createQueryClient.helper'
-import { QueryKeys } from '@/lib/query/queryKeys.constant'
+import {
+  QueryKeys,
+  QueryKeySegmentEnum
+} from '@/lib/query/queryKeys.constant'
 
 describe('createQueryClient', () => {
   test('returns a QueryClient instance', () => {
@@ -77,6 +80,31 @@ describe('createQueryClient', () => {
     )
   })
 
+  test('redacts a list filter that equals a registered segment on query failure', async () => {
+    const spy = vi.fn()
+    const client = createQueryClient({ onCaptureError: spy })
+    const error = new Error('typed word boom')
+
+    await client
+      .fetchQuery({
+        queryFn: async () => {
+          throw error
+        },
+        queryKey: QueryKeys.items.list(QueryKeySegmentEnum.LIST),
+        retry: false
+      })
+      .catch(() => undefined)
+
+    expect(spy).toHaveBeenCalledOnce()
+    expect(spy).toHaveBeenCalledWith(
+      error,
+      expect.objectContaining({
+        queryKey: ['items', 'list', '[redacted]'],
+        source: 'queryCache'
+      })
+    )
+  })
+
   test('calls onCaptureError with mutationCache source on mutation failure', async () => {
     const spy = vi.fn()
     const client = createQueryClient({ onCaptureError: spy })
@@ -112,4 +140,37 @@ describe('createQueryClient', () => {
       })
     ).rejects.toThrow('no-op sink')
   })
+
+  test.each([
+    { factory: 'detail', value: 'list' },
+    { factory: 'detail', value: 'items' },
+    { factory: 'list', value: 'detail' },
+    { factory: 'detail', value: 'a@b.co' }
+  ] as const)(
+    'redacts the value of $factory($value) on query failure, whatever it spells',
+    async ({ factory, value }) => {
+      const spy = vi.fn()
+      const client = createQueryClient({ onCaptureError: spy })
+      const queryKey = QueryKeys.items[factory](value)
+
+      await client
+        .fetchQuery({
+          queryFn: async () => {
+            throw new Error('typed value boom')
+          },
+          queryKey,
+          retry: false
+        })
+        .catch(() => undefined)
+
+      expect(spy).toHaveBeenCalledOnce()
+      expect(spy).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          queryKey: [queryKey[0], queryKey[1], '[redacted]'],
+          source: 'queryCache'
+        })
+      )
+    }
+  )
 })

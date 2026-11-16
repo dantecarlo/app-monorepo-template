@@ -1,7 +1,14 @@
 import { describe, expect, test, vi } from 'vitest'
 
+import { fireEvent, render, screen, within } from '@/test/test.helper'
+
+// Writes the count a message receives before its key, as the catalogs'
+// "{count} results" does, so a test sees how often the count shows.
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key })
+  useTranslation: () => ({
+    t: (...[key, options]: [string, { count?: number }?]) =>
+      options?.count === undefined ? key : `${options.count} ${key}`
+  })
 }))
 
 vi.mock('@/components/ui/GlassCard', () => ({
@@ -13,7 +20,7 @@ vi.mock('@/components/ui/SearchBar', () => ({
 }))
 
 vi.mock('@/components/ui/EmptyState', () => ({
-  EmptyState: () => null
+  EmptyState: () => 'empty-state'
 }))
 
 vi.mock('@/screens/ItemsDashboard/components/ItemCard', () => ({
@@ -64,5 +71,54 @@ describe('ItemsListCard (mobile)', () => {
       search: ''
     })
     expect(result).not.toBeNull()
+  })
+
+  test('shows the error state with a retry when the items failed to load', () => {
+    const onRetry = vi.fn()
+    render(
+      <ItemsListCard
+        isError
+        isLoading={false}
+        items={[]}
+        onRetry={onRetry}
+        onSearchChange={() => undefined}
+        search=""
+      />
+    )
+
+    const alert = within(screen.getByRole('alert'))
+    expect(alert.getByText('components.errorState.title')).toBeTruthy()
+    expect(screen.queryByText('empty-state')).toBeNull()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'components.errorState.retry' })
+    )
+
+    expect(onRetry).toHaveBeenCalledOnce()
+  })
+
+  test('shows the result count once', () => {
+    const item = {
+      authorInitials: 'AB',
+      authorLabel: 'Author A',
+      category: 'cat',
+      createdAt: new Date('2024-01-01'),
+      description: 'desc',
+      status: 'active' as const,
+      timeDisplay: '1h ago'
+    }
+    render(
+      <ItemsListCard
+        isLoading={false}
+        items={[
+          { ...item, id: '1', title: 'Item 1' },
+          { ...item, id: '2', title: 'Item 2' }
+        ]}
+        onSearchChange={() => undefined}
+        search=""
+      />
+    )
+
+    expect(screen.getByText('2 listResults')).toBeTruthy()
   })
 })

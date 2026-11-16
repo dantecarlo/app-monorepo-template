@@ -1,10 +1,11 @@
 import { useState } from 'react'
 
-import { AUTH_FIELD_STYLES as styles } from '@/components/ui/AuthField/AuthField.style'
+import { AUTH_FIELD_STYLES } from '@/components/ui/AuthField/AuthField.style'
 import type {
   IUseAuthFieldParams,
   IUseAuthFieldResult
 } from '@/components/ui/AuthField/AuthField.type'
+import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -23,6 +24,8 @@ export const useAuthField = ({
   isError,
   isPassword
 }: IUseAuthFieldParams): IUseAuthFieldResult => {
+  const styles = useThemedStyles({ styles: AUTH_FIELD_STYLES })
+
   const [showPassword, setShowPassword] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
 

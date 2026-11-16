@@ -1,11 +1,12 @@
-import { colors } from '@app/tokens'
 import { Pressable, Text, TextInput, View } from 'react-native'
 
 import { AUTH_FIELD_ICON_SIZE } from '@/components/ui/AuthField/AuthField.constant'
-import { AUTH_FIELD_STYLES as styles } from '@/components/ui/AuthField/AuthField.style'
+import { AUTH_FIELD_STYLES } from '@/components/ui/AuthField/AuthField.style'
 import type { IAuthFieldProps } from '@/components/ui/AuthField/AuthField.type'
 import { useAuthField } from '@/components/ui/AuthField/useAuthField.hook'
 import { Icon } from '@/components/ui/Icon/Icon.component'
+import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
+import { useThemeTokens } from '@/lib/theme/useThemeTokens.hook'
 
 /** Glass labeled TextInput. Password reveal toggle is i18n-decoupled via props. */
 export const AuthField = ({
@@ -17,6 +18,9 @@ export const AuthField = ({
   showPasswordLabel,
   ...textInputProps
 }: IAuthFieldProps) => {
+  const { colors: palette } = useThemeTokens()
+  const styles = useThemedStyles({ styles: AUTH_FIELD_STYLES })
+
   const {
     onBlur,
     onFocus,
@@ -33,7 +37,7 @@ export const AuthField = ({
         <TextInput
           onBlur={onBlur}
           onFocus={onFocus}
-          placeholderTextColor={colors.text.disabled}
+          placeholderTextColor={palette.text.disabled}
           secureTextEntry={secureEntry}
           style={styles.input}
           {...textInputProps}
@@ -48,7 +52,7 @@ export const AuthField = ({
             style={styles.revealButton}
           >
             <Icon
-              color={colors.text.secondary}
+              color={palette.text.secondary}
               decorative
               name={showPassword ? 'eye-off' : 'eye'}
               size={AUTH_FIELD_ICON_SIZE}
