@@ -769,6 +769,6 @@ package, no `@/` alias, no `#` key but `#src/`, and no `node:` builtin.
 
 ## Open questions
 
-- **Q4** — `docs/code-standards.md:601` has services throw an `AppError` with a `messageKey`, a
+- **Q4** — `docs/code-standards.md:640` has services throw an `AppError` with a `messageKey`, a
   `code` and an optional `cause`, but `packages/core/src/errors/AppError.helper.ts:4` makes
   `messageKey` optional too. See CORE-01.

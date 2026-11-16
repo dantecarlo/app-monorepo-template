@@ -110,7 +110,12 @@ params object (`['items', 'list', { filter }]`), which the error report always r
 All of [../code-standards.md](../code-standards.md) applies: arrow-only, alias imports (`@/*`),
 file suffixes (`.screen.tsx`/`.component.tsx`/`.hook.ts`/`.service.ts`/`.adapter.ts`/`.type.ts`/
 `.style.ts`/`.constant.ts`), `I{Name}`/`{Name}Type`/`{Name}Enum`, single-object params, UI
-strings via i18n, screens handle loading/empty/error states.
+strings via i18n, screens handle loading/empty/error states. Every user-facing string of a block
+is a catalog message of the active language, accessibility labels included (the toast's dismiss
+control, the busy labels of `Button`, `LoadingSkeleton` and the async boundary); an adapter
+returns data, never a sentence, so the items adapter gives an item's age as a unit and a count,
+which the item card words through `items.age`. A component test reads that copy through
+`renderWithI18n` in `src/test/i18n.helper.tsx`, an i18next instance on the real catalogs.
 
 **Styling lives in the components** (`AGENTS.md` LAW, `docs/code-standards.md` §22). A block under
 `src/components/ui/`, or a screen's own `components/`, owns its look, in NativeWind classes or a

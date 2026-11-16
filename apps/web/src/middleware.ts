@@ -18,6 +18,11 @@ export const middleware = (request: NextRequest): NextResponse => {
   return NextResponse.next()
 }
 
+// Each exempt name is anchored: a folder ends in its slash and a file in the end
+// of the path, so a route that only starts like one (/imagesadmin, /favicon.icox)
+// still runs the guard.
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|images|fonts).*)']
+  matcher: [
+    '/((?!_next/static/|_next/image$|favicon\\.ico$|images/|fonts/).*)'
+  ]
 }

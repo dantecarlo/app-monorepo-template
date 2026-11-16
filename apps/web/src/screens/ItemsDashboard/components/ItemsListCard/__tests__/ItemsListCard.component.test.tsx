@@ -1,8 +1,10 @@
+import { DEFAULT_LANGUAGE, resources } from '@app/i18n'
 import { NextIntlClientProvider } from 'next-intl'
 import { describe, expect, test } from 'vitest'
 
 import { ItemsListCard } from '@/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component'
 import type { IItemViewModel } from '@/screens/ItemsDashboard/models/Item.type'
+import { ItemAgeUnitEnum } from '@/services/Items/items.constant'
 import { render, screen } from '@/test/test.helper'
 
 const messages = {
@@ -13,17 +15,20 @@ const messages = {
     }
   },
   items: {
+    age: resources[DEFAULT_LANGUAGE].translation.items.age,
     dashboard: {
       listEmpty: 'No items found.',
       listResults: '{count} results',
       listTitle: 'Items',
       searchLabel: 'Search items',
       searchPlaceholder: 'Search items…'
-    }
+    },
+    status: resources[DEFAULT_LANGUAGE].translation.items.status
   }
 }
 
 const makeItem = (id: string): IItemViewModel => ({
+  age: { count: 2, unit: ItemAgeUnitEnum.HOURS },
   authorInitials: 'AB',
   authorLabel: 'Alice Brown',
   category: 'UX',
@@ -31,7 +36,6 @@ const makeItem = (id: string): IItemViewModel => ({
   description: 'A description',
   id,
   status: 'active',
-  timeDisplay: '2h ago',
   title: `Item ${id}`
 })
 

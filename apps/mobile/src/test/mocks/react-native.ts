@@ -47,7 +47,8 @@ const host =
       children
     )
 
-export const ActivityIndicator = noop
+// A spinner keeps its accessibility label, so a test can find a busy control.
+export const ActivityIndicator = host('span')
 export const Appearance = {
   addChangeListener: () => ({ remove: noop }),
   getColorScheme: () => 'dark' as const

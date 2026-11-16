@@ -52,6 +52,10 @@ Before writing ANY test:
 3. Check the global setup file (`src/test/setup.ts`) — never recreate global mocks.
 4. Check existing tests in the same domain for established patterns.
 5. Determine the test file type (A/B/C/D below).
+6. If the block reads the catalogs, render it on the real ones in the language the test
+   names: `renderWithIntl({ locale, ui })` from `@/test/intl.helper` on web,
+   `renderWithI18n({ language, ui })` from `@/test/i18n.helper` on mobile. Assert the copy
+   through `resources[language].translation`, never a literal in another language.
 
 ---
 

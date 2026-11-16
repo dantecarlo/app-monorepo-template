@@ -3,7 +3,7 @@
 > **Governs:** `apps/mobile/src`, `apps/mobile/app.json`
 > **ID prefix:** `MOBILE`
 > **Derived from:** `docs/architecture/mobile.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/observability.md`, `docs/e2e.md`, `docs/responsive.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-16 at `427b81d`
+> **Verified against the code:** 2026-11-16 at `bc46d55`
 
 ## Purpose
 
@@ -267,7 +267,7 @@ The mobile app SHALL map each item record to a view model, in input order, keepi
 title, description, category and status, with the author's label and the initials of the first
 two words of the author name, or an empty label and a question mark when there is no author.
 
-**Evidence:** `apps/mobile/src/services/Items/Items.adapter.ts:15-21`, `apps/mobile/src/services/Items/Items.adapter.ts:41-54`
+**Evidence:** `apps/mobile/src/services/Items/Items.adapter.ts:17-23`, `apps/mobile/src/services/Items/Items.adapter.ts:51-64`
 
 #### Scenario: a two-word author name
 
@@ -290,19 +290,28 @@ two words of the author name, or an empty label and a question mark when there i
 - **THEN** the view models keep that order
 - **Test:** `apps/mobile/src/services/Items/__tests__/Items.adapter.test.ts` › "maps all DTOs preserving order"
 
-### Requirement: MOBILE-14 — Relative creation time
+### Requirement: MOBILE-14 — The item card shows the age and the status in the active language
 
-The mobile app SHALL show each item's age as "just now" under one minute, then in whole minutes,
-hours or days followed by m ago, h ago or d ago.
+The mobile app SHALL describe each item's age as a unit and a count, just now under one minute,
+then whole minutes, hours or days, and the item card SHALL show that age as the `items.age`
+message of its unit and the item's status as the `items.status` message of that status, in the
+active language.
 
-**Evidence:** `apps/mobile/src/services/Items/Items.adapter.ts:23-35`
+**Evidence:** `apps/mobile/src/services/Items/Items.adapter.ts:27-45`, `apps/mobile/src/services/Items/Items.adapter.ts:52`, `apps/mobile/src/services/Items/items.constant.ts:12-17`, `apps/mobile/src/screens/ItemsDashboard/components/ItemCard/ItemCard.component.tsx:59`, `apps/mobile/src/screens/ItemsDashboard/components/ItemCard/ItemCard.component.tsx:65`
+
+#### Scenario: the age of an item
+
+- **GIVEN** items created under a minute, forty minutes, five hours and three days ago
+- **WHEN** they are adapted
+- **THEN** their ages are just now with a count of zero, 40 minutes, 5 hours and 3 days, each as a unit and a count
+- **Test:** `apps/mobile/src/services/Items/__tests__/Items.adapter.test.ts` › "describes the age as a unit and a count"
 
 #### Scenario: an item created three hours ago
 
-- **GIVEN** an item created three hours before now
-- **WHEN** it is adapted
-- **THEN** its time display reads 3h ago
-- **Test:** Not covered — no adapter test asserts the time display
+- **GIVEN** an active item three hours old, under the English or the Spanish language
+- **WHEN** its card renders
+- **THEN** its age and status read that language's `items.age.hours` message for three and `items.status.active` message
+- **Test:** `apps/mobile/src/screens/ItemsDashboard/components/ItemCard/__tests__/ItemCard.component.test.tsx` › "shows the status and the age in the active language"
 
 ### Requirement: MOBILE-15 — Dashboard totals
 
@@ -349,8 +358,9 @@ message from the catalogs, when the items query resolves no items.
 ### Requirement: MOBILE-18 — Results list and count
 
 The mobile app SHALL render one item card per loaded item, in order, each with the author
-initials, title, description, category, author label, time display and status, under a caption
-holding the items.dashboard.listResults message for the item count, which states the count once.
+initials, title, description, category, author label, age and status label (MOBILE-14), under a
+caption holding the items.dashboard.listResults message for the item count, which states the count
+once.
 
 **Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:35`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:57`
 
@@ -795,9 +805,10 @@ Android adaptive icon on the #0A0B0D background.
 ### Requirement: MOBILE-36 — The root layout shows the toast viewport
 
 The mobile app SHALL mount the toast viewport in the root layout, over every route, rendering each
-toast of the toast store as an alert with its message and a dismiss control that removes it.
+toast of the toast store as an alert with its message and a dismiss control, labelled with the
+`common.dismiss` message of the active language, that removes it.
 
-**Evidence:** `apps/mobile/src/app/_layout.tsx:79`, `apps/mobile/src/components/ui/Toast/Toast.component.tsx:15-53`
+**Evidence:** `apps/mobile/src/app/_layout.tsx:79`, `apps/mobile/src/components/ui/Toast/Toast.component.tsx:13-52`, `apps/mobile/src/components/ui/Toast/Toast.component.tsx:42`
 
 #### Scenario: a toast is added while a route is shown
 
@@ -812,6 +823,13 @@ toast of the toast store as an alert with its message and a dismiss control that
 - **WHEN** its dismiss control is pressed
 - **THEN** the toast is shown in an alert, and after the press it is gone
 - **Test:** `apps/mobile/src/components/ui/Toast/__tests__/Toast.component.test.tsx` › "removes a toast when its dismiss control is pressed"
+
+#### Scenario: the dismiss label in another language
+
+- **GIVEN** one toast in the viewport, under the Spanish language
+- **WHEN** it renders
+- **THEN** its dismiss control is named with the Spanish dismiss message
+- **Test:** `apps/mobile/src/components/ui/Toast/__tests__/Toast.component.test.tsx` › "labels the dismiss control in the active language"
 
 ### Requirement: MOBILE-37 — A render crash shows the error state and is reported once
 
@@ -1059,6 +1077,51 @@ search bar and the navigation tabs remain.
 - **THEN** it shows the welcome text and the title, and no settings button
 - **Test:** `apps/mobile/src/screens/ItemsDashboard/components/DashboardHeader/__tests__/DashboardHeader.component.test.tsx` › "shows no settings button"
 
+### Requirement: MOBILE-46 — The busy and retry labels come from the catalogs
+
+The mobile app SHALL label the busy indicator of `Button`, the `LoadingSkeleton` and the async
+boundary's loading region with the `common.loading` message, and SHALL show, in the async
+boundary's error fallback, the `helper.error.generic` message for a thrown value that is not an
+error and a retry control labelled with the `common.retry` message, every message in the active
+language.
+
+**Evidence:** `apps/mobile/src/components/ui/Button/Button.component.tsx:58`, `apps/mobile/src/components/ui/LoadingSkeleton/LoadingSkeleton.component.tsx:30`, `apps/mobile/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultLoading.component.tsx:12`, `apps/mobile/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultError.component.tsx:18`, `apps/mobile/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultError.component.tsx:21`, `apps/mobile/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultError.component.tsx:25`
+
+#### Scenario: a busy button
+
+- **GIVEN** a button whose action is running, under the Spanish language
+- **WHEN** it renders
+- **THEN** its busy indicator is named with the Spanish loading message
+- **Test:** `apps/mobile/src/components/ui/Button/__tests__/Button.component.test.tsx` › "labels its busy indicator in the active language"
+
+#### Scenario: a skeleton
+
+- **GIVEN** a loading skeleton, under the Spanish language
+- **WHEN** it renders
+- **THEN** it is named with the Spanish loading message
+- **Test:** `apps/mobile/src/components/ui/LoadingSkeleton/__tests__/LoadingSkeleton.component.test.tsx` › "labels the skeleton in the active language"
+
+#### Scenario: the loading fallback
+
+- **GIVEN** the async boundary's default loading fallback, under the Spanish language
+- **WHEN** it renders
+- **THEN** it is named with the Spanish loading message
+- **Test:** `apps/mobile/src/components/ui/AsyncBoundary/__tests__/AsyncBoundaryDefaultLoading.component.test.tsx` › "labels the loading region in the active language"
+
+#### Scenario: the error fallback
+
+- **GIVEN** the async boundary's default error fallback for a thrown value that is not an error, under the Spanish language
+- **WHEN** it renders and its retry control is pressed
+- **THEN** the Spanish generic message and retry label are shown, and the boundary is reset once
+- **Test:** `apps/mobile/src/components/ui/AsyncBoundary/__tests__/AsyncBoundaryDefaultError.component.test.tsx` › "shows the generic message and the retry label in the active language"
+
+#### Scenario: an error is thrown
+
+- **GIVEN** the async boundary's default error fallback for a thrown error
+- **WHEN** it renders
+- **THEN** the error's own message is shown
+- **Test:** `apps/mobile/src/components/ui/AsyncBoundary/__tests__/AsyncBoundaryDefaultError.component.test.tsx` › "shows the message of a thrown error"
+
 ## Open questions
 
 - **Q1** — Closed on 2026-11-16 by `openspec/changes/archive/2026-11-15-app-behaviour/`: a
@@ -1067,12 +1130,8 @@ search bar and the navigation tabs remain.
   root layout mounts the toast viewport (MOBILE-36).
 - **Q3** — Closed on 2026-11-14 by `openspec/changes/archive/2026-11-14-error-surfacing/`: the
   root layout exports `RootErrorBoundary` as its `ErrorBoundary` (MOBILE-37).
-- **Q4** — `docs/code-standards.md:513` and `docs/architecture/shared.md:54` route UI strings
-  through i18n, but English text is written in the code: the relative time in
-  `apps/mobile/src/services/Items/Items.adapter.ts:27`, the toast dismiss label in
-  `apps/mobile/src/components/ui/Toast/Toast.constant.ts:6`, the retry label in
-  `apps/mobile/src/components/ui/AsyncBoundary/AsyncBoundary.constant.ts:1`, the loading label in
-  `apps/mobile/src/components/ui/Button/Button.component.tsx:56`, and the raw status in
-  `apps/mobile/src/screens/ItemsDashboard/components/ItemCard/ItemCard.component.tsx:61`.
+- **Q4** — Closed on 2026-11-16 by `openspec/changes/archive/2026-11-15-i18n/`: the relative
+  time, the toast dismiss label, the retry and loading labels and the item status are read from
+  the catalogs in the active language (MOBILE-14, MOBILE-36, MOBILE-46).
 - **Q5** — Closed on 2026-11-16 by `openspec/changes/archive/2026-11-15-app-behaviour/`: the
   dashboard hook passes no override message (MOBILE-20).

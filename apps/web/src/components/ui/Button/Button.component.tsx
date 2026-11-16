@@ -1,3 +1,5 @@
+import { useTranslations } from 'next-intl'
+
 import { buttonVariants } from '@/components/ui/Button/Button.style'
 import type { IButtonProps } from '@/components/ui/Button/Button.type'
 
@@ -19,6 +21,8 @@ export const Button = ({
   variant,
   ...props
 }: IButtonProps) => {
+  const t = useTranslations('common')
+
   return (
     <button
       aria-busy={isLoading}
@@ -37,7 +41,7 @@ export const Button = ({
             aria-hidden="true"
             className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
           />
-          <span className="sr-only">Loading…</span>
+          <span className="sr-only">{t('loading')}</span>
         </>
       ) : (
         children

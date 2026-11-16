@@ -1,4 +1,5 @@
-import type { IAuthSession } from '@app/core'
+import { AppError, type IAuthSession } from '@app/core'
+import { DEFAULT_LANGUAGE, resources } from '@app/i18n'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NextIntlClientProvider } from 'next-intl'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
@@ -26,6 +27,10 @@ vi.mock('next/image', () => ({
   )
 }))
 
+import {
+  SIGN_IN_FAILURE_MESSAGE_KEY,
+  SignInFailureEnum
+} from '@/lib/supabase/authGateway.constant'
 import { LoginScreen } from '@/screens/Login/Login.screen'
 import { useToastStore } from '@/stores/toast.store'
 import { fireEvent, render, screen, waitFor } from '@/test/test.helper'
@@ -41,6 +46,7 @@ const SESSION: IAuthSession = {
 const messages = {
   app: { name: 'Acme' },
   auth: {
+    error: resources[DEFAULT_LANGUAGE].translation.auth.error,
     languageSwitcher: { label: 'Change language' },
     login: {
       cta: 'Sign in',
@@ -170,5 +176,32 @@ describe('LoginScreen', () => {
     ).not.toBeInTheDocument()
     expect(mockReplace).not.toHaveBeenCalled()
     expect(screen.getByRole('button', { name: 'Sign in' })).toBeEnabled()
+  })
+
+  test('shows the message of the failure the gateway names', async () => {
+    mockSignIn.mockRejectedValue(
+      new AppError({
+        code: SignInFailureEnum.INVALID_CREDENTIALS,
+        messageKey:
+          SIGN_IN_FAILURE_MESSAGE_KEY[
+            SignInFailureEnum.INVALID_CREDENTIALS
+          ]
+      })
+    )
+    renderLogin()
+
+    submitCredentials()
+
+    await waitFor(() =>
+      expect(useToastStore.getState().toasts).toEqual([
+        expect.objectContaining({
+          message:
+            resources[DEFAULT_LANGUAGE].translation.auth.error
+              .invalidCredentials,
+          variant: 'error'
+        })
+      ])
+    )
+    expect(mockReplace).not.toHaveBeenCalled()
   })
 })

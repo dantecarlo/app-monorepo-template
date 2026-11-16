@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient'
+import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import Animated from 'react-native-reanimated'
 
@@ -19,13 +20,14 @@ export const LoadingSkeleton = ({
   rounded = 'md',
   width = '100%'
 }: ILoadingSkeletonProps) => {
+  const { t } = useTranslation()
   const { animatedStyle } = useShimmer()
   const styles = useThemedStyles({ styles: LOADING_SKELETON_STYLES })
   const shimmerMid = useThemedStyles({ styles: SKELETON_SHIMMER_MID })
 
   return (
     <View
-      accessibilityLabel="Loading"
+      accessibilityLabel={t('common.loading')}
       accessible
       style={[
         styles.root,

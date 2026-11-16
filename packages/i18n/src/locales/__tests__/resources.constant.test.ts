@@ -1,13 +1,18 @@
 import { describe, expect, test } from 'vitest'
 
-import en from '@/locales/en.json'
-import es from '@/locales/es.json'
+import { SUPPORTED_LANGUAGES } from '@/locales/i18n.constant'
+import { resources } from '@/locales/resources.constant'
+
+interface ICollectLeafPathsParams {
+  obj: Record<string, unknown>
+  prefix?: string
+}
 
 // Collect all dot-separated leaf paths from a nested object
-const collectLeafPaths = (
-  obj: Record<string, unknown>,
+const collectLeafPaths = ({
+  obj,
   prefix = ''
-): string[] => {
+}: ICollectLeafPathsParams): string[] => {
   return Object.entries(obj).flatMap(([key, value]) => {
     const path = prefix ? `${prefix}.${key}` : key
     if (
@@ -15,20 +20,44 @@ const collectLeafPaths = (
       typeof value === 'object' &&
       !Array.isArray(value)
     ) {
-      return collectLeafPaths(value as Record<string, unknown>, path)
+      return collectLeafPaths({
+        obj: value as Record<string, unknown>,
+        prefix: path
+      })
     }
     return [path]
   })
 }
 
+const leafPathsByLanguage = Object.entries(resources).map(
+  ([language, { translation }]) => ({
+    language,
+    paths: new Set(
+      collectLeafPaths({
+        obj: translation as unknown as Record<string, unknown>
+      })
+    )
+  })
+)
+
 describe('catalog parity', () => {
-  test('es.json and en.json have identical key sets', () => {
-    const esPaths = collectLeafPaths(
-      es as unknown as Record<string, unknown>
-    ).sort()
-    const enPaths = collectLeafPaths(
-      en as unknown as Record<string, unknown>
-    ).sort()
-    expect(esPaths).toEqual(enPaths)
+  test('every catalog holds every key another catalog has', () => {
+    const missing = leafPathsByLanguage.flatMap((catalog) =>
+      leafPathsByLanguage
+        .filter((other) => other.language !== catalog.language)
+        .flatMap((other) =>
+          [...other.paths]
+            .filter((path) => !catalog.paths.has(path))
+            .map((path) => `${catalog.language} lacks ${path}`)
+        )
+    )
+
+    expect(missing).toEqual([])
+  })
+
+  test('holds a catalog for every supported language', () => {
+    expect(Object.keys(resources).sort()).toEqual(
+      [...SUPPORTED_LANGUAGES].sort()
+    )
   })
 })

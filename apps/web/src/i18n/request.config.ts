@@ -1,31 +1,19 @@
-import {
-  DEFAULT_LANGUAGE,
-  resources,
-  SUPPORTED_LANGUAGES,
-  type SupportedLanguageType
-} from '@app/i18n'
+import { resources } from '@app/i18n'
 import { cookies } from 'next/headers'
 import { getRequestConfig } from 'next-intl/server'
 
-const I18N_TIME_ZONE = 'UTC'
-
-const LOCALE_COOKIE_NAME = 'NEXT_LOCALE'
-
-const toSupportedLanguage = (
-  value: string | undefined
-): SupportedLanguageType =>
-  (SUPPORTED_LANGUAGES as ReadonlyArray<string>).includes(value ?? '')
-    ? (value as SupportedLanguageType)
-    : DEFAULT_LANGUAGE
+import { I18N_TIME_ZONE, LOCALE_COOKIE_NAME } from '@/i18n/i18n.constant'
+import { toSupportedLanguage } from '@/i18n/locale.helper'
 
 // Resolves the active locale per request: the NEXT_LOCALE cookie the
 // LanguageSwitcher writes wins, then the routing-provided requestLocale, then
-// DEFAULT_LANGUAGE. router.refresh() re-runs this on the server after a switch.
+// DEFAULT_LANGUAGE. router.refresh() re-runs this on the server after a switch,
+// and LocaleProviders hands its locale and messages to the client providers.
 export default getRequestConfig(async ({ requestLocale }) => {
   const cookieStore = await cookies()
   const requested =
     cookieStore.get(LOCALE_COOKIE_NAME)?.value ?? (await requestLocale)
-  const locale = toSupportedLanguage(requested)
+  const locale = toSupportedLanguage({ value: requested })
 
   return {
     locale,

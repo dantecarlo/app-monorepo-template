@@ -3,6 +3,12 @@
     "name": "App"
   },
   "auth": {
+    "error": {
+      "emailNotConfirmed": "Confirma tu correo electrónico antes de iniciar sesión.",
+      "invalidCredentials": "El correo electrónico o la contraseña son incorrectos.",
+      "notConfigured": "El inicio de sesión no está disponible en este momento.",
+      "rateLimited": "Demasiados intentos de inicio de sesión. Espera un momento e inténtalo de nuevo."
+    },
     "languageSwitcher": {
       "label": "Cambiar idioma"
     },
@@ -86,6 +92,12 @@
     }
   },
   "items": {
+    "age": {
+      "days": "hace {count} d",
+      "hours": "hace {count} h",
+      "justNow": "ahora mismo",
+      "minutes": "hace {count} min"
+    },
     "dashboard": {
       "listEmpty": "No se encontraron elementos.",
       "listResults": "{count} resultados",
@@ -110,8 +122,12 @@
       "welcomeBack": "Bienvenido de nuevo"
     },
     "emptyState": "No hay elementos",
-    "errorMessage": "Error al cargar elementos. Por favor, inténtalo de nuevo.",
     "errorState": "Error al cargar elementos",
+    "status": {
+      "active": "activo",
+      "archived": "archivado",
+      "draft": "borrador"
+    },
     "summary": {
       "active": "activo",
       "archived": "archivado",
