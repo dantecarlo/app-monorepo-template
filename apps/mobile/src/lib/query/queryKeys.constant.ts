@@ -7,8 +7,8 @@
 // [redacted].
 
 export enum QueryKeySegmentEnum {
-  Items = 'items',
-  List = 'list'
+  ITEMS = 'items',
+  LIST = 'list'
 }
 
 export const STRUCTURAL_QUERY_KEY_SEGMENTS: ReadonlySet<string> = new Set(
@@ -17,15 +17,15 @@ export const STRUCTURAL_QUERY_KEY_SEGMENTS: ReadonlySet<string> = new Set(
 
 export const QueryKeys = {
   items: {
-    all: [QueryKeySegmentEnum.Items] as const,
-    detail: (id: string) => [QueryKeySegmentEnum.Items, id] as const,
+    all: [QueryKeySegmentEnum.ITEMS] as const,
+    detail: (id: string) => [QueryKeySegmentEnum.ITEMS, id] as const,
     list: (filter?: string) =>
       filter
         ? ([
-            QueryKeySegmentEnum.Items,
-            QueryKeySegmentEnum.List,
+            QueryKeySegmentEnum.ITEMS,
+            QueryKeySegmentEnum.LIST,
             filter
           ] as const)
-        : ([QueryKeySegmentEnum.Items, QueryKeySegmentEnum.List] as const)
+        : ([QueryKeySegmentEnum.ITEMS, QueryKeySegmentEnum.LIST] as const)
   }
 } as const

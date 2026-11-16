@@ -109,7 +109,7 @@ interface IUseItems { ... }
 type ItemRowType = { ... }
 type StatusType = 'active' | 'inactive'
 
-// Enums — Enum suffix, ALL_CAPS values
+// Enums — Enum suffix, UPPER_SNAKE_CASE members
 enum ItemStatusEnum {
   ACTIVE = 'active',
   ARCHIVED = 'archived',

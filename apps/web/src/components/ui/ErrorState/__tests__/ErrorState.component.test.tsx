@@ -44,7 +44,7 @@ describe('ErrorState', () => {
   })
 
   test('renders code-specific copy for 404', () => {
-    renderErrorState({ code: ErrorStateCodeEnum.NotFound })
+    renderErrorState({ code: ErrorStateCodeEnum.NOT_FOUND })
     expect(screen.getByText('Not found')).toBeTruthy()
   })
 

@@ -74,6 +74,7 @@ A file may trigger multiple dimensions.
 - Interface names must have `I` prefix: `interface IFoo` not `interface Foo`
 - Type aliases must have `Type` suffix: `type StatusType`
 - Enums must have `Enum` suffix: `enum ItemStatusEnum`
+- Enum members are UPPER_SNAKE_CASE: `ItemStatusEnum.PAST_DUE`, not `PastDue`
 - Constants named by purpose, not value: `MAX_RETRIES` not `NUMBER_THREE`
 - File names follow mandatory suffixes (`.component.tsx`, `.hook.ts`, etc.)
 

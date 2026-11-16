@@ -79,16 +79,16 @@ Add to `src/lib/query/queryKeys.constant.ts`:
 ```typescript
 // The existing enum, with one member added for the new feature:
 export enum QueryKeySegmentEnum {
-  Items = 'items',
-  List = 'list',
-  {FeatureName} = '{featureName}' // the new feature's segment
+  ITEMS = 'items',
+  LIST = 'list',
+  {FEATURE_NAME} = '{featureName}' // the new feature's segment
 }
 
 {featureName}: {
-  all:    [QueryKeySegmentEnum.{FeatureName}] as const,
+  all:    [QueryKeySegmentEnum.{FEATURE_NAME}] as const,
   list:   (contextId: string) =>
-    [QueryKeySegmentEnum.{FeatureName}, contextId, QueryKeySegmentEnum.List] as const,
-  detail: (id: string) => [QueryKeySegmentEnum.{FeatureName}, id] as const,
+    [QueryKeySegmentEnum.{FEATURE_NAME}, contextId, QueryKeySegmentEnum.LIST] as const,
+  detail: (id: string) => [QueryKeySegmentEnum.{FEATURE_NAME}, id] as const,
 }
 ```
 

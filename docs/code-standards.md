@@ -266,7 +266,12 @@ Where a type is **declared** follows one rule:
 | Interface                | `I{Name}`                                  | `IItemCard`, `IUseItems`              |
 | Type alias               | `{Name}Type`                               | `ItemRowType`, `StatusType`           |
 | Enum                     | `{Name}Enum`                               | `ItemStatusEnum`, `CategoryEnum`      |
+| Enum member              | `UPPER_SNAKE_CASE`                         | `ItemStatusEnum.PAST_DUE`             |
 | Const (object/primitive) | `ALL_CAPS_SNAKE_CASE` named by **purpose** | `MAX_RETRY_ATTEMPTS`, `DEFAULT_LIMIT` |
+
+An enum member is written like any `ALL_CAPS` constant, whatever its value:
+`ErrorStateCodeEnum.NOT_FOUND = '404'`, `QueryKeySegmentEnum.ITEMS = 'items'`. The
+`enumMember` selector of `@typescript-eslint/naming-convention` holds it.
 
 **Name constants by functionality, not value.**
 
