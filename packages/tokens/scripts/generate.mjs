@@ -11,6 +11,9 @@
 //   tailwind-preset.cjs        the NativeWind preset: the dark colours and
 //                              the scales
 //   src/themeVars.constant.ts  the mobile theme variables, per theme
+//   src/themeNames.constant.ts the name of every token utility the web
+//                              theme declares, per Tailwind namespace,
+//                              which the web's tailwind-merge reads
 //
 // A token's output name is its key path in kebab case: themes.dark.bg.base
 // is bg-base, accentSurface is accent-surface, fontSize.amountHero is
@@ -42,6 +45,7 @@ export const SOURCE = 'src/tokens.constant.ts'
 
 export const OUTPUTS = Object.freeze({
   nativewindPreset: 'tailwind-preset.cjs',
+  themeNames: 'src/themeNames.constant.ts',
   themeVars: 'src/themeVars.constant.ts',
   webTheme: 'theme.css'
 })
@@ -153,52 +157,103 @@ const fontStack = ({ key, tokens }) => {
   ].join(', ')
 }
 
+// A token of the web theme, written as --<namespace>-<name>, or as
+// --<namespace>-<name>--<modifier> for a property of that token, such as a
+// font size's line height.
+const inNamespace = ({ namespace, pairs }) =>
+  pairs.map(([name, value]) => ({ name, namespace, value }))
+
+const variableName = ({ modifier, name, namespace }) =>
+  `${namespace}-${name}${modifier ? `--${modifier}` : ''}`
+
+const cssToken = (token) =>
+  cssDeclaration([variableName(token), token.value])
+
+// The tokens of the web theme, per block and, inside a block, per group:
+// @theme holds the colours, the font families, the shadows and the motion,
+// @theme inline the scales. theme.css writes them and the theme names list
+// them, so the two cannot name different tokens.
+const webThemeTokens = ({ tokens }) => {
+  const themed = themedByTheme({ tokens })
+  const colours = inNamespace({
+    namespace: 'color',
+    pairs: [
+      ...sharedColours({ tokens }).map(({ name, value }) => [name, value]),
+      ...themed.dark.map(({ name }) => [name, `var(--c-${name})`])
+    ].sort(([left], [right]) => compare(left, right))
+  })
+  const fonts = inNamespace({
+    namespace: 'font',
+    pairs: Object.keys(tokens.fontFamily).map((key) => [
+      kebab(key),
+      fontStack({ key, tokens })
+    ])
+  })
+  const shadows = inNamespace({
+    namespace: 'shadow',
+    pairs: Object.entries(tokens.shadows).map(([key, value]) => [
+      kebab(key),
+      value
+    ])
+  })
+  const motion = [
+    ...inNamespace({
+      namespace: 'duration',
+      pairs: scale({ format: ms, values: tokens.motion.duration })
+    }),
+    ...inNamespace({
+      namespace: 'ease',
+      pairs: scale({ format: String, values: tokens.motion.easing })
+    })
+  ]
+  const fontSizes = Object.entries(tokens.fontSize).flatMap(
+    ([key, { lineHeight, size }]) => [
+      { name: kebab(key), namespace: 'text', value: px(size) },
+      {
+        modifier: 'line-height',
+        name: kebab(key),
+        namespace: 'text',
+        value: px(lineHeight)
+      }
+    ]
+  )
+  const scales = [
+    ...inNamespace({
+      namespace: 'spacing',
+      pairs: [
+        ...scale({ format: px, values: tokens.spacing }),
+        ...scale({ format: px, values: tokens.inset })
+      ]
+    }),
+    ...inNamespace({
+      namespace: 'container',
+      pairs: scale({ format: rem, values: tokens.layoutWidth })
+    }),
+    ...inNamespace({
+      namespace: 'radius',
+      pairs: scale({ format: px, values: tokens.radius })
+    }),
+    ...fontSizes,
+    ...inNamespace({
+      namespace: 'text',
+      pairs: scale({ format: px, values: tokens.glyphSize })
+    })
+  ]
+
+  return { inline: [scales], theme: [colours, fonts, shadows, motion] }
+}
+
+// The groups of one block, a blank line between two of them.
+const cssGroups = (groups) =>
+  groups.flatMap((group, index) => [
+    ...(index === 0 ? [] : ['']),
+    ...group.map(cssToken)
+  ])
+
 const renderWebTheme = ({ tokens }) => {
   const themed = themedByTheme({ tokens })
   const colourVar = ({ name, value }) => [`c-${name}`, value]
-  const colours = [
-    ...sharedColours({ tokens }).map(({ name, value }) => [
-      `color-${name}`,
-      value
-    ]),
-    ...themed.dark.map(({ name }) => [`color-${name}`, `var(--c-${name})`])
-  ].sort(([left], [right]) => compare(left, right))
-  const fonts = Object.keys(tokens.fontFamily).map((key) => [
-    `font-${kebab(key)}`,
-    fontStack({ key, tokens })
-  ])
-  const shadows = Object.entries(tokens.shadows).map(([key, value]) => [
-    `shadow-${kebab(key)}`,
-    value
-  ])
-  const motion = [
-    ...Object.entries(tokens.motion.duration).map(([key, value]) => [
-      `duration-${kebab(key)}`,
-      ms(value)
-    ]),
-    ...Object.entries(tokens.motion.easing).map(([key, value]) => [
-      `ease-${kebab(key)}`,
-      value
-    ])
-  ]
-  const prefixed = (prefix, pairs) =>
-    pairs.map(([name, value]) => [`${prefix}-${name}`, value])
-  const scales = [
-    ...prefixed('spacing', scale({ format: px, values: tokens.spacing })),
-    ...prefixed('spacing', scale({ format: px, values: tokens.inset })),
-    ...prefixed(
-      'container',
-      scale({ format: rem, values: tokens.layoutWidth })
-    ),
-    ...prefixed('radius', scale({ format: px, values: tokens.radius })),
-    ...Object.entries(tokens.fontSize).flatMap(
-      ([key, { lineHeight, size }]) => [
-        [`text-${kebab(key)}`, px(size)],
-        [`text-${kebab(key)}--line-height`, px(lineHeight)]
-      ]
-    ),
-    ...prefixed('text', scale({ format: px, values: tokens.glyphSize }))
-  ]
+  const { inline, theme } = webThemeTokens({ tokens })
 
   return [
     ...cssComment(HEADER),
@@ -223,13 +278,7 @@ const renderWebTheme = ({ tokens }) => {
       'motion. Utilities and hand-written rules read them through var().'
     ]),
     '@theme {',
-    ...colours.map(cssDeclaration),
-    '',
-    ...fonts.map(cssDeclaration),
-    '',
-    ...shadows.map(cssDeclaration),
-    '',
-    ...motion.map(cssDeclaration),
+    ...cssGroups(theme),
     '}',
     '',
     ...cssComment([
@@ -237,7 +286,7 @@ const renderWebTheme = ({ tokens }) => {
       'max-w-content is max-width: 28rem.'
     ]),
     '@theme inline {',
-    ...scales.map(cssDeclaration),
+    ...cssGroups(inline),
     '}',
     ''
   ].join('\n')
@@ -373,11 +422,87 @@ const renderThemeVars = ({ tokens }) => {
 }
 
 // ---------------------------------------------------------------------------
+// The theme names (src/themeNames.constant.ts)
+// ---------------------------------------------------------------------------
+
+// A namespace of the web theme whose variables make no utility, so the
+// theme names leave it out: tailwind-merge has nothing of it to merge.
+// Tailwind 4 builds duration-* from --transition-duration-*, not from
+// --duration-*, so --duration-shimmer makes no class; globals.css reads it
+// through var().
+const VARIABLE_ONLY_NAMESPACES = Object.freeze(['duration'])
+
+// [namespace, names] for every namespace that makes a utility, both sorted.
+const themeNamespaces = ({ tokens }) => {
+  const { inline, theme } = webThemeTokens({ tokens })
+  const named = [...theme, ...inline]
+    .flat()
+    .filter(
+      ({ modifier, namespace }) =>
+        !modifier && !VARIABLE_ONLY_NAMESPACES.includes(namespace)
+    )
+  const unique = (values) => [...new Set(values)].sort(compare)
+  return unique(named.map(({ namespace }) => namespace)).map(
+    (namespace) => [
+      namespace,
+      unique(
+        named
+          .filter((token) => token.namespace === namespace)
+          .map(({ name }) => name)
+      )
+    ]
+  )
+}
+
+// Prettier's width: the package's ESLint run applies the prettier rule to
+// this output, .prettierignore or not.
+const PRINT_WIDTH = 75
+
+// One namespace as Prettier prints it: on one line when it fits, one name
+// per line when it does not.
+const tsNames = ({ last, names, namespace }) => {
+  const comma = last ? '' : ','
+  const line = `  ${namespace}: [${names.map(jsString).join(', ')}]${comma}`
+  if (line.length <= PRINT_WIDTH) return [line]
+  return [
+    `  ${namespace}: [`,
+    ...names.map(
+      (name, index) =>
+        `    ${jsString(name)}${index === names.length - 1 ? '' : ','}`
+    ),
+    `  ]${comma}`
+  ]
+}
+
+const renderThemeNames = ({ tokens }) => {
+  const namespaces = themeNamespaces({ tokens })
+
+  return [
+    ...HEADER.map((line) => `// ${line}`),
+    '',
+    '/**',
+    ' * The name of every token utility the web theme declares, per Tailwind',
+    ' * namespace: --spacing-pill-x is pill-x under spacing, the utility',
+    ' * px-pill-x. A namespace whose variables make no utility, such as',
+    " * --duration-*, is not here. Plain data: the web's shared tv registers",
+    ' * it with tailwind-merge, so a new token merges with no code change.',
+    ' */',
+    'export const themeNames = {',
+    ...namespaces.flatMap(([namespace, names], index) =>
+      tsNames({ last: index === namespaces.length - 1, names, namespace })
+    ),
+    '} as const satisfies Record<string, readonly string[]>',
+    ''
+  ].join('\n')
+}
+
+// ---------------------------------------------------------------------------
 // Every output
 // ---------------------------------------------------------------------------
 
 const RENDERERS = Object.freeze({
   nativewindPreset: renderNativewindPreset,
+  themeNames: renderThemeNames,
   themeVars: renderThemeVars,
   webTheme: renderWebTheme
 })

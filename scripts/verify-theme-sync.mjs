@@ -3,9 +3,10 @@
 // verify-theme-sync — every generated token output equals its regeneration.
 //
 // packages/tokens/scripts/generate.mjs writes the web theme (theme.css), the
-// NativeWind preset (tailwind-preset.cjs) and the mobile theme variables
-// (src/themeVars.constant.ts) from packages/tokens/src/tokens.constant.ts
-// alone (decision 59). This gate renders them again in memory from the
+// NativeWind preset (tailwind-preset.cjs), the mobile theme variables
+// (src/themeVars.constant.ts) and the theme names the web's tailwind-merge
+// reads (src/themeNames.constant.ts) from
+// packages/tokens/src/tokens.constant.ts alone (decision 59). This gate renders them again in memory from the
 // source and compares each with the committed file, so a hand edit of an
 // output, a source change nobody regenerated, or a generator change whose
 // outputs were not rewritten, each fails, naming the file and its first
@@ -102,8 +103,8 @@ const compareOutput = ({ committed, expected, path }) => {
 
 export const gate = defineGate({
   claims:
-    'every generated token output (the web theme, the NativeWind preset ' +
-    'and the mobile theme variables) equals what ' +
+    'every generated token output (the web theme, the NativeWind preset, ' +
+    'the mobile theme variables and the theme names) equals what ' +
     'packages/tokens/scripts/generate.mjs writes from tokens.constant.ts.',
   id: 'verify-theme-sync',
   notCovered:

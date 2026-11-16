@@ -251,8 +251,9 @@ Constants describe purpose: `CONTAINER`, `AVATAR` — not `FLEX_ROW`, `ROUNDED`.
 **Adding a token.** Write the value in `packages/tokens/src/tokens.constant.ts`, run
 `pnpm --filter @app/tokens generate`, and commit the source with what it writes: `theme.css` (the
 web theme, which `apps/web/src/app/globals.css` imports), `tailwind-preset.cjs` (the NativeWind
-preset) and `src/themeVars.constant.ts` (the mobile theme variables). Never edit those three by
-hand: `verify:theme-sync` fails while one differs from its regeneration. The utility is the key in
+preset), `src/themeVars.constant.ts` (the mobile theme variables) and `src/themeNames.constant.ts`
+(the name of every token utility, which the web's shared `tv` registers with tailwind-merge).
+Never edit those four by hand: `verify:theme-sync` fails while one differs from its regeneration. The utility is the key in
 kebab case (`spacing.pillX` is `px-pill-x`); see `packages/tokens/README.md`.
 
 Only `components/ui/**` imports a UI kit or its helpers (`tailwind-variants`, Radix,

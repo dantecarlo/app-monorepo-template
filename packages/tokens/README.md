@@ -10,6 +10,7 @@ writes every output from it (decision 59 of `docs/INIT_AND_HARNESS_PLAN.md`).
 | `theme.css`                 | The web theme, imported by `apps/web/src/app/globals.css` as `@app/tokens/theme.css`   | the generator  |
 | `tailwind-preset.cjs`       | The NativeWind preset `apps/mobile/tailwind.config.js` loads                            | the generator  |
 | `src/themeVars.constant.ts` | The mobile theme variables, `themeVars`, exported from `@app/tokens`                    | the generator  |
+| `src/themeNames.constant.ts` | The name of every token utility of the web theme, `themeNames`, exported from `@app/tokens` | the generator |
 
 React Native styles import the source directly (`colors`, `spacing`, `themes[active]`).
 
@@ -47,6 +48,20 @@ The themed colours also reach `themeVars`, `{ dark: { '--c-<name>': value }, lig
 NativeWind's `vars()` takes. The preset still carries the dark colours as literals, so the mobile
 app renders exactly as before; pointing them at the `--c-*` variables and injecting `themeVars`
 on a root view is the mobile light-theme work that follows.
+
+## The theme names
+
+`themeNames` lists, per Tailwind namespace, the name of every token of the web theme whose variable
+makes a utility: `{ spacing: ['2xl', …, 'pill-x', …], shadow: ['accent-glow', …], … }`. The
+generator writes it from the same tokens it writes into `theme.css`, so the two never name
+different tokens. It is plain data, with no tailwind-merge type. The web's shared `tv`
+(`apps/web/src/components/ui/variants.helper.ts`) registers it with tailwind-merge, so `p-sm p-lg`
+keeps `p-lg` and a new token merges with no code change.
+
+A namespace whose variables make no utility is left out. `--duration-*` is one: Tailwind 4 builds
+`duration-*` from `--transition-duration-*`, so `--duration-shimmer` makes no class, and
+`globals.css` reads it through `var()`. `src/__tests__/themeNames.constant.test.ts` ties the list
+to `theme.css` and names that rule.
 
 ## A new consumer
 
