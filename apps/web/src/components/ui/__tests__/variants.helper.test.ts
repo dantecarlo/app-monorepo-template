@@ -1,8 +1,10 @@
 import { readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { createRequire } from 'node:module'
+import { dirname, join } from 'node:path'
 
-import { fontSize, glyphSize } from '@app/tokens'
-import { twMerge } from 'tailwind-merge'
+import { fontSize, glyphSize, motion, themeNames } from '@app/tokens'
+import { getDefaultConfig, twMerge } from 'tailwind-merge'
+import { compile } from 'tailwindcss'
 import { describe, expect, test } from 'vitest'
 
 import { tv } from '@/components/ui/variants.helper'
@@ -18,6 +20,80 @@ const TOKEN_FONT_SIZE_CLASSES = [
 ].map((key) => `text-${kebab(key)}`)
 
 const UI_DIR = join(import.meta.dirname, '..')
+
+// One class string resolved through the shared tv, as a block's base.
+const merged = (classes: string) => tv({ base: classes })()
+
+// A utility of each namespace of the theme names: <utility>-<name> is the
+// class a token of that namespace makes.
+const NAMESPACE_UTILITY: Record<string, string> = {
+  color: 'bg',
+  container: 'max-w',
+  ease: 'ease',
+  font: 'font',
+  radius: 'rounded',
+  shadow: 'shadow',
+  spacing: 'p',
+  text: 'text'
+}
+
+// Two classes of one utility that carry token names, and what stays: one
+// pair per namespace of the theme names.
+const TOKEN_PAIRS: [string, string][] = [
+  ['p-sm p-lg', 'p-lg'],
+  ['px-pill-x px-lg', 'px-lg'],
+  ['px-pill-x p-lg', 'p-lg'],
+  ['py-pill-y py-sm', 'py-sm'],
+  ['gap-xs gap-xl', 'gap-xl'],
+  ['top-knob-inset top-sm', 'top-sm'],
+  ['w-content w-dialog', 'w-dialog'],
+  ['max-w-narrow max-w-wide', 'max-w-wide'],
+  ['rounded-md rounded-full', 'rounded-full'],
+  ['shadow-rim-light shadow-none', 'shadow-none'],
+  ['ease-shimmer ease-linear', 'ease-linear'],
+  ['font-body font-display', 'font-display'],
+  ['text-caption text-amount-hero', 'text-amount-hero'],
+  ['bg-bg-base bg-accent-tint', 'bg-accent-tint']
+]
+
+// Pairs tailwind-merge resolved before the token names were registered.
+const RESOLVED_PAIRS: [string, string][] = [
+  ['rounded-sm rounded-xl', 'rounded-xl'],
+  ['rounded-lg rounded-full', 'rounded-full'],
+  ['font-body font-display', 'font-display'],
+  ['font-display font-bold', 'font-display font-bold'],
+  ['text-accent text-button', 'text-accent text-button'],
+  ['text-caption text-title', 'text-title'],
+  ['bg-bg-base bg-accent', 'bg-accent'],
+  ['text-text-primary text-accent-text', 'text-accent-text'],
+  ['shadow-card shadow-accent-glow', 'shadow-accent-glow'],
+  ['duration-300 duration-500', 'duration-500'],
+  ['p-2 p-4', 'p-4']
+]
+
+const require = createRequire(import.meta.url)
+
+// The web theme as the web app compiles it: Tailwind, then the generated
+// tokens (src/app/globals.css imports both).
+const compileWebTheme = () => {
+  const theme = require.resolve('@app/tokens/theme.css')
+  const tailwind = require.resolve('tailwindcss/index.css')
+  const css = ["@import 'tailwindcss';", readFileSync(theme, 'utf8')]
+  return compile(css.join('\n'), {
+    base: dirname(theme),
+    loadStylesheet: async (id, base) => {
+      const path =
+        id === 'tailwindcss'
+          ? tailwind
+          : require.resolve(id, { paths: [base] })
+      return {
+        base: dirname(path),
+        content: readFileSync(path, 'utf8'),
+        path
+      }
+    }
+  })
+}
 
 const styleFiles = () =>
   readdirSync(UI_DIR, { encoding: 'utf8', recursive: true })
@@ -67,5 +143,77 @@ describe('variants helper', () => {
 
     expect(builders).not.toHaveLength(0)
     expect(direct).toEqual([])
+  })
+
+  test('keeps only the last of two classes of one utility that carry token names', () => {
+    expect(TOKEN_PAIRS.map(([classes]) => merged(classes))).toEqual(
+      TOKEN_PAIRS.map(([, kept]) => kept)
+    )
+  })
+
+  test('keeps a shadow size beside a shadow colour, and the last of two shadow sizes', () => {
+    expect(merged('shadow-card shadow-accent')).toBe(
+      'shadow-card shadow-accent'
+    )
+    expect(merged('shadow-accent shadow-card')).toBe(
+      'shadow-accent shadow-card'
+    )
+    expect(merged('shadow-accent-glow shadow-card')).toBe('shadow-card')
+  })
+
+  test('resolves as before the pairs tailwind-merge already resolved', () => {
+    expect(RESOLVED_PAIRS.map(([classes]) => merged(classes))).toEqual(
+      RESOLVED_PAIRS.map(([, kept]) => kept)
+    )
+  })
+
+  test('registers every theme name of @app/tokens under a tailwind-merge theme key', () => {
+    const namespaces = Object.keys(themeNames)
+    const themeKeys = Object.keys(getDefaultConfig().theme)
+    // Each name of a namespace after the one before it: only it stays.
+    const pairs = Object.entries(themeNames).flatMap(
+      ([namespace, names]) =>
+        names.slice(1).map((name, index): [string, string] => {
+          const utility = NAMESPACE_UTILITY[namespace]
+          return [
+            `${utility}-${names[index]} ${utility}-${name}`,
+            `${utility}-${name}`
+          ]
+        })
+    )
+
+    expect(namespaces.filter((key) => !themeKeys.includes(key))).toEqual(
+      []
+    )
+    expect(
+      namespaces.filter((key) => !Object.hasOwn(NAMESPACE_UTILITY, key))
+    ).toEqual([])
+    expect(pairs.map(([classes]) => merged(classes))).toEqual(
+      pairs.map(([, kept]) => kept)
+    )
+  })
+
+  test("lists only theme names the web's Tailwind turns into a utility", async () => {
+    const compiler = await compileWebTheme()
+    // A namespace the table has no utility for compiles as its own name.
+    const listed = Object.entries(themeNames).flatMap(
+      ([namespace, names]) =>
+        names.map(
+          (name) => `${NAMESPACE_UTILITY[namespace] ?? namespace}-${name}`
+        )
+    )
+    const durations = Object.keys(motion.duration).map(
+      (key) => `duration-${kebab(key)}`
+    )
+    const css = compiler.build([...listed, ...durations, 'duration-300'])
+    // The class of every rule the build wrote.
+    const rules = new Set(
+      [...css.matchAll(/\.([\w-]+) \{/gu)].map(([, name]) => name)
+    )
+    const hasRule = (candidate: string) => rules.has(candidate)
+
+    expect(listed.filter((candidate) => !hasRule(candidate))).toEqual([])
+    expect(hasRule('duration-300')).toBe(true)
+    expect(durations.filter(hasRule)).toEqual([])
   })
 })
