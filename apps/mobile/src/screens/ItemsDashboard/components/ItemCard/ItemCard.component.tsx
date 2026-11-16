@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { Text } from '@/components/ui/Text'
@@ -17,6 +18,7 @@ import type { IItemCardProps } from '@/screens/ItemsDashboard/components/ItemCar
 // ---------------------------------------------------------------------------
 
 export const ItemCard = ({ isLast = false, item }: IItemCardProps) => {
+  const { t } = useTranslation()
   const styles = useThemedStyles({ styles: ITEM_CARD })
   const statusColors = useThemedStyles({ styles: STATUS_COLOR })
 
@@ -53,12 +55,14 @@ export const ItemCard = ({ isLast = false, item }: IItemCardProps) => {
 
       {/* Time + status */}
       <View style={styles.right}>
-        <Text variant="caption">{item.timeDisplay}</Text>
+        <Text variant="caption">
+          {t(`items.age.${item.age.unit}`, { count: item.age.count })}
+        </Text>
         <Text
           style={{ color: statusColors[item.status] }}
           variant="caption"
         >
-          {item.status}
+          {t(`items.status.${item.status}`)}
         </Text>
       </View>
     </View>

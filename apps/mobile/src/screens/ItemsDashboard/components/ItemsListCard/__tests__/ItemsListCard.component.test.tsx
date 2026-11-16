@@ -1,5 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 
+import { ItemAgeUnitEnum } from '@/services/Items/items.constant'
 import { fireEvent, render, screen, within } from '@/test/test.helper'
 
 // Writes the count a message receives before its key, as the catalogs'
@@ -53,6 +54,7 @@ describe('ItemsListCard (mobile)', () => {
   test('renders without returning null with items', () => {
     const items = [
       {
+        age: { count: 1, unit: ItemAgeUnitEnum.HOURS },
         authorInitials: 'AB',
         authorLabel: 'Author A',
         category: 'cat',
@@ -60,7 +62,6 @@ describe('ItemsListCard (mobile)', () => {
         description: 'desc',
         id: '1',
         status: 'active' as const,
-        timeDisplay: '1h ago',
         title: 'Item 1'
       }
     ]
@@ -99,13 +100,13 @@ describe('ItemsListCard (mobile)', () => {
 
   test('shows the result count once', () => {
     const item = {
+      age: { count: 1, unit: ItemAgeUnitEnum.HOURS },
       authorInitials: 'AB',
       authorLabel: 'Author A',
       category: 'cat',
       createdAt: new Date('2024-01-01'),
       description: 'desc',
-      status: 'active' as const,
-      timeDisplay: '1h ago'
+      status: 'active' as const
     }
     render(
       <ItemsListCard
