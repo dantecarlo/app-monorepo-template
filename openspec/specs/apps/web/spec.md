@@ -3,7 +3,7 @@
 > **Governs:** `apps/web/src`, `apps/web/next.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-16 at `427b81d`
+> **Verified against the code:** 2026-11-16 at `36082cd`
 
 ## Purpose
 
@@ -838,7 +838,7 @@ The web app SHALL answer 403 with an empty body to every request outside `_next/
 `_next/image`, the favicon, `images` and `fonts` when the origin guard reports it untrusted, and
 let it through otherwise.
 
-**Evidence:** `apps/web/src/middleware.ts:8`, `apps/web/src/middleware.ts:14-15`, `apps/web/src/middleware.ts:22`, `apps/web/src/lib/origin-guard/originGuard.adapter.ts:4`
+**Evidence:** `apps/web/src/middleware.ts:8`, `apps/web/src/middleware.ts:14-15`, `apps/web/src/middleware.ts:25-27`, `apps/web/src/lib/origin-guard/originGuard.adapter.ts:4`
 
 #### Scenario: the origin secret is right
 
