@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { useTranslation } from 'react-i18next'
 
 import { QueryKeys } from '@/lib/query/queryKeys.constant'
 import { useAppQuery } from '@/lib/query/useAppQuery.hook'
@@ -34,6 +33,9 @@ import { adaptItems, getItems } from '@/services/Items'
  * Data-call chain:
  *   useItems → useAppQuery → items.service → Items.adapter → IItemViewModel[]
  *
+ * A failed load is exposed as `isError` with an `onRetry` that runs the query
+ * again; the list shows it in its ErrorState, and no toast is added.
+ *
  * The screen consumes this result directly and stays render-only.
  */
 export const useItems = ({
@@ -41,12 +43,13 @@ export const useItems = ({
 }: IUseItemsParams = {}): IUseItemsResult => {
   const [search, setSearch] = useState('')
   const [activeNav, setActiveNav] = useState(DEFAULT_NAV_ID)
-  const { t } = useTranslation()
 
-  const { data: items = EMPTY_ITEMS, isLoading } = useAppQuery<
-    IItemViewModel[]
-  >({
-    errorMessage: t('items.errorMessage'),
+  const {
+    data: items = EMPTY_ITEMS,
+    isError,
+    isLoading,
+    refetch
+  } = useAppQuery<IItemViewModel[]>({
     queryOptions: {
       queryFn: async () => {
         const dtos = await getItems({ limit, search })
@@ -67,9 +70,13 @@ export const useItems = ({
   return {
     activeCount,
     activeNav,
+    isError,
     isLoading,
     items,
     onNavChange: setActiveNav,
+    onRetry: () => {
+      void refetch()
+    },
     onSearchChange: setSearch,
     search,
     totalCount

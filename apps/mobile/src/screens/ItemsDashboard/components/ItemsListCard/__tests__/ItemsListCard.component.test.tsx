@@ -1,5 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 
+import { fireEvent, render, screen, within } from '@/test/test.helper'
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key })
 }))
@@ -13,7 +15,7 @@ vi.mock('@/components/ui/SearchBar', () => ({
 }))
 
 vi.mock('@/components/ui/EmptyState', () => ({
-  EmptyState: () => null
+  EmptyState: () => 'empty-state'
 }))
 
 vi.mock('@/screens/ItemsDashboard/components/ItemCard', () => ({
@@ -64,5 +66,29 @@ describe('ItemsListCard (mobile)', () => {
       search: ''
     })
     expect(result).not.toBeNull()
+  })
+
+  test('shows the error state with a retry when the items failed to load', () => {
+    const onRetry = vi.fn()
+    render(
+      <ItemsListCard
+        isError
+        isLoading={false}
+        items={[]}
+        onRetry={onRetry}
+        onSearchChange={() => undefined}
+        search=""
+      />
+    )
+
+    const alert = within(screen.getByRole('alert'))
+    expect(alert.getByText('components.errorState.title')).toBeTruthy()
+    expect(screen.queryByText('empty-state')).toBeNull()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'components.errorState.retry' })
+    )
+
+    expect(onRetry).toHaveBeenCalledOnce()
   })
 })

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, View } from 'react-native'
 
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { SearchBar } from '@/components/ui/SearchBar'
 import { Text } from '@/components/ui/Text'
@@ -11,8 +12,10 @@ import { ITEMS_LIST_CARD_STYLES as styles } from '@/screens/ItemsDashboard/compo
 import type { IItemsListCardProps } from '@/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.type'
 
 export const ItemsListCard = ({
+  isError = false,
   isLoading,
   items = [],
+  onRetry,
   onSearchChange,
   search
 }: IItemsListCardProps) => {
@@ -45,6 +48,8 @@ export const ItemsListCard = ({
             color={colors.accent}
             style={styles.loadingIndicator}
           />
+        ) : isError ? (
+          <ErrorState onRetry={onRetry} />
         ) : items.length === 0 ? (
           <EmptyState />
         ) : (

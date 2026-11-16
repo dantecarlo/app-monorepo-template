@@ -34,9 +34,11 @@ export const ItemsDashboardScreen = () => {
   const {
     activeCount,
     activeNav,
+    isError,
     isLoading,
     items,
     onNavChange,
+    onRetry,
     onSearchChange,
     search,
     totalCount
@@ -64,8 +66,10 @@ export const ItemsDashboardScreen = () => {
           />
 
           <ItemsListCard
+            isError={isError}
             isLoading={isLoading}
             items={items}
+            onRetry={onRetry}
             onSearchChange={onSearchChange}
             search={search}
           />
