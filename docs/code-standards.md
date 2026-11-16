@@ -789,10 +789,13 @@ The rule of the LAW of the same name in `AGENTS.md`, which quotes the owner's de
 - **A different look** is a variant or a prop of a `ui/` block, never a class in the screen.
 - **A web `ui/` style file builds its variants with the shared `tv`**
   (`apps/web/src/components/ui/variants.helper.ts`), never the kit's own. tailwind-merge,
-  which `tailwind-variants` runs on every call, reads a token font size (`text-title`) as a colour
-  and drops it next to a text colour; the shared `tv` registers every font size and glyph size of
-  `@app/tokens` as a font size, so a new size token needs no code change. `ui/Text` alone keeps
-  `{ twMerge: false }`, so a tone or a weight set beside a variant keeps both classes.
+  which `tailwind-variants` runs on every call, knows only Tailwind's own scales: it keeps both of
+  two token paddings (`p-sm p-lg`), reads a token font size (`text-title`) as a colour and drops it
+  next to a text colour, and drops a token shadow next to a shadow colour. The shared `tv`
+  registers every name of `themeNames`, which the token generator writes from the web theme, under
+  the tailwind-merge theme key of its namespace, so a new token needs no code change. `ui/Text`
+  alone keeps `{ twMerge: false }`, so a tone or a weight set beside a variant keeps both
+  classes.
 
 ```ts
 // WRONG — a screen style holds a look
