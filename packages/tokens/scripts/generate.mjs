@@ -8,8 +8,9 @@
 //
 //   theme.css                  the web theme: the --c-* variables of both
 //                              themes, @theme and @theme inline
-//   tailwind-preset.cjs        the NativeWind preset: the dark colours and
-//                              the scales
+//   tailwind-preset.cjs        the NativeWind preset: each themed colour as
+//                              its --c-* variable, each shared one as a
+//                              literal, and the scales
 //   src/themeVars.constant.ts  the mobile theme variables, per theme
 //   src/themeNames.constant.ts the name of every token utility the web
 //                              theme declares, per Tailwind namespace,
@@ -323,22 +324,31 @@ const jsLiteral = ({ depth = 0, inline = false, value }) => {
   return typeof value === 'number' ? String(value) : jsString(value)
 }
 
-const kebabKeys = (value) =>
-  value !== null && typeof value === 'object'
-    ? Object.fromEntries(
-        Object.entries(value).map(([key, child]) => [
-          kebab(key),
-          kebabKeys(child)
-        ])
-      )
-    : value
+// The preset's colours, in the dark theme's shape: a themed colour reads its
+// --c-* variable, which the mobile root view declares for the active theme
+// (themeVars through NativeWind's vars()), and a shared colour is written as
+// itself.
+const presetColours = ({ tokens }) => {
+  const visit = ({ path, value }) =>
+    value !== null && typeof value === 'object'
+      ? Object.fromEntries(
+          Object.entries(value).map(([key, child]) => [
+            kebab(key),
+            visit({ path: [...path, key], value: child })
+          ])
+        )
+      : isShared({ path, tokens })
+        ? value
+        : `var(--c-${nameOf(path)})`
+  return visit({ path: [], value: tokens.themes.dark })
+}
 
 const renderNativewindPreset = ({ tokens }) => {
   const pairs = (list) => Object.fromEntries(list)
   const preset = {
     theme: {
       extend: {
-        colors: kebabKeys(tokens.themes.dark),
+        colors: presetColours({ tokens }),
         spacing: pairs([
           ...scale({ format: px, values: tokens.spacing }),
           ...scale({ format: px, values: tokens.inset })
@@ -375,10 +385,11 @@ const renderNativewindPreset = ({ tokens }) => {
   return [
     ...HEADER.map((line) => `// ${line}`),
     '//',
-    '// The NativeWind preset apps/mobile/tailwind.config.js loads. Its colours',
-    "// are the dark theme's (themes.dark): mobile flips to light at runtime",
-    '// through useThemeTokens and its StyleSheet consumers. The web reads',
-    '// theme.css instead and loads no JavaScript config.',
+    '// The NativeWind preset apps/mobile/tailwind.config.js loads. A themed',
+    '// colour reads its --c-* variable, which the mobile root view declares',
+    "// for the active theme (themeVars through NativeWind's vars()), so a class",
+    '// follows the theme; a colour both themes share is written as itself. The',
+    '// web reads theme.css instead and loads no JavaScript config.',
     '',
     "/** @type {import('tailwindcss').Config} */",
     `module.exports = ${jsLiteral({ value: preset })}`,

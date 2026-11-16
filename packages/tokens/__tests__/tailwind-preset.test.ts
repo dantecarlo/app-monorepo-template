@@ -2,6 +2,7 @@ import { createRequire } from 'node:module'
 
 import { describe, expect, test } from 'vitest'
 
+import { themeVars } from '@/themeVars.constant'
 import {
   fontFallback,
   fontFamily,
@@ -11,6 +12,7 @@ import {
   layoutWidth,
   radius,
   shadows,
+  sharedColors,
   spacing,
   themes
 } from '@/tokens.constant'
@@ -62,6 +64,30 @@ const mapValues = ({
     ])
   )
 
+const VARIABLE_READ = /^var\((--c-[\w-]+)\)$/u
+
+// A preset colour as a theme paints it: a var() read resolves through that
+// theme's variables, a literal stays itself.
+const resolveVariable = ({
+  value,
+  variables
+}: {
+  value: string
+  variables: Record<string, string>
+}) => {
+  const read = VARIABLE_READ.exec(value)
+  return read ? variables[read[1]] : value
+}
+
+const isShared = (path: string[]) =>
+  path.length === 1 && Object.hasOwn(sharedColors, path[0])
+
+// Every colour of the dark theme that the themes do not share, by name.
+const themedColours = () =>
+  leaves(themes.dark)
+    .filter(([path]) => !isShared(path))
+    .map(([path, value]) => [path.map(kebab).join('-'), value])
+
 describe('tailwind preset', () => {
   test('the preset carries every scale token as a CSS length', () => {
     expect(extend.spacing).toEqual({
@@ -85,8 +111,26 @@ describe('tailwind preset', () => {
     })
   })
 
-  test('the preset carries every colour of the dark theme', () => {
-    expect(Object.fromEntries(flattenColors(extend.colors))).toEqual(
+  test('the preset reads every themed colour from its --c- variable, declared in both themes', () => {
+    const presetColours = Object.fromEntries(flattenColors(extend.colors))
+
+    themedColours().forEach(([name]) => {
+      const variable = `--c-${name}`
+      expect(presetColours[name]).toBe(`var(${variable})`)
+      expect(themeVars.dark).toHaveProperty(variable)
+      expect(themeVars.light).toHaveProperty(variable)
+    })
+  })
+
+  test("the preset resolves to the dark theme's colours under the dark variables", () => {
+    const resolved = Object.fromEntries(
+      flattenColors(extend.colors).map(([name, value]) => [
+        name,
+        resolveVariable({ value, variables: themeVars.dark })
+      ])
+    )
+
+    expect(resolved).toEqual(
       Object.fromEntries(
         leaves(themes.dark).map(([path, value]) => [
           path.map(kebab).join('-'),
@@ -94,6 +138,14 @@ describe('tailwind preset', () => {
         ])
       )
     )
+  })
+
+  test('the preset writes every shared colour as a literal', () => {
+    const presetColours = Object.fromEntries(flattenColors(extend.colors))
+
+    Object.entries(sharedColors).forEach(([key, value]) => {
+      expect(presetColours[kebab(key)]).toBe(value)
+    })
   })
 
   test('the preset writes each font family before its fallback', () => {

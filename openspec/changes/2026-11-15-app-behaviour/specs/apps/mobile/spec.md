@@ -7,10 +7,12 @@
 ### Requirement: MOBILE-42 — Every block paints the active theme
 
 The mobile app SHALL paint every themed colour of its blocks, the text, surfaces, borders, icons
-and indicators of `src/components/ui/` and of a screen's own `components/`, from the palette of
-the active theme, through `createThemedStyles` and `useThemedStyles` for a StyleSheet and
-`useThemeTokens` in a view, so switching to the light theme repaints the whole app; a colour the
-tokens share between the themes MAY still be read from the static palette.
+and indicators of `src/components/ui/` and of a screen's own `components/`, from the active
+theme: a StyleSheet through `createThemedStyles` and `useThemedStyles`, a view through
+`useThemeTokens`, and a NativeWind colour class through the preset's `var(--c-*)` read of the
+variable the root frame declares (MOBILE-05, TOKENS-12), so switching to the light theme repaints
+the whole app; a colour the tokens share between the themes MAY still be read from the static
+palette.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -24,9 +26,10 @@ tokens share between the themes MAY still be read from the static palette.
 #### Scenario: a class-styled block under the light theme
 
 - **GIVEN** the light theme is active
-- **WHEN** the secondary `Button` renders a label
-- **THEN** the label's colour is the light theme's primary text colour
-- **Test:** `apps/mobile/src/components/ui/Button/__tests__/Button.component.test.tsx` › "paints the secondary variant from the active theme"
+- **WHEN** a block paints through a NativeWind colour class, such as the secondary `Button`'s `text-text-primary`
+- **THEN** the class reads `var(--c-text-primary)` from the preset, and the root frame declares that variable with the light value
+- **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset reads every themed colour from its --c- variable, declared in both themes"
+- **Test:** `apps/mobile/src/app/__tests__/layout.route.test.tsx` › "wraps the routes in the variables of the active theme"
 
 #### Scenario: a themed style sheet
 

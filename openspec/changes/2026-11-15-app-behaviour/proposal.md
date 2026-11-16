@@ -78,23 +78,20 @@ The owner's words, verbatim:
   `vars()`), and every block reads its themed colours from the active theme's palette, through
   `createThemedStyles` and `useThemedStyles` under `src/lib/theme/` for a StyleSheet and through
   `useThemeTokens` in a view. `Screen` paints the active base always and loses its `themed` flag.
-  `Button` and `Chip` keep their classes for what does not change with the theme and take their
-  themed colours from the palette.
+- **The NativeWind preset (F12, packages/tokens).** The generator writes each themed colour of
+  the preset as `var(--c-<name>)`, under the names `themeVars` and `theme.css` use, and each
+  shared colour as its literal, so a NativeWind class such as `Button`'s and `Chip`'s follows the
+  variables the root view declares. Resolved through the dark variables, the preset gives every
+  value it gave before.
 - **Docs.** `docs/architecture/web.md`, `docs/architecture/mobile.md`, `docs/code-standards.md`
   and `docs/maps/global-map.md` say what ships.
 
 ## Out of scope
 
-- Pointing the NativeWind preset's colours at the `--c-*` variables. The preset is written by
-  `packages/tokens/scripts/generate.mjs`, outside this change; until it reads the variables, the
-  `themeVars` the root layout injects have no class to reach, and the blocks take their themed
-  colours from the palette instead.
-- A specific message for a wrong password: the catalogs hold no auth error key yet, and they are
-  outside this change, so a rejected sign-in shows the generic message `buildServiceError` gives.
 - The web dashboard's View all and settings buttons and the web Google button, which have no
   action either: F12 names the mobile app, and WEB-01 and WEB-11 state those web buttons.
 - The `items.errorMessage` catalog entry, which no code reads once the dashboards drop their
-  override: the catalogs are outside this change.
+  override, and an auth error key for a rejected sign-in: the catalogs belong to F.6 (i18n, F14).
 - Mobile sign-in through the gateway (MOBILE-31 keeps it out); F11 names the web.
 - A server-rendered no-op gateway test: happy-dom always defines `window`.
 
@@ -105,6 +102,7 @@ The owner's words, verbatim:
 - `openspec/specs/apps/mobile/spec.md`: modifies MOBILE-05, MOBILE-18, MOBILE-20, MOBILE-25,
   MOBILE-31, MOBILE-37 and MOBILE-40; adds MOBILE-42, MOBILE-43, MOBILE-44 and MOBILE-45; open
   questions Q1 and Q5 close at archive.
+- `openspec/specs/packages/tokens/spec.md`: modifies TOKENS-12.
 
 <!--
 Status is one of: open; archived — <date>; discarded — <date>, <reason>.
