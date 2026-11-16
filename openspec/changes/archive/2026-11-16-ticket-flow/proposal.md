@@ -1,6 +1,6 @@
 # Proposal: the ticket flow, seven skills every project adopts and a branch check
 
-> **Status:** open
+> **Status:** archived — 2026-11-16
 
 ## Why
 
