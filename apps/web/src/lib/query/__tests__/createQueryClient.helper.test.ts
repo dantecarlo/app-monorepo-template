@@ -140,4 +140,37 @@ describe('createQueryClient', () => {
       })
     ).rejects.toThrow('no-op sink')
   })
+
+  test.each([
+    { factory: 'detail', value: 'list' },
+    { factory: 'detail', value: 'items' },
+    { factory: 'list', value: 'detail' },
+    { factory: 'detail', value: 'a@b.co' }
+  ] as const)(
+    'redacts the value of $factory($value) on query failure, whatever it spells',
+    async ({ factory, value }) => {
+      const spy = vi.fn()
+      const client = createQueryClient({ onCaptureError: spy })
+      const queryKey = QueryKeys.items[factory](value)
+
+      await client
+        .fetchQuery({
+          queryFn: async () => {
+            throw new Error('typed value boom')
+          },
+          queryKey,
+          retry: false
+        })
+        .catch(() => undefined)
+
+      expect(spy).toHaveBeenCalledOnce()
+      expect(spy).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          queryKey: [queryKey[0], queryKey[1], '[redacted]'],
+          source: 'queryCache'
+        })
+      )
+    }
+  )
 })

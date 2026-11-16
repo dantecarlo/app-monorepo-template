@@ -81,4 +81,26 @@ describe('middleware', () => {
       true
     )
   })
+
+  test.each([
+    {
+      name: 'a wrong secret of the same length',
+      presented: 'origin-secret-for-testX'
+    },
+    {
+      name: 'the secret in upper case',
+      presented: ORIGIN_SECRET.toUpperCase()
+    },
+    { name: 'an empty header', presented: '' }
+  ])('answers 403 with an empty body for $name', async ({ presented }) => {
+    const { middleware } = await loadMiddleware()
+
+    const response = middleware(
+      requestWith({ [ORIGIN_SECRET_HEADER]: presented })
+    )
+
+    expect(response.status).toBe(FORBIDDEN_STATUS)
+    expect(await response.text()).toBe('')
+    expect(response.headers.get(NEXT_HEADER)).toBeNull()
+  })
 })

@@ -69,4 +69,16 @@ describe('RouteError', () => {
       error
     })
   })
+
+  test('reports the crash once across a rerender, an unmount and a new render', () => {
+    const error = new Error('render failed')
+    const retry = vi.fn()
+    const { rerender, unmount } = render(routeError({ error, retry }))
+
+    rerender(routeError({ error, retry }))
+    unmount()
+    render(routeError({ error, retry }))
+
+    expect(mockCaptureError).toHaveBeenCalledOnce()
+  })
 })

@@ -59,4 +59,15 @@ describe('useSession (mobile)', () => {
       status: 'authenticated'
     })
   })
+
+  test('keeps the same object when the store is set to the same values', () => {
+    const { result } = renderHook(() => useSession())
+    const first = result.current
+
+    act(() => {
+      useAuthStore.setState({ session: null, status: 'loading' })
+    })
+
+    expect(result.current).toBe(first)
+  })
 })
