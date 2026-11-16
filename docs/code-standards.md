@@ -540,7 +540,11 @@ statically decidable** — they stay WARN-tier guidance, caught in review / by t
 ## 15. English Everywhere
 
 All identifiers, comments, file names, and commit messages are in English.
-UI strings go through the i18n layer (`@app/i18n`).
+UI strings go through the i18n layer (`@app/i18n`): every user-facing string of
+a component or an adapter is a catalog message, in every catalog, accessibility
+labels included. An adapter returns data, never a sentence (an item's age is a
+unit and a count), and the component words it through the catalog in the
+active language.
 
 ---
 
@@ -559,9 +563,14 @@ Every catalog value must be non-empty and keep its ICU MessageFormat braces
 **balanced**. ICU uses single braces (`{count}`) nested for plural and select,
 so the structural check is brace balance, not a `{{` scan.
 
+The catalog key type is the shape of the English catalog, the catalog of the
+default and fallback language, and `resources` is typed by it: a catalog that
+lacks a key of the English one fails typecheck.
+
 > Status: **cross-locale key parity is enforced** by
-> `packages/i18n/src/locales/__tests__/resources.constant.test.ts` inside `pnpm validate`.
-> Key **casing** and brace balance are not yet enforced. Tracked in §21.
+> `packages/i18n/src/locales/__tests__/resources.constant.test.ts` inside `pnpm validate`:
+> it compares every catalog of `resources` with every other and needs one per supported
+> language. Key **casing** and brace balance are not yet enforced. Tracked in §21.
 
 ---
 
@@ -746,7 +755,7 @@ This table exists so that difference is visible.
 | §14a Logic in hooks         | lint          | `local/logic-in-view` + `local/single-use-state`                    |
 | Core import boundary        | lint          | `local/core-import-boundary` on `packages/core/src/**`              |
 | §15 English everywhere      | script        | `verify:english` (allowlist: §20 exception); identifier lint `warn` |
-| §15.1 i18n catalogs         | test          | `resources.constant.test.ts` — **parity only**, casing not yet      |
+| §15.1 i18n catalogs         | test + types  | `resources.constant.test.ts` + typed `resources` — casing not yet   |
 | §16 Conventional commits    | hook          | `commitlint` on `commit-msg`                                        |
 | §17 Per-feature DoD         | review        | —                                                                   |
 | §18 Validation gate         | script        | the `pnpm validate` chain                                           |
