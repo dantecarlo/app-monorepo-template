@@ -3,7 +3,7 @@
 > **Governs:** `apps/web/src`, `apps/web/next.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-16 at `eeeaac7`
+> **Verified against the code:** 2026-11-16 at `427b81d`
 
 ## Purpose
 
@@ -320,7 +320,7 @@ and when it rejects it SHALL queue an error toast with the message resolved from
 `messageKey`, set no field error and leave the route unchanged. The sign-in result the screen
 keeps holds the user id and not the access token.
 
-**Evidence:** `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:45`, `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:69`, `apps/web/src/screens/Login/hooks/useSignIn.hook.ts:21-24`, `apps/web/src/services/Auth/auth.service.ts:19-21`, `apps/web/src/services/Auth/Auth.adapter.ts:10`, `apps/web/src/screens/Login/Login.constant.ts:22`, `apps/web/src/lib/query/useAppMutation.hook.ts:37`
+**Evidence:** `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:45`, `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:69`, `apps/web/src/screens/Login/hooks/useSignIn.hook.ts:33-45`, `apps/web/src/services/Auth/auth.service.ts:19-21`, `apps/web/src/services/Auth/Auth.adapter.ts:10`, `apps/web/src/screens/Login/Login.constant.ts:22`, `apps/web/src/lib/query/useAppMutation.hook.ts:37`
 
 #### Scenario: the gateway accepts the credentials
 
