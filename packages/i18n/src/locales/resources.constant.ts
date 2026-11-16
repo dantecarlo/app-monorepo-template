@@ -1,10 +1,16 @@
 import en from '#src/locales/en.json'
 import es from '#src/locales/es.json'
+import type {
+  ILocaleResources,
+  SupportedLanguageType
+} from '#src/locales/i18n.constant'
 
+// Every supported language has a catalog, and every catalog holds every key
+// of the default one: a catalog that lacks one fails the type check here.
 export const resources = {
   en: { translation: en },
   es: { translation: es }
-} as const
+} as const satisfies Record<SupportedLanguageType, ILocaleResources>
 
 /**
  * Canonical project display name, sourced from the default-language catalog.

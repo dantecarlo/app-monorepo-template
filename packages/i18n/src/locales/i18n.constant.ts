@@ -1,4 +1,4 @@
-import type esTranslation from '#src/locales/es.json'
+import type defaultTranslation from '#src/locales/en.json'
 
 export const LanguageEnum = {
   EN: 'en',
@@ -18,7 +18,10 @@ export const SUPPORTED_LANGUAGES = [
 
 export type SupportedLanguageType = (typeof SUPPORTED_LANGUAGES)[number]
 
-export type TranslationKeysType = typeof esTranslation
+// The shape of the English catalog, the catalog of DEFAULT_LANGUAGE and of
+// FALLBACK_LANGUAGE: English is written first and every lookup falls back to
+// it, so its keys are the complete set every other catalog must hold.
+export type TranslationKeysType = typeof defaultTranslation
 
 export interface ILocaleResources {
   translation: TranslationKeysType
