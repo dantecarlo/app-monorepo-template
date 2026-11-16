@@ -10,27 +10,20 @@ import { ThemeProvider } from '@/components/ThemeProvider'
 import { NO_FLASH_THEME_SCRIPT } from '@/lib/theme/noFlashTheme.constant'
 
 // Self-hosted, so the build never fetches a font. The files in ./fonts are the
-// ones @expo-google-fonts/inter and @expo-google-fonts/montserrat ship, which
-// the mobile app loads too; docs/architecture/web.md § 4 says how to update them.
+// Latin variable woff2 files Google Fonts serves, one per family with its OFL
+// licence; docs/architecture/web.md § 4 says how to update them.
 const montserrat = localFont({
   display: 'swap',
-  src: [
-    { path: './fonts/Montserrat_400Regular.ttf', weight: '400' },
-    { path: './fonts/Montserrat_500Medium.ttf', weight: '500' },
-    { path: './fonts/Montserrat_600SemiBold.ttf', weight: '600' },
-    { path: './fonts/Montserrat_700Bold.ttf', weight: '700' },
-    { path: './fonts/Montserrat_800ExtraBold.ttf', weight: '800' }
-  ],
-  variable: '--font-montserrat'
+  src: './fonts/montserrat-latin.woff2',
+  variable: '--font-montserrat',
+  weight: '400 800'
 })
 
 const inter = localFont({
   display: 'swap',
-  src: [
-    { path: './fonts/Inter_400Regular.ttf', weight: '400' },
-    { path: './fonts/Inter_500Medium.ttf', weight: '500' }
-  ],
-  variable: '--font-inter'
+  src: './fonts/inter-latin.woff2',
+  variable: '--font-inter',
+  weight: '400 500'
 })
 
 export const metadata: Metadata = {

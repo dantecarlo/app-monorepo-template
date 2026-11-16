@@ -21,7 +21,7 @@ apps/web/
     ├── middleware.ts              # origin lock (originGuard adapter)
     ├── app/                       # Next App Router — ROUTING ONLY (RSC)
     │   ├── layout.tsx             # root layout: fonts, theme script, ThemeProvider, providers
-    │   ├── fonts/                 # Inter and Montserrat files + OFL.txt (next/font/local)
+    │   ├── fonts/                 # Inter and Montserrat woff2 + their OFL texts (next/font/local)
     │   ├── providers.tsx · SupabaseProviders.tsx   # NextIntl, QueryClient, AuthProvider, Toast
     │   ├── error.tsx              # root segment boundary: render crash → ErrorState + retry
     │   ├── global-error.tsx       # root layout crash: own html/body → ErrorState + retry
@@ -86,17 +86,19 @@ export default LoginPage
   `ui/` block can own (the `.glass-card` surface, the `<body>` and its aurora, the accent gradient
   and the shimmer), reading every colour, shadow, font and motion value through a generated
   variable.
-- **Fonts are self-hosted.** `src/app/layout.tsx` loads Inter (400, 500) and Montserrat (400 to
-  800) with `next/font/local` from `src/app/fonts/`, as `--font-inter` and `--font-montserrat`
+- **Fonts are self-hosted.** `src/app/layout.tsx` loads Inter (400 to 500) and Montserrat (400
+  to 800) with `next/font/local` from `src/app/fonts/`, as `--font-inter` and `--font-montserrat`
   with `display: 'swap'`, so `next build` fetches nothing (`next/font/google` downloaded them at
-  build time, and a network blip failed the build). The files are copies of the ones
-  `@expo-google-fonts/inter` and `@expo-google-fonts/montserrat` ship, the packages the mobile app
-  loads; `src/app/fonts/OFL.txt` holds their licence. To update them, bump those packages in
-  `apps/mobile`, copy the same `*_<weight><Style>.ttf` files from
-  `node_modules/@expo-google-fonts/<family>/` over the ones in `src/app/fonts/`, and keep the
-  copyright lines of `OFL.txt` equal to each file's name record. A new weight is a new file there
-  and a new `src` entry in the layout. `src/app/__tests__/layout.test.tsx` checks that every file
-  the layout names exists and that nothing loads from Google Fonts.
+  build time, and a network blip failed the build). Each family is one file: the Latin variable
+  woff2 Google Fonts serves (`inter-latin.woff2`, 48 KB, and `montserrat-latin.woff2`, 36 KB),
+  with its licence beside it (`inter-OFL.txt`, `montserrat-OFL.txt`). The Latin subset holds
+  every letter Spanish needs (U+0000 to U+00FF). They came from Certifipago (its commit
+  `70f653001`), whose files match what Google serves byte for byte. To update one, download the
+  `latin` woff2 that the Google Fonts CSS for the family names, check its sha256 against a second
+  download, replace the file, and keep the copyright line of its OFL text equal to the
+  file's name record. `src/app/__tests__/layout.test.tsx` checks that every file the layout
+  names exists and is a woff2, that both together stay under 128 KB, and that nothing loads from
+  Google Fonts.
 - **Styling lives in the components** (`AGENTS.md` LAW, `docs/code-standards.md` §22). A block
   under `components/ui/`, or a screen's own `components/`, owns its look; a screen, a route entry
   and a container only position, through their `*.style.ts` and `helpers/layout.style.ts`. Text

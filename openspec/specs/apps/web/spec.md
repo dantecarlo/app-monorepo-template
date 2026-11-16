@@ -3,7 +3,7 @@
 > **Governs:** `apps/web/src`, `apps/web/next.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-15 at `7145852`
+> **Verified against the code:** 2026-11-15 at `06d6bfa`
 
 ## Purpose
 
@@ -354,7 +354,7 @@ The web app SHALL render every client component with the default language locale
 whatever the `NEXT_LOCALE` cookie holds, inside an html element whose language attribute is
 English.
 
-**Evidence:** `apps/web/src/app/layout.tsx:66`, `apps/web/src/app/layout.tsx:69-73`, `apps/web/src/app/providers.tsx:43-47`
+**Evidence:** `apps/web/src/app/layout.tsx:59`, `apps/web/src/app/layout.tsx:62-66`, `apps/web/src/app/providers.tsx:43-47`
 
 #### Scenario: the locale cookie names another language
 
@@ -398,7 +398,7 @@ The web app SHALL set the html `data-theme` attribute before first paint from th
 cookie when it holds light or dark, else from the `prefers-color-scheme` media query, and adopt
 that painted value into the theme store on mount.
 
-**Evidence:** `apps/web/src/lib/theme/noFlashTheme.constant.ts:17-25`, `apps/web/src/app/layout.tsx:81-83`, `apps/web/src/components/ThemeProvider/useThemeBootstrap.hook.ts:14-23`
+**Evidence:** `apps/web/src/lib/theme/noFlashTheme.constant.ts:17-25`, `apps/web/src/app/layout.tsx:74-76`, `apps/web/src/components/ThemeProvider/useThemeBootstrap.hook.ts:14-23`
 
 #### Scenario: the head script paints the theme
 
@@ -1073,7 +1073,7 @@ shimmer) SHALL read every colour, shadow, font and motion value through a variab
 theme declares, and spell no colour; and the root layout SHALL load each font family under the CSS
 variable the tokens name for it.
 
-**Evidence:** `apps/web/src/app/globals.css:3`, `apps/web/src/app/globals.css:45`, `apps/web/src/app/globals.css:57`, `apps/web/src/app/globals.css:100`, `apps/web/src/app/globals.css:109`, `apps/web/src/app/layout.tsx:24`, `apps/web/src/app/layout.tsx:33`
+**Evidence:** `apps/web/src/app/globals.css:3`, `apps/web/src/app/globals.css:45`, `apps/web/src/app/globals.css:57`, `apps/web/src/app/globals.css:100`, `apps/web/src/app/globals.css:109`, `apps/web/src/app/layout.tsx:18`, `apps/web/src/app/layout.tsx:25`
 
 #### Scenario: the CSS entry is read
 
@@ -1130,7 +1130,7 @@ variable the tokens name for it.
   `apps/web/src/components/ui/Toast/Toast.constant.ts:1`.
 - **Q6** — `docs/architecture/web.md:74` resolves the locale from the `NEXT_LOCALE` cookie, but only
   server components follow it: `apps/web/src/app/providers.tsx:43` and
-  `apps/web/src/app/layout.tsx:66` pin client components to the default language and
-  `apps/web/src/app/layout.tsx:72` writes `lang="en"`, so the language switcher
+  `apps/web/src/app/layout.tsx:59` pin client components to the default language and
+  `apps/web/src/app/layout.tsx:65` writes `lang="en"`, so the language switcher
   (`apps/web/src/components/ui/LanguageSwitcher/useLanguageSwitcher.hook.ts:37`) always writes the
   Spanish code and can never switch back (WEB-14 to WEB-16).

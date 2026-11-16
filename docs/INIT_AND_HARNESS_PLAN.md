@@ -86,12 +86,14 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 - F.1, the styling pillar (#22).
 - F.4, tests in `__tests__/` per block, with the strict `verify:tests` and the shipped codemod (#24).
 - F30 and F31: the shared `tv` keeps the token font sizes, and the web fonts are self-hosted (#25).
-- F.9, the MCP documentation updater: the catalog `.agents/contracts/mcp-servers.json`, `pnpm mcp:docs` and the offline `verify:mcp-docs` (this change).
+- F.9, the MCP documentation updater: the catalog `.agents/contracts/mcp-servers.json`, `pnpm mcp:docs` and the offline `verify:mcp-docs` (#26).
+- F.12, the generated token outputs: one source, one generator, and `verify:theme-sync` as the regenerate-and-diff check (#27).
+- F32: the web fonts are Certifipago's Latin variable woff2 files, 84 KB in all (this change).
 - F.2, the Supabase hardening (#21; the native review did not fit its context budget, and the owner chose to merge on the independent verifier).
 
-**In flight:** F.12, the generated token outputs, on `feat/generated-tokens` (worktree `gentokens`).
+**In flight:** none.
 
-**Next:** F32 with Certifipago's Latin woff2 fonts once F.12 merges, then F.5.
+**Next:** F.5, the app behaviour (F11, F12, F23, F24, F25).
 
 **Pending, in order:**
 - F.5 to F.8 and F.11 of Stage F.
@@ -266,7 +268,7 @@ F.8 work units, in order:
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------- | ----------------------------------------------- |
 | 3.1 | `AGENTS.md` as the router: the LAWs, the Router tables (knowledge rows included), the Codex project-doc budget and its test; `verify:instruction-entry`, which also refuses a `CLAUDE.md` (Certifipago #791)                                                                                                                                                                                             | Template | Stage 2  | gates green; `AGENTS.md` under the Codex budget |
 | 3.2 | `.agents/` structure, the four-runtime projector and `projection-check`; agents with `gradedBy`; `sdd-steward`                                                                                                                                                                                                                                                                                           | Template | 3.1      | `projection-check` green                        |
-| 3.3 | Hook-safe test helpers (`withHookGitDir` beside `gitFreeEnv`); the agent write guard; the worktree pruner with Certifipago's ignored-files fix (#789); `.claude/launch.example.json`; `core.hooksPath` stays the relative `.husky/_` husky writes at repository level, never per worktree and never absolute (Certifipago found git 2.55 copying an absolute per-worktree value into every new worktree) | Template | 3.2      | each hook has its suite, run in `validate`      |
+| 3.3 | Hook-safe test helpers (`withHookGitDir` beside `gitFreeEnv`); the agent write guard; the worktree pruner with Certifipago's ignored-files fix (#789), which also fast-forwards the main checkout last when it is on the default branch (`git merge --ff-only`; when git refuses, it stays and a line says why; a dry run moves nothing; files that differ only in line endings count as local changes and block it), because every Claude Code hook runs from `${CLAUDE_PROJECT_DIR}`, the main checkout, which nothing else moves (Certifipago #846: it sat 1387 commits behind, and a merge gate ran stale for 10 days), and whose test waits for the detached prune to release its scratch before removing it (the Windows EPERM fix of #846); `.claude/launch.example.json`; `core.hooksPath` stays the relative `.husky/_` husky writes at repository level, never per worktree and never absolute (Certifipago found git 2.55 copying an absolute per-worktree value into every new worktree) | Template | 3.2      | each hook has its suite, run in `validate`      |
 
 ### Stage 4 — gates (T3: P3–P4)
 
@@ -403,7 +405,7 @@ master after these merges.
 | Package-private `#src` aliases                                                                                       | #792 (`4784c939b`)  | the same aliases in the five template packages                                                                                                                              | T1c                              | open   |
 | Shared test and process scripts | master (`scripts/`) | moved into `@app/tooling` by the tooling-package change, `fsModuleCache` left out (Vitest 5) and `signalProcessTree` returning false when the tree could not be signalled and is still running; Certifipago then replaces its 12 cross-workspace relative imports (7 package vitest configs, 3 app vitest configs, 1 mobile script, 1 root script) | T1d, then the Arquitecto session | template done; Certifipago K9 |
 | `no-unbounded-network` and `verify:scope-coverage`, with the group-wildcard fix                                      | #775, #788          | the rule, the gate and its fix                                                                                                                                              | Stage 4 (4.3)                    | open   |
-| Worktree pruner that keeps worktrees holding unrebuilt ignored files                                                 | #781, #789          | the pruner, the post-merge hook and the Claude hook                                                                                                                         | Stage 3 (3.3)                    | open   |
+| Worktree pruner that keeps worktrees holding unrebuilt ignored files                                                 | #781, #789, #846    | the pruner, the post-merge hook and the Claude hook                                                                                                                         | Stage 3 (3.3)                    | open   |
 | `CLAUDE.md` retired; `verify:doc-links` refuses one                                                                  | #791                | retired here by #5; the refusal goes into `verify:instruction-entry`                                                                                                        | Stage 3 (3.1)                    | closed by `2026-11-14-agents-router` |
 | Motion pairs, stagger and exit tokens, `verify:motion-pairs`                                                         | #713                | with the design-system intake                                                                                                                                               | Stage 7 (7.2)                    | open   |
 | pnpm 11.9.0, `nodeLinker: hoisted` | master | adopted by the pnpm-11 change, except the linker: the template keeps `isolated` with `publicHoistPattern`, since `hoisted` put six `@sentry/core` copies in the Hermes bundle (6.97 to 9.25 MB) | Stage 2 (2.3), D-S6 | closed |
@@ -473,7 +475,7 @@ defects behind them, for changes of their own.
 | F29 | packages/supabase | the verifier of the signed image URL signs the path and query only, so one secret serving several hosts accepts a URL on any of them | design, recorded |
 | F30 | apps/web | `tailwind-merge`, which `tailwind-variants` runs by default, takes the token font sizes (`text-button`, `text-title`) for colours and drops them next to a text colour, so the web `Button` renders without `text-button`; `ui/Text`, `ui/Divider` and `ui/Avatar` already set `twMerge: false` | done: this change |
 | F31 | apps/web | `next/font/google` fetches the fonts at build time, so a network blip fails `validate` and CI (three times on 2026-11-14 and 15); self-hosting them with `next/font/local` removes the dependency | done: this change |
-| F32 | apps/web | the self-hosted fonts are full-charset TTFs, about 1.6 MB, and `next/font/local` preloads all seven, where Google served small latin woff2 subsets; Montserrat 500 looks unused | small; after F.12: copy Certifipago's Latin variable woff2 files and their OFL texts from its commit 70f653001 (about 84 KB in all), through git objects |
+| F32 | apps/web | the self-hosted fonts are full-charset TTFs, about 1.6 MB, and `next/font/local` preloads all seven, where Google served small latin woff2 subsets; Montserrat 500 looks unused | done: this change, with Certifipago's Latin variable woff2 files from its commit 70f653001 |
 | F33 | harness | a scheduled CI job that runs `pnpm mcp:docs` and opens a pull request when an MCP server releases (Q1 of `2026-11-15-mcp-docs-updater`) | waits on the owner: CI is high-risk item 5 |
 
 ---
@@ -1776,3 +1778,8 @@ validate` exits 0. Independent verifier: no blocker. Native review: the hooks
   then "merge and continue with the plan". #24 and #25 merged; F.12 and F.9 ran in parallel
   writers. F.9 found that `@shadcn/mcp-server` is not on npm, so the catalog runs
   `npx -y shadcn mcp`, the command shadcn documents.
+- **L64 (2026-11-15, relayed by the Certifipago - Arquitecto session):** Certifipago adopted F.9
+  (#847) and registered `verify:mcp-docs` in its gate registry and `docs/mcp.md` in its docs
+  manifest; the template has neither gate yet, so those registrations land with `verify:gate-shape`
+  and step 4.3 (`verify:docs-freshness`). Its #846 fix to the worktree pruner joins step 3.3. F32
+  took Certifipago's woff2 fonts.
