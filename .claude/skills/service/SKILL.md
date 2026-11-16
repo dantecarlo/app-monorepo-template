@@ -252,8 +252,7 @@ export const use{Domain}List = ({ contextId }: IUse{Domain}List) =>
         const dtos = await get{Domain}List({ contextId })
         return adapt{Domain}s(dtos)
       }
-    },
-    errorMessage: 'Could not load {domain} data.'
+    }
   })
 
 // Mutation (write)
@@ -276,6 +275,10 @@ export const useCreate{Domain} = () => {
   })
 }
 ```
+
+A failed query queues no toast (`docs/code-standards.md` § 19): the screen reads
+`isError` and renders `ErrorState`, or wraps the block in `AsyncBoundary`, with the
+query's `refetch` as its retry. Only a mutation's failure is a toast.
 
 ---
 

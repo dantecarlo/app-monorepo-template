@@ -41,3 +41,45 @@ load no Tailwind JavaScript config.
 - **WHEN** it is read
 - **THEN** it imports the generated theme, holds no `@config` and no `tailwind.config.cjs` exists
 - **Test:** `apps/web/src/app/__tests__/globals.test.ts` › "imports the generated theme and loads no JS config"
+
+### Requirement: TOKENS-15 — Every generated output equals its regeneration
+
+The repository SHALL fail `pnpm verify:theme-sync` when a generated token output differs from what
+the generator writes from the current source, or is missing, naming the file, its first differing
+line and the command that regenerates it.
+
+**Evidence:** written at apply time, when the code exists.
+
+#### Scenario: a generated file is edited by hand
+
+- **GIVEN** the committed outputs, with one value of one output edited by hand
+- **WHEN** the theme-sync gate regenerates in memory and compares
+- **THEN** it reports that output, and only it
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "a planted edit in the web theme is caught"
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "a planted edit in the preset is caught"
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "a planted edit in the mobile theme variables is caught"
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "a planted edit in the theme names is caught"
+
+#### Scenario: the source changes and nobody regenerates
+
+- **GIVEN** the committed outputs, with a dark colour changed in the source only
+- **WHEN** the theme-sync gate compares
+- **THEN** it reports the web theme and the mobile theme variables, every output that carries the
+  themed colour values; the preset names the colour's variable and does not change
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "a source change that was not regenerated is caught in every output it reaches"
+
+#### Scenario: a token is renamed and nobody regenerates
+
+- **GIVEN** the committed outputs, with a token key renamed in the source only
+- **WHEN** the theme-sync gate compares
+- **THEN** it reports the web theme, the preset and the theme names, every output that names the
+  token
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "a renamed token that was not regenerated is caught in the theme names too"
+
+#### Scenario: the outputs are current
+
+- **GIVEN** the committed outputs as the generator writes them
+- **WHEN** the theme-sync gate runs as a process
+- **THEN** it exits 0
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "the shipped outputs equal their regeneration"
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "the gate exits 0 over the shipped outputs"

@@ -97,8 +97,13 @@ Expo Router resolves `src/app/` automatically (no root `app/`). The shipped rout
 `/` and `/login` under the root `Stack` in `_layout.tsx`, with no route guard. When an area needs
 shared chrome, add a route group (`(auth)`, `(tabs)`, …) with its own `_layout.tsx`. The root
 `_layout.tsx` exports `RootErrorBoundary` as its `ErrorBoundary` (Expo Router convention), so a
-render crash in any route shows the `ErrorState` with a retry; a route can export its own
-`ErrorBoundary`, re-exported from its screen barrel, to catch its crashes closer.
+render crash in any route shows the `ErrorState` with a retry and is reported to observability
+once, through `useReportBoundaryError` and `reportBoundaryError` in `src/lib/observability/`; a
+route can export its own `ErrorBoundary`, re-exported from its screen barrel, to catch its crashes
+closer. A failed query adds no toast: the screen shows its `ErrorState`, as the dashboard's items
+list does with a retry that refetches; a failed mutation is the toast
+([code-standards § 19](../code-standards.md)). A query key holds its dynamic values in one trailing
+params object (`['items', 'list', { filter }]`), which the error report always redacts.
 
 ## 5. Conventions
 
@@ -112,20 +117,24 @@ strings via i18n, screens handle loading/empty/error states.
 StyleSheet built from `@app/tokens`. A screen, a route file and a container under
 `src/components/<Name>/` only position: their StyleSheet entries and style props carry flex,
 gap, alignment, position, size and spacing, never a colour, a font or a radius. Text is
-`ui/Text`, a labelled rule `ui/Divider`, a screen's surface `ui/Screen` (dark by default, the
-active theme when `themed`) and the accent gradient `ui/AccentGradient`; the navigator's themed
-background comes from `useRootTheme`. Only `ui/` imports a UI kit or a drawing primitive
+`ui/Text`, a labelled rule `ui/Divider`, a screen's surface `ui/Screen` (the active theme's
+base) and the accent gradient `ui/AccentGradient`; the navigator's themed background comes from
+`useRootTheme`. Only `ui/` imports a UI kit or a drawing primitive
 (`expo-linear-gradient`, `react-native-svg`). `local/style-positions-only`,
 `local/style-token-values` and `local/ui-kit-boundary` hold it; a number in a StyleSheet is not
 read.
 
-**Tokens.** A StyleSheet reads `@app/tokens` directly (`colors`, `spacing`, `themes[active]` through
-`useThemeTokens`). The NativeWind classes come from `@app/tokens/tailwind-preset.cjs`, which
-`tailwind.config.js` loads and `packages/tokens/scripts/generate.mjs` writes from
-`packages/tokens/src/tokens.constant.ts`; its colours are the dark theme's. The generator also
-writes `themeVars`, exported from `@app/tokens`: the `--c-*` value of every themed colour per
-theme, the map NativeWind's `vars()` takes, which no screen injects yet. A new value goes in the
-token source, then `pnpm --filter @app/tokens generate`; never edit a generated file
+**Tokens and the light theme.** The light theme reaches the whole app from the root. The root
+layout wraps the routes in a view carrying `themeVars[active]` through NativeWind's `vars()`
+(`useRootTheme`), so every NativeWind colour class follows the theme: the preset
+(`@app/tokens/tailwind-preset.cjs`, which `tailwind.config.js` loads) writes each themed colour
+as `var(--c-<name>)` and each shared colour as its literal. A StyleSheet that paints a themed
+colour is built once per theme with `createThemedStyles` (or `createThemedValues` for a colour
+map) from `src/lib/theme/`, and the block reads the active one through `useThemedStyles`; a view
+that reads a colour inline takes the palette from `useThemeTokens`. A module-level StyleSheet over
+the static `colors` stays dark, and `createThemedStyles.helper.test.ts` fails on one. `spacing`,
+`radius`, `fontSize` and the shared colours are read from `@app/tokens` directly. A new value goes
+in the token source, then `pnpm --filter @app/tokens generate`; never edit a generated file
 (`pnpm verify:theme-sync`).
 
 ## 6. The shipped sample

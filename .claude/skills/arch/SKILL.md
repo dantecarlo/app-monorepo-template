@@ -328,11 +328,14 @@ const useItemList = ({ contextId }: IUseItemList) => {
         const dtos = await getItems({ contextId })
         return adaptItems(dtos)
       }
-    },
-    errorMessage: 'Could not load items.'
+    }
   })
 }
 ```
+
+A failed query queues no toast (`docs/code-standards.md` § 19): the screen reads
+`isError` and renders `ErrorState`, or wraps the block in `AsyncBoundary`, with the
+query's `refetch` as its retry. Only a mutation's failure is a toast.
 
 Register all query keys in `@/lib/query/queryKeys.constant.ts` (never inline strings).
 Write every hand-written segment as a member of `QueryKeySegmentEnum`. When a

@@ -4,7 +4,7 @@
 
 ## ADDED Requirements
 
-### Requirement: WEB-44 — A query key keeps its dynamic values in a trailing params object
+### Requirement: WEB-45 — A query key keeps its dynamic values in a trailing params object
 
 The web app SHALL build every key of `QueryKeys` from `QueryKeySegmentEnum` values followed, when
 the key carries a dynamic value, by one trailing params object that holds every such value, so
@@ -155,7 +155,7 @@ otherwise one Supabase auth gateway per browser.
 The web app SHALL report every failed query and mutation once, from the query cache and mutation
 cache error handlers, to the observability port, passing the query key through
 `sanitizeQueryKey` from packages/core with the values of `QueryKeySegmentEnum` as its structural
-segments, so the trailing params object of a key (WEB-44) is always redacted, whatever it holds.
+segments, so the trailing params object of a key (WEB-45) is always redacted, whatever it holds.
 
 **Evidence:** written at apply time, when the code exists.
 

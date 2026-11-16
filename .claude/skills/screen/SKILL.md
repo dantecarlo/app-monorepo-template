@@ -132,11 +132,14 @@ export const use{Name} = ({ contextId }: IUse{Name}) => {
         const dtos = await getItems({ contextId })
         return adaptItems(dtos)
       }
-    },
-    errorMessage: 'Could not load data.'
+    }
   })
 }
 ```
+
+A failed query queues no toast (`docs/code-standards.md` § 19): the screen reads
+`isError` and renders `ErrorState`, or wraps the block in `AsyncBoundary`, with the
+query's `refetch` as its retry. Only a mutation's failure is a toast.
 
 ---
 

@@ -656,8 +656,12 @@ Errors flow through **one** path. Screens and hooks must not bypass it.
   catalogs, or the toast silently degrades to the raw technical message.
 
 > Status: the ports and helpers exist (`AppError`, `buildServiceError`,
-> `scrubPII`, `sanitizeQueryKey`). The **mechanical** contract check is not yet
-> here. Tracked in §21.
+> `scrubPII`, `sanitizeQueryKey`), and both apps follow the table: `useAppQuery`
+> queues no toast and the dashboards show their `ErrorState`, `useAppMutation`
+> queues the toast, and the error boundaries report a crash once through
+> `reportBoundaryError` in `src/lib/observability/`. A query key holds its
+> dynamic values in a trailing params object, which `sanitizeQueryKey` always
+> redacts. The **mechanical** contract check is not yet here. Tracked in §21.
 
 ---
 

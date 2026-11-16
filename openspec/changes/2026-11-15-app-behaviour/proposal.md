@@ -98,11 +98,12 @@ The owner's words, verbatim:
 ## Affected specs
 
 - `openspec/specs/apps/web/spec.md`: modifies WEB-07, WEB-13, WEB-20, WEB-24, WEB-26, WEB-31 and
-  WEB-38; adds WEB-44; open question Q3 closes at archive, and Q5 loses the override it cites.
+  WEB-38; adds WEB-45; open question Q3 closes at archive, and Q5 loses the override it cites.
 - `openspec/specs/apps/mobile/spec.md`: modifies MOBILE-05, MOBILE-18, MOBILE-20, MOBILE-25,
   MOBILE-31, MOBILE-37 and MOBILE-40; adds MOBILE-42, MOBILE-43, MOBILE-44 and MOBILE-45; open
   questions Q1 and Q5 close at archive.
-- `openspec/specs/packages/tokens/spec.md`: modifies TOKENS-12.
+- `openspec/specs/packages/tokens/spec.md`: modifies TOKENS-12, and TOKENS-15, whose
+  unregenerated dark colour no longer reaches the preset.
 
 <!--
 Status is one of: open; archived — <date>; discarded — <date>, <reason>.
