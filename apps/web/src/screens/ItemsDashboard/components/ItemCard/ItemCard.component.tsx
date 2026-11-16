@@ -1,7 +1,6 @@
-import {
-  STATUS_CLASS,
-  STATUS_LABEL
-} from '@/screens/ItemsDashboard/components/ItemCard/ItemCard.constant'
+import { useTranslations } from 'next-intl'
+
+import { STATUS_CLASS } from '@/screens/ItemsDashboard/components/ItemCard/ItemCard.constant'
 import { ITEM_CARD } from '@/screens/ItemsDashboard/components/ItemCard/ItemCard.style'
 import type { IItemCardProps } from '@/screens/ItemsDashboard/components/ItemCard/ItemCard.type'
 
@@ -18,6 +17,8 @@ import type { IItemCardProps } from '@/screens/ItemsDashboard/components/ItemCar
 // ---------------------------------------------------------------------------
 
 export const ItemCard = ({ item }: IItemCardProps) => {
+  const t = useTranslations('items')
+
   return (
     <div className={`${ITEM_CARD.ROW} ${ITEM_CARD.DIVIDER}`}>
       {/* Author avatar */}
@@ -39,9 +40,11 @@ export const ItemCard = ({ item }: IItemCardProps) => {
 
       {/* Time + status */}
       <div className={ITEM_CARD.RIGHT}>
-        <span className={ITEM_CARD.TIME}>{item.timeDisplay}</span>
+        <span className={ITEM_CARD.TIME}>
+          {t(`age.${item.age.unit}`, { count: item.age.count })}
+        </span>
         <span className={STATUS_CLASS[item.status]}>
-          {STATUS_LABEL[item.status]}
+          {t(`status.${item.status}`)}
         </span>
       </div>
     </div>

@@ -1,8 +1,8 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import type { JSX } from 'react'
 
-import { DISMISS_LABEL } from '@/components/ui/Toast/Toast.constant'
 import {
   TOAST_DISMISS_BTN,
   TOAST_DOT_BASE,
@@ -18,6 +18,7 @@ import {
 } from '@/stores/toast.store'
 
 export const Toast = (): JSX.Element => {
+  const t = useTranslations('common')
   const toasts = useToastStore(selectToasts)
   const remove = useToastStore(selectRemoveToast)
 
@@ -31,7 +32,7 @@ export const Toast = (): JSX.Element => {
           />
           <p className={TOAST_MESSAGE}>{toast.message}</p>
           <button
-            aria-label={DISMISS_LABEL}
+            aria-label={t('dismiss')}
             className={TOAST_DISMISS_BTN}
             onClick={() => remove(toast.id)}
             type="button"

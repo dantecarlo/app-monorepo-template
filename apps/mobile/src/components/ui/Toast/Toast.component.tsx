@@ -1,9 +1,7 @@
+import { useTranslation } from 'react-i18next'
 import { Pressable, Text, View } from 'react-native'
 
-import {
-  TOAST_DISMISS_LABEL,
-  TOAST_DOT_COLOR
-} from '@/components/ui/Toast/Toast.constant'
+import { TOAST_DOT_COLOR } from '@/components/ui/Toast/Toast.constant'
 import { TOAST_STYLES } from '@/components/ui/Toast/Toast.style'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 import {
@@ -13,6 +11,7 @@ import {
 } from '@/stores/toast.store'
 
 export const Toast = () => {
+  const { t } = useTranslation()
   const dotColors = useThemedStyles({ styles: TOAST_DOT_COLOR })
   const styles = useThemedStyles({ styles: TOAST_STYLES })
 
@@ -40,7 +39,7 @@ export const Toast = () => {
           />
           <Text style={styles.message}>{toast.message}</Text>
           <Pressable
-            accessibilityLabel={TOAST_DISMISS_LABEL}
+            accessibilityLabel={t('common.dismiss')}
             accessibilityRole="button"
             onPress={() => remove(toast.id)}
           >

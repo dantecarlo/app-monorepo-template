@@ -3,6 +3,12 @@
     "name": "App"
   },
   "auth": {
+    "error": {
+      "emailNotConfirmed": "Confirm your email address before you sign in.",
+      "invalidCredentials": "The email or password is incorrect.",
+      "notConfigured": "Sign-in is not available right now.",
+      "rateLimited": "Too many sign-in attempts. Wait a moment and try again."
+    },
     "languageSwitcher": {
       "label": "Change language"
     },
@@ -86,6 +92,12 @@
     }
   },
   "items": {
+    "age": {
+      "days": "{count}d ago",
+      "hours": "{count}h ago",
+      "justNow": "just now",
+      "minutes": "{count}m ago"
+    },
     "dashboard": {
       "listEmpty": "No items found.",
       "listResults": "{count} results",
@@ -110,8 +122,12 @@
       "welcomeBack": "Welcome back"
     },
     "emptyState": "No items found",
-    "errorMessage": "Failed to load items. Please try again.",
     "errorState": "Failed to load items",
+    "status": {
+      "active": "active",
+      "archived": "archived",
+      "draft": "draft"
+    },
     "summary": {
       "active": "active",
       "archived": "archived",

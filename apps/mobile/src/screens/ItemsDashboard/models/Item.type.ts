@@ -1,3 +1,5 @@
+import type { ItemAgeUnitEnum } from '@/services/Items/items.constant'
+
 // ---------------------------------------------------------------------------
 // Raw DTO — shape as returned from the API / Supabase
 // ---------------------------------------------------------------------------
@@ -20,7 +22,15 @@ export interface IItemDto {
 // View model — what the UI consumes
 // ---------------------------------------------------------------------------
 
+/** How old an item is: a unit and a whole count of it, 0 for just now. */
+export interface IItemAge {
+  count: number
+  unit: ItemAgeUnitEnum
+}
+
 export interface IItemViewModel {
+  /** The item's age, which the card tells in the active language */
+  age: IItemAge
   /** Initials for the avatar, e.g. "AB" */
   authorInitials: string
   /** Author display, e.g. "Alice B." — empty string if none */
@@ -30,8 +40,6 @@ export interface IItemViewModel {
   description: string
   id: string
   status: 'active' | 'archived' | 'draft'
-  /** Formatted relative time, e.g. "2 hours ago" */
-  timeDisplay: string
   title: string
 }
 

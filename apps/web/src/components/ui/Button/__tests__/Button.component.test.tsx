@@ -1,39 +1,45 @@
+import { DEFAULT_LANGUAGE, LanguageEnum, resources } from '@app/i18n'
 import { describe, expect, test, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 
 import { Button } from '@/components/ui/Button/Button.component'
-import { render, screen } from '@/test/test.helper'
+import { renderWithIntl } from '@/test/intl.helper'
+import { screen } from '@/test/test.helper'
 
 describe('Button', () => {
   test('renders its children as the accessible label', () => {
-    render(<Button>Save</Button>)
+    renderWithIntl({ ui: <Button>Save</Button> })
     expect(
       screen.getByRole('button', { name: 'Save' })
     ).toBeInTheDocument()
   })
 
   test('has no accessibility violations', async () => {
-    const { container } = render(<Button>Save</Button>)
+    const { container } = renderWithIntl({ ui: <Button>Save</Button> })
     expect(await axe(container)).toHaveNoViolations()
   })
 
   test('shows a loading indicator and marks aria-busy when loading', () => {
-    render(<Button isLoading>Save</Button>)
+    renderWithIntl({ ui: <Button isLoading>Save</Button> })
     const button = screen.getByRole('button')
     expect(button).toHaveAttribute('aria-busy', 'true')
     expect(button).toBeDisabled()
-    expect(screen.getByText('Loading…')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        resources[DEFAULT_LANGUAGE].translation.common.loading
+      )
+    ).toBeInTheDocument()
   })
 
   test('fires onClick when pressed', () => {
     const onClick = vi.fn()
-    render(<Button onClick={onClick}>Save</Button>)
+    renderWithIntl({ ui: <Button onClick={onClick}>Save</Button> })
     screen.getByRole('button').click()
     expect(onClick).toHaveBeenCalledTimes(1)
   })
 
   test('keeps its token font size beside its text colour', () => {
-    render(<Button>Save</Button>)
+    renderWithIntl({ ui: <Button>Save</Button> })
 
     expect(screen.getByRole('button', { name: 'Save' })).toHaveClass(
       'text-button',
@@ -42,7 +48,7 @@ describe('Button', () => {
   })
 
   test('takes the font size of its size variant', () => {
-    render(<Button size="lg">Save</Button>)
+    renderWithIntl({ ui: <Button size="lg">Save</Button> })
     const button = screen.getByRole('button', { name: 'Save' })
 
     expect(button).toHaveClass('text-heading', 'text-accent-ink')
@@ -51,12 +57,27 @@ describe('Button', () => {
 
   test('does not fire onClick when disabled', () => {
     const onClick = vi.fn()
-    render(
-      <Button disabled onClick={onClick}>
-        Save
-      </Button>
-    )
+    renderWithIntl({
+      ui: (
+        <Button disabled onClick={onClick}>
+          Save
+        </Button>
+      )
+    })
     screen.getByRole('button').click()
     expect(onClick).not.toHaveBeenCalled()
+  })
+
+  test('labels its loading indicator in the active language', () => {
+    renderWithIntl({
+      locale: LanguageEnum.ES,
+      ui: <Button isLoading>Save</Button>
+    })
+
+    expect(
+      screen.getByText(
+        resources[LanguageEnum.ES].translation.common.loading
+      )
+    ).toBeInTheDocument()
   })
 })

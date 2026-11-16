@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Pressable, Text } from 'react-native'
 
 import { PRESS_OPACITY } from '@/components/ui/Button/Button.constant'
@@ -22,6 +23,7 @@ export const Button = ({
   size = 'md',
   variant = 'primary'
 }: IButtonProps) => {
+  const { t } = useTranslation()
   const isDisabled = disabled ?? isLoading
 
   const containerClass = [
@@ -53,7 +55,7 @@ export const Button = ({
     >
       {isLoading ? (
         <ActivityIndicator
-          accessibilityLabel="Loading"
+          accessibilityLabel={t('common.loading')}
           color="currentColor"
         />
       ) : (

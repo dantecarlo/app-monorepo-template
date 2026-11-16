@@ -7,6 +7,15 @@ export const MINUTES_PER_HOUR = 60
 export const MS_PER_HOUR = 3_600_000
 export const MS_PER_MINUTE = 60_000
 
+// The unit an item's age is told in; each value is the leaf of its message
+// under items.age in the catalogs ("{count}h ago").
+export enum ItemAgeUnitEnum {
+  DAYS = 'days',
+  HOURS = 'hours',
+  JUST_NOW = 'justNow',
+  MINUTES = 'minutes'
+}
+
 // ---------------------------------------------------------------------------
 // Mock service tuning — replace with real API/Supabase calls.
 // ---------------------------------------------------------------------------

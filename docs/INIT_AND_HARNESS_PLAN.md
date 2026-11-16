@@ -91,12 +91,13 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 - F32: the web fonts are Certifipago's Latin variable woff2 files, 84 KB in all (#28).
 - F34: tailwind-merge knows every token name, from the generated `themeNames` (#29).
 - F.5, the app behaviour: F11 (sign-in through the auth gateway, origin-guard tests), F12 (the mobile light theme from the root, the NativeWind preset reading `var(--c-*)`, the count once, a stable `useSession`, no actionless mobile buttons), F23 (query keys with a trailing params object), F24 (UPPER_SNAKE_CASE enum members, lint-enforced) and F25 (query errors on the screen, boundary crashes reported once) (#30; the independent verifier passed it with no blockers).
-- F36: the origin-guard matcher anchors its exempt paths (this change).
+- F36: the origin-guard matcher anchors its exempt paths (#31).
+- F.6, the i18n follow-ups: F10 (web client components and `<html lang>` follow the active locale, the switcher works both ways) and F14 (every block label and the item age from the catalogs in both apps, catalog keys typed by the default catalog, parity across every catalog, named sign-in failures) (this change).
 - F.2, the Supabase hardening (#21; the native review did not fit its context budget, and the owner chose to merge on the independent verifier).
 
 **In flight:** none.
 
-**Next:** F.6, the i18n follow-ups (F10, F14).
+**Next:** the ticket flow (in flight, `feat/ticket-flow`), then F.7.
 
 **Pending, in order:**
 - F.5 to F.8 and F.11 of Stage F.
@@ -486,6 +487,7 @@ defects behind them, for changes of their own.
 | F37 | both apps | when the items query fails, the caption shows "0 results" beside the `ErrorState` | small |
 | F38 | both apps | `useItems` keys its query by `search` only, but its `queryFn` also reads `limit`, so two limits share one cache entry | small |
 | F39 | apps/web, packages/tokens | a custom property resolves its `var()` where it is declared, and the generated theme declares on `:root`: a token that must follow an element-scoped or `@property`-animated variable has to be read with `--theme(<token> inline)`, and a nested `[data-theme]` scope would not re-resolve the `@theme` colours; tailwind-merge reads the hand-written `bg-accent-gradient` as a colour, so a later `bg-<colour>` drops it. Neither bites today (no `@property`, the theme on `html` only, no block combines the gradient with a colour); found by Certifipago #853 | note; a guard test when the first `@property` arrives |
+| F40 | apps/web | the active locale lives in the `NEXT_LOCALE` cookie, so since F.6 every route renders its content per request (`/`, `/login` are partial prerenders: a static shell, per-request content); a `/[locale]` URL segment would restore full prerendering and give each language its own URL, at the cost of new routes and a matcher change | decided (decision 60): keep the cookie |
 
 ---
 
@@ -546,6 +548,7 @@ init, markdown first, diagrams from specs). This plan adds:
 | 57 | **Tests in `__tests__/` inside each block** (owner, 2026-11-15), reversing D-S2: a unit's test lives in the `__tests__/` of the unit's own folder, with the unit's stem; shared infrastructure stays in `src/test/`; a strict gate checks it in both repositories, Certifipago now. |
 | 58 | **The follow-ups decided as recommended** (owner, 2026-11-14): F21 by column privileges, F23 with a trailing params object, F24 in UPPER_SNAKE_CASE, F25 by the error-channel table of `docs/code-standards.md`, F8 verified where a signed URL is served. |
 | 59 | **Token outputs are generated, never copied** (owner, 2026-11-15, relayed by the Certifipago - Arquitecto session, translated from Spanish: "we don't want to be tied to anything, everything must be adaptable, and that's why I like your third option"). One source, `packages/tokens/src/tokens.constant.ts`, and one generator write every token-derived output; each output has one writer and a drift gate (decision 15). The web reads its theme as CSS, with no JS-config bridge, so a new consumer gets a generator target and nothing else changes. Shadows and easings are literal values in the source; a composite look such as `glass-card` belongs to a `ui/` block (decision 50). |
+| 60 | **The web keeps its active locale in the `NEXT_LOCALE` cookie** (owner, 2026-11-16, choosing between two options). Every route renders its content per request, behind a static shell, which suits an app behind a sign-in; the HTML is not cached at the edge anyway. A `/[locale]` URL segment, full prerendering and one URL per language, stays an `/init` option for a project with a public, indexed site. |
 
 ---
 

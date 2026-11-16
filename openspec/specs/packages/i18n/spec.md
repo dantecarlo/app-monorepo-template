@@ -3,7 +3,7 @@
 > **Governs:** `packages/i18n/src`
 > **ID prefix:** `I18N`
 > **Derived from:** `docs/code-standards.md`, `docs/architecture/shared.md`
-> **Verified against the code:** 2026-11-15 at `00496d7`
+> **Verified against the code:** 2026-11-16 at `bc46d55`
 
 ## Purpose
 
@@ -15,18 +15,26 @@ map of packages/core.
 
 ## Requirements
 
-### Requirement: I18N-01 — Both catalogs hold the same keys
+### Requirement: I18N-01 — Every catalog holds the same keys
 
-The i18n package SHALL keep the English and the Spanish catalogs on one identical set of dot-separated leaf keys.
+The i18n package SHALL hold, in resources, a catalog for every supported language, and SHALL keep
+every catalog on one identical set of dot-separated leaf keys.
 
-**Evidence:** `packages/i18n/src/locales/__tests__/resources.constant.test.ts:32`, `packages/i18n/src/locales/en.json:1`, `packages/i18n/src/locales/es.json:1`
+**Evidence:** `packages/i18n/src/locales/__tests__/resources.constant.test.ts:44`, `packages/i18n/src/locales/__tests__/resources.constant.test.ts:58`, `packages/i18n/src/locales/resources.constant.ts:10-13`, `packages/i18n/src/locales/en.json:1`, `packages/i18n/src/locales/es.json:1`
 
 #### Scenario: a key is added to one catalog only
 
-- **GIVEN** the English and the Spanish catalogs
-- **WHEN** their leaf key paths are collected and sorted
-- **THEN** the two lists are equal, so a key present in one catalog alone fails the suite
-- **Test:** `packages/i18n/src/locales/__tests__/resources.constant.test.ts` › "es.json and en.json have identical key sets"
+- **GIVEN** every catalog of resources
+- **WHEN** the leaf key paths of each are compared with those of every other
+- **THEN** no catalog lacks a key another holds, so a key present in one catalog alone fails the suite and names that key
+- **Test:** `packages/i18n/src/locales/__tests__/resources.constant.test.ts` › "every catalog holds every key another catalog has"
+
+#### Scenario: a supported language has no catalog
+
+- **GIVEN** the supported languages
+- **WHEN** resources is read for each
+- **THEN** each one has a catalog
+- **Test:** `packages/i18n/src/locales/__tests__/resources.constant.test.ts` › "holds a catalog for every supported language"
 
 ### Requirement: I18N-02 — English and Spanish are the supported languages
 
@@ -71,7 +79,7 @@ The i18n package SHALL name en-US as the formatting locale.
 
 The i18n package SHALL expose a resources map whose en and es entries each hold that language's catalog under a translation key.
 
-**Evidence:** `packages/i18n/src/locales/resources.constant.ts:4`, `packages/i18n/src/locales/resources.constant.ts:5`, `packages/i18n/src/locales/resources.constant.ts:6`
+**Evidence:** `packages/i18n/src/locales/resources.constant.ts:10`, `packages/i18n/src/locales/resources.constant.ts:11`, `packages/i18n/src/locales/resources.constant.ts:12`
 
 #### Scenario: an app loads the messages of a language
 
@@ -84,7 +92,7 @@ The i18n package SHALL expose a resources map whose en and es entries each hold 
 
 The i18n package SHALL expose APP_NAME as the value of app.name in the English catalog.
 
-**Evidence:** `packages/i18n/src/locales/resources.constant.ts:17`, `packages/i18n/src/locales/en.json:3`
+**Evidence:** `packages/i18n/src/locales/resources.constant.ts:23`, `packages/i18n/src/locales/en.json:3`
 
 #### Scenario: a non-reactive context needs the display name
 
@@ -97,40 +105,42 @@ The i18n package SHALL expose APP_NAME as the value of app.name in the English c
 
 The i18n package SHALL define, in every catalog, the five keys the service-error map of packages/core names: helper.error.forbidden, helper.error.generic, helper.error.network, helper.error.notFound and helper.error.server.
 
-**Evidence:** `packages/i18n/src/locales/en.json:77`, `packages/i18n/src/locales/es.json:77`
+**Evidence:** `packages/i18n/src/locales/en.json:83`, `packages/i18n/src/locales/es.json:83`
 
 #### Scenario: a service error reaches the user
 
 - **GIVEN** an AppError whose message key comes from the packages/core service-error map
 - **WHEN** an app translates that key
 - **THEN** both catalogs hold a value for it
-- **Test:** Not covered — no test compares the packages/core message keys with the catalogs; `docs/code-standards.md:629` records that check as not built
+- **Test:** Not covered — no test compares the packages/core message keys with the catalogs; `docs/code-standards.md:664` records that check as not built
 
 ### Requirement: I18N-08 — Interpolations are single-brace ICU arguments
 
 The i18n package SHALL write every interpolated value as a single-brace ICU argument, such as name in auth.logo.label and count in items.dashboard.listResults, with the same argument in both catalogs.
 
-**Evidence:** `packages/i18n/src/locales/en.json:29`, `packages/i18n/src/locales/en.json:91`, `packages/i18n/src/locales/es.json:29`, `packages/i18n/src/locales/es.json:91`
+**Evidence:** `packages/i18n/src/locales/en.json:35`, `packages/i18n/src/locales/en.json:103`, `packages/i18n/src/locales/es.json:35`, `packages/i18n/src/locales/es.json:103`
 
 #### Scenario: a translated message takes a value
 
 - **GIVEN** a catalog value with an argument
 - **WHEN** an app formats it with that argument
 - **THEN** the argument is written in single braces, in both catalogs
-- **Test:** Not covered — the parity test compares keys, not values; `docs/code-standards.md:534` records brace balance as not enforced
+- **Test:** Not covered — the parity test compares keys, not values; `docs/code-standards.md:573` records brace balance as not enforced
 
-### Requirement: I18N-09 — The translation key type is the Spanish catalog's shape
+### Requirement: I18N-09 — The translation key type is the default language's catalog shape
 
-The i18n package SHALL type a locale resource's translation as the shape of the Spanish catalog.
+The i18n package SHALL type a locale resource's translation as the shape of the English catalog,
+the catalog of the default language, and SHALL type every entry of resources as a locale
+resource, so that a catalog lacking a key of the English one fails the type check.
 
-**Evidence:** `packages/i18n/src/locales/i18n.constant.ts:1`, `packages/i18n/src/locales/i18n.constant.ts:21`, `packages/i18n/src/locales/i18n.constant.ts:24`
+**Evidence:** `packages/i18n/src/locales/i18n.constant.ts:1`, `packages/i18n/src/locales/i18n.constant.ts:24`, `packages/i18n/src/locales/i18n.constant.ts:26-28`, `packages/i18n/src/locales/resources.constant.ts:13`
 
-#### Scenario: a consumer types its resources
+#### Scenario: the English catalog gains a key the Spanish one lacks
 
-- **GIVEN** a consumer that annotates a value as ILocaleResources
-- **WHEN** it is type-checked
-- **THEN** its translation must match the Spanish catalog's keys
-- **Test:** Not covered — a type, checked only by typecheck
+- **GIVEN** a key added to the English catalog only
+- **WHEN** the package is type-checked
+- **THEN** the Spanish entry of resources is rejected for lacking it
+- **Test:** Not covered — a type, checked by `pnpm --filter @app/i18n typecheck`; the verify report of `openspec/changes/archive/2026-11-15-i18n/` records that run against a catalog missing one key
 
 ### Requirement: I18N-10 — The entry point exposes the language contract
 
@@ -145,11 +155,25 @@ The i18n package SHALL expose from its entry point LanguageEnum, SUPPORTED_LANGU
 - **THEN** those constants and types are available, and TranslationKeysType is not
 - **Test:** Not covered — the parity test imports the catalogs directly; only the consumers' typecheck reads the entry point
 
+### Requirement: I18N-11 — The catalogs carry a message per sign-in failure
+
+The i18n package SHALL define, in every catalog, one message for each sign-in failure the web
+auth gateway names: auth.error.emailNotConfirmed, auth.error.invalidCredentials,
+auth.error.notConfigured and auth.error.rateLimited.
+
+**Evidence:** `packages/i18n/src/locales/en.json:6-11`, `packages/i18n/src/locales/es.json:6-11`, `apps/web/src/lib/supabase/authGateway.constant.ts:14-22`
+
+#### Scenario: a rejected sign-in reaches the user
+
+- **GIVEN** the message key of each sign-in failure the web auth gateway names
+- **WHEN** every catalog is searched for it
+- **THEN** each catalog holds a value for every key
+- **Test:** `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "names a message every catalog holds for each sign-in failure"
+
 ## Open questions
 
-- **Q1** — `docs/code-standards.md:519` requires PascalCase namespace segments in catalog keys,
+- **Q1** — `docs/code-standards.md:553` requires PascalCase namespace segments in catalog keys,
   but the catalogs use camelCase ones (`packages/i18n/src/locales/en.json:2`).
-- **Q2** — `docs/audits/2026-11-04-remediation.md:419` says the key type should come from the
-  default locale, but `packages/i18n/src/locales/i18n.constant.ts:21` takes it from the Spanish
-  catalog while the default language is English (`packages/i18n/src/locales/i18n.constant.ts:11`).
-  I18N-09 states the code.
+- **Q2** — Closed on 2026-11-16 by `openspec/changes/archive/2026-11-15-i18n/`: the key type
+  comes from the English catalog, the catalog of the default language, and types every entry of
+  resources (I18N-09).

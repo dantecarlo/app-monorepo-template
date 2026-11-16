@@ -9,11 +9,12 @@ import { useRouter } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { useCallback } from 'react'
 
+import type { IUseLanguageSwitcherResult } from '@/components/ui/LanguageSwitcher/LanguageSwitcher.type'
 import {
   LOCALE_COOKIE_MAX_AGE_SECONDS,
   LOCALE_COOKIE_NAME
-} from '@/components/ui/LanguageSwitcher/LanguageSwitcher.constant'
-import type { IUseLanguageSwitcherResult } from '@/components/ui/LanguageSwitcher/LanguageSwitcher.type'
+} from '@/i18n/i18n.constant'
+import { toSupportedLanguage } from '@/i18n/locale.helper'
 
 const toNextLanguage = (
   current: SupportedLanguageType
@@ -24,17 +25,13 @@ const toNextLanguage = (
   return SUPPORTED_LANGUAGES[nextIndex] ?? DEFAULT_LANGUAGE
 }
 
-const toSupportedLanguage = (value: string): SupportedLanguageType =>
-  (SUPPORTED_LANGUAGES as ReadonlyArray<string>).includes(value)
-    ? (value as SupportedLanguageType)
-    : DEFAULT_LANGUAGE
-
-// Cycles through SUPPORTED_LANGUAGES, persists the choice in the NEXT_LOCALE
-// cookie, and triggers a server refresh so the next-intl request config
-// re-resolves messages for the new locale.
+// Cycles through SUPPORTED_LANGUAGES from the active locale, persists the
+// choice in the NEXT_LOCALE cookie, and triggers a server refresh so the
+// next-intl request config re-resolves the locale and messages, which
+// LocaleProviders hands to the client providers.
 export const useLanguageSwitcher = (): IUseLanguageSwitcherResult => {
   const router = useRouter()
-  const locale = toSupportedLanguage(useLocale())
+  const locale = toSupportedLanguage({ value: useLocale() })
 
   const cycleLanguage = useCallback(() => {
     const next = toNextLanguage(locale)

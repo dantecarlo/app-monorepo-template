@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl'
 import type { JSX } from 'react'
 
 import { loadingSkeletonVariants } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.style'
@@ -9,12 +10,13 @@ export const LoadingSkeleton = ({
   rounded,
   width
 }: ILoadingSkeletonProps): JSX.Element => {
+  const t = useTranslations('common')
   const { root, shimmer } = loadingSkeletonVariants({ rounded })
 
   return (
     <div
       aria-busy="true"
-      aria-label="Loading"
+      aria-label={t('loading')}
       className={root({ class: className })}
       role="status"
       style={{ height, width }}

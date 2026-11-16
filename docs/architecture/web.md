@@ -79,7 +79,11 @@ export default LoginPage
   port through `src/services/Auth/` and replaces the route with `/`; a rejection is the mutation
   toast, never a field error. The browser gateway lives in
   `src/lib/supabase/authGateway.adapter.ts`, shared by the auth provider and the auth service: a
-  no-op during server rendering and without the Supabase settings.
+  no-op during server rendering and without the Supabase settings. The gateway names each sign-in
+  failure it knows as an `AppError` with its `auth.error` message key (`NOT_CONFIGURED`, and
+  `INVALID_CREDENTIALS`, `EMAIL_NOT_CONFIRMED` and `RATE_LIMITED` from the Supabase Auth code),
+  and an unreachable Supabase as the network error, so the toast says what went wrong; any other
+  rejection stays generic.
 - **Query keys**: `src/lib/query/queryKeys.constant.ts` builds every key from
   `QueryKeySegmentEnum` and puts its dynamic values in one trailing params object
   (`['items', 'list', { filter }]`), which the error report always redacts.
@@ -125,7 +129,21 @@ export default LoginPage
   read as a colour, and a token shadow stays beside a shadow colour.
 - **i18n: `next-intl`** reading the shared `@app/i18n` ICU catalogs — same keys as mobile,
   different adapter. `src/i18n/request.config.ts` resolves the locale from the `NEXT_LOCALE`
-  cookie; there is no locale middleware.
+  cookie; there is no locale middleware and no locale segment in the URL. Every component, server
+  or client, renders in that locale: the root layout keeps its document shell static (Cache
+  Components blocks a route that reads a cookie outside `<Suspense>`) and renders the providers
+  inside `<Suspense>` through `src/app/LocaleProviders.tsx`, which reads the request's locale and
+  messages (`getLocale`, `getMessages`) and hands them to the client providers. So the routes'
+  content renders per request and only the shell is prerendered. The shell writes the default
+  language on `<html lang>`; `src/i18n/noFlashLocale.constant.ts`, a pre-paint script beside the
+  theme's, replaces it with the cookie's supported language, and the providers keep it in step
+  after a switch (`useDocumentLanguage`). The language button writes the cookie and refreshes the
+  router, which runs the request config again. `app/global-error.tsx`, which has no request
+  config above it, reads the cookie on the client (`useCookieLanguage`). The cookie name, its
+  lifetime and the time zone live in `src/i18n/i18n.constant.ts`, and the reduction of a value to
+  a supported language in `src/i18n/locale.helper.ts`. Every user-facing string of a block is a
+  catalog message, accessibility labels included; an adapter returns data, such as an item's age
+  as a unit and a count, which the block words through the catalog.
 - **Edge/security**: origin-lock middleware, security headers in `next.config.ts`, Turnstile on
   abuse-prone forms (see [../infrastructure.md](../infrastructure.md) for the full checklist).
 

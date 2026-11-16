@@ -16,12 +16,13 @@ type ISupabaseProvidersPropsType = Omit<
 // no-op during server rendering and without the Supabase settings.
 export const SupabaseProviders = ({
   children,
+  locale,
   messages
 }: ISupabaseProvidersPropsType): React.JSX.Element => {
   const [gateway] = useState<IAuthGateway>(getAuthGateway)
 
   return (
-    <Providers gateway={gateway} messages={messages}>
+    <Providers gateway={gateway} locale={locale} messages={messages}>
       {children}
     </Providers>
   )

@@ -1,10 +1,14 @@
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { DEFAULT_LANGUAGE } from '@app/i18n'
 import { fontFamily, webFontVariable } from '@app/tokens'
+import type { ReactElement, ReactNode } from 'react'
+import { Children, isValidElement } from 'react'
 import { describe, expect, test, vi } from 'vitest'
 
 import RootLayout from '@/app/layout'
+import { NO_FLASH_LOCALE_SCRIPT } from '@/i18n/noFlashLocale.constant'
 
 interface IFontCallType {
   display: string
@@ -46,8 +50,36 @@ const fontCalls = () =>
 const fontFor = (variable: string) =>
   fontCalls().find((options) => options.variable === variable)
 
+interface IScriptPropsType {
+  dangerouslySetInnerHTML?: { __html: string }
+}
+
+// Every element of a rendered tree, depth first, read from its children.
+const elementsOf = (node: ReactNode): ReactElement[] =>
+  Children.toArray(node).flatMap((child) =>
+    isValidElement<{ children?: ReactNode }>(child)
+      ? [child, ...elementsOf(child.props.children)]
+      : []
+  )
+
 const licenceOf = (family: string) =>
   readFileSync(join(APP_DIR, 'fonts', `${family}-OFL.txt`), 'utf8')
+
+describe('root layout document', () => {
+  test('writes the default language and the locale script in the static shell', () => {
+    const html = RootLayout({ children: null })
+    const inlineScripts = elementsOf(html.props.children)
+      .filter((element) => element.type === 'script')
+      .map(
+        (element) =>
+          (element.props as IScriptPropsType).dangerouslySetInnerHTML
+            ?.__html
+      )
+
+    expect(html.props.lang).toBe(DEFAULT_LANGUAGE)
+    expect(inlineScripts).toContain(NO_FLASH_LOCALE_SCRIPT)
+  })
+})
 
 describe('root layout fonts', () => {
   test('loads both families from files in the app, never from Google Fonts', () => {
