@@ -81,6 +81,7 @@ const compileWebTheme = () => {
   const css = ["@import 'tailwindcss';", readFileSync(theme, 'utf8')]
   return compile(css.join('\n'), {
     base: dirname(theme),
+    // eslint-disable-next-line local/single-object-params -- mirrors the loadStylesheet(id, base) callback shape of Tailwind's compile()
     loadStylesheet: async (id, base) => {
       const path =
         id === 'tailwindcss'

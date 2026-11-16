@@ -781,8 +781,8 @@ The rule of the LAW of the same name in `AGENTS.md`, which quotes the owner's de
   Tailwind's scale** (`px-2.75`, `duration-120`). Never a raw colour, a palette colour
   (`bg-white/…`) or an arbitrary value (`max-w-[28rem]`).
 - **A new value goes in the token source**, `packages/tokens/src/tokens.constant.ts`; then
-  `pnpm --filter @app/tokens generate` writes the web theme, the NativeWind preset and the mobile
-  theme variables. A generated file is never edited by hand (`verify:theme-sync`), and
+  `pnpm --filter @app/tokens generate` writes the web theme, the NativeWind preset, the mobile
+  theme variables and the theme names the shared `tv` registers. A generated file is never edited by hand (`verify:theme-sync`), and
   `apps/web/src/app/globals.css` declares no value of its own.
 - **The kit sits behind `ui/`.** A UI kit, its primitives and its class helpers are imported by a
   `ui/` block only, so the look and the kit are one replaceable layer.

@@ -100,7 +100,9 @@ The **single source of truth** for visual design.
   each with one writer and a do-not-edit header:
   - `theme.css`, the web theme that `apps/web/src/app/globals.css` imports;
   - `tailwind-preset.cjs`, the NativeWind preset the mobile app loads;
-  - `src/themeVars.constant.ts`, the mobile theme variables.
+  - `src/themeVars.constant.ts`, the mobile theme variables;
+  - `src/themeNames.constant.ts`, the theme names of every token utility, which the web's shared
+    `tv` registers with tailwind-merge.
 - `pnpm verify:theme-sync` fails when a committed output differs from what the generator writes,
   so a token changes in the source and nowhere else.
 
