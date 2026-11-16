@@ -781,18 +781,21 @@ The rule of the LAW of the same name in `AGENTS.md`, which quotes the owner's de
   Tailwind's scale** (`px-2.75`, `duration-120`). Never a raw colour, a palette colour
   (`bg-white/…`) or an arbitrary value (`max-w-[28rem]`).
 - **A new value goes in the token source**, `packages/tokens/src/tokens.constant.ts`; then
-  `pnpm --filter @app/tokens generate` writes the web theme, the NativeWind preset and the mobile
-  theme variables. A generated file is never edited by hand (`verify:theme-sync`), and
+  `pnpm --filter @app/tokens generate` writes the web theme, the NativeWind preset, the mobile
+  theme variables and the theme names the shared `tv` registers. A generated file is never edited by hand (`verify:theme-sync`), and
   `apps/web/src/app/globals.css` declares no value of its own.
 - **The kit sits behind `ui/`.** A UI kit, its primitives and its class helpers are imported by a
   `ui/` block only, so the look and the kit are one replaceable layer.
 - **A different look** is a variant or a prop of a `ui/` block, never a class in the screen.
 - **A web `ui/` style file builds its variants with the shared `tv`**
   (`apps/web/src/components/ui/variants.helper.ts`), never the kit's own. tailwind-merge,
-  which `tailwind-variants` runs on every call, reads a token font size (`text-title`) as a colour
-  and drops it next to a text colour; the shared `tv` registers every font size and glyph size of
-  `@app/tokens` as a font size, so a new size token needs no code change. `ui/Text` alone keeps
-  `{ twMerge: false }`, so a tone or a weight set beside a variant keeps both classes.
+  which `tailwind-variants` runs on every call, knows only Tailwind's own scales: it keeps both of
+  two token paddings (`p-sm p-lg`), reads a token font size (`text-title`) as a colour and drops it
+  next to a text colour, and drops a token shadow next to a shadow colour. The shared `tv`
+  registers every name of `themeNames`, which the token generator writes from the web theme, under
+  the tailwind-merge theme key of its namespace, so a new token needs no code change. `ui/Text`
+  alone keeps `{ twMerge: false }`, so a tone or a weight set beside a variant keeps both
+  classes.
 
 ```ts
 // WRONG — a screen style holds a look

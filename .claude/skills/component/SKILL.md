@@ -146,11 +146,14 @@ look; a screen, a route entry and a container only position. This block is where
   React Native StyleSheet) or a step of Tailwind's scale (`px-2.75`). No raw colour, no palette
   colour (`bg-white/…`), no arbitrary value (`[…]`): `local/style-token-values` fails them. A value
   no token carries is added to `packages/tokens/src/tokens.constant.ts` first, then
-  `pnpm --filter @app/tokens generate` writes it into the web theme, the NativeWind preset and the
-  mobile theme variables; never edit those generated files, nor add a value to `globals.css`.
+  `pnpm --filter @app/tokens generate` writes it into the web theme, the NativeWind preset, the
+  mobile theme variables and the theme names; never edit those generated files, nor add a value to
+  `globals.css`.
 - On web, every `ui/` style file imports `tv` from `@/components/ui/variants.helper`, never from
-  `tailwind-variants`: its shared tailwind-merge config knows the token font sizes (`text-title`), which
-  plain tailwind-merge reads as colours and drops.
+  `tailwind-variants`: its shared tailwind-merge config registers every token name of `@app/tokens`
+  (`themeNames`). Plain tailwind-merge keeps both of two token paddings (`p-sm p-lg`), reads a token
+  font size (`text-title`) as a colour and drops it, and drops a token shadow beside a shadow
+  colour.
 - Only a `ui/` block imports a UI kit or its helpers (`tailwind-variants`, Radix,
   `class-variance-authority`, `expo-linear-gradient`, …): `local/ui-kit-boundary`. A screen-local
   block that needs one renders the `ui/` wrapper, or a wrapper is added to `ui/`.

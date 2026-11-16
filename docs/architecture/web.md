@@ -106,8 +106,10 @@ export default LoginPage
   screen's surface is `ui/Screen`. Every value is a token or a step of Tailwind's scale, and only
   `ui/` imports a UI kit or `tailwind-variants`. `local/style-positions-only`,
   `local/style-token-values` and `local/ui-kit-boundary` hold it. Every block builds its variants
-  with the shared `tv` of `components/ui/variants.helper.ts`, which tells tailwind-merge
-  that the token sizes (`text-button`, `text-initials-sm`) are font sizes, not colours.
+  with the shared `tv` of `components/ui/variants.helper.ts`, which registers every token name
+  with tailwind-merge from the generated `themeNames` of `@app/tokens`: of two token classes of
+  one utility only the last stays (`p-sm p-lg` is `p-lg`), a token size (`text-button`) is never
+  read as a colour, and a token shadow stays beside a shadow colour.
 - **i18n: `next-intl`** reading the shared `@app/i18n` ICU catalogs — same keys as mobile,
   different adapter. `src/i18n/request.config.ts` resolves the locale from the `NEXT_LOCALE`
   cookie; there is no locale middleware.

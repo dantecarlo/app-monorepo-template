@@ -40,6 +40,7 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | Web theme (generated)     | `packages/tokens/theme.css`                                                      | `.css`         | Both themes' `--c-*` colours, `@theme` and the scales in `@theme inline`; `apps/web/src/app/globals.css` imports it as `@app/tokens/theme.css` |
 | Tailwind preset (generated) | `packages/tokens/tailwind-preset.cjs`                                          | `.cjs`         | The NativeWind preset `apps/mobile/tailwind.config.js` loads: the dark colours and the scales |
 | Theme variables (generated) | `packages/tokens/src/themeVars.constant.ts`                                    | `.constant.ts` | The `--c-*` value of every themed colour per theme, for NativeWind's `vars()` |
+| Theme names (generated)   | `packages/tokens/src/themeNames.constant.ts`                                     | `.constant.ts` | The name of every token utility the web theme declares, per Tailwind namespace; the web's shared `tv` registers it with tailwind-merge |
 | Preset test               | `packages/tokens/__tests__/tailwind-preset.test.ts`                              | `.test.ts`     | The preset carries the dark colours, every scale as a CSS length, the font stacks and the shadows |
 | Domain errors             | `packages/core/src/errors/AppError.helper.ts`                                    | `.helper.ts`   | `AppError` + typed error contract (messageKey, cause chaining, prototype fix)                                                              |
 | Service error mapper      | `packages/core/src/errors/buildServiceError.helper.ts`                           | `.helper.ts`   | Maps provider errors to typed AppError codes + i18n keys via injectable mapper                                                             |
@@ -291,7 +292,7 @@ never calls `fetch` directly and never holds business logic in the view.
 | Web Tailwind    | `apps/web/src/app/globals.css`                                                        | Imports the generated theme; no JS config; keeps the hand-written glass card, body and utilities |
 | Mobile Tailwind | `apps/mobile/tailwind.config.js`                                                      | Extends the generated preset                      |
 | Layout classes | `apps/web/src/helpers/layout.style.ts`, `apps/mobile/src/helpers/layout.style.ts` | Positioning only; every look lives in a component block (`local/style-positions-only`) |
-| Web variants    | `apps/web/src/components/ui/variants.helper.ts`                               | The one `tv` every web ui style file builds with; registers the token font sizes of `@app/tokens` with tailwind-merge |
+| Web variants    | `apps/web/src/components/ui/variants.helper.ts`                               | The one `tv` every web ui style file builds with; registers every token name of `@app/tokens` (`themeNames`) with tailwind-merge |
 | Web fonts       | `apps/web/src/app/fonts/`                                                             | Inter and Montserrat, self-hosted through `next/font/local`: one Latin variable woff2 per family, with its OFL text |
 Inline literals (numbers/strings) belong in `*.constant.ts` or `*.style.ts`
 only — enforced by ESLint and by `node scripts/verify-maps.mjs`.

@@ -33,3 +33,4 @@ opencode.json
 packages/tokens/theme.css
 packages/tokens/tailwind-preset.cjs
 packages/tokens/src/themeVars.constant.ts
+packages/tokens/src/themeNames.constant.ts

@@ -88,12 +88,13 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 - F30 and F31: the shared `tv` keeps the token font sizes, and the web fonts are self-hosted (#25).
 - F.9, the MCP documentation updater: the catalog `.agents/contracts/mcp-servers.json`, `pnpm mcp:docs` and the offline `verify:mcp-docs` (#26).
 - F.12, the generated token outputs: one source, one generator, and `verify:theme-sync` as the regenerate-and-diff check (#27).
-- F32: the web fonts are Certifipago's Latin variable woff2 files, 84 KB in all (this change).
+- F32: the web fonts are Certifipago's Latin variable woff2 files, 84 KB in all (#28).
+- F34: tailwind-merge knows every token name, from the generated `themeNames` (this change).
 - F.2, the Supabase hardening (#21; the native review did not fit its context budget, and the owner chose to merge on the independent verifier).
 
-**In flight:** none.
+**In flight:** F.5, the app behaviour, on `fix/app-behaviour` (worktree `apps`); its NativeWind preset step waits for F34.
 
-**Next:** F.5, the app behaviour (F11, F12, F23, F24, F25).
+**Next:** F.5 finishes, then F.6.
 
 **Pending, in order:**
 - F.5 to F.8 and F.11 of Stage F.
@@ -477,6 +478,8 @@ defects behind them, for changes of their own.
 | F31 | apps/web | `next/font/google` fetches the fonts at build time, so a network blip fails `validate` and CI (three times on 2026-11-14 and 15); self-hosting them with `next/font/local` removes the dependency | done: this change |
 | F32 | apps/web | the self-hosted fonts are full-charset TTFs, about 1.6 MB, and `next/font/local` preloads all seven, where Google served small latin woff2 subsets; Montserrat 500 looks unused | done: this change, with Certifipago's Latin variable woff2 files from its commit 70f653001 |
 | F33 | harness | a scheduled CI job that runs `pnpm mcp:docs` and opens a pull request when an MCP server releases (Q1 of `2026-11-15-mcp-docs-updater`) | waits on the owner: CI is high-risk item 5 |
+| F34 | apps/web, packages/tokens | tailwind-merge knew only the token font sizes, so two classes of one utility with token names were both kept (`p-sm p-lg`, `px-pill-x px-lg`, `top-knob-inset top-sm`) and a token shadow was dropped next to a shadow colour (`shadow-card shadow-accent`): 12 of 25 probe pairs wrong; found by Certifipago Web #849 | done: this change |
+| F35 | apps/web | the web View all, settings and Google buttons have no action, which F12 fixes on mobile only; WEB-01 and WEB-11 state them | small; the F12 rule for web |
 
 ---
 
@@ -1783,3 +1786,6 @@ validate` exits 0. Independent verifier: no blocker. Native review: the hooks
   manifest; the template has neither gate yet, so those registrations land with `verify:gate-shape`
   and step 4.3 (`verify:docs-freshness`). Its #846 fix to the worktree pruner joins step 3.3. F32
   took Certifipago's woff2 fonts.
+- **L65 (2026-11-16, relayed by the Certifipago - Arquitecto session):** the owner paused the
+  sessions at 23:57 on 2026-11-15 and resumed them the next morning ("resume your plan from memory
+  and Engram, and continue where you stopped"). F34 and F.5 resumed from their branch tips.
