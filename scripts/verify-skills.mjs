@@ -91,7 +91,15 @@ export const ROLES = [
   'Independent area'
 ]
 
-export const OPERATIONS = ['create', 'read', 'move', 'comment', 'link']
+export const OPERATIONS = [
+  'create',
+  'read',
+  'move',
+  'comment',
+  'link',
+  'read version',
+  'set version'
+]
 
 // The header cells of the contract's two tables. A role skill holding
 // either has copied the contract instead of reading it.
@@ -132,6 +140,7 @@ export const SKILL_CONTRACTS = [
         headings: [
           '## Requirement',
           '## Acceptance criteria',
+          '## Target version',
           '## Spec',
           '## Areas and subtasks',
           '## Test plan',
@@ -143,8 +152,9 @@ export const SKILL_CONTRACTS = [
       },
       {
         headings: [
+          '## Version',
           '## Tickets',
-          '## Versions',
+          '## Versions per target',
           '## Migrations',
           '## Changelog',
           '## Rollback',

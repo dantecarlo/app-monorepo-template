@@ -23,6 +23,7 @@ import { registerCases, runCases } from './gate/cases.mjs'
 import { blindGate } from './gate/gate.mjs'
 import { withScratchTree } from './gate/scratch.mjs'
 import {
+  collectContext,
   FINDING_KIND,
   gate,
   OPERATIONS_TABLE_HEADER,
@@ -32,11 +33,11 @@ import {
   STATES_TABLE_HEADER
 } from './verify-skills.mjs'
 
-const CHECK = join(
-  dirname(fileURLToPath(import.meta.url)),
-  'verify-skills.mjs'
-)
+const HERE = dirname(fileURLToPath(import.meta.url))
+const CHECK = join(HERE, 'verify-skills.mjs')
+const REPO_ROOT = join(HERE, '..')
 const FAILED = 1
+const PASSED = 0
 const CONTRACT = 'ticket-flow'
 const INTAKE = 'process-intake'
 const TICKET_TEMPLATE = 'ticket.template.md'
@@ -226,6 +227,26 @@ export const CASES = [
     }),
     expected: 1,
     name: 'a ticket-flow without its ticket template is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [`${CONTRACT}/${TICKET_TEMPLATE}`]: withoutSection({
+          heading: '## Target version'
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a ticket template without its target version is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: CONTRACT })]: without({ line: '| set version |' })
+      }
+    }),
+    expected: 1,
+    name: 'a ticket-flow whose board operations cannot set the target version is refused'
   },
   {
     context: skills({
@@ -478,6 +499,29 @@ const checks = [
       assert.equal(result.status, FAILED, result.stdout)
       assert.match(result.stderr, /verify-skills: 1 problem/u)
       assert.match(result.stderr, /dev-ticket\/SKILL\.md/u)
+    }
+  },
+  {
+    name: 'the seven ticket skills of the repository pass',
+    run: () => {
+      const findings = gate.run(collectContext({ root: REPO_ROOT }))
+      assert.deepEqual(
+        findings.map(({ detail }) => detail),
+        [],
+        'the ticket skills of the repository break their contracts'
+      )
+    }
+  },
+  {
+    name: 'the check exits 0 over the repository and states what it judged',
+    run: () => {
+      const result = spawnSync(process.execPath, [CHECK], {
+        encoding: 'utf8'
+      })
+      assert.equal(result.status, PASSED, result.stderr)
+      assert.match(result.stdout, /verify-skills: PASS/u)
+      assert.match(result.stdout, /7 ticket skill\(s\)/u)
+      assert.match(result.stdout, /NOT covered: /u)
     }
   }
 ]
