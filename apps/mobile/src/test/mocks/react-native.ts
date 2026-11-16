@@ -57,6 +57,8 @@ export const Platform = {
   select: (map: Record<string, unknown>) => map['default'] ?? map['web']
 }
 export const Pressable = host('button')
+export const SafeAreaView = host('div')
+export const ScrollView = host('div')
 export const StyleSheet = { create: (s: unknown) => s, hairlineWidth: 1 }
 export const Text = host('span')
 export const TextInput = passThrough

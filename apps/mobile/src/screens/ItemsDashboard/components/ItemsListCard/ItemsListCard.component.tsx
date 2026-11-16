@@ -29,9 +29,7 @@ export const ItemsListCard = ({
         <View style={styles.cardHeaderRow}>
           <Text variant="title">{t('listTitle')}</Text>
           <Text variant="caption">
-            {isLoading
-              ? '…'
-              : `${items.length} ${t('listResults', { count: items.length })}`}
+            {isLoading ? '…' : t('listResults', { count: items.length })}
           </Text>
         </View>
         <SearchBar

@@ -4,8 +4,10 @@ import { beforeEach, describe, expect, test } from 'vitest'
 import {
   selectAuthStatus,
   selectSession,
-  useAuthStore
+  useAuthStore,
+  useSession
 } from '@/stores/auth.store'
+import { act, renderHook } from '@/test/test.helper'
 
 const mockSession: IAuthSession = {
   accessToken: 'token-abc',
@@ -57,5 +59,22 @@ describe('auth.store', () => {
     }
     expect(result.session).toEqual(mockSession)
     expect(result.status).toBe('authenticated')
+  })
+
+  test('useSession returns the same object until the session changes', () => {
+    const { rerender, result } = renderHook(() => useSession())
+    const first = result.current
+
+    rerender()
+    expect(result.current).toBe(first)
+
+    act(() => {
+      useAuthStore.getState().setSession(mockSession)
+    })
+    expect(result.current).not.toBe(first)
+    expect(result.current).toEqual({
+      session: mockSession,
+      status: 'loading'
+    })
   })
 })

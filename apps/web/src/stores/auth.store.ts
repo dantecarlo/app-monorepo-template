@@ -1,5 +1,6 @@
 import type { IAuthSession } from '@app/core'
 import { create } from 'zustand'
+import { useShallow } from 'zustand/react/shallow'
 
 export type AuthStatusType =
   | 'authenticated'
@@ -32,5 +33,9 @@ export const useAuthStore = create<IAuthState>((set) => ({
   status: 'loading'
 }))
 
+// useShallow keeps the same object while the session and the status are
+// unchanged: a selector that builds a new object on every read never settles.
 export const useSession = () =>
-  useAuthStore((s) => ({ session: s.session, status: s.status }))
+  useAuthStore(
+    useShallow((s) => ({ session: s.session, status: s.status }))
+  )

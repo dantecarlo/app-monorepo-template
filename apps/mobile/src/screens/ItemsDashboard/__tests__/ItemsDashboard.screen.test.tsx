@@ -1,12 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 
-vi.mock('react', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('react')>()
-  return {
-    ...actual,
-    useState: (init: unknown) => [init, () => undefined]
-  }
-})
+import { render, screen } from '@/test/test.helper'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key })
@@ -45,5 +39,12 @@ describe('ItemsDashboardScreen (mobile)', () => {
   test('renders without returning null', () => {
     const result = ItemsDashboardScreen()
     expect(result).not.toBeNull()
+  })
+
+  test('shows no View all button', () => {
+    render(<ItemsDashboardScreen />)
+
+    expect(screen.queryByText('viewAll')).toBeNull()
+    expect(screen.queryByRole('button')).toBeNull()
   })
 })

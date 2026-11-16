@@ -2,8 +2,13 @@ import { describe, expect, test, vi } from 'vitest'
 
 import { fireEvent, render, screen, within } from '@/test/test.helper'
 
+// Writes the count a message receives before its key, as the catalogs'
+// "{count} results" does, so a test sees how often the count shows.
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key })
+  useTranslation: () => ({
+    t: (...[key, options]: [string, { count?: number }?]) =>
+      options?.count === undefined ? key : `${options.count} ${key}`
+  })
 }))
 
 vi.mock('@/components/ui/GlassCard', () => ({
@@ -90,5 +95,30 @@ describe('ItemsListCard (mobile)', () => {
     )
 
     expect(onRetry).toHaveBeenCalledOnce()
+  })
+
+  test('shows the result count once', () => {
+    const item = {
+      authorInitials: 'AB',
+      authorLabel: 'Author A',
+      category: 'cat',
+      createdAt: new Date('2024-01-01'),
+      description: 'desc',
+      status: 'active' as const,
+      timeDisplay: '1h ago'
+    }
+    render(
+      <ItemsListCard
+        isLoading={false}
+        items={[
+          { ...item, id: '1', title: 'Item 1' },
+          { ...item, id: '2', title: 'Item 2' }
+        ]}
+        onSearchChange={() => undefined}
+        search=""
+      />
+    )
+
+    expect(screen.getByText('2 listResults')).toBeTruthy()
   })
 })

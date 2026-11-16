@@ -4,8 +4,6 @@ import { View } from 'react-native'
 import { AuthField } from '@/components/ui/AuthField/AuthField.component'
 import { AuthShell } from '@/components/ui/AuthShell/AuthShell.component'
 import { Button } from '@/components/ui/Button/Button.component'
-import { Divider } from '@/components/ui/Divider'
-import { SocialAuthButton } from '@/components/ui/SocialAuthButton/SocialAuthButton.component'
 import { useLoginForm } from '@/screens/Login/hooks/useLoginForm.hook'
 import { LOGIN_STYLES as styles } from '@/screens/Login/Login.style'
 
@@ -70,10 +68,6 @@ export const LoginScreen = () => {
           </Button>
         </View>
       </View>
-
-      <Divider label={t('dividerOr')} style={styles.divider} />
-
-      <SocialAuthButton label={t('googleCta')} />
     </AuthShell>
   )
 }
