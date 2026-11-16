@@ -96,6 +96,8 @@
     "scripts/verify-mcp-docs.test.mjs",
     "scripts/verify-pairing.mjs",
     "scripts/verify-security-static.mjs",
+    "scripts/verify-skills.mjs",
+    "scripts/verify-skills.test.mjs",
     "scripts/verify-structure.mjs",
     "scripts/verify-tests.mjs",
     "scripts/verify-tests.test.mjs",

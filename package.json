@@ -64,7 +64,7 @@
     "verify:theme-sync": "node scripts/verify-theme-sync.mjs",
     "verify:theme-sync:test": "node --test scripts/verify-theme-sync.test.mjs",
     "verify:ticket-branch": "node scripts/verify-ticket-branch.mjs",
-    "verify:ticket-branch:test": "node --test scripts/verify-ticket-branch.test.mjs"
+    "verify:ticket-branch:test": "node --test scripts/verify-ticket-branch.test.mjs scripts/verify-skills.test.mjs"
   },
   "devDependencies": {
     "@app/tooling": "workspace:*",
