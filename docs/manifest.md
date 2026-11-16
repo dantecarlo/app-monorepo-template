@@ -163,7 +163,7 @@ adapter (blocker B4); a delete-only executor cannot close it.
 | `supabase`            | `apps/web/src/app/layout.tsx` (via `SupabaseProviders`) and `apps/mobile/src/app/_layout.tsx` keep their Supabase imports                           |
 | `i18n`                | `apps/web/src/app/layout.tsx` and the `LanguageSwitcher` blocks keep their `@app/i18n` imports                                                      |
 | `e2e-playwright`      | `scripts.smoke:mobile-web` and the CI `mobile-web` job still call Playwright                                                                        |
-| `web-next`            | `verify-security-static`, `verify-theme-sync`, `verify-maps` and the knip workspaces still read `apps/web`                                          |
+| `web-next`            | `verify-security-static`, `verify-maps` and the knip workspaces still read `apps/web`                                          |
 | `mobile-expo`         | `verify-maps` and the knip workspaces still name `apps/mobile`                                                                                      |
 | `diagrams`            | `pnpm validate` still calls `docs:diagrams:check` (B2); the global map rows for `docs/diagrams/` and `build-diagrams` fail `verify:maps`            |
 | `sdd`                 | `pnpm validate` still calls `verify:specs`, `report:spec-drift` and their tests (B2); the global map rows for them and the skill fail `verify:maps` |

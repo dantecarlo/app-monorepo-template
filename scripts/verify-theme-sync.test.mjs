@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 // ---------------------------------------------------------------------------
-// Companion for verify-theme-sync. The shipped copies agree, so the cases are
-// the only evidence the gate can go red. Each case copies the three real
-// sources into a throwaway tree in the OS temp directory, plants one drift
-// with a string replacement, and drives the gate's own collector over it.
-// The checks then run the gate as a process over a planted drift, and re-run
-// every failing case against a blinded gate.
+// Companion for verify-theme-sync. The shipped outputs equal their
+// regeneration, so the cases are the only evidence the gate can go red. Each
+// case copies the token source and the three generated outputs into a
+// throwaway tree in the OS temp directory, plants one edit with a string
+// replacement, and drives the gate's own collector over it. The checks then
+// run the gate as a process over a planted edit, and re-run every failing
+// case against a blinded gate.
 //
 // Usage:
 //   node --test scripts/verify-theme-sync.test.mjs
@@ -27,6 +28,7 @@ const GATE = join(HERE, 'verify-theme-sync.mjs')
 const REPO_ROOT = resolve(HERE, '..')
 const FAILED = 1
 const PASSED = 0
+const REGENERATE = 'pnpm --filter @app/tokens generate'
 
 const SHIPPED = Object.fromEntries(
   Object.values(SOURCES).map((path) => [
@@ -35,7 +37,7 @@ const SHIPPED = Object.fromEntries(
   ])
 )
 
-// The shipped sources with one replacement applied to one of them. A
+// The shipped files with one replacement applied to one of them. A
 // replacement that matches nothing throws, so a case cannot pass by planting
 // nothing.
 const plant = ({ file, from, to } = {}) => {
@@ -47,23 +49,10 @@ const plant = ({ file, from, to } = {}) => {
   return { ...SHIPPED, [file]: source.replace(from, to) }
 }
 
-// The light theme's own block of tokens.constant.ts starts here, so a
-// replacement after it lands in the light theme only.
-const LIGHT_ANCHOR = 'const lightColors = {'
-
-const plantInLight = ({ from, to }) => {
-  const source = SHIPPED[SOURCES.tokens]
-  const start = source.indexOf(LIGHT_ANCHOR)
-  const at = source.indexOf(from, start)
-  if (start === -1 || at === -1) {
-    throw new Error(`plant: ${JSON.stringify(from)} is not in lightColors`)
-  }
-  return {
-    ...SHIPPED,
-    [SOURCES.tokens]:
-      source.slice(0, at) + to + source.slice(at + from.length)
-  }
-}
+const without = (file) =>
+  Object.fromEntries(
+    Object.entries(SHIPPED).filter(([path]) => path !== file)
+  )
 
 const walk = (files) => () =>
   withScratchTree({
@@ -82,123 +71,113 @@ const runGate = (files) =>
       })
   })
 
+// A hand edit of the dark base background in the generated web theme.
+const WEB_THEME_EDIT = {
+  file: SOURCES.webTheme,
+  from: '--c-bg-base: #0A0B0D;',
+  to: '--c-bg-base: #0A0B0E;'
+}
+
 export const CASES = [
   {
     context: walk(plant()),
     expected: 0,
-    name: 'the shipped copies agree'
+    name: 'the shipped outputs equal their regeneration'
   },
   {
-    context: walk(
-      plantInLight({
-        from: "coolGlow: '#5B6CFF'",
-        to: "coolGlow: '#5B6CFE'"
-      })
-    ),
+    context: walk(plant(WEB_THEME_EDIT)),
     expected: 1,
-    name: 'a light-theme drift of a theme-invariant colour is caught'
+    name: 'a planted edit in the web theme is caught'
   },
   {
     context: walk(
       plant({
-        file: SOURCES.css,
-        from: '--c-bg-base: #f4f5f7;',
-        to: '--c-bg-base: #f4f5f8;'
-      })
-    ),
-    expected: 1,
-    name: 'a light-theme drift of a themed colour is caught'
-  },
-  {
-    context: walk(
-      plant({
-        file: SOURCES.css,
-        from: '--c-bg-base: #0a0b0d;',
-        to: '--c-bg-base: #0a0b0e;'
-      })
-    ),
-    expected: 1,
-    name: 'a dark-theme drift of a themed colour is caught'
-  },
-  {
-    context: walk(
-      plant({
-        file: SOURCES.preset,
+        file: SOURCES.nativewindPreset,
         from: "raised: '#101216'",
         to: "raised: '#101217'"
       })
     ),
     expected: 1,
-    name: 'a preset drift from the dark theme is caught'
+    name: 'a planted edit in the preset is caught'
   },
   {
     context: walk(
       plant({
-        file: SOURCES.css,
-        from: '--color-accent: #ff6a1a;',
-        to: '--color-accent: #ff6a1b;'
+        file: SOURCES.themeVars,
+        from: "'--c-bg-raised': '#101216'",
+        to: "'--c-bg-raised': '#101217'"
+      })
+    ),
+    expected: 1,
+    name: 'a planted edit in the mobile theme variables is caught'
+  },
+  {
+    // The dark raised background reaches all three outputs.
+    context: walk(
+      plant({
+        file: SOURCES.tokens,
+        from: "raised: '#101216'",
+        to: "raised: '#101217'"
+      })
+    ),
+    expected: 3,
+    name: 'a source change that was not regenerated is caught in every output it reaches'
+  },
+  {
+    // The preset carries the dark colours only.
+    context: walk(
+      plant({
+        file: SOURCES.tokens,
+        from: "base: '#F4F5F7'",
+        to: "base: '#F4F5F8'"
       })
     ),
     expected: 2,
-    name: 'a CSS drift of the accent is caught against both themes'
+    name: 'a light-theme source change is caught in the web theme and the mobile variables'
+  },
+  {
+    context: walk(without(SOURCES.webTheme)),
+    expected: 1,
+    name: 'a missing output is named, not skipped'
   },
   {
     context: walk(
       plant({
-        file: SOURCES.preset,
-        from: "light: '#FF8A3D'",
-        to: "light: '#FF8A3E'"
+        file: SOURCES.tokens,
+        from: 'export const sharedColors = {',
+        to: 'export const sharedColors = {{'
       })
     ),
     expected: 1,
-    name: 'a preset drift of the accent ramp is caught'
-  },
-  {
-    context: walk(
-      plant({
-        file: SOURCES.css,
-        from: "[data-theme='light'] {",
-        to: "[data-theme='lite'] {"
-      })
-    ),
-    expected: 1,
-    name: 'a missing light block is named, not skipped'
+    name: 'a source the generator cannot read is named, not passed'
   }
 ]
 
 const checks = [
   {
-    name: 'a drift finding names the theme, the token and both values',
+    name: 'a drift finding names the file, its first differing line and the regenerate command',
     run: () => {
-      const [finding] = gate.run(
-        walk(
-          plantInLight({
-            from: "coolGlow: '#5B6CFF'",
-            to: "coolGlow: '#5B6CFE'"
-          })
-        )()
+      const [finding] = gate.run(walk(plant(WEB_THEME_EDIT))())
+      assert.match(
+        finding,
+        /^drift: packages\/tokens\/theme\.css differs from its regeneration at line \d+:/u
       )
-      assert.match(finding, /^CSS drift \[light\.coolGlow\]/u)
-      assert.match(finding, /tokens="#5B6CFE"/u)
-      assert.match(finding, /globals\.css --color-cool-glow="#5b6cff"/u)
+      assert.match(finding, /expected " {2}--c-bg-base: #0A0B0D;"/u)
+      assert.match(finding, /found " {2}--c-bg-base: #0A0B0E;"/u)
+      assert.ok(finding.includes(REGENERATE), finding)
     }
   },
   {
     name: 'the gate exits 1 and prints the drift',
     run: () => {
-      const result = runGate(
-        plantInLight({
-          from: "coolGlow: '#5B6CFF'",
-          to: "coolGlow: '#5B6CFE'"
-        })
-      )
+      const result = runGate(plant(WEB_THEME_EDIT))
       assert.equal(result.status, FAILED, result.stderr)
       assert.match(result.stderr, /verify-theme-sync: 1 problem/u)
-      assert.match(result.stderr, /light\.coolGlow/u)
+      assert.match(result.stderr, /packages\/tokens\/theme\.css/u)
     }
   },
   {
-    name: 'the gate exits 0 over the shipped copies',
+    name: 'the gate exits 0 over the shipped outputs',
     run: () => {
       const result = runGate(plant())
       assert.equal(result.status, PASSED, result.stderr)

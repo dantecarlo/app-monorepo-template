@@ -126,7 +126,9 @@ Rules:
   (`local/style-positions-only`), so a new look there is a variant or a prop of the `ui/` block it
   renders, never a class in the screen (`AGENTS.md` § Styling lives in the components).
 - Every value is a token or a step of Tailwind's scale; a raw colour, a palette colour or `[…]`
-  fails `local/style-token-values`, and a value no token carries is added to `packages/tokens`.
+  fails `local/style-token-values`, and a value no token carries is added to
+  `packages/tokens/src/tokens.constant.ts`, then `pnpm --filter @app/tokens generate` writes it
+  into every output.
 
 ---
 

@@ -27,3 +27,9 @@ docs/audits/*.json
 # prettier as a second writer the two could demand different files.
 .agents/projection-manifest.json
 opencode.json
+
+# Token outputs: packages/tokens/scripts/generate.mjs is the one writer of
+# their bytes, and `pnpm verify:theme-sync` holds them to it.
+packages/tokens/theme.css
+packages/tokens/tailwind-preset.cjs
+packages/tokens/src/themeVars.constant.ts

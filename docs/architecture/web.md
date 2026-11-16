@@ -25,7 +25,7 @@ apps/web/
     │   ├── providers.tsx · SupabaseProviders.tsx   # NextIntl, QueryClient, AuthProvider, Toast
     │   ├── error.tsx              # root segment boundary: render crash → ErrorState + retry
     │   ├── global-error.tsx       # root layout crash: own html/body → ErrorState + retry
-    │   ├── globals.css            # Tailwind CSS 4 entry: @config the preset, themed colours, body base
+    │   ├── globals.css            # Tailwind CSS 4 entry: imports the generated @app/tokens/theme.css
     │   ├── page.tsx               # / → ItemsSummaryScreen (RSC, in Suspense) + ItemsDashboardScreen
     │   ├── login/page.tsx         # /login → LoginScreen
     │   └── api/turnstile/verify/route.ts   # Turnstile token check (botProtection adapter)
@@ -76,12 +76,16 @@ export default LoginPage
 ## 4. UI & i18n stack
 
 - **In-repo UI primitives** under `src/components/ui/` (no shadcn) + **Tailwind CSS 4**.
-  `src/app/globals.css` loads `tailwind.config.cjs` with `@config`, and that config loads the
-  `@app/tokens` preset: the spacing, radius, font-size, layout-width, glyph and inset scales come
-  from it. The CSS keeps what the preset cannot carry, the colours that flip per theme through the
-  `--c-*` variables (its `@theme` wins over the preset), the font families `next/font` injects,
-  the shadows `.glass-card` reads, and the base look of `<body>`. `pnpm verify:theme-sync` keeps
-  every colour of both themes equal to the tokens.
+  `src/app/globals.css` imports `@app/tokens/theme.css`, which
+  `packages/tokens/scripts/generate.mjs` writes from `packages/tokens/src/tokens.constant.ts`:
+  the `--c-*` colours of both themes (flipped by `data-theme` on `<html>`), the `@theme` colour,
+  font, shadow and motion variables, and the spacing, radius, font-size, layout-width, glyph and
+  inset scales in `@theme inline`. The web loads no JavaScript config. A new value goes in the
+  token source, then `pnpm --filter @app/tokens generate`; `pnpm verify:theme-sync` fails while
+  the generated file differs from its regeneration. `globals.css` keeps by hand only what no
+  `ui/` block can own (the `.glass-card` surface, the `<body>` and its aurora, the accent gradient
+  and the shimmer), reading every colour, shadow, font and motion value through a generated
+  variable.
 - **Fonts are self-hosted.** `src/app/layout.tsx` loads Inter (400, 500) and Montserrat (400 to
   800) with `next/font/local` from `src/app/fonts/`, as `--font-inter` and `--font-montserrat`
   with `display: 'swap'`, so `next build` fetches nothing (`next/font/google` downloaded them at

@@ -6,16 +6,19 @@
   "exports": {
     ".": "./src/index.ts",
     "./tailwind-preset": "./tailwind-preset.cjs",
-    "./tailwind-preset.cjs": "./tailwind-preset.cjs"
+    "./tailwind-preset.cjs": "./tailwind-preset.cjs",
+    "./theme.css": "./theme.css"
   },
   "files": [
     "src",
-    "tailwind-preset.cjs"
+    "tailwind-preset.cjs",
+    "theme.css"
   ],
   "imports": {
     "#src/*": "./src/*.ts"
   },
   "scripts": {
+    "generate": "node scripts/generate.mjs",
     "lint": "eslint .",
     "test": "vitest run"
   },

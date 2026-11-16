@@ -1,16 +1,19 @@
 # packages/tokens — living spec
 
-> **Governs:** `packages/tokens/src`, `packages/tokens/tailwind-preset.cjs`
+> **Governs:** `packages/tokens/src`, `packages/tokens/scripts`, `packages/tokens/theme.css`, `packages/tokens/tailwind-preset.cjs`
 > **ID prefix:** `TOKENS`
 > **Derived from:** `docs/architecture/shared.md`
-> **Verified against the code:** 2026-11-15 at `00496d7`
+> **Verified against the code:** 2026-11-15 at `7145852`
 
 ## Purpose
 
 The tokens package owns the design-token values: a dark and a light theme with one key set, dark
-by default, and the spacing, radius, typography, shadows (CSS and React Native) and accent
-gradient, plus a Tailwind preset that carries the dark values. It holds no components; apps/web
-keeps its own CSS copy of the colors, and apps/mobile switches themes at runtime.
+by default, the colours both themes share, and the spacing, radius, typography, shadows (CSS and
+React Native), motion and accent gradient, all in one source, `packages/tokens/src/tokens.constant.ts`.
+One generator writes every token output from it: the web theme CSS apps/web imports, the
+NativeWind preset with the dark values, and the mobile theme variables; a gate fails while an
+output differs from its regeneration. It holds no components, and apps/mobile switches themes at
+runtime.
 
 ## Requirements
 
@@ -18,7 +21,7 @@ keeps its own CSS copy of the colors, and apps/mobile switches themes at runtime
 
 The tokens package SHALL define two color themes, dark and light, keyed by ThemeEnum, that expose an identical set of semantic leaf keys.
 
-**Evidence:** `packages/tokens/src/tokens.constant.ts:125`, `packages/tokens/src/tokens.constant.ts:9`
+**Evidence:** `packages/tokens/src/tokens.constant.ts:136`, `packages/tokens/src/tokens.constant.ts:15`
 
 #### Scenario: a consumer switches theme
 
@@ -31,7 +34,7 @@ The tokens package SHALL define two color themes, dark and light, keyed by Theme
 
 The tokens package SHALL name the dark theme as the default theme.
 
-**Evidence:** `packages/tokens/src/tokens.constant.ts:16`
+**Evidence:** `packages/tokens/src/tokens.constant.ts:22`
 
 #### Scenario: the default names a defined theme
 
@@ -51,7 +54,7 @@ The tokens package SHALL name the dark theme as the default theme.
 
 The tokens package SHALL give the glass surface the fill rgba(24,27,34,0.42) and the stroke rgba(255,255,255,0.10) in the dark theme, and the fill rgba(255,255,255,0.66) and the stroke rgba(0,0,0,0.08) in the light theme.
 
-**Evidence:** `packages/tokens/src/tokens.constant.ts:53`, `packages/tokens/src/tokens.constant.ts:54`, `packages/tokens/src/tokens.constant.ts:96`, `packages/tokens/src/tokens.constant.ts:97`
+**Evidence:** `packages/tokens/src/tokens.constant.ts:61`, `packages/tokens/src/tokens.constant.ts:62`, `packages/tokens/src/tokens.constant.ts:105`, `packages/tokens/src/tokens.constant.ts:106`
 
 #### Scenario: the glass values are read
 
@@ -64,7 +67,7 @@ The tokens package SHALL give the glass surface the fill rgba(24,27,34,0.42) and
 
 The tokens package SHALL export colors as the dark theme object itself.
 
-**Evidence:** `packages/tokens/src/tokens.constant.ts:134`
+**Evidence:** `packages/tokens/src/tokens.constant.ts:145`
 
 #### Scenario: a consumer imports colors
 
@@ -73,24 +76,26 @@ The tokens package SHALL export colors as the dark theme object itself.
 - **THEN** both are the same object
 - **Test:** `packages/tokens/src/__tests__/tokens.constant.test.ts` › "flat colors alias stays bound to the dark theme for back-compat"
 
-### Requirement: TOKENS-05 — The accent ramp is the same in both themes
+### Requirement: TOKENS-05 — The theme-invariant colours are shared by both themes
 
-The tokens package SHALL carry one accent ramp in both themes: accent #FF6A1A, accentLight #FF8A3D, accentInk #2A1402 and accentTint rgba(255,106,26,0.16).
+The tokens package SHALL define the theme-invariant colours once, as `sharedColors`: accent
+#FF6A1A, accentLight #FF8A3D, accentInk #2A1402, accentTint rgba(255,106,26,0.16) and coolGlow
+#5B6CFF, and give both themes those values.
 
-**Evidence:** `packages/tokens/src/tokens.constant.ts:22`, `packages/tokens/src/tokens.constant.ts:36`, `packages/tokens/src/tokens.constant.ts:79`
+**Evidence:** `packages/tokens/src/tokens.constant.ts:30`, `packages/tokens/src/tokens.constant.ts:45`, `packages/tokens/src/tokens.constant.ts:89`
 
-#### Scenario: the accent is read from each theme
+#### Scenario: a shared colour is read from each theme
 
 - **GIVEN** the dark and the light themes
-- **WHEN** their accent ramp is read
-- **THEN** both themes give the same four values
-- **Test:** Not covered — the theme test compares keys, not the accent values
+- **WHEN** each shared colour is read from both
+- **THEN** both themes give the value `sharedColors` holds
+- **Test:** `packages/tokens/src/__tests__/tokens.constant.test.ts` › "both themes carry the shared colours"
 
 ### Requirement: TOKENS-06 — Spacing is a fixed scale in pixels
 
 The tokens package SHALL define spacing as xs 4, sm 8, md 12, lg 16, xl 20, 2xl 24 and 3xl 32, in pixels.
 
-**Evidence:** `packages/tokens/src/tokens.constant.ts:140`
+**Evidence:** `packages/tokens/src/tokens.constant.ts:151`
 
 #### Scenario: a spacing step is read
 
@@ -103,7 +108,7 @@ The tokens package SHALL define spacing as xs 4, sm 8, md 12, lg 16, xl 20, 2xl 
 
 The tokens package SHALL define border radii as sm 8, md 14, lg 20, xl 26 and full 9999, in pixels.
 
-**Evidence:** `packages/tokens/src/tokens.constant.ts:154`
+**Evidence:** `packages/tokens/src/tokens.constant.ts:188`
 
 #### Scenario: a radius is read
 
@@ -116,7 +121,7 @@ The tokens package SHALL define border radii as sm 8, md 14, lg 20, xl 26 and fu
 
 The tokens package SHALL define the font families Inter for body and Montserrat for display, and nine font sizes, each a pixel size with its line height: caption, label, body, button, title, heading, amount, display and amountHero.
 
-**Evidence:** `packages/tokens/src/tokens.constant.ts:166`, `packages/tokens/src/tokens.constant.ts:172`
+**Evidence:** `packages/tokens/src/tokens.constant.ts:200`, `packages/tokens/src/tokens.constant.ts:218`
 
 #### Scenario: a text style is built
 
@@ -129,7 +134,7 @@ The tokens package SHALL define the font families Inter for body and Montserrat 
 
 The tokens package SHALL define the shadows accentGlow, card and markerGlow both as CSS box-shadow strings and as React Native shadow style objects, and rimLight, an inset shadow, as a CSS string only.
 
-**Evidence:** `packages/tokens/src/tokens.constant.ts:192`, `packages/tokens/src/tokens.constant.ts:203`
+**Evidence:** `packages/tokens/src/tokens.constant.ts:249`, `packages/tokens/src/tokens.constant.ts:260`
 
 #### Scenario: a native consumer reads a shadow
 
@@ -142,7 +147,7 @@ The tokens package SHALL define the shadows accentGlow, card and markerGlow both
 
 The tokens package SHALL define the accent gradient as a vertical CSS linear gradient from #FF8A3D to #FF6A1A.
 
-**Evidence:** `packages/tokens/src/tokens.constant.ts:233`
+**Evidence:** `packages/tokens/src/tokens.constant.ts:298`
 
 #### Scenario: a button uses the gradient
 
@@ -155,7 +160,7 @@ The tokens package SHALL define the accent gradient as a vertical CSS linear gra
 
 The tokens package SHALL expose every token group as a named export from its entry point, and the tokens aggregate of colors, fontFamily, fontSize, gradients, radius, rnShadows, shadows, spacing and themes as its default export.
 
-**Evidence:** `packages/tokens/src/index.ts:1`, `packages/tokens/src/index.ts:2`, `packages/tokens/src/tokens.constant.ts:240`
+**Evidence:** `packages/tokens/src/index.ts:1`, `packages/tokens/src/index.ts:2`, `packages/tokens/src/index.ts:3`, `packages/tokens/src/tokens.constant.ts:307`
 
 #### Scenario: a consumer imports the default export
 
@@ -164,35 +169,37 @@ The tokens package SHALL expose every token group as a named export from its ent
 - **THEN** it gets the aggregate holding every token group
 - **Test:** Not covered — the theme test imports the constant module, not the entry point
 
-### Requirement: TOKENS-12 — The Tailwind preset carries the dark theme's colors
+### Requirement: TOKENS-12 — The NativeWind preset carries the dark theme's colours
 
-The tokens package SHALL ship a Tailwind preset, exported as tailwind-preset.cjs, whose
-theme.extend.colors hold the values of the dark theme, and which the Tailwind configs of both apps
-load.
+The tokens package SHALL ship the generated Tailwind preset, exported as tailwind-preset.cjs,
+whose theme.extend.colors hold the values of the dark theme, and which the mobile Tailwind config
+loads; the web app SHALL load no Tailwind JavaScript config.
 
-**Evidence:** `packages/tokens/tailwind-preset.cjs:29`, `packages/tokens/package.json:9`, `apps/web/tailwind.config.cjs:9`, `apps/web/src/app/globals.css:2`, `apps/mobile/tailwind.config.js:7`
+**Evidence:** `packages/tokens/scripts/generate.mjs:292`, `packages/tokens/tailwind-preset.cjs:15`, `packages/tokens/package.json:9`, `apps/mobile/tailwind.config.js:7`, `apps/web/src/app/globals.css:3`
 
-#### Scenario: a Tailwind config loads the preset
+#### Scenario: a Tailwind config resolves a colour
 
-- **GIVEN** a Tailwind config that requires the preset
-- **WHEN** it resolves a color utility such as bg-base
-- **THEN** the value is the dark theme's
-- **Test:** `scripts/verify-theme-sync.test.mjs` › "the shipped copies agree"
+- **GIVEN** the preset
+- **WHEN** its colours are flattened to utility names, as Tailwind does
+- **THEN** every colour of the dark theme is there under the kebab case of its key path, with its
+  dark value
+- **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset carries every colour of the dark theme"
 
-#### Scenario: the web app loads the preset
+#### Scenario: the web app loads no JavaScript config
 
-- **GIVEN** the web app's Tailwind config and its CSS entry
-- **WHEN** they are read
-- **THEN** the config's only preset is the tokens preset, and the CSS entry loads the config
-- **Test:** `apps/web/src/app/__tests__/globals.test.ts` › "loads the tokens preset through the CSS entry"
+- **GIVEN** the web app's CSS entry
+- **WHEN** it is read
+- **THEN** it imports the generated theme, holds no `@config` and no `tailwind.config.cjs` exists
+- **Test:** `apps/web/src/app/__tests__/globals.test.ts` › "imports the generated theme and loads no JS config"
 
-### Requirement: TOKENS-13 — The Tailwind preset carries the scales as CSS lengths
+### Requirement: TOKENS-13 — The outputs carry the scales as CSS lengths
 
-The tokens package SHALL give the Tailwind preset the spacing, radius, font family, font size and
-shadow tokens, the numeric ones written as pixel lengths, and the web app SHALL take its spacing,
-radius and font-size utilities from the preset alone.
+The tokens package SHALL give the generated preset and web theme the spacing, inset, radius,
+layout-width, font family, font size, glyph size and shadow tokens, the numeric ones written as
+pixel or rem lengths, and the web app SHALL take its spacing, radius, layout-width and font-size
+utilities from the generated web theme alone.
 
-**Evidence:** `packages/tokens/tailwind-preset.cjs:88`, `packages/tokens/tailwind-preset.cjs:115`, `packages/tokens/tailwind-preset.cjs:126`, `packages/tokens/tailwind-preset.cjs:134`, `packages/tokens/tailwind-preset.cjs:154`, `apps/web/src/app/globals.css:101`
+**Evidence:** `packages/tokens/scripts/generate.mjs:187`, `packages/tokens/scripts/generate.mjs:193`, `packages/tokens/scripts/generate.mjs:293`, `packages/tokens/scripts/generate.mjs:316`, `packages/tokens/theme.css:119`, `packages/tokens/tailwind-preset.cjs:55`, `packages/tokens/tailwind-preset.cjs:99`, `apps/web/src/app/globals.css:3`
 
 #### Scenario: a Tailwind config resolves a spacing utility
 
@@ -201,14 +208,21 @@ radius and font-size utilities from the preset alone.
 - **THEN** the value is 16px, the lg spacing token
 - **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset carries every scale token as a CSS length"
 
+#### Scenario: the web theme carries the scales
+
+- **GIVEN** the web theme rendered from the source
+- **WHEN** its `@theme inline` block is read
+- **THEN** every scale token is there as a CSS length
+- **Test:** `packages/tokens/scripts/__tests__/generate.test.ts` › "inlines every scale in @theme inline as a CSS length"
+
 ### Requirement: TOKENS-14 — Layout widths, glyph sizes and insets are tokens
 
 The tokens package SHALL define the layout widths narrow 24, content 28, dialog 32 and wide 42, in
 rem; the glyph sizes, a font size with no line height, initialsSm 10, initialsMd 13, initialsLg
-16 and navIcon 22, in pixels; and the insets knob 2.5, pillX 11 and pillY 5, in pixels; and the
-Tailwind preset SHALL carry them as the `max-w-*`, `text-*` and spacing utilities.
+16 and navIcon 22, in pixels; and the insets knobInset 2.5, pillX 11 and pillY 5, in pixels; and
+the generated outputs SHALL carry them as the `max-w-*`, `text-*` and spacing utilities.
 
-**Evidence:** `packages/tokens/src/tokens.constant.ts:160`, `packages/tokens/src/tokens.constant.ts:171`, `packages/tokens/src/tokens.constant.ts:216`, `packages/tokens/tailwind-preset.cjs:97`, `packages/tokens/tailwind-preset.cjs:105`, `packages/tokens/tailwind-preset.cjs:145`
+**Evidence:** `packages/tokens/src/tokens.constant.ts:166`, `packages/tokens/src/tokens.constant.ts:177`, `packages/tokens/src/tokens.constant.ts:234`, `packages/tokens/scripts/generate.mjs:188`, `packages/tokens/scripts/generate.mjs:189`, `packages/tokens/scripts/generate.mjs:200`, `packages/tokens/tailwind-preset.cjs:55`, `packages/tokens/tailwind-preset.cjs:67`, `packages/tokens/tailwind-preset.cjs:84`
 
 #### Scenario: the preset carries the new scales
 
@@ -217,34 +231,151 @@ Tailwind preset SHALL carry them as the `max-w-*`, `text-*` and spacing utilitie
 - **THEN** each preset entry is its token written as a CSS length
 - **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset carries every scale token as a CSS length"
 
-### Requirement: TOKENS-15 — The colour copies agree for every colour of both themes
+### Requirement: TOKENS-15 — Every generated output equals its regeneration
 
-The tokens package SHALL keep the colours of `tokens.constant.ts` equal to their copy in
-`apps/web/src/app/globals.css` for both themes, the theme-invariant accent ramp and cool glow
-included, and equal to the Tailwind preset for the dark theme.
+The repository SHALL fail `pnpm verify:theme-sync` when a generated token output differs from what
+the generator writes from the current source, or is missing, naming the file, its first differing
+line and the command that regenerates it.
 
-**Evidence:** `scripts/verify-theme-sync.mjs:48`, `scripts/verify-theme-sync.mjs:145`, `scripts/verify-theme-sync.mjs:349`
+**Evidence:** `scripts/verify-theme-sync.mjs:50`, `scripts/verify-theme-sync.mjs:76`, `scripts/verify-theme-sync.mjs:90`, `scripts/verify-theme-sync.mjs:103`
 
-#### Scenario: a theme-invariant colour drifts in the light theme
+#### Scenario: a generated file is edited by hand
 
-- **GIVEN** the three copies, with the light theme's cool glow changed in `tokens.constant.ts` only
-- **WHEN** the theme-sync gate compares them
-- **THEN** it reports the light cool glow against its `globals.css` copy
-- **Test:** `scripts/verify-theme-sync.test.mjs` › "a light-theme drift of a theme-invariant colour is caught"
+- **GIVEN** the committed outputs, with one value of the web theme edited by hand
+- **WHEN** the theme-sync gate regenerates in memory and compares
+- **THEN** it reports the web theme, and only it
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "a planted edit in the web theme is caught"
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "a planted edit in the preset is caught"
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "a planted edit in the mobile theme variables is caught"
 
-#### Scenario: a themed colour drifts in the light theme
+#### Scenario: the source changes and nobody regenerates
 
-- **GIVEN** the three copies, with the light theme's base background changed in `globals.css` only
-- **WHEN** the theme-sync gate compares them
-- **THEN** it reports the light base background
-- **Test:** `scripts/verify-theme-sync.test.mjs` › "a light-theme drift of a themed colour is caught"
+- **GIVEN** the committed outputs, with a dark colour changed in the source only
+- **WHEN** the theme-sync gate compares
+- **THEN** it reports the web theme, the preset and the mobile theme variables, every output that
+  carries the dark colours
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "a source change that was not regenerated is caught in every output it reaches"
+
+#### Scenario: the outputs are current
+
+- **GIVEN** the committed outputs as the generator writes them
+- **WHEN** the theme-sync gate runs as a process
+- **THEN** it exits 0
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "the shipped outputs equal their regeneration"
+- **Test:** `scripts/verify-theme-sync.test.mjs` › "the gate exits 0 over the shipped outputs"
+
+### Requirement: TOKENS-16 — One generator writes every token output from the source
+
+The tokens package SHALL write every token-derived output, the web theme `theme.css`, the
+NativeWind preset `tailwind-preset.cjs` and the mobile theme variables
+`src/themeVars.constant.ts`, with one generator, `scripts/generate.mjs`, from
+`src/tokens.constant.ts` alone, each file starting with a header that names the generator and says
+not to edit it.
+
+**Evidence:** `packages/tokens/scripts/generate.mjs:43`, `packages/tokens/scripts/generate.mjs:49`, `packages/tokens/scripts/generate.mjs:385`, `packages/tokens/scripts/generate.mjs:393`, `packages/tokens/scripts/generate.mjs:403`, `packages/tokens/package.json:21`
+
+#### Scenario: the generator runs
+
+- **GIVEN** a package folder holding the token source
+- **WHEN** the generator runs over it twice
+- **THEN** the first run writes the three outputs, each under its do-not-edit header, and the
+  second run rewrites none of them
+- **Test:** `packages/tokens/scripts/__tests__/generate.test.ts` › "writes every output under its do-not-edit header, and rewrites nothing on a second run"
+
+#### Scenario: a token is added to the source
+
+- **GIVEN** the source with one more spacing step
+- **WHEN** the outputs are rendered from it
+- **THEN** the web theme and the preset both carry the new step, as a CSS length
+- **Test:** `packages/tokens/scripts/__tests__/generate.test.ts` › "a token added to the source reaches every output that carries its group"
+
+### Requirement: TOKENS-17 — The web theme carries both themes and the scales
+
+The tokens package SHALL write, in the web theme, each themed colour as `--c-<name>` with its
+dark value in `:root, [data-theme='dark']` and its light value in `[data-theme='light']`, mapped in
+`@theme` as `--color-<name>: var(--c-<name>)`; each shared colour once, as a literal
+`--color-<name>` in `@theme`; the font families, the shadows and the motion in `@theme`; and the
+spacing, inset, layout-width, radius, font-size and glyph-size scales in `@theme inline` as CSS
+lengths, `<name>` being the kebab case of the token's key path.
+
+**Evidence:** `packages/tokens/scripts/generate.mjs:93`, `packages/tokens/scripts/generate.mjs:156`, `packages/tokens/scripts/generate.mjs:211`, `packages/tokens/scripts/generate.mjs:216`, `packages/tokens/scripts/generate.mjs:225`, `packages/tokens/scripts/generate.mjs:239`, `packages/tokens/theme.css:11`, `packages/tokens/theme.css:40`, `packages/tokens/theme.css:72`, `packages/tokens/theme.css:119`
+
+#### Scenario: a themed colour is read in each theme
+
+- **GIVEN** the web theme rendered from the source
+- **WHEN** its theme blocks and its `@theme` block are read
+- **THEN** every themed colour has its dark and its light value under `--c-<name>`, and
+  `--color-<name>` reads that variable
+- **Test:** `packages/tokens/scripts/__tests__/generate.test.ts` › "declares every themed colour in both theme blocks and maps it in @theme"
+
+#### Scenario: a shared colour is read
+
+- **GIVEN** the web theme rendered from the source
+- **WHEN** a shared colour is looked up
+- **THEN** it is a literal in `@theme` and in neither theme block
+- **Test:** `packages/tokens/scripts/__tests__/generate.test.ts` › "writes every shared colour once, as a literal in @theme"
+
+#### Scenario: a scale reaches its utilities
+
+- **GIVEN** the web theme rendered from the source
+- **WHEN** its `@theme inline` block is read
+- **THEN** every spacing, inset, layout width, radius, font size with its line height and glyph
+  size is there as a CSS length
+- **Test:** `packages/tokens/scripts/__tests__/generate.test.ts` › "inlines every scale in @theme inline as a CSS length"
+
+### Requirement: TOKENS-18 — The mobile theme variables carry each themed colour per theme
+
+The tokens package SHALL export `themeVars`, the `--c-<name>` value of every themed colour for
+each theme, the shape NativeWind's `vars()` takes, and no shared colour.
+
+**Evidence:** `packages/tokens/scripts/generate.mjs:344`, `packages/tokens/src/themeVars.constant.ts:13`, `packages/tokens/src/index.ts:1`
+
+#### Scenario: a theme's variables are read
+
+- **GIVEN** themeVars
+- **WHEN** the variables of each theme are read
+- **THEN** each themed colour of that theme is its `--c-<name>` value
+- **Test:** `packages/tokens/src/__tests__/themeVars.constant.test.ts` › "maps every themed colour of each theme to its --c- variable"
+
+#### Scenario: a shared colour is looked up
+
+- **GIVEN** themeVars
+- **WHEN** a shared colour's variable is looked up
+- **THEN** neither theme carries it
+- **Test:** `packages/tokens/src/__tests__/themeVars.constant.test.ts` › "carries no shared colour"
+
+### Requirement: TOKENS-19 — Font stacks and motion are tokens
+
+The tokens package SHALL define the generic font fallback sans-serif, the CSS variable each web
+font loader sets (body `--font-inter`, display `--font-montserrat`) and the shimmer motion, 1600 ms
+and linear; the web theme SHALL write each font family as `var(<loader variable>), <family>,
+<fallback>` and the motion as `--duration-shimmer` and `--ease-shimmer`, and the preset each font
+family as `[<family>, <fallback>]`.
+
+**Evidence:** `packages/tokens/src/tokens.constant.ts:206`, `packages/tokens/src/tokens.constant.ts:212`, `packages/tokens/src/tokens.constant.ts:289`, `packages/tokens/scripts/generate.mjs:147`, `packages/tokens/scripts/generate.mjs:176`, `packages/tokens/scripts/generate.mjs:180`, `packages/tokens/scripts/generate.mjs:301`
+
+#### Scenario: the web theme reads the font stacks and the motion
+
+- **GIVEN** the web theme rendered from the source
+- **WHEN** its font families and motion are read
+- **THEN** each family is its loader variable, its name and the fallback, and the shimmer is
+  1600ms and linear
+- **Test:** `packages/tokens/scripts/__tests__/generate.test.ts` › "writes each font stack with its loader variable and fallback, and the shimmer motion"
+
+#### Scenario: the preset reads the font stacks
+
+- **GIVEN** the generated preset
+- **WHEN** its font families are read
+- **THEN** each is its family followed by the fallback
+- **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset writes each font family before its fallback"
 
 ## Open questions
 
 - **Q1** — Closed on 2026-11-15 by `openspec/changes/archive/2026-11-14-style-pillar/`: the web
-  app loads the preset through `apps/web/tailwind.config.cjs` and `@config` (TOKENS-12).
-- **Q2** — Partly closed on 2026-11-15 by `openspec/changes/archive/2026-11-14-style-pillar/`: the
-  theme-sync gate compares every colour of both themes, the accent ramp included (TOKENS-15), and
-  `packages/tokens/__tests__/tailwind-preset.test.ts` compares the preset's spacing, radius and font
-  sizes with the tokens (TOKENS-13). The preset's shadows and font families are still compared
-  with nothing.
+  app loaded the preset through a Tailwind JavaScript config and `@config`. Superseded the same day
+  by `openspec/changes/archive/2026-11-15-generated-tokens/`: the web app imports the generated
+  theme and loads no JavaScript config (TOKENS-12, apps/web WEB-43).
+- **Q2** — Closed on 2026-11-15 by `openspec/changes/archive/2026-11-15-generated-tokens/`: every
+  output is generated from the source, so the preset's shadows and font families are the source's
+  (TOKENS-13, TOKENS-19), and `verify:theme-sync` regenerates and compares every output
+  (TOKENS-15).

@@ -62,7 +62,7 @@ app-monorepo-template/
 │       └── product-discovery/       # product → screens/services/data/components → launch map
 │
 ├── packages/                        # SHARED, framework-agnostic only
-│   ├── tokens/    # @app/tokens — src/tokens.constant.ts + tailwind-preset.cjs (VALUES, no components)
+│   ├── tokens/    # @app/tokens — src/tokens.constant.ts, the one source; scripts/generate.mjs writes the rest (VALUES)
 │   ├── core/      # @app/core — errors/AppError.helper.ts, utils/scrubPII.helper.ts (no React/RN/DOM)
 │   ├── i18n/      # @app/i18n — locales/{en,es}.json + i18n.constant.ts + resources.constant.ts + parity test
 │   ├── supabase/  # @app/supabase — src/{client.adapter,server.adapter,types}.ts + supabase/{config,migrations,tests}
@@ -93,10 +93,16 @@ app-monorepo-template/
 
 The **single source of truth** for visual design.
 
-- `src/tokens.constant.ts` — plain TypeScript: colors, spacing, radius, typography, shadows,
-  gradients. No framework dependencies. Both apps import these directly.
-- `tailwind-preset.cjs` — Tailwind preset mapping the same values into `theme.extend`, consumed
-  by both apps via `require('@app/tokens/tailwind-preset.cjs')`.
+- `src/tokens.constant.ts` — plain TypeScript: colors per theme, spacing, radius, typography,
+  shadows, gradients and motion. No framework dependencies. It is the one source of every token
+  value, and both apps import it directly.
+- `scripts/generate.mjs` (`pnpm --filter @app/tokens generate`) writes every other token file,
+  each with one writer and a do-not-edit header:
+  - `theme.css`, the web theme that `apps/web/src/app/globals.css` imports;
+  - `tailwind-preset.cjs`, the NativeWind preset the mobile app loads;
+  - `src/themeVars.constant.ts`, the mobile theme variables.
+- `pnpm verify:theme-sync` fails when a committed output differs from what the generator writes,
+  so a token changes in the source and nowhere else.
 
 **Web** uses Tailwind class names (e.g. `bg-bg-base`, `text-accent`). **Mobile** uses NativeWind
 class names + direct token imports for RN `StyleSheet.create()`.

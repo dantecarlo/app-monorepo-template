@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { fontFamily, webFontVariable } from '@app/tokens'
 import { describe, expect, test, vi } from 'vitest'
 
 import RootLayout from '@/app/layout'
@@ -65,6 +66,16 @@ describe('root layout fonts', () => {
       '800'
     ])
     expect(weightsOf('--font-inter')).toEqual(['400', '500'])
+  })
+
+  test('loads each family under the variable the generated theme reads', () => {
+    Object.entries(webFontVariable).forEach(([role, variable]) => {
+      const family = fontFamily[role as keyof typeof fontFamily]
+      const paths = fontFor(variable)?.src.map(({ path }) => path) ?? []
+
+      expect(paths.length).toBeGreaterThan(0)
+      paths.forEach((path) => expect(path).toContain(`/${family}_`))
+    })
   })
 
   test('puts both font variables on the html element', () => {

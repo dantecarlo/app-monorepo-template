@@ -119,6 +119,15 @@ background comes from `useRootTheme`. Only `ui/` imports a UI kit or a drawing p
 `local/style-token-values` and `local/ui-kit-boundary` hold it; a number in a StyleSheet is not
 read.
 
+**Tokens.** A StyleSheet reads `@app/tokens` directly (`colors`, `spacing`, `themes[active]` through
+`useThemeTokens`). The NativeWind classes come from `@app/tokens/tailwind-preset.cjs`, which
+`tailwind.config.js` loads and `packages/tokens/scripts/generate.mjs` writes from
+`packages/tokens/src/tokens.constant.ts`; its colours are the dark theme's. The generator also
+writes `themeVars`, exported from `@app/tokens`: the `--c-*` value of every themed colour per
+theme, the map NativeWind's `vars()` takes, which no screen injects yet. A new value goes in the
+token source, then `pnpm --filter @app/tokens generate`; never edit a generated file
+(`pnpm verify:theme-sync`).
+
 ## 6. The shipped sample
 
 There is no `src/features/` folder; the sample code already follows the layout above.

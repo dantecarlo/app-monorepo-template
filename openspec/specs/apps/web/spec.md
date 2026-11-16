@@ -3,7 +3,7 @@
 > **Governs:** `apps/web/src`, `apps/web/next.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-15 at `c2a897d`
+> **Verified against the code:** 2026-11-15 at `7145852`
 
 ## Purpose
 
@@ -990,7 +990,7 @@ strings and style props carry only layout, spacing, size, position, overflow and
 The web app SHALL take every value of its style files and views from `@app/tokens` or a step of
 Tailwind's scale: no raw colour, no Tailwind palette colour and no arbitrary value.
 
-**Evidence:** `eslint-local-rules/style-positioning.detect.mjs:721`, `eslint-local-rules/style-positioning.detect.mjs:295`, `apps/web/tailwind.config.cjs:9`
+**Evidence:** `eslint-local-rules/style-positioning.detect.mjs:721`, `eslint-local-rules/style-positioning.detect.mjs:295`, `apps/web/src/app/globals.css:3`
 
 #### Scenario: a component holds an arbitrary value
 
@@ -1063,6 +1063,47 @@ The web app SHALL import a UI kit, its headless primitives or its class helpers 
 - **WHEN** it is linted
 - **THEN** nothing is reported
 - **Test:** `eslint-local-rules/index.test.mjs` › "import { tv } from 'tailwind-variants'\nimport * as Dialog from '@radix-ui/react-dialog'"
+
+### Requirement: WEB-43 — The web theme is the generated CSS, with no JS config
+
+The web app SHALL read every token value from the generated `@app/tokens/theme.css`, which
+`src/app/globals.css` imports, and load no Tailwind JavaScript config; the rules `globals.css` still
+writes by hand (the glass card, the document body and its aurora, the accent gradient and the
+shimmer) SHALL read every colour, shadow, font and motion value through a variable the generated
+theme declares, and spell no colour; and the root layout SHALL load each font family under the CSS
+variable the tokens name for it.
+
+**Evidence:** `apps/web/src/app/globals.css:3`, `apps/web/src/app/globals.css:45`, `apps/web/src/app/globals.css:57`, `apps/web/src/app/globals.css:100`, `apps/web/src/app/globals.css:109`, `apps/web/src/app/layout.tsx:24`, `apps/web/src/app/layout.tsx:33`
+
+#### Scenario: the CSS entry is read
+
+- **GIVEN** the web app's CSS entry
+- **WHEN** it is read
+- **THEN** it imports the generated theme, holds no `@config`, and no `tailwind.config.cjs` exists
+- **Test:** `apps/web/src/app/__tests__/globals.test.ts` › "imports the generated theme and loads no JS config"
+
+#### Scenario: a hand-written rule reads a value
+
+- **GIVEN** the hand-written rules of the CSS entry and the generated theme
+- **WHEN** every variable the rules read is looked up in the generated theme
+- **THEN** each is declared there, and the rules spell no hex or colour function
+- **Test:** `apps/web/src/app/__tests__/globals.test.ts` › "reads every colour, shadow, font and motion value of its own rules from a generated variable"
+
+#### Scenario: the layout loads the fonts
+
+- **GIVEN** the root layout and the tokens
+- **WHEN** the layout's font loaders are read
+- **THEN** each family is loaded under the variable the generated theme reads for it
+- **Test:** `apps/web/src/app/__tests__/layout.test.tsx` › "loads each family under the variable the generated theme reads"
+
+#### Scenario: the served pages render in both themes
+
+- **GIVEN** the built app served by the production server
+- **WHEN** the home and login pages are opened in the dark and the light theme
+- **THEN** every element computes the same style it did through the preset bridge
+- **Test:** Not covered — no committed test renders both themes; the verify report records a
+  one-off Playwright comparison of computed styles and screenshots before and after the change,
+  and `e2e/glass.e2e.ts` covers the dark glass card only
 
 ## Open questions
 
