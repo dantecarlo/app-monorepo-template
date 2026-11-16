@@ -90,12 +90,13 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 - F.12, the generated token outputs: one source, one generator, and `verify:theme-sync` as the regenerate-and-diff check (#27).
 - F32: the web fonts are Certifipago's Latin variable woff2 files, 84 KB in all (#28).
 - F34: tailwind-merge knows every token name, from the generated `themeNames` (#29).
-- F.5, the app behaviour: F11 (sign-in through the auth gateway, origin-guard tests), F12 (the mobile light theme from the root, the NativeWind preset reading `var(--c-*)`, the count once, a stable `useSession`, no actionless mobile buttons), F23 (query keys with a trailing params object), F24 (UPPER_SNAKE_CASE enum members, lint-enforced) and F25 (query errors on the screen, boundary crashes reported once) (this change; the independent verifier passed it with no blockers).
+- F.5, the app behaviour: F11 (sign-in through the auth gateway, origin-guard tests), F12 (the mobile light theme from the root, the NativeWind preset reading `var(--c-*)`, the count once, a stable `useSession`, no actionless mobile buttons), F23 (query keys with a trailing params object), F24 (UPPER_SNAKE_CASE enum members, lint-enforced) and F25 (query errors on the screen, boundary crashes reported once) (#30; the independent verifier passed it with no blockers).
+- F36: the origin-guard matcher anchors its exempt paths (this change).
 - F.2, the Supabase hardening (#21; the native review did not fit its context budget, and the owner chose to merge on the independent verifier).
 
 **In flight:** none.
 
-**Next:** F36 (the origin-guard matcher), then F.6.
+**Next:** F.6, the i18n follow-ups (F10, F14).
 
 **Pending, in order:**
 - F.5 to F.8 and F.11 of Stage F.
@@ -481,7 +482,7 @@ defects behind them, for changes of their own.
 | F33 | harness | a scheduled CI job that runs `pnpm mcp:docs` and opens a pull request when an MCP server releases (Q1 of `2026-11-15-mcp-docs-updater`) | waits on the owner: CI is high-risk item 5 |
 | F34 | apps/web, packages/tokens | tailwind-merge knew only the token font sizes, so two classes of one utility with token names were both kept (`p-sm p-lg`, `px-pill-x px-lg`, `top-knob-inset top-sm`) and a token shadow was dropped next to a shadow colour (`shadow-card shadow-accent`): 12 of 25 probe pairs wrong; found by Certifipago Web #849 | done: this change |
 | F35 | apps/web | the web View all, settings and Google buttons have no action, which F12 fixes on mobile only; WEB-01 and WEB-11 state them | small; the F12 rule for web |
-| F36 | apps/web, security | the origin-guard matcher exempts any path that only starts with an exempt name: `/imagesadmin`, `/fonts-private/x`, `/favicon.icox` and `/_next/staticfoo` skip the guard; anchor the pattern (`images/`, `fonts/`, `favicon.ico$`); found by the F.5 verifier, there before it | small; high-risk item 2, next |
+| F36 | apps/web, security | the origin-guard matcher exempts any path that only starts with an exempt name: `/imagesadmin`, `/fonts-private/x`, `/favicon.icox` and `/_next/staticfoo` skip the guard; anchor the pattern (`images/`, `fonts/`, `favicon.ico$`); found by the F.5 verifier, there before it | done: this change |
 | F37 | both apps | when the items query fails, the caption shows "0 results" beside the `ErrorState` | small |
 | F38 | both apps | `useItems` keys its query by `search` only, but its `queryFn` also reads `limit`, so two limits share one cache entry | small |
 
