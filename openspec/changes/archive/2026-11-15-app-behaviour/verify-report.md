@@ -76,8 +76,8 @@ that run showed. A test of behaviour the code already had is marked as such.
 | TOKENS-12 | the dark theme is unchanged | `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset resolves to the dark theme's colours under the dark variables" | green on the old code: the guard that the dark values stay | green |
 | TOKENS-12 | a shared colour | `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset writes every shared colour as a literal" | green on the old code, a guard | green |
 | TOKENS-12 | the web app loads no JavaScript config | `apps/web/src/app/__tests__/globals.test.ts` › "imports the generated theme and loads no JS config" | existing test | green |
-| TOKENS-15 | a generated file is edited by hand | `scripts/verify-theme-sync.test.mjs` › "a planted edit in the preset is caught" and the three others | the planted string `raised: '#101216'` is no longer in the preset | see "Not verified" |
-| TOKENS-15 | the source changes and nobody regenerates | `scripts/verify-theme-sync.test.mjs` › "a source change that was not regenerated is caught in every output it reaches" | expects 3 outputs; the preset no longer carries the value, so 2 | see "Not verified" |
+| TOKENS-15 | a generated file is edited by hand | `scripts/verify-theme-sync.test.mjs` › "a planted edit in the preset is caught" and the three others | after the preset change: the planted string `raised: '#101216'` was no longer in the preset; the plant now edits `raised: 'var(--c-bg-raised)'` | green |
+| TOKENS-15 | the source changes and nobody regenerates | `scripts/verify-theme-sync.test.mjs` › "a source change that was not regenerated is caught in every output it reaches" | after the preset change: 2 outputs reported where the case expected 3; it now expects 2 | green |
 | TOKENS-15 | a token is renamed and nobody regenerates | `scripts/verify-theme-sync.test.mjs` › "a renamed token that was not regenerated is caught in the theme names too" | existing test | green |
 | TOKENS-15 | the outputs are current | `scripts/verify-theme-sync.test.mjs` › "the shipped outputs equal their regeneration", "the gate exits 0 over the shipped outputs" | existing tests | green |
 
@@ -111,6 +111,12 @@ No route renders a themed NativeWind class: the Sign in button paints with share
 
 ## Gate
 
+- `ATL_TEMPLATE_SELF=1 pnpm validate`, run over the archive: exit 0, 2026-11-16, on `eeeaac7` with
+  the deltas merged (turbo 24 of 24 tasks; web 338 tests, mobile 152, tokens 23;
+  `verify:specs` and `verify:theme-sync:test` green).
+
+The run before the archive and the fixture update, kept for the record:
+
 - `ATL_TEMPLATE_SELF=1 pnpm validate`: exit 1, 2026-11-16, at `1c77842`. Every gate before
   `verify:specs` passed: the projection check, the manifest gates, the lint-rule and allowlist
   gates, `turbo run lint typecheck test build format:check` (24 of 24 tasks; web 338 tests,
@@ -132,8 +138,6 @@ No route renders a themed NativeWind class: the Sign in button paints with share
 
 ## Not verified
 
-- TOKENS-15's two planted cases, until `scripts/verify-theme-sync.test.mjs` plants its preset
-  edit on a value the preset still writes and expects 2 outputs for an unregenerated dark colour.
 - Native resolution of a `var(--c-*)` class through the root view's `vars()`: the web export
   above shows it on react-native-web; on iOS and Android it is covered only by the CI-only
   Hermes smoke, `pnpm smoke:mobile`, which was not run.

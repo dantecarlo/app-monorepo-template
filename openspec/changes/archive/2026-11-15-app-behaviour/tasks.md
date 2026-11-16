@@ -8,7 +8,7 @@
 - [x] T6 — mobile: the result count once, a stable `useSession` (and the web one), no button without an action (F12) · Requirements: MOBILE-18, MOBILE-31, MOBILE-44, MOBILE-45 · Commit: e8b7c2b
 - [x] T7 — mobile light theme from the root: `themeVars` on the root view, `createThemedStyles` and `useThemedStyles`, every StyleSheet block on the active palette, `Screen` always themed (F12) · Requirements: MOBILE-05, MOBILE-40, MOBILE-42 · Commit: 89b4d99
 - [x] T8 — the NativeWind preset reads each themed colour from its `--c-*` variable, so a class-styled block follows the theme (F12) · Requirements: MOBILE-42, TOKENS-12, TOKENS-15 · Commit: f0bc34c
-- [ ] T9 — the docs, the skills and the map; `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-15-app-behaviour/` as the last commit · Requirements: none · Commit: —
+- [x] T9 — the docs, the skills and the map; `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-15-app-behaviour/` as the last commit · Requirements: none · Commit: fc89ead
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of

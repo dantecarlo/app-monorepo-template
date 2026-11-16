@@ -3,7 +3,7 @@
 > **Governs:** `packages/tokens/src`, `packages/tokens/scripts`, `packages/tokens/theme.css`, `packages/tokens/tailwind-preset.cjs`
 > **ID prefix:** `TOKENS`
 > **Derived from:** `docs/architecture/shared.md`
-> **Verified against the code:** 2026-11-16 at `6fc9c27`
+> **Verified against the code:** 2026-11-16 at `eeeaac7`
 
 ## Purpose
 
@@ -11,7 +11,7 @@ The tokens package owns the design-token values: a dark and a light theme with o
 by default, the colours both themes share, and the spacing, radius, typography, shadows (CSS and
 React Native), motion and accent gradient, all in one source, `packages/tokens/src/tokens.constant.ts`.
 One generator writes every token output from it: the web theme CSS apps/web imports, the
-NativeWind preset with the dark values, the mobile theme variables, and the name of every token
+NativeWind preset, which reads each themed colour from its variable, the mobile theme variables, and the name of every token
 utility, which the web's tailwind-merge reads; a gate fails while an output differs from its
 regeneration. It holds no components, and apps/mobile switches themes at
 runtime.
@@ -170,21 +170,36 @@ The tokens package SHALL expose every token group as a named export from its ent
 - **THEN** it gets the aggregate holding every token group
 - **Test:** Not covered — the theme test imports the constant module, not the entry point
 
-### Requirement: TOKENS-12 — The NativeWind preset carries the dark theme's colours
+### Requirement: TOKENS-12 — The NativeWind preset reads each themed colour from its variable
 
 The tokens package SHALL ship the generated Tailwind preset, exported as tailwind-preset.cjs,
-whose theme.extend.colors hold the values of the dark theme, and which the mobile Tailwind config
-loads; the web app SHALL load no Tailwind JavaScript config.
+whose theme.extend.colors hold, in the dark theme's shape, each themed colour as a read of its
+`--c-*` variable, under the name `themeVars` and the web theme declare it, and each colour the
+themes share as its literal value, and which the mobile Tailwind config loads; the web app SHALL
+load no Tailwind JavaScript config.
 
-**Evidence:** `packages/tokens/scripts/generate.mjs:341`, `packages/tokens/tailwind-preset.cjs:15`, `packages/tokens/package.json:9`, `apps/mobile/tailwind.config.js:7`, `apps/web/src/app/globals.css:3`
+**Evidence:** `packages/tokens/scripts/generate.mjs:331-344`, `packages/tokens/scripts/generate.mjs:351`, `packages/tokens/tailwind-preset.cjs:22`, `packages/tokens/package.json:9`, `apps/mobile/tailwind.config.js:7`, `apps/web/src/app/globals.css:3`
 
-#### Scenario: a Tailwind config resolves a colour
+#### Scenario: a themed colour is resolved
+
+- **GIVEN** the preset and the mobile theme variables
+- **WHEN** its colours are flattened to utility names, as Tailwind does
+- **THEN** every themed colour reads `var(--c-<name>)`, and the variable is declared in both the dark and the light theme variables
+- **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset reads every themed colour from its --c- variable, declared in both themes"
+
+#### Scenario: the dark theme is unchanged
 
 - **GIVEN** the preset
-- **WHEN** its colours are flattened to utility names, as Tailwind does
-- **THEN** every colour of the dark theme is there under the kebab case of its key path, with its
-  dark value
-- **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset carries every colour of the dark theme"
+- **WHEN** each of its colours is resolved through the dark theme variables
+- **THEN** every colour of the dark theme is there under the kebab case of its key path, with its dark value
+- **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset resolves to the dark theme's colours under the dark variables"
+
+#### Scenario: a shared colour
+
+- **GIVEN** the preset
+- **WHEN** a colour both themes share is read
+- **THEN** it is the literal value of the shared colour
+- **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset writes every shared colour as a literal"
 
 #### Scenario: the web app loads no JavaScript config
 
@@ -200,7 +215,7 @@ layout-width, font family, font size, glyph size and shadow tokens, the numeric 
 pixel or rem lengths, and the web app SHALL take its spacing, radius, layout-width and font-size
 utilities from the generated web theme alone.
 
-**Evidence:** `packages/tokens/scripts/generate.mjs:224`, `packages/tokens/scripts/generate.mjs:233`, `packages/tokens/scripts/generate.mjs:342`, `packages/tokens/scripts/generate.mjs:365`, `packages/tokens/theme.css:119`, `packages/tokens/tailwind-preset.cjs:55`, `packages/tokens/tailwind-preset.cjs:99`, `apps/web/src/app/globals.css:3`
+**Evidence:** `packages/tokens/scripts/generate.mjs:225`, `packages/tokens/scripts/generate.mjs:234`, `packages/tokens/scripts/generate.mjs:352`, `packages/tokens/scripts/generate.mjs:375`, `packages/tokens/theme.css:119`, `packages/tokens/tailwind-preset.cjs:56`, `packages/tokens/tailwind-preset.cjs:100`, `apps/web/src/app/globals.css:3`
 
 #### Scenario: a Tailwind config resolves a spacing utility
 
@@ -223,7 +238,7 @@ rem; the glyph sizes, a font size with no line height, initialsSm 10, initialsMd
 16 and navIcon 22, in pixels; and the insets knobInset 2.5, pillX 11 and pillY 5, in pixels; and
 the generated outputs SHALL carry them as the `max-w-*`, `text-*` and spacing utilities.
 
-**Evidence:** `packages/tokens/src/tokens.constant.ts:166`, `packages/tokens/src/tokens.constant.ts:177`, `packages/tokens/src/tokens.constant.ts:234`, `packages/tokens/scripts/generate.mjs:225`, `packages/tokens/scripts/generate.mjs:229`, `packages/tokens/scripts/generate.mjs:239`, `packages/tokens/tailwind-preset.cjs:55`, `packages/tokens/tailwind-preset.cjs:67`, `packages/tokens/tailwind-preset.cjs:84`
+**Evidence:** `packages/tokens/src/tokens.constant.ts:166`, `packages/tokens/src/tokens.constant.ts:177`, `packages/tokens/src/tokens.constant.ts:234`, `packages/tokens/scripts/generate.mjs:226`, `packages/tokens/scripts/generate.mjs:230`, `packages/tokens/scripts/generate.mjs:240`, `packages/tokens/tailwind-preset.cjs:56`, `packages/tokens/tailwind-preset.cjs:68`, `packages/tokens/tailwind-preset.cjs:85`
 
 #### Scenario: the preset carries the new scales
 
@@ -238,7 +253,7 @@ The repository SHALL fail `pnpm verify:theme-sync` when a generated token output
 the generator writes from the current source, or is missing, naming the file, its first differing
 line and the command that regenerates it.
 
-**Evidence:** `scripts/verify-theme-sync.mjs:51`, `scripts/verify-theme-sync.mjs:77`, `scripts/verify-theme-sync.mjs:91`, `scripts/verify-theme-sync.mjs:104`, `scripts/verify-theme-sync.test.mjs:117`, `scripts/verify-theme-sync.test.mjs:155`
+**Evidence:** `scripts/verify-theme-sync.mjs:51`, `scripts/verify-theme-sync.mjs:77`, `scripts/verify-theme-sync.mjs:91`, `scripts/verify-theme-sync.mjs:104`, `scripts/verify-theme-sync.test.mjs:96`, `scripts/verify-theme-sync.test.mjs:135`
 
 #### Scenario: a generated file is edited by hand
 
@@ -254,8 +269,8 @@ line and the command that regenerates it.
 
 - **GIVEN** the committed outputs, with a dark colour changed in the source only
 - **WHEN** the theme-sync gate compares
-- **THEN** it reports the web theme, the preset and the mobile theme variables, every output that
-  carries the dark colours
+- **THEN** it reports the web theme and the mobile theme variables, every output that carries the
+  themed colour values; the preset names the colour's variable and does not change
 - **Test:** `scripts/verify-theme-sync.test.mjs` › "a source change that was not regenerated is caught in every output it reaches"
 
 #### Scenario: a token is renamed and nobody regenerates
@@ -282,7 +297,7 @@ NativeWind preset `tailwind-preset.cjs`, the mobile theme variables `src/themeVa
 and the theme names `src/themeNames.constant.ts`. Each file SHALL start with a header that names
 the generator and says not to edit it.
 
-**Evidence:** `packages/tokens/scripts/generate.mjs:46`, `packages/tokens/scripts/generate.mjs:53`, `packages/tokens/scripts/generate.mjs:503`, `packages/tokens/scripts/generate.mjs:510`, `packages/tokens/scripts/generate.mjs:518`, `packages/tokens/scripts/generate.mjs:528`, `packages/tokens/package.json:21`
+**Evidence:** `packages/tokens/scripts/generate.mjs:47`, `packages/tokens/scripts/generate.mjs:54`, `packages/tokens/scripts/generate.mjs:514`, `packages/tokens/scripts/generate.mjs:521`, `packages/tokens/scripts/generate.mjs:529`, `packages/tokens/scripts/generate.mjs:539`, `packages/tokens/package.json:21`
 
 #### Scenario: the generator runs
 
@@ -309,7 +324,7 @@ dark value in `:root, [data-theme='dark']` and its light value in `[data-theme='
 spacing, inset, layout-width, radius, font-size and glyph-size scales in `@theme inline` as CSS
 lengths, `<name>` being the kebab case of the token's key path.
 
-**Evidence:** `packages/tokens/scripts/generate.mjs:97`, `packages/tokens/scripts/generate.mjs:253`, `packages/tokens/scripts/generate.mjs:266`, `packages/tokens/scripts/generate.mjs:271`, `packages/tokens/scripts/generate.mjs:280`, `packages/tokens/scripts/generate.mjs:288`, `packages/tokens/theme.css:11`, `packages/tokens/theme.css:40`, `packages/tokens/theme.css:72`, `packages/tokens/theme.css:119`
+**Evidence:** `packages/tokens/scripts/generate.mjs:98`, `packages/tokens/scripts/generate.mjs:254`, `packages/tokens/scripts/generate.mjs:267`, `packages/tokens/scripts/generate.mjs:272`, `packages/tokens/scripts/generate.mjs:281`, `packages/tokens/scripts/generate.mjs:289`, `packages/tokens/theme.css:11`, `packages/tokens/theme.css:40`, `packages/tokens/theme.css:72`, `packages/tokens/theme.css:119`
 
 #### Scenario: a themed colour is read in each theme
 
@@ -339,7 +354,7 @@ lengths, `<name>` being the kebab case of the token's key path.
 The tokens package SHALL export `themeVars`, the `--c-<name>` value of every themed colour for
 each theme, the shape NativeWind's `vars()` takes, and no shared colour.
 
-**Evidence:** `packages/tokens/scripts/generate.mjs:393`, `packages/tokens/src/themeVars.constant.ts:13`, `packages/tokens/src/index.ts:2`
+**Evidence:** `packages/tokens/scripts/generate.mjs:404`, `packages/tokens/src/themeVars.constant.ts:13`, `packages/tokens/src/index.ts:2`
 
 #### Scenario: a theme's variables are read
 
@@ -363,7 +378,7 @@ and linear; the web theme SHALL write each font family as `var(<loader variable>
 <fallback>` and the motion as `--duration-shimmer` and `--ease-shimmer`, and the preset each font
 family as `[<family>, <fallback>]`.
 
-**Evidence:** `packages/tokens/src/tokens.constant.ts:206`, `packages/tokens/src/tokens.constant.ts:212`, `packages/tokens/src/tokens.constant.ts:289`, `packages/tokens/scripts/generate.mjs:151`, `packages/tokens/scripts/generate.mjs:201`, `packages/tokens/scripts/generate.mjs:205`, `packages/tokens/scripts/generate.mjs:350`
+**Evidence:** `packages/tokens/src/tokens.constant.ts:206`, `packages/tokens/src/tokens.constant.ts:212`, `packages/tokens/src/tokens.constant.ts:289`, `packages/tokens/scripts/generate.mjs:152`, `packages/tokens/scripts/generate.mjs:202`, `packages/tokens/scripts/generate.mjs:206`, `packages/tokens/scripts/generate.mjs:360`
 
 #### Scenario: the web theme reads the font stacks and the motion
 
@@ -390,7 +405,7 @@ plain data. A namespace whose variables make no utility SHALL be left out by a n
 that is `duration`: Tailwind 4 builds `duration-*` from `--transition-duration-*`, so
 `--duration-shimmer` is read only through `var()`.
 
-**Evidence:** `packages/tokens/scripts/generate.mjs:176`, `packages/tokens/scripts/generate.mjs:433`, `packages/tokens/scripts/generate.mjs:436`, `packages/tokens/scripts/generate.mjs:477`, `packages/tokens/src/themeNames.constant.ts:13`, `packages/tokens/src/index.ts:1`, `packages/tokens/src/__tests__/themeNames.constant.test.ts:27`
+**Evidence:** `packages/tokens/scripts/generate.mjs:177`, `packages/tokens/scripts/generate.mjs:444`, `packages/tokens/scripts/generate.mjs:447`, `packages/tokens/scripts/generate.mjs:488`, `packages/tokens/src/themeNames.constant.ts:13`, `packages/tokens/src/index.ts:1`, `packages/tokens/src/__tests__/themeNames.constant.test.ts:27`
 
 #### Scenario: the names are tied to the web theme
 

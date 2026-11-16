@@ -1,6 +1,6 @@
 # Proposal: sign in through the gateway, keep query errors on screen, theme the whole mobile app
 
-> **Status:** open
+> **Status:** archived — 2026-11-16
 
 ## Why
 
