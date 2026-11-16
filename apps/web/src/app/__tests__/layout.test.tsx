@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { fontFamily, webFontVariable } from '@app/tokens'
@@ -8,8 +8,9 @@ import RootLayout from '@/app/layout'
 
 interface IFontCallType {
   display: string
-  src: { path: string; weight: string }[]
+  src: string
   variable: string
+  weight: string
 }
 
 // next/font is a build-time loader; the test records what the layout asks it
@@ -32,49 +33,61 @@ vi.mock('next/font/local', () => ({ default: localFont }))
 // The folder of the layout, which next/font/local resolves each src against.
 const APP_DIR = join(import.meta.dirname, '..')
 
+// What both families may weigh together. Google Fonts serves each as one Latin
+// variable woff2 of about 40 KB; the full-charset static files weighed 1.6 MB.
+const FONT_PAYLOAD_LIMIT_BYTES = 128 * 1024
+
+// The first four bytes of every woff2 file.
+const WOFF2_SIGNATURE = 'wOF2'
+
 const fontCalls = () =>
   localFont.mock.calls.map(([options]) => options as IFontCallType)
 
 const fontFor = (variable: string) =>
   fontCalls().find((options) => options.variable === variable)
 
+const licenceOf = (family: string) =>
+  readFileSync(join(APP_DIR, 'fonts', `${family}-OFL.txt`), 'utf8')
+
 describe('root layout fonts', () => {
   test('loads both families from files in the app, never from Google Fonts', () => {
     expect(googleFont).not.toHaveBeenCalled()
     expect(localFont).toHaveBeenCalledTimes(2)
 
-    const paths = fontCalls().flatMap(({ src }) =>
-      src.map(({ path }) => path)
-    )
-    for (const path of paths) {
-      expect(path).toMatch(/^\.\/fonts\/.+\.ttf$/)
-      expect(existsSync(join(APP_DIR, path))).toBe(true)
+    for (const { src } of fontCalls()) {
+      expect(src).toMatch(/^\.\/fonts\/.+\.woff2$/)
+      expect(existsSync(join(APP_DIR, src))).toBe(true)
     }
   })
 
-  test('keeps the font variables, the swap display and the weights', () => {
-    const weightsOf = (variable: string) =>
-      fontFor(variable)?.src.map(({ weight }) => weight)
+  test('ships one variable woff2 per family, small enough to preload', () => {
+    const files = fontCalls().map(({ src }) => join(APP_DIR, src))
+    const bytes = files.reduce(
+      (total, file) => total + statSync(file).size,
+      0
+    )
 
+    expect(new Set(files).size).toBe(2)
+    files.forEach((file) =>
+      expect(readFileSync(file).subarray(0, 4).toString('latin1')).toBe(
+        WOFF2_SIGNATURE
+      )
+    )
+    expect(bytes).toBeLessThan(FONT_PAYLOAD_LIMIT_BYTES)
+  })
+
+  test('keeps the font variables, the swap display and the weights', () => {
     expect(fontFor('--font-montserrat')?.display).toBe('swap')
     expect(fontFor('--font-inter')?.display).toBe('swap')
-    expect(weightsOf('--font-montserrat')).toEqual([
-      '400',
-      '500',
-      '600',
-      '700',
-      '800'
-    ])
-    expect(weightsOf('--font-inter')).toEqual(['400', '500'])
+    expect(fontFor('--font-montserrat')?.weight).toBe('400 800')
+    expect(fontFor('--font-inter')?.weight).toBe('400 500')
   })
 
   test('loads each family under the variable the generated theme reads', () => {
     Object.entries(webFontVariable).forEach(([role, variable]) => {
       const family = fontFamily[role as keyof typeof fontFamily]
-      const paths = fontFor(variable)?.src.map(({ path }) => path) ?? []
 
-      expect(paths.length).toBeGreaterThan(0)
-      paths.forEach((path) => expect(path).toContain(`/${family}_`))
+      expect(fontFor(variable)?.src).toContain(`/${family.toLowerCase()}-`)
     })
   })
 
@@ -87,12 +100,16 @@ describe('root layout fonts', () => {
   })
 
   test('ships the OFL licence of both families beside the files', () => {
-    const licence = readFileSync(join(APP_DIR, 'fonts', 'OFL.txt'), 'utf8')
-
-    expect(licence).toContain('Copyright 2020 The Inter Project Authors')
-    expect(licence).toContain(
-      'Copyright 2011 The Montserrat Project Authors'
+    expect(licenceOf('inter')).toContain(
+      'Copyright 2020 The Inter Project Authors'
     )
-    expect(licence).toContain('SIL OPEN FONT LICENSE Version 1.1')
+    expect(licenceOf('montserrat')).toContain(
+      'Copyright 2024 The Montserrat.Git Project Authors'
+    )
+    ;['inter', 'montserrat'].forEach((family) =>
+      expect(licenceOf(family)).toContain(
+        'SIL OPEN FONT LICENSE Version 1.1'
+      )
+    )
   })
 })
