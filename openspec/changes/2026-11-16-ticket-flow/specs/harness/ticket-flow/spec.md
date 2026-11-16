@@ -162,13 +162,19 @@ whose description holds `USE WHEN:` and `DO NOT USE:`, and which has a `## CONTR
 - **THEN** it reports the missing `SKILL.md`, rather than judging six skills green
 - **Test:** `scripts/verify-skills.test.mjs` › "a missing ticket skill is caught, not skipped"
 
-#### Scenario: the check as a process
+#### Scenario: the check as a process, refusing
 
-- **GIVEN** a scratch tree that lacks a ticket skill, then the repository itself
+- **GIVEN** a scratch tree that lacks a ticket skill
 - **WHEN** `node scripts/verify-skills.mjs --root <tree>` runs
-- **THEN** it exits 1 naming the missing skill, and over the repository exits 0 with a line that
-  states what it judged and what it does not cover
-- **Test:** `scripts/verify-skills.test.mjs` › "the check run over a tree that lacks a ticket skill exits 1 and names it", "the check exits 0 over the repository and states what it judged"
+- **THEN** it exits 1, naming the missing skill
+- **Test:** `scripts/verify-skills.test.mjs` › "the check run over a tree that lacks a ticket skill exits 1 and names it"
+
+#### Scenario: the check as a process, passing
+
+- **GIVEN** the repository itself
+- **WHEN** `node scripts/verify-skills.mjs` runs
+- **THEN** it exits 0 with a line that states what it judged and what it does not cover
+- **Test:** `scripts/verify-skills.test.mjs` › "the check exits 0 over the repository and states what it judged"
 
 ### Requirement: TICKET-04 — process-intake ships the template of the project layer
 
