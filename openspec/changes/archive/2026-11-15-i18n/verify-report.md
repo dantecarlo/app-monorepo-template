@@ -85,6 +85,8 @@ that run showed. A test of behaviour the code already had is marked as such, and
   `init-project:test`, `verify:pairing`, `verify:structure`, `verify:security`,
   `verify:theme-sync:test`, `verify:theme-sync`, `mcp:docs:test`, `verify:mcp-docs:test`,
   `verify:mcp-docs`, `docs:diagrams:check`, `pnpm --filter @app/i18n test` and `pnpm knip`.
+- After the archive merged the deltas: `ATL_TEMPLATE_SELF=1 pnpm validate`: exit 0, 2026-11-16,
+  `verify:specs` included.
 - `pnpm --filter @app/web build`: exit 0. With Cache Components on, `/`, `/login` and
   `/_not-found` are partial prerenders: a static document shell and per-request content.
 - `pnpm --filter @app/mobile export:web`: exit 0; `apps/mobile/dist-web` was deleted afterwards.

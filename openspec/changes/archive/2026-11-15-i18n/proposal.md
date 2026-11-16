@@ -1,6 +1,6 @@
 # Proposal: show both apps in the active language, every string from the catalogs
 
-> **Status:** open
+> **Status:** archived — 2026-11-16
 
 ## Why
 
