@@ -18,5 +18,8 @@ export const LOGIN_ERROR_KEY = {
   PASSWORD: 'errors.password'
 } as const
 
+/** The route a sign-in replaces the login route with: the home page. */
+export const SIGN_IN_REDIRECT_PATH = '/'
+
 /** Initial, empty login form values. */
 export const EMPTY_VALUES: ILoginFormValues = { email: '', password: '' }

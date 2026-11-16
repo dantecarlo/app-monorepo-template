@@ -1,12 +1,46 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ChangeEvent, FormEvent } from 'react'
-import { describe, expect, test, vi } from 'vitest'
+import React from 'react'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
+
+const { mockSignIn } = vi.hoisted(() => ({ mockSignIn: vi.fn() }))
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: vi.fn() })
+}))
+
+vi.mock('next-intl', () => ({
+  useTranslations: () =>
+    Object.assign((key: string) => key, { has: () => false })
+}))
+
+vi.mock('@/lib/supabase/authGateway.adapter', () => ({
+  getAuthGateway: () => ({ signIn: mockSignIn })
+}))
 
 import { useLoginForm } from '@/screens/Login/hooks/useLoginForm.hook'
 import {
   LOGIN_ERROR_KEY,
   LOGIN_MIN_PASSWORD_LENGTH
 } from '@/screens/Login/Login.constant'
-import { act, renderHook } from '@/test/test.helper'
+import { act, renderHook, waitFor } from '@/test/test.helper'
+
+const VALID_EMAIL = 'user@example.com'
+const VALID_PASSWORD = 'a'.repeat(LOGIN_MIN_PASSWORD_LENGTH)
+
+const makeWrapper = () => {
+  const queryClient = new QueryClient()
+  const Wrapper = ({ children }: { children: React.ReactNode }) =>
+    React.createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      children
+    )
+  return Wrapper
+}
+
+const renderForm = () =>
+  renderHook(() => useLoginForm(), { wrapper: makeWrapper() })
 
 const changeEvent = (value: string) =>
   ({ target: { value } }) as ChangeEvent<HTMLInputElement>
@@ -18,18 +52,21 @@ const fillValid = (result: {
   current: ReturnType<typeof useLoginForm>
 }) => {
   act(() => {
-    result.current.onEmailChange(changeEvent('user@example.com'))
+    result.current.onEmailChange(changeEvent(VALID_EMAIL))
   })
   act(() => {
-    result.current.onPasswordChange(
-      changeEvent('a'.repeat(LOGIN_MIN_PASSWORD_LENGTH))
-    )
+    result.current.onPasswordChange(changeEvent(VALID_PASSWORD))
   })
 }
 
 describe('useLoginForm', () => {
+  beforeEach(() => {
+    mockSignIn.mockReset()
+    mockSignIn.mockReturnValue(new Promise(() => {}))
+  })
+
   test('starts empty with no errors and not submitting', () => {
-    const { result } = renderHook(() => useLoginForm())
+    const { result } = renderForm()
 
     expect(result.current.values).toEqual({ email: '', password: '' })
     expect(result.current.errors).toEqual({})
@@ -37,7 +74,7 @@ describe('useLoginForm', () => {
   })
 
   test('tracks email and password input', () => {
-    const { result } = renderHook(() => useLoginForm())
+    const { result } = renderForm()
 
     act(() => {
       result.current.onEmailChange(changeEvent('user@example.com'))
@@ -51,7 +88,7 @@ describe('useLoginForm', () => {
   })
 
   test('reports field error keys for an invalid submit', () => {
-    const { result } = renderHook(() => useLoginForm())
+    const { result } = renderForm()
     const event = submitEvent()
 
     act(() => {
@@ -64,8 +101,8 @@ describe('useLoginForm', () => {
     expect(result.current.isSubmitting).toBe(false)
   })
 
-  test('flips submitting on a valid submit and clears errors', () => {
-    const { result } = renderHook(() => useLoginForm())
+  test('sends the values to the sign-in on a valid submit and clears errors', async () => {
+    const { result } = renderForm()
     fillValid(result)
 
     act(() => {
@@ -73,6 +110,21 @@ describe('useLoginForm', () => {
     })
 
     expect(result.current.errors).toEqual({})
-    expect(result.current.isSubmitting).toBe(true)
+    await waitFor(() => expect(result.current.isSubmitting).toBe(true))
+    expect(mockSignIn).toHaveBeenCalledOnce()
+    expect(mockSignIn).toHaveBeenCalledWith({
+      email: VALID_EMAIL,
+      password: VALID_PASSWORD
+    })
+  })
+
+  test('does not sign in on an invalid submit', () => {
+    const { result } = renderForm()
+
+    act(() => {
+      result.current.onSubmit(submitEvent())
+    })
+
+    expect(mockSignIn).not.toHaveBeenCalled()
   })
 })
