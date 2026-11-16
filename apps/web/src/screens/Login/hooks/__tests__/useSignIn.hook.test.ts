@@ -1,89 +1,164 @@
-import type { IAuthSession } from '@app/core'
+import { AppError } from '@app/core'
+import { DEFAULT_LANGUAGE, resources } from '@app/i18n'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { NextIntlClientProvider } from 'next-intl'
 import React from 'react'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
+import { createQueryClient } from '@/lib/query/createQueryClient.helper'
+import { useToastStore } from '@/stores/toast.store'
 import { act, renderHook, waitFor } from '@/test/test.helper'
 
-const { mockAddToast, mockReplace, mockSignIn } = vi.hoisted(() => ({
-  mockAddToast: vi.fn(),
+// Only the browser Supabase client is replaced: the auth gateway, the auth
+// service, the adapter, the mutation, the toast store and the query client
+// are the real ones.
+const { mockReplace, mockSignInWithPassword } = vi.hoisted(() => ({
   mockReplace: vi.fn(),
-  mockSignIn: vi.fn()
+  mockSignInWithPassword: vi.fn()
 }))
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: mockReplace })
 }))
 
-vi.mock('next-intl', () => ({
-  useTranslations: () =>
-    Object.assign((key: string) => key, { has: () => true })
-}))
-
-vi.mock('@/stores/toast.store', () => ({
-  useToastStore: (
-    selector: (s: { add: typeof mockAddToast }) => unknown
-  ) => selector({ add: mockAddToast })
-}))
-
-vi.mock('@/lib/supabase/authGateway.adapter', () => ({
-  getAuthGateway: () => ({ signIn: mockSignIn })
+vi.mock('@/lib/supabase/client.adapter', () => ({
+  getSupabaseClient: () => ({
+    auth: { signInWithPassword: mockSignInWithPassword }
+  })
 }))
 
 import { useSignIn } from '@/screens/Login/hooks/useSignIn.hook'
 
 const CREDENTIALS = { email: 'user@example.com', password: 'secret-pass' }
 
-const SESSION: IAuthSession = {
-  accessToken: 'access-token',
-  expiresAt: null,
-  userId: 'usr_1'
+const messages = resources[DEFAULT_LANGUAGE].translation
+const GENERIC_MESSAGE = messages.helper.error.generic
+
+const SUPABASE_SESSION = {
+  access_token: 'access-token',
+  expires_at: 1_900_000_000,
+  user: { id: 'usr_1' }
 }
 
-const makeWrapper = () => {
-  const queryClient = new QueryClient()
+const renderSignIn = () => {
+  const onCaptureError = vi.fn()
+  const queryClient: QueryClient = createQueryClient({ onCaptureError })
   const Wrapper = ({ children }: { children: React.ReactNode }) =>
     React.createElement(
       QueryClientProvider,
       { client: queryClient },
-      children
+      React.createElement(NextIntlClientProvider, {
+        children,
+        locale: DEFAULT_LANGUAGE,
+        messages
+      })
     )
-  return Wrapper
+  const view = renderHook(() => useSignIn(), { wrapper: Wrapper })
+  return { ...view, onCaptureError, queryClient }
+}
+
+const signInAndSettle = async ({
+  result
+}: Pick<ReturnType<typeof renderSignIn>, 'result'>) => {
+  act(() => result.current.mutate(CREDENTIALS))
+  await waitFor(() => expect(mockSignInWithPassword).toHaveBeenCalled())
+  await waitFor(() => expect(result.current.isPending).toBe(false))
 }
 
 describe('useSignIn', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://demo.supabase.co')
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'anon-key')
+    useToastStore.getState().clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   test('replaces the route with the home page and keeps no token', async () => {
-    mockSignIn.mockResolvedValue(SESSION)
-    const { result } = renderHook(() => useSignIn(), {
-      wrapper: makeWrapper()
+    mockSignInWithPassword.mockResolvedValue({
+      data: { session: SUPABASE_SESSION },
+      error: null
     })
+    const { result } = renderSignIn()
 
     act(() => result.current.mutate(CREDENTIALS))
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(result.current.data).toEqual({ userId: 'usr_1' })
-    expect(mockReplace).toHaveBeenCalledOnce()
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledOnce())
     expect(mockReplace).toHaveBeenCalledWith('/')
+    expect(mockSignInWithPassword).toHaveBeenCalledWith(CREDENTIALS)
+    expect(useToastStore.getState().toasts).toEqual([])
   })
 
-  test('queues the toast of the error message key and stays on the route', async () => {
-    mockSignIn.mockRejectedValue(new Error('Invalid login credentials'))
-    const { result } = renderHook(() => useSignIn(), {
-      wrapper: makeWrapper()
-    })
+  test('queues the generic toast, reports the error once and stays on the route when the sign-in fails', async () => {
+    mockSignInWithPassword.mockRejectedValue(
+      new Error(
+        `Invalid login credentials for ${CREDENTIALS.email} with ${CREDENTIALS.password}`
+      )
+    )
+    const { onCaptureError, result } = renderSignIn()
 
-    act(() => result.current.mutate(CREDENTIALS))
+    await signInAndSettle({ result })
 
-    await waitFor(() => expect(result.current.isError).toBe(true))
-    expect(mockAddToast).toHaveBeenCalledOnce()
-    expect(mockAddToast).toHaveBeenCalledWith({
-      message: 'helper.error.generic',
-      variant: 'error'
+    await waitFor(() =>
+      expect(useToastStore.getState().toasts).toHaveLength(1)
+    )
+    const [toast] = useToastStore.getState().toasts
+    expect(toast).toEqual(
+      expect.objectContaining({
+        message: GENERIC_MESSAGE,
+        variant: 'error'
+      })
+    )
+    expect(toast?.message).not.toContain(CREDENTIALS.email)
+    expect(toast?.message).not.toContain(CREDENTIALS.password)
+    expect(onCaptureError).toHaveBeenCalledOnce()
+    const [captured, context] = onCaptureError.mock.calls[0] ?? []
+    expect(captured).toBeInstanceOf(AppError)
+    expect((captured as AppError).code).toBe('UNKNOWN')
+    expect(context).toEqual({ source: 'mutationCache' })
+    expect(mockReplace).not.toHaveBeenCalled()
+  })
+
+  test('keeps no credentials in the mutation cache after a rejected sign-in', async () => {
+    mockSignInWithPassword.mockRejectedValue(new Error('Invalid login'))
+    const { queryClient, result } = renderSignIn()
+
+    await signInAndSettle({ result })
+
+    await waitFor(() =>
+      expect(
+        queryClient
+          .getMutationCache()
+          .getAll()
+          .filter((mutation) =>
+            JSON.stringify(mutation.state.variables ?? null).includes(
+              CREDENTIALS.password
+            )
+          )
+      ).toEqual([])
+    )
+  })
+
+  test('queues the generic toast and stays on the route when the gateway returns no session', async () => {
+    mockSignInWithPassword.mockResolvedValue({
+      data: { session: null },
+      error: null
     })
+    const { result } = renderSignIn()
+
+    await signInAndSettle({ result })
+
+    await waitFor(() =>
+      expect(useToastStore.getState().toasts).toEqual([
+        expect.objectContaining({
+          message: GENERIC_MESSAGE,
+          variant: 'error'
+        })
+      ])
+    )
     expect(mockReplace).not.toHaveBeenCalled()
   })
 })

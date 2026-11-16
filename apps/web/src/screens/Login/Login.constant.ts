@@ -21,5 +21,11 @@ export const LOGIN_ERROR_KEY = {
 /** The route a sign-in replaces the login route with: the home page. */
 export const SIGN_IN_REDIRECT_PATH = '/'
 
+/**
+ * How long a settled sign-in stays in the mutation cache, which holds its
+ * email and password: not at all, rather than TanStack's default 5 minutes.
+ */
+export const SIGN_IN_GC_TIME_MS = 0
+
 /** Initial, empty login form values. */
 export const EMPTY_VALUES: ILoginFormValues = { email: '', password: '' }
