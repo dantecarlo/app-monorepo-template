@@ -6,8 +6,9 @@
 - [x] T4 — mobile: `useAppQuery` adds no toast; the dashboard shows the `ErrorState` with a retry when the items query fails; `RootErrorBoundary` reports the crash once through `reportBoundaryError` (F25) · Requirements: MOBILE-20, MOBILE-37 · Commit: 78df647
 - [x] T5 — web sign-in through the auth gateway: the `Auth` service and adapter, the shared browser gateway in `src/lib/supabase/authGateway.adapter.ts`, the sign-in hook and the login form; the middleware tests (F11) · Requirements: WEB-13, WEB-20, WEB-31 · Commit: 65749b5
 - [x] T6 — mobile: the result count once, a stable `useSession` (and the web one), no button without an action (F12) · Requirements: MOBILE-18, MOBILE-31, MOBILE-44, MOBILE-45 · Commit: e8b7c2b
-- [x] T7 — mobile light theme from the root: `themeVars` on the root view, `createThemedStyles` and `useThemedStyles`, every block on the active palette, `Screen` always themed, and the NativeWind preset reading each themed colour from its `--c-*` variable (F12) · Requirements: MOBILE-05, MOBILE-40, MOBILE-42, TOKENS-12, TOKENS-15 · Commit: 89b4d99,f0bc34c
-- [ ] T8 — the docs and the map; `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-15-app-behaviour/` as the last commit · Requirements: none · Commit: —
+- [x] T7 — mobile light theme from the root: `themeVars` on the root view, `createThemedStyles` and `useThemedStyles`, every StyleSheet block on the active palette, `Screen` always themed (F12) · Requirements: MOBILE-05, MOBILE-40, MOBILE-42 · Commit: 89b4d99
+- [x] T8 — the NativeWind preset reads each themed colour from its `--c-*` variable, so a class-styled block follows the theme (F12) · Requirements: MOBILE-42, TOKENS-12, TOKENS-15 · Commit: f0bc34c
+- [ ] T9 — the docs, the skills and the map; `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-15-app-behaviour/` as the last commit · Requirements: none · Commit: —
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of
