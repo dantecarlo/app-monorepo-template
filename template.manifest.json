@@ -101,6 +101,8 @@
     "scripts/verify-tests.test.mjs",
     "scripts/verify-theme-sync.mjs",
     "scripts/verify-theme-sync.test.mjs",
+    "scripts/verify-ticket-branch.mjs",
+    "scripts/verify-ticket-branch.test.mjs",
     "template.manifest.json",
     "tsconfig.base.json",
     "turbo.json"
