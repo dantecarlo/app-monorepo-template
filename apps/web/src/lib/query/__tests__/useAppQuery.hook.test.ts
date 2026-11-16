@@ -5,7 +5,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { act, renderHook, waitFor } from '@/test/test.helper'
 
 // ---------------------------------------------------------------------------
-// Mock the toast store — useAppQuery fires an error toast on failure.
+// Mock the toast store, so a test sees any toast useAppQuery would queue: a
+// failed query shows on its screen's ErrorState, never as a toast.
 // ---------------------------------------------------------------------------
 
 const { mockAddToast } = vi.hoisted(() => ({ mockAddToast: vi.fn() }))
@@ -14,12 +15,6 @@ vi.mock('@/stores/toast.store', () => ({
   useToastStore: (
     selector: (s: { add: typeof mockAddToast }) => unknown
   ) => selector({ add: mockAddToast })
-}))
-
-const tFn = Object.assign((key: string) => key, { has: () => false })
-
-vi.mock('next-intl', () => ({
-  useTranslations: () => tFn
 }))
 
 import { useAppQuery } from '@/lib/query/useAppQuery.hook'
@@ -89,75 +84,27 @@ describe('useAppQuery', () => {
     expect(result.current.data).toBe(42)
   })
 
-  test('fires an error toast with the override message on failure', async () => {
+  test('queues no toast when the query fails, however many components observe it', async () => {
+    const options = {
+      queryOptions: {
+        queryFn: async (): Promise<number> => {
+          throw new Error('network down')
+        },
+        queryKey: ['boom']
+      }
+    }
     const { result } = renderHook(
-      () =>
-        useAppQuery<number>({
-          errorMessage: 'Could not load',
-          queryOptions: {
-            queryFn: async () => {
-              throw new Error('network down')
-            },
-            queryKey: ['boom']
-          }
-        }),
+      () => ({
+        first: useAppQuery<number>(options),
+        second: useAppQuery<number>(options)
+      }),
       { wrapper: makeWrapper() }
     )
 
-    await waitFor(() => expect(result.current.isError).toBe(true))
-    await waitFor(() =>
-      expect(mockAddToast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: 'Could not load',
-          variant: 'error'
-        })
-      )
-    )
-  })
-
-  test('queues one error toast per failure however often it re-renders', async () => {
-    const { rerender, result } = renderHook(
-      () =>
-        useAppQuery<number>({
-          errorMessage: 'Could not load',
-          queryOptions: {
-            queryFn: async () => {
-              throw new Error('network down')
-            },
-            queryKey: ['boom-once']
-          }
-        }),
-      { wrapper: makeWrapper() }
-    )
-
-    await waitFor(() => expect(result.current.isError).toBe(true))
-    rerender()
-    rerender()
+    await waitFor(() => expect(result.current.first.isError).toBe(true))
+    expect(result.current.second.isError).toBe(true)
     await act(flushPendingTimers)
 
-    expect(mockAddToast).toHaveBeenCalledOnce()
-  })
-
-  test('queues another error toast when the query fails again', async () => {
-    const { result } = renderHook(
-      () =>
-        useAppQuery<number>({
-          errorMessage: 'Could not load',
-          queryOptions: {
-            queryFn: async () => {
-              throw new Error('network down')
-            },
-            queryKey: ['boom-twice']
-          }
-        }),
-      { wrapper: makeWrapper() }
-    )
-
-    await waitFor(() => expect(result.current.isError).toBe(true))
-    await act(async () => {
-      await result.current.refetch()
-    })
-
-    await waitFor(() => expect(mockAddToast).toHaveBeenCalledTimes(2))
+    expect(mockAddToast).not.toHaveBeenCalled()
   })
 })

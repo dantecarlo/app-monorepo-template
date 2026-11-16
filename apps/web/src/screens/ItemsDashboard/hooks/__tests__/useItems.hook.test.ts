@@ -107,4 +107,23 @@ describe('useItems', () => {
       )
     )
   })
+
+  test('reports the failure and runs the query again on retry', async () => {
+    mockGetItems.mockRejectedValueOnce(new Error('items down'))
+    mockGetItems.mockResolvedValueOnce(MOCK_ITEM_DTOS)
+
+    const { result } = renderHook(() => useItems(), {
+      wrapper: makeWrapper()
+    })
+
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(result.current.items).toEqual([])
+    expect(mockGetItems).toHaveBeenCalledOnce()
+
+    act(() => result.current.onRetry())
+
+    await waitFor(() => expect(result.current.isError).toBe(false))
+    expect(mockGetItems).toHaveBeenCalledTimes(2)
+    expect(result.current.items).toHaveLength(MOCK_ITEM_DTOS.length)
+  })
 })

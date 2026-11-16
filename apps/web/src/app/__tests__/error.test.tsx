@@ -1,25 +1,42 @@
 import { DEFAULT_LANGUAGE, resources } from '@app/i18n'
 import { NextIntlClientProvider } from 'next-intl'
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
+
+const { mockCaptureError } = vi.hoisted(() => ({
+  mockCaptureError: vi.fn()
+}))
+
+vi.mock('@/lib/observability/observability.adapter', () => ({
+  observability: { captureError: mockCaptureError }
+}))
 
 import RouteError from '@/app/error'
+import { BOUNDARY_ERROR_SOURCE } from '@/lib/observability/observability.constant'
 import { fireEvent, render, screen } from '@/test/test.helper'
 
 const messages = resources[DEFAULT_LANGUAGE].translation
 const errorStateCopy = messages.components.errorState
 
+const routeError = ({
+  error,
+  retry
+}: {
+  error: Error
+  retry: () => void
+}) => (
+  <NextIntlClientProvider locale={DEFAULT_LANGUAGE} messages={messages}>
+    <RouteError error={error} reset={vi.fn()} unstable_retry={retry} />
+  </NextIntlClientProvider>
+)
+
 const renderRouteError = ({ retry }: { retry: () => void }) =>
-  render(
-    <NextIntlClientProvider locale={DEFAULT_LANGUAGE} messages={messages}>
-      <RouteError
-        error={new Error('render failed')}
-        reset={vi.fn()}
-        unstable_retry={retry}
-      />
-    </NextIntlClientProvider>
-  )
+  render(routeError({ error: new Error('render failed'), retry }))
 
 describe('RouteError', () => {
+  beforeEach(() => {
+    mockCaptureError.mockClear()
+  })
+
   test('renders the generic error state for a render crash', () => {
     renderRouteError({ retry: vi.fn() })
 
@@ -37,5 +54,19 @@ describe('RouteError', () => {
     )
 
     expect(retry).toHaveBeenCalledOnce()
+  })
+
+  test('reports the crash to observability once', () => {
+    const error = new Error('render failed')
+    const retry = vi.fn()
+    const { rerender } = render(routeError({ error, retry }))
+
+    rerender(routeError({ error, retry }))
+
+    expect(mockCaptureError).toHaveBeenCalledOnce()
+    expect(mockCaptureError).toHaveBeenCalledWith({
+      context: { source: BOUNDARY_ERROR_SOURCE },
+      error
+    })
   })
 })
