@@ -19,6 +19,17 @@ const EXEMPT_URLS = [
   'https://app.example.com/fonts/Inter_400Regular.ttf'
 ]
 
+// Paths that only start like an exempt one: each is a route, so the guard runs.
+const LOOKALIKE_URLS = [
+  'https://app.example.com/imagesadmin',
+  'https://app.example.com/images',
+  'https://app.example.com/fonts-private/x',
+  'https://app.example.com/favicon.icox',
+  'https://app.example.com/faviconXico',
+  'https://app.example.com/_next/staticfoo',
+  'https://app.example.com/_next/imagefoo'
+]
+
 const loadMiddleware = async () => import('@/middleware')
 
 const requestWith = (headers: Record<string, string> = {}) =>
@@ -71,6 +82,17 @@ describe('middleware', () => {
 
     EXEMPT_URLS.forEach((url) => {
       expect(unstable_doesMiddlewareMatch({ config, url })).toBe(false)
+    })
+  })
+
+  test('runs for a path that only starts like an exempt one', async () => {
+    const { config } = await loadMiddleware()
+
+    LOOKALIKE_URLS.forEach((url) => {
+      expect({
+        matched: unstable_doesMiddlewareMatch({ config, url }),
+        url
+      }).toEqual({ matched: true, url })
     })
   })
 
