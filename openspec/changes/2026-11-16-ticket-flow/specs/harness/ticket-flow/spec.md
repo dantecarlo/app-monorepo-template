@@ -10,18 +10,21 @@
 `.claude/skills/ticket-flow/SKILL.md` SHALL carry the contract every role reads first, as its
 sections: a pre-flight that reads docs/process/ticket-flow.md and sends a team with no board
 adapter to `process-intake`, the board operations with their GitHub Issues mapping, the states and
-transitions naming each of the ten states, the architect as dispatcher, the messages, the rules
-every role follows, the ticket identity, what a ticket carries and the Ready to merge conditions,
-beside `ticket.template.md`, the body a ticket is written from, in its folder.
+transitions naming each of the thirteen states (the ten of the build and the three of the
+release), the architect as dispatcher, the messages, the roles naming each of the six (the CI/CD
+role included), the rules every role follows, the ticket identity, what a ticket carries, the
+Ready to merge conditions and the release stage, beside two templates in its folder:
+`ticket.template.md`, the body a ticket is written from, and `release.template.md`, the body of a
+release ticket.
 
 **Evidence:** written at apply time, when the code exists.
 
 #### Scenario: the contract of the repository
 
-- **GIVEN** the repository's six ticket skills
+- **GIVEN** the repository's seven ticket skills
 - **WHEN** `pnpm verify:ticket-branch:test` runs
 - **THEN** the structural check finds nothing
-- **Test:** `scripts/verify-skills.test.mjs` › "the six ticket skills of the repository pass"
+- **Test:** `scripts/verify-skills.test.mjs` › "the seven ticket skills of the repository pass"
 
 #### Scenario: a state is dropped
 
@@ -51,10 +54,24 @@ beside `ticket.template.md`, the body a ticket is written from, in its folder.
 - **THEN** it reports the missing file
 - **Test:** `scripts/verify-skills.test.mjs` › "a ticket-flow without its ticket template is refused"
 
+#### Scenario: the CI/CD role is dropped
+
+- **GIVEN** a `ticket-flow` whose roles table has no CI/CD row
+- **WHEN** the structural check runs
+- **THEN** it reports one finding, naming the role
+- **Test:** `scripts/verify-skills.test.mjs` › "a ticket-flow whose roles table has no CI/CD row is refused"
+
+#### Scenario: the release template is gone
+
+- **GIVEN** a `ticket-flow` folder with no `release.template.md`
+- **WHEN** the structural check runs
+- **THEN** it reports the missing file
+- **Test:** `scripts/verify-skills.test.mjs` › "a ticket-flow without its release template is refused"
+
 ### Requirement: TICKET-02 — A role skill sends its reader to the contract and never restates it
 
-`po-ticket`, `refine-ticket`, `dev-ticket` and `qa-ticket` SHALL each open, in the first paragraph
-after their title, by sending the reader to `.claude/skills/ticket-flow/SKILL.md`, and hold
+`po-ticket`, `refine-ticket`, `dev-ticket`, `qa-ticket` and `release-ticket` SHALL each open, in
+the first paragraph after their title, by sending the reader to `.claude/skills/ticket-flow/SKILL.md`, and hold
 neither the contract's states table nor its board operations table.
 
 **Evidence:** written at apply time, when the code exists.
@@ -82,7 +99,7 @@ neither the contract's states table nor its board operations table.
 
 ### Requirement: TICKET-03 — Every ticket skill has the shape of a template skill
 
-Each of the six ticket skills SHALL have a `SKILL.md` whose frontmatter `name` is its folder,
+Each of the seven ticket skills SHALL have a `SKILL.md` whose frontmatter `name` is its folder,
 whose description holds `USE WHEN:` and `DO NOT USE:`, and which has a `## CONTRACT` and an
 `## Output` section.
 
@@ -90,7 +107,7 @@ whose description holds `USE WHEN:` and `DO NOT USE:`, and which has a `## CONTR
 
 #### Scenario: healthy skills
 
-- **GIVEN** six synthetic ticket skills with every section
+- **GIVEN** seven synthetic ticket skills with every section
 - **WHEN** the structural check runs
 - **THEN** it finds nothing
 - **Test:** `scripts/verify-skills.test.mjs` › "healthy ticket skills pass"
@@ -143,7 +160,9 @@ whose description holds `USE WHEN:` and `DO NOT USE:`, and which has a `## CONTR
 `.claude/skills/process-intake/` SHALL hold `ticket-flow.template.md`, the template of a
 project's docs/process/ticket-flow.md, with sections for the board adapter (its kind and a row
 for each of the five operations: create, read, move, comment and link), the states, the roles and
-sessions, the approvals, the merge policy, the ticket identity and the branch check in CI.
+sessions, the approvals, the merge policy, the ticket identity, the branch check in CI, the deploy
+targets (a table of each target's kind, trigger, order, check, rollback and secret store) and the
+branching model.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -167,6 +186,13 @@ sessions, the approvals, the merge policy, the ticket identity and the branch ch
 - **WHEN** the structural check runs
 - **THEN** it reports the missing file
 - **Test:** `scripts/verify-skills.test.mjs` › "a missing process template is caught, not skipped"
+
+#### Scenario: no deploy targets section
+
+- **GIVEN** a process template with no deploy targets section
+- **WHEN** the structural check runs
+- **THEN** it reports the missing section
+- **Test:** `scripts/verify-skills.test.mjs` › "a process template without the deploy targets section is refused"
 
 ### Requirement: TICKET-05 — A ticket branch whose body names its id passes
 
@@ -361,3 +387,84 @@ the team to confirm them.
 - **WHEN** `process-intake` runs
 - **THEN** it asks the team to paste the document and fetches nothing
 - **Test:** Not covered — the rule is a procedure an agent follows; no runner drives a session
+
+### Requirement: TICKET-14 — The release skill carries the release, and the architect groups it
+
+`.claude/skills/release-ticket/SKILL.md` SHALL carry sections for the deploy targets, the
+branching (the recommended default with a `production` branch, and the tags-only alternative),
+the migrations and the hotfix, and `.claude/skills/refine-ticket/SKILL.md` a section that groups
+Done tickets into a release ticket.
+
+**Evidence:** written at apply time, when the code exists.
+
+#### Scenario: the branching is gone
+
+- **GIVEN** a `release-ticket` with no branching section
+- **WHEN** the structural check runs
+- **THEN** it reports the missing section
+- **Test:** `scripts/verify-skills.test.mjs` › "a release-ticket without its branching section is refused"
+
+#### Scenario: the alternative is gone
+
+- **GIVEN** a `release-ticket` whose branching section never names the tags-only alternative
+- **WHEN** the structural check runs
+- **THEN** it reports one finding, naming the section and what it owes
+- **Test:** `scripts/verify-skills.test.mjs` › "a release-ticket whose branching names no tags-only alternative is refused"
+
+#### Scenario: the architect cannot group a release
+
+- **GIVEN** a `refine-ticket` with no section that groups a release
+- **WHEN** the structural check runs
+- **THEN** it reports the missing section
+- **Test:** `scripts/verify-skills.test.mjs` › "a refine-ticket without its release step is refused"
+
+### Requirement: TICKET-15 — A release enters Ready for prod only when its batch is proven
+
+`refine-ticket` SHALL move a release ticket to Ready for prod only when every ticket it lists is
+Done, the default branch's CI is green, and the QA of each area the batch touches has checked it
+on staging or preview, with evidence on the release ticket.
+
+**Evidence:** written at apply time, when the code exists.
+
+#### Scenario: an area not checked on staging
+
+- **GIVEN** a release ticket whose batch touches web and backend, with web evidence only
+- **WHEN** the architect would move it to Ready for prod
+- **THEN** it stays in Refinement, and the backend QA is asked to check it on staging
+- **Test:** Not covered — the rule is a procedure an architect session follows; no runner drives
+  a session
+
+### Requirement: TICKET-16 — Each deploy target runs on the owner's word, in order, checked
+
+`release-ticket` SHALL run the deploy targets a release touches in the order the project layer
+declares, only on the owner's word for the release and for each irreversible step, recorded on
+the release ticket, check each target, run a failed target's declared rollback and stop the
+release, and read every deploy secret from the store the target names, never from a ticket.
+
+**Evidence:** written at apply time, when the code exists.
+
+#### Scenario: a target fails its check
+
+- **GIVEN** a release whose migration target passed and whose web target fails its check
+- **WHEN** the CI/CD role reads the check
+- **THEN** it runs the web target's rollback, runs no later target, comments on the release
+  ticket and messages the architect that the target failed
+- **Test:** Not covered — the rule is a procedure a CI/CD session follows; no runner drives a
+  session or a deploy
+
+### Requirement: TICKET-17 — A migration in a release keeps the live app running
+
+`release-ticket` SHALL ship only backward-compatible migrations, expanding the schema in one
+release and contracting it in a later one, so a mobile app version already in the store keeps
+running against the new schema, and declare a migration's rollback as a forward fix.
+
+**Evidence:** written at apply time, when the code exists.
+
+#### Scenario: a column the live app still reads
+
+- **GIVEN** a release whose migration drops a column the store version of the app reads
+- **WHEN** the CI/CD role reads the release ticket
+- **THEN** it stops, comments that the drop needs its own later release, and messages the
+  architect
+- **Test:** Not covered — the rule is a procedure a CI/CD session follows; no runner drives a
+  session

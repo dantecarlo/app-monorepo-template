@@ -1,4 +1,4 @@
-# Proposal: the ticket flow, six skills every project adopts and a branch check
+# Proposal: the ticket flow, seven skills every project adopts and a branch check
 
 > **Status:** open
 
@@ -26,32 +26,41 @@ The owner's words, verbatim:
 - 2026-11-16, relayed the same way (translated from Spanish): a session may split its work into
   subagents or subsessions; each one is deleted as soon as it finishes; none stays idle; and no
   session duplicates one that exists.
+- 2026-11-16 at 12:38, the release stage, § 8b of the source (translated from Spanish): "when a
+  group of tickets is ready, mark them ready for prod and there ask its corresponding CI/CD to
+  launch the deploy ... we also need a strategy, which must also be adaptable, for the web
+  deployment. It can be a branching"; and, approving § 8b as written (translated from Spanish):
+  "I approve it"
 
 Two corrections from Certifipago's Arquitecto, accepted by the coordinator on 2026-11-16, are
 applied below: the board adapter has three kinds of filler, and Ready to merge requires the
-default branch's current tip.
+default branch's current tip. The release stage the owner approved at 12:38 is § 8b of the same
+file, copied with it, and built here with the template's changes to it.
 
 ## What changes
 
-- **Six skills** under `.claude/skills/`, each in the shape `.claude/skills/new-skill/SKILL.md`
+- **Seven skills** under `.claude/skills/`, each in the shape `.claude/skills/new-skill/SKILL.md`
   sets (frontmatter, USE WHEN and DO NOT USE, a CONTRACT and an Output):
   - `ticket-flow`, the contract every role reads first: the pre-flight, the board operations and
     their GitHub Issues mapping, the states and transitions, the architect as dispatcher, the
-    one-line messages, the rules, the ticket identity, what a ticket carries, the Ready to merge
-    conditions, and `ticket.template.md`, the body a ticket is written from;
-  - four thin role procedures, `po-ticket`, `refine-ticket`, `dev-ticket` and `qa-ticket`, each
-    opening with "read `ticket-flow` first" and never restating it;
+    one-line messages, the roles, the rules, the ticket identity, what a ticket carries, the Ready
+    to merge conditions, the release stage, and two templates: `ticket.template.md`, the body a
+    ticket is written from, and `release.template.md`, the body of a release ticket;
+  - five role procedures, `po-ticket`, `refine-ticket`, `dev-ticket`, `qa-ticket` and
+    `release-ticket` (the CI/CD role), each opening with "read `ticket-flow` first" and never
+    restating it; `release-ticket` holds the deploy targets, the default branching and its
+    tags-only alternative, the migration rules and the hotfix;
   - `process-intake`, which writes a project's layer, docs/process/ticket-flow.md, from
     `ticket-flow.template.md` in its own folder.
 - **The skills' structural check.** No gate checks a skill's shape today, so
-  `scripts/verify-skills.mjs` (pure) and `scripts/verify-skills.test.mjs` hold the six to their
-  sections: the shape above, every state and every board operation named, the role skills'
-  opening and the two tables they must not copy, and both templates' sections.
+  `scripts/verify-skills.mjs` (pure) and `scripts/verify-skills.test.mjs` hold the seven to their
+  sections: the shape above, every state, role and board operation named, the role skills'
+  opening and the two tables they must not copy, and the three templates' sections.
 - **The branch check.** `scripts/verify-ticket-branch.mjs`, pure and tested, checks a branch
   `<type>/<id>-<slug>` and that the pull request body names the same id. `pnpm verify:ticket-branch`
   runs it; it is not in `validate`. `pnpm verify:ticket-branch:test` runs its test and the skills'
   structural test, and is in `validate`, because both run offline.
-- **The router and the docs.** A `process` table in the `AGENTS.md` router with the six skills;
+- **The router and the docs.** A `process` table in the `AGENTS.md` router with the seven skills;
   `docs/harness.md`, `docs/maps/global-map.md`, `.claude/skill-registry.md` and the
   `template.manifest.json` claims of every new file.
 - **The living spec.** `openspec/specs/harness/ticket-flow/spec.md`, prefix `TICKET`, with its row
@@ -61,7 +70,7 @@ default branch's current tip.
 
 The template's answers to the source's § 9, and every change it makes to the source:
 
-1. § 9, one skill or five: six skills, as § 7 lists them; the four role skills are thin procedures that open with "read `ticket-flow` first" and never restate it.
+1. § 9, one skill or five: the six skills § 7 lists, plus `release-ticket` for § 8b; the five role skills are procedures that open with "read `ticket-flow` first" and never restate it.
 2. Skills, not subagents: a role is played by a whole long-lived session, so the unit is a skill that session loads; a session may still use subagents for its own subtasks, under § 5 rule 3.
 3. The board is a declared interface of five operations (create a ticket, read it, move its state, comment, link a branch or PR), and the skills speak only in those operations (decision 51).
 4. A project fills the board interface with one of three kinds: (a) `gh`, GitHub Issues, the template's default; (b) an MCP connector (Notion, Jira or Linear); (c) the project's own scripts.
@@ -87,7 +96,23 @@ The template's answers to the source's § 9, and every change it makes to the so
 24. § 4, a question message: a session that asks on the ticket messages the owner of the answer with the one line `<id> question`.
 25. § 2, a change of scope: the PO records it on the ticket, quoting the client verbatim, and messages the architect `<id> scope changed`, so the architect re-refines it.
 26. § 7, the ticket template: `ticket-flow` ships it as `ticket.template.md`, one section per item of § 6, and `po-ticket` writes a ticket from it.
-27. The six skills are routed in a `process` table of the `AGENTS.md` router.
+27. The seven skills are routed in a `process` table of the `AGENTS.md` router, `release-ticket` included.
+28. § 8b, the release states: Ready for prod, In release and Released follow Done, with their transitions and notifier lines, the CI/CD role joins the roles table, and `release-ticket` is its skill.
+29. Ready for prod requires every listed ticket Done, the default branch's CI green, and the batch checked on staging or preview by the QA of each touched area, with evidence on the release ticket.
+30. While that evidence is gathered the release ticket sits in Refinement: the architect asks each touched area's QA with `<release-id> check on staging`, QA answers `<release-id> staging checked`, and a failed check becomes a fix ticket the release then lists, or its feature is switched off by its flag, before the release moves on.
+31. Deploy targets are adapters declared in the project layer like the board adapter; each declares its kind (a branch a host deploys, a CLI, an over-the-air update, a store build, a migration push), its trigger, order, check and rollback, and the secret store it reads.
+32. A mobile target declares whether a change ships as an over-the-air update (JS-only, the same runtime version) or needs a store build (a native change); they are two target kinds.
+33. Migrations in a release are backward compatible, expand then contract in a later release, because a mobile app version already in the store keeps running against the new schema for days; a migration that would break the live app or web has its contract step split into its own later release.
+34. A migration has no rollback beyond a forward fix, and its target says so.
+35. The release ticket carries the listed tickets, the version per target, the migrations, the changelog, the rollback per target, the staging evidence and the owner's go for each irreversible step, recorded on the ticket; `ticket-flow` ships it as `release.template.md`.
+36. Credentials stay out of tickets: deploy secrets live in the host or CI secret store the target names, and a ticket never holds one.
+37. A failed target runs that target's declared rollback and stops the release; the CI/CD role comments on the release ticket and messages the architect `<release-id> <target> failed`.
+38. Every deploy and every merge to `production` stays the owner's word (§ 5 rule 4), per release and per irreversible step, given in the CI/CD session and recorded on the release ticket.
+39. A hotfix is a ticket of type `fix` on a branch from `production`; it goes through QA like any other ticket, its Ready to merge asks for `production`'s current tip instead of the default branch's, and after it ships `production` merges back into the default branch on the owner's word.
+40. The default branching of § 8b is the recommended one and the tags-only alternative is described beside it, both in `release-ticket`; the template ships no `production` branch of its own, it is the default a project's layer adopts.
+41. With a release stage, the architect closes the tickets a release lists once it is Released and messages the PO `<release-id> released`; a project with no deploy targets closes a ticket after Done, as § 3 says.
+42. A release ticket has the type `release` and no branch of its own; the release pull request, from the default branch to `production`, is merged and never rebased, and a project's branch check in CI skips it.
+43. `process-intake` asks for the deploy targets and the branching model, and the process-layer template has a section for each.
 
 ## Out of scope
 
@@ -96,14 +121,16 @@ The template's answers to the source's § 9, and every change it makes to the so
 - Wiring `verify:ticket-branch` into this template's CI: its own branches carry no ticket ids.
 - An MCP or script board adapter: the template ships the GitHub Issues mapping; a project writes
   its own in its layer.
+- A `production` branch, a deploy job or a host configuration in the template: § 8b's branching is
+  the default a project adopts; the template's own repository deploys nothing.
 - `/init` calling `process-intake`: `/init` is Stage 6; the coordinator adds the row to the plan's
   `/init` table.
-- The other skills of `.claude/skills/`: the structural check judges only the six ticket skills,
+- The other skills of `.claude/skills/`: the structural check judges only the seven ticket skills,
   as most others carry no DO NOT USE, CONTRACT or Output yet.
 
 ## Affected specs
 
-- `openspec/specs/harness/ticket-flow/spec.md` (new): added TICKET-01 to TICKET-13.
+- `openspec/specs/harness/ticket-flow/spec.md` (new): added TICKET-01 to TICKET-17.
 
 ## Open questions
 

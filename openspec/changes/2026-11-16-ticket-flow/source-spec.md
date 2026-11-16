@@ -107,6 +107,47 @@ instead of restating them.
 - The router points at it, and the project's agent instructions name the role each session
   plays.
 
+## 8b. Release stage (owner-approved, 2026-11-16 12:38)
+
+**States after Done:**
+
+| State | Entered by | Then |
+|---|---|---|
+| Ready for prod | the architect groups Done tickets into a release ticket that lists them | the CI/CD role is told "<release-id> ready for prod" |
+| In release | the CI/CD role, on the owner's word | it runs each deploy target the release touches, in dependency order |
+| Released | the CI/CD role, after checking production | the architect is told, and the architect tells the PO, who updates the plan |
+
+**CI/CD role.** One session runs every deploy target and never decides whether to release. The
+owner's word does, per release and per irreversible step (a production migration, a store
+submission).
+
+**Deploy targets are adapters**, declared in the project layer like the board adapter: a
+branch a host deploys, a CLI, a store pipeline, a migration push. Each one declares its trigger,
+its order, its check and its rollback.
+
+**Default branching (recommended):**
+- The default branch is integration, deployed to staging or preview. QA works there.
+- A long-lived `production` branch is what is live.
+- A web release is a PR from the default branch to `production`, merged on the owner's word,
+  never rebased. The host deploys it.
+- A mobile release is a tag (`app-vX.Y.Z`) on that `production` commit. The CI/CD role builds it
+  and submits it to the store track the owner names.
+- Schema migrations in the batch go to production first, on the owner's word, so the web and the
+  app find the schema they expect.
+- A hotfix branches from `production`, merges back into it, and then `production` merges into
+  the default branch.
+
+**What a batch is.** With a production branch, a release ships everything merged since the
+last release. Unfinished work stays behind a feature flag or off the default branch.
+
+**Alternative a project may declare:** tags only (`web-vX`, `app-vX`) on the default branch,
+each tag running a deploy job.
+
+**Certifipago's targets:**
+- Vercel, with its production branch moved to `production` (master deploys production today);
+- EAS build and Play submit, run by the session "Certifipago - CI/CD";
+- Supabase migrations pushed to the production project.
+
 ## 9. Open for the template to decide
 
 - Whether the role skills are one skill with role sections or five skills.
