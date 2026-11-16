@@ -1,12 +1,14 @@
 import '@/app/globals.css'
 
-import { APP_NAME, DEFAULT_LANGUAGE, resources } from '@app/i18n'
+import { APP_NAME, DEFAULT_LANGUAGE } from '@app/i18n'
 import { DEFAULT_THEME } from '@app/tokens'
 import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
+import { Suspense } from 'react'
 
-import { SupabaseProviders } from '@/app/SupabaseProviders'
+import { LocaleProviders } from '@/app/LocaleProviders'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { NO_FLASH_LOCALE_SCRIPT } from '@/i18n/noFlashLocale.constant'
 import { NO_FLASH_THEME_SCRIPT } from '@/lib/theme/noFlashTheme.constant'
 
 // Self-hosted, so the build never fetches a font. The files in ./fonts are the
@@ -55,35 +57,37 @@ interface IRootLayoutProps {
   children: React.ReactNode
 }
 
-const RootLayout = ({ children }: IRootLayoutProps) => {
-  const messages = resources[DEFAULT_LANGUAGE].translation
-
-  return (
-    <html
-      className={`${montserrat.variable} ${inter.variable}`}
-      data-theme={DEFAULT_THEME}
-      lang="en"
-      suppressHydrationWarning
-    >
-      <head>
-        {/* Blocking pre-paint script: resolves the theme before first paint
-            (NEXT_THEME cookie first, else prefers-color-scheme) and overrides
-            the static default data-theme above with zero flash. The layout
-            stays static — reading cookies() here would make every route
-            dynamic under Cache Components. */}
-        <script
-          dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME_SCRIPT }}
-        />
-      </head>
-      <body className="min-h-screen">
-        <ThemeProvider>
-          <SupabaseProviders messages={messages}>
-            {children}
-          </SupabaseProviders>
-        </ThemeProvider>
-      </body>
-    </html>
-  )
-}
+// The document shell is static: it writes the default language and theme,
+// which the pre-paint scripts replace with the cookie's choices, and renders
+// the providers inside <Suspense>, where LocaleProviders reads the request's
+// locale. Reading it outside <Suspense> would block every route.
+const RootLayout = ({ children }: IRootLayoutProps) => (
+  <html
+    className={`${montserrat.variable} ${inter.variable}`}
+    data-theme={DEFAULT_THEME}
+    lang={DEFAULT_LANGUAGE}
+    suppressHydrationWarning
+  >
+    <head>
+      {/* Blocking pre-paint scripts: the theme's resolves data-theme from the
+          NEXT_THEME cookie, else prefers-color-scheme, and the locale's sets
+          lang from the NEXT_LOCALE cookie, both before first paint and over
+          the static defaults above. */}
+      <script
+        dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME_SCRIPT }}
+      />
+      <script
+        dangerouslySetInnerHTML={{ __html: NO_FLASH_LOCALE_SCRIPT }}
+      />
+    </head>
+    <body className="min-h-screen">
+      <ThemeProvider>
+        <Suspense>
+          <LocaleProviders>{children}</LocaleProviders>
+        </Suspense>
+      </ThemeProvider>
+    </body>
+  </html>
+)
 
 export default RootLayout
