@@ -29,9 +29,12 @@ session did not build it. `move` it to In QA.
 
 ## Step 2 — Check out the branch
 
+The branch is the one the ticket names, in the shape the project layer's ticket identity sets
+(`<type>/<id>-<slug>` by default; see `ticket-flow` § Ticket identity).
+
 ```bash
 git fetch origin
-git worktree add <repo-parent>/<repo>-worktrees/qa-<id> <type>/<id>-<slug>
+git worktree add <repo-parent>/<repo>-worktrees/qa-<id> <branch>
 ```
 
 Never check a ticket in the dev session's worktree.

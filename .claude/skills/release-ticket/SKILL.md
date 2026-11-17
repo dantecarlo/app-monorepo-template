@@ -96,9 +96,9 @@ declares its kind, its trigger, its order, its check, its rollback and the secre
 
 A mobile target declares which of the two a change takes: an over-the-air update when only
 JavaScript changed and the runtime version is the same, a store build when native code or the
-runtime version changed. Certifipago, for example, declares a host branch (Vercel, its production
-branch moved to `production`), a store build (EAS build and Play submit, run by its CI/CD
-session) and a migration push (Supabase, to the production project).
+runtime version changed. A project may, for example, declare a host branch (a host whose
+production branch is `production`), a store build (a build service and a store submit, run by
+its CI/CD session) and a migration push (to the production database).
 
 ---
 

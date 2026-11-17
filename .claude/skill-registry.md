@@ -42,7 +42,7 @@ Last updated: 2026-11-17
 
 ### dev-ticket
 
-- **Description**: The dev role of the ticket flow: picks up a ticket in Ready for dev, builds it in a worktree of its own on the branch `<type>/<id>-<slug>`, test first under the project's workflow (SDD when a living spec changes), runs the validation gate, opens the pull request that links the ticket and moves it to Ready for QA; on Changes requested, fixes it in the same worktree.
+- **Description**: The dev role of the ticket flow: picks up a ticket in Ready for dev, builds it in a worktree of its own on the ticket's branch (`<type>/<id>-<slug>` unless the project layer's ticket identity says otherwise), test first under the project's workflow (SDD when a living spec changes), runs the validation gate, opens the pull request that links the ticket and moves it to Ready for QA; on Changes requested, fixes it in the same worktree.
 - **Triggers**: "<id> ready for dev", "<id> changes requested", "pick up ticket <id>", "build the hotfix <id>", a dev session of the ticket flow starts work
 - **DO NOT USE**: a change with no ticket (the scope guard of `ticket-flow` files one first), checking a build (use `qa-ticket`), or a deploy (use `release-ticket`)
 - **Path**: `.claude/skills/dev-ticket/SKILL.md`

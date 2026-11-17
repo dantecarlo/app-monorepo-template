@@ -32,6 +32,7 @@ import {
   SKILLS_ROOT,
   STATES_TABLE_HEADER
 } from './verify-skills.mjs'
+import { DEFAULT_IDENTITY, IDENTITY_INFO } from './verify-ticket-branch.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const CHECK = join(HERE, 'verify-skills.mjs')
@@ -55,6 +56,19 @@ const LOW_RISK_NAMED = 'It names `low-risk`.'
 const NAMES_NOTHING = 'It names nothing.'
 const POLICY_FIELD = '- **Policy:**'
 const POLICY_LINE = `${POLICY_FIELD} \`manual\``
+const IDENTITY = '## Ticket identity'
+const BRANCH_TYPES_NAMED = 'It names `branchTypes`.'
+const BLOCK_NAMED = `It names \`${IDENTITY_INFO}\`.`
+const REQUIRED_SLUG = '"slug": "required"'
+
+// The block a process template's Ticket identity section ships: the branch
+// check's defaults, as JSON.
+const IDENTITY_BLOCK = [
+  `\`\`\`${IDENTITY_INFO}`,
+  JSON.stringify(DEFAULT_IDENTITY, null, 2),
+  '```'
+]
+const ANY_IDENTITY_BLOCK = /```json ticket-identity\n[\s\S]*?\n```\n/u
 
 const frontmatter = ({ name }) =>
   [
@@ -74,8 +88,9 @@ const tableOf = ({ header, keys }) => [
 ]
 
 // One section per heading the contract names, with its table under it when
-// the contract names one, the text a section must mention, and the line a
-// section must give its default in.
+// the contract names one, the text a section must mention, the line a
+// section must give its default in, and the ticket identity block a section
+// must hold.
 const sectionsOf = ({ contract }) =>
   contract.headings.flatMap((heading) => {
     const table = (contract.tables ?? []).find(
@@ -87,11 +102,14 @@ const sectionsOf = ({ contract }) =>
     const defaults = (contract.defaults ?? [])
       .filter((item) => item.heading === heading)
       .map(({ field, value }) => `${field} ${value}`)
+    const identity =
+      contract.identity?.heading === heading ? [...IDENTITY_BLOCK, ''] : []
     return [
       heading,
       '',
       ...mentions,
       ...defaults,
+      ...identity,
       ...(table ? tableOf(table) : []),
       ''
     ]
@@ -528,6 +546,78 @@ export const CASES = [
     }),
     expected: 1,
     name: 'a process template whose merge policy has no Policy line is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [`${INTAKE}/${PROCESS_TEMPLATE}`]: replace({
+          from: ANY_IDENTITY_BLOCK,
+          to: ''
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a process template whose ticket identity holds no block is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [`${INTAKE}/${PROCESS_TEMPLATE}`]: replace({
+          from: REQUIRED_SLUG,
+          to: '"slug": "optional"'
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a process template whose ticket identity block is not the defaults is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [`${INTAKE}/${PROCESS_TEMPLATE}`]: replace({
+          from: REQUIRED_SLUG,
+          to: `${REQUIRED_SLUG},`
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a process template whose ticket identity block is malformed is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: CONTRACT })]: replace({
+          from: BRANCH_TYPES_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a ticket-flow whose ticket identity names no branchTypes is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: CONTRACT })]: replace({
+          from: BLOCK_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a ticket-flow whose ticket identity names no ticket-identity block is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: INTAKE })]: replace({
+          from: BLOCK_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a process-intake whose mapping step names no ticket-identity block is refused'
   }
 ]
 
@@ -645,6 +735,38 @@ const checks = [
       )
       assert.ok(
         finding.detail.includes('`manual`'),
+        `the finding does not name the default it owes: ${finding.detail}`
+      )
+    }
+  },
+  {
+    name: 'a template block off the defaults is named with its file and field',
+    run: () => {
+      const findings = gate.run(
+        skills({
+          edits: {
+            [`${INTAKE}/${PROCESS_TEMPLATE}`]: replace({
+              from: REQUIRED_SLUG,
+              to: '"slug": "optional"'
+            })
+          }
+        })()
+      )
+      assert.equal(findings.length, 1, JSON.stringify(findings))
+      const [finding] = findings
+      assert.equal(finding.kind, FINDING_KIND.value)
+      assert.equal(finding.folder, INTAKE)
+      assert.ok(
+        finding.detail.startsWith(`${SKILLS_ROOT}/${INTAKE}/${PROCESS_TEMPLATE}`),
+        `the finding does not name the file: ${finding.detail}`
+      )
+      assert.ok(
+        finding.detail.includes(IDENTITY),
+        `the finding does not name the section: ${finding.detail}`
+      )
+      assert.match(finding.detail, /\bslug\b/u)
+      assert.ok(
+        finding.detail.includes('"required"'),
         `the finding does not name the default it owes: ${finding.detail}`
       )
     }

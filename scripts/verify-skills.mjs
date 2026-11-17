@@ -15,15 +15,21 @@
 //     with USE WHEN and DO NOT USE, a CONTRACT and an Output section;
 //   - `ticket-flow`: its sections, a row for every state, role and board
 //     operation, a pre-flight that names `process-intake`, rules that name
-//     both merge policies, and its ticket and release templates;
+//     both merge policies, a ticket identity that names `branchTypes` and
+//     the `json ticket-identity` block, and its ticket and release
+//     templates;
 //   - a role skill: a first paragraph that names ticket-flow's SKILL.md, and
 //     neither of the contract's two tables; `refine-ticket` its release step,
 //     `qa-ticket` a merge step that names both merge policies, and
 //     `release-ticket` its deploy targets, branching, migrations and hotfix;
-//   - `process-intake`: a mapping step that names both merge policies, and
-//     the template of the project layer, with a row for every board
-//     operation and every state, its deploy targets, and a merge policy
-//     section that names both policies and gives `manual` as the default.
+//   - `process-intake`: a mapping step that names both merge policies and
+//     the `json ticket-identity` block, and the template of the project
+//     layer, with a row for every board operation and every state, its
+//     deploy targets, a merge policy section that names both policies and
+//     gives `manual` as the default, and a ticket identity section holding
+//     one block that verify-ticket-branch reads with no finding and whose
+//     fields are its defaults, so the contract, the template and the check
+//     agree.
 //
 // `run` is pure: it decides on the files `collectContext` gathers, so a case
 // drives it from synthetic skills.
@@ -37,6 +43,11 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { defineGate, reportGate } from './gate/gate.mjs'
+import {
+  DEFAULT_IDENTITY,
+  IDENTITY_INFO,
+  readIdentityBlock
+} from './verify-ticket-branch.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT_FLAG = '--root'
@@ -141,6 +152,7 @@ const SHAPE_HEADINGS = ['## CONTRACT', '## Output']
 const RULES_HEADING = '## Rules every role follows'
 const QA_MERGE_STEP = '## Step 6 — One merge at a time, under the merge policy'
 const INTAKE_MAPPING_STEP = '## Step 3 — Map it onto the core'
+const IDENTITY_HEADING = '## Ticket identity'
 const MERGE_POLICY_HEADING = '## Merge policy'
 const POLICY_FIELD = '- **Policy:**'
 
@@ -149,6 +161,13 @@ const codeOf = ({ text }) => `\`${text}\``
 // A section that must name every merge policy, each in backticks.
 const policyMentions = ({ heading }) =>
   MERGE_POLICIES.map((policy) => ({ heading, text: codeOf({ text: policy }) }))
+
+// The ticket identity a section must describe: the block the branch check
+// reads, and `branchTypes`, the field a branch's prefix comes from.
+const identityMentions = ({ heading }) => [
+  { heading, text: codeOf({ text: 'branchTypes' }) },
+  { heading, text: codeOf({ text: IDENTITY_INFO }) }
+]
 
 // What each ticket skill carries: the headings of its SKILL.md, the tables
 // under some of them and the keys each table must list in its first column,
@@ -203,7 +222,8 @@ export const SKILL_CONTRACTS = [
     mentions: [
       { heading: '## Pre-flight', text: 'docs/process/ticket-flow.md' },
       { heading: '## Pre-flight', text: 'process-intake' },
-      ...policyMentions({ heading: RULES_HEADING })
+      ...policyMentions({ heading: RULES_HEADING }),
+      ...identityMentions({ heading: IDENTITY_HEADING })
     ],
     tables: [
       {
@@ -269,6 +289,7 @@ export const SKILL_CONTRACTS = [
           '## Branching model',
           '## Source'
         ],
+        identity: { heading: IDENTITY_HEADING },
         mentions: policyMentions({ heading: MERGE_POLICY_HEADING }),
         name: 'ticket-flow.template.md',
         tables: [
@@ -292,7 +313,10 @@ export const SKILL_CONTRACTS = [
     ],
     folder: 'process-intake',
     headings: [INTAKE_MAPPING_STEP, ...SHAPE_HEADINGS],
-    mentions: policyMentions({ heading: INTAKE_MAPPING_STEP })
+    mentions: [
+      ...policyMentions({ heading: INTAKE_MAPPING_STEP }),
+      { heading: INTAKE_MAPPING_STEP, text: codeOf({ text: IDENTITY_INFO }) }
+    ]
   }
 ]
 
@@ -413,6 +437,42 @@ const judgeDefaults = ({ defaults = [], folder, lines, path }) =>
         ]
   })
 
+const sameValue = ({ left, right }) =>
+  JSON.stringify(left) === JSON.stringify(right)
+
+// The one ticket identity block a section holds, as the branch check reads
+// it: no finding of its own, and every field the branch check's default.
+const judgeIdentity = ({ folder, identity, lines, path }) => {
+  if (identity === undefined) return []
+  const section = sectionOf({ heading: identity.heading, lines })
+  if (section === null) return []
+  const at = `the section ${identity.heading}`
+  const report = ({ detail }) =>
+    finding({ detail, folder, kind: FINDING_KIND.value, path })
+  const { fields, problems } = readIdentityBlock({ text: section.join('\n') })
+  if (problems.length > 0) {
+    return problems.map((problem) => report({ detail: `${at}: ${problem}` }))
+  }
+  if (fields === null) {
+    return [
+      report({
+        detail:
+          `${at} holds no ${codeOf({ text: IDENTITY_INFO })} block, which ` +
+          "owes the branch check's defaults"
+      })
+    ]
+  }
+  return Object.entries(DEFAULT_IDENTITY)
+    .filter(([field, value]) => !sameValue({ left: fields[field], right: value }))
+    .map(([field, value]) =>
+      report({
+        detail:
+          `${at}: the block's ${field} is ${JSON.stringify(fields[field])}, ` +
+          `not the default ${JSON.stringify(value)}`
+      })
+    )
+}
+
 // The headings, tables, mentions and defaults a file owes; every file a
 // contract names is judged by this, SKILL.md and the templates alike.
 const judgeBody = ({ folder, lines, path, spec }) => [
@@ -428,7 +488,8 @@ const judgeBody = ({ folder, lines, path, spec }) => [
     ),
   ...judgeTables({ folder, lines, path, tables: spec.tables }),
   ...judgeMentions({ folder, lines, mentions: spec.mentions, path }),
-  ...judgeDefaults({ defaults: spec.defaults, folder, lines, path })
+  ...judgeDefaults({ defaults: spec.defaults, folder, lines, path }),
+  ...judgeIdentity({ folder, identity: spec.identity, lines, path })
 ]
 
 const readFrontmatter = ({ lines }) => {
@@ -559,17 +620,20 @@ export const gate = defineGate({
     'WHEN and DO NOT USE, and which has a CONTRACT and an Output section; ' +
     'ticket-flow has its sections, a row for every state, role and board ' +
     'operation, a pre-flight that names process-intake, rules that name ' +
-    'both merge policies (manual and low-risk), and its ticket and release ' +
-    'templates; each role skill opens by sending the reader to ticket-flow ' +
+    'both merge policies (manual and low-risk), a ticket identity that ' +
+    `names branchTypes and the ${IDENTITY_INFO} block, and its ticket and ` +
+    'release templates; each role skill opens by sending the reader to ticket-flow ' +
     "and copies neither of the contract's tables, refine-ticket has its " +
     'release step, qa-ticket a merge step that names both merge policies, ' +
     'and release-ticket its deploy targets, its branching with the ' +
     'tags-only alternative, its migrations and its hotfix; and ' +
     'process-intake has a mapping step that names both merge policies and ' +
-    'holds the template of the project layer, with a row for every board ' +
-    'operation and every state, a deploy targets table, and a merge policy ' +
-    'section that names both policies and whose Policy line gives manual, ' +
-    'the default.',
+    `the ${IDENTITY_INFO} block, and holds the template of the project ` +
+    'layer, with a row for every board operation and every state, a deploy ' +
+    'targets table, a merge policy section that names both policies and ' +
+    'whose Policy line gives manual, the default, and a ticket identity ' +
+    `section holding one ${IDENTITY_INFO} block that verify-ticket-branch ` +
+    'reads with no finding and whose fields are its defaults.',
   id: 'verify-skills',
   notCovered:
     'whether a procedure says what an agent should do, which only the ' +

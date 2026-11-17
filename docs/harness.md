@@ -92,8 +92,8 @@ the pre-commit hook on staged files.
 | `verify:security`     | The static security posture holds                                                         |
 | `verify:theme-sync`   | Every generated token output (the web `theme.css`, the NativeWind preset, the mobile `themeVars`, the `themeNames` the shared `tv` registers) equals its regeneration from `tokens.constant.ts`; `verify:theme-sync:test` plants a hand edit in each and an un-regenerated source change |
 | `verify:mcp-docs`     | The generated block of `docs/mcp.md` is what `pnpm mcp:docs` wrote and lists every server, package and capability of `.agents/contracts/mcp-servers.json` plus `.mcp.json`; offline, and it never judges a version. `verify:mcp-docs:test` plants each drift; `mcp:docs:test` drives the updater with an injected registry |
-| `verify:ticket-branch:test` | `scripts/verify-ticket-branch.test.mjs` drives the branch check (below, 3d) with a valid ticket branch and pull request body and each refusal |
-| `verify:skills:test` | `scripts/verify-skills.test.mjs` holds the seven ticket skills of `.claude/skills/` to their sections (the shape of `new-skill`, every state, role and board operation of `ticket-flow`, the role skills' opening and the contract tables they must not copy, the three templates, and both merge policies, `manual` and `low-risk`, named in `ticket-flow` rule 4, `qa-ticket`'s merge step, `process-intake`'s mapping step and the process template, whose Policy line gives `manual`), with synthetic cases and over the repository |
+| `verify:ticket-branch:test` | `scripts/verify-ticket-branch.test.mjs` drives the branch check (below, 3d) with a valid ticket branch and pull request body and each refusal, under the default ticket identity and under example layers (a TASK-slug one among them), with each malformed block and flag, and as a process over a scratch working directory |
+| `verify:skills:test` | `scripts/verify-skills.test.mjs` holds the seven ticket skills of `.claude/skills/` to their sections (the shape of `new-skill`, every state, role and board operation of `ticket-flow`, the role skills' opening and the contract tables they must not copy, the three templates, and both merge policies, `manual` and `low-risk`, named in `ticket-flow` rule 4, `qa-ticket`'s merge step, `process-intake`'s mapping step and the process template, whose Policy line gives `manual`; and the ticket identity: `ticket-flow` names `branchTypes` and the `json ticket-identity` block, `process-intake`'s mapping step names the block, and the process template ships one that the branch check reads with no finding and whose fields are its defaults), with synthetic cases and over the repository |
 | `docs:diagrams:check` | Every committed diagram matches its spec and the tokens                                   |
 | `verify:specs`        | Every living spec and change has its shape, and every test a scenario names exists        |
 | `report:spec-drift`   | Lists the living specs whose governed code moved past their verified commit; never blocks |
@@ -127,11 +127,29 @@ may add to its CI, a decision its `docs/process/ticket-flow.md` records:
 pnpm verify:ticket-branch --branch "$HEAD_REF" --body "$PR_BODY"
 ```
 
-It passes a branch `<type>/<id>-<slug>` (a type of `feature`, `fix`, `tech` or
-`chore`, an id that is a number or an upper-case key, a lower-case kebab slug)
-whose pull request body names the same id, `#123` or `PROJ-42`, and exits 1 with
-every defect named on its own. It never reads the board: whether the ticket
-exists and which state it is in needs the network.
+It judges under the project's ticket identity: the one fenced block with the
+info string `json ticket-identity` in `docs/process/ticket-flow.md` under its
+working directory, or in the file `--layer <path>` names. The block holds
+`idPattern` (a regular-expression source for one id, matched whole),
+`branchTypes` (the prefixes a branch may start with) and `slug` (`required` or
+`optional`); `--id-pattern`, `--types` and `--slug` each replace one field.
+With no layer or no block it keeps the defaults: a type of `feature`, `fix`,
+`tech` or `chore`, an id that is a number or an upper-case key, and a required
+slug. A malformed block or flag is a finding that names the file or the flag and
+the field, never a silent default.
+
+```bash
+pnpm verify:ticket-branch --branch <b> --body <text> \
+  [--layer <path>] [--id-pattern <source>] [--types <a,b>] [--slug <required|optional>]
+```
+
+It passes a branch `<type>/<id>-<slug>`, or `<type>/<id>` when the slug is
+optional, whose type, id and lower-case kebab slug the identity allows and whose
+pull request body names the same id, `#123` for a number and the id itself
+otherwise (`PROJ-42`, `TASK-min-app-version-app`), and exits 1 with every defect
+named on its own. Its pass line names the identity it judged under. It never
+reads the board: whether the ticket exists and which state it is in needs the
+network.
 
 ### 3e. The agent projections
 
