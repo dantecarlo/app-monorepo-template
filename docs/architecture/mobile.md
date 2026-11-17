@@ -103,7 +103,9 @@ route can export its own `ErrorBoundary`, re-exported from its screen barrel, to
 closer. A failed query adds no toast: the screen shows its `ErrorState`, as the dashboard's items
 list does with a retry that refetches; a failed mutation is the toast
 ([code-standards § 19](../code-standards.md)). A query key holds its dynamic values in one trailing
-params object (`['items', 'list', { filter }]`), which the error report always redacts.
+params object (`['items', 'list', { limit, search }]`), which the error report always redacts. A
+key holds every value its query reads, so two items lists of different limits never share a cache
+entry.
 
 ## 5. Conventions
 

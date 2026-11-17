@@ -6,6 +6,9 @@ import {
   QueryKeySegmentEnum
 } from '@/lib/query/queryKeys.constant'
 
+// The limit every items list key below is built with.
+const LIST_LIMIT = 50
+
 describe('createQueryClient', () => {
   test('returns a QueryClient instance', () => {
     const client = createQueryClient()
@@ -66,7 +69,10 @@ describe('createQueryClient', () => {
         queryFn: async () => {
           throw error
         },
-        queryKey: QueryKeys.items.list('alice'),
+        queryKey: QueryKeys.items.list({
+          limit: LIST_LIMIT,
+          search: 'alice'
+        }),
         retry: false
       })
       .catch(() => undefined)
@@ -80,7 +86,7 @@ describe('createQueryClient', () => {
     )
   })
 
-  test('redacts a list filter that equals a registered segment on query failure', async () => {
+  test('redacts a list search that equals a registered segment on query failure', async () => {
     const spy = vi.fn()
     const client = createQueryClient({ onCaptureError: spy })
     const error = new Error('typed word boom')
@@ -90,7 +96,10 @@ describe('createQueryClient', () => {
         queryFn: async () => {
           throw error
         },
-        queryKey: QueryKeys.items.list(QueryKeySegmentEnum.LIST),
+        queryKey: QueryKeys.items.list({
+          limit: LIST_LIMIT,
+          search: QueryKeySegmentEnum.LIST
+        }),
         retry: false
       })
       .catch(() => undefined)
@@ -142,16 +151,34 @@ describe('createQueryClient', () => {
   })
 
   test.each([
-    { factory: 'detail', value: 'list' },
-    { factory: 'detail', value: 'items' },
-    { factory: 'list', value: 'detail' },
-    { factory: 'detail', value: 'a@b.co' }
-  ] as const)(
+    {
+      factory: 'detail',
+      queryKey: QueryKeys.items.detail('list'),
+      value: 'list'
+    },
+    {
+      factory: 'detail',
+      queryKey: QueryKeys.items.detail('items'),
+      value: 'items'
+    },
+    {
+      factory: 'list',
+      queryKey: QueryKeys.items.list({
+        limit: LIST_LIMIT,
+        search: 'detail'
+      }),
+      value: 'detail'
+    },
+    {
+      factory: 'detail',
+      queryKey: QueryKeys.items.detail('a@b.co'),
+      value: 'a@b.co'
+    }
+  ])(
     'redacts the value of $factory($value) on query failure, whatever it spells',
-    async ({ factory, value }) => {
+    async ({ queryKey }) => {
       const spy = vi.fn()
       const client = createQueryClient({ onCaptureError: spy })
-      const queryKey = QueryKeys.items[factory](value)
 
       await client
         .fetchQuery({
