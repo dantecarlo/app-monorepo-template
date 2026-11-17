@@ -47,12 +47,26 @@ say.
 - **THEN** it reports one finding
 - **Test:** `scripts/verify-skills.test.mjs` › "a qa-ticket whose merge step names no low-risk merge policy is refused"
 
+#### Scenario: QA's merge step is gone
+
+- **GIVEN** a `qa-ticket` with no Step 6
+- **WHEN** the structural check runs
+- **THEN** it reports the missing section, rather than judging the policies it would name
+- **Test:** `scripts/verify-skills.test.mjs` › "a qa-ticket without its merge step is refused"
+
 #### Scenario: the intake never offers `low-risk`
 
 - **GIVEN** a `process-intake` whose Step 3 never names `low-risk`
 - **WHEN** the structural check runs
 - **THEN** it reports one finding
 - **Test:** `scripts/verify-skills.test.mjs` › "a process-intake whose mapping step names no low-risk merge policy is refused"
+
+#### Scenario: the intake's mapping step is gone
+
+- **GIVEN** a `process-intake` with no Step 3
+- **WHEN** the structural check runs
+- **THEN** it reports the missing section
+- **Test:** `scripts/verify-skills.test.mjs` › "a process-intake without its mapping step is refused"
 
 #### Scenario: the template never names `low-risk`
 
