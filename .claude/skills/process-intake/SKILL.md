@@ -73,8 +73,21 @@ only what the document did not answer:
   Say that neither policy covers a merge to `production`, a deploy, a production migration, a
   store submission or any other irreversible step: those stay the owner's word. Then ask whether
   a branch is brought current by merge or by rebase, and the merge method.
-- **Ticket identity** — the id the board writes (`#123` or a key such as `PROJ-42`), and where
-  the target version lives (a milestone, or a board field).
+- **Ticket identity** — where the target version lives (a milestone, or a board field), and
+  three answers the branch check reads, written as the template's `json ticket-identity` block
+  in § Ticket identity:
+  - `idPattern`: the shape of the id the board writes, as a regular-expression source matched
+    whole; the default takes `#123` and a key such as `PROJ-42`;
+  - `branchTypes`: what a branch starts with, the ticket type (the default, `feature`, `fix`,
+    `tech`, `chore`) or the Conventional Commit type (`feat`, `fix`, `chore`, `refactor`, `perf`,
+    `test`, `build`, `ci`, `docs`);
+  - `slug`: whether a branch must carry one, `required` (the default) or `optional`.
+
+  Keep the defaults the team does not change. Certifipago, for example, writes
+  `{"idPattern": "TASK-[a-z0-9]+(?:-[a-z0-9]+)*", "branchTypes": ["feat", "fix", "chore", "refactor", "perf", "test", "build", "ci", "docs"], "slug": "optional"}`.
+  Before writing it, prove it on one real branch and pull request body of the team's:
+  `pnpm verify:ticket-branch --branch <b> --body <text> --id-pattern <p> --types <a,b> --slug <s>`,
+  and show the result.
 - **Branch check in CI** — whether the project runs `pnpm verify:ticket-branch` in its CI; the
   team decides, and the default is no.
 - **Deploy targets** — for each one: its kind (host branch, CLI, OTA update, store build,

@@ -264,7 +264,7 @@ const layerFields = ({ layer }) => {
             'judges no branch under a layer it cannot read'
         })
       ],
-      source: path
+      source: `the layer ${path}`
     }
   }
   const { fields, problems } = readIdentityBlock({ text: layer.text })
@@ -305,10 +305,13 @@ export const resolveIdentity = ({ flags = {}, layer = null } = {}) => {
     ...fromLayer.fields,
     ...Object.fromEntries(fromFlags.map(({ field, value }) => [field, value]))
   }
+  const flagNames = fromFlags.map(({ flag }) => flag)
   const over =
-    fromFlags.length === 0
+    flagNames.length === 0
       ? ''
-      : `, with ${fromFlags.map(({ flag }) => flag).join(' and ')} over it`
+      : `, with ${[flagNames.slice(0, -1).join(', '), flagNames.at(-1)]
+          .filter((part) => part !== '')
+          .join(' and ')} over it`
   return { findings, identity, source: `${fromLayer.source}${over}` }
 }
 

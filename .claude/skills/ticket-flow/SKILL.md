@@ -159,9 +159,9 @@ session may fill a dev role; exactly one QA session fills each dev area's QA rol
    flight. If it changes a ticket's scope, the session answers that it must go through the PO and
    does not do it. A request with no ticket behind it gets a ticket first; the architect may
    create a technical ticket itself.
-2. **One worktree per ticket.** Dev builds in its own worktree, on the branch
-   `<type>/<id>-<slug>` (§ Ticket identity), cut from the default branch, or from `production`
-   for a hotfix. The pull request links the ticket.
+2. **One worktree per ticket.** Dev builds in its own worktree, on the ticket's branch
+   (§ Ticket identity; `<type>/<id>-<slug>` by default), cut from the default branch, or from
+   `production` for a hotfix. The pull request links the ticket.
 3. **Subagent hygiene.** A session may split its task into subagents or subsessions. Each one is
    deleted as soon as it finishes, and none is left idle. No session duplicates another session
    that already exists for a job.
@@ -190,17 +190,37 @@ session may fill a dev role; exactly one QA session fills each dev area's QA rol
 
 ## Ticket identity
 
-- **Id** — as the board writes it: a number (a GitHub issue, `123`, written `#123`) or a key
-  (`PROJ-42`).
-- **Type** — `feature`, `fix`, `tech` or `chore`; `release` for a release ticket, which has no
-  branch of its own.
-- **Branch** — `<type>/<id>-<slug>`, the slug lower-case kebab: `feature/123-add-sign-in`,
-  `fix/PROJ-42-null-total`. `scripts/verify-ticket-branch.mjs` checks the branch and that the
+The shape of an id and of a branch is the project's. Its layer declares them in § Ticket
+identity, as one fenced block with the info string `json ticket-identity` that `process-intake`
+writes and the branch check reads. The block holds exactly three fields:
+
+| Field | What it holds | Default |
+| --- | --- | --- |
+| `idPattern` | a regular-expression source for one id, matched whole | a number (`123`) or an upper-case key, a hyphen and a number (`PROJ-42`) |
+| `branchTypes` | the prefixes a ticket branch may start with | `feature`, `fix`, `tech`, `chore` |
+| `slug` | `required` or `optional` | `required` |
+
+A layer with no block keeps every default; a malformed block is a finding of the branch check,
+never a silent default.
+
+- **Id** — as the board writes it, of the shape `idPattern` matches: by default a number (a
+  GitHub issue, `123`, written `#123`) or a key (`PROJ-42`).
+- **Type** — the ticket type: `feature`, `fix`, `tech` or `chore`; `release` for a release
+  ticket, which has no branch of its own.
+- **Branch** — `<type>/<id>-<slug>`, or `<type>/<id>` when the slug is optional; the slug
+  lower-case kebab: `feature/123-add-sign-in`, `fix/PROJ-42-null-total`. The prefix is one of the
+  layer's `branchTypes`: the ticket type by default, or the Conventional Commit type of the table
+  below when the layer says so. Certifipago's layer does: its ids are `TASK-<slug>`, its slug is
+  optional, and a branch reads `feat/TASK-min-app-version-app`. When the slug is optional and
+  `idPattern` matches everything after the prefix, the branch has no slug.
+  `scripts/verify-ticket-branch.mjs` checks the branch under the layer's identity and that the
   pull request body names the id; a project may run it in its CI
   (`pnpm verify:ticket-branch --branch "$HEAD_REF" --body "$PR_BODY"`), a decision its layer
   records.
-- **Pull request body** — names the id (`Refs #123`, or the key), the test plan and the Risk line.
-- **Commit type** — the Conventional Commit type of the ticket's commits:
+- **Pull request body** — names the id (`Refs #123`, or the id itself), the test plan and the
+  Risk line.
+- **Commit type** — always the Conventional Commit type of the ticket's commits, whatever the
+  branch prefix:
 
 | Ticket type | Commit type |
 | --- | --- |

@@ -2,8 +2,9 @@
 name: dev-ticket
 description: >
   The dev role of the ticket flow: picks up a ticket in Ready for dev, builds it in a worktree of
-  its own on the branch `<type>/<id>-<slug>`, test first under the project's workflow (SDD when a
-  living spec changes), runs the validation gate, opens the pull request that links the ticket
+  its own on the ticket's branch (`<type>/<id>-<slug>` unless the project layer's ticket identity
+  says otherwise), test first under the project's workflow (SDD when a living spec changes), runs
+  the validation gate, opens the pull request that links the ticket
   and moves it to Ready for QA; on Changes requested, fixes it in the same worktree. Never moves a
   ticket past Ready for QA.
   USE WHEN: "<id> ready for dev", "<id> changes requested", "pick up ticket <id>", "build the
@@ -38,9 +39,12 @@ the ticket.
 
 ```bash
 git fetch origin
-git worktree add <repo-parent>/<repo>-worktrees/<id>-<slug> \
-  -b <type>/<id>-<slug> origin/<default branch>
+git worktree add <repo-parent>/<repo>-worktrees/<id> \
+  -b <branch> origin/<default branch>
 ```
+
+- `<branch>` is the ticket's branch, `ticket-flow` § Ticket identity: `<type>/<id>-<slug>` by
+  default, its prefix one of the layer's `branchTypes`, its slug as the layer's `slug` says.
 
 - A hotfix (a `fix` ticket the architect marked as one) starts from `origin/production` instead
   (`release-ticket` § Hotfix).
@@ -71,7 +75,7 @@ git worktree add <repo-parent>/<repo>-worktrees/<id>-<slug> \
 ## Step 6 — The pull request
 
 Push the branch and open the pull request; the project layer's approvals say whether that needs
-the owner's word first. The body names the ticket (`Refs #<id>`, or the key), the test plan and
+the owner's word first. The body names the ticket (`Refs #<id>`, or the id itself), the test plan and
 the Risk line. `link` it to the ticket.
 
 ---
@@ -104,7 +108,7 @@ moves:
   - In dev → Ready for QA
 messages: ['<id> ready for QA, branch <b>', '<id> question']
 emits:
-  - the branch <type>/<id>-<slug> and its pull request
+  - the ticket's branch (ticket-flow § Ticket identity) and its pull request
 validated_by: validate · verify:ticket-branch
 done_when: pnpm validate exits 0, the pull request links the ticket, and it is in Ready for QA
 ```

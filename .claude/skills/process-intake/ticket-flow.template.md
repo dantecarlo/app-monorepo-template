@@ -69,16 +69,31 @@
 
 ## Ticket identity
 
-- **Id:** <`#123`, a GitHub issue | a key such as `PROJ-42`>
+- **Id:** <`#123`, a GitHub issue | a key such as `PROJ-42` | the project's own shape>
 - **Target version:** <the issue's milestone | the board field that holds it>
 - **Types:** `feature`, `fix`, `tech`, `chore`, and `release` for a release ticket
+- **Branch prefix:** <the ticket type, the default | the Conventional Commit type>
+
+The branch check reads the block below: `idPattern`, a regular-expression source for one id,
+matched whole; `branchTypes`, the prefixes a ticket branch may start with; and `slug`, `required`
+or `optional`. These are the defaults: an id that is a number or a key such as `PROJ-42`, the
+ticket types as prefixes, and a required slug. Keep one block, with all three fields.
+
+```json ticket-identity
+{
+  "idPattern": "\\d+|[A-Z][A-Z0-9]*-\\d+",
+  "branchTypes": ["feature", "fix", "tech", "chore"],
+  "slug": "required"
+}
+```
 
 ## Branch check in CI
 
 - **Runs in CI:** <no | yes, in the workflow <path>>
 - When yes, every pull request into the default branch runs
-  `pnpm verify:ticket-branch --branch "$HEAD_REF" --body "$PR_BODY"`; the release pull request
-  into `production`, whose head is the default branch, skips it.
+  `pnpm verify:ticket-branch --branch "$HEAD_REF" --body "$PR_BODY"`, which reads the block of
+  § Ticket identity; the release pull request into `production`, whose head is the default
+  branch, skips it.
 
 ## Deploy targets
 

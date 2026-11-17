@@ -40,7 +40,7 @@ faithfully and marked with the language it came from:
 
 ## Branch and pull request
 
-- **Branch:** `<type>/<id>-<slug>`
+- **Branch:** `<type>/<id>-<slug>`, or the shape the project layer's ticket identity sets
 - **Pull request:** <url>, its body naming the id
 
 ## QA evidence
