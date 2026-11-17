@@ -1,6 +1,6 @@
 # Proposal: the ticket branch check reads the project's ticket identity
 
-> **Status:** open
+> **Status:** archived — 2026-11-17
 
 ## Why
 
