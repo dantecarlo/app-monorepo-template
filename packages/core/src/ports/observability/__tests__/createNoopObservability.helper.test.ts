@@ -1,6 +1,18 @@
-import { expect, test } from 'vitest'
+import {
+  type IObservabilityPortHarness,
+  runObservabilityPortContract
+} from '@app/tooling/observability-port-contract'
+import { describe, expect, test } from 'vitest'
 
 import { createNoopObservability } from '#src/ports/observability/createNoopObservability.helper'
+
+// The no-op adapter has no provider behind it: nothing may reach one.
+const noopHarness: IObservabilityPortHarness = {
+  create: () => createNoopObservability(),
+  currentUser: () => null,
+  delivered: () => [],
+  delivers: false
+}
 
 test('captureError is callable and returns undefined', () => {
   const adapter = createNoopObservability()
@@ -27,4 +39,8 @@ test('captureError does not throw with context', () => {
       error: new Error('boom')
     })
   ).not.toThrow()
+})
+
+describe('the observability port contract', () => {
+  runObservabilityPortContract({ harness: noopHarness, test })
 })

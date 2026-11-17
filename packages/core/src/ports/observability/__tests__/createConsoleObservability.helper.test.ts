@@ -1,4 +1,8 @@
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import {
+  type IObservabilityPortHarness,
+  runObservabilityPortContract
+} from '@app/tooling/observability-port-contract'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { createConsoleObservability } from '#src/ports/observability/createConsoleObservability.helper'
 import { ObservabilityLevelEnum } from '#src/ports/observability/observabilityLevel.type'
@@ -116,4 +120,31 @@ test('addBreadcrumb is suppressed when isEnabled is false', () => {
   const adapter = createConsoleObservability({ isEnabled: false })
   adapter.addBreadcrumb?.({ message: 'noop' })
   expect(warnSpy).not.toHaveBeenCalled()
+})
+
+// The provider of the console adapter is the host console: what it logged is
+// what was delivered, and the last user it logged is the user it holds.
+const SET_USER_LABEL = 'setUser'
+
+const consoleHarness: IObservabilityPortHarness = {
+  create: ({ enabled }) => {
+    errorSpy.mockClear()
+    warnSpy.mockClear()
+    return createConsoleObservability({ isEnabled: enabled })
+  },
+  currentUser: () => {
+    const userCalls = warnSpy.mock.calls.filter(([label]: unknown[]) =>
+      String(label).endsWith(SET_USER_LABEL)
+    )
+    return (userCalls.at(-1)?.[1] ?? null) as { id?: unknown } | null
+  },
+  delivered: () =>
+    [...errorSpy.mock.calls, ...warnSpy.mock.calls].map(
+      ([, payload]) => payload
+    ),
+  delivers: true
+}
+
+describe('the observability port contract', () => {
+  runObservabilityPortContract({ harness: consoleHarness, test })
 })
