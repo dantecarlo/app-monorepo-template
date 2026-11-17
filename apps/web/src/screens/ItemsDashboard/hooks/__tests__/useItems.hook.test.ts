@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
+import { QueryKeys } from '@/lib/query/queryKeys.constant'
 import { MOCK_ITEM_DTOS } from '@/test/mocks/items.mock'
 import { act, renderHook, waitFor } from '@/test/test.helper'
 
@@ -41,10 +42,12 @@ import { useItems } from '@/screens/ItemsDashboard/hooks/useItems.hook'
 // Helpers
 // ---------------------------------------------------------------------------
 
-const makeWrapper = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } }
-  })
+const makeQueryClient = () =>
+  new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
+const makeWrapper = ({
+  queryClient = makeQueryClient()
+}: { queryClient?: QueryClient } = {}) => {
   const Wrapper = ({ children }: { children: React.ReactNode }) =>
     React.createElement(
       QueryClientProvider,
@@ -105,6 +108,40 @@ describe('useItems', () => {
       expect(mockGetItems).toHaveBeenCalledWith(
         expect.objectContaining({ limit: 10, search: 'onboarding' })
       )
+    )
+  })
+
+  test('keeps one cache entry per limit, each with its own items', async () => {
+    mockGetItems.mockImplementation(async ({ limit }: { limit: number }) =>
+      MOCK_ITEM_DTOS.slice(0, limit)
+    )
+    const queryClient = makeQueryClient()
+
+    const { result } = renderHook(
+      () => ({ one: useItems({ limit: 1 }), two: useItems({ limit: 2 }) }),
+      { wrapper: makeWrapper({ queryClient }) }
+    )
+
+    await waitFor(() => {
+      expect(result.current.one.isLoading).toBe(false)
+      expect(result.current.two.isLoading).toBe(false)
+    })
+
+    expect(result.current.one.items).toHaveLength(1)
+    expect(result.current.two.items).toHaveLength(2)
+    expect(mockGetItems).toHaveBeenCalledTimes(2)
+    expect(mockGetItems).toHaveBeenCalledWith({ limit: 1, search: '' })
+    expect(mockGetItems).toHaveBeenCalledWith({ limit: 2, search: '' })
+    const keys = queryClient
+      .getQueryCache()
+      .findAll({ queryKey: QueryKeys.items.all })
+      .map(({ queryKey }) => queryKey)
+    expect(keys).toHaveLength(2)
+    expect(keys).toEqual(
+      expect.arrayContaining([
+        QueryKeys.items.list({ limit: 1, search: '' }),
+        QueryKeys.items.list({ limit: 2, search: '' })
+      ])
     )
   })
 
