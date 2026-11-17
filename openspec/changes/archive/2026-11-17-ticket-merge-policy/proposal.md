@@ -1,6 +1,6 @@
 # Proposal: the ticket flow follows the project's merge policy
 
-> **Status:** open
+> **Status:** archived — 2026-11-17
 
 ## Why
 
