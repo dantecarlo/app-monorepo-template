@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./observability-port-contract": {
+      "types": "./src/observability-port-contract.d.mts",
+      "default": "./src/observability-port-contract.mjs"
+    },
     "./process-tree": {
       "types": "./src/process-tree.d.mts",
       "default": "./src/process-tree.mjs"
