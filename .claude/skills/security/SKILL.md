@@ -96,8 +96,11 @@ one cache entry.
 
 What to look for:
 - `rg -n 'queryKey:' --glob '*.hook.ts'` — check for raw email, name, phone
-- Error reporting calls (`captureException`, Sentry `beforeSend`) — verify
-  `scrubPII` is applied to breadcrumb/event data
+- Error reporting calls — the observability adapters (PostHog by default, Sentry
+  when its capability is selected) and the SDK hooks (PostHog `before_send`,
+  Sentry `beforeSend` / `beforeBreadcrumb`) — verify `scrubPII` is applied to
+  context, breadcrumb, user and event data, and that the web PostHog
+  `before_send` drops the query string and fragment of every URL
 - Mock data files that contain fields in `PII_KEYS` with non-fake values
 
 ---
@@ -136,6 +139,9 @@ Required headers:
 | `Permissions-Policy`        | any value restricting unused APIs        |
 | `Strict-Transport-Security` | `max-age` ≥ 31536000                     |
 | `Content-Security-Policy`   | any value (flag `unsafe-eval + unsafe-inline` together without nonce) |
+
+A CSP, when present, must admit the PostHog ingestion host in `connect-src` and
+its assets host in `script-src` (`docs/observability.md`).
 
 ---
 

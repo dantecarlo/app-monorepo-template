@@ -48,7 +48,8 @@ apps/mobile/
     │       └── index.ts          # barrel — consumers import from @/services/<Domain>
     ├── hooks/                    # SHARED hooks (used across screens, e.g. useSession)
     ├── stores/                   # Zustand slices (auth, toast, ui) — shared by definition
-    ├── lib/                      # framework wiring: i18n/, observability/, query/, supabase/, theme/
+    ├── lib/                      # framework wiring: i18n/, observability/, posthog/, query/,
+    │                             # supabase/, theme/
     ├── helpers/                  # shared pure helpers + layout.style.ts (positioning only)
     ├── validation/               # shared zod schemas (or per-screen in the screen's models/)
     └── test/                     # test helper, setup, MSW and native-module mocks
@@ -105,7 +106,10 @@ list does with a retry that refetches; a failed mutation is the toast
 ([code-standards § 19](../code-standards.md)). A query key holds its dynamic values in one trailing
 params object (`['items', 'list', { limit, search }]`), which the error report always redacts. A
 key holds every value its query reads, so two items lists of different limits never share a cache
-entry.
+entry. The observability port is bound to PostHog in
+`src/lib/observability/observability.adapter.ts`; its one client, `src/lib/posthog/posthogClient.adapter.ts`, is the only file that imports
+`posthog-react-native`, and Sentry is an optional capability `/init` can prune
+([../observability.md](../observability.md)).
 
 ## 5. Conventions
 

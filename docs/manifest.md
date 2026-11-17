@@ -69,6 +69,32 @@ belong to `core`: other gates are built on them.
 matches no tracked file fails the coverage gate as stale; the claim lands with
 the first spec.
 
+### The optional Sentry capability
+
+The `sentry` capability (group `observability`) owns every Sentry file, and no
+preset selects it: PostHog is the default observability provider, so `/init`
+prunes Sentry unless the project picks it (`docs/observability.md`).
+
+- It **claims** the web root files no other claim covers:
+  `apps/web/instrumentation.ts`, `apps/web/next-sentry.config.ts`, the three
+  `apps/web/sentry.*.config.ts` and `apps/web/__tests__/next-sentry.config.test.ts`.
+  `web-next` therefore claims its own root files by name instead of
+  `apps/web/**`, and its `onAbsent` removes `apps/web/**`, which keeps what an
+  absent `web-next` deletes.
+- It **removes** what sits inside the apps' `src/`, which `web-next` and
+  `mobile-expo` own: both Sentry adapters, their tests and the SDK mock.
+- It **drops** `@sentry/nextjs` and `@sentry/react-native` with `remove-dep`,
+  and sets `expo.plugins` of `apps/mobile/app.json` to the list without
+  `@sentry/react-native/expo` with `patch-json`.
+
+`packages/tooling/src/__tests__/prune-boundary.test.mjs` proves the prune
+leaves no dangling reference: it fails when a file the prune keeps imports a
+file the prune deletes or a dependency it removes, when a kept `app.json`
+would list a plugin of a removed dependency, and when the patched plugin list
+drifts from `app.json`. A Next.js config cannot be pruned by deleting a file
+it imports, so `apps/web/next.config.ts` applies every
+`next-<capability>.config.ts` beside it and names none.
+
 ---
 
 ## The six verbs
@@ -168,6 +194,10 @@ adapter (blocker B4); a delete-only executor cannot close it.
 | `diagrams`            | `pnpm validate` still calls `docs:diagrams:check` (B2); the global map rows for `docs/diagrams/` and `build-diagrams` fail `verify:maps`            |
 | `sdd`                 | `pnpm validate` still calls `verify:specs`, `report:spec-drift` and their tests (B2); the global map rows for them and the skill fail `verify:maps` |
 | `english-artifacts`   | `pnpm validate` still calls `verify:english` and its test (B2); the global map rows for the gate fail `verify:maps`                                 |
+| `sentry`              | `verify:security` CHECK 42 fails: `scripts/verify-security-static.mjs` requires `apps/web/sentry.client.config.ts` and `sentry.server.config.ts`   |
+| `sentry`              | The Sentry keys stay in both `.env.example`; `@sentry/cli` stays in `pnpm-workspace.yaml` `allowBuilds`; the mobile Vitest alias names the removed mock |
+| `sentry`              | `openspec/specs/apps/web/spec.md` and `openspec/specs/apps/mobile/spec.md` keep the Sentry requirements and cite the removed tests: `verify:specs` fails |
+| `sentry`              | `README.md`, `docs/infrastructure.md` and `docs/decisions/0001-pluggable-providers.md` still name Sentry; the `eslint.rules.mjs` vendor override names its files |
 | any with a spec       | its spec under `openspec/specs/` goes, and its row in the `openspec/README.md` § 2.1 table stays                                                    |
 | `template-maintainer` | Never selected, so always absent: the global map rows for the plans and `docs/audits/`, and the plan citations in code-standards, go stale          |
 

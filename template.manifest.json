@@ -157,7 +157,15 @@
       "group": "web",
       "requires": ["design-tokens"],
       "claims": [
-        "apps/web/**",
+        "apps/web/.env.example",
+        "apps/web/__tests__/next.config.test.ts",
+        "apps/web/next.config.ts",
+        "apps/web/package.json",
+        "apps/web/postcss.config.mjs",
+        "apps/web/public/**",
+        "apps/web/src/**",
+        "apps/web/tsconfig.json",
+        "apps/web/vitest.config.ts",
         "docs/architecture/web.md",
         "openspec/specs/apps/web/spec.md",
         "scripts/smoke-web-render.mjs"
@@ -172,6 +180,10 @@
           "file": "package.json",
           "op": "unset",
           "path": "scripts.smoke:web"
+        },
+        {
+          "verb": "remove",
+          "paths": ["apps/web/**"]
         }
       ]
     },
@@ -256,6 +268,68 @@
             "apps/web/src/lib/bot-protection/**",
             "apps/web/src/lib/image-delivery/**",
             "apps/web/src/lib/origin-guard/**"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sentry",
+      "title": "Sentry error monitoring, optional beside the PostHog default",
+      "group": "observability",
+      "claims": [
+        "apps/web/__tests__/next-sentry.config.test.ts",
+        "apps/web/instrumentation.ts",
+        "apps/web/next-sentry.config.ts",
+        "apps/web/sentry.client.config.ts",
+        "apps/web/sentry.edge.config.ts",
+        "apps/web/sentry.server.config.ts"
+      ],
+      "onAbsent": [
+        {
+          "verb": "remove",
+          "paths": [
+            "apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts",
+            "apps/mobile/src/lib/observability/createSentryObservability.adapter.ts",
+            "apps/mobile/src/test/mocks/sentry-react-native.ts",
+            "apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts",
+            "apps/web/src/lib/observability/createSentryObservability.adapter.ts"
+          ]
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/web/package.json",
+          "name": "@sentry/nextjs",
+          "scope": "dependencies"
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/mobile/package.json",
+          "name": "@sentry/react-native",
+          "scope": "dependencies"
+        },
+        {
+          "verb": "patch-json",
+          "file": "apps/mobile/app.json",
+          "op": "set",
+          "path": "expo.plugins",
+          "value": [
+            "expo-router",
+            [
+              "expo-font",
+              {
+                "fonts": []
+              }
+            ],
+            "expo-localization",
+            [
+              "expo-splash-screen",
+              {
+                "image": "./assets/splash.png",
+                "resizeMode": "contain",
+                "backgroundColor": "#0A0B0D"
+              }
+            ],
+            "expo-status-bar"
           ]
         }
       ]

@@ -93,15 +93,16 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 - F.5, the app behaviour: F11 (sign-in through the auth gateway, origin-guard tests), F12 (the mobile light theme from the root, the NativeWind preset reading `var(--c-*)`, the count once, a stable `useSession`, no actionless mobile buttons), F23 (query keys with a trailing params object), F24 (UPPER_SNAKE_CASE enum members, lint-enforced) and F25 (query errors on the screen, boundary crashes reported once) (#30; the independent verifier passed it with no blockers).
 - F36: the origin-guard matcher anchors its exempt paths (#31).
 - F.6, the i18n follow-ups: F10 (web client components and `<html lang>` follow the active locale, the switcher works both ways) and F14 (every block label and the item age from the catalogs in both apps, catalog keys typed by the default catalog, parity across every catalog, named sign-in failures) (this change).
+- F.7, observability: PostHog is the default adapter in both apps, with privacy defaults, one port contract suite every adapter runs, and Sentry an optional `sentry` capability `/init` can prune with no dangling import (this change).
 - F.2, the Supabase hardening (#21; the native review did not fit its context budget, and the owner chose to merge on the independent verifier).
 - The ticket flow: seven skills (`ticket-flow`, `po-ticket`, `refine-ticket`, `dev-ticket`, `qa-ticket`, `release-ticket`, `process-intake`), the board and the deploy targets as adapters, the release stage and the target version, the pure `verify:ticket-branch` check, and the living spec harness/ticket-flow (this change; Certifipago adopts it with its own project layer).
 
 **In flight:** none.
 
-**Next:** F.7, observability (PostHog by default, Sentry optional).
+**Next:** F.8, every library behind an adapter (decisions 51 and 52).
 
 **Pending, in order:**
-- F.7, F.8 and F.11 of Stage F, and the small follow-ups F43 to F45.
+- F.8 and F.11 of Stage F, and the small follow-ups F43 to F45 and F48 to F50.
 - F33, when the owner decides it.
 - Step 3.2 part B: `gradedBy`, `sdd-steward` and `verify:router-coverage` (F27).
 - Step 3.3, then Stages 4 to 7.
@@ -494,6 +495,11 @@ defects behind them, for changes of their own.
 | F43 | both apps | when the items query fails, the stats card still shows a total of 0 beside the `ErrorState` (F37 fixed only the list caption) | small |
 | F44 | harness | `runtime-verify` and `validate-all` declare no `USE WHEN:` in their frontmatter, so the regenerated registry flags them | small; the `improve-skill` flow |
 | F45 | apps/mobile | Expo published `expo` 58.0.26 and `expo-router` 58.0.32 on 2026-11-17 at 12:01 UTC, and CI's `expo-health` fails every branch on the patch mismatch; pnpm 11's `minimumReleaseAge` (24 hours) refuses them until 2026-11-18 at 12:01 UTC, and the owner chose to wait rather than add exceptions | small; bump them after 2026-11-18 12:01 UTC, with no `minimumReleaseAgeExclude` |
+| F46 | both apps, privacy | PostHog keeps a distinct id in a cookie or local storage and records the client IP unless the project discards it, which some jurisdictions treat as needing consent; and its URL scrub drops the query and fragment but not a secret inside a path segment (`/reset/<token>`), found by the native review | owner decision: a consent mode (opt-out until consent, or memory-only persistence) and whether `/init` asks it |
+| F47 | apps/web | without Sentry, an error thrown only on the web server is not captured; PostHog captures it server-side only through `posthog-node`, a new dependency | owner decision: add `posthog-node` |
+| F48 | apps/web | `posthog-js` ships in the client bundle even without a key, one chunk of about 374 KB before compression; load it only when a key is set | small |
+| F49 | harness | a Sentry prune leaves the Sentry keys in both `.env.example`, the mobile vitest alias, `@sentry/cli` in `allowBuilds`, mentions in `README.md`, `docs/infrastructure.md` and ADR 0001, and specs that cite the removed Sentry tests; the `sentry` capability should claim or rewrite each | small; before Stage 6 |
+| F50 | both apps | test ergonomics the native review and the writer found: `posthog-react-native` cannot load under the mobile vitest setup (a shared alias would replace two per-test mocks), the Sentry adapter test leaks an env var, and `identify` takes an id it does not guard | small |
 
 ---
 
@@ -1813,3 +1819,6 @@ validate` exits 0. Independent verifier: no blocker. Native review: the hooks
   there is a human in the loop, but the option you mention, of merging directly, should exist". The
   ticket flow follows decision 38's merge policy: `manual` by default, `low-risk` as the option, and
   every deploy and merge to `production` stays the owner's word.
+- **L68 (2026-11-17, owner, choosing between options):** download the latest `posthog-js` and
+  `posthog-react-native` for F.7; wait until the Expo patches pass pnpm's 24-hour `minimumReleaseAge`
+  rather than add exceptions (F45).

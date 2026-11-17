@@ -15,8 +15,10 @@ only differences from mobile are the routing layer and the UI primitives.
 
 ```
 apps/web/
-├── next.config.ts · postcss.config.mjs · tailwind.config.cjs · instrumentation.ts
-├── sentry.client.config.ts · sentry.server.config.ts · sentry.edge.config.ts
+├── next.config.ts · postcss.config.mjs · tailwind.config.cjs
+│                                  # next.config.ts applies every next-<capability>.config.ts beside it
+├── next-sentry.config.ts · instrumentation.ts · sentry.{client,server,edge}.config.ts
+│                                  # the optional sentry capability (docs/observability.md)
 └── src/
     ├── middleware.ts              # origin lock (originGuard adapter)
     ├── app/                       # Next App Router — ROUTING ONLY (RSC)
@@ -38,7 +40,7 @@ apps/web/
     ├── services/<Domain>/         # SHARED transversal services — service + adapter + barrel
     │                              # (Items, ItemsSummary, Auth: sign-in through IAuthGateway)
     ├── lib/                       # bot-protection, image-delivery, observability, origin-guard,
-    │                              # query, supabase, theme
+    │                              # posthog (the one PostHog client), query, supabase, theme
     └── stores/  helpers/ (layout.style.ts: positioning only)  validation/  i18n/  test/
 ```
 
@@ -147,6 +149,10 @@ export default LoginPage
   as a unit and a count, which the block words through the catalog.
 - **Edge/security**: origin-lock middleware, security headers in `next.config.ts`, Turnstile on
   abuse-prone forms (see [../infrastructure.md](../infrastructure.md) for the full checklist).
+- **Observability**: the composition root `src/lib/observability/observability.adapter.ts` binds
+  the PostHog adapter, whose one client is `src/lib/posthog/posthogClient.adapter.ts`, the only
+  file that imports `posthog-js`; Sentry is an optional capability `/init` can prune (see
+  [../observability.md](../observability.md)).
 
 ## 5. Differences vs mobile (quick reference)
 

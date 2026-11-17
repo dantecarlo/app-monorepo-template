@@ -1,4 +1,8 @@
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import {
+  type IObservabilityPortHarness,
+  runObservabilityPortContract
+} from '@app/tooling/observability-port-contract'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const captureException = vi.fn()
 const captureMessage = vi.fn()
@@ -82,4 +86,30 @@ test('methods no-op when the DSN is absent', async () => {
   adapter.setUser?.({ user: { id: 'u1' } })
   expect(captureException).not.toHaveBeenCalled()
   expect(setUser).not.toHaveBeenCalled()
+})
+
+// What reached Sentry: every SDK call but the init, and the user of the last
+// setUser. The adapter reads the DSN when its module loads.
+const sentryHarness: IObservabilityPortHarness = {
+  create: async ({ enabled }) => {
+    vi.clearAllMocks()
+    vi.resetModules()
+    if (enabled) {
+      process.env.EXPO_PUBLIC_SENTRY_DSN = 'https://example@sentry.io/2'
+    } else {
+      delete process.env.EXPO_PUBLIC_SENTRY_DSN
+    }
+    return loadAdapter()
+  },
+  currentUser: () =>
+    (setUser.mock.calls.at(-1)?.[0] ?? null) as { id?: unknown } | null,
+  delivered: () =>
+    [captureException, captureMessage, addBreadcrumb, setUser].flatMap(
+      (mock) => mock.mock.calls
+    ),
+  delivers: true
+}
+
+describe('the observability port contract', () => {
+  runObservabilityPortContract({ harness: sentryHarness, test })
 })

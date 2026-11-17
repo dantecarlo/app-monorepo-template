@@ -19,6 +19,7 @@ allowBuilds:
   '@parcel/watcher': true
   '@sentry/cli': true
   '@swc/core': true
+  core-js: false
   msw: true
   sharp: true
   unrs-resolver: true

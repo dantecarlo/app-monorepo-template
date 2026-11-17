@@ -51,7 +51,7 @@ requirements in several specs, each linking to its neighbour by ID.
 | [packages/supabase](specs/packages/supabase/spec.md) | `SUPABASE` | `packages/supabase/src`, `packages/supabase/supabase/migrations`, `packages/supabase/supabase/config.toml` |
 | [packages/tokens](specs/packages/tokens/spec.md) | `TOKENS` | `packages/tokens/src`, `packages/tokens/scripts`, `packages/tokens/theme.css`, `packages/tokens/tailwind-preset.cjs` |
 | [packages/tooling](specs/packages/tooling/spec.md) | `TOOLING` | `packages/tooling/src` |
-| [apps/web](specs/apps/web/spec.md) | `WEB` | `apps/web/src`, `apps/web/next.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts` |
+| [apps/web](specs/apps/web/spec.md) | `WEB` | `apps/web/src`, `apps/web/next.config.ts`, `apps/web/next-sentry.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts` |
 | [apps/mobile](specs/apps/mobile/spec.md) | `MOBILE` | `apps/mobile/src`, `apps/mobile/app.json` |
 | [harness/mcp](specs/harness/mcp/spec.md) | `MCP` | `.agents/contracts/mcp-servers.json`, `scripts/mcp-docs.detect.mjs`, `scripts/update-mcp-docs.mjs`, `scripts/verify-mcp-docs.mjs` |
 | [harness/ticket-flow](specs/harness/ticket-flow/spec.md) | `TICKET` | `.claude/skills/ticket-flow`, `.claude/skills/po-ticket`, `.claude/skills/refine-ticket`, `.claude/skills/dev-ticket`, `.claude/skills/qa-ticket`, `.claude/skills/release-ticket`, `.claude/skills/process-intake`, `scripts/verify-skills.mjs`, `scripts/verify-ticket-branch.mjs` |

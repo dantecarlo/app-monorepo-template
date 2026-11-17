@@ -1,9 +1,9 @@
 # apps/web — living spec
 
-> **Governs:** `apps/web/src`, `apps/web/next.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
+> **Governs:** `apps/web/src`, `apps/web/next.config.ts`, `apps/web/next-sentry.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-17 at `5590d72`
+> **Verified against the code:** 2026-11-17 at `e35b1ac`
 
 ## Purpose
 
@@ -11,7 +11,8 @@ The web app is the Next.js App Router consumer surface. It serves the home route
 items summary server screen and the client items dashboard), the sign-in route and the Turnstile
 verify API route, and renders their loading, empty and error states. It owns the edge guarantees
 wired in its own code: the origin-lock middleware, the security and image cache headers, the
-Sentry setup with PII scrubbing, and the single query-error capture path. It leaves the domain
+PostHog observability default and the optional Sentry setup, both with PII scrubbing, and the
+single query-error capture path. It leaves the domain
 types, ports, `scrubPII` and `sanitizeQueryKey` to packages/core, the origin guard and Turnstile
 verdicts to packages/cloudflare, the Supabase clients and auth gateway to packages/supabase, the
 translation catalogs to packages/i18n, and the theme values to packages/tokens.
@@ -81,7 +82,7 @@ item counts computed from the items service, labelled with the `items.summary` t
 The web app SHALL cache the items summary result across requests with the `minutes` cache-life
 profile under the `items-summary` cache tag.
 
-**Evidence:** `apps/web/src/services/ItemsSummary/itemsSummary.service.ts:1`, `apps/web/src/services/ItemsSummary/itemsSummary.service.ts:26-27`, `apps/web/src/services/ItemsSummary/itemsSummary.constant.ts:4-7`, `apps/web/next.config.ts:33`
+**Evidence:** `apps/web/src/services/ItemsSummary/itemsSummary.service.ts:1`, `apps/web/src/services/ItemsSummary/itemsSummary.service.ts:26-27`, `apps/web/src/services/ItemsSummary/itemsSummary.constant.ts:4-7`, `apps/web/next.config.ts:35`
 
 #### Scenario: a second request reuses the cached summary
 
@@ -418,7 +419,7 @@ The web app SHALL resolve the locale of server-rendered translations from the `N
 cookie, else the routing locale, falling back to the default language for a missing or unsupported
 value, and load that locale's catalog with the UTC time zone.
 
-**Evidence:** `apps/web/src/i18n/request.config.ts:12-23`, `apps/web/src/i18n/locale.helper.ts:23-28`, `apps/web/next.config.ts:10`
+**Evidence:** `apps/web/src/i18n/request.config.ts:12-23`, `apps/web/src/i18n/locale.helper.ts:23-28`, `apps/web/next.config.ts:12`
 
 #### Scenario: no cookie is set
 
@@ -892,13 +893,13 @@ given, with a retry button only when a retry or reset handler is given.
 - **Test:** `apps/web/src/components/ui/ErrorState/__tests__/ErrorState.component.test.tsx` › "calls resetErrorBoundary as fallback retry"
 - **Test:** `apps/web/src/components/ui/ErrorState/__tests__/ErrorState.component.test.tsx` › "does not render retry button when neither onRetry nor resetErrorBoundary given"
 
-### Requirement: WEB-29 — Observability scrubs PII and stays silent without a DSN
+### Requirement: WEB-29 — The Sentry adapter scrubs PII and stays silent without a DSN
 
-The web app SHALL send errors, messages, breadcrumbs and the user to Sentry only when
-`NEXT_PUBLIC_SENTRY_DSN` is set, passing every context, breadcrumb payload and user through
-`scrubPII` from packages/core first.
+The web app's Sentry adapter, the optional provider of the `sentry` capability, SHALL send
+errors, messages, breadcrumbs and the user to Sentry only when `NEXT_PUBLIC_SENTRY_DSN` is set,
+passing every context, breadcrumb payload and user through `scrubPII` from packages/core first.
 
-**Evidence:** `apps/web/src/lib/observability/createSentryObservability.adapter.ts:24-65`, `apps/web/src/lib/observability/observability.adapter.ts:5-6`
+**Evidence:** `apps/web/src/lib/observability/createSentryObservability.adapter.ts:24-65`
 
 #### Scenario: an error is captured
 
@@ -1034,7 +1035,7 @@ The web app SHALL send, on every path, `X-Frame-Options: SAMEORIGIN`,
 `Permissions-Policy` that denies camera, microphone and geolocation, and a two-year
 `Strict-Transport-Security` with subdomains and preload.
 
-**Evidence:** `apps/web/next.config.ts:12-24`, `apps/web/next.config.ts:37-40`
+**Evidence:** `apps/web/next.config.ts:14-26`, `apps/web/next.config.ts:39-42`
 
 #### Scenario: a page is served
 
@@ -1049,7 +1050,7 @@ The web app SHALL send a `Cache-Control` header of
 `public, max-age=31536000, immutable, stale-while-revalidate=86400` on every path ending in an
 svg, jpg, jpeg, png, webp, avif, gif or ico extension.
 
-**Evidence:** `apps/web/next.config.ts:26-30`, `apps/web/next.config.ts:39`, `apps/web/src/lib/image-delivery/imageCacheHeaders.constant.ts:1-7`
+**Evidence:** `apps/web/next.config.ts:28-32`, `apps/web/next.config.ts:41`, `apps/web/src/lib/image-delivery/imageCacheHeaders.constant.ts:1-7`
 
 #### Scenario: the header value
 
@@ -1483,11 +1484,233 @@ The web app SHALL label the busy indicator of `Button` and the `LoadingSkeleton`
 - **THEN** its status region is named with the Spanish loading message
 - **Test:** `apps/web/src/components/ui/LoadingSkeleton/__tests__/LoadingSkeleton.component.test.tsx` › "labels the skeleton in the active language"
 
+### Requirement: WEB-48 — PostHog is the default observability provider
+
+The web app SHALL bind its observability port to the PostHog adapter in its composition root, so
+every error, message, breadcrumb and user the app reports goes to PostHog unless that one line
+binds another adapter.
+
+**Evidence:** `apps/web/src/lib/observability/observability.adapter.ts:7-8`
+
+#### Scenario: a captured error reaches PostHog
+
+- **GIVEN** a PostHog key and the PostHog SDK replaced at its module
+- **WHEN** an error is captured through the composition root
+- **THEN** the SDK's exception capture receives it
+- **Test:** `apps/web/src/lib/observability/__tests__/observability.adapter.test.ts` › "binds the PostHog adapter by default"
+
+### Requirement: WEB-49 — The PostHog adapter maps the port through scrubPII
+
+The web app SHALL send an error as a PostHog exception, a message as a PostHog log record at the
+mapped level, a breadcrumb as an exception step and a user as an `identify` by id, passing every
+context, breadcrumb payload and person property through `scrubPII` from packages/core, and SHALL
+reset the PostHog identity on `setUser(null)`.
+
+**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:21-68`, `apps/web/src/lib/observability/createPostHogObservability.constant.ts:10-19`
+
+#### Scenario: an error
+
+- **GIVEN** a PostHog key
+- **WHEN** an error is captured with a context holding an email
+- **THEN** PostHog's exception capture receives the error and the context with the email redacted
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "captureError sends the exception with the scrubbed context"
+
+#### Scenario: a message
+
+- **GIVEN** a PostHog key
+- **WHEN** a warning message is captured with a context holding an email
+- **THEN** PostHog receives a log record whose body is the message, whose level is `warn` and
+  whose attributes have the email redacted
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "captureMessage sends a log record at the mapped level"
+
+#### Scenario: a breadcrumb
+
+- **GIVEN** a PostHog key
+- **WHEN** a breadcrumb is added with a category and data holding an email
+- **THEN** PostHog adds an exception step named by the message, with the email redacted
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "addBreadcrumb adds an exception step with the scrubbed data"
+
+#### Scenario: a user, then none
+
+- **GIVEN** a PostHog key
+- **WHEN** a user with an id and an email is set, then `null`
+- **THEN** PostHog identifies the id with the email redacted, then resets the identity
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "setUser identifies the id with the scrubbed rest"
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "setUser(null) resets the identity"
+
+### Requirement: WEB-50 — The PostHog client is inert without a key
+
+The web app SHALL initialise its one PostHog client only in the browser and only when
+`NEXT_PUBLIC_POSTHOG_KEY` is set, sending to `NEXT_PUBLIC_POSTHOG_HOST` or, without it, to the US
+ingestion host, and SHALL otherwise expose no client, so every observability call is a no-op and
+no request leaves the app.
+
+**Evidence:** `apps/web/src/lib/posthog/posthogClient.constant.ts:4-11`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:14`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:35-36`
+
+#### Scenario: no key
+
+- **GIVEN** no PostHog key
+- **WHEN** the client module loads and every observability method is called
+- **THEN** the SDK is never initialised and receives nothing
+- **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "does not initialise PostHog without a key"
+
+#### Scenario: a key and a host
+
+- **GIVEN** a key and a host
+- **WHEN** the client module loads in the browser
+- **THEN** the SDK is initialised once with that key and that host
+- **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "initialises PostHog with the key and the host from the environment"
+
+#### Scenario: a key and no host
+
+- **GIVEN** a key and no host
+- **WHEN** the client module loads in the browser
+- **THEN** the SDK sends to `https://us.i.posthog.com`
+- **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "falls back to the US ingestion host"
+
+#### Scenario: the server
+
+- **GIVEN** a key and no `window`
+- **WHEN** the client module loads
+- **THEN** the SDK is never initialised and no client is exposed
+- **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "does not initialise PostHog on the server"
+
+### Requirement: WEB-51 — The PostHog client starts with privacy defaults
+
+The web app SHALL initialise PostHog with session recording off, DOM autocapture off (form inputs
+included), console errors off, unhandled errors and rejections captured, and the URL scrub as
+its `before_send`.
+
+**Evidence:** `apps/web/src/lib/posthog/posthogClient.adapter.ts:16-28`, `apps/web/src/lib/posthog/posthogClient.constant.ts:15-19`
+
+#### Scenario: recording and autocapture
+
+- **GIVEN** a key
+- **WHEN** the client is initialised
+- **THEN** session recording is disabled and autocapture is off
+- **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "turns session recording and autocapture off"
+
+#### Scenario: automatic exception capture
+
+- **GIVEN** a key
+- **WHEN** the client is initialised
+- **THEN** unhandled errors and rejections are captured and console errors are not
+- **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "captures unhandled errors but not console errors"
+
+#### Scenario: every event is scrubbed
+
+- **GIVEN** a key
+- **WHEN** the client is initialised
+- **THEN** its `before_send` is the URL scrub
+- **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "runs the URL scrub before every event"
+
+### Requirement: WEB-52 — Every URL leaves without its query and fragment
+
+The web app SHALL drop, before PostHog sends an event, the query string and the fragment of every
+URL, path and referrer property of the event and of the person, and of every page URL that keys
+heatmap data, merging the points of two URLs that scrub to the same key.
+
+**Evidence:** `apps/web/src/lib/posthog/scrubCaptureUrls.helper.ts:16-82`, `apps/web/src/lib/posthog/scrubCaptureUrls.constant.ts:4-13`
+
+#### Scenario: a page URL with a token
+
+- **GIVEN** a URL with a query and a fragment that carry a token
+- **WHEN** it is scrubbed
+- **THEN** both are gone and the rest of the URL is kept
+- **Test:** `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "drops the query and the fragment of a page URL"
+
+#### Scenario: an event and its person
+
+- **GIVEN** an event whose properties, `$set` and `$set_once` hold URLs, paths and referrers
+- **WHEN** the event is scrubbed
+- **THEN** each of them leaves without its query and its fragment
+- **Test:** `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "scrubs every URL property of an event and of its person"
+
+#### Scenario: heatmap data
+
+- **GIVEN** heatmap points keyed by two URLs that differ only in their query
+- **WHEN** the event is scrubbed
+- **THEN** the points sit under one scrubbed URL
+- **Test:** `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "keys heatmap points by the scrubbed URL"
+
+#### Scenario: other properties
+
+- **GIVEN** properties that are not URL properties, one holding a URL string
+- **WHEN** the event is scrubbed
+- **THEN** they are untouched
+- **Test:** `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "leaves every other property untouched"
+
+#### Scenario: a dropped event
+
+- **GIVEN** an event an earlier hook dropped
+- **WHEN** it is scrubbed
+- **THEN** it stays dropped
+- **Test:** `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "passes a dropped event through as dropped"
+
+### Requirement: WEB-53 — The Next config applies every optional capability's file
+
+The web app SHALL build its Next.js config and then apply, in name order, the default export of
+every `next-<capability>.config.ts` beside `next.config.ts`, naming no capability itself; the
+Sentry capability's file wraps the config with `withSentryConfig`, silent, uploading source maps
+only when `SENTRY_AUTH_TOKEN` is set.
+
+**Evidence:** `apps/web/next.config.ts:52-89`, `apps/web/next-sentry.config.ts:13-19`
+
+#### Scenario: a capability file beside the config
+
+- **GIVEN** a folder with two `next-<capability>.config.ts` files and one other file
+- **WHEN** the config plugins of that folder are applied to a config
+- **THEN** both change it, in name order, and the other file is not loaded
+- **Test:** `apps/web/__tests__/next.config.test.ts` › "applies every next-<capability>.config.ts beside it, in name order"
+
+#### Scenario: no capability file
+
+- **GIVEN** a folder with no `next-<capability>.config.ts`
+- **WHEN** the config plugins of that folder are applied
+- **THEN** the config is returned as built
+- **Test:** `apps/web/__tests__/next.config.test.ts` › "keeps the config as built when no capability file is beside it"
+
+#### Scenario: the web app's own folder
+
+- **GIVEN** the web app as the template ships it, with `@sentry/nextjs` replaced at its module
+- **WHEN** its config is built
+- **THEN** the Sentry capability's file is applied, and the built config is what it returned
+- **Test:** `apps/web/__tests__/next-sentry.config.test.ts` › "next.config.ts applies the Sentry capability's file of the web app"
+
+#### Scenario: the Sentry wrapper
+
+- **GIVEN** `@sentry/nextjs` replaced at its module
+- **WHEN** the Sentry capability's file wraps a config, with and without `SENTRY_AUTH_TOKEN`
+- **THEN** `withSentryConfig` receives the config, `silent: true`, and source maps disabled only
+  without the token
+- **Test:** `apps/web/__tests__/next-sentry.config.test.ts` › "wraps the config with Sentry, uploading source maps only with a token"
+
+### Requirement: WEB-54 — Both observability adapters keep the port contract
+
+The web app SHALL ship a PostHog adapter and a Sentry adapter that both pass the observability
+port contract of packages/tooling with their SDK replaced at its module.
+
+**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:21-68`, `apps/web/src/lib/observability/createSentryObservability.adapter.ts:26-65`
+
+#### Scenario: the PostHog adapter
+
+- **GIVEN** the PostHog adapter, with and without a key
+- **WHEN** the port contract runs against it
+- **THEN** every case passes
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "the observability port contract"
+
+#### Scenario: the Sentry adapter
+
+- **GIVEN** the Sentry adapter, with and without a DSN
+- **WHEN** the port contract runs against it
+- **THEN** every case passes
+- **Test:** `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "the observability port contract"
+
 ## Open questions
 
 - **Q1** — `docs/infrastructure.md:109` and `docs/infrastructure.md:111` list `X-XSS-Protection`
   and a `Content-Security-Policy`, and `docs/infrastructure.md:92` puts HSTS at Cloudflare, but
-  `apps/web/next.config.ts:12` sends neither of the first two and adds `Strict-Transport-Security`
+  `apps/web/next.config.ts:14` sends neither of the first two and adds `Strict-Transport-Security`
   itself (WEB-34).
 - **Q2** — `docs/infrastructure.md:136` names the Cloudflare Images or R2 adapters as the default
   image delivery, but `apps/web/src/lib/image-delivery/imageDelivery.adapter.ts:4` defaults to the
