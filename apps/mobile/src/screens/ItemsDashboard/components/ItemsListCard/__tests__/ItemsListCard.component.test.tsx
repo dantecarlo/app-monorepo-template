@@ -98,6 +98,24 @@ describe('ItemsListCard (mobile)', () => {
     expect(onRetry).toHaveBeenCalledOnce()
   })
 
+  test('shows the error state and no result count when the items failed to load', () => {
+    render(
+      <ItemsListCard
+        isError
+        isLoading={false}
+        items={[]}
+        onSearchChange={() => undefined}
+        search=""
+      />
+    )
+
+    const alert = within(screen.getByRole('alert'))
+    expect(alert.getByText('components.errorState.title')).toBeTruthy()
+    expect(screen.getByText('listTitle')).toBeTruthy()
+    expect(screen.queryByText('0 listResults')).toBeNull()
+    expect(screen.queryByText(/listResults/)).toBeNull()
+  })
+
   test('shows the result count once', () => {
     const item = {
       age: { count: 1, unit: ItemAgeUnitEnum.HOURS },
