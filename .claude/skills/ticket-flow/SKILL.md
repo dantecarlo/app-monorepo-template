@@ -87,8 +87,8 @@ The project layer maps its own state names onto these.
 | Ready for QA | Dev: build and tests done | Architect, then the architect tells the area's QA: `<id> ready for QA, branch <b>` | `ticket:ready-for-qa` |
 | In QA | QA picks it up | none | `ticket:in-qa` |
 | Changes requested | QA, with a comment; or a red CI or a conflict after Ready to merge | Architect, then the architect tells the dev session: `<id> changes requested` | `ticket:changes-requested` |
-| Ready to merge | QA: checks passed and § Ready to merge met | the owner: QA asks whether to merge | `ticket:ready-to-merge` |
-| Done | QA merges on the owner's word | Architect: `<id> merged` | `ticket:done` |
+| Ready to merge | QA: checks passed and § Ready to merge met | the owner: QA asks whether to merge, unless the `low-risk` policy covers it (rule 4) | `ticket:ready-to-merge` |
+| Done | QA merges on the owner's word, or under the `low-risk` policy (rule 4) | Architect: `<id> merged` | `ticket:done` |
 | Closed | Architect: after Done when the project declares no deploy target, or once the release that lists the ticket is Released | PO: `<id> closed`, and the PO updates the general plan | `ticket:closed` |
 | Ready for prod | Architect: a release ticket that lists Done tickets, § Release stage met | the CI/CD session: `<release-id> ready for prod` | `ticket:ready-for-prod` |
 | In release | CI/CD, on the owner's word | none (it runs each deploy target the release touches, in order) | `ticket:in-release` |
@@ -104,7 +104,8 @@ transition exists.
 Every "ready" state reaches the next session through the architect: dev tells the architect, the
 architect tells QA; QA tells the architect, the architect tells dev or the CI/CD session. The
 architect also sets the merge order, groups Done tickets into releases and closes tickets. The one
-exception is the merge itself: QA asks the owner directly, in its own session (rule 6).
+exception is the merge itself: QA asks the owner directly, in its own session (rule 6), or merges
+without asking under the `low-risk` policy (rule 4).
 
 ---
 
@@ -146,7 +147,7 @@ session may fill a dev role; exactly one QA session fills each dev area's QA rol
 | PO | Turns a client requirement into a ticket, quoting the client verbatim; owns scope, and every change of scope goes through it; updates the general plan when a ticket closes | `po-ticket` |
 | Architect | Refines a ticket into specs and a technical plan (areas, subtasks, reserved files, dependencies); dispatches every transition; sets the merge order; groups releases; closes tickets; creates technical tickets | `refine-ticket` |
 | Dev | One or more sessions per area (App, Web, Backend): builds a ticket in its own worktree and branch, test first | `dev-ticket` |
-| QA | One per area, Backend included: checks out the branch, runs the area's end-to-end checks with evidence, returns the ticket or makes it ready to merge, merges on the owner's word; checks a release on staging | `qa-ticket` |
+| QA | One per area, Backend included: checks out the branch, runs the area's end-to-end checks with evidence, returns the ticket or makes it ready to merge, merges on the owner's word or under the `low-risk` policy; checks a release on staging | `qa-ticket` |
 | CI/CD | One session runs every deploy target and never decides whether to release: the owner's word does, per release and per irreversible step | `release-ticket` |
 | Independent area | Such as Marketing: works its own tickets without a PO unless the client asks, reviews its own work, gets the owner's sign-off, and joins the full flow only when it touches the product | none |
 
@@ -164,10 +165,21 @@ session may fill a dev role; exactly one QA session fills each dev area's QA rol
 3. **Subagent hygiene.** A session may split its task into subagents or subsessions. Each one is
    deleted as soon as it finishes, and none is left idle. No session duplicates another session
    that already exists for a job.
-4. **Merges stay the owner's.** QA asks the owner before merging. Every deploy and every merge to
-   `production` is the owner's word. Anything irreversible (a production migration, a store
-   submission, a release) needs the owner's word, whatever the state. The project layer records
-   the merge policy; `manual`, the default, is this rule as written.
+4. **Merges follow the merge policy; the irreversible stays the owner's.** The project layer
+   records the merge policy; with none recorded, it is `manual`.
+   - **`manual`, the default**, keeps a human in the loop: QA asks the owner before every merge.
+   - **`low-risk`** lets QA merge, without asking, a pull request that meets every condition:
+     it is Ready to merge into the default branch (CI green, no conflict, its branch holding the
+     default branch's current tip) and at the head of the architect's merge order; its Risk line
+     is `Risk: none`, or it changes only passive files; and its merge sets off no irreversible
+     step. A passive file is prose documentation or an image: never code, a test, configuration,
+     a migration, a workflow, a lockfile, or anything an agent reads as instructions (`AGENTS.md`,
+     a skill, an agent). QA records on the ticket that it merged under `low-risk`, with the Risk
+     line it relied on. A pull request that fails one condition, or that QA is unsure of, waits
+     for the owner, as under `manual`.
+   - **Under every policy**, every deploy, every merge to `production` and anything irreversible
+     (a production migration, a store submission, a release) needs the owner's word, whatever
+     the state.
 5. **Independent QA.** The session that built a ticket never moves it past Ready for QA.
 6. **Approval in place.** An approval counts only in the session that asked for it. A relay from
    another session does not stand in for it.
@@ -240,13 +252,14 @@ QA moves a ticket to Ready to merge only when all three hold:
 1. the pull request's CI is green;
 2. it has no conflict with its base branch: the default branch, or `production` for a hotfix;
 3. its branch contains the base branch's current tip. QA brings it current (merge or rebase, as
-   the project layer says), pushes, re-runs the checks, and only then asks the owner. A pull
-   request that was conflict-free and green but behind its base turned Certifipago's master red
-   (its #841).
+   the project layer says), pushes, re-runs the checks, and only then asks the owner, or merges
+   under the `low-risk` policy (rule 4). A pull request that was conflict-free and green but
+   behind its base turned Certifipago's master red (its #841).
 
-**Merges are serialized**, one at a time, in the order the architect records on the tickets. QA
-asks the owner only for the ticket at the head of that order; after each merge, the next ticket
-is brought current again and re-checked before it is asked.
+**Merges are serialized**, one at a time, in the order the architect records on the tickets, under
+every merge policy. QA asks the owner, or merges under `low-risk`, only for the ticket at the head
+of that order; after each merge, the next ticket is brought current again and re-checked before
+it is asked or merged.
 
 A red CI or a conflict after Ready to merge sends the ticket back to Changes requested, with a
 comment.

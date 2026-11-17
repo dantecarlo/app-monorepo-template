@@ -14,14 +14,16 @@
 //   - every skill: a frontmatter `name` that is its folder, a description
 //     with USE WHEN and DO NOT USE, a CONTRACT and an Output section;
 //   - `ticket-flow`: its sections, a row for every state, role and board
-//     operation, a pre-flight that names `process-intake`, and its ticket
-//     and release templates;
+//     operation, a pre-flight that names `process-intake`, rules that name
+//     both merge policies, and its ticket and release templates;
 //   - a role skill: a first paragraph that names ticket-flow's SKILL.md, and
 //     neither of the contract's two tables; `refine-ticket` its release step,
-//     and `release-ticket` its deploy targets, branching, migrations and
-//     hotfix;
-//   - `process-intake`: the template of the project layer, with a row for
-//     every board operation and every state, and its deploy targets.
+//     `qa-ticket` a merge step that names both merge policies, and
+//     `release-ticket` its deploy targets, branching, migrations and hotfix;
+//   - `process-intake`: a mapping step that names both merge policies, and
+//     the template of the project layer, with a row for every board
+//     operation and every state, its deploy targets, and a merge policy
+//     section that names both policies and gives `manual` as the default.
 //
 // `run` is pure: it decides on the files `collectContext` gathers, so a case
 // drives it from synthetic skills.
@@ -63,7 +65,8 @@ export const FINDING_KIND = Object.freeze({
   restated: 'restated',
   row: 'row',
   table: 'table',
-  trigger: 'trigger'
+  trigger: 'trigger',
+  value: 'value'
 })
 
 export const STATES = [
@@ -101,6 +104,12 @@ export const OPERATIONS = [
   'set version'
 ]
 
+// The merge policies a project layer may record (decision 38): `manual`, the
+// default, keeps the owner's word on every merge; `low-risk` lets QA merge a
+// pull request that meets every condition of ticket-flow's rule 4.
+export const MERGE_POLICIES = ['manual', 'low-risk']
+export const DEFAULT_MERGE_POLICY = 'manual'
+
 // The header cells of the contract's two tables. A role skill holding
 // either has copied the contract instead of reading it.
 export const STATES_TABLE_HEADER = [
@@ -128,6 +137,18 @@ const TARGETS_TABLE_HEADER = [
 const STATE_NAMES_TABLE_HEADER = ['Core state', "This project's name"]
 
 const SHAPE_HEADINGS = ['## CONTRACT', '## Output']
+
+const RULES_HEADING = '## Rules every role follows'
+const QA_MERGE_STEP = '## Step 6 — One merge at a time, under the merge policy'
+const INTAKE_MAPPING_STEP = '## Step 3 — Map it onto the core'
+const MERGE_POLICY_HEADING = '## Merge policy'
+const POLICY_FIELD = '- **Policy:**'
+
+const codeOf = ({ text }) => `\`${text}\``
+
+// A section that must name every merge policy, each in backticks.
+const policyMentions = ({ heading }) =>
+  MERGE_POLICIES.map((policy) => ({ heading, text: codeOf({ text: policy }) }))
 
 // What each ticket skill carries: the headings of its SKILL.md, the tables
 // under some of them and the keys each table must list in its first column,
@@ -172,7 +193,7 @@ export const SKILL_CONTRACTS = [
       '## The architect dispatches',
       '## Messages',
       '## Roles',
-      '## Rules every role follows',
+      RULES_HEADING,
       '## Ticket identity',
       '## What a ticket carries',
       '## Ready to merge',
@@ -181,7 +202,8 @@ export const SKILL_CONTRACTS = [
     ],
     mentions: [
       { heading: '## Pre-flight', text: 'docs/process/ticket-flow.md' },
-      { heading: '## Pre-flight', text: 'process-intake' }
+      { heading: '## Pre-flight', text: 'process-intake' },
+      ...policyMentions({ heading: RULES_HEADING })
     ],
     tables: [
       {
@@ -204,7 +226,12 @@ export const SKILL_CONTRACTS = [
     role: true
   },
   { folder: 'dev-ticket', headings: SHAPE_HEADINGS, role: true },
-  { folder: 'qa-ticket', headings: SHAPE_HEADINGS, role: true },
+  {
+    folder: 'qa-ticket',
+    headings: [QA_MERGE_STEP, ...SHAPE_HEADINGS],
+    mentions: policyMentions({ heading: QA_MERGE_STEP }),
+    role: true
+  },
   {
     folder: 'release-ticket',
     headings: [
@@ -223,18 +250,26 @@ export const SKILL_CONTRACTS = [
   {
     files: [
       {
+        defaults: [
+          {
+            field: POLICY_FIELD,
+            heading: MERGE_POLICY_HEADING,
+            value: codeOf({ text: DEFAULT_MERGE_POLICY })
+          }
+        ],
         headings: [
           '## Board adapter',
           '## States',
           '## Roles and sessions',
           '## Approvals',
-          '## Merge policy',
+          MERGE_POLICY_HEADING,
           '## Ticket identity',
           '## Branch check in CI',
           '## Deploy targets',
           '## Branching model',
           '## Source'
         ],
+        mentions: policyMentions({ heading: MERGE_POLICY_HEADING }),
         name: 'ticket-flow.template.md',
         tables: [
           {
@@ -256,7 +291,8 @@ export const SKILL_CONTRACTS = [
       }
     ],
     folder: 'process-intake',
-    headings: SHAPE_HEADINGS
+    headings: [INTAKE_MAPPING_STEP, ...SHAPE_HEADINGS],
+    mentions: policyMentions({ heading: INTAKE_MAPPING_STEP })
   }
 ]
 
@@ -347,8 +383,38 @@ const judgeMentions = ({ folder, lines, mentions = [], path }) =>
     ]
   })
 
-// The headings, tables and mentions a file owes; every file a contract names
-// is judged by this, SKILL.md and the templates alike.
+// The line a section gives its default in: the field, then the default
+// value alone, as in "- **Policy:** `manual`".
+const judgeDefaults = ({ defaults = [], folder, lines, path }) =>
+  defaults.flatMap(({ field, heading, value }) => {
+    const section = sectionOf({ heading, lines })
+    if (section === null) return []
+    const line = section.find((item) => item.trim().startsWith(field))
+    if (line === undefined) {
+      return [
+        finding({
+          detail: `the section ${heading} has no line ${field}, which owes the default ${value}`,
+          folder,
+          kind: FINDING_KIND.value,
+          path
+        })
+      ]
+    }
+    const given = line.trim().slice(field.length).trim()
+    return given === value
+      ? []
+      : [
+          finding({
+            detail: `the line ${field} under ${heading} gives ${given === '' ? 'nothing' : given}, not the default ${value}`,
+            folder,
+            kind: FINDING_KIND.value,
+            path
+          })
+        ]
+  })
+
+// The headings, tables, mentions and defaults a file owes; every file a
+// contract names is judged by this, SKILL.md and the templates alike.
 const judgeBody = ({ folder, lines, path, spec }) => [
   ...spec.headings
     .filter((heading) => !lines.includes(heading))
@@ -361,7 +427,8 @@ const judgeBody = ({ folder, lines, path, spec }) => [
       })
     ),
   ...judgeTables({ folder, lines, path, tables: spec.tables }),
-  ...judgeMentions({ folder, lines, mentions: spec.mentions, path })
+  ...judgeMentions({ folder, lines, mentions: spec.mentions, path }),
+  ...judgeDefaults({ defaults: spec.defaults, folder, lines, path })
 ]
 
 const readFrontmatter = ({ lines }) => {
@@ -491,14 +558,18 @@ export const gate = defineGate({
     'whose frontmatter name is its folder, whose description holds USE ' +
     'WHEN and DO NOT USE, and which has a CONTRACT and an Output section; ' +
     'ticket-flow has its sections, a row for every state, role and board ' +
-    'operation, a pre-flight that names process-intake, and its ticket ' +
-    'and release templates; each role skill opens by sending the reader to ' +
-    "ticket-flow and copies neither of the contract's tables, refine-ticket " +
-    'has its release step and release-ticket its deploy targets, its ' +
-    'branching with the tags-only alternative, its migrations and its ' +
-    'hotfix; and process-intake holds the template of the project layer, ' +
-    'with a row for every board operation and every state, and a deploy ' +
-    'targets table.',
+    'operation, a pre-flight that names process-intake, rules that name ' +
+    'both merge policies (manual and low-risk), and its ticket and release ' +
+    'templates; each role skill opens by sending the reader to ticket-flow ' +
+    "and copies neither of the contract's tables, refine-ticket has its " +
+    'release step, qa-ticket a merge step that names both merge policies, ' +
+    'and release-ticket its deploy targets, its branching with the ' +
+    'tags-only alternative, its migrations and its hotfix; and ' +
+    'process-intake has a mapping step that names both merge policies and ' +
+    'holds the template of the project layer, with a row for every board ' +
+    'operation and every state, a deploy targets table, and a merge policy ' +
+    'section that names both policies and whose Policy line gives manual, ' +
+    'the default.',
   id: 'verify-skills',
   notCovered:
     'whether a procedure says what an agent should do, which only the ' +

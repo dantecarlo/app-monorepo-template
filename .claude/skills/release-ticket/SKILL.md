@@ -21,6 +21,11 @@ procedure uses its board operations, states, messages and rules and never restat
 reads the deploy targets and the branching model of docs/process/ticket-flow.md; a layer that
 declares no deploy target → stop and send the team to `process-intake`.
 
+No merge policy covers a step of this skill. The `low-risk` policy (`ticket-flow` rule 4) lets QA
+merge a ticket into the default branch; every release, deploy target, merge to `production`,
+migration push and store submission here, and the hotfix's merges, stays the owner's word under
+every policy.
+
 ---
 
 ## Step 1 — Read the release
