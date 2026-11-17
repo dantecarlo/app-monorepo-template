@@ -31,9 +31,11 @@ export const ItemsListCard = ({
       <View style={[{ padding: 20 }, styles.cardHeader]}>
         <View style={styles.cardHeaderRow}>
           <Text variant="title">{t('listTitle')}</Text>
-          <Text variant="caption">
-            {isLoading ? '…' : t('listResults', { count: items.length })}
-          </Text>
+          {!isError && (
+            <Text variant="caption">
+              {isLoading ? '…' : t('listResults', { count: items.length })}
+            </Text>
+          )}
         </View>
         <SearchBar
           accessibilityLabel={t('searchLabel')}
