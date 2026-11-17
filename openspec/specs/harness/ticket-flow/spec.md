@@ -266,14 +266,14 @@ has no slug.
 - **THEN** it finds nothing
 - **Test:** `scripts/verify-ticket-branch.test.mjs` › "a branch with a keyed id and a body that names the key passes"
 
-#### Scenario: Certifipago's branch under its layer
+#### Scenario: a TASK-slug branch under its layer
 
-- **GIVEN** Certifipago's layer (`idPattern` `TASK-[a-z0-9]+(?:-[a-z0-9]+)*`, the Conventional
+- **GIVEN** a TASK-slug layer (`idPattern` `TASK-[a-z0-9]+(?:-[a-z0-9]+)*`, the Conventional
   Commit types as `branchTypes`, an optional slug), the branch `feat/TASK-min-app-version-app`
   and a body that names `TASK-min-app-version-app`
 - **WHEN** the check runs
 - **THEN** it finds nothing
-- **Test:** `scripts/verify-ticket-branch.test.mjs` › "a Certifipago branch and body pass under its layer"
+- **Test:** `scripts/verify-ticket-branch.test.mjs` › "a TASK-slug branch and body pass under its layer"
 
 #### Scenario: an optional slug left out
 
@@ -345,12 +345,12 @@ before a `/`, a type outside the identity's `branchTypes` (naming them), no id t
 - **THEN** the finding names the branch and the shape it owes
 - **Test:** `scripts/verify-ticket-branch.test.mjs` › "a finding names the branch and the shape it owes"
 
-#### Scenario: Certifipago's branch under the defaults
+#### Scenario: a TASK-slug branch under the defaults
 
 - **GIVEN** no layer, the branch `feat/TASK-min-app-version-app` and a body that names it
 - **WHEN** the check runs
 - **THEN** it reports two findings: the type `feat`, and no id the default pattern matches
-- **Test:** `scripts/verify-ticket-branch.test.mjs` › "a Certifipago branch is refused under the defaults"
+- **Test:** `scripts/verify-ticket-branch.test.mjs` › "a TASK-slug branch is refused under the defaults"
 
 #### Scenario: a type the layer does not allow
 
@@ -381,7 +381,7 @@ before a `/`, a type outside the identity's `branchTypes` (naming them), no id t
 branch's id, naming the id it owes and the ids it names instead. The body SHALL be searched for
 the id literally, never as a pattern, and an id SHALL count as named only where no longer id the
 identity's pattern accepts starts with it: `#1234` does not name `#123`, `PROJ-421` does not name
-`PROJ-42`, and under Certifipago's layer `TASK-min-app-version` does not name `TASK-min-app`.
+`PROJ-42`, and under a TASK-slug layer `TASK-min-app-version` does not name `TASK-min-app`.
 
 **Evidence:** `scripts/verify-ticket-branch.mjs:334`, `scripts/verify-ticket-branch.mjs:368`,
 `scripts/verify-ticket-branch.mjs:387`, `scripts/verify-ticket-branch.mjs:407`
@@ -409,7 +409,7 @@ identity's pattern accepts starts with it: `#1234` does not name `#123`, `PROJ-4
 
 #### Scenario: a longer id under a layer
 
-- **GIVEN** Certifipago's layer, the branch `feat/TASK-min-app` and a body that names
+- **GIVEN** a TASK-slug layer, the branch `feat/TASK-min-app` and a body that names
   `TASK-min-app-version`
 - **WHEN** the check runs
 - **THEN** it reports one finding
@@ -451,7 +451,7 @@ each flag that replaced a field) and what it does not cover.
 
 #### Scenario: the layer of the working directory
 
-- **GIVEN** a working directory whose docs/process/ticket-flow.md holds Certifipago's block
+- **GIVEN** a working directory whose docs/process/ticket-flow.md holds a TASK-slug block
 - **WHEN** the check runs there as a process over `feat/TASK-min-app-version-app` and a body
   that names it
 - **THEN** it exits 0, and its stdout names docs/process/ticket-flow.md
@@ -459,7 +459,7 @@ each flag that replaced a field) and what it does not cover.
 
 #### Scenario: a layer named by `--layer`
 
-- **GIVEN** Certifipago's block in a file that `--layer` names
+- **GIVEN** a TASK-slug block in a file that `--layer` names
 - **WHEN** the check runs as a process over the same branch and body
 - **THEN** it exits 0, and its stdout names that file
 - **Test:** `scripts/verify-ticket-branch.test.mjs` › "the check reads the layer --layer names"
@@ -473,7 +473,7 @@ each flag that replaced a field) and what it does not cover.
 
 #### Scenario: a flag as a process
 
-- **GIVEN** Certifipago's layer in the working directory and `--types feature`
+- **GIVEN** a TASK-slug layer in the working directory and `--types feature`
 - **WHEN** the check runs as a process over `feature/TASK-abc` and a body that names it
 - **THEN** it exits 0, and its stdout names `--types`
 - **Test:** `scripts/verify-ticket-branch.test.mjs` › "the check takes a flag over one field of the layer"
@@ -912,7 +912,7 @@ SHALL then judge no branch under any other identity.
 
 #### Scenario: a flag over one field
 
-- **GIVEN** Certifipago's layer, the flag `--types feature`, the branch `feature/TASK-abc` and a
+- **GIVEN** a TASK-slug layer, the flag `--types feature`, the branch `feature/TASK-abc` and a
   body that names `TASK-abc`
 - **WHEN** the check runs
 - **THEN** it finds nothing: the types come from the flag, the pattern and the slug rule from the
@@ -921,7 +921,7 @@ SHALL then judge no branch under any other identity.
 
 #### Scenario: a type the flag replaced
 
-- **GIVEN** Certifipago's layer, the flag `--types feature` and the branch `feat/TASK-abc`
+- **GIVEN** a TASK-slug layer, the flag `--types feature` and the branch `feat/TASK-abc`
 - **WHEN** the check runs
 - **THEN** it reports one finding: `feat` is no longer allowed
 - **Test:** `scripts/verify-ticket-branch.test.mjs` › "a type the flag replaced is refused"

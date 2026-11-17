@@ -83,7 +83,8 @@ only what the document did not answer:
     `test`, `build`, `ci`, `docs`);
   - `slug`: whether a branch must carry one, `required` (the default) or `optional`.
 
-  Keep the defaults the team does not change. Certifipago, for example, writes
+  Keep the defaults the team does not change. A team whose ids are `TASK-<slug>` and whose
+  branches carry the Conventional Commit type writes, for example,
   `{"idPattern": "TASK-[a-z0-9]+(?:-[a-z0-9]+)*", "branchTypes": ["feat", "fix", "chore", "refactor", "perf", "test", "build", "ci", "docs"], "slug": "optional"}`.
   Before writing it, prove it on one real branch and pull request body of the team's:
   `pnpm verify:ticket-branch --branch <b> --body <text> --id-pattern <p> --types <a,b> --slug <s>`,

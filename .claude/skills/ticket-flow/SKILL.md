@@ -66,9 +66,9 @@ The three kinds of adapter:
 - **(b) an MCP connector** — Notion, Jira or Linear. The project layer names the tool call each
   operation maps to.
 - **(c) the project's own scripts** — the project layer names the command each operation runs.
-  Certifipago, for example, drives a Notion database through its scripts/board/ client with a
-  `verify:board-config` gate, its state in the field `Estado` and the target version in a select
-  named Versi&oacute;n; the template ships no script adapter.
+  A project may, for example, drive a Notion database through its own board client and a gate
+  that checks the board config, with the state and the target version in two of its fields; the
+  template ships no script adapter.
 
 A `move` makes only a transition of the table below, and only one the session's role may make.
 
@@ -210,8 +210,8 @@ never a silent default.
 - **Branch** — `<type>/<id>-<slug>`, or `<type>/<id>` when the slug is optional; the slug
   lower-case kebab: `feature/123-add-sign-in`, `fix/PROJ-42-null-total`. The prefix is one of the
   layer's `branchTypes`: the ticket type by default, or the Conventional Commit type of the table
-  below when the layer says so. Certifipago's layer does: its ids are `TASK-<slug>`, its slug is
-  optional, and a branch reads `feat/TASK-min-app-version-app`. When the slug is optional and
+  below when the layer says so. A layer may, for example, use ids such as `TASK-<slug>` with an
+  optional slug, so a branch reads `feat/TASK-min-app-version-app`. When the slug is optional and
   `idPattern` matches everything after the prefix, the branch has no slug.
   `scripts/verify-ticket-branch.mjs` checks the branch under the layer's identity and that the
   pull request body names the id; a project may run it in its CI
@@ -274,7 +274,7 @@ QA moves a ticket to Ready to merge only when all three hold:
 3. its branch contains the base branch's current tip. QA brings it current (merge or rebase, as
    the project layer says), pushes, re-runs the checks, and only then asks the owner, or merges
    under the `low-risk` policy (rule 4). A pull request that was conflict-free and green but
-   behind its base turned Certifipago's master red (its #841).
+   behind its base has turned a downstream project's default branch red.
 
 **Merges are serialized**, one at a time, in the order the architect records on the tickets, under
 every merge policy. QA asks the owner, or merges under `low-risk`, only for the ticket at the head

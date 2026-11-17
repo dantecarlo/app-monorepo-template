@@ -51,10 +51,10 @@ const DEFAULT_TYPES = ['feature', 'fix', 'tech', 'chore']
 const BLOCK_OPEN = '```json ticket-identity'
 const BLOCK_CLOSE = '```'
 
-// Certifipago's ticket identity, as its Arquitecto reported it on
+// A downstream ticket identity, as a downstream project reported it on
 // 2026-11-17: ids `TASK-<slug>`, branches that start with the Conventional
 // Commit type, and an optional slug. An example layer, never a default.
-const CERTIFIPAGO = {
+const TASK_SLUG = {
   branchTypes: [
     'feat',
     'fix',
@@ -69,9 +69,9 @@ const CERTIFIPAGO = {
   idPattern: 'TASK-[a-z0-9]+(?:-[a-z0-9]+)*',
   slug: 'optional'
 }
-const CERTIFIPAGO_ID = 'TASK-min-app-version-app'
-const CERTIFIPAGO_BRANCH = `feat/${CERTIFIPAGO_ID}`
-const CERTIFIPAGO_BODY = `Adds the minimum app version.\n\nTicket: ${CERTIFIPAGO_ID}\n`
+const TASK_SLUG_ID = 'TASK-min-app-version-app'
+const TASK_SLUG_BRANCH = `feat/${TASK_SLUG_ID}`
+const TASK_SLUG_BODY = `Adds the minimum app version.\n\nTicket: ${TASK_SLUG_ID}\n`
 
 // A project layer whose Ticket identity section holds `blocks`, each the
 // text of one fenced block, JSON or not.
@@ -98,7 +98,7 @@ const layerOf = ({ blocks }) => ({
 const identityLayer = ({ identity }) =>
   layerOf({ blocks: [blockOf({ identity })] })
 
-const CERTIFIPAGO_LAYER = identityLayer({ identity: CERTIFIPAGO })
+const TASK_SLUG_LAYER = identityLayer({ identity: TASK_SLUG })
 
 const DEFAULTS = {
   branchTypes: DEFAULT_TYPES,
@@ -186,17 +186,17 @@ export const CASES = [
   },
   {
     context: pair({
-      body: CERTIFIPAGO_BODY,
-      branch: CERTIFIPAGO_BRANCH,
-      layer: CERTIFIPAGO_LAYER
+      body: TASK_SLUG_BODY,
+      branch: TASK_SLUG_BRANCH,
+      layer: TASK_SLUG_LAYER
     }),
     expected: 0,
-    name: 'a Certifipago branch and body pass under its layer'
+    name: 'a TASK-slug branch and body pass under its layer'
   },
   {
-    context: pair({ body: CERTIFIPAGO_BODY, branch: CERTIFIPAGO_BRANCH }),
+    context: pair({ body: TASK_SLUG_BODY, branch: TASK_SLUG_BRANCH }),
     expected: 2,
-    name: 'a Certifipago branch is refused under the defaults'
+    name: 'a TASK-slug branch is refused under the defaults'
   },
   {
     context: pair({
@@ -253,7 +253,7 @@ export const CASES = [
     context: pair({
       body: 'Ticket: TASK-min-app-version\n',
       branch: 'feat/TASK-min-app',
-      layer: CERTIFIPAGO_LAYER
+      layer: TASK_SLUG_LAYER
     }),
     expected: 1,
     name: 'a body that names a longer id under the layer is refused'
@@ -330,7 +330,7 @@ export const CASES = [
       layer: layerOf({
         blocks: [
           blockOf({ identity: DEFAULTS }),
-          blockOf({ identity: CERTIFIPAGO })
+          blockOf({ identity: TASK_SLUG })
         ]
       })
     }),
@@ -349,7 +349,7 @@ export const CASES = [
       body: 'Ticket: TASK-abc\n',
       branch: 'feature/TASK-abc',
       flags: { types: 'feature' },
-      layer: CERTIFIPAGO_LAYER
+      layer: TASK_SLUG_LAYER
     }),
     expected: 0,
     name: 'a flag overrides a single field of the layer'
@@ -359,7 +359,7 @@ export const CASES = [
       body: 'Ticket: TASK-abc\n',
       branch: 'feat/TASK-abc',
       flags: { types: 'feature' },
-      layer: CERTIFIPAGO_LAYER
+      layer: TASK_SLUG_LAYER
     }),
     expected: 1,
     name: 'a type the flag replaced is refused'
@@ -391,7 +391,7 @@ const runIn = ({ args, body, branch, files }) =>
     use: ({ root }) => runCheck({ args, body, branch, cwd: root })
   })
 
-const CERTIFIPAGO_FILES = { [LAYER_PATH]: CERTIFIPAGO_LAYER.text }
+const TASK_SLUG_FILES = { [LAYER_PATH]: TASK_SLUG_LAYER.text }
 
 const checks = [
   {
@@ -497,9 +497,9 @@ const checks = [
     name: 'the check reads the layer of its working directory',
     run: () => {
       const result = runIn({
-        body: CERTIFIPAGO_BODY,
-        branch: CERTIFIPAGO_BRANCH,
-        files: CERTIFIPAGO_FILES
+        body: TASK_SLUG_BODY,
+        branch: TASK_SLUG_BRANCH,
+        files: TASK_SLUG_FILES
       })
       assert.equal(result.status, PASSED, result.stderr)
       assert.match(result.stdout, /verify-ticket-branch: PASS/u)
@@ -513,14 +513,14 @@ const checks = [
     name: 'the check reads the layer --layer names',
     run: () =>
       withScratchTree({
-        files: { 'layers/certifipago.md': CERTIFIPAGO_LAYER.text },
+        files: { 'layers/task-slug.md': TASK_SLUG_LAYER.text },
         prefix: 'verify-ticket-branch-layer-',
         use: ({ root }) => {
-          const layer = join(root, 'layers', 'certifipago.md')
+          const layer = join(root, 'layers', 'task-slug.md')
           const result = runCheck({
             args: ['--layer', layer],
-            body: CERTIFIPAGO_BODY,
-            branch: CERTIFIPAGO_BRANCH
+            body: TASK_SLUG_BODY,
+            branch: TASK_SLUG_BRANCH
           })
           assert.equal(result.status, PASSED, result.stderr)
           assert.ok(
@@ -541,8 +541,8 @@ const checks = [
       assert.equal(result.status, PASSED, result.stderr)
       assert.match(result.stdout, /the default ticket identity/u)
       const refused = runIn({
-        body: CERTIFIPAGO_BODY,
-        branch: CERTIFIPAGO_BRANCH,
+        body: TASK_SLUG_BODY,
+        branch: TASK_SLUG_BRANCH,
         files: {}
       })
       assert.equal(refused.status, FAILED, refused.stdout)
@@ -555,7 +555,7 @@ const checks = [
         args: ['--types', 'feature'],
         body: 'Ticket: TASK-abc\n',
         branch: 'feature/TASK-abc',
-        files: CERTIFIPAGO_FILES
+        files: TASK_SLUG_FILES
       })
       assert.equal(result.status, PASSED, result.stderr)
       assert.ok(
