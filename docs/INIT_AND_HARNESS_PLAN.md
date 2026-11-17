@@ -102,7 +102,7 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 
 **Pending, in order:**
 - F.7, F.8 and F.11 of Stage F, and the small follow-ups F37, F38 and F42.
-- F33 and F41, when the owner decides them.
+- F33, when the owner decides it.
 - Step 3.2 part B: `gradedBy`, `sdd-steward` and `verify:router-coverage` (F27).
 - Step 3.3, then Stages 4 to 7.
 
@@ -489,7 +489,7 @@ defects behind them, for changes of their own.
 | F38 | both apps | `useItems` keys its query by `search` only, but its `queryFn` also reads `limit`, so two limits share one cache entry | small |
 | F39 | apps/web, packages/tokens | a custom property resolves its `var()` where it is declared, and the generated theme declares on `:root`: a token that must follow an element-scoped or `@property`-animated variable has to be read with `--theme(<token> inline)`, and a nested `[data-theme]` scope would not re-resolve the `@theme` colours; tailwind-merge reads the hand-written `bg-accent-gradient` as a colour, so a later `bg-<colour>` drops it. Neither bites today (no `@property`, the theme on `html` only, no block combines the gradient with a colour); found by Certifipago #853 | note; a guard test when the first `@property` arrives |
 | F40 | apps/web | the active locale lives in the `NEXT_LOCALE` cookie, so since F.6 every route renders its content per request (`/`, `/login` are partial prerenders: a static shell, per-request content); a `/[locale]` URL segment would restore full prerendering and give each language its own URL, at the cost of new routes and a matcher change | decided (decision 60): keep the cookie |
-| F41 | harness | the ticket flow keeps every merge on the owner's word (its rule 4), while decision 38's `low-risk` merge policy lets an agent merge a green, current pull request whose Risk line is `none`; which wins for a project that picks `low-risk` | owner decision |
+| F41 | harness | the ticket flow keeps every merge on the owner's word (its rule 4), while decision 38's `low-risk` merge policy lets an agent merge a green, current pull request whose Risk line is `none`; which wins for a project that picks `low-risk` | done: this change (the owner: `/init` decides, `manual` by default, `low-risk` as the option) |
 | F42 | harness | `.claude/skill-registry.md` lacks `archify`, `general-plan`, `propagate-from-template` and `sdd` (it was stale before the ticket flow added its seven) | small; regenerate it with the `registry` skill |
 
 ---
@@ -1806,3 +1806,7 @@ validate` exits 0. Independent verifier: no blocker. Native review: the hooks
   decoupled, and send it to the template so it also evaluates and executes it"; the release stage
   (12:38, "I approve it"); the target version (12:52). Built as `2026-11-16-ticket-flow` with the
   template's 50 changes to the source spec, which the Arquitecto adopts.
+- **L67 (2026-11-17, owner, translated from Spanish):** on F41, "Let the init decide it; by default
+  there is a human in the loop, but the option you mention, of merging directly, should exist". The
+  ticket flow follows decision 38's merge policy: `manual` by default, `low-risk` as the option, and
+  every deploy and merge to `production` stays the owner's word.

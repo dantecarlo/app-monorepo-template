@@ -176,7 +176,7 @@ Last updated: 2026-11-17
 
 ### qa-ticket
 
-- **Description**: The QA role of the ticket flow, one session per area: checks out a ticket's branch, runs the area's end-to-end checks with the project's own harness, posts the evidence as a pull request comment, then returns the ticket as Changes requested or brings the branch current and makes it Ready to merge, asks the owner for one merge at a time and merges on the owner's word; checks a release batch on staging.
+- **Description**: The QA role of the ticket flow, one session per area: checks out a ticket's branch, runs the area's end-to-end checks with the project's own harness, posts the evidence as a pull request comment, then returns the ticket as Changes requested or brings the branch current and makes it Ready to merge, and merges one ticket at a time under the project's merge policy: on the owner's word under `manual`, the default, or without asking under `low-risk` when the pull request meets every condition; checks a release batch on staging.
 - **Triggers**: "<id> ready for QA, branch <b>", "check ticket <id>", "<release-id> check on staging", "merge <id>", a QA session of the ticket flow starts work
 - **DO NOT USE**: a ticket this session built (rule 5 of `ticket-flow`), building a fix (use `dev-ticket`), or a deploy to production (use `release-ticket`)
 - **Path**: `.claude/skills/qa-ticket/SKILL.md`

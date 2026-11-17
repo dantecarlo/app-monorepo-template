@@ -56,7 +56,14 @@
 
 ## Merge policy
 
-- **Policy:** `manual`: an agent merges only on the owner's word
+- **Policy:** `manual`
+- **What each policy allows:** `manual`, the default, keeps a human in the loop: QA asks the
+  owner for every merge. `low-risk` lets QA merge, without asking, a pull request that meets every
+  condition of `ticket-flow` rule 4 (Ready to merge into the default branch, at the head of the
+  merge order, its Risk line `Risk: none` or only passive files, and no irreversible step), and
+  record that merge on the ticket; any other pull request waits for the owner, as under `manual`.
+- **What no policy covers:** a merge to `production`, a deploy, a production migration, a store
+  submission and every other irreversible step stay the owner's word.
 - **Bringing a branch current:** <merge | rebase>
 - **Merge method:** <merge commit | squash | rebase>
 

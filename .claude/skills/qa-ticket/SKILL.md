@@ -4,15 +4,16 @@ description: >
   The QA role of the ticket flow, one session per area: checks out a ticket's branch, runs the
   area's end-to-end checks with the project's own harness, posts the evidence as a pull request
   comment, then returns the ticket as Changes requested or brings the branch current and makes it
-  Ready to merge, asks the owner for one merge at a time and merges on the owner's word; checks a
-  release batch on staging.
+  Ready to merge, and merges one ticket at a time under the project's merge policy: on the
+  owner's word under `manual`, the default, or without asking under `low-risk` when the pull
+  request meets every condition; checks a release batch on staging.
   USE WHEN: "<id> ready for QA, branch <b>", "check ticket <id>", "<release-id> check on
   staging", "merge <id>", a QA session of the ticket flow starts work.
   DO NOT USE: a ticket this session built (rule 5 of `ticket-flow`), building a fix (use
   `dev-ticket`), or a deploy to production (use `release-ticket`).
 ---
 
-# QA ticket — check a ticket with evidence, then return it or merge it on the owner's word
+# QA ticket — check a ticket with evidence, then return it or merge it under the merge policy
 
 Read `ticket-flow` first (`.claude/skills/ticket-flow/SKILL.md`), its pre-flight included: this
 procedure uses its board operations, states, messages and rules and never restates them.
@@ -72,19 +73,38 @@ Did every check pass?
 
 ---
 
-## Step 6 — Ask the owner, one merge at a time
+## Step 6 — One merge at a time, under the merge policy
 
-Only for the ticket at the head of the merge order the architect recorded, ask in this session:
-"`<id>` is ready to merge: `<url>`, CI green, current with `<base>`. Merge it?" Wait for the
-owner's word here; a relay from another session does not count. When another merge lands before
-the answer, go back to Step 5 and bring the branch current again.
+Only for the ticket at the head of the merge order the architect recorded. Read the merge policy
+in the project layer (`ticket-flow` rule 4):
+
+```
+Which merge policy does the project layer record?
+├── `manual`, the default, or none → ask the owner.
+└── `low-risk` → does the pull request meet every condition?
+      1. it is Ready to merge into the default branch: CI green, no conflict, current with the
+         default branch's tip (Step 5); a pull request into `production` never is;
+      2. its body's Risk line is `Risk: none`, or its diff changes only passive files
+         (`ticket-flow` rule 4);
+      3. its merge sets off no irreversible step: no deploy, no production migration, no store
+         submission, nothing that cannot be undone.
+    ├── YES, all three → merge it without asking (Step 7).
+    └── NO to one, no Risk line, or unsure → ask the owner, as under `manual`.
+```
+
+To ask, say in this session: "`<id>` is ready to merge: `<url>`, CI green, current with `<base>`.
+Merge it?" Wait for the owner's word here; a relay from another session does not count. When
+another merge lands before the answer, or before a `low-risk` merge, go back to Step 5 and bring
+the branch current again.
 
 ---
 
 ## Step 7 — Merge
 
-- **Yes** → merge it with the project layer's merge method, `move` the ticket to Done, and message
-  the architect `<id> merged`. Remove the QA worktree.
+- **Yes, or every `low-risk` condition met** → merge it with the project layer's merge method.
+  After a `low-risk` merge, `comment` the ticket: "Merged under the `low-risk` merge policy. Risk
+  line: `<the pull request's Risk line>`; it qualified by <`Risk: none` | only passive files>."
+  `move` the ticket to Done, and message the architect `<id> merged`. Remove the QA worktree.
 - **No** → `comment` the owner's answer; the ticket stays where it is.
 - A red CI or a conflict while it waits → `comment` it, `move` it to Changes requested, and
   message the architect `<id> changes requested`.
@@ -105,19 +125,24 @@ its links), and message the architect `<release-id> staging checked`.
 # skill: qa-ticket — the QA role; the board operations come from ticket-flow.
 reads:
   - .claude/skills/ticket-flow/SKILL.md
+  - docs/process/ticket-flow.md # the merge policy, the merge method, merge or rebase
   - docs/e2e.md
 board_operations: [read, move, comment, link]
+merge_policies: [manual, low-risk] # manual, the default, when the layer records none
 moves:
   - Ready for QA → In QA
   - In QA → Changes requested
   - In QA → Ready to merge
   - Ready to merge → Changes requested
-  - Ready to merge → Done # on the owner's word only
+  - Ready to merge → Done # on the owner's word, or under low-risk when every condition holds
 messages: ['<id> changes requested', '<id> merged', '<release-id> staging checked']
 emits:
   - a pull request comment with the evidence
+  - a ticket comment for each low-risk merge, with the Risk line it relied on
 validated_by: test:e2e
-done_when: the ticket is in Changes requested with its evidence, or Done on the owner's word
+done_when: >-
+  the ticket is in Changes requested with its evidence, or Done on the owner's word, or Done
+  under the low-risk merge policy with that merge recorded on the ticket
 ```
 
 ---
