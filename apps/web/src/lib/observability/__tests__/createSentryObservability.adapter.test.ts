@@ -1,4 +1,8 @@
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import {
+  type IObservabilityPortHarness,
+  runObservabilityPortContract
+} from '@app/tooling/observability-port-contract'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { createSentryObservability } from '@/lib/observability/createSentryObservability.adapter'
 
@@ -75,4 +79,28 @@ test('all methods no-op when the DSN is absent', () => {
   expect(captureMessage).not.toHaveBeenCalled()
   expect(setUser).not.toHaveBeenCalled()
   expect(addBreadcrumb).not.toHaveBeenCalled()
+})
+
+// What reached Sentry: every SDK call, and the user of the last setUser.
+const sentryHarness: IObservabilityPortHarness = {
+  create: ({ enabled }) => {
+    vi.clearAllMocks()
+    if (enabled) {
+      process.env.NEXT_PUBLIC_SENTRY_DSN = 'https://example@sentry.io/1'
+    } else {
+      delete process.env.NEXT_PUBLIC_SENTRY_DSN
+    }
+    return createSentryObservability()
+  },
+  currentUser: () =>
+    (setUser.mock.calls.at(-1)?.[0] ?? null) as { id?: unknown } | null,
+  delivered: () =>
+    [captureException, captureMessage, addBreadcrumb, setUser].flatMap(
+      (mock) => mock.mock.calls
+    ),
+  delivers: true
+}
+
+describe('the observability port contract', () => {
+  runObservabilityPortContract({ harness: sentryHarness, test })
 })
