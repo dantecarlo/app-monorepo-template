@@ -101,7 +101,7 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 **Next:** F.7, observability (PostHog by default, Sentry optional).
 
 **Pending, in order:**
-- F.7, F.8 and F.11 of Stage F, and the small follow-ups F37, F38 and F42.
+- F.7, F.8 and F.11 of Stage F, and the small follow-ups F43 to F45.
 - F33, when the owner decides it.
 - Step 3.2 part B: `gradedBy`, `sdd-steward` and `verify:router-coverage` (F27).
 - Step 3.3, then Stages 4 to 7.
@@ -485,12 +485,15 @@ defects behind them, for changes of their own.
 | F34 | apps/web, packages/tokens | tailwind-merge knew only the token font sizes, so two classes of one utility with token names were both kept (`p-sm p-lg`, `px-pill-x px-lg`, `top-knob-inset top-sm`) and a token shadow was dropped next to a shadow colour (`shadow-card shadow-accent`): 12 of 25 probe pairs wrong; found by Certifipago Web #849 | done: this change |
 | F35 | apps/web | the web View all, settings and Google buttons have no action, which F12 fixes on mobile only; WEB-01 and WEB-11 state them | small; the F12 rule for web |
 | F36 | apps/web, security | the origin-guard matcher exempts any path that only starts with an exempt name: `/imagesadmin`, `/fonts-private/x`, `/favicon.icox` and `/_next/staticfoo` skip the guard; anchor the pattern (`images/`, `fonts/`, `favicon.ico$`); found by the F.5 verifier, there before it | done: this change |
-| F37 | both apps | when the items query fails, the caption shows "0 results" beside the `ErrorState` | small |
-| F38 | both apps | `useItems` keys its query by `search` only, but its `queryFn` also reads `limit`, so two limits share one cache entry | small |
+| F37 | both apps | when the items query fails, the caption shows "0 results" beside the `ErrorState` | done: this change |
+| F38 | both apps | `useItems` keys its query by `search` only, but its `queryFn` also reads `limit`, so two limits share one cache entry | done: this change |
 | F39 | apps/web, packages/tokens | a custom property resolves its `var()` where it is declared, and the generated theme declares on `:root`: a token that must follow an element-scoped or `@property`-animated variable has to be read with `--theme(<token> inline)`, and a nested `[data-theme]` scope would not re-resolve the `@theme` colours; tailwind-merge reads the hand-written `bg-accent-gradient` as a colour, so a later `bg-<colour>` drops it. Neither bites today (no `@property`, the theme on `html` only, no block combines the gradient with a colour); found by Certifipago #853 | note; a guard test when the first `@property` arrives |
 | F40 | apps/web | the active locale lives in the `NEXT_LOCALE` cookie, so since F.6 every route renders its content per request (`/`, `/login` are partial prerenders: a static shell, per-request content); a `/[locale]` URL segment would restore full prerendering and give each language its own URL, at the cost of new routes and a matcher change | decided (decision 60): keep the cookie |
 | F41 | harness | the ticket flow keeps every merge on the owner's word (its rule 4), while decision 38's `low-risk` merge policy lets an agent merge a green, current pull request whose Risk line is `none`; which wins for a project that picks `low-risk` | done: this change (the owner: `/init` decides, `manual` by default, `low-risk` as the option) |
-| F42 | harness | `.claude/skill-registry.md` lacks `archify`, `general-plan`, `propagate-from-template` and `sdd` (it was stale before the ticket flow added its seven) | small; regenerate it with the `registry` skill |
+| F42 | harness | `.claude/skill-registry.md` lacks `archify`, `general-plan`, `propagate-from-template` and `sdd` (it was stale before the ticket flow added its seven) | done: this change |
+| F43 | both apps | when the items query fails, the stats card still shows a total of 0 beside the `ErrorState` (F37 fixed only the list caption) | small |
+| F44 | harness | `runtime-verify` and `validate-all` declare no `USE WHEN:` in their frontmatter, so the regenerated registry flags them | small; the `improve-skill` flow |
+| F45 | apps/mobile | Expo published `expo` 58.0.26 and `expo-router` 58.0.32 on 2026-11-17 at 12:01 UTC, and CI's `expo-health` fails every branch on the patch mismatch; pnpm 11's `minimumReleaseAge` (24 hours) refuses them until 2026-11-18 at 12:01 UTC, and the owner chose to wait rather than add exceptions | small; bump them after 2026-11-18 12:01 UTC, with no `minimumReleaseAgeExclude` |
 
 ---
 
