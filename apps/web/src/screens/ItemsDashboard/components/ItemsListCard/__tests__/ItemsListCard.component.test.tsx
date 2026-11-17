@@ -12,7 +12,9 @@ const messages = {
     emptyState: {
       message: 'There is nothing here yet.',
       title: 'No results'
-    }
+    },
+    errorState:
+      resources[DEFAULT_LANGUAGE].translation.components.errorState
   },
   items: {
     age: resources[DEFAULT_LANGUAGE].translation.items.age,
@@ -68,6 +70,26 @@ describe('ItemsListCard', () => {
       </NextIntlClientProvider>
     )
     expect(screen.getByText('No items found.')).toBeInTheDocument()
+  })
+
+  test('shows the error state and no result count when the items failed to load', () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <ItemsListCard
+          isError
+          isLoading={false}
+          items={[]}
+          onSearchChange={() => {}}
+          search=""
+        />
+      </NextIntlClientProvider>
+    )
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      messages.components.errorState.title
+    )
+    expect(screen.getByText('Items')).toBeInTheDocument()
+    expect(screen.queryByText('0 results')).not.toBeInTheDocument()
+    expect(screen.queryByText(/results/)).not.toBeInTheDocument()
   })
 
   test('renders skeleton rows when loading', () => {

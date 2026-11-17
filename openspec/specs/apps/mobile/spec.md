@@ -3,7 +3,7 @@
 > **Governs:** `apps/mobile/src`, `apps/mobile/app.json`
 > **ID prefix:** `MOBILE`
 > **Derived from:** `docs/architecture/mobile.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/observability.md`, `docs/e2e.md`, `docs/responsive.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-16 at `bc46d55`
+> **Verified against the code:** 2026-11-17 at `5590d72`
 
 ## Purpose
 
@@ -191,20 +191,28 @@ before i18next and its ICU plugin initialise.
 - **THEN** the singular form shows instead of the other form
 - **Test:** Not covered — the polyfill matters only on Hermes, and no test runs on a device or asserts a plural form
 
-### Requirement: MOBILE-09 — Dashboard data keyed by the search term
+### Requirement: MOBILE-09 — Dashboard data keyed by the search term and the limit
 
 The mobile app SHALL load the dashboard items through useAppQuery under the items list query key
-for the current search term, fetching at most 50 items from the items service and adapting them
-to view models.
+`QueryKeys.items.list({ search, limit })`, which holds the current search term and the item
+limit, 50 by default, so two limits never share a cache entry, fetching at most that many items
+from the items service and adapting them to view models.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:41-60`, `apps/mobile/src/lib/query/queryKeys.constant.ts:32-39`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:41-60`, `apps/mobile/src/lib/query/queryKeys.constant.ts:36-41`, `apps/mobile/src/lib/query/queryKeys.type.ts:3-6`
 
 #### Scenario: the user types a search term
 
 - **GIVEN** the dashboard shows the full list
 - **WHEN** the user types a term in the search bar
 - **THEN** a new query runs under the key for that term and the list shows its result
-- **Test:** Not covered — the only useItems test asserts that the export is a function
+- **Test:** Not covered — no mobile test changes the search text of useItems; the key factory test pins where the search sits in the key
+
+#### Scenario: two limits
+
+- **GIVEN** two dashboard hooks under one query client, with limits of 1 and 2
+- **WHEN** both settle
+- **THEN** each lists the items its own limit fetched, the items service is called once per limit, and the client holds one items list query per limit, keyed by `QueryKeys.items.list({ search, limit })`
+- **Test:** `apps/mobile/src/screens/ItemsDashboard/hooks/__tests__/useItems.hook.test.ts` › "keeps one cache entry per limit, each with its own items"
 
 ### Requirement: MOBILE-10 — The items service serves sample data
 
@@ -332,7 +340,7 @@ whose status is active, and a dash in place of each number while loading.
 The mobile app SHALL show an activity indicator in the items list, and an ellipsis in place of
 the result count, while the items query is loading.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:34-51`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:34-53`
 
 #### Scenario: the first load
 
@@ -346,7 +354,7 @@ the result count, while the items query is loading.
 The mobile app SHALL show the shared empty state, with the components.emptyState title and
 message from the catalogs, when the items query resolves no items.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:54-55`, `apps/mobile/src/components/ui/EmptyState/EmptyState.component.tsx:18-23`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:56-57`, `apps/mobile/src/components/ui/EmptyState/EmptyState.component.tsx:18-23`
 
 #### Scenario: a search with no match
 
@@ -362,7 +370,7 @@ initials, title, description, category, author label, age and status label (MOBI
 caption holding the items.dashboard.listResults message for the item count, which states the count
 once.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:35`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:57`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:36`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:59`
 
 #### Scenario: items have loaded
 
@@ -397,9 +405,9 @@ home tab selected on mount, and mark a pressed tab as selected without navigatin
 The mobile app SHALL add no toast when a query made through useAppQuery fails, however many
 components observe it; the dashboard SHALL show the error state with its generic copy in the
 items list, in place of the items and the empty state, with a retry control that runs the items
-query again.
+query again, and no result count in the list caption.
 
-**Evidence:** `apps/mobile/src/lib/query/useAppQuery.hook.ts:19`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:49`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:77-79`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:52-53`
+**Evidence:** `apps/mobile/src/lib/query/useAppQuery.hook.ts:19`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:49`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:77-79`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:34-38`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:54-55`
 
 #### Scenario: a failing query
 
@@ -421,6 +429,13 @@ query again.
 - **WHEN** it renders and its retry control is pressed
 - **THEN** it shows the error state alert, no empty state, and the retry handler runs once
 - **Test:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/__tests__/ItemsListCard.component.test.tsx` › "shows the error state with a retry when the items failed to load"
+
+#### Scenario: the caption shows no count
+
+- **GIVEN** the list card told the items failed to load
+- **WHEN** it renders
+- **THEN** it shows the error state alert with its generic title, and no result count
+- **Test:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/__tests__/ItemsListCard.component.test.tsx` › "shows the error state and no result count when the items failed to load"
 
 ### Requirement: MOBILE-21 — Error message precedence
 
@@ -543,7 +558,7 @@ against the values of `QueryKeySegmentEnum`, so the trailing params object of a 
 is always redacted, and every failed mutation to the observability port's captureError, tagged
 with the cache it came from.
 
-**Evidence:** `apps/mobile/src/lib/query/createQueryClient.helper.ts:35`, `apps/mobile/src/lib/query/queryKeys.constant.ts:26-39`, `apps/mobile/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/mobile/src/app/_layout.tsx:39`
+**Evidence:** `apps/mobile/src/lib/query/createQueryClient.helper.ts:35`, `apps/mobile/src/lib/query/queryKeys.constant.ts:29-41`, `apps/mobile/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/mobile/src/app/_layout.tsx:39`
 
 #### Scenario: a query key holding an identifier
 
@@ -554,17 +569,17 @@ with the cache it came from.
 
 #### Scenario: a query keyed by a search text
 
-- **GIVEN** a query keyed by `QueryKeys.items.list('alice')`
+- **GIVEN** a query keyed by `QueryKeys.items.list({ limit, search: 'alice' })`
 - **WHEN** the query fails
 - **THEN** the capture callback receives the key `['items', 'list', '[redacted]']`
 - **Test:** `apps/mobile/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "redacts the search text of an items list key on query failure"
 
 #### Scenario: a typed value equal to a registered word
 
-- **GIVEN** a query keyed by `QueryKeys.items.list('list')`
+- **GIVEN** a query keyed by `QueryKeys.items.list({ limit, search: 'list' })`
 - **WHEN** the query fails
 - **THEN** the capture callback receives the key `['items', 'list', '[redacted]']`
-- **Test:** `apps/mobile/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "redacts a list filter that equals a registered segment on query failure"
+- **Test:** `apps/mobile/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "redacts a list search that equals a registered segment on query failure"
 
 #### Scenario: a failing mutation
 
@@ -1009,22 +1024,22 @@ when the key carries a dynamic value, by one trailing params object that holds e
 so that no string segment of a key is a value the user typed or the data supplied, and a
 feature's `all` key is a prefix of each of its keys.
 
-**Evidence:** `apps/mobile/src/lib/query/queryKeys.constant.ts:14`, `apps/mobile/src/lib/query/queryKeys.constant.ts:25`, `apps/mobile/src/lib/query/queryKeys.constant.ts:26-30`, `apps/mobile/src/lib/query/queryKeys.constant.ts:32-39`
+**Evidence:** `apps/mobile/src/lib/query/queryKeys.constant.ts:17`, `apps/mobile/src/lib/query/queryKeys.constant.ts:28`, `apps/mobile/src/lib/query/queryKeys.constant.ts:29-34`, `apps/mobile/src/lib/query/queryKeys.constant.ts:36-41`, `apps/mobile/src/lib/query/queryKeys.type.ts:3-6`
 
 #### Scenario: every factory is walked
 
-- **GIVEN** every entry of `QueryKeys`, each factory called with a probe value
+- **GIVEN** every entry of `QueryKeys`, each factory called with a probe argument of its own type
 - **WHEN** the string segments of the keys they return are read
-- **THEN** each one is a value of `QueryKeySegmentEnum`
+- **THEN** every factory has a probe, and each string segment is a value of `QueryKeySegmentEnum`
 - **Test:** `apps/mobile/src/lib/query/__tests__/queryKeys.constant.test.ts` › "builds every string segment of every key factory from QueryKeySegmentEnum"
 
-#### Scenario: the list filter and the detail id
+#### Scenario: the list search and limit and the detail id
 
-- **GIVEN** a list filter and an item id
+- **GIVEN** a list search, a list limit and an item id
 - **WHEN** the list and detail keys are built
-- **THEN** they are `['items', 'list', { filter }]` and `['items', 'detail', { id }]`, and the list key with no filter stays `['items', 'list']`
-- **Test:** `apps/mobile/src/lib/query/__tests__/queryKeys.constant.test.ts` › "puts the list filter and the detail id in a trailing params object"
-- **Test:** `apps/mobile/src/lib/query/__tests__/queryKeys.constant.test.ts` › "keeps the bare list key when no filter is given"
+- **THEN** they are `['items', 'list', { limit, search }]` and `['items', 'detail', { id }]`, and a list key with no search, or an empty one, holds the empty search beside its limit
+- **Test:** `apps/mobile/src/lib/query/__tests__/queryKeys.constant.test.ts` › "puts the list search and limit and the detail id in a trailing params object"
+- **Test:** `apps/mobile/src/lib/query/__tests__/queryKeys.constant.test.ts` › "keeps the limit in the list key when no search is given"
 
 #### Scenario: the items prefix is invalidated
 

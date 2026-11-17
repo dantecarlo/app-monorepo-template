@@ -30,9 +30,11 @@ export const ItemsListCard = ({
       <div className={ITEMS_LIST_CARD.TOP}>
         <div className={ITEMS_LIST_CARD.HEADER}>
           <Text variant="title">{t('listTitle')}</Text>
-          <span className={ITEMS_LIST_CARD.COUNT_LABEL}>
-            {isLoading ? '…' : t('listResults', { count: items.length })}
-          </span>
+          {!isError && (
+            <span className={ITEMS_LIST_CARD.COUNT_LABEL}>
+              {isLoading ? '…' : t('listResults', { count: items.length })}
+            </span>
+          )}
         </div>
         <SearchBar
           accessibilityLabel={t('searchLabel')}

@@ -3,7 +3,7 @@
 > **Governs:** `apps/web/src`, `apps/web/next.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-16 at `b514c6e`
+> **Verified against the code:** 2026-11-17 at `5590d72`
 
 ## Purpose
 
@@ -95,7 +95,7 @@ profile under the `items-summary` cache tag.
 The web app SHALL, while the items query is loading, render skeleton rows with the status role in
 the items list and a dash in place of each count on the stats card.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:46-56`, `apps/web/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.tsx:28-32`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:48-58`, `apps/web/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.tsx:28-32`
 
 #### Scenario: the list shows skeletons
 
@@ -117,7 +117,7 @@ the items list and a dash in place of each count on the stats card.
 The web app SHALL, once the items load, render one item card per item, the result count in the
 list header, the total item count and the count of items whose status is active.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:64-70`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:33-35`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:61-62`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:64-70`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:33-37`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:63-64`
 
 #### Scenario: the item cards appear
 
@@ -146,7 +146,7 @@ list header, the total item count and the count of items whose status is active.
 The web app SHALL render the empty state with the `items.dashboard.listEmpty` message when the
 loaded item list is empty.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:59-60`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:61-62`
 
 #### Scenario: the service returns no items
 
@@ -160,9 +160,9 @@ loaded item list is empty.
 
 The web app SHALL, when the items query fails, render the error state with its generic copy in
 the items list, in place of the items and the empty state, with a Try again button that runs the
-items query again, and queue no toast.
+items query again, show no result count in the list header, and queue no toast.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:51`, `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:79-81`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:57-58`, `apps/web/src/lib/query/useAppQuery.hook.ts:21`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:51`, `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:79-81`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:33-37`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:59-60`, `apps/web/src/lib/query/useAppQuery.hook.ts:21`
 
 #### Scenario: the items service rejects
 
@@ -170,6 +170,13 @@ items query again, and queue no toast.
 - **WHEN** the dashboard settles
 - **THEN** the list shows the error state alert with its generic title, no empty-list message, and the toast store holds no toast
 - **Test:** `apps/web/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx` › "shows the error state and queues no toast when the items query fails"
+
+#### Scenario: the list header shows no count
+
+- **GIVEN** the items list card told the items failed to load
+- **WHEN** it renders
+- **THEN** it shows the error state alert with its generic title, and no result count
+- **Test:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/__tests__/ItemsListCard.component.test.tsx` › "shows the error state and no result count when the items failed to load"
 
 #### Scenario: Try again after a failure
 
@@ -188,9 +195,10 @@ items query again, and queue no toast.
 ### Requirement: WEB-08 — The dashboard search re-queries the items
 
 The web app SHALL re-run the items query with the typed search text and the item limit, 50 by
-default, under the query key `QueryKeys.items.list(search)`.
+default, under the query key `QueryKeys.items.list({ search, limit })`, which holds both, so two
+limits never share a cache entry.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:43-62`, `apps/web/src/lib/query/queryKeys.constant.ts:40-47`, `apps/web/src/services/Items/items.service.ts:96-116`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:43-62`, `apps/web/src/lib/query/queryKeys.constant.ts:44-49`, `apps/web/src/lib/query/queryKeys.type.ts:3-6`, `apps/web/src/services/Items/items.service.ts:96-116`
 
 #### Scenario: a search term is typed
 
@@ -198,6 +206,13 @@ default, under the query key `QueryKeys.items.list(search)`.
 - **WHEN** the search text changes to a term
 - **THEN** the items service is called with that term and the limit
 - **Test:** `apps/web/src/screens/ItemsDashboard/hooks/__tests__/useItems.hook.test.ts` › "forwards search and limit to the service when search changes"
+
+#### Scenario: two limits
+
+- **GIVEN** two dashboard hooks under one query client, with limits of 1 and 2
+- **WHEN** both settle
+- **THEN** each lists the items its own limit fetched, the items service is called once per limit, and the client holds one items list query per limit, keyed by `QueryKeys.items.list({ search, limit })`
+- **Test:** `apps/web/src/screens/ItemsDashboard/hooks/__tests__/useItems.hook.test.ts` › "keeps one cache entry per limit, each with its own items"
 
 #### Scenario: the search box is labelled
 
@@ -700,7 +715,7 @@ cache error handlers, to the observability port, passing the query key through
 `sanitizeQueryKey` from packages/core with the values of `QueryKeySegmentEnum` as its structural
 segments, so the trailing params object of a key (WEB-45) is always redacted, whatever it holds.
 
-**Evidence:** `apps/web/src/lib/query/createQueryClient.helper.ts:41`, `apps/web/src/lib/query/queryKeys.constant.ts:34-47`, `apps/web/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/web/src/app/providers.tsx:20-27`
+**Evidence:** `apps/web/src/lib/query/createQueryClient.helper.ts:41`, `apps/web/src/lib/query/queryKeys.constant.ts:37-49`, `apps/web/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/web/src/app/providers.tsx:20-27`
 
 #### Scenario: a query fails
 
@@ -711,17 +726,17 @@ segments, so the trailing params object of a key (WEB-45) is always redacted, wh
 
 #### Scenario: a query keyed by a search text
 
-- **GIVEN** a query keyed by `QueryKeys.items.list('alice')`
+- **GIVEN** a query keyed by `QueryKeys.items.list({ limit, search: 'alice' })`
 - **WHEN** it fails
 - **THEN** the capture sink receives the key `['items', 'list', '[redacted]']`
 - **Test:** `apps/web/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "redacts the search text of an items list key on query failure"
 
 #### Scenario: a typed value equal to a registered word
 
-- **GIVEN** a query keyed by `QueryKeys.items.list('list')`
+- **GIVEN** a query keyed by `QueryKeys.items.list({ limit, search: 'list' })`
 - **WHEN** it fails
 - **THEN** the capture sink receives the key `['items', 'list', '[redacted]']`
-- **Test:** `apps/web/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "redacts a list filter that equals a registered segment on query failure"
+- **Test:** `apps/web/src/lib/query/__tests__/createQueryClient.helper.test.ts` › "redacts a list search that equals a registered segment on query failure"
 
 #### Scenario: a mutation fails
 
@@ -1376,22 +1391,22 @@ the key carries a dynamic value, by one trailing params object that holds every 
 that no string segment of a key is a value the user typed or the data supplied, and a feature's
 `all` key is a prefix of each of its keys.
 
-**Evidence:** `apps/web/src/lib/query/queryKeys.constant.ts:22`, `apps/web/src/lib/query/queryKeys.constant.ts:33`, `apps/web/src/lib/query/queryKeys.constant.ts:34-38`, `apps/web/src/lib/query/queryKeys.constant.ts:40-47`
+**Evidence:** `apps/web/src/lib/query/queryKeys.constant.ts:25`, `apps/web/src/lib/query/queryKeys.constant.ts:36`, `apps/web/src/lib/query/queryKeys.constant.ts:37-42`, `apps/web/src/lib/query/queryKeys.constant.ts:44-49`, `apps/web/src/lib/query/queryKeys.type.ts:3-6`
 
 #### Scenario: every factory is walked
 
-- **GIVEN** every entry of `QueryKeys`, each factory called with a probe value
+- **GIVEN** every entry of `QueryKeys`, each factory called with a probe argument of its own type
 - **WHEN** the string segments of the keys they return are read
-- **THEN** each one is a value of `QueryKeySegmentEnum`
+- **THEN** every factory has a probe, and each string segment is a value of `QueryKeySegmentEnum`
 - **Test:** `apps/web/src/lib/query/__tests__/queryKeys.constant.test.ts` › "builds every string segment of every key factory from QueryKeySegmentEnum"
 
-#### Scenario: the list filter and the detail id
+#### Scenario: the list search and limit and the detail id
 
-- **GIVEN** a list filter and an item id
+- **GIVEN** a list search, a list limit and an item id
 - **WHEN** the list and detail keys are built
-- **THEN** they are `['items', 'list', { filter }]` and `['items', 'detail', { id }]`, and the list key with no filter stays `['items', 'list']`
-- **Test:** `apps/web/src/lib/query/__tests__/queryKeys.constant.test.ts` › "puts the list filter and the detail id in a trailing params object"
-- **Test:** `apps/web/src/lib/query/__tests__/queryKeys.constant.test.ts` › "keeps the bare list key when no filter is given"
+- **THEN** they are `['items', 'list', { limit, search }]` and `['items', 'detail', { id }]`, and a list key with no search, or an empty one, holds the empty search beside its limit
+- **Test:** `apps/web/src/lib/query/__tests__/queryKeys.constant.test.ts` › "puts the list search and limit and the detail id in a trailing params object"
+- **Test:** `apps/web/src/lib/query/__tests__/queryKeys.constant.test.ts` › "keeps the limit in the list key when no search is given"
 
 #### Scenario: the items prefix is invalidated
 
