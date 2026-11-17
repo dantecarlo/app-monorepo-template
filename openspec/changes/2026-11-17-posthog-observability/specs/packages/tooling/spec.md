@@ -21,6 +21,20 @@ of a user is kept, and `setUser(null)` clears the user.
 - **THEN** every case passes
 - **Test:** `packages/tooling/src/__tests__/observability-port-contract.test.mjs` › "an adapter that keeps the contract passes every case"
 
+#### Scenario: an adapter with no provider behind it
+
+- **GIVEN** a harness that declares no provider and an adapter that hands nothing on
+- **WHEN** the contract runs against it
+- **THEN** every case passes
+- **Test:** `packages/tooling/src/__tests__/observability-port-contract.test.mjs` › "an adapter that hands nothing on passes as a silent provider"
+
+#### Scenario: one test per case
+
+- **GIVEN** a test runner's `test` function
+- **WHEN** the contract registers through it
+- **THEN** it registers one test per case, under the case's title, in order
+- **Test:** `packages/tooling/src/__tests__/observability-port-contract.test.mjs` › "the contract registers one test per case, by its title"
+
 #### Scenario: an adapter that throws while disabled
 
 - **GIVEN** an adapter whose methods throw while the provider is disabled
