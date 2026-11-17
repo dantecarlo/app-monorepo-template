@@ -71,9 +71,9 @@ Owner rule of 2026-11-13, relayed by the Arquitecto (translated from Spanish): w
 finishes a harness or architecture change, it tells the template, which applies it too; each
 such report becomes a parity-ledger row.
 
-### Where things stand (2026-11-15)
+### Where things stand (2026-11-16)
 
-Requested by the owner: everything below "Next" and "Pending", in that order (L61 to L63).
+Requested by the owner: everything below "Next" and "Pending", in that order (L61 to L66).
 
 **Done, merged into `main`:**
 - Stages 0 to 2.
@@ -94,14 +94,15 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 - F36: the origin-guard matcher anchors its exempt paths (#31).
 - F.6, the i18n follow-ups: F10 (web client components and `<html lang>` follow the active locale, the switcher works both ways) and F14 (every block label and the item age from the catalogs in both apps, catalog keys typed by the default catalog, parity across every catalog, named sign-in failures) (this change).
 - F.2, the Supabase hardening (#21; the native review did not fit its context budget, and the owner chose to merge on the independent verifier).
+- The ticket flow: seven skills (`ticket-flow`, `po-ticket`, `refine-ticket`, `dev-ticket`, `qa-ticket`, `release-ticket`, `process-intake`), the board and the deploy targets as adapters, the release stage and the target version, the pure `verify:ticket-branch` check, and the living spec harness/ticket-flow (this change; Certifipago adopts it with its own project layer).
 
 **In flight:** none.
 
-**Next:** the ticket flow (in flight, `feat/ticket-flow`), then F.7.
+**Next:** F.7, observability (PostHog by default, Sentry optional).
 
 **Pending, in order:**
-- F.5 to F.8 and F.11 of Stage F.
-- F33, when the owner decides it.
+- F.7, F.8 and F.11 of Stage F, and the small follow-ups F37, F38 and F42.
+- F33 and F41, when the owner decides them.
 - Step 3.2 part B: `gradedBy`, `sdd-steward` and `verify:router-coverage` (F27).
 - Step 3.3, then Stages 4 to 7.
 
@@ -488,6 +489,8 @@ defects behind them, for changes of their own.
 | F38 | both apps | `useItems` keys its query by `search` only, but its `queryFn` also reads `limit`, so two limits share one cache entry | small |
 | F39 | apps/web, packages/tokens | a custom property resolves its `var()` where it is declared, and the generated theme declares on `:root`: a token that must follow an element-scoped or `@property`-animated variable has to be read with `--theme(<token> inline)`, and a nested `[data-theme]` scope would not re-resolve the `@theme` colours; tailwind-merge reads the hand-written `bg-accent-gradient` as a colour, so a later `bg-<colour>` drops it. Neither bites today (no `@property`, the theme on `html` only, no block combines the gradient with a colour); found by Certifipago #853 | note; a guard test when the first `@property` arrives |
 | F40 | apps/web | the active locale lives in the `NEXT_LOCALE` cookie, so since F.6 every route renders its content per request (`/`, `/login` are partial prerenders: a static shell, per-request content); a `/[locale]` URL segment would restore full prerendering and give each language its own URL, at the cost of new routes and a matcher change | decided (decision 60): keep the cookie |
+| F41 | harness | the ticket flow keeps every merge on the owner's word (its rule 4), while decision 38's `low-risk` merge policy lets an agent merge a green, current pull request whose Risk line is `none`; which wins for a project that picks `low-risk` | owner decision |
+| F42 | harness | `.claude/skill-registry.md` lacks `archify`, `general-plan`, `propagate-from-template` and `sdd` (it was stale before the ticket flow added its seven) | small; regenerate it with the `registry` skill |
 
 ---
 
@@ -1264,7 +1267,7 @@ a `CLAUDE.md` from scratch, so `verify:instruction-entry` fails any tracked
 | 4   | Backend and data  | backend: front-end only, a new backend, an existing structure, or the default Supabase (decision 54); tables and entities to start with; auth providers | `contracts/data.json`, `docs/data-model.md`, first migration stub                                                            |
 | 5   | Design system     | does one exist? source: Figma, URL, package, tokens file, none; **destination folder** for the copy                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | copied source, `docs/design-system.md`, tokens data → generated tokens, `contracts/design.json`                              |
 | 6   | Flows and screens | main user flows; screen list per app                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | `docs/user-flows.md`, screen map, scaffolded screens and routes                                                              |
-| 7   | Team workflow     | branch strategy, PR policy, merge vs rebase, protected branch, commit convention, board (Notion / Jira / Linear / none); owners and reviewers per area (default: the repository owner), written as `CODEOWNERS` only where GitHub honours it (a public repository, or Pro or Team for a private one), otherwise kept in the project config for review routing                                                                                                                                                                                                                                       | `contracts/workflow.json`, `contracts/board.json`, hooks, commitlint; the merge policy, `manual` or `low-risk` (decision 38) |
+| 7   | Team workflow     | branch strategy, PR policy, merge vs rebase, protected branch, commit convention, board (Notion / Jira / Linear / GitHub Issues / none), through `process-intake` (the team's process document, or a link to read; it writes `docs/process/ticket-flow.md`: the board adapter and its per-operation mapping, the state names, the roles and the sessions that fill them, the approvals, the merge policy, the deploy targets and the branching); owners and reviewers per area (default: the repository owner), written as `CODEOWNERS` only where GitHub honours it (a public repository, or Pro or Team for a private one), otherwise kept in the project config for review routing                                                                                                                                                                                                                                       | `contracts/workflow.json`, `contracts/board.json`, hooks, commitlint; the merge policy, `manual` or `low-risk` (decision 38) |
 | 8   | Harness           | runtimes (Claude Code, Codex, OpenCode, Copilot); skill packs (proposed from sections 2–4: marketing or product work, web, mobile, backend; the owner confirms); shared memory (repo URL or none); the artifact language for specs, docs, comments, commits and pull requests, English by default, and the conversation language (decision 48); the workflow: SDD (default) or ODD (decision 40); the toolchain: the latest gentle-ai and each MCP server, connector or plugin not vendored, listed with source and version, installed on the owner's yes and pinned (decision 44)                  | `project.config.json` harness block; projections; pruned skill packs                                                         |
 | 9 | Quality profile | gate profile (strict / standard), coverage floor, budgets, mutation on push, review policy; what runs before a push: husky only (default), the pre-push gate, peer review, review skills owed (decision 49) | `contracts/budgets.json`, `contracts/review.json`, registry entries |
 | 10  | Docs and diagrams | which doc families to keep; which are generated from code and which hand-kept; diagrams on or off; stack picture on or off                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | pruned `docs/`, `docs/diagrams/`                                                                                             |
@@ -1798,3 +1801,8 @@ validate` exits 0. Independent verifier: no blocker. Native review: the hooks
 - **L65 (2026-11-16, relayed by the Certifipago - Arquitecto session):** the owner paused the
   sessions at 23:57 on 2026-11-15 and resumed them the next morning ("resume your plan from memory
   and Engram, and continue where you stopped"). F34 and F.5 resumed from their branch tips.
+- **L66 (2026-11-16, owner, relayed by the Certifipago - Arquitecto session, translated from
+  Spanish):** the ticket flow (12:23): "all of this ... needs its own skill or subagent, and it can be
+  decoupled, and send it to the template so it also evaluates and executes it"; the release stage
+  (12:38, "I approve it"); the target version (12:52). Built as `2026-11-16-ticket-flow` with the
+  template's 50 changes to the source spec, which the Arquitecto adopts.

@@ -312,7 +312,8 @@ Evidence still outranks brevity: never drop a measurement, a caveat or a
 
 Resolve the task to a skill from these tables, one per phase of a change, in
 the order a change moves through them: understand, define, scaffold, build,
-test, review, operate, harness. Then **load that skill and follow it**: the
+test, review, operate, harness; the last, process, routes the ticket flow that
+carries a change from one session to the next. Then **load that skill and follow it**: the
 skill holds its file set and its steps, and these tables do not restate them. A
 phase with no routed skill has no table. **Validated by** names the `pnpm`
 script that checks the result, or says `review` when no gate does. Every skill
@@ -384,6 +385,20 @@ lives at `.claude/skills/<name>/SKILL.md`.
 | **audit or improve** an existing skill; nothing changes before the findings are shown and confirmed | `improve-skill`           | review                       |
 | build or refresh the **skill index**, `.claude/skill-registry.md`                                    | `registry`                | review                       |
 | **sync template improvements** into a downstream project                                             | `propagate-from-template` | `validate`, in that project |
+
+### process
+
+Every role loads `ticket-flow` first; with no `docs/process/ticket-flow.md`, run `process-intake`.
+
+| If the task means…                                                                                                  | Load skill       | Validated by                                |
+| ------------------------------------------------------------------------------------------------------------------- | ---------------- | ------------------------------------------- |
+| the **ticket flow** itself: the states, the board operations, the messages, the rules a role follows               | `ticket-flow`    | `verify:skills:test`                        |
+| **PO**: a client requirement becomes a ticket with its target version; a scope or version change; the plan on close | `po-ticket`      | review                                      |
+| **architect**: refine a ticket into specs and a plan, dispatch every ready state, group a release                   | `refine-ticket`  | `verify:specs`                              |
+| **dev**: build a ticket test first in its own worktree, up to Ready for QA                                          | `dev-ticket`     | `validate` · `verify:ticket-branch`         |
+| **QA**: check a ticket with evidence, bring it current, merge one at a time on the owner's word                     | `qa-ticket`      | `test:e2e`                                  |
+| **CI/CD**: deploy a release target by target on the owner's word, check production, a hotfix                        | `release-ticket` | review                                      |
+| **set up** a project's ticket flow: its board adapter, states, roles, approvals, deploy targets and branching       | `process-intake` | review                                      |
 
 ---
 

@@ -92,6 +92,8 @@ the pre-commit hook on staged files.
 | `verify:security`     | The static security posture holds                                                         |
 | `verify:theme-sync`   | Every generated token output (the web `theme.css`, the NativeWind preset, the mobile `themeVars`, the `themeNames` the shared `tv` registers) equals its regeneration from `tokens.constant.ts`; `verify:theme-sync:test` plants a hand edit in each and an un-regenerated source change |
 | `verify:mcp-docs`     | The generated block of `docs/mcp.md` is what `pnpm mcp:docs` wrote and lists every server, package and capability of `.agents/contracts/mcp-servers.json` plus `.mcp.json`; offline, and it never judges a version. `verify:mcp-docs:test` plants each drift; `mcp:docs:test` drives the updater with an injected registry |
+| `verify:ticket-branch:test` | `scripts/verify-ticket-branch.test.mjs` drives the branch check (below, 3d) with a valid ticket branch and pull request body and each refusal |
+| `verify:skills:test` | `scripts/verify-skills.test.mjs` holds the seven ticket skills of `.claude/skills/` to their sections (the shape of `new-skill`, every state, role and board operation of `ticket-flow`, the role skills' opening and the contract tables they must not copy, and the three templates), with synthetic cases and over the repository |
 | `docs:diagrams:check` | Every committed diagram matches its spec and the tokens                                   |
 | `verify:specs`        | Every living spec and change has its shape, and every test a scenario names exists        |
 | `report:spec-drift`   | Lists the living specs whose governed code moved past their verified commit; never blocks |
@@ -115,6 +117,21 @@ pnpm smoke:mobile  # expo export + a Hermes bundle assertion
 `pnpm mcp:docs` is not in `pnpm validate` either: it asks the npm registry for the
 latest release of each MCP server and rewrites the generated block of
 [mcp.md](mcp.md). The gate only checks that block offline (`verify:mcp-docs`).
+
+`pnpm verify:ticket-branch` is not in `pnpm validate` either, and nothing in the
+template runs it: the template's own branches carry no ticket id. It is the pure
+check a project that adopts the ticket flow (`.claude/skills/ticket-flow/SKILL.md`)
+may add to its CI, a decision its `docs/process/ticket-flow.md` records:
+
+```bash
+pnpm verify:ticket-branch --branch "$HEAD_REF" --body "$PR_BODY"
+```
+
+It passes a branch `<type>/<id>-<slug>` (a type of `feature`, `fix`, `tech` or
+`chore`, an id that is a number or an upper-case key, a lower-case kebab slug)
+whose pull request body names the same id, `#123` or `PROJ-42`, and exits 1 with
+every defect named on its own. It never reads the board: whether the ticket
+exists and which state it is in needs the network.
 
 ### 3e. The agent projections
 
