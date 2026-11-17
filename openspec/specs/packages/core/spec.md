@@ -3,7 +3,7 @@
 > **Governs:** `packages/core/src`
 > **ID prefix:** `CORE`
 > **Derived from:** `AGENTS.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/maps/global-map.md`
-> **Verified against the code:** 2026-11-15 at `8852663`
+> **Verified against the code:** 2026-11-17 at `276489d`
 
 ## Purpose
 
@@ -397,9 +397,9 @@ record nothing and return `undefined`.
 #### Scenario: a user and a breadcrumb
 
 - **GIVEN** the no-op adapter
-- **WHEN** it sets a user and adds a breadcrumb
-- **THEN** both calls return `undefined`
-- **Test:** Not covered — no test calls `setUser` or `addBreadcrumb` on the no-op adapter.
+- **WHEN** it sets a user, clears it and adds a breadcrumb
+- **THEN** no call throws and nothing is handed on
+- **Test:** `packages/core/src/ports/observability/__tests__/createNoopObservability.helper.test.ts` › "the observability port contract"
 
 ### Requirement: CORE-16 — The console adapter scrubs what it logs
 
@@ -766,6 +766,29 @@ package, no `@/` alias, no `#` key but `#src/`, and no `node:` builtin.
 - **WHEN** it is linted
 - **THEN** lint reports nothing
 - **Test:** `eslint-local-rules/index.test.mjs` › "import { scrubPII } from '#src/utils/scrubPII.helper'"
+
+### Requirement: CORE-26 — The built-in adapters keep the observability port contract
+
+The core package SHALL ship a no-op and a console adapter that both pass the observability port
+contract of packages/tooling: the no-op adapter hands nothing on, and the console adapter logs
+every payload scrubbed, logs nothing while switched off, and logs a `null` user on
+`setUser(null)`.
+
+**Evidence:** `packages/core/src/ports/observability/createNoopObservability.helper.ts:3-8`, `packages/core/src/ports/observability/createConsoleObservability.helper.ts:23-77`
+
+#### Scenario: the no-op adapter
+
+- **GIVEN** the no-op adapter and a harness with no provider behind it
+- **WHEN** the port contract runs against it
+- **THEN** every case passes
+- **Test:** `packages/core/src/ports/observability/__tests__/createNoopObservability.helper.test.ts` › "the observability port contract"
+
+#### Scenario: the console adapter
+
+- **GIVEN** the console adapter, switched on or off, and a harness reading the host console
+- **WHEN** the port contract runs against it
+- **THEN** every case passes
+- **Test:** `packages/core/src/ports/observability/__tests__/createConsoleObservability.helper.test.ts` › "the observability port contract"
 
 ## Open questions
 

@@ -1,6 +1,6 @@
 # Proposal: PostHog as the default observability provider, Sentry an optional capability
 
-> **Status:** open
+> **Status:** archived — 2026-11-17
 
 ## Why
 
