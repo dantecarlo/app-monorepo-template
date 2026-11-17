@@ -24,6 +24,9 @@ vi.mock('@expo-google-fonts/montserrat', () => ({
   useFonts: () => [true, null]
 }))
 vi.mock('@/lib/supabase/client.adapter', () => ({ supabase: {} }))
+// The root layout binds observability to PostHog, whose package cannot load
+// under the test environment.
+vi.mock('posthog-react-native', () => ({ PostHog: class {} }))
 vi.mock('@app/supabase', () => ({
   createSupabaseAuthGateway: () => ({
     getSession: vi.fn().mockResolvedValue(null),
