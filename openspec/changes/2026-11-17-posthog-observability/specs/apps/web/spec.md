@@ -192,10 +192,10 @@ only when `SENTRY_AUTH_TOKEN` is set.
 
 #### Scenario: the web app's own folder
 
-- **GIVEN** the web app as the template ships it
+- **GIVEN** the web app as the template ships it, with `@sentry/nextjs` replaced at its module
 - **WHEN** its config is built
-- **THEN** the Sentry capability's file is applied
-- **Test:** `apps/web/__tests__/next.config.test.ts` › "applies the Sentry capability's file of the web app"
+- **THEN** the Sentry capability's file is applied, and the built config is what it returned
+- **Test:** `apps/web/__tests__/next-sentry.config.test.ts` › "next.config.ts applies the Sentry capability's file of the web app"
 
 #### Scenario: the Sentry wrapper
 

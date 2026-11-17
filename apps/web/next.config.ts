@@ -1,4 +1,6 @@
-import { withSentryConfig } from '@sentry/nextjs'
+import { readdirSync } from 'node:fs'
+import { join } from 'node:path'
+
 import type { NextConfig } from 'next'
 import createNextIntlPlugin from 'next-intl/plugin'
 
@@ -43,7 +45,45 @@ const nextConfig: NextConfig = {
   typedRoutes: true
 }
 
-export default withSentryConfig(withNextIntl(nextConfig), {
-  silent: true,
-  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN }
-})
+// An optional capability changes the config from a file of its own beside
+// this one, `next-<capability>.config.ts` (Sentry's is next-sentry.config.ts),
+// whose default export takes the config and returns it changed. /init deletes
+// that file with its capability, so this file names none of them.
+const CONFIG_PLUGIN_FILE = /^next-[a-z0-9-]+\.config\.ts$/u
+
+type NextConfigPluginType = (params: { config: NextConfig }) => NextConfig
+
+type LoadConfigPluginType = (params: {
+  path: string
+}) => Promise<NextConfigPluginType>
+
+const importConfigPlugin: LoadConfigPluginType = async ({ path }) => {
+  const plugin = (await import(path)) as { default: NextConfigPluginType }
+  return plugin.default
+}
+
+/** Applies the default export of every capability file in `dir`, by name. */
+export const applyConfigPlugins = async ({
+  config,
+  dir,
+  load = importConfigPlugin
+}: {
+  config: NextConfig
+  dir: string
+  load?: LoadConfigPluginType
+}): Promise<NextConfig> => {
+  const paths = readdirSync(dir)
+    .filter((name) => CONFIG_PLUGIN_FILE.test(name))
+    .sort()
+    .map((name) => join(dir, name))
+  const plugins = await Promise.all(paths.map((path) => load({ path })))
+  return plugins.reduce(
+    (applied, plugin) => plugin({ config: applied }),
+    config
+  )
+}
+
+const buildNextConfig = (): Promise<NextConfig> =>
+  applyConfigPlugins({ config: withNextIntl(nextConfig), dir: __dirname })
+
+export default buildNextConfig
