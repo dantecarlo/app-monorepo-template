@@ -57,7 +57,7 @@ export const useItems = ({
         const dtos = await getItems({ limit, search })
         return adaptItems(dtos)
       },
-      queryKey: QueryKeys.items.list(search)
+      queryKey: QueryKeys.items.list({ limit, search })
     }
   })
 

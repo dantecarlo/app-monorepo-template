@@ -320,12 +320,12 @@ Use `useAppQuery` and `useAppMutation` from `@/lib/query`. Never call
 `useQuery`/`useMutation` directly in features.
 
 ```typescript
-const useItemList = ({ contextId }: IUseItemList) => {
+const useItemList = ({ limit, search }: IUseItemList) => {
   return useAppQuery<IItemViewModel[]>({
     queryOptions: {
-      queryKey: QueryKeys.items.list(contextId),
+      queryKey: QueryKeys.items.list({ limit, search }),
       queryFn: async () => {
-        const dtos = await getItems({ contextId })
+        const dtos = await getItems({ limit, search })
         return adaptItems(dtos)
       }
     }
@@ -350,6 +350,10 @@ params object, never as a bare segment: `sanitizeQueryKey` redacts the object wh
 while a bare value equal to a registered word (`list('list')`) would survive it. The
 feature's `all` key stays the prefix of each of its keys, so invalidating it reaches
 them all; `pnpm validate` runs a test that walks every factory of `QueryKeys`.
+
+A key holds every value its `queryFn` reads, so two queries that read different values
+never share a cache entry: the items list is keyed by `QueryKeys.items.list({ limit, search })`,
+because `getItems` reads both.
 
 ---
 

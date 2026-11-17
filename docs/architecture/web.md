@@ -86,7 +86,8 @@ export default LoginPage
   rejection stays generic.
 - **Query keys**: `src/lib/query/queryKeys.constant.ts` builds every key from
   `QueryKeySegmentEnum` and puts its dynamic values in one trailing params object
-  (`['items', 'list', { filter }]`), which the error report always redacts.
+  (`['items', 'list', { limit, search }]`), which the error report always redacts. A key holds
+  every value its query reads, so two items lists of different limits never share a cache entry.
 - **Route segments**: organize by logical area (e.g. `/dashboard`, `/profile`, `/settings`) with
   server layouts. `src/middleware.ts` only enforces the origin lock today; it gates no route.
 
