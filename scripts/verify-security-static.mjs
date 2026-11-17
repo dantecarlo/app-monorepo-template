@@ -18,8 +18,10 @@
 //   headers: X-Frame-Options, X-Content-Type-Options, Referrer-Policy,
 //   Permissions-Policy.
 //
-// CHECK 42 (partial) — sentry.client.config.ts AND sentry.server.config.ts
-//   wire scrubPII at the beforeSend hook.
+// CHECK 42 (partial) — while @sentry/nextjs is a web dependency (the optional
+//   `sentry` capability, decision 53), sentry.client.config.ts AND
+//   sentry.server.config.ts wire scrubPII at the beforeSend hook. A project
+//   whose /init dropped Sentry has no Sentry config to check.
 //
 // CHECK 46 (partial) — every src/app/api/**/route.ts either exports
 //   `dynamic = 'force-dynamic'` or sets a `Cache-Control` / `no-store`
@@ -204,7 +206,21 @@ const sentryFiles = [
   'apps/web/sentry.server.config.ts'
 ]
 
-for (const sentryFile of sentryFiles) {
+const webDependencies = (() => {
+  try {
+    const manifest = JSON.parse(readText('apps/web/package.json') ?? '{}')
+    return { ...manifest.dependencies, ...manifest.devDependencies }
+  } catch {
+    return {}
+  }
+})()
+const sentryInstalled = '@sentry/nextjs' in webDependencies
+
+if (!sentryInstalled) {
+  pass('42', 'Sentry is not installed (@sentry/nextjs is no web dependency): no Sentry config to check')
+}
+
+for (const sentryFile of sentryInstalled ? sentryFiles : []) {
   if (!exists(sentryFile)) {
     fail('42', sentryFile, 'Sentry config file not found')
     continue
