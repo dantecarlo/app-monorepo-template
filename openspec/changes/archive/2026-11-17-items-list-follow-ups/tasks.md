@@ -4,7 +4,7 @@
 - [x] T2 — mobile: the same key, hook, tests and `docs/architecture/mobile.md` (F38) · Requirements: MOBILE-09, MOBILE-25, MOBILE-43 · Commit: dc56fe5
 - [x] T3 — web: the list card shows no result count when the items failed to load (F37) · Requirements: WEB-07 · Commit: 0573984
 - [x] T4 — mobile: the list card shows no result count when the items failed to load (F37) · Requirements: MOBILE-20 · Commit: c1e1975
-- [ ] T5 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-17-items-list-follow-ups/` as the last commit · Requirements: none · Commit: —
+- [x] T5 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-17-items-list-follow-ups/` as the last commit · Requirements: none · Commit: 21f1081
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of

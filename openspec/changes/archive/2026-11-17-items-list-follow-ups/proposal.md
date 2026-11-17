@@ -1,6 +1,6 @@
 # Proposal: key the items list by every value it reads, and show no count beside a failed load
 
-> **Status:** open
+> **Status:** archived — 2026-11-17
 
 ## Why
 
