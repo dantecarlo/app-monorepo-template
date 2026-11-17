@@ -29,8 +29,8 @@ const initPostHog = ({ key }: { key: string }): IPostHogClient => {
 
 /**
  * The ONE PostHog client of this app, and the only file that imports the
- * SDK (decision 51). Undefined without a key or outside the browser, so a
- * caller guards every call.
+ * SDK. Undefined without a key or outside the browser, so a caller guards
+ * every call.
  */
 export const posthogClient: IPostHogClient | undefined =
   POSTHOG_KEY && IS_BROWSER ? initPostHog({ key: POSTHOG_KEY }) : undefined

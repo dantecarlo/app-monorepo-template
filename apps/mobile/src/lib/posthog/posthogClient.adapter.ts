@@ -20,9 +20,9 @@ const createPostHogClient = ({ key }: { key: string }): IPostHogClient =>
 
 /**
  * The ONE PostHog client of this app, and the only file that imports the
- * SDK (decision 51). Built only with a key, never as `new PostHog('')`, so
- * without one nothing is constructed and no request leaves the app; a caller
- * guards every call.
+ * SDK. Built only with a key, never as `new PostHog('')`, so without one
+ * nothing is constructed and no request leaves the app; a caller guards
+ * every call.
  */
 export const posthogClient: IPostHogClient | undefined = POSTHOG_KEY
   ? createPostHogClient({ key: POSTHOG_KEY })
