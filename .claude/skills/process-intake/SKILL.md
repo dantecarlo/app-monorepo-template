@@ -62,8 +62,17 @@ only what the document did not answer:
 - **Roles and sessions** — which session fills each role, per area; one QA session per dev area.
 - **Approvals** — who approves the specs and where, and whether pushing a branch or opening a
   pull request needs the owner's word first.
-- **Merge policy** — `manual` unless the team says otherwise, whether a branch is brought current
-  by merge or by rebase, and the merge method.
+- **Merge policy** — ask which of the two (`ticket-flow` rule 4), and write `manual` unless the
+  team picks the other:
+  - `manual`, the default: a human in the loop; QA asks the owner for every merge.
+  - `low-risk`: QA may merge, without asking, a pull request that is Ready to merge into the
+    default branch, at the head of the merge order, whose Risk line is `Risk: none` or that
+    changes only passive files, and whose merge sets off no irreversible step; it records each
+    such merge on the ticket, and any other pull request waits for the owner, as under `manual`.
+
+  Say that neither policy covers a merge to `production`, a deploy, a production migration, a
+  store submission or any other irreversible step: those stay the owner's word. Then ask whether
+  a branch is brought current by merge or by rebase, and the merge method.
 - **Ticket identity** — the id the board writes (`#123` or a key such as `PROJ-42`), and where
   the target version lives (a milestone, or a board field).
 - **Branch check in CI** — whether the project runs `pnpm verify:ticket-branch` in its CI; the

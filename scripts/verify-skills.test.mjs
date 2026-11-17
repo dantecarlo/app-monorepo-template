@@ -47,6 +47,14 @@ const DROPPED_STATE = 'Ready to merge'
 const DROPPED_OPERATION = 'link'
 const READ_FIRST =
   'Read `ticket-flow` first: `.claude/skills/ticket-flow/SKILL.md`.'
+const RULES = '## Rules every role follows'
+const QA_MERGE_STEP = '## Step 6 — One merge at a time, under the merge policy'
+const INTAKE_MAPPING_STEP = '## Step 3 — Map it onto the core'
+const MANUAL_NAMED = 'It names `manual`.'
+const LOW_RISK_NAMED = 'It names `low-risk`.'
+const NAMES_NOTHING = 'It names nothing.'
+const POLICY_FIELD = '- **Policy:**'
+const POLICY_LINE = `${POLICY_FIELD} \`manual\``
 
 const frontmatter = ({ name }) =>
   [
@@ -66,7 +74,8 @@ const tableOf = ({ header, keys }) => [
 ]
 
 // One section per heading the contract names, with its table under it when
-// the contract names one, and the text a section must mention.
+// the contract names one, the text a section must mention, and the line a
+// section must give its default in.
 const sectionsOf = ({ contract }) =>
   contract.headings.flatMap((heading) => {
     const table = (contract.tables ?? []).find(
@@ -75,10 +84,14 @@ const sectionsOf = ({ contract }) =>
     const mentions = (contract.mentions ?? [])
       .filter((item) => item.heading === heading)
       .map(({ text }) => `It names ${text}.`)
+    const defaults = (contract.defaults ?? [])
+      .filter((item) => item.heading === heading)
+      .map(({ field, value }) => `${field} ${value}`)
     return [
       heading,
       '',
       ...mentions,
+      ...defaults,
       ...(table ? tableOf(table) : []),
       ''
     ]
@@ -424,6 +437,97 @@ export const CASES = [
     }),
     expected: 1,
     name: 'a refine-ticket without its release step is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: CONTRACT })]: replace({
+          from: LOW_RISK_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a ticket-flow whose rules name no low-risk merge policy is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'qa-ticket' })]: replace({
+          from: MANUAL_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a qa-ticket whose merge step names no manual merge policy is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'qa-ticket' })]: replace({
+          from: LOW_RISK_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a qa-ticket whose merge step names no low-risk merge policy is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'qa-ticket' })]: withoutSection({
+          heading: QA_MERGE_STEP
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a qa-ticket without its merge step is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: INTAKE })]: replace({
+          from: LOW_RISK_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a process-intake whose mapping step names no low-risk merge policy is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: INTAKE })]: withoutSection({
+          heading: INTAKE_MAPPING_STEP
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a process-intake without its mapping step is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [`${INTAKE}/${PROCESS_TEMPLATE}`]: replace({
+          from: LOW_RISK_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a process template whose merge policy names no low-risk policy is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [`${INTAKE}/${PROCESS_TEMPLATE}`]: without({ line: POLICY_FIELD })
+      }
+    }),
+    expected: 1,
+    name: 'a process template whose merge policy has no Policy line is refused'
   }
 ]
 
@@ -481,6 +585,68 @@ const checks = [
       assert.equal(finding.kind, FINDING_KIND.name)
       assert.match(finding.detail, /refine-ticket/u)
       assert.match(finding.detail, /`refine`/u)
+    }
+  },
+  {
+    name: 'a dropped merge policy is named with its file and section',
+    run: () => {
+      const findings = gate.run(
+        skills({
+          edits: {
+            [SKILL({ folder: CONTRACT })]: replace({
+              from: LOW_RISK_NAMED,
+              to: NAMES_NOTHING
+            })
+          }
+        })()
+      )
+      assert.equal(findings.length, 1, JSON.stringify(findings))
+      const [finding] = findings
+      assert.equal(finding.kind, FINDING_KIND.mention)
+      assert.equal(finding.folder, CONTRACT)
+      assert.ok(
+        finding.detail.startsWith(`${SKILLS_ROOT}/${CONTRACT}/${SKILL_FILE}`),
+        `the finding does not name the file: ${finding.detail}`
+      )
+      assert.ok(
+        finding.detail.includes(RULES),
+        `the finding does not name the section: ${finding.detail}`
+      )
+      assert.ok(
+        finding.detail.includes('`low-risk`'),
+        `the finding does not name the policy: ${finding.detail}`
+      )
+    }
+  },
+  {
+    name: 'a process template whose merge policy does not default to manual is refused',
+    run: () => {
+      const findings = gate.run(
+        skills({
+          edits: {
+            [`${INTAKE}/${PROCESS_TEMPLATE}`]: replace({
+              from: POLICY_LINE,
+              to: `${POLICY_FIELD} \`low-risk\``
+            })
+          }
+        })()
+      )
+      assert.equal(findings.length, 1, JSON.stringify(findings))
+      const [finding] = findings
+      assert.equal(finding.kind, FINDING_KIND.value)
+      assert.equal(finding.folder, INTAKE)
+      assert.ok(
+        finding.detail.startsWith(`${SKILLS_ROOT}/${INTAKE}/${PROCESS_TEMPLATE}`),
+        `the finding does not name the file: ${finding.detail}`
+      )
+      assert.ok(
+        finding.detail.includes(POLICY_FIELD),
+        `the finding does not name the line: ${finding.detail}`
+      )
+      assert.ok(
+        finding.detail.includes('`manual`'),
+        `the finding does not name the default it owes: ${finding.detail}`
+      )
     }
   },
   {
