@@ -7,8 +7,8 @@ description: >
   the validation gate, opens the pull request that links the ticket
   and moves it to Ready for QA; on Changes requested, fixes it in the same worktree. Never moves a
   ticket past Ready for QA.
-  USE WHEN: "<id> ready for dev", "<id> changes requested", "pick up ticket <id>", "build the
-  hotfix <id>", a dev session of the ticket flow starts work.
+  USE WHEN: "<id> ready for dev", "<id> changes requested", "<id> merged", "pick up ticket <id>",
+  "build the hotfix <id>", a dev session of the ticket flow starts work.
   DO NOT USE: a change with no ticket (the scope guard of `ticket-flow` files one first),
   checking a build (use `qa-ticket`), or a deploy (use `release-ticket`).
 ---
@@ -92,7 +92,9 @@ Stop there: the session that built a ticket never moves it further.
 On `<id> changes requested`: `read` QA's comment and `move` the ticket to In dev. Before any later
 change in this worktree, pull the branch (`git pull origin <branch>`): QA may have pushed to it
 when it brought the branch current (`qa-ticket` Step 5). Then fix it in the same worktree test
-first, run Step 5 again, push, then Step 7. Once the ticket is Done, remove the worktree
+first, run Step 5 again, push, then Step 7.
+
+On `<id> merged`, which the architect sends once the ticket is Done: remove the worktree
 (`git worktree remove <path>`).
 
 ---

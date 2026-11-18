@@ -4,17 +4,18 @@ description: >
   The QA role of the ticket flow, one session per area: checks out a ticket's branch in a
   detached worktree, runs the area's end-to-end checks with the project's own harness, posts the
   evidence as a pull request comment, then returns the ticket as Changes requested or brings the
-  branch current and makes it Ready to merge, and merges one ticket at a time under the
-  project's merge policy: on the owner's word under `manual`, the default, or without asking
-  under `low-risk` when the pull request meets every condition; never merges a hotfix into
-  `production`, which waits at Ready to merge for its release; checks a release batch on staging.
-  USE WHEN: "<id> ready for QA, branch <b>", "check ticket <id>", "<release-id> check on
-  staging", "merge <id>", a QA session of the ticket flow starts work.
-  DO NOT USE: a ticket this session built (rule 5 of `ticket-flow`), building a fix (use
-  `dev-ticket`), or a deploy to production (use `release-ticket`).
+  branch current, makes it Ready to merge and hands it to the architect, who keeps the merge
+  queue and merges; brings it current again when the architect asks; never asks the owner to
+  merge and never merges, a hotfix included, which waits at Ready to merge for its release;
+  checks a release batch on staging.
+  USE WHEN: "<id> ready for QA, branch <b>", "check ticket <id>", "<id> bring current",
+  "<id> merged", "<release-id> check on staging", a QA session of the ticket flow starts work.
+  DO NOT USE: a ticket this session built (rule 5 of `ticket-flow`), merging a pull request (the
+  architect's `refine-ticket` § Merge queue), building a fix (use `dev-ticket`), or a deploy to
+  production (use `release-ticket`).
 ---
 
-# QA ticket — check a ticket with evidence, then return it or merge it under the merge policy
+# QA ticket — check a ticket with evidence, then return it or bring it to Ready to merge
 
 Read `ticket-flow` first (`.claude/skills/ticket-flow/SKILL.md`), its pre-flight included: this
 procedure uses its board operations, states, messages and rules and never restates them.
@@ -78,52 +79,40 @@ Did every check pass?
              then push it to the ticket branch, never forced: git push origin HEAD:<branch>
              (refused because the remote moved → repeat this step from the fetch);
           3. re-run the checks on the current branch, the dev session's new commits included;
-          4. no conflict and every check green → move to Ready to merge.
+          4. no conflict and every check green → move to Ready to merge, then Step 6.
 ```
+
+`<base>` is the default branch, or the production branch the layer names for a hotfix.
 
 ---
 
-## Step 6 — One merge at a time, under the merge policy
+## Step 6 — Hand it to the architect
 
-**A hotfix is never QA's to merge.** A pull request into `production` waits at Ready to merge for
-its release under every policy, `manual` included: merging it deploys, so the CI/CD session
-merges it as that release's deploy step (`release-ticket` § Hotfix). Ask the owner nothing and
-merge nothing: message the architect `<id> ready to merge, hotfix`, remove the QA worktree, and
-stop.
+QA stops at Ready to merge: it asks the owner nothing and merges nothing, under every merge
+policy. The architect keeps the merge queue, asks the owner for each merge in its own session or
+merges under `low-risk`, and moves the ticket to Done (`refine-ticket` § Merge queue).
 
-Every other ticket: only the one at the head of the merge order the architect recorded. Read the
-merge policy in the project layer (`ticket-flow` rule 4):
-
-```
-Which merge policy does the project layer record?
-├── `manual`, the default, or none → ask the owner.
-└── `low-risk` → does the pull request meet every condition?
-      1. it is Ready to merge into the default branch: CI green, no conflict, current with the
-         default branch's tip (Step 5); a pull request into `production` never is;
-      2. its body's Risk line is `Risk: none`, or its diff changes only passive files
-         (`ticket-flow` rule 4);
-      3. its merge sets off no irreversible step: no deploy, no production migration, no store
-         submission, nothing that cannot be undone.
-    ├── YES, all three → merge it without asking (Step 7).
-    └── NO to one, no Risk line, or unsure → ask the owner, as under `manual`.
-```
-
-To ask, say in this session: "`<id>` is ready to merge: `<url>`, CI green, current with `<base>`.
-Merge it?" Wait for the owner's word here; a relay from another session does not count. When
-another merge lands before the answer, or before a `low-risk` merge, go back to Step 5 and bring
-the branch current again.
+- **Into the default branch** → message the architect `<id> ready to merge, PR #<n>`; the ticket
+  already carries the link to the evidence (Step 4). Keep the QA worktree: the architect asks
+  for the branch to be brought current again after each merge ahead of it (Step 7).
+- **A hotfix**, a pull request into the production branch the layer names → it waits at Ready to
+  merge for its release under every policy, `manual` included: merging it deploys, so the CI/CD
+  session merges it as that release's deploy step (`release-ticket` § Hotfix). Message the
+  architect `<id> ready to merge, hotfix`, remove the QA worktree, and stop.
 
 ---
 
-## Step 7 — Merge
+## Step 7 — When the architect writes back
 
-- **Yes, or every `low-risk` condition met** → merge it with the project layer's merge method.
-  After a `low-risk` merge, `comment` the ticket: "Merged under the `low-risk` merge policy. Risk
-  line: `<the pull request's Risk line>`; it qualified by <`Risk: none` | only passive files>."
-  `move` the ticket to Done, and message the architect `<id> merged`. Remove the QA worktree.
-- **No** → `comment` the owner's answer; the ticket stays where it is.
-- A red CI or a conflict while it waits, a hotfix's included → `comment` it, `move` it to Changes
-  requested, and message the architect `<id> changes requested`.
+- **`<id> bring current`** — a merge ahead of it moved its base, or its CI must run again. In
+  the QA worktree (Step 2 adds it again when it was removed), repeat Step 5 from its point 2:
+  merge the ticket branch and the base, push unforced, and re-run the checks.
+  - No conflict and every check green → it stays at Ready to merge: message the architect
+    `<id> ready to merge, PR #<n>` again, or `<id> ready to merge, hotfix` for a hotfix.
+  - A conflict or a red check → `comment` it with the evidence, `move` it to Changes requested,
+    and message the architect `<id> changes requested`.
+- **`<id> merged`** — the architect merged it and moved it to Done, or the CI/CD session did
+  for a hotfix. Remove the QA worktree; QA never moves a ticket to Done.
 
 ---
 
@@ -141,26 +130,22 @@ its links), and message the architect `<release-id> staging checked`.
 # skill: qa-ticket — the QA role; the board operations come from ticket-flow.
 reads:
   - .claude/skills/ticket-flow/SKILL.md
-  - docs/process/ticket-flow.md # the merge policy and the merge method
+  - docs/process/ticket-flow.md # the base branches, the production branch among them
   - docs/e2e.md
 board_operations: [read, move, comment, link]
-merge_policies: [manual, low-risk] # manual, the default, when the layer records none
 moves:
   - Ready for QA → In QA
   - In QA → Changes requested
   - In QA → Ready to merge
-  - Ready to merge → Changes requested
-  - Ready to merge → Done # the owner's word, or low-risk; never a pull request into production
-messages: ['<id> changes requested', '<id> merged', '<id> ready to merge, hotfix',
-  '<release-id> staging checked']
+  - Ready to merge → Changes requested # a conflict or a red check, when it brings it current
+messages: ['<id> changes requested', '<id> ready to merge, PR #<n>',
+  '<id> ready to merge, hotfix', '<release-id> staging checked']
 emits:
   - a pull request comment with the evidence
-  - a ticket comment for each low-risk merge, with the Risk line it relied on
 validated_by: test:e2e
 done_when: >-
-  the ticket is in Changes requested with its evidence, or Done on the owner's word, or Done
-  under the low-risk merge policy with that merge recorded on the ticket, or, for a hotfix, at
-  Ready to merge with the architect told `<id> ready to merge, hotfix`
+  the ticket is in Changes requested with its evidence, or at Ready to merge with the architect
+  told `<id> ready to merge, PR #<n>`, or `<id> ready to merge, hotfix` for a hotfix
 ```
 
 ---

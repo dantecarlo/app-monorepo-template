@@ -86,9 +86,9 @@ The project layer maps its own state names onto these.
 | In dev | Dev picks it up, or picks it up again after Changes requested | none | `ticket:in-dev` |
 | Ready for QA | Dev: build and tests done | Architect, then the architect tells the area's QA: `<id> ready for QA, branch <b>` | `ticket:ready-for-qa` |
 | In QA | QA picks it up | none | `ticket:in-qa` |
-| Changes requested | QA, with a comment; or a red CI or a conflict after Ready to merge | Architect, then the architect tells the dev session: `<id> changes requested` | `ticket:changes-requested` |
-| Ready to merge | QA: checks passed and § Ready to merge met | the owner: QA asks whether to merge, unless the `low-risk` policy covers it (rule 4); for a hotfix into `production`, the architect: `<id> ready to merge, hotfix`, and QA asks no one | `ticket:ready-to-merge` |
-| Done | QA merges on the owner's word, or under the `low-risk` policy (rule 4); for a hotfix, CI/CD merges it into `production` as its release's deploy step | Architect: `<id> merged`, sent by QA, or by CI/CD for a hotfix | `ticket:done` |
+| Changes requested | QA, with a comment: from In QA, or from Ready to merge on a red CI or a conflict when it brings the branch current | Architect, then the architect tells the dev session: `<id> changes requested` | `ticket:changes-requested` |
+| Ready to merge | QA: checks passed and § Ready to merge met; QA asks no one and merges nothing | Architect: `<id> ready to merge, PR #<n>`, and the architect queues it; for a hotfix into the production branch, `<id> ready to merge, hotfix` | `ticket:ready-to-merge` |
+| Done | Architect: merges it from its merge queue, on the owner's word or under the `low-risk` policy (rule 4); for a hotfix, CI/CD merges it into the production branch as its release's deploy step | QA and the dev session: `<id> merged`, sent by the architect; for a hotfix, CI/CD tells the architect, and the architect tells them | `ticket:done` |
 | Closed | Architect: after Done when the project declares no deploy target, or once the release that lists the ticket is Released | PO: `<id> closed`, and the PO updates the general plan | `ticket:closed` |
 | Ready for prod | Architect: a release ticket whose tickets are Done, or a hotfix at Ready to merge, § Release stage met | the CI/CD session: `<release-id> ready for prod` | `ticket:ready-for-prod` |
 | In release | CI/CD, on the owner's word | none (it runs each deploy target the release touches, in order) | `ticket:in-release` |
@@ -103,10 +103,12 @@ transition exists.
 
 Every "ready" state reaches the next session through the architect: dev tells the architect, the
 architect tells QA; QA tells the architect, the architect tells dev or the CI/CD session. The
-architect also sets the merge order, groups Done tickets into releases and closes tickets. The one
-exception is the merge itself: QA asks the owner directly, in its own session (rule 6), or merges
-without asking under the `low-risk` policy (rule 4). A hotfix's merge into `production` is not
-QA's: the CI/CD session runs it as the deploy step of the hotfix's release.
+architect also sets the merge order and keeps the merge queue: it asks the owner for each merge,
+in its own session (rule 6), or merges without asking under the `low-risk` policy (rule 4), one
+pull request at a time (`refine-ticket` § Merge queue). It groups Done tickets into releases and
+closes tickets. QA asks the owner nothing and merges nothing. The one merge that is not the
+architect's is a hotfix's into the production branch: the CI/CD session runs it as the deploy
+step of the hotfix's release.
 
 ---
 
@@ -121,8 +123,10 @@ needs it, the branch. It carries no requirement, decision or file list: those li
 | `<id> ready for dev` | architect to the dev session |
 | `<id> ready for QA, branch <b>` | dev to architect, then architect to the area's QA |
 | `<id> changes requested` | QA to architect, then architect to the dev session |
-| `<id> ready to merge, hotfix` | QA to architect: a hotfix at Ready to merge into `production`, left there for its release |
-| `<id> merged` | QA to architect, or CI/CD to architect for a hotfix |
+| `<id> ready to merge, PR #<n>` | QA to architect: Ready to merge into the default branch, for the merge queue |
+| `<id> ready to merge, hotfix` | QA to architect: a hotfix at Ready to merge into the production branch, left there for its release |
+| `<id> bring current` | architect to the ticket's QA: a pull request of the merge queue that a merge left behind its base, or whose CI must run again |
+| `<id> merged` | architect to the ticket's QA and dev sessions; for a hotfix, CI/CD to architect, then architect to them |
 | `<id> closed` | architect to PO |
 | `<id> question` | any session to the owner of the answer: the PO for scope, the architect for the plan, the dev session for its build |
 | `<id> scope changed` | PO to architect |
@@ -147,10 +151,10 @@ session may fill a dev role; exactly one QA session fills each dev area's QA rol
 | Role | Responsibility | Skill |
 | --- | --- | --- |
 | PO | Turns a client requirement into a ticket, quoting the client verbatim; owns scope, and every change of scope goes through it; updates the general plan when a ticket closes | `po-ticket` |
-| Architect | Refines a ticket into specs and a technical plan (areas, subtasks, reserved files, dependencies); dispatches every transition; sets the merge order; groups releases; closes tickets; creates technical tickets | `refine-ticket` |
+| Architect | Refines a ticket into specs and a technical plan (areas, subtasks, reserved files, dependencies); dispatches every transition; sets the merge order, keeps the merge queue and merges one pull request at a time, on the owner's word or under the `low-risk` policy; groups releases; closes tickets; creates technical tickets | `refine-ticket` |
 | Dev | One or more sessions per area (App, Web, Backend): builds a ticket in its own worktree and branch, test first | `dev-ticket` |
-| QA | One per area, Backend included: checks out the branch, runs the area's end-to-end checks with evidence, returns the ticket or makes it ready to merge, merges on the owner's word or under the `low-risk` policy, never a hotfix into `production`; checks a release on staging | `qa-ticket` |
-| CI/CD | One session runs every deploy target, a hotfix's merge into `production` included, and never decides whether to release: the owner's word does, per release and per irreversible step | `release-ticket` |
+| QA | One per area, Backend included: checks out the branch, runs the area's end-to-end checks with evidence, returns the ticket or brings it to Ready to merge and hands it to the architect, brings it current again when the architect asks; merges nothing; checks a release on staging | `qa-ticket` |
+| CI/CD | One session runs every deploy target, a hotfix's merge into the production branch included, and never decides whether to release: the owner's word does, per release and per irreversible step | `release-ticket` |
 | Independent area | Such as Marketing: works its own tickets without a PO unless the client asks, reviews its own work, gets the owner's sign-off, and joins the full flow only when it touches the product | none |
 
 ---
@@ -168,21 +172,24 @@ session may fill a dev role; exactly one QA session fills each dev area's QA rol
    deleted as soon as it finishes, and none is left idle. No session duplicates another session
    that already exists for a job.
 4. **Merges follow the merge policy; the irreversible stays the owner's.** The project layer
-   records the merge policy; with none recorded, it is `manual`.
-   - **`manual`, the default**, keeps a human in the loop: QA asks the owner before every merge.
-   - **`low-risk`** lets QA merge, without asking, a pull request that meets every condition:
-     it is Ready to merge into the default branch (CI green, no conflict, its branch holding the
-     default branch's current tip) and at the head of the architect's merge order; its Risk line
+   records the merge policy; with none recorded, it is `manual`. The architect applies it, in its
+   merge queue (`refine-ticket` § Merge queue); QA asks the owner nothing and merges nothing.
+   - **`manual`, the default**, keeps a human in the loop: the architect asks the owner before
+     every merge.
+   - **`low-risk`** lets the architect merge, without asking, a pull request that meets every
+     condition: it is Ready to merge into the default branch (CI green, no conflict, its branch
+     holding the default branch's current tip) and at the head of the merge queue; its Risk line
      is `Risk: none`, or it changes only passive files; and its merge sets off no irreversible
      step. A passive file is prose documentation or an image: never code, a test, configuration,
      a migration, a workflow, a lockfile, or anything an agent reads as instructions (`AGENTS.md`,
-     a skill, an agent). QA records on the ticket that it merged under `low-risk`, with the Risk
-     line it relied on. A pull request that fails one condition, or that QA is unsure of, waits
-     for the owner, as under `manual`.
-   - **Under every policy**, every deploy, every merge to `production` and anything irreversible
-     (a production migration, a store submission, a release) needs the owner's word, whatever
-     the state. QA merges no pull request into `production`: a hotfix waits at Ready to merge,
-     and the CI/CD session merges it as its release's deploy step (`release-ticket` § Hotfix).
+     a skill, an agent). The architect records on the ticket that it merged under `low-risk`,
+     with the Risk line it relied on. A pull request that fails one condition, or that the
+     architect is unsure of, waits for the owner, as under `manual`.
+   - **Under every policy**, every deploy, every merge into the production branch and anything
+     irreversible (a production migration, a store submission, a release) needs the owner's
+     word, whatever the state. Neither the architect nor QA merges a pull request into the
+     production branch: a hotfix waits at Ready to merge, and the CI/CD session merges it as its
+     release's deploy step (`release-ticket` § Hotfix).
 5. **Independent QA.** The session that built a ticket never moves it past Ready for QA.
 6. **Approval in place.** An approval counts only in the session that asked for it. A relay from
    another session does not stand in for it.
@@ -276,18 +283,20 @@ QA moves a ticket to Ready to merge only when all three hold:
 1. the pull request's CI is green;
 2. it has no conflict with its base branch: the default branch, or `production` for a hotfix;
 3. its branch contains the base branch's current tip. QA brings it current by merging the base
-   into it (never a rebase, which could not be pushed unforced), pushes, re-runs the checks, and only then asks the owner, or merges
-   under the `low-risk` policy (rule 4); a hotfix it leaves there for its release. A pull request
-   that was conflict-free and green but behind its base has turned a downstream project's
-   default branch red.
+   into it (never a rebase, which could not be pushed unforced), pushes, re-runs the checks, and
+   only then messages the architect `<id> ready to merge, PR #<n>`; a hotfix it leaves there for
+   its release, with `<id> ready to merge, hotfix`. A pull request that was conflict-free and
+   green but behind its base has turned a downstream project's default branch red.
 
-**Merges are serialized**, one at a time, in the order the architect records on the tickets, under
-every merge policy. QA asks the owner, or merges under `low-risk`, only for the ticket at the head
-of that order; after each merge, the next ticket is brought current again and re-checked before
-it is asked or merged.
+**Merges are serialized**, one at a time, in the architect's merge queue (`refine-ticket`
+§ Merge queue), in the order the architect records on the tickets, under every merge policy. The
+architect asks the owner, or merges under `low-risk`, only for the pull request at the head of
+the queue, and only while all three conditions hold. After each merge it messages the QA of the
+next one `<id> bring current`: QA brings that branch current and re-checks it before the
+architect asks for it or merges it.
 
 A red CI or a conflict after Ready to merge sends the ticket back to Changes requested, with a
-comment.
+comment: QA moves it, when it brings the branch current.
 
 ---
 

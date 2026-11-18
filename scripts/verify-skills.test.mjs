@@ -51,7 +51,8 @@ const READ_FIRST =
 const RULES = '## Rules every role follows'
 const QA_CHECKOUT_STEP = '## Step 2 — Check out the branch'
 const QA_DECIDE_STEP = '## Step 5 — Decide'
-const QA_MERGE_STEP = '## Step 6 — One merge at a time, under the merge policy'
+const QA_HANDOFF_STEP = '## Step 6 — Hand it to the architect'
+const MERGE_QUEUE = '## Merge queue'
 const INTAKE_MAPPING_STEP = '## Step 3 — Map it onto the core'
 const MANUAL_NAMED = 'It names `manual`.'
 const LOW_RISK_NAMED = 'It names `low-risk`.'
@@ -60,6 +61,8 @@ const DETACH = '--detach'
 const DETACH_NAMED = `It names ${DETACH}.`
 const PUSH_NAMED = 'It names git push origin HEAD:<branch>.'
 const HOTFIX_NAMED = 'It names `<id> ready to merge, hotfix`.'
+const READY_TO_MERGE_NAMED = 'It names ready to merge, PR #.'
+const DONE_MOVE = 'Ready to merge → Done'
 const HOTFIX_LEFT_NAMED = 'It names QA leaves it at Ready to merge.'
 const POLICY_FIELD = '- **Policy:**'
 const POLICY_LINE = `${POLICY_FIELD} \`manual\``
@@ -478,37 +481,60 @@ export const CASES = [
   {
     context: skills({
       edits: {
-        [SKILL({ folder: 'qa-ticket' })]: replace({
+        [SKILL({ folder: 'refine-ticket' })]: replace({
           from: MANUAL_NAMED,
           to: NAMES_NOTHING
         })
       }
     }),
     expected: 1,
-    name: 'a qa-ticket whose merge step names no manual merge policy is refused'
+    name: 'a refine-ticket whose merge queue names no manual merge policy is refused'
   },
   {
     context: skills({
       edits: {
-        [SKILL({ folder: 'qa-ticket' })]: replace({
+        [SKILL({ folder: 'refine-ticket' })]: replace({
           from: LOW_RISK_NAMED,
           to: NAMES_NOTHING
         })
       }
     }),
     expected: 1,
-    name: 'a qa-ticket whose merge step names no low-risk merge policy is refused'
+    name: 'a refine-ticket whose merge queue names no low-risk merge policy is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'refine-ticket' })]: withoutSection({
+          heading: MERGE_QUEUE
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a refine-ticket without its merge queue is refused'
   },
   {
     context: skills({
       edits: {
         [SKILL({ folder: 'qa-ticket' })]: withoutSection({
-          heading: QA_MERGE_STEP
+          heading: QA_HANDOFF_STEP
         })
       }
     }),
     expected: 1,
-    name: 'a qa-ticket without its merge step is refused'
+    name: 'a qa-ticket without its hand-off step is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'qa-ticket' })]: replace({
+          from: READY_TO_MERGE_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a qa-ticket whose hand-off step names no ready to merge message is refused'
   },
   {
     context: skills({
@@ -682,7 +708,7 @@ export const CASES = [
       }
     }),
     expected: 1,
-    name: 'a qa-ticket whose merge step sends no hotfix message is refused'
+    name: 'a qa-ticket whose hand-off step sends no hotfix message is refused'
   },
   {
     context: skills({
@@ -900,6 +926,32 @@ const checks = [
       assert.ok(
         finding.detail.includes(DETACH),
         `the finding does not name what the step owes: ${finding.detail}`
+      )
+    }
+  },
+  {
+    name: 'a qa-ticket that moves a ticket to Done is refused',
+    run: () => {
+      const findings = gate.run(
+        skills({
+          edits: {
+            [SKILL({ folder: 'qa-ticket' })]: append({
+              lines: ['moves:', `  - ${DONE_MOVE}`]
+            })
+          }
+        })()
+      )
+      assert.equal(findings.length, 1, JSON.stringify(findings))
+      const [finding] = findings
+      assert.equal(finding.kind, FINDING_KIND.forbidden)
+      assert.equal(finding.folder, 'qa-ticket')
+      assert.ok(
+        finding.detail.startsWith(`${SKILLS_ROOT}/qa-ticket/${SKILL_FILE}`),
+        `the finding does not name the file: ${finding.detail}`
+      )
+      assert.ok(
+        finding.detail.includes(DONE_MOVE),
+        `the finding does not name the move: ${finding.detail}`
       )
     }
   },

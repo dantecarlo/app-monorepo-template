@@ -394,9 +394,9 @@ Every role loads `ticket-flow` first; with no `docs/process/ticket-flow.md`, run
 | ------------------------------------------------------------------------------------------------------------------- | ---------------- | ------------------------------------------- |
 | the **ticket flow** itself: the states, the board operations, the messages, the rules a role follows               | `ticket-flow`    | `verify:skills:test`                        |
 | **PO**: a client requirement becomes a ticket with its target version; a scope or version change; the plan on close | `po-ticket`      | review                                      |
-| **architect**: refine a ticket into specs and a plan, dispatch every ready state, group a release                   | `refine-ticket`  | `verify:specs`                              |
+| **architect**: refine a ticket into specs and a plan, dispatch every state, keep the merge queue, group a release   | `refine-ticket`  | `verify:specs`                              |
 | **dev**: build a ticket test first in its own worktree, up to Ready for QA                                          | `dev-ticket`     | `validate` · `verify:ticket-branch`         |
-| **QA**: check a ticket with evidence, bring it current, merge one at a time under the merge policy                 | `qa-ticket`      | `test:e2e`                                  |
+| **QA**: check a ticket with evidence, bring it current, hand it to the architect at Ready to merge                  | `qa-ticket`      | `test:e2e`                                  |
 | **CI/CD**: deploy a release target by target on the owner's word, check production, a hotfix                        | `release-ticket` | review                                      |
 | **set up** a project's ticket flow: its board adapter, states, roles, approvals, deploy targets and branching       | `process-intake` | review                                      |
 

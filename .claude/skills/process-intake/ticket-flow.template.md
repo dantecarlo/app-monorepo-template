@@ -52,20 +52,29 @@
 
 - **Specs:** <such as: SDD proposals, approved by the owner in the architect's session>
 - **Pushing a branch and opening a pull request:** <dev does it | ask the owner first>
+- **Merging into the default branch:** in one place, the architect's session, from its merge
+  queue (`refine-ticket` § Merge queue). QA brings a ticket to Ready to merge and messages the
+  architect `<id> ready to merge, PR #<n>`; it neither asks the owner nor merges. The owner
+  approves each merge in the architect's session, or the architect merges without asking under
+  the `low-risk` policy (§ Merge policy). A merge into the production branch is the CI/CD
+  session's, on the owner's word.
 - **Other:** <any approval the team names, and where it is given>
 
 ## Merge policy
 
 - **Policy:** `manual`
-- **What each policy allows:** `manual`, the default, keeps a human in the loop: QA asks the
-  owner for every merge. `low-risk` lets QA merge, without asking, a pull request that meets every
-  condition of `ticket-flow` rule 4 (Ready to merge into the default branch, at the head of the
-  merge order, its Risk line `Risk: none` or only passive files, and no irreversible step), and
-  record that merge on the ticket; any other pull request waits for the owner, as under `manual`.
+- **What each policy allows:** `manual`, the default, keeps a human in the loop: the architect
+  asks the owner for every merge, in its own session. `low-risk` lets the architect merge,
+  without asking, a pull request that meets every condition of `ticket-flow` rule 4 (Ready to
+  merge into the default branch, at the head of the merge queue, its Risk line `Risk: none` or
+  only passive files, and no irreversible step), and record that merge on the ticket; any other
+  pull request waits for the owner, as under `manual`.
 - **What no policy covers:** a merge to `production`, a deploy, a production migration, a store
   submission and every other irreversible step stay the owner's word.
 - **Bringing a branch current:** merge (always: QA merges the base and pushes unforced)
 - **Merge method:** <merge commit | squash | rebase>
+- **Merge gate:** <the check the architect runs before each merge | none beyond `ticket-flow`
+  § Ready to merge>
 
 ## Ticket identity
 

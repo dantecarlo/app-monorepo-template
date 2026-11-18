@@ -21,10 +21,10 @@ procedure uses its board operations, states, messages and rules and never restat
 reads the deploy targets and the branching model of docs/process/ticket-flow.md; a layer that
 declares no deploy target → stop and send the team to `process-intake`.
 
-No merge policy covers a step of this skill. The `low-risk` policy (`ticket-flow` rule 4) lets QA
-merge a ticket into the default branch; every release, deploy target, merge to `production`,
-migration push and store submission here, and the hotfix's merges, stays the owner's word under
-every policy.
+No merge policy covers a step of this skill. The `low-risk` policy (`ticket-flow` rule 4) lets
+the architect merge a ticket into the default branch; every release, deploy target, merge into
+the production branch, migration push and store submission here, and the hotfix's merges, stays
+the owner's word under every policy.
 
 ---
 
@@ -123,7 +123,8 @@ its CI/CD session) and a migration push (to the production database).
 
 **The alternative, tags only:** a project may declare tags (`web-vX`, `app-vX`) on the default
 branch instead, each tag running a deploy job; it has no `production` branch, and a hotfix is a
-`fix` ticket on the default branch, merged by QA like any other and shipped by a new tag.
+`fix` ticket on the default branch, merged by the architect from its merge queue like any other
+and shipped by a new tag.
 
 The template ships no `production` branch of its own: the project layer's branching model says
 which one a project adopted.
@@ -147,13 +148,15 @@ which one a project adopted.
 1. A hotfix is a ticket of type `fix` on a branch cut from `production` (`dev-ticket` Step 3).
 2. It goes through QA like any other ticket, and its Ready to merge asks for `production`'s
    current tip. QA leaves it at Ready to merge, under every merge policy, and messages the
-   architect `<id> ready to merge, hotfix`: merging into `production` deploys, so the merge never
-   runs ahead of its release's approval and its migrations.
+   architect `<id> ready to merge, hotfix`, and the architect keeps it out of its merge queue:
+   merging into `production` deploys, so the merge never runs ahead of its release's approval and
+   its migrations.
 3. The architect lists it in a release ticket of its own, at Ready to merge
    (`refine-ticket` § Group a release), and this session ships it with Steps 1 to 4. The merge
    of its pull request into `production` is that release's deploy step: on the owner's word for
    the release and for that step, after the release's migrations, in their order. Once it
-   merges, `move` the hotfix to Done and message the architect `<id> merged`.
+   merges, `move` the hotfix to Done and message the architect `<id> merged`; the architect
+   passes it to the hotfix's QA and dev sessions.
 4. Once it is live, `production` merges back into the default branch, through a pull request
    merged on the owner's word.
 
