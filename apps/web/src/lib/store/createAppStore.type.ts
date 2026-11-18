@@ -1,3 +1,6 @@
+// Twin of apps/mobile/src/lib/store/createAppStore.type.ts:
+// both apps share one store API, so a change to one type lands in both.
+
 /** A change to a store: some of its fields, or a function of the state that returns them. */
 export type AppStoreUpdateType<TState> =
   | Partial<TState>

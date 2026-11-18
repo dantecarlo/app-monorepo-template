@@ -107,7 +107,7 @@
       "name": "zustand",
       "category": "infra",
       "seam": ["apps/*/src/lib/store/createAppStore.helper.ts"],
-      "note": "Behind createAppStore, which creates every store under src/stores with its selectors, its useShallow and its optional persistence."
+      "note": "Behind createAppStore: every store under src/stores is created through it, which gives the store its useShallow and its optional persistence; each store declares its own named selectors."
     },
     {
       "name": "zod",

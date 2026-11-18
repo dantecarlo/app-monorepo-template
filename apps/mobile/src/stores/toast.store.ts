@@ -1,5 +1,6 @@
-// Mirrors apps/web/src/stores/toast.store.ts — identical: both apps create
-// their stores through the same createAppStore.
+// The mobile twin of apps/web/src/stores/toast.store.ts: the same state,
+// actions and 4-second dismissal, written more compactly; both apps create
+// their stores through their own createAppStore.
 
 import { createAppStore } from '@/lib/store/createAppStore.helper'
 
