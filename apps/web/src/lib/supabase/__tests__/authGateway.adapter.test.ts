@@ -13,6 +13,7 @@ import {
 
 const {
   mockCreateSupabaseAuthGateway,
+  mockCreateSupabaseClient,
   mockGetSession,
   mockGetSupabaseClient,
   mockSignIn
@@ -20,20 +21,24 @@ const {
   const getSession = vi.fn()
   const signIn = vi.fn()
   return {
-    mockCreateSupabaseAuthGateway: vi.fn(() => ({
+    mockCreateSupabaseAuthGateway: vi.fn<
+      (params: { client: unknown }) => object
+    >(() => ({
       getSession,
       onAuthStateChange: vi.fn(),
       signIn,
       signOut: vi.fn()
     })),
+    mockCreateSupabaseClient: vi.fn(() => ({ tag: 'created-client' })),
     mockGetSession: getSession,
-    mockGetSupabaseClient: vi.fn(() => ({ tag: 'client' })),
+    mockGetSupabaseClient: vi.fn((): unknown => ({ tag: 'client' })),
     mockSignIn: signIn
   }
 })
 
 vi.mock('@app/supabase', () => ({
-  createSupabaseAuthGateway: mockCreateSupabaseAuthGateway
+  createSupabaseAuthGateway: mockCreateSupabaseAuthGateway,
+  createSupabaseClient: mockCreateSupabaseClient
 }))
 
 vi.mock('@/lib/supabase/client.adapter', () => ({
@@ -155,6 +160,26 @@ describe('auth gateway adapter', () => {
     })
     await expect(first.getSession()).resolves.toBeNull()
     expect(mockGetSession).toHaveBeenCalledOnce()
+  })
+
+  test('hands the gateway the very client the browser client adapter creates', async () => {
+    withSupabaseSettings()
+    const { getSupabaseClient } = await vi.importActual<
+      typeof import('@/lib/supabase/client.adapter')
+    >('@/lib/supabase/client.adapter')
+    mockGetSupabaseClient.mockImplementationOnce(getSupabaseClient)
+    const { getAuthGateway } = await loadAdapter()
+
+    getAuthGateway()
+
+    const created: unknown =
+      mockCreateSupabaseClient.mock.results[0]?.value
+    expect(mockCreateSupabaseClient).toHaveBeenCalledOnce()
+    expect(mockCreateSupabaseAuthGateway).toHaveBeenCalledOnce()
+    expect(mockCreateSupabaseAuthGateway.mock.calls[0]?.[0].client).toBe(
+      created
+    )
+    expect(getSupabaseClient()).toBe(created)
   })
 
   test('names the failure of each Supabase Auth code a sign-in rejects with', async () => {

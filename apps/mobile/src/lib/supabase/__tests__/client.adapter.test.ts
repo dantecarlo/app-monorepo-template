@@ -1,4 +1,13 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import type { BackendClientType } from '@app/supabase'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  expectTypeOf,
+  test,
+  vi
+} from 'vitest'
 
 // ---------------------------------------------------------------------------
 // Mock the typed source so we assert on what the wrapper forwards, without
@@ -47,5 +56,11 @@ describe('mobile supabase client adapter', () => {
       url: 'https://placeholder.supabase.co'
     })
     expect(console.warn).toHaveBeenCalledTimes(1)
+  })
+
+  test('types the client as the opaque backend client', async () => {
+    const { supabase } = await import('@/lib/supabase/client.adapter')
+
+    expectTypeOf(supabase).toEqualTypeOf<BackendClientType>()
   })
 })

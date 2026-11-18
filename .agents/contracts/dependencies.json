@@ -251,17 +251,20 @@
     {
       "name": "@supabase/supabase-js",
       "category": "vendor",
-      "seam": ["packages/supabase/src/*.adapter.ts"]
+      "seam": ["packages/supabase/src/*.adapter.ts"],
+      "note": "Its client leaves the package as the opaque BackendClientType, which only packages/supabase/src/backendClient.adapter.ts turns back into the SDK client."
     },
     {
       "name": "@supabase/ssr",
       "category": "vendor",
-      "seam": ["packages/supabase/src/*.adapter.ts"]
+      "seam": ["packages/supabase/src/*.adapter.ts"],
+      "note": "The SSR client leaves the package as the opaque BackendClientType, as the browser client does."
     },
     {
       "name": "@app/supabase",
       "category": "vendor-package",
-      "seam": ["apps/*/src/lib/supabase/**"]
+      "seam": ["apps/*/src/lib/supabase/*.adapter.ts"],
+      "note": "Each app's lib/supabase adapters: the client, typed BackendClientType, and the auth gateway the app's auth provider receives."
     },
     {
       "name": "@app/cloudflare",

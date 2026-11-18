@@ -1,4 +1,7 @@
-import { createSupabaseClient } from '@app/supabase'
+import {
+  type BackendClientType,
+  createSupabaseClient
+} from '@app/supabase'
 
 // Valid-format placeholders so the client never throws when env is absent
 // (UI preview / dev without a backend). Real values come from apps/mobile/.env.
@@ -17,10 +20,15 @@ if (url === PLACEHOLDER_URL || anonKey === PLACEHOLDER_ANON_KEY) {
 }
 
 /**
- * Thin app wrapper over the single typed source (@app/supabase).
+ * Thin app wrapper over the single typed source (@app/supabase): the client
+ * is the opaque BackendClientType, which only the package's adapters unwrap,
+ * so the app names no Supabase type.
  *
  * To persist sessions on device, install
  * @react-native-async-storage/async-storage and extend the @app/supabase
  * client factory to accept an `auth.storage` option.
  */
-export const supabase = createSupabaseClient({ anonKey, url })
+export const supabase: BackendClientType = createSupabaseClient({
+  anonKey,
+  url
+})

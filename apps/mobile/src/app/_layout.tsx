@@ -2,7 +2,6 @@ import '../../global.css'
 import '@/lib/i18n/i18n.config'
 import '@/lib/theme/theme.config'
 
-import { createSupabaseAuthGateway } from '@app/supabase'
 import { Stack } from 'expo-router'
 import { View } from 'react-native'
 
@@ -16,7 +15,7 @@ import { observability } from '@/lib/observability/observability.adapter'
 import { toCaptureError } from '@/lib/observability/toCaptureError.helper'
 import { AppQueryProvider } from '@/lib/query/AppQueryProvider.component'
 import { createQueryClient } from '@/lib/query/createQueryClient.helper'
-import { supabase } from '@/lib/supabase/client.adapter'
+import { authGateway } from '@/lib/supabase/authGateway.adapter'
 import { useRootTheme } from '@/lib/theme/useRootTheme.hook'
 
 // Expo Router wraps the root layout, and every route below it, in this boundary.
@@ -27,7 +26,6 @@ holdSplashScreen()
 const queryClient = createQueryClient({
   onCaptureError: toCaptureError({ observability })
 })
-const authGateway = createSupabaseAuthGateway({ client: supabase })
 
 const RootLayout = () => {
   const { contentStyle, statusBarStyle, themeStyle } = useRootTheme()

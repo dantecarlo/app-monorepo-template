@@ -1,15 +1,5 @@
 [
   {
-    "path": "apps/mobile/src/app/__tests__/layout.route.test.tsx",
-    "package": "@app/supabase",
-    "reason": "F.8 unit 7: the opaque Supabase client, behind lib/supabase, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/app/_layout.tsx",
-    "package": "@app/supabase",
-    "reason": "F.8 unit 7: the opaque Supabase client, behind lib/supabase, takes this import."
-  },
-  {
     "path": "apps/web/src/app/__tests__/LocaleProviders.test.tsx",
     "package": "next/navigation",
     "reason": "F.8 unit 6: lib/routing takes this import; the test then mocks the project module, not the vendor."
