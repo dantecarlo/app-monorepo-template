@@ -3,10 +3,9 @@
 // capability. Source maps upload only when SENTRY_AUTH_TOKEN is set, at
 // deploy time.
 //
-// A build-time config of the framework, the same kind as next.config.ts and
-// the sentry.*.config.ts files the vendor-SDK override of eslint.rules.mjs
-// lists; that list predates this file.
-// eslint-disable-next-line no-restricted-imports -- framework config entry point, like next.config.ts
+// It is one of the files the `@sentry/nextjs` entry of
+// .agents/contracts/dependencies.json names as its seam, so
+// local/dependency-seam lets it import the SDK.
 import { withSentryConfig } from '@sentry/nextjs'
 import type { NextConfig } from 'next'
 

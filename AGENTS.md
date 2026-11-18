@@ -406,6 +406,7 @@ Every role loads `ticket-flow` first; with no `docs/process/ticket-flow.md`, run
 
 - Conventional commits only. No AI attribution or Co-Authored-By in commits.
 - Domain and application layers must not import framework or vendor SDKs.
+- A package is imported only inside its seam, per `.agents/contracts/dependencies.json` (code-standards §23).
 - Every `*.service.ts` is paired with a `*.adapter.ts` — no fetch in components.
 - `pnpm validate` must be green before any work is reported as done.
 - Arrow functions only — no `function` keyword.

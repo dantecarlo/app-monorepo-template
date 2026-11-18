@@ -64,7 +64,7 @@
   record that merge on the ticket; any other pull request waits for the owner, as under `manual`.
 - **What no policy covers:** a merge to `production`, a deploy, a production migration, a store
   submission and every other irreversible step stay the owner's word.
-- **Bringing a branch current:** <merge | rebase>
+- **Bringing a branch current:** merge (always: QA merges the base and pushes unforced)
 - **Merge method:** <merge commit | squash | rebase>
 
 ## Ticket identity

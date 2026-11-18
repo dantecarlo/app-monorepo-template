@@ -32,9 +32,12 @@ every policy.
 
 On `<release-id> ready for prod`: `read` the release ticket. It carries the tickets it lists, the
 version per target, the migrations, the changelog, the rollback per target and the staging
-evidence of every touched area, for one version V. Something missing, a ticket whose target
-version is V not listed or not Done (`read version`), or the default branch's CI red →
-`comment` it, message the architect `<release-id> question`, and stop.
+evidence of every touched area, for one version V. Every ticket it lists is Done, except a
+hotfix, which is at Ready to merge into `production` with every Ready to merge condition met
+against `production`'s current tip (`ticket-flow` § Ready to merge; § Hotfix below). Something
+missing, a ticket whose target version is V not listed or not in that state (`read version`),
+or the default branch's CI red → `comment` it, message the architect `<release-id> question`,
+and stop.
 
 **Merged for a later version.** A release ships everything merged since the last one, under the
 default branching and a tag on the default branch alike. List every ticket merged since the last
@@ -120,7 +123,7 @@ its CI/CD session) and a migration push (to the production database).
 
 **The alternative, tags only:** a project may declare tags (`web-vX`, `app-vX`) on the default
 branch instead, each tag running a deploy job; it has no `production` branch, and a hotfix is a
-`fix` ticket on the default branch shipped by a new tag.
+`fix` ticket on the default branch, merged by QA like any other and shipped by a new tag.
 
 The template ships no `production` branch of its own: the project layer's branching model says
 which one a project adopted.
@@ -142,10 +145,15 @@ which one a project adopted.
 ## Hotfix
 
 1. A hotfix is a ticket of type `fix` on a branch cut from `production` (`dev-ticket` Step 3).
-2. It goes through QA like any other ticket; its Ready to merge asks for `production`'s current
-   tip, and it is merged into `production` on the owner's word.
-3. The architect lists it in a release ticket of its own, and this session ships it with
-   Steps 1 to 4.
+2. It goes through QA like any other ticket, and its Ready to merge asks for `production`'s
+   current tip. QA leaves it at Ready to merge, under every merge policy, and messages the
+   architect `<id> ready to merge, hotfix`: merging into `production` deploys, so the merge never
+   runs ahead of its release's approval and its migrations.
+3. The architect lists it in a release ticket of its own, at Ready to merge
+   (`refine-ticket` § Group a release), and this session ships it with Steps 1 to 4. The merge
+   of its pull request into `production` is that release's deploy step: on the owner's word for
+   the release and for that step, after the release's migrations, in their order. Once it
+   merges, `move` the hotfix to Done and message the architect `<id> merged`.
 4. Once it is live, `production` merges back into the default branch, through a pull request
    merged on the owner's word.
 
@@ -163,7 +171,9 @@ moves:
   - Ready for prod → In release # on the owner's word only
   - In release → Released
   - In release → Refinement # a failed target
-messages: ['<release-id> released', '<release-id> <target> failed', '<release-id> question']
+  - Ready to merge → Done # a hotfix, merged into production as its release's deploy step
+messages: ['<release-id> released', '<release-id> <target> failed', '<release-id> question',
+  '<id> merged']
 validated_by: review
 done_when: every touched target passed its check in production and the release is Released
 ```

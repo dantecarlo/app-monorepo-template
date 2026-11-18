@@ -1,0 +1,540 @@
+{
+  "$comment": "Every package, or package subpath, the workspace declares or imports, with its category and its seam: the repository globs of the files that may import it (decisions 51, 52 and 58). A core entry is imported anywhere; every other entry only inside its seam, type-only imports included unless \"types\" is \"anywhere\", and an empty seam means no file may import it yet. The most specific entry wins (next/navigation before next), and every Node builtin is the entry node:*. A test also imports what the seam of the unit it tests admits, and a testInfrastructure file any registered package. local/dependency-seam enforces it on apps/* and packages/*; pnpm verify:dependency-seams holds it to every package.json and file. See docs/code-standards.md section 23.",
+  "testInfrastructure": ["{apps,packages}/*/src/test/**"],
+  "packages": [
+    {
+      "name": "@app/core",
+      "category": "core"
+    },
+    {
+      "name": "@app/i18n",
+      "category": "core"
+    },
+    {
+      "name": "@app/tokens",
+      "category": "core"
+    },
+    {
+      "name": "expo",
+      "category": "core"
+    },
+    {
+      "name": "expo-router",
+      "category": "core",
+      "note": "Its hooks go through lib/routing (F.8 unit 6); the rule judges the package, not the names imported from it."
+    },
+    {
+      "name": "next",
+      "category": "core",
+      "note": "next/cache, next/navigation and next/image are narrowed by entries of their own."
+    },
+    {
+      "name": "react",
+      "category": "core"
+    },
+    {
+      "name": "react-dom",
+      "category": "core"
+    },
+    {
+      "name": "react-native",
+      "category": "core",
+      "note": "The primitives that have a ui/ wrapper (Text, Pressable, TextInput) are F.8 unit 8; the rule judges the package, not the names imported from it."
+    },
+    {
+      "name": "typescript",
+      "category": "core"
+    },
+    {
+      "name": "next/cache",
+      "category": "infra",
+      "seam": [],
+      "note": "Behind apps/web/src/lib/cache/, which F.8 unit 6 creates."
+    },
+    {
+      "name": "next/navigation",
+      "category": "infra",
+      "seam": [],
+      "note": "Behind apps/web/src/lib/routing/, which F.8 unit 6 creates."
+    },
+    {
+      "name": "next-intl",
+      "category": "infra",
+      "seam": ["apps/web/next.config.ts"],
+      "note": "Behind apps/web/src/lib/i18n/, which F.8 unit 2 creates; the Next config loads its plugin."
+    },
+    {
+      "name": "react-i18next",
+      "category": "infra",
+      "seam": ["apps/mobile/src/lib/i18n/**"]
+    },
+    {
+      "name": "i18next",
+      "category": "infra",
+      "seam": ["apps/mobile/src/lib/i18n/**"]
+    },
+    {
+      "name": "i18next-icu",
+      "category": "infra",
+      "seam": ["apps/mobile/src/lib/i18n/**"]
+    },
+    {
+      "name": "@formatjs/intl-pluralrules",
+      "category": "infra",
+      "seam": ["apps/mobile/src/lib/i18n/**"]
+    },
+    {
+      "name": "expo-localization",
+      "category": "infra",
+      "seam": ["apps/mobile/src/lib/i18n/**"]
+    },
+    {
+      "name": "@tanstack/react-query",
+      "category": "infra",
+      "seam": ["apps/*/src/lib/query/**"]
+    },
+    {
+      "name": "zustand",
+      "category": "infra",
+      "seam": [],
+      "note": "Behind apps/*/src/lib/store/createAppStore.helper.ts, which F.8 unit 4 creates."
+    },
+    {
+      "name": "zod",
+      "category": "infra",
+      "seam": ["apps/*/src/validation/**"]
+    },
+    {
+      "name": "@react-native-async-storage/async-storage",
+      "category": "infra",
+      "seam": [],
+      "note": "Behind apps/mobile/src/lib/storage/keyValueStorage.adapter.ts and a key-value storage port in @app/core, which F.8 unit 4 creates."
+    },
+    {
+      "name": "expo-splash-screen",
+      "category": "infra",
+      "seam": [],
+      "note": "Behind apps/mobile/src/lib/bootstrap/, which F.8 unit 6 creates."
+    },
+    {
+      "name": "@expo-google-fonts/inter",
+      "category": "infra",
+      "seam": [],
+      "note": "Behind apps/mobile/src/lib/bootstrap/, which F.8 unit 6 creates."
+    },
+    {
+      "name": "@expo-google-fonts/montserrat",
+      "category": "infra",
+      "seam": [],
+      "note": "Behind apps/mobile/src/lib/bootstrap/, which F.8 unit 6 creates."
+    },
+    {
+      "name": "nativewind",
+      "category": "infra",
+      "seam": [
+        "apps/mobile/src/lib/theme/**",
+        "apps/mobile/metro.config.js",
+        "apps/mobile/tailwind.config.js"
+      ],
+      "note": "The class dialect is core (decision 58); the package itself is imported by lib/theme and the config files."
+    },
+    {
+      "name": "next/image",
+      "category": "ui",
+      "seam": [],
+      "note": "Behind apps/web/src/components/ui/Image/, which F.8 unit 5 creates."
+    },
+    {
+      "name": "tailwind-variants",
+      "category": "ui",
+      "seam": ["apps/web/src/components/ui/variants.helper.ts"],
+      "note": "The one value-import site of tv (F30): every other file builds its variants with the shared tv."
+    },
+    {
+      "name": "tailwind-merge",
+      "category": "ui",
+      "seam": ["apps/web/src/components/ui/variants.helper.ts"],
+      "note": "The peer tailwind-variants runs on every call; the shared tv configures it."
+    },
+    {
+      "name": "react-error-boundary",
+      "category": "ui",
+      "seam": ["apps/*/src/components/ui/AsyncBoundary/**"]
+    },
+    {
+      "name": "expo-blur",
+      "category": "ui",
+      "seam": ["apps/mobile/src/components/ui/**"]
+    },
+    {
+      "name": "expo-linear-gradient",
+      "category": "ui",
+      "seam": ["apps/mobile/src/components/ui/**"]
+    },
+    {
+      "name": "react-native-reanimated",
+      "category": "ui",
+      "seam": ["apps/mobile/src/components/ui/**"]
+    },
+    {
+      "name": "react-native-safe-area-context",
+      "category": "ui",
+      "seam": ["apps/mobile/src/components/ui/**"]
+    },
+    {
+      "name": "react-native-svg",
+      "category": "ui",
+      "seam": ["apps/mobile/src/components/ui/**"]
+    },
+    {
+      "name": "expo-status-bar",
+      "category": "ui",
+      "seam": [],
+      "note": "Behind apps/mobile/src/components/ui/StatusBar/, with its own style type, which F.8 unit 5 creates."
+    },
+    {
+      "name": "@sentry/nextjs",
+      "category": "vendor",
+      "seam": [
+        "apps/web/src/lib/observability/*.adapter.ts",
+        "apps/web/instrumentation.ts",
+        "apps/web/next-sentry.config.ts",
+        "apps/web/sentry.*.config.ts"
+      ],
+      "note": "An optional capability (decision 53): its adapter and the framework config files."
+    },
+    {
+      "name": "@sentry/react-native",
+      "category": "vendor",
+      "seam": ["apps/mobile/src/lib/observability/*.adapter.ts"],
+      "note": "An optional capability (decision 53)."
+    },
+    {
+      "name": "posthog-js",
+      "category": "vendor",
+      "seam": ["apps/web/src/lib/{observability,posthog}/*.adapter.ts"],
+      "note": "The default observability adapter (F.7)."
+    },
+    {
+      "name": "posthog-react-native",
+      "category": "vendor",
+      "seam": ["apps/mobile/src/lib/{observability,posthog}/*.adapter.ts"],
+      "note": "The default observability adapter (F.7)."
+    },
+    {
+      "name": "@supabase/supabase-js",
+      "category": "vendor",
+      "seam": ["packages/supabase/src/*.adapter.ts"]
+    },
+    {
+      "name": "@supabase/ssr",
+      "category": "vendor",
+      "seam": ["packages/supabase/src/*.adapter.ts"]
+    },
+    {
+      "name": "@app/supabase",
+      "category": "vendor-package",
+      "seam": ["apps/*/src/lib/supabase/**"]
+    },
+    {
+      "name": "@app/cloudflare",
+      "category": "vendor-package",
+      "seam": ["apps/web/src/lib/{bot-protection,origin-guard}/**"]
+    },
+    {
+      "name": "node:*",
+      "category": "build",
+      "seam": [
+        "{apps,packages}/*/**/__tests__/**",
+        "{apps,packages}/*/*.config.{js,mjs,cjs,ts}",
+        "packages/tokens/scripts/**",
+        "packages/tooling/src/**"
+      ],
+      "note": "Every Node builtin, with or without the node: scheme: tests, configs and tooling scripts run on Node, the apps do not."
+    },
+    {
+      "name": "@app/tooling",
+      "category": "build",
+      "seam": [
+        "{apps,packages}/*/**/__tests__/**",
+        "{apps,packages}/*/vitest.config.ts"
+      ],
+      "note": "The shared test and process scripts (decision 46)."
+    },
+    {
+      "name": "vitest",
+      "category": "build",
+      "seam": [
+        "{apps,packages}/*/**/__tests__/**",
+        "{apps,packages}/*/vitest.config.ts"
+      ]
+    },
+    {
+      "name": "@vitejs/plugin-react",
+      "category": "build",
+      "seam": ["apps/web/vitest.config.ts"]
+    },
+    {
+      "name": "@testing-library/react",
+      "category": "build",
+      "seam": ["{apps,packages}/*/**/__tests__/**"],
+      "note": "Tests render through the local test.helper, which re-exports it; no-restricted-imports keeps that path."
+    },
+    {
+      "name": "@testing-library/jest-dom",
+      "category": "build",
+      "seam": ["{apps,packages}/*/**/__tests__/**"]
+    },
+    {
+      "name": "msw",
+      "category": "build",
+      "seam": ["{apps,packages}/*/**/__tests__/**"]
+    },
+    {
+      "name": "vitest-axe",
+      "category": "build",
+      "seam": ["{apps,packages}/*/**/__tests__/**"]
+    },
+    {
+      "name": "tailwindcss",
+      "category": "build",
+      "seam": ["{apps,packages}/*/**/__tests__/**"],
+      "note": "The CSS compiler: the web loads it from CSS and PostCSS, never from source, and a test may compile with it. The class dialect is core (decision 58)."
+    },
+    {
+      "name": "@axe-core/playwright",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "@babel/plugin-transform-class-static-block",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "@commitlint/cli",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "@commitlint/config-conventional",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "@next/eslint-plugin-next",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "@playwright/test",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "@tailwindcss/postcss",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "@types/node",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "@types/react",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "@types/react-dom",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "babel-plugin-module-resolver",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "babel-plugin-react-compiler",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "babel-preset-expo",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "eslint",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "eslint-config-next",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "eslint-config-prettier",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "eslint-plugin-check-file",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "eslint-plugin-expo",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "eslint-plugin-import",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "eslint-plugin-jsx-a11y",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "eslint-plugin-no-relative-import-paths",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "eslint-plugin-perfectionist",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "eslint-plugin-prettier",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "eslint-plugin-react",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "eslint-plugin-react-hooks",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "eslint-plugin-simple-import-sort",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "eslint-plugin-sort-destructure-keys",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "eslint-plugin-sort-keys-fix",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "eslint-plugin-vitest",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "globals",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "happy-dom",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "husky",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "knip",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "lint-staged",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "postcss",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "prettier",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "serve",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "turbo",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "typescript-eslint",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "vite",
+      "category": "build",
+      "seam": []
+    },
+    {
+      "name": "@expo/metro-runtime",
+      "category": "peer",
+      "seam": []
+    },
+    {
+      "name": "expo-constants",
+      "category": "peer",
+      "seam": []
+    },
+    {
+      "name": "expo-font",
+      "category": "peer",
+      "seam": []
+    },
+    {
+      "name": "expo-linking",
+      "category": "peer",
+      "seam": []
+    },
+    {
+      "name": "react-native-screens",
+      "category": "peer",
+      "seam": []
+    },
+    {
+      "name": "react-native-web",
+      "category": "peer",
+      "seam": []
+    },
+    {
+      "name": "react-native-worklets",
+      "category": "peer",
+      "seam": []
+    }
+  ]
+}
