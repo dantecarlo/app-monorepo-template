@@ -3,7 +3,7 @@
 > **Governs:** `apps/mobile/src`, `apps/mobile/app.json`
 > **ID prefix:** `MOBILE`
 > **Derived from:** `docs/architecture/mobile.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/observability.md`, `docs/e2e.md`, `docs/responsive.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-17 at `e35b1ac`
+> **Verified against the code:** 2026-11-18 at `081ca06`
 
 ## Purpose
 
@@ -12,11 +12,11 @@ items dashboard, backed by a sample service, and a sign-in form that validates i
 signs no one in. It also owns the theme and language controls and their persistence, the
 light and dark themes painted from the root, a query layer that shows a failed query on its
 screen, toasts a failed mutation and captures both through the observability port, and the
-environment wiring of Supabase, of PostHog, the default observability provider, and of
-the optional Sentry. It leaves the error, PII-scrubbing, query-key and
-auth-gateway contracts to packages/core, the catalogs and language constants to packages/i18n,
-the Supabase client and auth gateway to packages/supabase, the theme values to packages/tokens,
-and the web counterpart to apps/web.
+environment wiring of Supabase, of PostHog, the default observability provider, with its
+consent mode and the consent API, and of the optional Sentry. It leaves the error,
+PII-scrubbing, query-key, auth-gateway and consent-port contracts to packages/core, the catalogs
+and language constants to packages/i18n, the Supabase client and auth gateway to
+packages/supabase, the theme values to packages/tokens, and the web counterpart to apps/web.
 
 ## Requirements
 
@@ -1198,7 +1198,7 @@ The mobile app SHALL construct its one PostHog client only when `EXPO_PUBLIC_POS
 sending to `EXPO_PUBLIC_POSTHOG_HOST` or, without it, to the US ingestion host, and SHALL
 otherwise expose no client, so every observability call is a no-op and no request leaves the app.
 
-**Evidence:** `apps/mobile/src/lib/posthog/posthogClient.constant.ts:4-11`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:27-29`
+**Evidence:** `apps/mobile/src/lib/posthog/posthogClient.constant.ts:4-11`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:73-79`
 
 #### Scenario: no key
 
@@ -1223,11 +1223,11 @@ otherwise expose no client, so every observability call is a no-op and no reques
 
 ### Requirement: MOBILE-50 — The PostHog client starts with privacy defaults
 
-The mobile app SHALL construct PostHog with session replay off, app lifecycle events off, console
-errors off, unhandled rejections captured, and uncaught exceptions captured only on native, never
-in a web bundle.
+The mobile app SHALL construct PostHog, under every consent mode, with session replay off, app
+lifecycle events off, console errors off, unhandled rejections captured, and uncaught exceptions
+captured only on native, never in a web bundle.
 
-**Evidence:** `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:10-19`, `apps/mobile/src/lib/posthog/posthogClient.constant.ts:15-28`
+**Evidence:** `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:17-36`, `apps/mobile/src/lib/posthog/posthogClient.constant.ts:22-28`, `apps/mobile/src/lib/posthog/posthogClient.constant.ts:49-53`
 
 #### Scenario: replay and lifecycle events
 
@@ -1250,6 +1250,14 @@ in a web bundle.
 - **THEN** uncaught exceptions are not captured and unhandled rejections are
 - **Test:** `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "leaves uncaught exception capture off in a web bundle"
 
+#### Scenario: every consent mode
+
+- **GIVEN** a key and each consent mode
+- **WHEN** the client is constructed
+- **THEN** session replay, lifecycle events and console errors are off, and unhandled rejections
+  and native uncaught exceptions are captured
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "keeps the privacy defaults under every consent mode"
+
 ### Requirement: MOBILE-51 — Both observability adapters keep the port contract
 
 The mobile app SHALL ship a PostHog adapter and a Sentry adapter that both pass the observability
@@ -1270,6 +1278,173 @@ port contract of packages/tooling with their SDK replaced at its module.
 - **WHEN** the port contract runs against it
 - **THEN** every case passes
 - **Test:** `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "the observability port contract"
+
+### Requirement: MOBILE-52 — One setting chooses the PostHog consent mode
+
+The mobile app SHALL read its PostHog consent mode from `EXPO_PUBLIC_POSTHOG_CONSENT` through its
+constant file: `granted` when the value is absent or empty, and `granted`, `opt-in` or `memory`
+when it names one, constructing PostHog in `granted` mode with the options it had before this
+setting existed. It SHALL throw a configuration error that names the variable and the accepted
+values when, with a key set, the value names anything else.
+
+**Evidence:** `apps/mobile/src/lib/posthog/posthogClient.constant.ts:33-44`, `apps/mobile/src/lib/posthog/resolveConsentMode.helper.ts:15-26`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:54-56`
+
+#### Scenario: no setting
+
+- **GIVEN** a key and no consent mode
+- **WHEN** the client is constructed
+- **THEN** its options are exactly the ones it had before the setting existed
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "keeps the granted options when no consent mode is set"
+
+#### Scenario: `granted` named
+
+- **GIVEN** a key and the consent mode `granted`
+- **WHEN** the client is constructed
+- **THEN** its options equal those of no setting
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "starts the granted mode with the same options as no setting"
+
+#### Scenario: reading the value
+
+- **GIVEN** an absent, an empty and each known value
+- **WHEN** the mode is resolved
+- **THEN** absent and empty read as `granted`, and each known value as itself
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/resolveConsentMode.helper.test.ts` › "reads an absent or empty consent mode as granted"
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/resolveConsentMode.helper.test.ts` › "reads each consent mode it knows"
+
+#### Scenario: an unknown value
+
+- **GIVEN** an unknown value
+- **WHEN** the mode is resolved, and when the client module loads with a key
+- **THEN** each throws an error naming `EXPO_PUBLIC_POSTHOG_CONSENT`, the value and the three
+  accepted modes, and no client is constructed
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/resolveConsentMode.helper.test.ts` › "throws a configuration error for an unknown consent mode"
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "refuses to load with an unknown consent mode"
+
+### Requirement: MOBILE-53 — Each consent mode maps onto the SDK's options
+
+The mobile app SHALL construct PostHog in `opt-in` mode with `defaultOptIn: false` and the
+consent storage of MOBILE-54 as its `customStorage`, so it captures nothing and stores nothing
+until consent is granted, and SHALL opt it in at launch when that storage holds a grant from an
+earlier launch; and in `memory` mode with `persistence: 'memory'`, so it captures but keeps
+nothing on the device. Each mode adds nothing else to the `granted` options.
+
+**Evidence:** `apps/mobile/src/lib/posthog/posthogClient.constant.ts:49-53`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:26-48`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:62-86`
+
+#### Scenario: `opt-in`
+
+- **GIVEN** a key and the consent mode `opt-in`
+- **WHEN** the client is constructed
+- **THEN** its options are the `granted` ones opted out by default and writing through the
+  consent storage
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "starts opt-in mode opted out, writing through the consent storage"
+
+#### Scenario: a grant from an earlier launch
+
+- **GIVEN** a key, the consent mode `opt-in` and a grant stored by an earlier launch
+- **WHEN** the client module loads
+- **THEN** the client is opted in
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "opts in at launch after a grant from an earlier launch"
+
+#### Scenario: `memory`
+
+- **GIVEN** a key and the consent mode `memory`
+- **WHEN** the client is constructed
+- **THEN** its options are the `granted` ones with memory persistence
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "starts memory mode with memory persistence"
+
+### Requirement: MOBILE-54 — The consent storage writes to the device only after a grant
+
+The mobile app SHALL give PostHog, in `opt-in` mode, a storage that keeps every value it is
+handed in memory until consent is granted; on a grant writes a grant marker, the held values and
+every later value to AsyncStorage under its own prefix; reads the marker back at the next launch;
+and on a revoke stops writing to the device and removes the marker and every key it wrote or
+read.
+
+**Evidence:** `apps/mobile/src/lib/posthog/consentStorage.adapter.ts:22-87`, `apps/mobile/src/lib/posthog/consentStorage.constant.ts:3-8`
+
+#### Scenario: before a grant
+
+- **GIVEN** a consent storage with no earlier grant
+- **WHEN** PostHog writes a value and reads it back
+- **THEN** it reads the value, and AsyncStorage holds nothing
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "keeps every value off the device before a grant"
+
+#### Scenario: a grant
+
+- **GIVEN** a consent storage holding a value written before a grant
+- **WHEN** it is opened, and PostHog writes another value
+- **THEN** AsyncStorage holds the marker and both values under the storage's prefix
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "writes the held values and every later one to the device after a grant"
+
+#### Scenario: the next launch
+
+- **GIVEN** a grant and a value written by an earlier consent storage
+- **WHEN** a new consent storage is created
+- **THEN** it reads as granted and returns the stored value
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "reads a grant from an earlier launch back from the device"
+
+#### Scenario: a revoke
+
+- **GIVEN** a granted consent storage with values on the device
+- **WHEN** it is closed, and PostHog writes another value
+- **THEN** AsyncStorage holds nothing, and the storage reads as not granted
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "removes every value it wrote on a revoke and writes none after"
+
+### Requirement: MOBILE-55 — The consent API grants, revokes and reads the status
+
+The mobile app SHALL export a consent API, the `IConsentPort` of packages/core, from its
+observability barrel, bound to PostHog in the composition root `consent.adapter.ts`. In `opt-in`
+mode with a client, `grant` SHALL open the consent storage and then opt PostHog in; `revoke`
+SHALL close the consent storage and then opt PostHog out and reset it keeping no property, the
+device id included; and `getStatus` SHALL read
+`granted` while the storage holds a grant, `denied` after a revoke in the same launch, and
+`pending` otherwise. In `granted` and `memory` mode and without a key, `getStatus` SHALL read
+`not-required`, and `grant` and `revoke` SHALL call nothing on PostHog.
+
+**Evidence:** `apps/mobile/src/lib/observability/createPostHogConsent.adapter.ts:21-51`, `apps/mobile/src/lib/observability/createPostHogConsent.constant.ts:3`, `apps/mobile/src/lib/observability/consent.adapter.ts:7`, `apps/mobile/src/lib/observability/index.ts:1`
+
+#### Scenario: before a choice
+
+- **GIVEN** a key and the consent mode `opt-in`
+- **WHEN** the status is read before any grant or revoke
+- **THEN** it is `pending` and PostHog was not opted in
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "reads pending and opts nothing in before a choice in opt-in mode"
+
+#### Scenario: a grant
+
+- **GIVEN** a key and the consent mode `opt-in`
+- **WHEN** consent is granted
+- **THEN** the consent storage holds a grant, PostHog is opted in and the status reads `granted`
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "grant opens the consent storage, opts PostHog in and reads granted"
+
+#### Scenario: a revoke
+
+- **GIVEN** a key, the consent mode `opt-in` and a grant
+- **WHEN** consent is revoked
+- **THEN** AsyncStorage holds nothing, PostHog is opted out and reset keeping no property, and
+  the status reads `denied`
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "revoke closes the consent storage, opts PostHog out, resets it and reads denied"
+
+#### Scenario: a mode that asks no consent
+
+- **GIVEN** a key and the consent mode `granted`, then `memory`
+- **WHEN** consent is granted, revoked and read
+- **THEN** PostHog receives no consent call and the status reads `not-required`
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "changes nothing and reads not-required outside opt-in mode"
+
+#### Scenario: no key
+
+- **GIVEN** the consent mode `opt-in` and no key
+- **WHEN** consent is granted, revoked and read
+- **THEN** nothing throws, no client exists and the status reads `not-required`
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "changes nothing and reads not-required without a key"
+
+#### Scenario: the composition root
+
+- **GIVEN** a key, the consent mode `opt-in` and the SDK replaced at its module
+- **WHEN** consent is granted through the barrel's `consent`
+- **THEN** PostHog is opted in
+- **Test:** `apps/mobile/src/lib/observability/__tests__/consent.adapter.test.ts` › "binds the PostHog consent by default"
 
 ## Open questions
 

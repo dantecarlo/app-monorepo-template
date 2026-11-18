@@ -3,14 +3,14 @@
 > **Governs:** `packages/core/src`
 > **ID prefix:** `CORE`
 > **Derived from:** `AGENTS.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/maps/global-map.md`
-> **Verified against the code:** 2026-11-17 at `276489d`
+> **Verified against the code:** 2026-11-18 at `081ca06`
 
 ## Purpose
 
 The core package is the framework-agnostic domain layer the apps and the adapter packages build
 on. It holds the typed `AppError` and its service-error mapping, and the PII scrubber and
 query-key sanitizer that observability sinks rely on. It declares the ports (auth gateway,
-backend client, bot protection, image delivery, observability, origin guard) and ships
+backend client, bot protection, consent, image delivery, observability, origin guard) and ships
 vendor-free defaults for four of them. The vendor implementations live elsewhere: the auth
 gateway, backend client and service-error mapper in packages/supabase; the origin guard, bot
 protection and image delivery in packages/cloudflare; the catalogs the message keys resolve in,
@@ -789,6 +789,28 @@ every payload scrubbed, logs nothing while switched off, and logs a `null` user 
 - **WHEN** the port contract runs against it
 - **THEN** every case passes
 - **Test:** `packages/core/src/ports/observability/__tests__/createConsoleObservability.helper.test.ts` › "the observability port contract"
+
+### Requirement: CORE-27 — The consent port
+
+The core package SHALL declare the consent port, `IConsentPort`, whose `grant`, `revoke` and
+`getStatus` each return a promise, and `ConsentStatusEnum` with the statuses `granted`,
+`denied`, `pending` and `not-required`, both exported from its barrel and free of any vendor.
+
+**Evidence:** `packages/core/src/ports/consent/IConsentPort.type.ts:5-9`, `packages/core/src/ports/consent/consentStatus.type.ts:3-11`, `packages/core/src/index.ts:34-36`
+
+#### Scenario: the statuses
+
+- **GIVEN** the core barrel
+- **WHEN** `ConsentStatusEnum` is read
+- **THEN** it holds exactly `granted`, `denied`, `pending` and `not-required`
+- **Test:** `packages/core/src/ports/consent/__tests__/consentStatus.type.test.ts` › "names the four consent statuses"
+
+#### Scenario: an app implements the port
+
+- **GIVEN** the web app's consent composition root, typed as `IConsentPort`
+- **WHEN** consent is granted through it
+- **THEN** its provider receives the grant
+- **Test:** `apps/web/src/lib/observability/__tests__/consent.adapter.test.ts` › "binds the PostHog consent by default"
 
 ## Open questions
 

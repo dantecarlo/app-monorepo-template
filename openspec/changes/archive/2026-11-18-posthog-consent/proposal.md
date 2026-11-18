@@ -1,6 +1,6 @@
 # Proposal: a consent mode for PostHog, and a consent API the apps own
 
-> **Status:** open
+> **Status:** archived — 2026-11-18
 
 ## Why
 
