@@ -5,23 +5,21 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { useToastStore } from '@/stores/toast.store'
 import { act, render, screen, within } from '@/test/test.helper'
 
+const { mockHoldSplashScreen, mockUseAppBootstrap } = vi.hoisted(() => ({
+  mockHoldSplashScreen: vi.fn(),
+  mockUseAppBootstrap: vi.fn(() => ({ isReady: true }))
+}))
+
 vi.mock('expo-router', () => ({ Stack: () => 'routes' }))
-vi.mock('expo-splash-screen', () => ({
-  hideAsync: vi.fn(),
-  preventAutoHideAsync: vi.fn()
-}))
 vi.mock('@/components/ui/StatusBar', () => ({ StatusBar: () => null }))
-vi.mock('@expo-google-fonts/inter', () => ({
-  Inter_400Regular: 'Inter_400Regular',
-  Inter_500Medium: 'Inter_500Medium'
+// The splash screen and the fonts act only in a native or web build: the
+// root layout reaches both through lib/bootstrap, which the test replaces.
+vi.mock('@/lib/bootstrap/splashScreen.adapter', () => ({
+  hideSplashScreen: vi.fn(),
+  holdSplashScreen: mockHoldSplashScreen
 }))
-vi.mock('@expo-google-fonts/montserrat', () => ({
-  Montserrat_400Regular: 'Montserrat_400Regular',
-  Montserrat_500Medium: 'Montserrat_500Medium',
-  Montserrat_600SemiBold: 'Montserrat_600SemiBold',
-  Montserrat_700Bold: 'Montserrat_700Bold',
-  Montserrat_800ExtraBold: 'Montserrat_800ExtraBold',
-  useFonts: () => [true, null]
+vi.mock('@/lib/bootstrap/useAppBootstrap.hook', () => ({
+  useAppBootstrap: mockUseAppBootstrap
 }))
 vi.mock('@/lib/supabase/client.adapter', () => ({ supabase: {} }))
 // The root layout binds observability to PostHog, whose package cannot load
@@ -59,6 +57,18 @@ describe('RootLayout', () => {
         'Could not save the item'
       )
     ).toBeTruthy()
+  })
+
+  test('holds the splash screen through lib/bootstrap as it loads', () => {
+    expect(mockHoldSplashScreen).toHaveBeenCalledOnce()
+  })
+
+  test('renders no route until the bootstrap is ready', () => {
+    mockUseAppBootstrap.mockReturnValueOnce({ isReady: false })
+
+    render(<RootLayout />)
+
+    expect(screen.queryByText('routes')).toBeNull()
   })
 
   test('exports the root error boundary as its ErrorBoundary', () => {
