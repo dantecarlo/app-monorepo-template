@@ -215,7 +215,8 @@ never a silent default.
   layer's `branchTypes`: the ticket type by default, or the Conventional Commit type of the table
   below when the layer says so. A layer may, for example, use ids such as `TASK-<slug>` with an
   optional slug, so a branch reads `feat/TASK-min-app-version-app`. When the slug is optional and
-  `idPattern` matches everything after the prefix, the branch has no slug.
+  `idPattern` matches everything after the prefix, the branch has no slug: the whole tail is the id,
+  and the pull request body must name all of it (`TASK-min-app-version-app`, not `TASK-min-app`).
   `scripts/verify-ticket-branch.mjs` checks the branch under the layer's identity and that the
   pull request body names the id; a project may run it in its CI
   (`pnpm verify:ticket-branch --branch "$HEAD_REF" --body "$PR_BODY"`), a decision its layer
