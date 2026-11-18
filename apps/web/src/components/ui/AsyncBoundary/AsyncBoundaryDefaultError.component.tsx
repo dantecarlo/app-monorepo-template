@@ -1,14 +1,14 @@
 'use client'
 
 import type { JSX } from 'react'
-import type { FallbackProps } from 'react-error-boundary'
 
+import type { IAsyncBoundaryFallbackProps } from '@/components/ui/AsyncBoundary/AsyncBoundary.type'
 import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 
 export const AsyncBoundaryDefaultError = ({
   error,
   resetErrorBoundary
-}: FallbackProps): JSX.Element => {
+}: IAsyncBoundaryFallbackProps): JSX.Element => {
   const { t } = useAppTranslator()
 
   return (

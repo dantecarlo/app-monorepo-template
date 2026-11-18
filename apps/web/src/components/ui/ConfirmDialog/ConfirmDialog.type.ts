@@ -1,10 +1,6 @@
-import type { VariantProps } from 'tailwind-variants'
+import type { ConfirmDialogToneType } from '@/components/ui/ConfirmDialog/ConfirmDialog.constant'
 
-import { confirmButtonVariants } from '@/components/ui/ConfirmDialog/ConfirmDialog.style'
-
-export interface IConfirmDialogProps extends VariantProps<
-  typeof confirmButtonVariants
-> {
+export interface IConfirmDialogProps {
   cancelLabel?: string
   confirmLabel?: string
   isOpen: boolean
@@ -12,4 +8,5 @@ export interface IConfirmDialogProps extends VariantProps<
   onCancel: () => void
   onConfirm: () => void
   title?: string
+  tone?: ConfirmDialogToneType
 }

@@ -1,5 +1,5 @@
 import { themeNames } from '@app/tokens'
-import { createTV } from 'tailwind-variants'
+import { createTV, type VariantProps } from 'tailwind-variants'
 
 // The one `tv` every ui block builds its variants with.
 //
@@ -25,3 +25,17 @@ const THEME = Object.fromEntries(
 )
 
 export const tv = createTV({ twMergeConfig: { extend: { theme: THEME } } })
+
+// The variants a block built with tv takes: each variant's name, required, to
+// the union of its option names, an option `true` read as a boolean. A block's
+// props never name it, nor any type of the kit: they use the unions its
+// *.constant.ts declares, and the block's constant test compares those with
+// this type, so typecheck fails when the unions and the config disagree.
+export type VariantUnionsType<
+  TVariants extends (...args: never[]) => unknown
+> = {
+  [TName in keyof VariantProps<TVariants>]-?: Exclude<
+    VariantProps<TVariants>[TName],
+    undefined
+  >
+}

@@ -130,7 +130,12 @@ export default LoginPage
   with the shared `tv` of `components/ui/variants.helper.ts`, which registers every token name
   with tailwind-merge from the generated `themeNames` of `@app/tokens`: of two token classes of
   one utility only the last stays (`p-sm p-lg` is `p-lg`), a token size (`text-button`) is never
-  read as a colour, and a token shadow stays beside a shadow colour.
+  read as a colour, and a token shadow stays beside a shadow colour. A block's props name no kit
+  type: its variants are unions its `*.constant.ts` declares, held to its `tv` config by
+  `__tests__/<Block>.constant.test.ts` through `VariantUnionsType` of the helper, the one file
+  that imports `tailwind-variants`. An image is `ui/Image`, the only file that imports
+  `next/image`, and the async boundary's fallback takes its own `IAsyncBoundaryFallbackProps`; a
+  test mocks those blocks, never the library.
 - **i18n: `next-intl`, behind `src/lib/i18n/`**, reading the shared `@app/i18n` ICU catalogs —
   same keys and the same translator as mobile, a different runtime. A block calls
   `useAppTranslator()` (`useAppTranslator.hook.ts`), a server component awaits

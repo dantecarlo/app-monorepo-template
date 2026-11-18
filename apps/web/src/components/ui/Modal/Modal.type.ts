@@ -1,14 +1,12 @@
 import type { ReactNode } from 'react'
-import type { VariantProps } from 'tailwind-variants'
 
-import { modalPanelVariants } from '@/components/ui/Modal/Modal.style'
+import type { ModalSizeType } from '@/components/ui/Modal/Modal.constant'
 
-export interface IModalProps extends VariantProps<
-  typeof modalPanelVariants
-> {
+export interface IModalProps {
   children?: ReactNode
   isOpen: boolean
   onClose: () => void
+  size?: ModalSizeType
   title?: string
 }
 

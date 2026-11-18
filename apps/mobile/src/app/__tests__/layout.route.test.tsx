@@ -10,7 +10,7 @@ vi.mock('expo-splash-screen', () => ({
   hideAsync: vi.fn(),
   preventAutoHideAsync: vi.fn()
 }))
-vi.mock('expo-status-bar', () => ({ StatusBar: () => null }))
+vi.mock('@/components/ui/StatusBar', () => ({ StatusBar: () => null }))
 vi.mock('@expo-google-fonts/inter', () => ({
   Inter_400Regular: 'Inter_400Regular',
   Inter_500Medium: 'Inter_500Medium'

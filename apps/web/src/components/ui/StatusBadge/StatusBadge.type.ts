@@ -1,9 +1,6 @@
-import type { VariantProps } from 'tailwind-variants'
+import type { StatusBadgeToneType } from '@/components/ui/StatusBadge/StatusBadge.constant'
 
-import { statusBadgeVariants } from '@/components/ui/StatusBadge/StatusBadge.style'
-
-export interface IStatusBadgeProps extends VariantProps<
-  typeof statusBadgeVariants
-> {
+export interface IStatusBadgeProps {
   label: string
+  tone?: StatusBadgeToneType
 }

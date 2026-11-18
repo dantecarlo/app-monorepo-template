@@ -5,9 +5,12 @@ import { dirname, join } from 'node:path'
 import { fontSize, glyphSize, motion, themeNames } from '@app/tokens'
 import { getDefaultConfig, twMerge } from 'tailwind-merge'
 import { compile } from 'tailwindcss'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, expectTypeOf, test } from 'vitest'
 
-import { tv } from '@/components/ui/variants.helper'
+import {
+  tv,
+  type VariantUnionsType
+} from '@/components/ui/variants.helper'
 
 // The Tailwind key of a token, as the tokens preset writes it: the token
 // amountHero is the utility text-amount-hero.
@@ -216,5 +219,31 @@ describe('variants helper', () => {
     expect(listed.filter((candidate) => !hasRule(candidate))).toEqual([])
     expect(hasRule('duration-300')).toBe(true)
     expect(durations.filter(hasRule)).toEqual([])
+  })
+
+  test('reads the variants a tv config takes, and tells a union that drops or adds an option from them', () => {
+    const probe = tv({
+      variants: {
+        size: { lg: 'p-lg', sm: 'p-sm' },
+        wide: { true: 'w-full' }
+      }
+    })
+
+    expect(probe({ size: 'lg', wide: true })).toBe('p-lg w-full')
+    expectTypeOf<VariantUnionsType<typeof probe>>().toEqualTypeOf<{
+      size: 'lg' | 'sm'
+      wide: boolean
+    }>()
+    expectTypeOf<VariantUnionsType<typeof probe>>().not.toEqualTypeOf<{
+      size: 'lg'
+      wide: boolean
+    }>()
+    expectTypeOf<VariantUnionsType<typeof probe>>().not.toEqualTypeOf<{
+      size: 'lg' | 'md' | 'sm'
+      wide: boolean
+    }>()
+    expectTypeOf<VariantUnionsType<typeof probe>>().not.toEqualTypeOf<{
+      size: 'lg' | 'sm'
+    }>()
   })
 })

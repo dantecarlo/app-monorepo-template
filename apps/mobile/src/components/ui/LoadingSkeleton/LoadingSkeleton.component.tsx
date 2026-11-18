@@ -1,7 +1,7 @@
-import { LinearGradient } from 'expo-linear-gradient'
 import { View } from 'react-native'
 import Animated from 'react-native-reanimated'
 
+import { Gradient } from '@/components/ui/Gradient/Gradient.component'
 import {
   LOADING_SKELETON_STYLES,
   ROUNDED_BY_VARIANT,
@@ -37,7 +37,7 @@ export const LoadingSkeleton = ({
       <Animated.View
         style={[SKELETON_SHIMMER_STYLES.shimmer, animatedStyle]}
       >
-        <LinearGradient
+        <Gradient
           colors={[
             SKELETON_SHIMMER_START,
             shimmerMid,

@@ -1,8 +1,14 @@
-import { colors, fontFamily, fontSize, themes } from '@app/tokens'
-import { colorScheme } from 'nativewind'
+import {
+  colors,
+  fontFamily,
+  fontSize,
+  ThemeEnum,
+  themes
+} from '@app/tokens'
 import { afterEach, describe, expect, test } from 'vitest'
 
 import { Text } from '@/components/ui/Text/Text.component'
+import { applyTheme } from '@/lib/theme/colorScheme.adapter'
 import { render, screen } from '@/test/test.helper'
 
 // The mobile tests run without the DOM lib: this is the part of a rendered
@@ -21,7 +27,7 @@ const styleOf = (node: unknown) =>
 
 describe('Text', () => {
   afterEach(() => {
-    colorScheme.set('dark')
+    applyTheme({ theme: ThemeEnum.DARK })
   })
 
   test("renders a variant's typography", () => {
@@ -58,7 +64,7 @@ describe('Text', () => {
   })
 
   test("paints a variant in the active theme's colour", () => {
-    colorScheme.set('light')
+    applyTheme({ theme: ThemeEnum.LIGHT })
     render(<Text variant="caption">Updated</Text>)
 
     expect(styleOf(screen.getByText('Updated'))).toEqual({

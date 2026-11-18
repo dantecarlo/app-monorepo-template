@@ -1,9 +1,11 @@
 import type { HTMLAttributes } from 'react'
-import type { VariantProps } from 'tailwind-variants'
 
-import { glassCardVariants } from '@/components/ui/GlassCard/GlassCard.style'
+import type {
+  GlassCardPaddingType,
+  GlassCardRadiusType
+} from '@/components/ui/GlassCard/GlassCard.constant'
 
-export interface IGlassCardProps
-  extends
-    HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof glassCardVariants> {}
+export interface IGlassCardProps extends HTMLAttributes<HTMLDivElement> {
+  padding?: GlassCardPaddingType
+  radius?: GlassCardRadiusType
+}

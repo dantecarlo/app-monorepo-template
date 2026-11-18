@@ -1,13 +1,13 @@
-import type { FallbackProps } from 'react-error-boundary'
 import { Pressable, Text, View } from 'react-native'
 
 import { ASYNC_BOUNDARY_STYLES as styles } from '@/components/ui/AsyncBoundary/AsyncBoundary.style'
+import type { IAsyncBoundaryFallbackProps } from '@/components/ui/AsyncBoundary/AsyncBoundary.type'
 import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 
 export const AsyncBoundaryDefaultError = ({
   error,
   resetErrorBoundary
-}: FallbackProps) => {
+}: IAsyncBoundaryFallbackProps) => {
   const { t } = useAppTranslator()
 
   return (
