@@ -103,7 +103,7 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 **Next:** F.8, every library behind an adapter (decisions 51 and 52).
 
 **Pending, in order:**
-- F.8 and F.11 of Stage F, and the small follow-ups F43 to F45 and F48 to F50.
+- F.8 and F.11 of Stage F, and the small follow-ups F43, F44 and F48 to F50.
 - F33, when the owner decides it.
 - Step 3.2 part B: `gradedBy`, `sdd-steward` and `verify:router-coverage` (F27).
 - Step 3.3, then Stages 4 to 7.
@@ -495,7 +495,7 @@ defects behind them, for changes of their own.
 | F42 | harness | `.claude/skill-registry.md` lacks `archify`, `general-plan`, `propagate-from-template` and `sdd` (it was stale before the ticket flow added its seven) | done: this change |
 | F43 | both apps | when the items query fails, the stats card still shows a total of 0 beside the `ErrorState` (F37 fixed only the list caption) | small |
 | F44 | harness | `runtime-verify` and `validate-all` declare no `USE WHEN:` in their frontmatter, so the regenerated registry flags them | small; the `improve-skill` flow |
-| F45 | apps/mobile | Expo published `expo` 58.0.26 and `expo-router` 58.0.32 on 2026-11-17 at 12:01 UTC, and CI's `expo-health` fails every branch on the patch mismatch; pnpm 11's `minimumReleaseAge` (24 hours) refuses them until 2026-11-18 at 12:01 UTC, and the owner chose to wait rather than add exceptions | small; bump them after 2026-11-18 12:01 UTC, with no `minimumReleaseAgeExclude` |
+| F45 | apps/mobile | Expo published `expo` 58.0.26 and `expo-router` 58.0.32 on 2026-11-17 at 12:01 UTC, and CI's `expo-health` fails every branch on the patch mismatch; pnpm 11's `minimumReleaseAge` (24 hours) refuses them until 2026-11-18 at 12:01 UTC, and the owner chose to wait rather than add exceptions | done: this change, on 2026-11-18 after 12:04 UTC, with no exclude entry |
 | F46 | both apps, privacy | PostHog keeps a distinct id in a cookie or local storage and records the client IP unless the project discards it, which some jurisdictions treat as needing consent; and its URL scrub drops the query and fragment but not a secret inside a path segment (`/reset/<token>`), found by the native review | owner decision: a consent mode (opt-out until consent, or memory-only persistence) and whether `/init` asks it |
 | F47 | apps/web | without Sentry, an error thrown only on the web server is not captured; PostHog captures it server-side only through `posthog-node`, a new dependency | owner decision: add `posthog-node` |
 | F48 | apps/web | `posthog-js` ships in the client bundle even without a key, one chunk of about 374 KB before compression; load it only when a key is set | small |
