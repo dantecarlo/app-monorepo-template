@@ -8,6 +8,8 @@
     "eslint-style-positioning-allowlist.json",
     "eslint.config.mjs",
     "eslint.rules.mjs",
+    "scripts/dependency-seams.detect.mjs",
+    "scripts/eslint-config.detect.mjs",
     "tsconfig.base.json"
   ],
   "tasks": {

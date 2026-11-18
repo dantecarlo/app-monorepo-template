@@ -3,7 +3,7 @@
 > **Governs:** `packages/core/src`
 > **ID prefix:** `CORE`
 > **Derived from:** `AGENTS.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/maps/global-map.md`
-> **Verified against the code:** 2026-11-18 at `e43870d`
+> **Verified against the code:** 2026-11-18 at `2dbc432`
 
 ## Purpose
 
@@ -730,7 +730,7 @@ The core package SHALL reach the host console only through `hostConsole`, which 
 The core package SHALL import, in its production files, nothing from outside itself: no
 package, no `@/` alias, no `#` key but `#src/`, and no `node:` builtin.
 
-**Evidence:** `eslint-local-rules/index.mjs:504-531`, `eslint.config.mjs:138-140`,
+**Evidence:** `eslint-local-rules/index.mjs:504-531`, `eslint.config.mjs:299-301`,
 `packages/core/package.json:12-14`
 
 #### Scenario: a framework import

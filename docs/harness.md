@@ -203,15 +203,18 @@ was being broken with nothing to notice.
 | `local/no-inline-tailwind-classname` | views                          | Classes live in `*.style.ts`                 |
 | `local/single-object-params`         | everywhere                     | Rule 5                                       |
 | `local/no-non-ascii-identifier`      | everywhere                     | §15 — English everywhere                     |
-| `local/style-positions-only`         | both apps, outside the component blocks | §22 — a screen or section only positions |
-| `local/style-token-values`           | every style file and view of both apps | §22 — every value is a token        |
-| `local/ui-kit-boundary`              | both apps, outside `components/ui` | §22 — only `ui/` imports a UI kit        |
+| `local/style-positions-only`         | every app, outside the component blocks | §22 — a screen or section only positions |
+| `local/style-token-values`           | every style file and view of every app | §22 — every value is a token        |
+| `local/ui-kit-boundary`              | every app, outside `components/ui` | §22 — only `ui/` imports a UI kit        |
 | `local/dependency-seam`              | `apps/*/**` and `packages/*/**`, by pattern | §23 — every package registered, imported only inside its seam |
 
-`local/dependency-seam` is the only rule wired by pattern rather than per app: its block in
-`eslint.rules.mjs` registers the plugin itself, so an app added under `apps/` is judged with no
-config change. `eslint-local-rules/__fixtures__/apps/fixture/` proves it: the lint-rule tests lint
-those files through the real `eslint.config.mjs` as `apps/fixture/`.
+Every rule is wired by pattern, never per app (`docs/code-standards.md` § 24): a shared rule set
+reaches `apps/*/**` and `packages/*/**`, and a framework's block (React, Next.js, Expo) reaches
+every app whose `package.json` declares it, read by `scripts/eslint-config.detect.mjs` when the
+config loads. So an app added under `apps/` is judged with no config change. The fixture apps under
+`eslint-local-rules/__fixtures__/apps/` prove it: the lint-rule tests lint them through the config
+`eslint.config.mjs` builds for that folder (`createConfig`), as `apps/<fixture>/`, and a plain
+React app is refused for a violation of every shared rule family.
 
 ---
 

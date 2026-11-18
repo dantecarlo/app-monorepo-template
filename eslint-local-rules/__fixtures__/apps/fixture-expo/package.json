@@ -1,0 +1,8 @@
+{
+  "name": "@fixture/expo-app",
+  "private": true,
+  "dependencies": {
+    "expo": "*",
+    "react": "*"
+  }
+}

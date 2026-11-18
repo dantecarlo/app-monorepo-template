@@ -60,10 +60,10 @@ export const isUiKitSource = (source) => {
   )
 }
 
-const APP_SOURCE_RE = /(?:^|\/)(apps\/(?:web|mobile)\/src\/.+)$/
+const APP_SOURCE_RE = /(?:^|\/)(apps\/[^/]+\/src\/.+)$/
 const TEST_PATH_RE =
-  /(?:^|\/)(?:__tests__|__mocks__)\/|\.(?:test|spec)\.[cm]?[jt]sx?$|^apps\/(?:web|mobile)\/src\/test\//
-const UI_BLOCK_RE = /^apps\/(?:web|mobile)\/src\/components\/ui\//
+  /(?:^|\/)(?:__tests__|__mocks__)\/|\.(?:test|spec)\.[cm]?[jt]sx?$|^apps\/[^/]+\/src\/test\//
+const UI_BLOCK_RE = /^apps\/[^/]+\/src\/components\/ui\//
 
 // True when the file may not import a UI kit: an app source file outside
 // components/ui, tests and test infrastructure excepted.
