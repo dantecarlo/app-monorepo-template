@@ -3,7 +3,7 @@
 > **Governs:** `apps/web/src`, `apps/web/next.config.ts`, `apps/web/next-sentry.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-18 at `15a7106`
+> **Verified against the code:** 2026-11-18 at `68ed6e3`
 
 ## Purpose
 
@@ -1823,7 +1823,7 @@ blocking the record included, and `pending` otherwise. In `granted` and `memory`
 SHALL read `not-required`, and `grant` and `revoke` SHALL load nothing and call nothing on
 PostHog.
 
-**Evidence:** `apps/web/src/lib/observability/createPostHogConsent.adapter.ts:36-79`, `apps/web/src/lib/observability/createPostHogConsent.constant.ts:7-14`, `apps/web/src/lib/posthog/grantRecord.adapter.ts:23-43`, `apps/web/src/lib/posthog/grantRecord.constant.ts:4-6`, `apps/web/src/lib/observability/consent.adapter.ts:7`, `apps/web/src/lib/observability/index.ts:1`
+**Evidence:** `apps/web/src/lib/observability/createPostHogConsent.adapter.ts:36-76`, `apps/web/src/lib/observability/createPostHogConsent.constant.ts:7-14`, `apps/web/src/lib/posthog/grantRecord.adapter.ts:23-43`, `apps/web/src/lib/posthog/grantRecord.constant.ts:4-6`, `apps/web/src/lib/observability/consent.adapter.ts:7`, `apps/web/src/lib/observability/index.ts:1`
 
 #### Scenario: before a choice
 
@@ -2033,7 +2033,7 @@ when the queue is full, and hand every held call to the SDK in order once it loa
 all if it fails to load; and drop it while no load has started: without a key, on the server, in
 `opt-in` mode before a grant and after a revoke.
 
-**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:23-66`, `apps/web/src/lib/posthog/deferredClient.helper.ts:16-66`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:39-40`, `apps/web/src/lib/posthog/posthogClient.constant.ts:51`
+**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:23-66`, `apps/web/src/lib/posthog/deferredClient.helper.ts:17-78`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:39-40`, `apps/web/src/lib/posthog/posthogClient.constant.ts:51`
 
 #### Scenario: the SDK loading
 

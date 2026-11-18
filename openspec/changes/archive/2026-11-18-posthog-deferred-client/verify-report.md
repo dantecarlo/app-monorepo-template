@@ -65,6 +65,13 @@ fixed in `fbdfd6f` and `15a7106`, each against a test that ran first:
 | Mobile: a revoke landing while the launch restores an earlier grant could leave PostHog opted in | none: the consent storage settles its first read before either the restore or the revoke goes on, and the restore asks first, so the revoke always opts out the client the restore built; the test pins it, and asserts the restore did opt in |
 | Mobile: the pre-grant drop test called one method | none, a coverage gap: the test now reports a message, a breadcrumb, a user and a cleared user too |
 
+The native review of `fbdfd6f`, raised for item 2, approved it with three advisory findings. Two said the
+interrupted load now handed its client to every caller of `start`; `68ed6e3` hands it to the stop only,
+against "stop forgets the client and the held calls, during a load too" and "stop hands over the loaded
+client, or none while nothing has loaded", red first (`expected { receive: [Function Mock] } to be
+undefined`). The third, that a grant after a revoke might read `pending`, does not hold: the grant
+clears the revoke, and "grants again after a revoke with the SDK it already loaded" reads `granted`.
+
 Two more are row F56 of `docs/INIT_AND_HARNESS_PLAN.md`: a dropped mobile client is not shut down,
 and one held web call that throws loses the calls after it.
 
