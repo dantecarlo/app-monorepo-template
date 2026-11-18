@@ -5,16 +5,6 @@
     "reason": "F.8 unit 7: the opaque Supabase client, behind lib/supabase, takes this import; the test then mocks the project module, not the vendor."
   },
   {
-    "path": "apps/mobile/src/app/__tests__/layout.route.test.tsx",
-    "package": "nativewind",
-    "reason": "F.8 unit 6: lib/bootstrap takes the root layout's theme, and this import with it; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/app/__tests__/layout.route.test.tsx",
-    "package": "posthog-react-native",
-    "reason": "F.8 unit 6: lib/bootstrap takes the root layout's providers, and this import with them; the test then mocks the project module, not the vendor."
-  },
-  {
     "path": "apps/mobile/src/app/_layout.tsx",
     "package": "@app/supabase",
     "reason": "F.8 unit 7: the opaque Supabase client, behind lib/supabase, takes this import."

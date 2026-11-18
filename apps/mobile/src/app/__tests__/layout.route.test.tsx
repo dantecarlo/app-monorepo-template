@@ -1,7 +1,7 @@
-import { themeVars } from '@app/tokens'
-import { colorScheme } from 'nativewind'
+import { ThemeEnum, themeVars } from '@app/tokens'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
+import { applyTheme } from '@/lib/theme/colorScheme.adapter'
 import { useToastStore } from '@/stores/toast.store'
 import { act, render, screen, within } from '@/test/test.helper'
 
@@ -22,9 +22,11 @@ vi.mock('@/lib/bootstrap/useAppBootstrap.hook', () => ({
   useAppBootstrap: mockUseAppBootstrap
 }))
 vi.mock('@/lib/supabase/client.adapter', () => ({ supabase: {} }))
-// The root layout binds observability to PostHog, whose package cannot load
-// under the test environment.
-vi.mock('posthog-react-native', () => ({ PostHog: class {} }))
+// The root layout's observability binding starts PostHog, whose package
+// cannot load under the test environment.
+vi.mock('@/lib/observability/observability.adapter', () => ({
+  observability: { captureError: vi.fn() }
+}))
 vi.mock('@app/supabase', () => ({
   createSupabaseAuthGateway: () => ({
     getSession: vi.fn().mockResolvedValue(null),
@@ -40,7 +42,7 @@ import { RootErrorBoundary } from '@/components/RootErrorBoundary'
 describe('RootLayout', () => {
   afterEach(() => {
     useToastStore.getState().clear()
-    colorScheme.set('dark')
+    applyTheme({ theme: ThemeEnum.DARK })
   })
 
   test('shows a toast added to the store over the routes', () => {
@@ -76,7 +78,7 @@ describe('RootLayout', () => {
   })
 
   test('wraps the routes in the variables of the active theme', () => {
-    colorScheme.set('light')
+    applyTheme({ theme: ThemeEnum.LIGHT })
     render(<RootLayout />)
 
     const frame = (

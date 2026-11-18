@@ -34,6 +34,7 @@ const launch = async ({ appearance, stored }: ILoadParams = {}) => {
 
 afterEach(() => {
   vi.doUnmock('@/lib/storage')
+  vi.doUnmock('@/lib/theme/colorScheme.adapter')
   vi.restoreAllMocks()
 })
 
@@ -61,4 +62,24 @@ test('stores a chosen theme in the device storage and applies it', async () => {
 
   expect(await device.getItem({ key: THEME_KEY })).toBe(ThemeEnum.LIGHT)
   expect(colorScheme.get()).toBe(ThemeEnum.LIGHT)
+})
+
+test('applies the start-up theme and a chosen one through applyTheme', async () => {
+  const applyTheme = vi.fn()
+  vi.doMock('@/lib/theme/colorScheme.adapter', async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import('@/lib/theme/colorScheme.adapter')
+      >()
+    applyTheme.mockImplementation(actual.applyTheme)
+    return { applyTheme }
+  })
+  const { config } = await launch({ stored: ThemeEnum.LIGHT })
+
+  await config.setTheme(ThemeEnum.DARK)
+
+  expect(applyTheme.mock.calls).toEqual([
+    [{ theme: ThemeEnum.LIGHT }],
+    [{ theme: ThemeEnum.DARK }]
+  ])
 })
