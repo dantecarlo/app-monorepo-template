@@ -168,7 +168,10 @@
     {
       "name": "react-error-boundary",
       "category": "ui",
-      "seam": ["apps/*/src/components/ui/AsyncBoundary/**"]
+      "seam": [
+        "apps/*/src/components/ui/AsyncBoundary/AsyncBoundary.component.tsx"
+      ],
+      "note": "Behind the AsyncBoundary block, whose fallback takes the block's own IAsyncBoundaryFallbackProps, so only its component file names the library."
     },
     {
       "name": "expo-blur",
