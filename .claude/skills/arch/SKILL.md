@@ -72,7 +72,7 @@ exist, naming and structure are mandatory.
 | --------------- | ----------------------------------------------------- | ------------------------------------------------- |
 | Domain / Core   | Ports (IAuthGateway, IBackendClientProvider), AppError, scrubPII | No framework or vendor imports. Lives in `@app/core`. |
 | Application     | Hooks that orchestrate ports, the `lib/query` hooks   | No UI framework imports in business logic         |
-| Infrastructure  | Service functions, adapters, store slices             | Reach TanStack Query through `lib/query`, zustand through `createAppStore`, Supabase through its port |
+| Infrastructure  | Service functions, adapters, store slices             | Reach TanStack Query through `lib/query`, zustand through `createAppStore`, Supabase through its port, and on web Next's router and cache through `lib/routing` and `lib/cache` |
 | Presentation    | Components, screens, pages                            | May import any, but no direct data fetching       |
 
 **Dependency direction**: inward only. Domain depends on nothing. Outer layers
@@ -466,7 +466,7 @@ component), with full keys: `t('items.dashboard.title')`. It is the same
 | ------------- | ------------------------ | ---------------------------------- |
 | Routing       | `app/` directory         | `app/` directory                   |
 | Styling       | Tailwind + `*.style.ts`  | NativeWind or StyleSheet + `*.style.ts`  |
-| Nav hook      | `useRouter` (next/navigation) | `useRouter` (expo-router)     |
+| Nav hook      | `useAppRouter` of `lib/routing` (over next/navigation) | `useRouter` (expo-router; behind `lib/routing` in F.8 unit 8) |
 | State/query   | `createAppStore` + `lib/query` (zustand + TanStack Query) | Same, persisting through `keyValueStorage` |
 | `'use client'`| Required for hooks/interactivity | Not applicable             |
 

@@ -305,3 +305,4 @@ query's `refetch` as its retry. Only a mutation's failure is a toast.
 | Access Supabase only via port/adapter         | Import Supabase SDK directly in features   |
 | Export service + adapter only from barrel     | Export constants or tests from the barrel  |
 | Write key segments from `QueryKeySegmentEnum` | Wrap a live key in `sanitizeQueryKey`      |
+| Set a `'use cache'` service's life and tags with `applyCachePolicy({ life: CacheLifeEnum.MINUTES, tags })` of `@/lib/cache` (web), and mock `@/lib/cache` in its test | Call `cacheLife` or `cacheTag` of `next/cache` |

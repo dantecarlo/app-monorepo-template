@@ -1,10 +1,10 @@
 'use client'
 
 import type { ISignInWithPasswordParams } from '@app/core'
-import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 
 import { useAppMutation } from '@/lib/query/useAppMutation.hook'
+import { useAppRouter } from '@/lib/routing'
 import {
   SIGN_IN_GC_TIME_MS,
   SIGN_IN_REDIRECT_PATH
@@ -23,7 +23,7 @@ import type { ISignedInUser } from '@/services/Auth/auth.type'
  * zero gcTime, leaves the cache: no password stays behind it.
  */
 export const useSignIn = () => {
-  const router = useRouter()
+  const router = useAppRouter()
 
   const mutation = useAppMutation<
     ISignedInUser,

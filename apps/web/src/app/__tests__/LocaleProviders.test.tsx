@@ -6,9 +6,9 @@ vi.mock('@/lib/i18n/appTranslator.adapter', () => ({
   getAppMessages: async () => resources[LanguageEnum.ES].translation
 }))
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() })
-}))
+vi.mock('@/lib/routing', async () =>
+  (await import('@/test/routing.helper')).createRoutingDouble()
+)
 
 import { LocaleProviders } from '@/app/LocaleProviders'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'

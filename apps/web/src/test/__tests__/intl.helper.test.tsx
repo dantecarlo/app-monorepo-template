@@ -37,9 +37,9 @@ vi.mock('next-intl/server', () => ({
     })
 }))
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() })
-}))
+vi.mock('@/lib/routing', async () =>
+  (await import('@/test/routing.helper')).createRoutingDouble()
+)
 
 vi.mock('@/components/ui/Image/Image.component', () => ({
   Image: ({ alt, src }: { alt: string; src: string }) => (
