@@ -12,14 +12,15 @@ reads.
 
 This release ships <V>. It lists every ticket whose target version is <V>, read from the board
 (`read version`), and each one is Done before it reaches Ready for prod, except a hotfix, which is
-at Ready to merge into `production` with every Ready to merge condition met against
-`production`'s current tip: the CI/CD session merges it as this release's deploy step.
+at Ready to merge into the production branch the layer names, with every Ready to merge
+condition met against that branch's current tip: the CI/CD session merges it as this release's
+deploy step.
 
 ## Tickets
 
 | Ticket | Title | Area | State |
 | --- | --- | --- | --- |
-| <id> | <title> | <Web> | <Done, or Ready to merge into `production` for a hotfix> |
+| <id> | <title> | <Web> | <Done, or Ready to merge into the production branch for a hotfix> |
 
 Merged since the last release but aimed at a later version, each settled before In release:
 
@@ -31,7 +32,7 @@ Merged since the last release but aimed at a later version, each settled before 
 
 | Target | Version |
 | --- | --- |
-| <web> | <the `production` commit, or `web-vX.Y.Z`> |
+| <web> | <the production branch's commit, or `web-vX.Y.Z`> |
 | <app> | `app-vX.Y.Z`, runtime version <n>, shipped as <an over-the-air update or a store build> |
 
 ## Migrations
@@ -62,4 +63,4 @@ Merged since the last release but aimed at a later version, each settled before 
 | Step | The owner's words | Date | Session |
 | --- | --- | --- | --- |
 | the release | "<words>" | <YYYY-MM-DD> | <the CI/CD session> |
-| <each irreversible step: a production migration, a store submission, the merge to `production`> | "<words>" | <YYYY-MM-DD> | <the CI/CD session> |
+| <each irreversible step: a production migration, a store submission, the merge into the production branch> | "<words>" | <YYYY-MM-DD> | <the CI/CD session> |

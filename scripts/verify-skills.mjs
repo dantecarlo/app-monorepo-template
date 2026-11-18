@@ -18,19 +18,23 @@
 //     name the hotfix's line `<id> ready to merge, hotfix`, rules that name
 //     both merge policies, a ticket identity that names `branchTypes` and
 //     the `json ticket-identity` block, and its ticket and release
-//     templates;
+//     templates, the ticket's target version marked required;
 //   - a role skill: a first paragraph that names ticket-flow's SKILL.md, and
-//     neither of the contract's two tables; `refine-ticket` a release step
-//     that names the hotfix's line, `qa-ticket` a checkout step that adds a
-//     `--detach` worktree, a decide step that pushes `HEAD:<branch>` and a
-//     merge step that names both merge policies and the hotfix's line, and
+//     neither of the contract's two tables; `refine-ticket` a merge queue
+//     that names both merge policies and a release step that names the
+//     hotfix's line; `qa-ticket` a checkout step that adds a `--detach`
+//     worktree, a decide step that pushes `HEAD:<branch>`, a hand-off step
+//     that names its `<id> ready to merge, PR #<n>` line and the hotfix's
+//     line, and no move of a ticket to Done, which is the architect's; and
 //     `release-ticket` its deploy targets, branching, migrations and a hotfix
 //     section in which QA leaves the hotfix at Ready to merge;
 //   - `process-intake`: a mapping step that names both merge policies and
 //     the `json ticket-identity` block, and the template of the project
 //     layer, with a row for every board operation and every state, its
 //     deploy targets, a merge policy section that names both policies and
-//     gives `manual` as the default, and a ticket identity section holding
+//     gives `manual` as the default, a branching model whose production
+//     branch line gives `production` as the default, and a ticket identity
+//     section holding
 //     one block that verify-ticket-branch reads with no finding and whose
 //     fields are its defaults, so the contract, the template and the check
 //     agree.
@@ -71,6 +75,7 @@ export const SKILLS_ROOT = '.claude/skills'
 export const SKILL_FILE = 'SKILL.md'
 
 export const FINDING_KIND = Object.freeze({
+  forbidden: 'forbidden',
   frontmatter: 'frontmatter',
   heading: 'heading',
   mention: 'mention',
@@ -120,8 +125,9 @@ export const OPERATIONS = [
 ]
 
 // The merge policies a project layer may record (decision 38): `manual`, the
-// default, keeps the owner's word on every merge; `low-risk` lets QA merge a
-// pull request that meets every condition of ticket-flow's rule 4.
+// default, keeps the owner's word on every merge; `low-risk` lets the
+// architect merge a pull request that meets every condition of ticket-flow's
+// rule 4.
 export const MERGE_POLICIES = ['manual', 'low-risk']
 export const DEFAULT_MERGE_POLICY = 'manual'
 
@@ -156,11 +162,18 @@ const SHAPE_HEADINGS = ['## CONTRACT', '## Output']
 const RULES_HEADING = '## Rules every role follows'
 const QA_CHECKOUT_STEP = '## Step 2 — Check out the branch'
 const QA_DECIDE_STEP = '## Step 5 — Decide'
-const QA_MERGE_STEP = '## Step 6 — One merge at a time, under the merge policy'
+const QA_HANDOFF_STEP = '## Step 6 — Hand it to the architect'
+const MERGE_QUEUE = '## Merge queue'
 const INTAKE_MAPPING_STEP = '## Step 3 — Map it onto the core'
 const IDENTITY_HEADING = '## Ticket identity'
 const MERGE_POLICY_HEADING = '## Merge policy'
 const POLICY_FIELD = '- **Policy:**'
+
+// The production branch is the one the project layer names; the template
+// ships `production`, the default, for a team that names no other.
+const BRANCHING_MODEL_HEADING = '## Branching model'
+const PRODUCTION_BRANCH_FIELD = '- **Production branch:**'
+const DEFAULT_PRODUCTION_BRANCH = 'production'
 
 // QA checks a ticket out detached at the remote branch, because the dev
 // session's worktree holds the branch and git refuses to check one branch out
@@ -168,15 +181,26 @@ const POLICY_FIELD = '- **Policy:**'
 const DETACHED_CHECKOUT = '--detach'
 const HEAD_PUSH = 'git push origin HEAD:<branch>'
 
-// A hotfix is never QA's to merge: QA leaves it at Ready to merge and tells
-// the architect with this line, the architect lists it in a release of its
-// own, and the CI/CD session merges it into `production` as that release's
-// deploy step.
+// The architect keeps the merge queue and merges: QA stops at Ready to merge
+// and hands the pull request over with this line, and never moves a ticket
+// to Done.
+const READY_TO_MERGE_MESSAGE = 'ready to merge, PR #'
+const DONE_MOVE = 'Ready to merge → Done'
+
+// A hotfix is never in the merge queue: QA leaves it at Ready to merge and
+// tells the architect with this line, the architect lists it in a release of
+// its own, and the CI/CD session merges it into the production branch as that
+// release's deploy step.
 const HOTFIX_MESSAGE = '<id> ready to merge, hotfix'
 const HOTFIX_LEFT = 'QA leaves it at Ready to merge'
 const RELEASE_STEP = '## Group a release'
 const MESSAGES_HEADING = '## Messages'
 const HOTFIX_HEADING = '## Hotfix'
+
+// Every ticket carries a target version, so every ticket closes through a
+// release: the ticket template marks the field required.
+const TARGET_VERSION_HEADING = '## Target version'
+const VERSION_REQUIRED = '**Version (required):**'
 const hotfixMention = ({ heading }) => ({
   heading,
   text: codeOf({ text: HOTFIX_MESSAGE })
@@ -206,13 +230,16 @@ export const SKILL_CONTRACTS = [
         headings: [
           '## Requirement',
           '## Acceptance criteria',
-          '## Target version',
+          TARGET_VERSION_HEADING,
           '## Spec',
           '## Areas and subtasks',
           '## Test plan',
           '## Branch and pull request',
           '## QA evidence',
           '## Risk'
+        ],
+        mentions: [
+          { heading: TARGET_VERSION_HEADING, text: VERSION_REQUIRED }
         ],
         name: 'ticket.template.md'
       },
@@ -269,24 +296,33 @@ export const SKILL_CONTRACTS = [
   { folder: 'po-ticket', headings: SHAPE_HEADINGS, role: true },
   {
     folder: 'refine-ticket',
-    headings: [RELEASE_STEP, ...SHAPE_HEADINGS],
-    mentions: [hotfixMention({ heading: RELEASE_STEP })],
+    headings: [MERGE_QUEUE, RELEASE_STEP, ...SHAPE_HEADINGS],
+    mentions: [
+      ...policyMentions({ heading: MERGE_QUEUE }),
+      hotfixMention({ heading: RELEASE_STEP })
+    ],
     role: true
   },
   { folder: 'dev-ticket', headings: SHAPE_HEADINGS, role: true },
   {
     folder: 'qa-ticket',
+    forbids: [
+      {
+        text: DONE_MOVE,
+        why: 'the architect merges a ticket and moves it to Done'
+      }
+    ],
     headings: [
       QA_CHECKOUT_STEP,
       QA_DECIDE_STEP,
-      QA_MERGE_STEP,
+      QA_HANDOFF_STEP,
       ...SHAPE_HEADINGS
     ],
     mentions: [
       { heading: QA_CHECKOUT_STEP, text: DETACHED_CHECKOUT },
       { heading: QA_DECIDE_STEP, text: HEAD_PUSH },
-      ...policyMentions({ heading: QA_MERGE_STEP }),
-      hotfixMention({ heading: QA_MERGE_STEP })
+      { heading: QA_HANDOFF_STEP, text: READY_TO_MERGE_MESSAGE },
+      hotfixMention({ heading: QA_HANDOFF_STEP })
     ],
     role: true
   },
@@ -314,6 +350,11 @@ export const SKILL_CONTRACTS = [
             field: POLICY_FIELD,
             heading: MERGE_POLICY_HEADING,
             value: codeOf({ text: DEFAULT_MERGE_POLICY })
+          },
+          {
+            field: PRODUCTION_BRANCH_FIELD,
+            heading: BRANCHING_MODEL_HEADING,
+            value: codeOf({ text: DEFAULT_PRODUCTION_BRANCH })
           }
         ],
         headings: [
@@ -325,7 +366,7 @@ export const SKILL_CONTRACTS = [
           '## Ticket identity',
           '## Branch check in CI',
           '## Deploy targets',
-          '## Branching model',
+          BRANCHING_MODEL_HEADING,
           '## Source'
         ],
         identity: { heading: IDENTITY_HEADING },
@@ -446,6 +487,20 @@ const judgeMentions = ({ folder, lines, mentions = [], path }) =>
     ]
   })
 
+// Text a file must not hold anywhere: a role skill that holds it does what
+// another role owns.
+const judgeForbids = ({ folder, forbids = [], lines, path }) =>
+  forbids
+    .filter(({ text }) => lines.some((line) => line.includes(text)))
+    .map(({ text, why }) =>
+      finding({
+        detail: `names ${text}, which it must not: ${why}`,
+        folder,
+        kind: FINDING_KIND.forbidden,
+        path
+      })
+    )
+
 // The line a section gives its default in: the field, then the default
 // value alone, as in "- **Policy:** `manual`".
 const judgeDefaults = ({ defaults = [], folder, lines, path }) =>
@@ -512,7 +567,7 @@ const judgeIdentity = ({ folder, identity, lines, path }) => {
     )
 }
 
-// The headings, tables, mentions and defaults a file owes; every file a
+// The headings, tables, mentions, defaults and forbidden text a file owes; every file a
 // contract names is judged by this, SKILL.md and the templates alike.
 const judgeBody = ({ folder, lines, path, spec }) => [
   ...spec.headings
@@ -528,6 +583,7 @@ const judgeBody = ({ folder, lines, path, spec }) => [
   ...judgeTables({ folder, lines, path, tables: spec.tables }),
   ...judgeMentions({ folder, lines, mentions: spec.mentions, path }),
   ...judgeDefaults({ defaults: spec.defaults, folder, lines, path }),
+  ...judgeForbids({ folder, forbids: spec.forbids, lines, path }),
   ...judgeIdentity({ folder, identity: spec.identity, lines, path })
 ]
 
@@ -662,19 +718,25 @@ export const gate = defineGate({
     `${HOTFIX_MESSAGE}, rules that name ` +
     'both merge policies (manual and low-risk), a ticket identity that ' +
     `names branchTypes and the ${IDENTITY_INFO} block, and its ticket and ` +
-    'release templates; each role skill opens by sending the reader to ticket-flow ' +
+    'release templates, the ticket template naming its target version ' +
+    `${VERSION_REQUIRED}; each role skill opens by sending the reader to ` +
+    'ticket-flow ' +
     "and copies neither of the contract's tables, refine-ticket has a " +
-    `release step that names ${HOTFIX_MESSAGE}, qa-ticket a checkout step ` +
-    `that names ${DETACHED_CHECKOUT}, a decide step that names ${HEAD_PUSH} ` +
-    'and a merge step that names both merge policies and ' +
-    `${HOTFIX_MESSAGE}, and release-ticket its deploy targets, its ` +
+    'merge queue that names both merge policies and a release step that ' +
+    `names ${HOTFIX_MESSAGE}, qa-ticket a checkout step that names ` +
+    `${DETACHED_CHECKOUT}, a decide step that names ${HEAD_PUSH}, a ` +
+    `hand-off step that names ${READY_TO_MERGE_MESSAGE} and ` +
+    `${HOTFIX_MESSAGE}, and no ${DONE_MOVE}, and release-ticket its ` +
+    'deploy targets, its ' +
     'branching with the tags-only alternative, its migrations and a ' +
     `hotfix section that says ${HOTFIX_LEFT}; and ` +
     'process-intake has a mapping step that names both merge policies and ' +
     `the ${IDENTITY_INFO} block, and holds the template of the project ` +
     'layer, with a row for every board operation and every state, a deploy ' +
     'targets table, a merge policy section that names both policies and ' +
-    'whose Policy line gives manual, the default, and a ticket identity ' +
+    'whose Policy line gives manual, the default, a branching model whose ' +
+    `Production branch line gives ${DEFAULT_PRODUCTION_BRANCH}, the ` +
+    'default, and a ticket identity ' +
     `section holding one ${IDENTITY_INFO} block that verify-ticket-branch ` +
     'reads with no finding and whose fields are its defaults.',
   id: 'verify-skills',
