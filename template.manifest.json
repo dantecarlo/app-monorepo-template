@@ -2,6 +2,7 @@
   "version": 1,
   "core": [
     ".agents/agents/**",
+    ".agents/contracts/dependencies.json",
     ".agents/contracts/mcp-servers.json",
     ".agents/projection-manifest.json",
     ".claude/agents/**",
@@ -66,6 +67,7 @@
     "docs/memory.md",
     "docs/observability.md",
     "docs/propagation.md",
+    "eslint-dependency-seam-allowlist.json",
     "eslint-local-rules/**",
     "eslint-style-positioning-allowlist.json",
     "eslint.config.mjs",

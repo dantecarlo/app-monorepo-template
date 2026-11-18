@@ -1,6 +1,8 @@
 // @ts-check
 import vitestPlugin from 'eslint-plugin-vitest'
 
+import localRules from './eslint-local-rules/index.mjs'
+
 //
 // Shared ESLint rule sets for the whole monorepo.
 //
@@ -191,13 +193,11 @@ export const BASE_RULES = {
     }
   ],
 
-  // Import seam guards (code-standards Rule 6 + adapter-seam):
-  //   - Vendor/framework SDKs (@supabase/*, @stripe/*, @sentry/*) may only be
-  //     imported from *.adapter.ts files or src/lib/** composition code; the
-  //     allow-list overrides below re-enable them in exactly those locations.
-  //   - @testing-library/react must flow through the local test.helper re-export
-  //     so render config / providers stay in one seam (re-enabled for the helper
-  //     and *.test.* files via the override below).
+  // The render seam: @testing-library/react flows through the local
+  // test.helper re-export, so render config and providers stay in one place
+  // (re-enabled for the helper and *.test.* files by the override below).
+  // Which file may import which package is local/dependency-seam's
+  // (DEPENDENCY_SEAM_OVERRIDE, code-standards §23).
   'no-restricted-imports': [
     'error',
     {
@@ -206,18 +206,6 @@ export const BASE_RULES = {
           message:
             'Import render/screen/etc. from the local test.helper (single render seam), not @testing-library/react directly.',
           name: '@testing-library/react'
-        }
-      ],
-      patterns: [
-        {
-          group: [
-            '@supabase/*',
-            '@stripe/*',
-            '@stripe/stripe-js',
-            '@sentry/*'
-          ],
-          message:
-            'Vendor/framework SDKs may only be imported from *.adapter.ts or src/lib/** — keep the adapter seam intact (code-standards: ports + adapters).'
         }
       ]
     }
@@ -380,8 +368,7 @@ const NO_ASYNC_VIEW_SELECTORS = [
   {
     message:
       'No async component/handler in a client screen/component — move async data orchestration into a *.hook.ts that calls a *.service.ts (code-standards: logic-in-hook). RSC async server components are exempt via the apps/web screen allowlist.',
-    selector:
-      "VariableDeclarator > ArrowFunctionExpression[async=true]"
+    selector: 'VariableDeclarator > ArrowFunctionExpression[async=true]'
   },
   {
     message:
@@ -439,39 +426,11 @@ export const UI_COMPONENT_OVERRIDE = {
   rules: { 'react/jsx-props-no-spreading': 'off' }
 }
 
-// Vendor/framework SDK imports are allowed at the adapter seam and in the
-// app composition layer (src/lib/**). The Sentry framework-instrumentation
-// files (sentry.*.config.ts, instrumentation.ts, next.config.ts) are
-// framework-reserved entry points that must import the SDK directly — they
-// live OUTSIDE src/ so the path-based allow-list does not reach them.
-export const VENDOR_SDK_ALLOWED_OVERRIDE = {
-  files: [
-    '**/*.adapter.ts',
-    '**/src/lib/**/*.{ts,tsx}',
-    'apps/web/sentry.*.config.ts',
-    'apps/web/instrumentation.ts',
-    'apps/web/next.config.ts'
-  ],
-  rules: {
-    'no-restricted-imports': [
-      'error',
-      {
-        paths: [
-          {
-            message:
-              'Import render/screen/etc. from the local test.helper (single render seam), not @testing-library/react directly.',
-            name: '@testing-library/react'
-          }
-        ]
-      }
-    ]
-  }
-}
-
 // The test render seam: the local test.helper re-exports @testing-library/react,
 // and test files import it directly (the established template pattern). Both
-// drop the testing-library restriction; the vendor-SDK pattern ban still
-// applies (tests should not reach for raw vendor SDKs).
+// drop the testing-library restriction, the only one no-restricted-imports
+// still carries; which vendor a test may reach is local/dependency-seam's: a
+// test inherits the seam of the unit it tests (DEPENDENCY_SEAM_OVERRIDE).
 export const TESTING_LIBRARY_ALLOWED_OVERRIDE = {
   files: [
     '**/test/test.helper.ts',
@@ -481,23 +440,7 @@ export const TESTING_LIBRARY_ALLOWED_OVERRIDE = {
     '**/*.spec.tsx'
   ],
   rules: {
-    'no-restricted-imports': [
-      'error',
-      {
-        patterns: [
-          {
-            group: [
-              '@supabase/*',
-              '@stripe/*',
-              '@stripe/stripe-js',
-              '@sentry/*'
-            ],
-            message:
-              'Vendor/framework SDKs may only be imported from *.adapter.ts or src/lib/** — keep the adapter seam intact (code-standards: ports + adapters).'
-          }
-        ]
-      }
-    ]
+    'no-restricted-imports': 'off'
   }
 }
 
@@ -699,6 +642,29 @@ export const PURE_DOMAIN_ADAPTER_OVERRIDE = {
 // a different set of files. local/ui-kit-boundary keeps every UI kit import
 // inside components/ui, the layer a kit swap rewrites.
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// The dependency seam (code-standards §23; decisions 51, 52 and 58). Every
+// package is registered in .agents/contracts/dependencies.json and imported
+// only inside its seam; an unregistered one fails, closed. Wired by pattern
+// over every app and every package, with the plugin registered here too, so
+// an app added under apps/ is judged with no change to eslint.config.mjs
+// (eslint-local-rules/__fixtures__/apps/fixture/ proves it). It replaces the
+// @supabase/@stripe/@sentry patterns no-restricted-imports used to carry:
+// that rule is replace-not-merge across blocks, so a pattern had to be
+// repeated in every override that touched it. The files ESLint ignores (the
+// *.config.js and *.cjs configs) are judged by verify:dependency-seams.
+// ---------------------------------------------------------------------------
+const SEAM_EXTENSIONS = '{js,jsx,mjs,cjs,ts,tsx,mts,cts}'
+
+export const DEPENDENCY_SEAM_OVERRIDE = {
+  files: [
+    `apps/*/**/*.${SEAM_EXTENSIONS}`,
+    `packages/*/**/*.${SEAM_EXTENSIONS}`
+  ],
+  plugins: { local: localRules },
+  rules: { 'local/dependency-seam': 'error' }
+}
+
 export const STYLE_PILLAR_OVERRIDE = {
   files: ['apps/web/src/**/*.{ts,tsx}', 'apps/mobile/src/**/*.{ts,tsx}'],
   rules: {

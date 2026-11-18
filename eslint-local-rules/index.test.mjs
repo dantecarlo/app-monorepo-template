@@ -25,6 +25,7 @@ import checkFile from 'eslint-plugin-check-file'
 import tseslint from 'typescript-eslint'
 
 import { FILENAME_RULES } from '../eslint.rules.mjs'
+import { registerDependencySeamCases } from './dependency-seam.cases.mjs'
 import localRules from './index.mjs'
 import { toSrcAlias } from './package-src-alias.detect.mjs'
 import {
@@ -959,3 +960,7 @@ viewTester.run('ui-kit-boundary', rules['ui-kit-boundary'], {
     })
   ]
 })
+
+// The dependency seam (code-standards §23): its rule cases, its detection
+// and the fixture app that proves a new app inherits it.
+registerDependencySeamCases()

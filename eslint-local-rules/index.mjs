@@ -34,6 +34,14 @@ import {
   tokenValuesScope
 } from './style-positioning.detect.mjs'
 import { isOutsideUiKit, isUiKitSource } from './ui-kit.detect.mjs'
+import { fileURLToPath } from 'node:url'
+import {
+  collectSeamViolations,
+  indexRegistry,
+  isInScope,
+  readSeamInputs,
+  toRepoPath
+} from './dependency-seam.detect.mjs'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -888,10 +896,72 @@ const uiKitBoundary = {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Rule: dependency-seam (code-standards §23)
+// Every package is registered in .agents/contracts/dependencies.json and
+// imported only inside its seam (./dependency-seam.detect.mjs); a package
+// nobody registered fails, closed. The registry and the frozen allowlist are
+// read once per lint run from the repository root this plugin lives in, and
+// the file's path is taken relative to that root, so the verdict is the same
+// whichever folder ESLint runs from.
+// ---------------------------------------------------------------------------
+
+const SEAM_ROOT = fileURLToPath(new URL('..', import.meta.url))
+const SEAM_INPUTS = readSeamInputs({ root: SEAM_ROOT })
+const SEAM_INDEX = indexRegistry({ registry: SEAM_INPUTS.registry })
+const NO_SEAM = 'no file yet'
+
+const dependencySeam = {
+  create(context) {
+    const path = toRepoPath({
+      filename: context.filename ?? context.getFilename(),
+      root: SEAM_ROOT
+    })
+    if (!path || !isInScope({ path })) return {}
+    return {
+      Program(program) {
+        for (const { entry, kind, node, source } of collectSeamViolations({
+          allowlist: SEAM_INPUTS.allowlist,
+          index: SEAM_INDEX,
+          path,
+          program
+        })) {
+          const seam = Array.isArray(entry?.seam) ? entry.seam : []
+          context.report({
+            data: {
+              category: entry?.category ?? '',
+              name: entry?.name ?? '',
+              seam: seam.length > 0 ? seam.join(', ') : NO_SEAM,
+              source
+            },
+            messageId: kind,
+            node
+          })
+        }
+      }
+    }
+  },
+  meta: {
+    docs: {
+      description:
+        'Every package is registered in .agents/contracts/dependencies.json and imported only inside its seam; an unregistered package fails, closed.'
+    },
+    messages: {
+      outsideSeam:
+        "'{{source}}' is {{category}} ('{{name}}' in .agents/contracts/dependencies.json), and only its seam may import it: {{seam}}. Import the project module that wraps it (a @/lib/* adapter, a components/ui block, an @app/* package), or move this code into the seam (code-standards §23).",
+      unregistered:
+        "'{{source}}' is not in .agents/contracts/dependencies.json, so no file may import it. Register the package with its category and the seam that wraps it before any code uses it (code-standards §23)."
+    },
+    schema: [],
+    type: 'problem'
+  }
+}
+
 const plugin = {
   meta: { name: 'local', version: '1.0.0' },
   rules: {
     'core-import-boundary': coreImportBoundary,
+    'dependency-seam': dependencySeam,
     'pure-domain-adapter': pureDomainAdapter,
     'logic-in-view': logicInView,
     'no-inline-tailwind-classname': noInlineTailwindClassname,
