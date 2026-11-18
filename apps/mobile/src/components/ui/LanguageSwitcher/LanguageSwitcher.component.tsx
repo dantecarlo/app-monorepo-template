@@ -6,7 +6,7 @@ import { useLanguageSwitcher } from '@/components/ui/LanguageSwitcher/useLanguag
 import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import { useThemeTokens } from '@/lib/theme/useThemeTokens.hook'
 
-/** Cycles the active locale across SUPPORTED_LANGUAGES, persisting via AsyncStorage. */
+/** Cycles the active locale across SUPPORTED_LANGUAGES, persisting it on the device. */
 export const LanguageSwitcher = ({
   accessibilityLabel
 }: ILanguageSwitcherProps) => {

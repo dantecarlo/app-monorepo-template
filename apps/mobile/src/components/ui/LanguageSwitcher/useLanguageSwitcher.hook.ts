@@ -19,7 +19,7 @@ const toNextLanguage = (
 }
 
 // Cycles through SUPPORTED_LANGUAGES and persists the choice via the i18n
-// config's setLanguage (AsyncStorage + changeLanguage).
+// config's setLanguage (the device storage + changeLanguage).
 export const useLanguageSwitcher = (): IUseLanguageSwitcherResult => {
   const { locale } = useAppTranslator()
 
