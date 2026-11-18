@@ -3,6 +3,8 @@ import {
   createServerClient as createSsrServerClient
 } from '@supabase/ssr'
 
+import { toBackendClient } from '#src/backendClient.adapter'
+import type { BackendClientType } from '#src/backendClient.type'
 import type { Database } from '#src/types'
 
 interface ICreateSupabaseServerClientArgs {
@@ -12,7 +14,8 @@ interface ICreateSupabaseServerClientArgs {
 }
 
 /**
- * Typed server Supabase factory (auth-aware SSR).
+ * Server Supabase factory (auth-aware SSR), typed by the Database schema
+ * inside this package and handed out as the opaque BackendClientType.
  *
  * Uses @supabase/ssr so the user's session cookie is propagated to RLS in
  * Server Components and Route Handlers. The caller owns the cookie store and
@@ -42,5 +45,7 @@ export const createSupabaseServerClient = ({
   anonKey,
   cookies,
   url
-}: ICreateSupabaseServerClientArgs) =>
-  createSsrServerClient<Database>(url, anonKey, { cookies })
+}: ICreateSupabaseServerClientArgs): BackendClientType =>
+  toBackendClient({
+    client: createSsrServerClient<Database>(url, anonKey, { cookies })
+  })

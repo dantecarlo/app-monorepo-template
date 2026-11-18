@@ -1,3 +1,4 @@
+export type { BackendClientType } from '#src/backendClient.type'
 export { buildSupabaseServiceError } from '#src/buildSupabaseServiceError.helper'
 export { createSupabaseClient } from '#src/client.adapter'
 export { mapSupabaseError } from '#src/mapSupabaseError.adapter'

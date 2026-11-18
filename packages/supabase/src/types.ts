@@ -4,15 +4,16 @@
  * This is a placeholder shape: the template links no Supabase project, and
  * the CLI generates types from a remote project, or from a database URL or the
  * local stack through a Docker container. Once the migrations are applied to
- * the linked cloud project, regenerate this file so the whole monorepo imports
- * a fully-typed client:
+ * the linked cloud project, regenerate this file so the adapters of this
+ * package build a fully-typed client (the apps hold it as the opaque
+ * BackendClientType):
  *
  *   pnpm --filter @app/supabase gen:types
  *   # runs: supabase gen types typescript --linked > src/types.ts.tmp, and moves
  *   # src/types.ts.tmp over this file only when the CLI succeeds; a failed run
  *   # leaves this file as it was, removes the temporary file and exits 1.
  *
- * Commit the generated file so apps pick up the typed schema via @app/supabase.
+ * Commit the generated file so the package's adapters pick up the typed schema.
  */
 export type Database = {
   public: {
