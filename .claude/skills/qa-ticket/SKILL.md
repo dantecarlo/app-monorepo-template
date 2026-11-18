@@ -70,8 +70,9 @@ Did every check pass?
 │         architect `<id> changes requested`. Stop.
 └── YES → bring it to Ready to merge (`ticket-flow` § Ready to merge):
           1. the pull request's CI is green;
-          2. bring the detached HEAD current with its base, as the project layer says:
-             git fetch origin && git merge origin/<base>   (or: git rebase origin/<base>)
+          2. bring the detached HEAD current by merging its base, never by a rebase (a rebased
+             branch cannot be pushed unforced):
+             git fetch origin && git merge origin/<base>
              then push it to the ticket branch, never forced: git push origin HEAD:<branch>
              (refused because the remote moved → git fetch origin, and repeat this step);
           3. re-run the checks on the current branch;
@@ -138,7 +139,7 @@ its links), and message the architect `<release-id> staging checked`.
 # skill: qa-ticket — the QA role; the board operations come from ticket-flow.
 reads:
   - .claude/skills/ticket-flow/SKILL.md
-  - docs/process/ticket-flow.md # the merge policy, the merge method, merge or rebase
+  - docs/process/ticket-flow.md # the merge policy and the merge method
   - docs/e2e.md
 board_operations: [read, move, comment, link]
 merge_policies: [manual, low-risk] # manual, the default, when the layer records none

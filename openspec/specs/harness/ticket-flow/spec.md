@@ -521,8 +521,8 @@ that it merged under `low-risk` and the Risk line it relied on. A pull request t
 condition waits for the owner, as under `manual`. A pull request into `production` QA merges
 under no policy: it waits at Ready to merge for its release (TICKET-24).
 
-**Evidence:** `.claude/skills/qa-ticket/SKILL.md:65`, `.claude/skills/qa-ticket/SKILL.md:83`,
-`.claude/skills/qa-ticket/SKILL.md:115`, `.claude/skills/ticket-flow/SKILL.md:170`,
+**Evidence:** `.claude/skills/qa-ticket/SKILL.md:65`, `.claude/skills/qa-ticket/SKILL.md:84`,
+`.claude/skills/qa-ticket/SKILL.md:116`, `.claude/skills/ticket-flow/SKILL.md:170`,
 `.claude/skills/ticket-flow/SKILL.md:271`
 
 #### Scenario: a green branch behind its base
@@ -739,8 +739,8 @@ both policies, and that section's `Policy` line SHALL give `manual`, the default
 step SHALL stay the owner's word under every policy, as `ticket-flow` rule 4 and `release-ticket`
 say; and under neither policy SHALL QA merge a pull request into `production` (TICKET-24).
 
-**Evidence:** `.claude/skills/ticket-flow/SKILL.md:170`, `.claude/skills/qa-ticket/SKILL.md:83`,
-`.claude/skills/qa-ticket/SKILL.md:85`, `.claude/skills/process-intake/SKILL.md:65`,
+**Evidence:** `.claude/skills/ticket-flow/SKILL.md:170`, `.claude/skills/qa-ticket/SKILL.md:84`,
+`.claude/skills/qa-ticket/SKILL.md:86`, `.claude/skills/process-intake/SKILL.md:65`,
 `.claude/skills/process-intake/ticket-flow.template.md:57`,
 `.claude/skills/process-intake/ticket-flow.template.md:59`,
 `.claude/skills/release-ticket/SKILL.md:24`, `scripts/verify-skills.mjs:125`,
@@ -974,7 +974,7 @@ fields are the branch check's defaults.
 **Evidence:** `scripts/verify-skills.mjs:193`, `scripts/verify-skills.mjs:253`,
 `scripts/verify-skills.mjs:331`, `scripts/verify-skills.mjs:357`, `scripts/verify-skills.mjs:484`,
 `.claude/skills/ticket-flow/SKILL.md:197`, `.claude/skills/ticket-flow/SKILL.md:203`,
-`.claude/skills/process-intake/SKILL.md:77`,
+`.claude/skills/process-intake/SKILL.md:78`,
 `.claude/skills/process-intake/ticket-flow.template.md:82`
 
 #### Scenario: the skills of the repository
@@ -1047,8 +1047,8 @@ because the remote moved; and QA SHALL remove its own worktree once it is done w
 QA may have pushed to it. The structural check SHALL hold `qa-ticket` § Step 2 to name
 `--detach` and § Step 5 to name `git push origin HEAD:<branch>`.
 
-**Evidence:** `.claude/skills/qa-ticket/SKILL.md:38`, `.claude/skills/qa-ticket/SKILL.md:75`,
-`.claude/skills/qa-ticket/SKILL.md:120`, `.claude/skills/dev-ticket/SKILL.md:93`,
+**Evidence:** `.claude/skills/qa-ticket/SKILL.md:38`, `.claude/skills/qa-ticket/SKILL.md:76`,
+`.claude/skills/qa-ticket/SKILL.md:121`, `.claude/skills/dev-ticket/SKILL.md:93`,
 `scripts/verify-skills.mjs:168`, `scripts/verify-skills.mjs:286`
 
 #### Scenario: the skills of the repository
@@ -1128,7 +1128,7 @@ the session that enters Done for a hotfix. The structural check SHALL hold `qa-t
 `<id> ready to merge, hotfix`, and `release-ticket` § Hotfix to say that QA leaves it at Ready to
 merge.
 
-**Evidence:** `.claude/skills/qa-ticket/SKILL.md:85`, `.claude/skills/refine-ticket/SKILL.md:83`,
+**Evidence:** `.claude/skills/qa-ticket/SKILL.md:86`, `.claude/skills/refine-ticket/SKILL.md:83`,
 `.claude/skills/refine-ticket/SKILL.md:98`, `.claude/skills/release-ticket/SKILL.md:145`,
 `.claude/skills/ticket-flow/SKILL.md:91`, `.claude/skills/ticket-flow/SKILL.md:124`,
 `scripts/verify-skills.mjs:175`, `scripts/verify-skills.mjs:289`

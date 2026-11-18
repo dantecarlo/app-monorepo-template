@@ -274,8 +274,8 @@ QA moves a ticket to Ready to merge only when all three hold:
 
 1. the pull request's CI is green;
 2. it has no conflict with its base branch: the default branch, or `production` for a hotfix;
-3. its branch contains the base branch's current tip. QA brings it current (merge or rebase, as
-   the project layer says), pushes, re-runs the checks, and only then asks the owner, or merges
+3. its branch contains the base branch's current tip. QA brings it current by merging the base
+   into it (never a rebase, which could not be pushed unforced), pushes, re-runs the checks, and only then asks the owner, or merges
    under the `low-risk` policy (rule 4); a hotfix it leaves there for its release. A pull request
    that was conflict-free and green but behind its base has turned a downstream project's
    default branch red.
