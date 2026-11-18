@@ -916,8 +916,10 @@ import { createAppStore } from '@/lib/store/createAppStore.helper'
 
 **A wrapper owns its types.** `useAppQuery` and `useAppMutation` take and return the app's own
 `IAppQueryOptions`, `IAppQueryResult`, `IAppMutationOptions` and `IAppMutationResult`, never the
-library's, so a caller that reads them survives a swap of the library. `AppQueryProvider` gives a
-tree its client and `useInvalidateAppQuery` invalidates a `QueryKeys` prefix; a test of a hook or
+library's, so a caller that reads them survives a swap of the library; an option a caller leaves
+out keeps the client's default, and each hook returns the same result while no field changed.
+`AppQueryProvider` gives a tree its client, `useInvalidateAppQuery` invalidates a `QueryKeys` prefix
+and `useIsAppMutating` tells whether a keyed mutation runs; a test of a hook or
 a screen that queries renders through `createQueryWrapper` of `src/test/query.helper.tsx`. A store
 is `createAppStore({ initializer: ({ get, set }) => …, persist? })`, read through a named selector
 or, for an object of several fields, through the store's `useShallow`. On mobile, every value kept

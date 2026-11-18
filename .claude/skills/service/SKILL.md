@@ -277,6 +277,15 @@ export const useCreate{Domain} = () => {
 }
 ```
 
+The options are the app's own (`src/lib/query/useAppQuery.type.ts` and `useAppMutation.type.ts`).
+Besides `queryKey` and `queryFn`, a query takes `enabled`, `staleTime`, `retry`, `networkMode`
+(`'online'`, `'always'` or `'offlineFirst'`) and `keepPreviousData`; besides `mutationFn`, a mutation
+takes `mutationKey`, `gcTime` and the callbacks `onMutate({ variables })`,
+`onSuccess({ data, variables })`, `onError({ error, variables })` and
+`onSettled({ data, error, variables })`. An option left out keeps the query client's default. A
+control that waits on a keyed mutation reads `useIsAppMutating({ mutationKey })`. Each hook returns
+the same result object while none of its fields changed.
+
 A failed query queues no toast (`docs/code-standards.md` § 19): the screen reads
 `isError` and renders `ErrorState`, or wraps the block in `AsyncBoundary`, with the
 query's `refetch` as its retry. Only a mutation's failure is a toast.

@@ -322,7 +322,10 @@ Use `useAppQuery` and `useAppMutation` from `@/lib/query`. Never call
 Both take and return the app's own types (`IAppQueryOptions` → `IAppQueryResult`: `data`,
 `error`, `isError`, `isLoading`, `isSuccess`, `refetch`; `IAppMutationOptions` →
 `IAppMutationResult`: `data`, `error`, `isError`, `isPending`, `isSuccess`, `mutate`, `reset`),
-and a mutation's `onSuccess` and `onError` receive one object. The app root renders
+and every mutation callback (`onMutate`, `onSuccess`, `onError`, `onSettled`) receives one object.
+A query also takes `enabled`, `staleTime`, `retry`, `networkMode` and `keepPreviousData`, a mutation
+`mutationKey` and `gcTime`, and `useIsAppMutating({ mutationKey })` tells whether a keyed mutation
+runs. The app root renders
 `AppQueryProvider`; a mutation invalidates a feature's keys through `useInvalidateAppQuery`:
 
 ```typescript
