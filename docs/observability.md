@@ -214,9 +214,13 @@ is not read.
 device when it is built, even with `defaultOptIn: false`, and picks its storage
 once. In `opt-in` mode it therefore persists through
 `apps/mobile/src/lib/posthog/consentStorage.adapter.ts`, which holds every value
-in memory until a grant, then writes them to AsyncStorage under the
-`posthog-consent:` prefix with the marker `posthog-consent:granted`, the key the
-next launch reads. A revoke stops those writes and removes every key.
+in memory until a grant, then writes them to the device's key-value storage
+under the `posthog-consent:` prefix with the marker `posthog-consent:granted`,
+the key the next launch reads. A revoke stops those writes and removes every
+key. That storage is `apps/mobile/src/lib/storage/keyValueStorage.adapter.ts`,
+AsyncStorage behind the `IKeyValueStoragePort` of packages/core, and the only
+file of the app that imports AsyncStorage apart from the theme and language
+configs, which F.8 unit 4 moves onto it.
 
 **What `opt-in` still does before a grant.** Both SDKs load their remote config
 and flags at start, a request that carries the project key and an in-memory
@@ -280,7 +284,8 @@ from (`https://us-assets.i.posthog.com` for the US cloud) in `script-src`.
 - **What the SDKs store under each consent mode.** The tests prove the options
   each mode hands the SDK and the calls the consent API makes; that the SDK
   then stores nothing is its documented behaviour, which no test runs. The
-  mobile consent storage is the exception: its test reads AsyncStorage.
+  mobile consent storage is the exception: its test reads the device storage
+  it writes to, replaced by the in-memory storage of packages/core.
 - **Switching a running app to `opt-in`.** What `granted` stored before the
   switch stays where the SDK keeps it until the SDK clears it.
 

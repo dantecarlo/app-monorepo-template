@@ -81,9 +81,9 @@ nothing on the device. Each mode adds nothing else to the `granted` options.
 
 The mobile app SHALL give PostHog, in `opt-in` mode, a storage that keeps every value it is
 handed in memory until consent is granted; on a grant writes a grant marker, the held values and
-every later value to AsyncStorage under its own prefix; reads the marker back at the next launch;
-and on a revoke stops writing to the device and removes the marker and every key it wrote or
-read.
+every later value under its own prefix to the device's key-value storage, `keyValueStorage` of
+MOBILE-56; reads the marker back at the next launch; and on a revoke stops writing to the device
+and removes the marker and every key it wrote or read.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -91,14 +91,14 @@ read.
 
 - **GIVEN** a consent storage with no earlier grant
 - **WHEN** PostHog writes a value and reads it back
-- **THEN** it reads the value, and AsyncStorage holds nothing
+- **THEN** it reads the value, and the device storage holds nothing
 - **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "keeps every value off the device before a grant"
 
 #### Scenario: a grant
 
 - **GIVEN** a consent storage holding a value written before a grant
 - **WHEN** it is opened, and PostHog writes another value
-- **THEN** AsyncStorage holds the marker and both values under the storage's prefix
+- **THEN** the device storage holds the marker and both values under the storage's prefix
 - **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "writes the held values and every later one to the device after a grant"
 
 #### Scenario: the next launch
@@ -112,7 +112,7 @@ read.
 
 - **GIVEN** a granted consent storage with values on the device
 - **WHEN** it is closed, and PostHog writes another value
-- **THEN** AsyncStorage holds nothing, and the storage reads as not granted
+- **THEN** the device storage holds nothing, and the storage reads as not granted
 - **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "removes every value it wrote on a revoke and writes none after"
 
 ### Requirement: MOBILE-55 — The consent API grants, revokes and reads the status
@@ -146,7 +146,7 @@ device id included; and `getStatus` SHALL read
 
 - **GIVEN** a key, the consent mode `opt-in` and a grant
 - **WHEN** consent is revoked
-- **THEN** AsyncStorage holds nothing, PostHog is opted out and reset keeping no property, and
+- **THEN** the device storage holds nothing, PostHog is opted out and reset keeping no property, and
   the status reads `denied`
 - **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "revoke closes the consent storage, opts PostHog out, resets it and reads denied"
 
@@ -170,6 +170,38 @@ device id included; and `getStatus` SHALL read
 - **WHEN** consent is granted through the barrel's `consent`
 - **THEN** PostHog is opted in
 - **Test:** `apps/mobile/src/lib/observability/__tests__/consent.adapter.test.ts` › "binds the PostHog consent by default"
+
+### Requirement: MOBILE-56 — The device keeps key-value data through one adapter
+
+The mobile app SHALL implement the `IKeyValueStoragePort` of packages/core over AsyncStorage in
+`keyValueStorage`, exported from `src/lib/storage/`, and SHALL import AsyncStorage only there,
+the seam the dependency registry names for it, apart from the theme and language configs its
+allowlist still freezes until F.8 unit 4.
+
+**Evidence:** written at apply time, when the code exists.
+
+#### Scenario: a value on the device
+
+- **GIVEN** AsyncStorage replaced by its in-memory mock
+- **WHEN** a value is set, read and removed through `keyValueStorage`
+- **THEN** AsyncStorage holds the value, it reads back, and after the removal AsyncStorage holds
+  nothing
+- **Test:** `apps/mobile/src/lib/storage/__tests__/keyValueStorage.adapter.test.ts` › "writes, reads and removes a value on the device storage"
+
+#### Scenario: a missing key
+
+- **GIVEN** AsyncStorage replaced by its in-memory mock, holding nothing
+- **WHEN** a key is read through `keyValueStorage`
+- **THEN** it reads `null`
+- **Test:** `apps/mobile/src/lib/storage/__tests__/keyValueStorage.adapter.test.ts` › "reads null for a key the device storage does not hold"
+
+#### Scenario: the seam
+
+- **GIVEN** every file under `apps/` and `packages/`
+- **WHEN** the dependency seams are checked
+- **THEN** only `keyValueStorage.adapter.ts`, its test and the frozen theme and language configs
+  import AsyncStorage
+- **Test:** Not covered — `pnpm verify:dependency-seams` and the `local/dependency-seam` lint rule hold it, a gate and a rule rather than a test
 
 ## MODIFIED Requirements
 

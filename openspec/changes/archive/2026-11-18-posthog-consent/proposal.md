@@ -41,6 +41,9 @@ behaviour. The decisions it made for this change, applied as stated:
 - **apps/mobile:** the same, plus a consent storage under `src/lib/posthog/` that PostHog writes
   through in `opt-in` mode: it holds every value in memory until a grant and removes what it
   wrote on a revoke.
+- **Follow-up, after the archive:** the key-value storage port in packages/core with an in-memory
+  implementation, and `src/lib/storage/keyValueStorage.adapter.ts` in apps/mobile, the AsyncStorage
+  seam the consent storage writes through.
 - **Docs:** `docs/observability.md` (the three modes, what each stores, where a banner calls the
   API, and that `/init` asks for the mode when the project picks PostHog), both `.env.example`
   files, the env table of `AGENTS.md`, the architecture docs and the global map.
@@ -58,6 +61,7 @@ behaviour. The decisions it made for this change, applied as stated:
 
 ## Affected specs
 
-- `openspec/specs/packages/core/spec.md`: CORE-27 added
+- `openspec/specs/packages/core/spec.md`: CORE-27 added; CORE-28 added in the follow-up
 - `openspec/specs/apps/web/spec.md`: WEB-51 modified; WEB-55 to WEB-57 added
-- `openspec/specs/apps/mobile/spec.md`: MOBILE-50 modified; MOBILE-52 to MOBILE-55 added
+- `openspec/specs/apps/mobile/spec.md`: MOBILE-50 modified; MOBILE-52 to MOBILE-55 added; MOBILE-56
+  added and MOBILE-54 restated in the follow-up

@@ -93,5 +93,39 @@ Every mode requested the remote config and `/flags` at start, `opt-in` before an
 ## Not verified
 
 - What `posthog-react-native` writes to the device: the app's tests replace it at its module. Its
-  writes in `opt-in` mode go through the consent storage, whose test reads AsyncStorage.
+  writes in `opt-in` mode go through the consent storage, whose test reads the device storage it
+  writes to.
 - A real device or browser build sending events to PostHog.
+
+## Follow-up: the key-value storage seam
+
+> **Verified:** 2026-11-18 at `e43870d`
+
+The merge of origin/main into the branch brought `local/dependency-seam` and
+`verify:dependency-seams`, which failed with 4 problems: the consent storage and three tests imported
+AsyncStorage, whose seam was empty until F.8 unit 4. The seam is built here instead of an allowlist
+entry.
+
+| Requirement | Scenario | Test | Result |
+| ----------- | -------- | ---- | ------ |
+| CORE-28 | a value and a missing key | `packages/core/src/ports/storage/__tests__/createMemoryKeyValueStorage.helper.test.ts` › "reads back what it was handed, and null for a key it never held" | green |
+| CORE-28 | a removed key | `packages/core/src/ports/storage/__tests__/createMemoryKeyValueStorage.helper.test.ts` › "removes a key" | green |
+| CORE-28 | two storages | `packages/core/src/ports/storage/__tests__/createMemoryKeyValueStorage.helper.test.ts` › "keeps the values of each storage apart" | green |
+| MOBILE-56 | a value on the device | `apps/mobile/src/lib/storage/__tests__/keyValueStorage.adapter.test.ts` › "writes, reads and removes a value on the device storage" | green |
+| MOBILE-56 | a missing key | `apps/mobile/src/lib/storage/__tests__/keyValueStorage.adapter.test.ts` › "reads null for a key the device storage does not hold" | green |
+| MOBILE-56 | the seam | Not covered — `pnpm verify:dependency-seams` and `local/dependency-seam` hold it | gate green |
+| MOBILE-54 | every scenario, through the port | `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts`, its four tests | green |
+| MOBILE-55 | a grant, a revoke, through the port | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts`, its five tests | green |
+
+| Rule | Red observed |
+| ---- | ------------ |
+| CORE-28 | `TypeError: createMemoryKeyValueStorage is not a function`: the barrel exported none |
+| MOBILE-56 | the module `@/lib/storage/keyValueStorage.adapter` did not exist |
+| MOBILE-54, MOBILE-55, MOBILE-53 through the port | with the tests replacing `@/lib/storage`, `expected null to be 'true'` twice and `expected "vi.fn()" to be called once, but got 0 times`: the consent storage still wrote to AsyncStorage |
+| The seam | `verify-dependency-seams: 4 problem(s)`, each `imports @react-native-async-storage/async-storage outside its seam` |
+
+### Follow-up gate
+
+- `pnpm verify:dependency-seams`: PASS, 0 problems; the theme and language configs stay on their
+  frozen allowlist entries.
+- GATES_PENDING

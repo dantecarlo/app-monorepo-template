@@ -38,10 +38,12 @@ and `posthog-react-native` 4.87.0 (`PostHogOptions`, and `PostHogCoreOptions` of
    device at construction: the SDK seeds the device id from the anonymous id and records the app
    build and version (`initAfterStorage` and `persistAppVersion` of `posthog-rn`). Persistence is
    chosen once, at construction, so `opt-in` hands PostHog a `customStorage` that keeps every
-   value in memory until a grant, then writes it and every later value to AsyncStorage under its
-   own prefix with a grant marker. The marker is what the next launch reads. A revoke closes the
-   storage before opting out, so no later write reaches the device, and removes every key it
-   wrote. AsyncStorage is a dependency the app already has.
+   value in memory until a grant, then writes it and every later value to the device's
+   key-value storage under its own prefix with a grant marker. The marker is what the next launch
+   reads. A revoke closes the storage before opting out, so no later write reaches the device, and
+   removes every key it wrote. The device's key-value storage is `IKeyValueStoragePort` of
+   packages/core over AsyncStorage, in `apps/mobile/src/lib/storage/keyValueStorage.adapter.ts`,
+   the seam the dependency registry names for AsyncStorage (a follow-up of this change).
 5. **A refusal is not stored.** The rule is that nothing is stored until a grant. A web revoke
    therefore resets after opting out, and `reset` clears the stored choice with the rest; a
    mobile revoke removes everything. The status reads `denied` for the rest of that visit or
