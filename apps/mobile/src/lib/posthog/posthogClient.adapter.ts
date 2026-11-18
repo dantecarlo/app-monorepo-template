@@ -35,18 +35,6 @@ const createPostHogClient = ({
     ...(consentStorage && { customStorage: consentStorage })
   })
 
-// A grant from an earlier launch opts the client in again, so it captures
-// even when that launch stopped before PostHog saved its opt-in.
-const optInAfterEarlierGrant = async ({
-  client,
-  consentStorage
-}: {
-  client: IPostHogClient
-  consentStorage: IPostHogConsentStorage
-}): Promise<void> => {
-  if (await consentStorage.isGranted()) await client.optIn()
-}
-
 /**
  * The consent mode the client starts in, read whenever a key is set: an
  * unknown value throws when this module loads.
@@ -64,23 +52,50 @@ export const posthogConsentStorage: IPostHogConsentStorage | undefined =
     ? createConsentStorage()
     : undefined
 
-/**
- * The ONE PostHog client of this app, and the only file that imports the
- * SDK. Built only with a key, never as `new PostHog('')`, so without one
- * nothing is constructed and no request leaves the app; a caller guards
- * every call.
- */
-export const posthogClient: IPostHogClient | undefined = POSTHOG_KEY
-  ? createPostHogClient({
-      consentMode: posthogConsentMode,
-      consentStorage: posthogConsentStorage,
-      key: POSTHOG_KEY
-    })
-  : undefined
+// The ONE PostHog client of this app, while one exists.
+const current: { client?: IPostHogClient } = {}
 
-if (posthogClient && posthogConsentStorage) {
-  void optInAfterEarlierGrant({
-    client: posthogClient,
-    consentStorage: posthogConsentStorage
+/** The client, or undefined while none exists: a caller guards every call. */
+export const getPostHogClient = (): IPostHogClient | undefined =>
+  current.client
+
+/**
+ * Constructs the client once and returns it; undefined without a key, never
+ * as `new PostHog('')`, so without one nothing is constructed and no request
+ * leaves the app. The app starts it at launch in `granted` and `memory`
+ * mode; in `opt-in` mode a grant starts it, or a grant from an earlier
+ * launch at launch.
+ */
+export const startPostHogClient = (): IPostHogClient | undefined => {
+  if (!POSTHOG_KEY) return undefined
+  current.client ??= createPostHogClient({
+    consentMode: posthogConsentMode,
+    consentStorage: posthogConsentStorage,
+    key: POSTHOG_KEY
   })
+  return current.client
+}
+
+/** Drops the client; a later start constructs a new one. */
+export const stopPostHogClient = (): void => {
+  current.client = undefined
+}
+
+// A grant from an earlier launch starts the client and opts it in again, so
+// it captures even when that launch stopped before PostHog saved its opt-in.
+const startAfterEarlierGrant = async ({
+  consentStorage
+}: {
+  consentStorage: IPostHogConsentStorage
+}): Promise<void> => {
+  if (!(await consentStorage.isGranted())) return
+  await startPostHogClient()?.optIn()
+}
+
+if (POSTHOG_KEY && posthogConsentMode !== PostHogConsentModeEnum.OPT_IN) {
+  startPostHogClient()
+}
+
+if (posthogConsentStorage) {
+  void startAfterEarlierGrant({ consentStorage: posthogConsentStorage })
 }
