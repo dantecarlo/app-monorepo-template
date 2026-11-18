@@ -1837,5 +1837,5 @@ validate` exits 0. Independent verifier: no blocker. Native review: the hooks
 - **L69 (2026-11-18, owner, translated from Spanish):** on F46, "Yes, add it if it is requested, if you
   want PostHog, and continue with the plan". The consent mode is an option `/init` asks for when a
   project picks PostHog; `granted` keeps today's behaviour.
-- **L70 (2026-11-18, owner):** on F54, "Opción 2" (translated from Spanish: "Option 2"): under `opt-in`
+- **L70 (2026-11-18, owner):** on F54, "Option 2" (translated from Spanish): under `opt-in`
   the PostHog client starts only after the user grants consent.
