@@ -3,14 +3,15 @@
 > **Governs:** `apps/mobile/src`, `apps/mobile/app.json`
 > **ID prefix:** `MOBILE`
 > **Derived from:** `docs/architecture/mobile.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/observability.md`, `docs/e2e.md`, `docs/responsive.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-18 at `e43870d`
+> **Verified against the code:** 2026-11-18 at `7bb32cc`
 
 ## Purpose
 
 The mobile app is the Expo Router client of the template. It owns two routes with no guard: the
 items dashboard, backed by a sample service, and a sign-in form that validates its fields but
 signs no one in. It also owns the theme and language controls and their persistence, the
-light and dark themes painted from the root, a query layer that shows a failed query on its
+light and dark themes painted from the root, the translator its blocks read their copy
+through, over react-i18next behind its lib/i18n, a query layer that shows a failed query on its
 screen, toasts a failed mutation and captures both through the observability port, and the
 environment wiring of Supabase, of PostHog, the default observability provider, with its
 consent mode and the consent API, and of the optional Sentry, and the device's key-value
@@ -170,7 +171,7 @@ The mobile app SHALL show the active language code on the language switcher and,
 move to the next language of packages/i18n in order, wrapping to the first, storing it under the
 app.language key before switching i18next.
 
-**Evidence:** `apps/mobile/src/components/ui/LanguageSwitcher/useLanguageSwitcher.hook.ts:12-34`, `apps/mobile/src/lib/i18n/i18n.config.ts:28-33`
+**Evidence:** `apps/mobile/src/components/ui/LanguageSwitcher/useLanguageSwitcher.hook.ts:12-28`, `apps/mobile/src/lib/i18n/i18n.config.ts:28-33`
 
 #### Scenario: pressing on the last language
 
@@ -328,7 +329,7 @@ active language.
 The mobile app SHALL show on the stats card the number of loaded items and the number of them
 whose status is active, and a dash in place of each number while loading.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:62-68`, `apps/mobile/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.tsx:33-41`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:62-68`, `apps/mobile/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.tsx:31-40`
 
 #### Scenario: the sample list has loaded
 
@@ -342,7 +343,7 @@ whose status is active, and a dash in place of each number while loading.
 The mobile app SHALL show an activity indicator in the items list, and an ellipsis in place of
 the result count, while the items query is loading.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:34-53`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:32-55`
 
 #### Scenario: the first load
 
@@ -356,7 +357,7 @@ the result count, while the items query is loading.
 The mobile app SHALL show the shared empty state, with the components.emptyState title and
 message from the catalogs, when the items query resolves no items.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:56-57`, `apps/mobile/src/components/ui/EmptyState/EmptyState.component.tsx:18-23`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:58-59`, `apps/mobile/src/components/ui/EmptyState/EmptyState.component.tsx:18-23`
 
 #### Scenario: a search with no match
 
@@ -372,7 +373,7 @@ initials, title, description, category, author label, age and status label (MOBI
 caption holding the items.dashboard.listResults message for the item count, which states the count
 once.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:36`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:59`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:34-38`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:61`
 
 #### Scenario: items have loaded
 
@@ -393,7 +394,7 @@ once.
 The mobile app SHALL show a bottom tab bar with the home, items, search and settings tabs, the
 home tab selected on mount, and mark a pressed tab as selected without navigating.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/DashboardNav/DashboardNav.component.tsx:15-28`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:45`, `apps/mobile/src/components/ui/NavBar/NavBar.component.tsx:39-53`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/components/DashboardNav/DashboardNav.component.tsx:12-33`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:45`, `apps/mobile/src/components/ui/NavBar/NavBar.component.tsx:39-53`
 
 #### Scenario: the user presses the search tab
 
@@ -409,7 +410,7 @@ components observe it; the dashboard SHALL show the error state with its generic
 items list, in place of the items and the empty state, with a retry control that runs the items
 query again, and no result count in the list caption.
 
-**Evidence:** `apps/mobile/src/lib/query/useAppQuery.hook.ts:19`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:49`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:77-79`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:34-38`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:54-55`
+**Evidence:** `apps/mobile/src/lib/query/useAppQuery.hook.ts:19`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:49`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:77-79`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:32-40`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:56-57`
 
 #### Scenario: a failing query
 
@@ -724,7 +725,7 @@ step with every later auth state change until unmount.
 The mobile app SHALL, on submit, reject an email that does not match the address pattern and a
 password shorter than 8 characters, showing each field's catalog error under that field.
 
-**Evidence:** `apps/mobile/src/screens/Login/hooks/useLoginForm.hook.ts:15-29`, `apps/mobile/src/screens/Login/Login.constant.ts:4-13`, `apps/mobile/src/screens/Login/Login.screen.tsx:31-35`
+**Evidence:** `apps/mobile/src/screens/Login/hooks/useLoginForm.hook.ts:15-29`, `apps/mobile/src/screens/Login/Login.constant.ts:6-15`, `apps/mobile/src/screens/Login/Login.screen.tsx:30-34`
 
 #### Scenario: a short password
 
@@ -739,7 +740,7 @@ The mobile app SHALL make no authentication request from the login screen: a val
 puts the sign-in button in its loading state, and the screen offers no social sign-in button,
 since the template has no provider for it.
 
-**Evidence:** `apps/mobile/src/screens/Login/hooks/useLoginForm.hook.ts:49-53`, `apps/mobile/src/screens/Login/Login.screen.tsx:23`, `apps/mobile/src/screens/Login/Login.screen.tsx:61`
+**Evidence:** `apps/mobile/src/screens/Login/hooks/useLoginForm.hook.ts:49-53`, `apps/mobile/src/screens/Login/Login.screen.tsx:22`, `apps/mobile/src/screens/Login/Login.screen.tsx:60`
 
 #### Scenario: a valid submit
 
@@ -1078,7 +1079,7 @@ The mobile app SHALL show on the dashboard only controls with an action: no View
 the list and no settings button in the header, since the template has no screen for either; the
 search bar and the navigation tabs remain.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/ItemsDashboard.screen.tsx:49-66`, `apps/mobile/src/screens/ItemsDashboard/components/DashboardHeader/DashboardHeader.component.tsx:19`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/ItemsDashboard.screen.tsx:49-66`, `apps/mobile/src/screens/ItemsDashboard/components/DashboardHeader/DashboardHeader.component.tsx:16`
 
 #### Scenario: the dashboard renders
 
@@ -1454,7 +1455,7 @@ The mobile app SHALL implement the `IKeyValueStoragePort` of packages/core over 
 the seam the dependency registry names for it, apart from the theme and language configs its
 allowlist still freezes until F.8 unit 4.
 
-**Evidence:** `apps/mobile/src/lib/storage/keyValueStorage.adapter.ts:13-22`, `apps/mobile/src/lib/storage/index.ts:1`, `.agents/contracts/dependencies.json:108-111`
+**Evidence:** `apps/mobile/src/lib/storage/keyValueStorage.adapter.ts:13-22`, `apps/mobile/src/lib/storage/index.ts:1`, `.agents/contracts/dependencies.json:117-120`
 
 #### Scenario: a value on the device
 
@@ -1478,6 +1479,81 @@ allowlist still freezes until F.8 unit 4.
 - **THEN** only `keyValueStorage.adapter.ts`, its test and the frozen theme and language configs
   import AsyncStorage
 - **Test:** Not covered — `pnpm verify:dependency-seams` and the `local/dependency-seam` lint rule hold it, a gate and a rule rather than a test
+
+### Requirement: MOBILE-57 — A block translates through the app's translator
+
+The mobile app SHALL give every block one translator, `useAppTranslator()` of
+`apps/mobile/src/lib/i18n/`, that implements IAppTranslator of packages/i18n over the active
+i18next instance: `t` returns the message of a key in the active language with its ICU values
+filled, `has` tells a key the catalog holds from a string it lacks, and `locale` is the active
+language, reduced to a supported one.
+
+**Evidence:** `apps/mobile/src/lib/i18n/useAppTranslator.hook.ts:12-15`, `apps/mobile/src/lib/i18n/useAppTranslator.hook.ts:22-33`
+
+#### Scenario: a message with a value
+
+- **GIVEN** a block under an i18next instance started in Spanish on the real catalogs
+- **WHEN** it calls `t` with a key and an ICU value
+- **THEN** it gets the Spanish message with the value in place
+- **Test:** `apps/mobile/src/lib/i18n/__tests__/useAppTranslator.hook.test.tsx` › "formats a message of the active catalog with its values"
+
+#### Scenario: a key the catalog lacks
+
+- **GIVEN** the same block
+- **WHEN** it calls `has` with a key of the catalog and with a string the catalog lacks
+- **THEN** the first is true and the second false
+- **Test:** `apps/mobile/src/lib/i18n/__tests__/useAppTranslator.hook.test.tsx` › "tells a key the active catalog holds from one it lacks"
+
+#### Scenario: the active locale
+
+- **GIVEN** the same block
+- **WHEN** it reads `locale`
+- **THEN** it is the Spanish language code
+- **Test:** `apps/mobile/src/lib/i18n/__tests__/useAppTranslator.hook.test.tsx` › "reports the active locale"
+
+### Requirement: MOBILE-58 — Only lib/i18n imports the i18n libraries
+
+The mobile app SHALL import react-i18next, i18next, i18next-icu, @formatjs/intl-pluralrules and
+expo-localization only in `apps/mobile/src/lib/i18n/**`; every other file, tests included,
+reaches translation through `@/lib/i18n/…`, and a test of any other unit mocks that module or
+renders through `renderWithI18n`, never one of those libraries.
+
+**Evidence:** `.agents/contracts/dependencies.json:70-99`, `eslint-dependency-seam-allowlist.json:1`
+
+#### Scenario: a block outside the seam imports react-i18next
+
+- **GIVEN** a component, screen, hook or test outside `apps/mobile/src/lib/i18n/` that imports or
+  mocks react-i18next
+- **WHEN** ESLint and `pnpm verify:dependency-seams` run
+- **THEN** the import is reported as outside its seam, and no allowlist entry excuses it
+- **Test:** Not covered — no test of this app reads its imports; `local/dependency-seam` refuses
+  such an import (harness/dependency-seams SEAM-03) and `pnpm verify:dependency-seams` fails an
+  allowlist entry or a violation for it (SEAM-07), both inside `pnpm validate`
+
+### Requirement: MOBILE-59 — The sampled screens keep their messages in both languages
+
+The mobile app SHALL render the sign-in screen, the items dashboard with items and the error,
+empty, confirmation and offline blocks with the catalog messages, in the order and with the
+values, that the record in `apps/mobile/src/test/__tests__/i18n.helper.test.tsx` holds for each
+language, taken at `571d25b`, and each of those messages SHALL show the copy its language's
+catalog holds.
+
+**Evidence:** `apps/mobile/src/test/__tests__/i18n.helper.test.tsx:97-122`, `apps/mobile/src/test/__tests__/i18n.helper.test.tsx:124-204`, `apps/mobile/src/test/i18n.helper.tsx:51-60`
+
+#### Scenario: the messages behind the text
+
+- **GIVEN** a catalog whose every message is its own key, in English and in Spanish
+- **WHEN** each sample renders with it
+- **THEN** its visible text and accessible labels equal the record for that language
+- **Test:** `apps/mobile/src/test/__tests__/i18n.helper.test.tsx` › "every sample shows the messages it showed at the base, in both languages"
+
+#### Scenario: the copy of each language
+
+- **GIVEN** the real English and Spanish catalogs
+- **WHEN** each sample renders with one of them
+- **THEN** its visible text and accessible labels are the record with every message in that
+  catalog's copy
+- **Test:** `apps/mobile/src/test/__tests__/i18n.helper.test.tsx` › "every sample shows the copy its catalog holds, in both languages"
 
 ## Open questions
 

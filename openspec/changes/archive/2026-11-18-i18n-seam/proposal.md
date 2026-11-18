@@ -1,6 +1,6 @@
 # Proposal: one translator for both apps, behind each app's lib/i18n
 
-> **Status:** open
+> **Status:** archived — 2026-11-18
 
 ## Why
 
