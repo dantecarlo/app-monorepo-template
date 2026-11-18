@@ -141,10 +141,32 @@ sink; the port contract fails when it does not.
 `apps/{web,mobile}/src/lib/posthog/posthogClient.adapter.ts` is the ONE PostHog
 client of each app and the only file that imports the SDK (`posthog-js` on
 web, `posthog-react-native` on mobile). Its config comes from the
-environment, and it is **inert without a key**: the client is never
-initialised or constructed, `posthogClient` is `undefined`, every observability
-call is a no-op, and no request leaves the app. On web the client is also
-`undefined` on the server: `posthog-js` runs in the browser only.
+environment, and it is **inert without a key**: the SDK is never loaded on web
+and no client is constructed on mobile, every observability call is a no-op,
+and no request leaves the app. On web the SDK is never loaded on the server
+either: `posthog-js` runs in the browser only.
+
+**The client starts only when it may run.**
+
+| Mode                | Web: `posthog-js` is loaded                                 | Mobile: the client is constructed                              |
+| ------------------- | ----------------------------------------------------------- | -------------------------------------------------------------- |
+| `granted`, `memory` | when the app starts, in the browser                         | when the app launches                                          |
+| `opt-in`            | on a grant, or at start after a grant from an earlier visit | on a grant, or at launch after a grant from an earlier launch  |
+| no key              | never                                                       | never                                                          |
+
+On web the SDK is loaded by a dynamic `import()`, so its chunk is not among
+the ones a page loads at start. In a build of the template, with or without a
+key, that chunk is 371,455 bytes, 121,613 gzipped, and the scripts each
+prerendered page loads at start went from 1,414,313 bytes (426,674 gzipped) to
+1,043,683 (305,434). `src/lib/posthog/deferredClient.helper.ts` holds the
+client: a call made while the SDK loads waits in a queue of
+`POSTHOG_PENDING_CALLS_LIMIT` calls (50), which drops its oldest call when
+full and hands the rest to the SDK in order once it loads; a call made while
+nothing loads is dropped, and so are the held calls when the SDK fails to
+load. Every payload is scrubbed when the call is made, before it waits.
+
+On mobile the client is constructed synchronously, so nothing waits: a call
+made while there is no client is dropped.
 
 ### How the port maps onto PostHog
 
@@ -192,7 +214,7 @@ none keeps `granted`, the behaviour PostHog had before the setting existed.
 | Mode                | Captures              | Keeps on the device                                                                                     |
 | ------------------- | --------------------- | ------------------------------------------------------------------------------------------------------- |
 | `granted` (default) | from the start        | the SDK's ids and session: a cookie, local and session storage on web; the SDK's storage file on mobile |
-| `opt-in`            | nothing until a grant | nothing until a grant; after it, what `granted` keeps; after a revoke, nothing                          |
+| `opt-in`            | nothing until a grant | nothing until a grant; after it, what `granted` keeps and the grant record; after a revoke, nothing     |
 | `memory`            | from the start        | nothing: each page load on web, and each launch on mobile, gets a new anonymous id                      |
 
 Each mode adds only these options to the `granted` ones, named as the installed
@@ -222,9 +244,20 @@ AsyncStorage behind the `IKeyValueStoragePort` of packages/core, and the only
 file of the app that imports AsyncStorage apart from the theme and language
 configs, which F.8 unit 4 moves onto it.
 
-**What `opt-in` still does before a grant.** Both SDKs load their remote config
-and flags at start, a request that carries the project key and an in-memory
-anonymous id. Nothing is captured and nothing is stored.
+**Nothing reaches PostHog before a grant.** In `opt-in` mode the web SDK is not
+loaded and the mobile client is not constructed until consent is granted, so
+neither requests its remote config or its flags, and PostHog never sees the
+user's IP or user agent before consent. **Feature flags are therefore
+unavailable before consent in `opt-in` mode**: a project that reads a flag
+there gets no value until a grant, and must not gate content on one.
+
+**The web grant record.** Because the SDK is not loaded before a grant, it
+cannot read its own stored choice at the start of the next visit. A grant
+therefore also records `posthog-consent:granted` in the browser's local
+storage, the key the mobile consent storage uses, after the SDK is opted in; the
+next visit reads it, loads the SDK at start and the SDK's stored opt-in resumes
+capture. A revoke removes it. A browser that blocks site data reads as no
+grant.
 
 **A refusal is not stored.** Nothing is stored until a grant, so a revoke clears
 the stored choice with the rest: the status reads `denied` for the rest of the
@@ -240,14 +273,15 @@ wants to remember a refusal keeps it in its banner.
 composition root, and its observability barrel exports it as `consent`. Only
 `src/lib/posthog/` imports the SDK.
 
-| Call          | `opt-in`, web                                                       | `opt-in`, mobile                                                                   | `granted`, `memory`, no key, the web server |
-| ------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------- |
-| `grant()`     | `opt_in_capturing({ captureEventName: false })`: no `$opt_in` event | opens the consent storage, then `optIn()`                                          | nothing                                     |
-| `revoke()`    | `opt_out_capturing()`, then `reset({ resetDeviceID: true })`        | closes the consent storage, then `optOut()` and `reset([])`                        | nothing                                     |
-| `getStatus()` | `granted` after a grant, `denied` after a revoke, else `pending`    | `granted` while the storage holds a grant, `denied` after a revoke, else `pending` | `not-required`                              |
+| Call          | `opt-in`, web                                                                                                                        | `opt-in`, mobile                                                                                                | `granted`, `memory`, no key, the web server |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| `grant()`     | loads the SDK once, `opt_in_capturing({ captureEventName: false })`: no `$opt_in` event, then writes the grant record               | constructs the client once, opens the consent storage, then `optIn()`                                           | nothing                                     |
+| `revoke()`    | waits for a load in flight, removes the record and stops the client, then `opt_out_capturing()` and `reset({ resetDeviceID: true })` | closes the consent storage, drops the client, then `optOut()` and `reset([])`; a later grant constructs a new one | nothing                                     |
+| `getStatus()` | `granted` while the record holds a grant, `denied` after a revoke, else `pending`                                                    | `granted` while the storage holds a grant, `denied` after a revoke, else `pending`                              | `not-required`                              |
 
 A revoke also resets the identity, with a new device id, so a later grant
-starts a new person.
+starts a new person, and every observability call after it is dropped. When a
+revoke and a grant overlap a web load, the later one decides.
 
 **Where a banner plugs in.** No banner ships: it is product work. One is a
 `ui/` block for the look and a container that owns the calls (`AGENTS.md`, the
@@ -288,6 +322,15 @@ from (`https://us-assets.i.posthog.com` for the US cloud) in `script-src`.
   it writes to, replaced by the in-memory storage of packages/core.
 - **Switching a running app to `opt-in`.** What `granted` stored before the
   switch stays where the SDK keeps it until the SDK clears it.
+- **Errors thrown before the web SDK loads.** The SDK's own capture of
+  unhandled errors and rejections starts when its chunk has loaded; errors the
+  app reports through the port before then wait in the queue.
+- **The request a web revoke makes.** The reset of a revoke reloads the SDK's
+  flags once with the new anonymous id, one `/flags` request after the refusal
+  (seen in a scratch run of the real `posthog-js` 1.450.0). Before a grant
+  nothing is requested.
+- **The mobile client a revoke drops.** It is opted out and reset, not shut
+  down: the listeners the SDK registered stay until the app quits.
 
 ### Env keys
 
@@ -454,8 +497,9 @@ repository keeps every file below; copy them from it rather than retyping.
 
 ## Graceful degradation
 
-With no PostHog key, both PostHog clients stay unbuilt, every port call is a
-no-op and the consent API reads `not-required`. With no Sentry DSN, the Sentry adapters and the `sentry.*.config`
+With no PostHog key, the web app never loads `posthog-js` and the mobile app
+constructs no client, every port call is a no-op and the consent API reads
+`not-required`. With no Sentry DSN, the Sentry adapters and the `sentry.*.config`
 files no-op (`enabled: !!dsn`) and source-map upload is disabled (no
 `SENTRY_AUTH_TOKEN`). `pnpm validate` and `pnpm build` stay green with no real
 credentials. This is intentional for local dev and CI.
