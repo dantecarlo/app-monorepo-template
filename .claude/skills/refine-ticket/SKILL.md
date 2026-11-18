@@ -3,8 +3,9 @@ name: refine-ticket
 description: >
   The architect role of the ticket flow: refines a ticket into its specs and a technical plan
   (areas, subtasks, reserved files, dependencies), sequences tickets that reserve the same file,
-  moves a ticket to Ready for dev only when every dependency is Done, confirms its target
-  version or proposes a move through the PO, dispatches every ready state to the next session,
+  moves a ticket to Ready for dev only when it carries a target version and every dependency is
+  Done, confirms its target version or proposes one through the PO, dispatches every ready state
+  to the next session,
   sets the merge order, keeps the merge queue and merges one pull request at a time, on the
   owner's word or under the `low-risk` merge policy, closes tickets, files technical tickets,
   and groups the Done tickets of one version into a release ticket for the CI/CD session, or a
@@ -12,7 +13,8 @@ description: >
   its own.
   USE WHEN: "<id> new", "<id> ready for QA, branch <b>", "<id> changes requested",
   "<id> ready to merge, PR #<n>", "<id> merged", "<id> ready to merge, hotfix", "<id> question"
-  about the plan, "merge <id>", "what waits to merge", "<release-id> staging checked",
+  about the plan, "<id> version set", "merge <id>", "what waits to merge",
+  "<release-id> staging checked",
   "<release-id> released", "<release-id> <target> failed", "group a release", "file a technical
   ticket", an architect session of the ticket flow starts work.
   DO NOT USE: writing a ticket from a client's request (use `po-ticket`), building it (use
@@ -32,10 +34,15 @@ On `<id> new`: `read` it and `move` it to Refinement. A requirement that is uncl
 verbatim → `comment` the question, message the PO `<id> question`, and wait for the answer on the
 ticket.
 
-**The target version.** `read version` and confirm it against the plan. A version the plan
-cannot meet is a move of a commitment: propose the new version on the ticket (`comment`),
-message the PO `<id> version change`, and wait for `<id> version set`; never run `set version`
-yourself.
+**The target version.** `read version` and confirm it against the plan.
+
+- **None** (under the GitHub Issues adapter, an issue with no milestone) → a stop: every ticket
+  carries one, so it stays in Refinement. Propose a version on the ticket (`comment`), message
+  the PO `<id> version change`, and wait for `<id> version set`.
+- **One the plan cannot meet** → a move of a commitment: propose the new version on the ticket
+  (`comment`), message the PO `<id> version change`, and wait for `<id> version set`.
+
+Never run `set version` yourself: the PO does, for every ticket.
 
 ---
 
@@ -60,11 +67,14 @@ their dependencies.
 ## Step 4 — Reservations and dependencies
 
 ```
-Does a ticket in flight (Ready for dev to Ready to merge) reserve a file this one reserves?
-├── YES → this ticket depends on that one, or re-plan one of them; comment it on both
-└── NO  → is every ticket this one depends on Done?
-    ├── YES → Step 5
-    └── NO  → it stays in Refinement; comment the dependency, and recheck on `<dep> merged`
+Does it carry a target version (`read version`)?
+├── NO  → it stays in Refinement: Step 1, the target version
+└── YES → does a ticket in flight (Ready for dev to Ready to merge) reserve a file this one
+          reserves?
+    ├── YES → this ticket depends on that one, or re-plan one of them; comment it on both
+    └── NO  → is every ticket this one depends on Done?
+        ├── YES → Step 5
+        └── NO  → it stays in Refinement; comment the dependency, and recheck on `<dep> merged`
 ```
 
 ---
@@ -96,7 +106,9 @@ Does a ticket in flight (Ready for dev to Ready to merge) reserve a file this on
 
 Work asked of this session directly, or found in passing, gets a ticket first: `create` one of
 type `tech` (or `fix` or `chore`) whose Requirement quotes the asker, or states the finding with
-its evidence, then take it from Step 1.
+its evidence. It gets a target version like any other ticket: propose one on it (`comment`) and
+message the PO `<id> version change`. Then take it from Step 1, where it waits for
+`<id> version set`.
 
 ---
 

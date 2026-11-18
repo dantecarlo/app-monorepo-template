@@ -18,7 +18,7 @@
 //     name the hotfix's line `<id> ready to merge, hotfix`, rules that name
 //     both merge policies, a ticket identity that names `branchTypes` and
 //     the `json ticket-identity` block, and its ticket and release
-//     templates;
+//     templates, the ticket's target version marked required;
 //   - a role skill: a first paragraph that names ticket-flow's SKILL.md, and
 //     neither of the contract's two tables; `refine-ticket` a merge queue
 //     that names both merge policies and a release step that names the
@@ -188,6 +188,11 @@ const HOTFIX_LEFT = 'QA leaves it at Ready to merge'
 const RELEASE_STEP = '## Group a release'
 const MESSAGES_HEADING = '## Messages'
 const HOTFIX_HEADING = '## Hotfix'
+
+// Every ticket carries a target version, so every ticket closes through a
+// release: the ticket template marks the field required.
+const TARGET_VERSION_HEADING = '## Target version'
+const VERSION_REQUIRED = '**Version (required):**'
 const hotfixMention = ({ heading }) => ({
   heading,
   text: codeOf({ text: HOTFIX_MESSAGE })
@@ -217,13 +222,16 @@ export const SKILL_CONTRACTS = [
         headings: [
           '## Requirement',
           '## Acceptance criteria',
-          '## Target version',
+          TARGET_VERSION_HEADING,
           '## Spec',
           '## Areas and subtasks',
           '## Test plan',
           '## Branch and pull request',
           '## QA evidence',
           '## Risk'
+        ],
+        mentions: [
+          { heading: TARGET_VERSION_HEADING, text: VERSION_REQUIRED }
         ],
         name: 'ticket.template.md'
       },
@@ -697,7 +705,9 @@ export const gate = defineGate({
     `${HOTFIX_MESSAGE}, rules that name ` +
     'both merge policies (manual and low-risk), a ticket identity that ' +
     `names branchTypes and the ${IDENTITY_INFO} block, and its ticket and ` +
-    'release templates; each role skill opens by sending the reader to ticket-flow ' +
+    'release templates, the ticket template naming its target version ' +
+    `${VERSION_REQUIRED}; each role skill opens by sending the reader to ` +
+    'ticket-flow ' +
     "and copies neither of the contract's tables, refine-ticket has a " +
     'merge queue that names both merge policies and a release step that ' +
     `names ${HOTFIX_MESSAGE}, qa-ticket a checkout step that names ` +

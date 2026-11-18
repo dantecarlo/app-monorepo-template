@@ -63,6 +63,7 @@ const PUSH_NAMED = 'It names git push origin HEAD:<branch>.'
 const HOTFIX_NAMED = 'It names `<id> ready to merge, hotfix`.'
 const READY_TO_MERGE_NAMED = 'It names ready to merge, PR #.'
 const DONE_MOVE = 'Ready to merge → Done'
+const VERSION_REQUIRED_NAMED = 'It names **Version (required):**.'
 const HOTFIX_LEFT_NAMED = 'It names QA leaves it at Ready to merge.'
 const POLICY_FIELD = '- **Policy:**'
 const POLICY_LINE = `${POLICY_FIELD} \`manual\``
@@ -279,6 +280,18 @@ export const CASES = [
     }),
     expected: 1,
     name: 'a ticket template without its target version is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [`${CONTRACT}/${TICKET_TEMPLATE}`]: replace({
+          from: VERSION_REQUIRED_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a ticket template that does not mark its version required is refused'
   },
   {
     context: skills({

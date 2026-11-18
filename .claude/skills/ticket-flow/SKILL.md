@@ -60,7 +60,8 @@ The three kinds of adapter:
 - **(a) `gh`, GitHub Issues** — the template's default, mapped above. A ticket is an issue, a
   state is a `ticket:<state>` label (§ States and transitions), the type is a `type:<type>` label,
   a comment is an issue comment, and the target version is the issue's milestone: a release
-  version is a milestone, and its release ticket lists the milestone's issues. The pull request
+  version is a milestone, and its release ticket lists the milestone's issues. An issue with no
+  milestone has no target version, and that stops it in Refinement (§ Target version). The pull request
   links the issue with `Refs #<id>`, never `Closes`, so the merge does not close it: the
   architect does, at Closed, with `gh issue close <id>`.
 - **(b) an MCP connector** — Notion, Jira or Linear. The project layer names the tool call each
@@ -82,7 +83,7 @@ The project layer maps its own state names onto these.
 | --- | --- | --- | --- |
 | Backlog | PO creates the ticket | Architect: `<id> new` | `ticket:backlog` |
 | Refinement | Architect takes it; a release ticket is created here | none (the owner approves the specs in the architect's session when the spec mechanism requires it) | `ticket:refinement` |
-| Ready for dev | Architect: plan done, every ticket it depends on Done, no reserved file held by a ticket in flight | the assigned dev session: `<id> ready for dev` | `ticket:ready-for-dev` |
+| Ready for dev | Architect: plan done, target version set, every ticket it depends on Done, no reserved file held by a ticket in flight | the assigned dev session: `<id> ready for dev` | `ticket:ready-for-dev` |
 | In dev | Dev picks it up, or picks it up again after Changes requested | none | `ticket:in-dev` |
 | Ready for QA | Dev: build and tests done | Architect, then the architect tells the area's QA: `<id> ready for QA, branch <b>` | `ticket:ready-for-qa` |
 | In QA | QA picks it up | none | `ticket:in-qa` |
@@ -130,7 +131,7 @@ needs it, the branch. It carries no requirement, decision or file list: those li
 | `<id> closed` | architect to PO |
 | `<id> question` | any session to the owner of the answer: the PO for scope, the architect for the plan, the dev session for its build |
 | `<id> scope changed` | PO to architect |
-| `<id> version change` | architect to PO: a move of the target version, proposed on the ticket |
+| `<id> version change` | architect to PO: a target version proposed on the ticket, a move or the first one of a ticket that has none |
 | `<id> version set` | PO to architect: the move confirmed and set |
 | `<release-id> check on staging` | architect to the QA of each area the release touches |
 | `<release-id> staging checked` | QA to architect |
@@ -247,9 +248,16 @@ their dependencies, so each ticket has one dev session, one branch and one QA se
 
 ## Target version
 
-- A ticket carries the version it is aimed at, so the CI/CD session knows which tickets a
-  release ships. The PO proposes it when it creates the ticket (`set version`); the architect
-  confirms it during refinement, or proposes a correction.
+- **Every ticket carries one**, whatever its type (`feature`, `fix`, `tech` or `chore`; a test
+  or docs ticket is a `tech` one), so every ticket closes through a release and the CI/CD session
+  knows which tickets a release ships. The PO creates no ticket without one (`po-ticket` Steps 2
+  and 3). The architect moves none past Refinement without one (`refine-ticket` Steps 1 and 4):
+  a ticket with none stops there, and under the GitHub Issues adapter an issue with no milestone
+  has none. No gate reads the board, and `scripts/verify-ticket-branch.mjs` judges a branch and
+  a pull request body only, so those steps are where the rule is checked.
+- The PO sets it when it creates the ticket (`set version`); the architect confirms it during
+  refinement, or proposes a correction. Only the PO runs `set version`: the first version of a
+  technical ticket the architect files goes through it like a move.
 - Moving a target version changes a commitment, so it goes through the PO: the architect proposes
   the move on the ticket (`comment`) and messages the PO `<id> version change`; the PO confirms
   it, sets it (`set version`), updates the general plan and messages the architect
@@ -265,7 +273,7 @@ Written from `ticket.template.md`, in this folder; a release ticket from `releas
 
 - the client's requirement, verbatim;
 - acceptance criteria;
-- its target version;
+- its target version, which every ticket carries;
 - the link to its spec, never a copy of the spec;
 - the areas and subtasks, with the files each one reserves and the tickets it depends on;
 - the test plan: unit tests and the end-to-end flows by id;
