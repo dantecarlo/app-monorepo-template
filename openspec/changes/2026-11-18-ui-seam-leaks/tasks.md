@@ -6,7 +6,7 @@
 - [x] T4 — the mobile `ui/Gradient` block, the accent gradient, the skeleton and the toggle on it, the dashboard header test without its vendor mock, the seam narrowed and the `expo-linear-gradient` allowlist entry removed · Requirements: MOBILE-71 · Commit: 6314bc8
 - [x] T5 — the mobile `ui/StatusBar` block with `StatusBarStyleType`, the root layout and the root theme's type on it, the layout test mocking it, the seam narrowed and the 3 `expo-status-bar` allowlist entries removed · Requirements: MOBILE-72 · Commit: a1eb12a
 - [x] T6 — `applyTheme` in `lib/theme`, the `Screen` and `Text` tests on it, and the 2 unit-5 `nativewind` allowlist entries removed · Requirements: MOBILE-73 · Commit: 8ec65af
-- [ ] T7 — the `component` and `modify` skills, `docs/code-standards.md` § 22, `docs/architecture/web.md` and `mobile.md`, and `docs/maps/global-map.md` · Requirements: none · Commit: —
+- [x] T7 — the `component` and `modify` skills, `docs/code-standards.md` § 22, `docs/architecture/web.md` and `mobile.md`, and `docs/maps/global-map.md` · Requirements: none · Commit: 2b2b35c
 - [ ] T8 — `verify-report.md`, then the archive into the living specs · Requirements: none · Commit: —
 
 <!--
