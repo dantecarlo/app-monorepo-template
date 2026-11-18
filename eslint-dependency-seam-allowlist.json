@@ -75,21 +75,6 @@
     "reason": "F.8 unit 5: the ui block's test sets the theme through lib/theme, not the vendor; the test then mocks the project module, not the vendor."
   },
   {
-    "path": "apps/mobile/src/lib/i18n/__tests__/i18n.config.test.ts",
-    "package": "@react-native-async-storage/async-storage",
-    "reason": "F.8 unit 4: the key-value storage port and its lib/storage adapter take this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/lib/i18n/i18n.config.ts",
-    "package": "@react-native-async-storage/async-storage",
-    "reason": "F.8 unit 4: the key-value storage port and its lib/storage adapter take this import."
-  },
-  {
-    "path": "apps/mobile/src/lib/theme/theme.config.ts",
-    "package": "@react-native-async-storage/async-storage",
-    "reason": "F.8 unit 4: the key-value storage port and its lib/storage adapter take this import."
-  },
-  {
     "path": "apps/mobile/src/lib/theme/useRootTheme.type.ts",
     "package": "expo-status-bar",
     "reason": "F.8 unit 5: a components/ui/StatusBar block with its own style type takes this import."

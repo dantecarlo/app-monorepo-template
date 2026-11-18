@@ -118,7 +118,7 @@
       "name": "@react-native-async-storage/async-storage",
       "category": "infra",
       "seam": ["apps/mobile/src/lib/storage/keyValueStorage.adapter.ts"],
-      "note": "Behind IKeyValueStoragePort of @app/core. The theme and language configs still import it until F.8 unit 4 moves them onto the adapter."
+      "note": "Behind IKeyValueStoragePort of @app/core: the theme and language configs and every persisted store keep their values on the device through keyValueStorage of lib/storage."
     },
     {
       "name": "expo-splash-screen",

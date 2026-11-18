@@ -7,11 +7,12 @@ import {
   SUPPORTED_LANGUAGES,
   type SupportedLanguageType
 } from '@app/i18n'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { getLocales } from 'expo-localization'
 import i18n from 'i18next'
 import ICU from 'i18next-icu'
 import { initReactI18next } from 'react-i18next'
+
+import { keyValueStorage } from '@/lib/storage'
 
 const LANGUAGE_STORAGE_KEY = 'app.language'
 
@@ -28,14 +29,16 @@ export const getSafeLanguage = (
 export const setLanguage = async (
   lang: SupportedLanguageType
 ): Promise<void> => {
-  await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, lang)
+  await keyValueStorage.setItem({ key: LANGUAGE_STORAGE_KEY, value: lang })
   await i18n.changeLanguage(lang)
 }
 
 const resolveInitialLanguage =
   async (): Promise<SupportedLanguageType> => {
     try {
-      const stored = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY)
+      const stored = await keyValueStorage.getItem({
+        key: LANGUAGE_STORAGE_KEY
+      })
       if (
         stored &&
         (SUPPORTED_LANGUAGES as ReadonlyArray<string>).includes(stored)
@@ -43,7 +46,7 @@ const resolveInitialLanguage =
         return stored as SupportedLanguageType
       }
     } catch {
-      // AsyncStorage unavailable — fall through to device locale
+      // The device storage is unavailable — fall through to device locale
     }
     const locales = getLocales()
     const deviceTag = locales[0]?.languageCode ?? null
