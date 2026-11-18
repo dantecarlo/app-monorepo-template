@@ -1,6 +1,6 @@
 # Proposal: every dependency registered, and imported only inside its seam
 
-> **Status:** open
+> **Status:** archived — 2026-11-18
 
 ## Why
 

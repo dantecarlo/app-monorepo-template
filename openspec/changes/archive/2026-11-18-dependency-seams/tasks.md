@@ -4,7 +4,7 @@
 - [x] T2 — the fixture app `eslint-local-rules/__fixtures__/apps/fixture/`, linted through the real config as `apps/fixture/` · Requirements: SEAM-09 · Commit: 9f10e98
 - [x] T3 — `pnpm verify:dependency-seams` (`scripts/verify-dependency-seams.mjs`, `scripts/dependency-seams.detect.mjs`) with its test, both run by `validate`; the manifest claims · Requirements: SEAM-01, SEAM-07, SEAM-08 · Commit: 552a1dd
 - [x] T4 — `docs/code-standards.md` § 23 and its § 21 rows, `docs/harness.md`, `docs/maps/global-map.md`, the `lib` skill and `AGENTS.md` § Conventions · Requirements: none · Commit: f8985c0
-- [ ] T5 — `verify-report.md`, then the archive: the living spec `openspec/specs/harness/dependency-seams/spec.md`, its row in `openspec/README.md` § 2.1, and the folder moved to `openspec/changes/archive/2026-11-18-dependency-seams/` · Requirements: none · Commit: —
+- [x] T5 — `verify-report.md`, then the archive: the living spec `openspec/specs/harness/dependency-seams/spec.md`, its row in `openspec/README.md` § 2.1, and the folder moved to `openspec/changes/archive/2026-11-18-dependency-seams/` · Requirements: none · Commit: dd62315
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of
