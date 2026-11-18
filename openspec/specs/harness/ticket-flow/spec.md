@@ -34,7 +34,7 @@ Ready to merge conditions and the release stage, beside two templates in its fol
 
 **Evidence:** `.claude/skills/ticket-flow/SKILL.md:29`, `.claude/skills/ticket-flow/SKILL.md:43`,
 `.claude/skills/ticket-flow/SKILL.md:77`, `.claude/skills/ticket-flow/SKILL.md:142`,
-`.claude/skills/ticket-flow/SKILL.md:293`, `.claude/skills/ticket-flow/ticket.template.md:21`,
+`.claude/skills/ticket-flow/SKILL.md:294`, `.claude/skills/ticket-flow/ticket.template.md:21`,
 `.claude/skills/ticket-flow/release.template.md:11`, `scripts/verify-skills.mjs:202`
 
 #### Scenario: the contract of the repository
@@ -523,7 +523,7 @@ under no policy: it waits at Ready to merge for its release (TICKET-24).
 
 **Evidence:** `.claude/skills/qa-ticket/SKILL.md:65`, `.claude/skills/qa-ticket/SKILL.md:84`,
 `.claude/skills/qa-ticket/SKILL.md:116`, `.claude/skills/ticket-flow/SKILL.md:170`,
-`.claude/skills/ticket-flow/SKILL.md:271`
+`.claude/skills/ticket-flow/SKILL.md:272`
 
 #### Scenario: a green branch behind its base
 
@@ -628,7 +628,7 @@ staging or preview, with evidence on the release ticket. `ticket-flow`'s Ready f
 the same exception.
 
 **Evidence:** `.claude/skills/refine-ticket/SKILL.md:111`, `.claude/skills/ticket-flow/SKILL.md:93`,
-`.claude/skills/ticket-flow/SKILL.md:301`, `.claude/skills/release-ticket/SKILL.md:35`,
+`.claude/skills/ticket-flow/SKILL.md:302`, `.claude/skills/release-ticket/SKILL.md:35`,
 `.claude/skills/ticket-flow/release.template.md:14`
 
 #### Scenario: an area not checked on staging
@@ -699,7 +699,7 @@ running against the new schema, and declare a migration's rollback as a forward 
 the PO confirms the architect's proposal on the ticket, refreshing the general plan.
 
 **Evidence:** `.claude/skills/po-ticket/SKILL.md:54`, `.claude/skills/po-ticket/SKILL.md:68`,
-`.claude/skills/refine-ticket/SKILL.md:32`, `.claude/skills/ticket-flow/SKILL.md:240`
+`.claude/skills/refine-ticket/SKILL.md:32`, `.claude/skills/ticket-flow/SKILL.md:241`
 
 #### Scenario: the plan cannot meet the version
 

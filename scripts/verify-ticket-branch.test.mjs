@@ -375,12 +375,17 @@ export const CASES = [
   }
 ]
 
-const runCheck = ({ args = [], body, branch, cwd }) =>
-  spawnSync(
+// The check as a process. `cwd` is required: run from the repository's own
+// working directory, the check would read a project layer that a downstream
+// project declares, and the case would judge that layer, not its own input.
+const runCheck = ({ args = [], body, branch, cwd }) => {
+  if (!cwd) throw new Error('runCheck needs the scratch tree it runs in')
+  return spawnSync(
     process.execPath,
     [CHECK, '--branch', branch, '--body', body, ...args],
     { cwd, encoding: 'utf8' }
   )
+}
 
 // The check as a process whose working directory is a scratch tree
 // holding `files`, docs/process/ticket-flow.md among them or not.
@@ -520,7 +525,8 @@ const checks = [
           const result = runCheck({
             args: ['--layer', layer],
             body: TASK_SLUG_BODY,
-            branch: TASK_SLUG_BRANCH
+            branch: TASK_SLUG_BRANCH,
+            cwd: root
           })
           assert.equal(result.status, PASSED, result.stderr)
           assert.ok(
@@ -575,7 +581,11 @@ const checks = [
   {
     name: 'the check exits 1 and names the id the body owes',
     run: () => {
-      const result = runCheck({ body: 'Refs #124\n', branch: ISSUE_BRANCH })
+      const result = runIn({
+        body: 'Refs #124\n',
+        branch: ISSUE_BRANCH,
+        files: {}
+      })
       assert.equal(result.status, FAILED, result.stdout)
       assert.match(result.stderr, /#123/u)
       assert.match(result.stderr, /verify-ticket-branch: 1 problem/u)
@@ -584,7 +594,11 @@ const checks = [
   {
     name: 'the check exits 0 and states what it judged',
     run: () => {
-      const result = runCheck({ body: ISSUE_BODY, branch: ISSUE_BRANCH })
+      const result = runIn({
+        body: ISSUE_BODY,
+        branch: ISSUE_BRANCH,
+        files: {}
+      })
       assert.equal(result.status, PASSED, result.stderr)
       assert.match(result.stdout, /verify-ticket-branch: PASS/u)
       assert.ok(
@@ -597,8 +611,11 @@ const checks = [
   {
     name: 'the check run with no arguments refuses an empty branch and body',
     run: () => {
-      const result = spawnSync(process.execPath, [CHECK], {
-        encoding: 'utf8'
+      const result = withScratchTree({
+        files: {},
+        prefix: 'verify-ticket-branch-bare-',
+        use: ({ root }) =>
+          spawnSync(process.execPath, [CHECK], { cwd: root, encoding: 'utf8' })
       })
       assert.equal(result.status, FAILED, result.stdout)
       assert.ok(
