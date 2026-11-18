@@ -95,6 +95,7 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 - F.6, the i18n follow-ups: F10 (web client components and `<html lang>` follow the active locale, the switcher works both ways) and F14 (every block label and the item age from the catalogs in both apps, catalog keys typed by the default catalog, parity across every catalog, named sign-in failures) (this change).
 - F.7, observability: PostHog is the default adapter in both apps, with privacy defaults, one port contract suite every adapter runs, and Sentry an optional `sentry` capability `/init` can prune with no dangling import (this change).
 - F.8 unit 1: the dependency registry `.agents/contracts/dependencies.json`, the `local/dependency-seam` rule applied by pattern, and the `verify:dependency-seams` gate, with today's imports frozen in an allowlist that only shrinks (this change).
+- F.8 unit 1b: every ESLint block applies by pattern, and the React, Next.js and Expo blocks by what each `apps/*/package.json` declares, proven by identical findings before and after and by plain React, Next.js and Expo fixture apps (this change).
 - F.2, the Supabase hardening (#21; the native review did not fit its context budget, and the owner chose to merge on the independent verifier).
 - The ticket flow: seven skills (`ticket-flow`, `po-ticket`, `refine-ticket`, `dev-ticket`, `qa-ticket`, `release-ticket`, `process-intake`), the board and the deploy targets as adapters, the release stage and the target version, the pure `verify:ticket-branch` check, and the living spec harness/ticket-flow (this change; Certifipago adopts it with its own project layer).
 - The ticket flow's adoption fixes: the merge policy (#34), the project's ticket identity and neutral examples (#37), and the QA checkout detached at the remote branch, a branch brought current by merging its base, and a hotfix held at Ready to merge and shipped only as its release (this change).
@@ -261,7 +262,7 @@ The template adopts what works and closes those gaps.
 
 F.8 work units, in order:
 1. the registry, the rule and the gate, with the frozen allowlist (done: 143 frozen imports, by unit: 2 → 82, 3 → 8, 4 → 11, 5 → 20, 6 → 20, 7 → 2);
-1b. every ESLint block applied to `apps/*` and `packages/*` by pattern, not per app (decision 52), so the fixture app inherits every rule, not only `local/dependency-seam`;
+1b. every ESLint block applied to `apps/*` and `packages/*` by pattern, not per app (decision 52), so the fixture app inherits every rule, not only `local/dependency-seam` (done: framework blocks by what each app declares; identical findings before and after);
 2. the i18n seam in both apps;
 3. the query seam's own types and provider;
 4. `createAppStore` and the key-value storage port;
@@ -506,6 +507,7 @@ defects behind them, for changes of their own.
 | F51 | harness | a shipped skill named a downstream project, which that project's core-purity gate refuses on sync; the examples are neutral now (#37), but no template gate stops a skill from naming one again | small; a check in `verify:skills` or a core-purity gate |
 | F52 | harness | when `/init` drops a capability (Sentry, mobile, Supabase), its entries in `.agents/contracts/dependencies.json` and their seam globs go stale, and `verify:dependency-seams` fails in that project; the manifest should claim each capability's registry entries so the prune removes them | small; before Stage 6 |
 | F53 | harness | the native review of F.8 unit 1: `verify:dependency-seams` skips an unreadable `package.json` silently and miscounts with a malformed registry; the rule caches the registry for an editor session, untested detection branches remain, and the seam rule covers `apps/*` and `packages/*` only (root scripts import no vendor today) | small |
+| F55 | harness | after F.8 unit 1b, `verify:allowlist-freshness`, `verify:maps` and `verify:tests` still walk the web and mobile app folders by name, a React package under `packages/` would get the shared rules but not the React set, and `packages/tokens` keeps browser globals and React rules it does not need | small; read the workspace list from `scripts/eslint-config.detect.mjs` |
 
 ---
 
