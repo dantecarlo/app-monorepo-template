@@ -1,4 +1,3 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
@@ -6,6 +5,7 @@ import { AppI18nProvider } from '@/lib/i18n/AppI18nProvider.component'
 import { useToastStore } from '@/stores/toast.store'
 import { withCopy } from '@/test/intl.helper'
 import { MOCK_ITEM_DTOS } from '@/test/mocks/items.mock'
+import { createQueryWrapper } from '@/test/query.helper'
 import { fireEvent, render, screen, waitFor } from '@/test/test.helper'
 
 const { mockGetItems } = vi.hoisted(() => ({
@@ -62,15 +62,13 @@ const messages = {
 }
 
 const createWrapper = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } }
-  })
+  const QueryWrapper = createQueryWrapper()
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
+    <QueryWrapper>
       <AppI18nProvider locale="en" messages={withCopy({ copy: messages })}>
         {children}
       </AppI18nProvider>
-    </QueryClientProvider>
+    </QueryWrapper>
   )
   return Wrapper
 }

@@ -51,11 +51,6 @@
   },
   {
     "path": "apps/mobile/src/app/_layout.tsx",
-    "package": "@tanstack/react-query",
-    "reason": "F.8 unit 3: the query seam's own types and AppQueryProvider, in lib/query, take this import."
-  },
-  {
-    "path": "apps/mobile/src/app/_layout.tsx",
     "package": "expo-splash-screen",
     "reason": "F.8 unit 6: lib/bootstrap takes this import."
   },
@@ -110,11 +105,6 @@
     "reason": "F.8 unit 5: the components/ui block that wraps it takes this import; the test then mocks the project module, not the vendor."
   },
   {
-    "path": "apps/mobile/src/screens/ItemsDashboard/hooks/__tests__/useItems.hook.test.ts",
-    "package": "@tanstack/react-query",
-    "reason": "F.8 unit 3: the query seam's own types and AppQueryProvider, in lib/query, take this import; the test then mocks the project module, not the vendor."
-  },
-  {
     "path": "apps/mobile/src/stores/auth.store.ts",
     "package": "zustand",
     "reason": "F.8 unit 4: createAppStore, in lib/store, takes this import."
@@ -138,11 +128,6 @@
     "path": "apps/web/src/app/__tests__/providers.test.tsx",
     "package": "next/navigation",
     "reason": "F.8 unit 6: lib/routing takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/app/providers.tsx",
-    "package": "@tanstack/react-query",
-    "reason": "F.8 unit 3: the query seam's own types and AppQueryProvider, in lib/query, take this import."
   },
   {
     "path": "apps/web/src/components/ui/AuthShell/__tests__/AuthShell.component.test.tsx",
@@ -225,21 +210,6 @@
     "reason": "F.8 unit 5: explicit variant unions in *.constant.ts replace the VariantProps type."
   },
   {
-    "path": "apps/web/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx",
-    "package": "@tanstack/react-query",
-    "reason": "F.8 unit 3: the query seam's own types and AppQueryProvider, in lib/query, take this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/screens/ItemsDashboard/hooks/__tests__/useItems.hook.test.ts",
-    "package": "@tanstack/react-query",
-    "reason": "F.8 unit 3: the query seam's own types and AppQueryProvider, in lib/query, take this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/screens/Login/__tests__/Login.screen.test.tsx",
-    "package": "@tanstack/react-query",
-    "reason": "F.8 unit 3: the query seam's own types and AppQueryProvider, in lib/query, take this import; the test then mocks the project module, not the vendor."
-  },
-  {
     "path": "apps/web/src/screens/Login/__tests__/Login.screen.test.tsx",
     "package": "next/image",
     "reason": "F.8 unit 5: a components/ui/Image block takes this import; the test then mocks the project module, not the vendor."
@@ -251,18 +221,8 @@
   },
   {
     "path": "apps/web/src/screens/Login/hooks/__tests__/useLoginForm.hook.test.ts",
-    "package": "@tanstack/react-query",
-    "reason": "F.8 unit 3: the query seam's own types and AppQueryProvider, in lib/query, take this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/screens/Login/hooks/__tests__/useLoginForm.hook.test.ts",
     "package": "next/navigation",
     "reason": "F.8 unit 6: lib/routing takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/screens/Login/hooks/__tests__/useSignIn.hook.test.ts",
-    "package": "@tanstack/react-query",
-    "reason": "F.8 unit 3: the query seam's own types and AppQueryProvider, in lib/query, take this import; the test then mocks the project module, not the vendor."
   },
   {
     "path": "apps/web/src/screens/Login/hooks/__tests__/useSignIn.hook.test.ts",

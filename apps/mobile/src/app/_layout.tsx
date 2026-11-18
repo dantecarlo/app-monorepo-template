@@ -15,7 +15,6 @@ import {
   Montserrat_800ExtraBold,
   useFonts
 } from '@expo-google-fonts/montserrat'
-import { QueryClientProvider } from '@tanstack/react-query'
 import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
@@ -27,6 +26,7 @@ import { AuthProvider } from '@/components/AuthProvider'
 import { Toast } from '@/components/ui/Toast'
 import { observability } from '@/lib/observability/observability.adapter'
 import { toCaptureError } from '@/lib/observability/toCaptureError.helper'
+import { AppQueryProvider } from '@/lib/query/AppQueryProvider.component'
 import { createQueryClient } from '@/lib/query/createQueryClient.helper'
 import { supabase } from '@/lib/supabase/client.adapter'
 import { useRootTheme } from '@/lib/theme/useRootTheme.hook'
@@ -65,7 +65,7 @@ const RootLayout = () => {
 
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
+      <AppQueryProvider client={queryClient}>
         <AuthProvider gateway={authGateway}>
           <View style={themeStyle}>
             <StatusBar style={statusBarStyle} />
@@ -79,7 +79,7 @@ const RootLayout = () => {
             <Toast />
           </View>
         </AuthProvider>
-      </QueryClientProvider>
+      </AppQueryProvider>
     </SafeAreaProvider>
   )
 }

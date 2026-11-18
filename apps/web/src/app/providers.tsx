@@ -2,7 +2,6 @@
 
 import type { IAuthGateway } from '@app/core'
 import type { SupportedLanguageType } from '@app/i18n'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { AuthProvider } from '@/components/AuthProvider'
@@ -12,11 +11,13 @@ import { AppI18nProvider } from '@/lib/i18n/AppI18nProvider.component'
 import type { AppMessagesType } from '@/lib/i18n/AppI18nProvider.type'
 import { observability } from '@/lib/observability/observability.adapter'
 import { toCaptureError } from '@/lib/observability/toCaptureError.helper'
+import type { AppQueryClientType } from '@/lib/query/appQueryClient.type'
+import { AppQueryProvider } from '@/lib/query/AppQueryProvider.component'
 import { createQueryClient } from '@/lib/query/createQueryClient.helper'
 
-let browserQueryClient: QueryClient | undefined
+let browserQueryClient: AppQueryClientType | undefined
 
-const getQueryClient = (): QueryClient => {
+const getQueryClient = (): AppQueryClientType => {
   const onCaptureError = toCaptureError({ observability })
   if (typeof window === 'undefined') {
     return createQueryClient({ onCaptureError })
@@ -45,10 +46,10 @@ export const Providers = ({
 
   return (
     <AppI18nProvider locale={locale} messages={messages}>
-      <QueryClientProvider client={queryClient}>
+      <AppQueryProvider client={queryClient}>
         <AuthProvider gateway={gateway}>{children}</AuthProvider>
         <Toast />
-      </QueryClientProvider>
+      </AppQueryProvider>
     </AppI18nProvider>
   )
 }

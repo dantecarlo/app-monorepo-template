@@ -1,12 +1,12 @@
 import { AppError } from '@app/core'
 import { DEFAULT_LANGUAGE, resources } from '@app/i18n'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { AppI18nProvider } from '@/lib/i18n/AppI18nProvider.component'
 import { createQueryClient } from '@/lib/query/createQueryClient.helper'
 import { useToastStore } from '@/stores/toast.store'
+import { createQueryWrapper } from '@/test/query.helper'
 import { act, renderHook, waitFor } from '@/test/test.helper'
 
 // Only the browser Supabase client is replaced: the auth gateway, the auth
@@ -42,17 +42,16 @@ const SUPABASE_SESSION = {
 
 const renderSignIn = () => {
   const onCaptureError = vi.fn()
-  const queryClient: QueryClient = createQueryClient({ onCaptureError })
+  const queryClient = createQueryClient({ onCaptureError })
+  const QueryWrapper = createQueryWrapper({ client: queryClient })
   const Wrapper = ({ children }: { children: React.ReactNode }) =>
-    React.createElement(
-      QueryClientProvider,
-      { client: queryClient },
-      React.createElement(AppI18nProvider, {
+    React.createElement(QueryWrapper, {
+      children: React.createElement(AppI18nProvider, {
         children,
         locale: DEFAULT_LANGUAGE,
         messages
       })
-    )
+    })
   const view = renderHook(() => useSignIn(), { wrapper: Wrapper })
   return { ...view, onCaptureError, queryClient }
 }

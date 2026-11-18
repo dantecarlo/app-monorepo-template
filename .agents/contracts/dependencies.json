@@ -100,7 +100,8 @@
     {
       "name": "@tanstack/react-query",
       "category": "infra",
-      "seam": ["apps/*/src/lib/query/**"]
+      "seam": ["apps/*/src/lib/query/**"],
+      "note": "Behind useAppQuery, useAppMutation, useInvalidateAppQuery and AppQueryProvider, whose option and result types are the project's own; tests render through createQueryWrapper of src/test/query.helper.tsx. The seam stays the folder: the tests of the key factories reach the client too."
     },
     {
       "name": "zustand",
