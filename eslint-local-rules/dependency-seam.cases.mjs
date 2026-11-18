@@ -48,6 +48,13 @@ const refused = ({ code, kinds, name, path }) => ({
   errors: kinds.map((messageId) => ({ messageId }))
 })
 
+// The vendor SDKs the old no-restricted-imports patterns refused. They are
+// spelled apart from any import text: the prune check of the sentry
+// capability (packages/tooling/src/prune-boundary.mjs) reads every
+// `from '…'` of the repository, strings included.
+const SENTRY_SDK = ['@sentry', 'nextjs'].join('/')
+const STRIPE_SDK = ['@stripe', 'stripe-js'].join('/')
+
 const WEB_SCREEN = 'apps/web/src/screens/Example/Example.screen.tsx'
 const WEB_SCREEN_TEST =
   'apps/web/src/screens/Example/__tests__/Example.screen.test.tsx'
@@ -79,7 +86,10 @@ const RULE_CASES = {
       path: WEB_SCREEN
     }),
     refused({
-      code: "import * as Sentry from '@sentry/nextjs'\nimport { loadStripe } from '@stripe/stripe-js'",
+      code: [
+        `import * as Sentry from '${SENTRY_SDK}'`,
+        `import { loadStripe } from '${STRIPE_SDK}'`
+      ].join('\n'),
       kinds: [OUTSIDE_SEAM, UNREGISTERED],
       name: 'a vendor SDK the old import patterns refused is still refused',
       path: WEB_SCREEN
