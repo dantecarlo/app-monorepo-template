@@ -6,7 +6,7 @@
 - [x] T4 — apps/mobile: the consent storage · Requirements: MOBILE-54 · Commit: 6710047
 - [x] T5 — apps/mobile: the consent mode setting, its resolver and the SDK options of each mode, the opt-in at launch, privacy defaults under every mode · Requirements: MOBILE-50, MOBILE-52, MOBILE-53 · Commit: 5df5de9
 - [x] T6 — apps/mobile: the PostHog consent adapter and the composition root, exported from the observability barrel · Requirements: MOBILE-55 · Commit: 152ab84
-- [ ] T7 — docs: `docs/observability.md`, both `.env.example` files, the env table of `AGENTS.md`, the architecture docs and the global map · Requirements: none · Commit: —
+- [x] T7 — docs: `docs/observability.md`, both `.env.example` files, the env table of `AGENTS.md`, the architecture docs and the global map · Requirements: none · Commit: a299302
 - [ ] T8 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-18-posthog-consent/` as the last commit · Requirements: none · Commit: —
 
 <!--
