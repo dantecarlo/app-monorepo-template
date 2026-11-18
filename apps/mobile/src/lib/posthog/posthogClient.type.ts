@@ -33,5 +33,5 @@ export interface IPostHogClient {
   identify(distinctId: string, properties?: PostHogPropertiesType): void
   optIn(): Promise<void>
   optOut(): Promise<void>
-  reset(): void
+  reset(propertiesToKeep?: string[]): void
 }
