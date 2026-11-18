@@ -4,7 +4,7 @@
 - [x] T2 — `IAsyncBoundaryFallbackProps` in both apps, and the `react-error-boundary` seam narrowed to the boundary's component file · Requirements: WEB-71, MOBILE-70 · Commit: ee9d6a2
 - [x] T3 — the web `ui/Image` block, the logo on it, every test mocking it instead of `next/image`, the seam narrowed and the 4 `next/image` allowlist entries removed · Requirements: WEB-72 · Commit: b735563
 - [x] T4 — the mobile `ui/Gradient` block, the accent gradient, the skeleton and the toggle on it, the dashboard header test without its vendor mock, the seam narrowed and the `expo-linear-gradient` allowlist entry removed · Requirements: MOBILE-71 · Commit: 6314bc8
-- [ ] T5 — the mobile `ui/StatusBar` block with `StatusBarStyleType`, the root layout and the root theme's type on it, the layout test mocking it, the seam narrowed and the 3 `expo-status-bar` allowlist entries removed · Requirements: MOBILE-72 · Commit: —
+- [x] T5 — the mobile `ui/StatusBar` block with `StatusBarStyleType`, the root layout and the root theme's type on it, the layout test mocking it, the seam narrowed and the 3 `expo-status-bar` allowlist entries removed · Requirements: MOBILE-72 · Commit: a1eb12a
 - [ ] T6 — `applyTheme` in `lib/theme`, the `Screen` and `Text` tests on it, and the 2 unit-5 `nativewind` allowlist entries removed · Requirements: MOBILE-73 · Commit: —
 - [ ] T7 — the `component` and `modify` skills, `docs/code-standards.md` § 22, `docs/architecture/web.md` and `mobile.md`, and `docs/maps/global-map.md` · Requirements: none · Commit: —
 - [ ] T8 — `verify-report.md`, then the archive into the living specs · Requirements: none · Commit: —

@@ -60,16 +60,6 @@
     "reason": "F.8 unit 6: lib/bootstrap takes this import."
   },
   {
-    "path": "apps/mobile/src/components/ui/Screen/__tests__/Screen.component.test.tsx",
-    "package": "nativewind",
-    "reason": "F.8 unit 5: the ui block's test sets the theme through lib/theme, not the vendor; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/components/ui/Text/__tests__/Text.component.test.tsx",
-    "package": "nativewind",
-    "reason": "F.8 unit 5: the ui block's test sets the theme through lib/theme, not the vendor; the test then mocks the project module, not the vendor."
-  },
-  {
     "path": "apps/mobile/src/hooks/useSession.hook.ts",
     "package": "zustand",
     "reason": "F.8 unit 4: createAppStore, in lib/store, takes this import."

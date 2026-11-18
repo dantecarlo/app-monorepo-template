@@ -1,8 +1,8 @@
-import { themes } from '@app/tokens'
-import { colorScheme } from 'nativewind'
+import { ThemeEnum, themes } from '@app/tokens'
 import { afterEach, describe, expect, test } from 'vitest'
 
 import { Screen } from '@/components/ui/Screen/Screen.component'
+import { applyTheme } from '@/lib/theme/colorScheme.adapter'
 import { render, screen } from '@/test/test.helper'
 
 // The mobile tests run without the DOM lib: this is the part of a rendered
@@ -24,11 +24,11 @@ const surfaceOf = (text: string) =>
 
 describe('Screen', () => {
   afterEach(() => {
-    colorScheme.set('dark')
+    applyTheme({ theme: ThemeEnum.DARK })
   })
 
   test("paints the active theme's base background", () => {
-    colorScheme.set('light')
+    applyTheme({ theme: ThemeEnum.LIGHT })
     render(
       <>
         <Screen>
