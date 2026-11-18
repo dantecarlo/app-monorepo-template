@@ -1,8 +1,8 @@
 'use client'
 
-import Image from 'next/image'
 import type { JSX } from 'react'
 
+import { Image } from '@/components/ui/Image/Image.component'
 import {
   DEFAULT_LOGO_SIZE,
   LOGO_ASSET_SRC

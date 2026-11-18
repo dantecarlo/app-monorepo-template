@@ -11,9 +11,9 @@ vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
   })
 }))
 
-vi.mock('next/image', () => ({
-  default: (props: ImgHTMLAttributes<HTMLImageElement>) => (
-    // eslint-disable-next-line @next/next/no-img-element -- test stub mirroring next/image
+vi.mock('@/components/ui/Image/Image.component', () => ({
+  Image: (props: ImgHTMLAttributes<HTMLImageElement>) => (
+    // eslint-disable-next-line @next/next/no-img-element -- test stub mirroring the ui Image block
     <img {...props} />
   )
 }))

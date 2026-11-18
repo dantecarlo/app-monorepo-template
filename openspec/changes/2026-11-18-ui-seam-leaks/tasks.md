@@ -1,7 +1,7 @@
 # Tasks: 2026-11-18-ui-seam-leaks
 
 - [x] T1 — the web variant unions: `VariantUnionsType` in `variants.helper.ts`, one tuple and union per variant in the 10 blocks' `*.constant.ts`, their props on the unions, a type test per block, and the 10 `tailwind-variants` allowlist entries removed · Requirements: WEB-62 · Commit: fd1d135
-- [ ] T2 — `IAsyncBoundaryFallbackProps` in both apps, and the `react-error-boundary` seam narrowed to the boundary's component file · Requirements: WEB-63, MOBILE-60 · Commit: —
+- [x] T2 — `IAsyncBoundaryFallbackProps` in both apps, and the `react-error-boundary` seam narrowed to the boundary's component file · Requirements: WEB-63, MOBILE-60 · Commit: ee9d6a2
 - [ ] T3 — the web `ui/Image` block, the logo on it, every test mocking it instead of `next/image`, the seam narrowed and the 4 `next/image` allowlist entries removed · Requirements: WEB-64 · Commit: —
 - [ ] T4 — the mobile `ui/Gradient` block, the accent gradient, the skeleton and the toggle on it, the dashboard header test without its vendor mock, the seam narrowed and the `expo-linear-gradient` allowlist entry removed · Requirements: MOBILE-61 · Commit: —
 - [ ] T5 — the mobile `ui/StatusBar` block with `StatusBarStyleType`, the root layout and the root theme's type on it, the layout test mocking it, the seam narrowed and the 3 `expo-status-bar` allowlist entries removed · Requirements: MOBILE-62 · Commit: —

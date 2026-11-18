@@ -39,8 +39,8 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() })
 }))
 
-vi.mock('next/image', () => ({
-  default: ({ alt, src }: { alt: string; src: string }) => (
+vi.mock('@/components/ui/Image/Image.component', () => ({
+  Image: ({ alt, src }: { alt: string; src: string }) => (
     <img alt={alt} src={src} />
   )
 }))

@@ -150,8 +150,8 @@
     {
       "name": "next/image",
       "category": "ui",
-      "seam": [],
-      "note": "Behind apps/web/src/components/ui/Image/, which F.8 unit 5 creates."
+      "seam": ["apps/web/src/components/ui/Image/Image.component.tsx"],
+      "note": "Behind the Image block, whose props are its own; every other block renders it, and a test mocks it, never next/image."
     },
     {
       "name": "tailwind-variants",

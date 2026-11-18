@@ -146,11 +146,6 @@
   },
   {
     "path": "apps/web/src/components/ui/AuthShell/__tests__/AuthShell.component.test.tsx",
-    "package": "next/image",
-    "reason": "F.8 unit 5: a components/ui/Image block takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/components/ui/AuthShell/__tests__/AuthShell.component.test.tsx",
     "package": "next/navigation",
     "reason": "F.8 unit 6: lib/routing takes this import; the test then mocks the project module, not the vendor."
   },
@@ -163,16 +158,6 @@
     "path": "apps/web/src/components/ui/LanguageSwitcher/useLanguageSwitcher.hook.ts",
     "package": "next/navigation",
     "reason": "F.8 unit 6: lib/routing takes this import."
-  },
-  {
-    "path": "apps/web/src/components/ui/Logo/__tests__/Logo.component.test.tsx",
-    "package": "next/image",
-    "reason": "F.8 unit 5: a components/ui/Image block takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/components/ui/Logo/Logo.component.tsx",
-    "package": "next/image",
-    "reason": "F.8 unit 5: a components/ui/Image block takes this import."
   },
   {
     "path": "apps/web/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx",
@@ -188,11 +173,6 @@
     "path": "apps/web/src/screens/Login/__tests__/Login.screen.test.tsx",
     "package": "@tanstack/react-query",
     "reason": "F.8 unit 3: the query seam's own types and AppQueryProvider, in lib/query, take this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/screens/Login/__tests__/Login.screen.test.tsx",
-    "package": "next/image",
-    "reason": "F.8 unit 5: a components/ui/Image block takes this import; the test then mocks the project module, not the vendor."
   },
   {
     "path": "apps/web/src/screens/Login/__tests__/Login.screen.test.tsx",
