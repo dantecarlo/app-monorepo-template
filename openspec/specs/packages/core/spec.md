@@ -3,7 +3,7 @@
 > **Governs:** `packages/core/src`
 > **ID prefix:** `CORE`
 > **Derived from:** `AGENTS.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/maps/global-map.md`
-> **Verified against the code:** 2026-11-18 at `d925099`
+> **Verified against the code:** 2026-11-18 at `2dbc432`
 
 ## Purpose
 
