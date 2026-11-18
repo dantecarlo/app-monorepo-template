@@ -53,15 +53,5 @@
     "path": "apps/mobile/src/app/_layout.tsx",
     "package": "react-native-safe-area-context",
     "reason": "F.8 unit 6: lib/bootstrap takes this import."
-  },
-  {
-    "path": "apps/web/src/services/ItemsSummary/__tests__/itemsSummary.service.test.ts",
-    "package": "next/cache",
-    "reason": "F.8 unit 6: lib/cache takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/services/ItemsSummary/itemsSummary.service.ts",
-    "package": "next/cache",
-    "reason": "F.8 unit 6: lib/cache takes this import."
   }
 ]

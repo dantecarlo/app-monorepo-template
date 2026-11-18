@@ -48,8 +48,8 @@
     {
       "name": "next/cache",
       "category": "infra",
-      "seam": [],
-      "note": "Behind apps/web/src/lib/cache/, which F.8 unit 6 creates."
+      "seam": ["apps/web/src/lib/cache/cachePolicy.adapter.ts"],
+      "note": "Behind applyCachePolicy of lib/cache, which a 'use cache' function calls with one of the app's CacheLifeEnum profiles and its tags; its tests mock @/lib/cache."
     },
     {
       "name": "next/navigation",

@@ -1,13 +1,17 @@
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 // ---------------------------------------------------------------------------
-// Mock next/cache — cacheLife and cacheTag are Next.js runtime APIs that
-// require server request context. In unit tests we stub them out so the
-// service logic can be exercised in isolation (Vitest / Node environment).
+// Mock the cache policy — applyCachePolicy reaches Next's cache, which runs
+// only inside a 'use cache' function of a Next render. The spy records the
+// policy the service sets; CacheLifeEnum stays the real one.
 // ---------------------------------------------------------------------------
-vi.mock('next/cache', () => ({
-  cacheLife: vi.fn(),
-  cacheTag: vi.fn()
+const { applyCachePolicy } = vi.hoisted(() => ({
+  applyCachePolicy: vi.fn()
+}))
+
+vi.mock('@/lib/cache', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/cache')>()),
+  applyCachePolicy
 }))
 
 // ---------------------------------------------------------------------------
@@ -52,14 +56,30 @@ vi.mock('@/services/Items/items.service', () => ({
   ])
 }))
 
+import { CacheLifeEnum } from '@/lib/cache'
+import { CACHE_TAG } from '@/services/ItemsSummary/itemsSummary.constant'
 import { getItemsSummary } from '@/services/ItemsSummary/itemsSummary.service'
 
 describe('getItemsSummary', () => {
+  beforeEach(() => {
+    applyCachePolicy.mockClear()
+  })
+
   test('returns summary counts that reflect the mocked item list', async () => {
     const vm = await getItemsSummary()
     expect(vm.totalCount).toBe(3)
     expect(vm.activeCount).toBe(1)
     expect(vm.archivedCount).toBe(1)
     expect(vm.draftCount).toBe(1)
+  })
+
+  test('sets the minutes life profile and the items-summary tag once', async () => {
+    await getItemsSummary()
+
+    expect(applyCachePolicy).toHaveBeenCalledExactlyOnceWith({
+      life: CacheLifeEnum.MINUTES,
+      tags: [CACHE_TAG]
+    })
+    expect(CACHE_TAG).toBe('items-summary')
   })
 })

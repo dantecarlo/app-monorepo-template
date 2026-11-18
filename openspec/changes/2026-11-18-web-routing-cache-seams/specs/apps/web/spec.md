@@ -66,6 +66,13 @@ tag to Next's `cacheTag` in one call.
 - **THEN** `cacheLife` receives `hours` once and `cacheTag` receives both tags in one call
 - **Test:** `apps/web/src/lib/cache/__tests__/cachePolicy.adapter.test.ts` › "hands its life profile and every tag to the framework cache, once each"
 
+#### Scenario: every profile under its own name
+
+- **GIVEN** `next/cache` replaced at its module by spies
+- **WHEN** `applyCachePolicy` runs once with each profile of `CacheLifeEnum`
+- **THEN** `cacheLife` receives each profile's own name, in that order
+- **Test:** `apps/web/src/lib/cache/__tests__/cachePolicy.adapter.test.ts` › "sets every profile of the app under its own name"
+
 #### Scenario: the profiles are the app's own
 
 - **GIVEN** the app's `CacheLifeEnum`
