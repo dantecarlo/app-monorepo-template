@@ -21,6 +21,13 @@ SHALL take the client as a `BackendClientType` and reach the SDK through it.
 - **THEN** the unwrapped client is the very client that was wrapped
 - **Test:** `packages/supabase/src/__tests__/backendClient.adapter.test.ts` › "hands back the very client it wrapped"
 
+#### Scenario: the type names no Supabase type
+
+- **GIVEN** `BackendClientType` and the SDK client typed by the Database schema
+- **WHEN** each is checked against the other
+- **THEN** neither is assignable to the other, and the wrapper hands out `BackendClientType`
+- **Test:** `packages/supabase/src/__tests__/backendClient.adapter.test.ts` › "names no Supabase type in the client it hands out"
+
 #### Scenario: the factories' types
 
 - **GIVEN** the browser and the server client factories
