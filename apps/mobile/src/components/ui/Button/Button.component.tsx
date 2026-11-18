@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Pressable, Text } from 'react-native'
 
 import { PRESS_OPACITY } from '@/components/ui/Button/Button.constant'
@@ -12,6 +11,7 @@ import {
   BUTTON_VARIANT_CLASS
 } from '@/components/ui/Button/Button.style'
 import type { IButtonProps } from '@/components/ui/Button/Button.type'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 
 export const Button = ({
   accessibilityLabel,
@@ -23,7 +23,7 @@ export const Button = ({
   size = 'md',
   variant = 'primary'
 }: IButtonProps) => {
-  const { t } = useTranslation()
+  const { t } = useAppTranslator()
   const isDisabled = disabled ?? isLoading
 
   const containerClass = [

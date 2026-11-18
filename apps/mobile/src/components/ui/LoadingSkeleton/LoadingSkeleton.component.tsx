@@ -1,5 +1,4 @@
 import { LinearGradient } from 'expo-linear-gradient'
-import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import Animated from 'react-native-reanimated'
 
@@ -13,6 +12,7 @@ import {
 } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.style'
 import type { ILoadingSkeletonProps } from '@/components/ui/LoadingSkeleton/LoadingSkeleton.type'
 import { useShimmer } from '@/components/ui/LoadingSkeleton/useShimmer.hook'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 
 export const LoadingSkeleton = ({
@@ -20,7 +20,7 @@ export const LoadingSkeleton = ({
   rounded = 'md',
   width = '100%'
 }: ILoadingSkeletonProps) => {
-  const { t } = useTranslation()
+  const { t } = useAppTranslator()
   const { animatedStyle } = useShimmer()
   const styles = useThemedStyles({ styles: LOADING_SKELETON_STYLES })
   const shimmerMid = useThemedStyles({ styles: SKELETON_SHIMMER_MID })

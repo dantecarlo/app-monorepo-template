@@ -1,6 +1,6 @@
 import { useMutation, UseMutationResult } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
 
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import { resolveErrorMessage } from '@/lib/query/resolveErrorMessage.helper'
 import type { IAppMutationOptions } from '@/lib/query/useAppMutation.type'
 import { GENERIC_ERROR_KEY } from '@/lib/query/useAppQuery.constant'
@@ -20,7 +20,7 @@ export const useAppMutation = <
   TVariables
 > => {
   const addToast = useToastStore((s) => s.add)
-  const { i18n, t } = useTranslation()
+  const { has, t } = useAppTranslator()
 
   return useMutation<TData, TError, TVariables>({
     ...mutationOptions,
@@ -29,8 +29,8 @@ export const useAppMutation = <
         error,
         errorMessage,
         fallback: t(GENERIC_ERROR_KEY),
-        hasKey: (key) => i18n.exists(key),
-        translate: (key) => t(key)
+        hasKey: has,
+        translate: (key) => (has(key) ? t(key) : key)
       })
       addToast({ message, variant: 'error' })
       mutationOptions.onError?.(error, variables, onMutateResult, context)

@@ -1,6 +1,5 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
 import type { JSX } from 'react'
 
 import {
@@ -12,6 +11,7 @@ import {
 } from '@/components/ui/Modal/Modal.style'
 import type { IModalProps } from '@/components/ui/Modal/Modal.type'
 import { useModalDismiss } from '@/components/ui/Modal/useModalDismiss.hook'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 
 export const Modal = ({
   children,
@@ -20,7 +20,7 @@ export const Modal = ({
   size,
   title
 }: IModalProps): JSX.Element | null => {
-  const t = useTranslations('components.modal')
+  const { t } = useAppTranslator()
 
   useModalDismiss({ isOpen, onClose })
 
@@ -40,7 +40,7 @@ export const Modal = ({
         onClick={(e) => e.stopPropagation()}
       >
         <button
-          aria-label={t('close')}
+          aria-label={t('components.modal.close')}
           className={MODAL_CLOSE_BTN}
           onClick={onClose}
           type="button"

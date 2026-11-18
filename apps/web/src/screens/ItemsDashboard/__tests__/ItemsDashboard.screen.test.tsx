@@ -1,9 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { NextIntlClientProvider } from 'next-intl'
 import React from 'react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
+import { AppI18nProvider } from '@/lib/i18n/AppI18nProvider.component'
 import { useToastStore } from '@/stores/toast.store'
+import { withCopy } from '@/test/intl.helper'
 import { MOCK_ITEM_DTOS } from '@/test/mocks/items.mock'
 import { fireEvent, render, screen, waitFor } from '@/test/test.helper'
 
@@ -66,9 +67,9 @@ const createWrapper = () => {
   })
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <NextIntlClientProvider locale="en" messages={messages}>
+      <AppI18nProvider locale="en" messages={withCopy({ copy: messages })}>
         {children}
-      </NextIntlClientProvider>
+      </AppI18nProvider>
     </QueryClientProvider>
   )
   return Wrapper

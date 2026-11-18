@@ -39,7 +39,8 @@ apps/web/
     │                              # ui/variants.helper.ts: the one tv the ui blocks build with
     ├── services/<Domain>/         # SHARED transversal services — service + adapter + barrel
     │                              # (Items, ItemsSummary, Auth: sign-in through IAuthGateway)
-    ├── lib/                       # bot-protection, image-delivery, observability, origin-guard,
+    ├── lib/                       # bot-protection, i18n (the translator over next-intl),
+    │                              # image-delivery, observability, origin-guard,
     │                              # posthog (the one PostHog client), query, supabase, theme
     └── stores/  helpers/ (layout.style.ts: positioning only)  validation/  i18n/  test/
 ```
@@ -130,13 +131,19 @@ export default LoginPage
   with tailwind-merge from the generated `themeNames` of `@app/tokens`: of two token classes of
   one utility only the last stays (`p-sm p-lg` is `p-lg`), a token size (`text-button`) is never
   read as a colour, and a token shadow stays beside a shadow colour.
-- **i18n: `next-intl`** reading the shared `@app/i18n` ICU catalogs — same keys as mobile,
-  different adapter. `src/i18n/request.config.ts` resolves the locale from the `NEXT_LOCALE`
-  cookie; there is no locale middleware and no locale segment in the URL. Every component, server
+- **i18n: `next-intl`, behind `src/lib/i18n/`**, reading the shared `@app/i18n` ICU catalogs —
+  same keys and the same translator as mobile, a different runtime. A block calls
+  `useAppTranslator()` (`useAppTranslator.hook.ts`), a server component awaits
+  `getAppTranslator()` (`appTranslator.adapter.ts`), both the `IAppTranslator` of `@app/i18n`
+  with full keys, and the client tree sits in `AppI18nProvider`, which adds the time zone. Only
+  `src/lib/i18n/`, the request config and `next.config.ts` import next-intl (code-standards
+  § 15). `src/i18n/request.config.ts` is next-intl's request config, which the plugin loads by
+  path; its resolution, `src/i18n/requestConfig.helper.ts`, takes the locale from the
+  `NEXT_LOCALE` cookie; there is no locale middleware and no locale segment in the URL. Every component, server
   or client, renders in that locale: the root layout keeps its document shell static (Cache
   Components blocks a route that reads a cookie outside `<Suspense>`) and renders the providers
   inside `<Suspense>` through `src/app/LocaleProviders.tsx`, which reads the request's locale and
-  messages (`getLocale`, `getMessages`) and hands them to the client providers. So the routes'
+  messages (`getAppLocale`, `getAppMessages`) and hands them to the client providers. So the routes'
   content renders per request and only the shell is prerendered. The shell writes the default
   language on `<html lang>`; `src/i18n/noFlashLocale.constant.ts`, a pre-paint script beside the
   theme's, replaces it with the cookie's supported language, and the providers keep it in step
@@ -165,7 +172,8 @@ export default LoginPage
 | Route → screen | route file renders `<Screen/>`   | `page.tsx` renders `<Screen/>`                   |
 | Boundaries     | per-route `ErrorBoundary` export | `error.tsx` / `global-error.tsx` / `loading.tsx` |
 | UI             | React Native + NativeWind        | DOM + Tailwind CSS 4                             |
-| i18n adapter   | react-i18next                    | next-intl                                        |
+| i18n runtime   | react-i18next, behind `lib/i18n` | next-intl, behind `lib/i18n`                     |
+| Translator     | `useAppTranslator()`             | `useAppTranslator()`, `getAppTranslator()` (RSC) |
 | Native modules | project-specific                 | none (consumer surface)                          |
 
 Everything else (screens fractal, shared `src/` root, services+adapters, `packages/*`) is the same.

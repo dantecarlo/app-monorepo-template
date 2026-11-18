@@ -2,8 +2,12 @@ import { describe, expect, test, vi } from 'vitest'
 
 import { render, screen } from '@/test/test.helper'
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key })
+vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
+  useAppTranslator: () => ({
+    has: () => false,
+    locale: 'en',
+    t: (key: string) => key
+  })
 }))
 
 vi.mock('expo-linear-gradient', () => ({
@@ -21,8 +25,8 @@ describe('DashboardHeader (mobile)', () => {
   test('shows no settings button', () => {
     render(<DashboardHeader />)
 
-    expect(screen.getByText('welcomeBack')).toBeTruthy()
-    expect(screen.getByText('title')).toBeTruthy()
+    expect(screen.getByText('items.dashboard.welcomeBack')).toBeTruthy()
+    expect(screen.getByText('items.dashboard.title')).toBeTruthy()
     expect(screen.queryByRole('button')).toBeNull()
   })
 })

@@ -1,14 +1,14 @@
 import type { FallbackProps } from 'react-error-boundary'
-import { useTranslation } from 'react-i18next'
 import { Pressable, Text, View } from 'react-native'
 
 import { ASYNC_BOUNDARY_STYLES as styles } from '@/components/ui/AsyncBoundary/AsyncBoundary.style'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 
 export const AsyncBoundaryDefaultError = ({
   error,
   resetErrorBoundary
 }: FallbackProps) => {
-  const { t } = useTranslation()
+  const { t } = useAppTranslator()
 
   return (
     <View accessibilityRole="alert" style={styles.fill}>

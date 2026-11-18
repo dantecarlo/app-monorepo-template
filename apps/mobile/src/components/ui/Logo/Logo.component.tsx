@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next'
 import { Text, View } from 'react-native'
 import Svg, {
   Defs,
@@ -22,6 +21,7 @@ import { LOGO_GRADIENT_ID } from '@/components/ui/Logo/Logo.constant'
 import { LOGO_STYLES as styles } from '@/components/ui/Logo/Logo.style'
 import type { ILogoProps } from '@/components/ui/Logo/Logo.type'
 import { useLogo } from '@/components/ui/Logo/useLogo.hook'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 
 /**
  * Generic brand mark: renders the per-project SVG asset placeholder when
@@ -32,7 +32,7 @@ export const Logo = ({
   hasAsset = true,
   size = DEFAULT_LOGO_SIZE
 }: ILogoProps) => {
-  const { t } = useTranslation()
+  const { t } = useAppTranslator()
   const { showWordmark } = useLogo({ hasAsset })
   const altLabel = t('auth.logo.label', { name: brandLabel })
 

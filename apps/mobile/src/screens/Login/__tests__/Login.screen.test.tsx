@@ -2,8 +2,12 @@ import { describe, expect, test, vi } from 'vitest'
 
 import { render, screen } from '@/test/test.helper'
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key })
+vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
+  useAppTranslator: () => ({
+    has: () => false,
+    locale: 'en',
+    t: (key: string) => key
+  })
 }))
 
 vi.mock('@/components/ui/AuthShell/AuthShell.component', () => ({
@@ -40,7 +44,7 @@ describe('LoginScreen (mobile)', () => {
   test('renders no social sign-in button', () => {
     render(<LoginScreen />)
 
-    expect(screen.queryByText('googleCta')).toBeNull()
-    expect(screen.queryByText('dividerOr')).toBeNull()
+    expect(screen.queryByText('auth.login.googleCta')).toBeNull()
+    expect(screen.queryByText('auth.login.dividerOr')).toBeNull()
   })
 })

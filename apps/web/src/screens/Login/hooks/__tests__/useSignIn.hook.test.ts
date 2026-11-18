@@ -1,10 +1,10 @@
 import { AppError } from '@app/core'
 import { DEFAULT_LANGUAGE, resources } from '@app/i18n'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { NextIntlClientProvider } from 'next-intl'
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
+import { AppI18nProvider } from '@/lib/i18n/AppI18nProvider.component'
 import { createQueryClient } from '@/lib/query/createQueryClient.helper'
 import { useToastStore } from '@/stores/toast.store'
 import { act, renderHook, waitFor } from '@/test/test.helper'
@@ -47,7 +47,7 @@ const renderSignIn = () => {
     React.createElement(
       QueryClientProvider,
       { client: queryClient },
-      React.createElement(NextIntlClientProvider, {
+      React.createElement(AppI18nProvider, {
         children,
         locale: DEFAULT_LANGUAGE,
         messages

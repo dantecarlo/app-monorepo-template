@@ -1,14 +1,15 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
 import type { JSX } from 'react'
 import type { FallbackProps } from 'react-error-boundary'
+
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 
 export const AsyncBoundaryDefaultError = ({
   error,
   resetErrorBoundary
 }: FallbackProps): JSX.Element => {
-  const t = useTranslations()
+  const { t } = useAppTranslator()
 
   return (
     <div aria-live="assertive" role="alert">

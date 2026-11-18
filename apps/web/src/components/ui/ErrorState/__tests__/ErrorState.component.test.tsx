@@ -1,9 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { NextIntlClientProvider } from 'next-intl'
 import { describe, expect, test, vi } from 'vitest'
 
 import { ErrorState } from '@/components/ui/ErrorState/ErrorState.component'
 import { ErrorStateCodeEnum } from '@/components/ui/ErrorState/ErrorState.constant'
+import { AppI18nProvider } from '@/lib/i18n/AppI18nProvider.component'
+import { withCopy } from '@/test/intl.helper'
 
 const messages = {
   components: {
@@ -31,9 +32,9 @@ const renderErrorState = (
   props: Partial<React.ComponentProps<typeof ErrorState>> = {}
 ) =>
   render(
-    <NextIntlClientProvider locale="en" messages={messages}>
+    <AppI18nProvider locale="en" messages={withCopy({ copy: messages })}>
       <ErrorState {...props} />
-    </NextIntlClientProvider>
+    </AppI18nProvider>
   )
 
 describe('ErrorState', () => {

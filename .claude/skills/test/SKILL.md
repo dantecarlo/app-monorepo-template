@@ -55,7 +55,10 @@ Before writing ANY test:
 6. If the block reads the catalogs, render it on the real ones in the language the test
    names: `renderWithIntl({ locale, ui })` from `@/test/intl.helper` on web,
    `renderWithI18n({ language, ui })` from `@/test/i18n.helper` on mobile. Assert the copy
-   through `resources[language].translation`, never a literal in another language.
+   through `resources[language].translation`, never a literal in another language. A web
+   test that asserts its own copy passes `messages: withCopy({ copy })`. A test that only
+   checks which message a block asks for mocks `@/lib/i18n/useAppTranslator.hook` with a
+   translator that returns the key; no test mocks next-intl or react-i18next.
 
 ---
 

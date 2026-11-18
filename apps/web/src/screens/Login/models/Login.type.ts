@@ -1,3 +1,4 @@
+import type { TranslationKeyType } from '@app/i18n'
 import type { ChangeEvent, FormEvent } from 'react'
 
 /** Login form field values. */
@@ -6,10 +7,10 @@ export interface ILoginFormValues {
   password: string
 }
 
-/** Per-field validation messages, keyed to translation lookups. */
+/** Per-field validation messages, as the keys of their translations. */
 export interface ILoginFormErrors {
-  email?: string
-  password?: string
+  email?: TranslationKeyType
+  password?: TranslationKeyType
 }
 
 /** Public surface returned by the useLoginForm hook. */

@@ -1,7 +1,11 @@
 import { describe, expect, test, vi } from 'vitest'
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key })
+vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
+  useAppTranslator: () => ({
+    has: () => false,
+    locale: 'en',
+    t: (key: string) => key
+  })
 }))
 
 import { OfflineBanner } from '@/components/ui/OfflineBanner/OfflineBanner.component'

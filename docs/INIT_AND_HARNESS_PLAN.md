@@ -98,6 +98,7 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 - F46: PostHog's consent mode, `granted` by default or `opt-in` or `memory`, behind a provider-agnostic `IConsentPort`, and the key-value storage port `IKeyValueStoragePort` with `lib/storage/keyValueStorage.adapter.ts` as the AsyncStorage seam (this change).
 - F54 and F48: under `opt-in` PostHog starts only after a grant, so nothing reaches it before consent, and `posthog-js` is loaded by dynamic import only when it may run, out of every page's start-up scripts (this change).
 - F.8 unit 1b: every ESLint block applies by pattern, and the React, Next.js and Expo blocks by what each `apps/*/package.json` declares, proven by identical findings before and after and by plain React, Next.js and Expo fixture apps (this change).
+- F.8 unit 2: one `IAppTranslator` for both apps behind each app's `lib/i18n`, every next-intl and react-i18next import migrated, and a visible-text record test per app (this change).
 - F.2, the Supabase hardening (#21; the native review did not fit its context budget, and the owner chose to merge on the independent verifier).
 - The ticket flow: seven skills (`ticket-flow`, `po-ticket`, `refine-ticket`, `dev-ticket`, `qa-ticket`, `release-ticket`, `process-intake`), the board and the deploy targets as adapters, the release stage and the target version, the pure `verify:ticket-branch` check, and the living spec harness/ticket-flow (this change; Certifipago adopts it with its own project layer).
 - The ticket flow's adoption fixes: the merge policy (#34), the project's ticket identity and neutral examples (#37), and the QA checkout detached at the remote branch, a branch brought current by merging its base, and a hotfix held at Ready to merge and shipped only as its release (this change).
@@ -265,7 +266,7 @@ The template adopts what works and closes those gaps.
 F.8 work units, in order:
 1. the registry, the rule and the gate, with the frozen allowlist (done: 143 frozen imports, by unit: 2 → 82, 3 → 8, 4 → 11, 5 → 20, 6 → 20, 7 → 2);
 1b. every ESLint block applied to `apps/*` and `packages/*` by pattern, not per app (decision 52), so the fixture app inherits every rule, not only `local/dependency-seam` (done: framework blocks by what each app declares; identical findings before and after);
-2. the i18n seam in both apps;
+2. the i18n seam in both apps (done: one `IAppTranslator` in `@app/i18n`, the 82 frozen imports migrated, the allowlist from 143 to 61);
 3. the query seam's own types and provider;
 4. `createAppStore` and the key-value storage port;
 5. the `ui/` leaks (AsyncBoundary, variant unions, Gradient, StatusBar, Image);

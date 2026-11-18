@@ -232,7 +232,7 @@ constants, types, or test utilities from the barrel.
 'use client' // web only
 
 import { useQueryClient } from '@tanstack/react-query'
-import { useTranslations } from 'next-intl' // mobile: useTranslation from react-i18next
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook' // the same in both apps
 import { useAppMutation } from '@/lib/query/useAppMutation.hook'
 import { useAppQuery } from '@/lib/query/useAppQuery.hook'
 import { QueryKeys } from '@/lib/query/queryKeys.constant'
@@ -259,7 +259,7 @@ export const use{Domain}List = ({ contextId }: IUse{Domain}List) =>
 // Mutation (write)
 export const useCreate{Domain} = () => {
   const queryClient = useQueryClient()
-  const t = useTranslations('{featureName}')
+  const { t } = useAppTranslator()
   return useAppMutation<I{Domain}ViewModel, ICreate{Domain}Payload>({
     mutationOptions: {
       mutationFn: async (payload) => {
@@ -274,7 +274,7 @@ export const useCreate{Domain} = () => {
     },
     // A failure's toast is its AppError's messageKey (code-standards § 19), and
     // every user-facing string is a catalog message, never a literal (§ 15).
-    successMessage: t('created')
+    successMessage: t('{featureName}.created')
   })
 }
 ```

@@ -1,5 +1,4 @@
 import { DEFAULT_LANGUAGE, resources } from '@app/i18n'
-import { NextIntlClientProvider } from 'next-intl'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const { mockCaptureError } = vi.hoisted(() => ({
@@ -11,6 +10,7 @@ vi.mock('@/lib/observability/observability.adapter', () => ({
 }))
 
 import RouteError from '@/app/error'
+import { AppI18nProvider } from '@/lib/i18n/AppI18nProvider.component'
 import { BOUNDARY_ERROR_SOURCE } from '@/lib/observability/observability.constant'
 import { fireEvent, render, screen } from '@/test/test.helper'
 
@@ -24,9 +24,9 @@ const routeError = ({
   error: Error
   retry: () => void
 }) => (
-  <NextIntlClientProvider locale={DEFAULT_LANGUAGE} messages={messages}>
+  <AppI18nProvider locale={DEFAULT_LANGUAGE} messages={messages}>
     <RouteError error={error} reset={vi.fn()} unstable_retry={retry} />
-  </NextIntlClientProvider>
+  </AppI18nProvider>
 )
 
 const renderRouteError = ({ retry }: { retry: () => void }) =>

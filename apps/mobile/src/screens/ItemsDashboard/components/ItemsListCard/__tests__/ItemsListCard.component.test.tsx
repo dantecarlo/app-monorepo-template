@@ -5,10 +5,12 @@ import { fireEvent, render, screen, within } from '@/test/test.helper'
 
 // Writes the count a message receives before its key, as the catalogs'
 // "{count} results" does, so a test sees how often the count shows.
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (...[key, options]: [string, { count?: number }?]) =>
-      options?.count === undefined ? key : `${options.count} ${key}`
+vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
+  useAppTranslator: () => ({
+    has: () => false,
+    locale: 'en',
+    t: (...[key, values]: [string, { count?: number }?]) =>
+      values?.count === undefined ? key : `${values.count} ${key}`
   })
 }))
 
@@ -111,8 +113,8 @@ describe('ItemsListCard (mobile)', () => {
 
     const alert = within(screen.getByRole('alert'))
     expect(alert.getByText('components.errorState.title')).toBeTruthy()
-    expect(screen.getByText('listTitle')).toBeTruthy()
-    expect(screen.queryByText('0 listResults')).toBeNull()
+    expect(screen.getByText('items.dashboard.listTitle')).toBeTruthy()
+    expect(screen.queryByText('0 items.dashboard.listResults')).toBeNull()
     expect(screen.queryByText(/listResults/)).toBeNull()
   })
 
@@ -138,6 +140,6 @@ describe('ItemsListCard (mobile)', () => {
       />
     )
 
-    expect(screen.getByText('2 listResults')).toBeTruthy()
+    expect(screen.getByText('2 items.dashboard.listResults')).toBeTruthy()
   })
 })

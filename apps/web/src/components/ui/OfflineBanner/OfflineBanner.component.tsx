@@ -1,16 +1,16 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
 import type { JSX } from 'react'
 
 import { offlineBannerVariants } from '@/components/ui/OfflineBanner/OfflineBanner.style'
 import type { IOfflineBannerProps } from '@/components/ui/OfflineBanner/OfflineBanner.type'
 import { useOnlineStatus } from '@/components/ui/OfflineBanner/useOnlineStatus.hook'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 
 export const OfflineBanner = ({
   forceOffline
 }: IOfflineBannerProps): JSX.Element | null => {
-  const t = useTranslations('helper.offline')
+  const { t } = useAppTranslator()
   const isOnline = useOnlineStatus()
   const isOffline = forceOffline ?? !isOnline
 
@@ -20,7 +20,7 @@ export const OfflineBanner = ({
 
   return (
     <div className={offlineBannerVariants()} role="status">
-      {t('message')}
+      {t('helper.offline.message')}
     </div>
   )
 }

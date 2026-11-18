@@ -9,9 +9,12 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: vi.fn() })
 }))
 
-vi.mock('next-intl', () => ({
-  useTranslations: () =>
-    Object.assign((key: string) => key, { has: () => false })
+vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
+  useAppTranslator: () => ({
+    has: () => false,
+    locale: 'en',
+    t: (key: string) => key
+  })
 }))
 
 vi.mock('@/lib/supabase/authGateway.adapter', () => ({

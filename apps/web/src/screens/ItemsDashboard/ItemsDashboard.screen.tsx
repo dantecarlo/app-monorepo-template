@@ -1,10 +1,9 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
-
 import { Button } from '@/components/ui/Button'
 import { Screen } from '@/components/ui/Screen'
 import { LAYOUT } from '@/helpers/layout.style'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import { DashboardHeader } from '@/screens/ItemsDashboard/components/DashboardHeader'
 import { DashboardNav } from '@/screens/ItemsDashboard/components/DashboardNav'
 import { ItemsListCard } from '@/screens/ItemsDashboard/components/ItemsListCard'
@@ -13,7 +12,7 @@ import { useItems } from '@/screens/ItemsDashboard/hooks/useItems.hook'
 import { ITEMS_DASHBOARD } from '@/screens/ItemsDashboard/ItemsDashboard.style'
 
 export const ItemsDashboardScreen = () => {
-  const t = useTranslations('items.dashboard')
+  const { t } = useAppTranslator()
 
   const {
     activeCount,
@@ -51,7 +50,7 @@ export const ItemsDashboardScreen = () => {
             fullWidth
             variant="primary"
           >
-            {t('viewAll')}
+            {t('items.dashboard.viewAll')}
           </Button>
         </div>
       </main>

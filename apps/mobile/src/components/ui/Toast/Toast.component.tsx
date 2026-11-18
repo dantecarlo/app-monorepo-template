@@ -1,8 +1,8 @@
-import { useTranslation } from 'react-i18next'
 import { Pressable, Text, View } from 'react-native'
 
 import { TOAST_DOT_COLOR } from '@/components/ui/Toast/Toast.constant'
 import { TOAST_STYLES } from '@/components/ui/Toast/Toast.style'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 import {
   selectRemoveToast,
@@ -11,7 +11,7 @@ import {
 } from '@/stores/toast.store'
 
 export const Toast = () => {
-  const { t } = useTranslation()
+  const { t } = useAppTranslator()
   const dotColors = useThemedStyles({ styles: TOAST_DOT_COLOR })
   const styles = useThemedStyles({ styles: TOAST_STYLES })
 

@@ -1,6 +1,7 @@
 import {
   DEFAULT_LANGUAGE,
   FALLBACK_LANGUAGE,
+  type ILocaleResources,
   resources,
   type SupportedLanguageType
 } from '@app/i18n'
@@ -13,15 +14,19 @@ import { render } from '@/test/test.helper'
 
 export interface IRenderWithI18nParams {
   language?: SupportedLanguageType
+  /** The catalog to read the copy from: the language's own one by default. */
+  messages?: ILocaleResources['translation']
   ui: ReactElement
 }
 
 // An i18next instance on the real catalogs, as src/lib/i18n/i18n.config.ts
 // builds the app's, started synchronously in one language.
 const createTestI18n = ({
-  language
+  language,
+  messages
 }: {
   language: SupportedLanguageType
+  messages?: ILocaleResources['translation']
 }) => {
   const instance = i18next.createInstance()
   void instance.use(ICU).init({
@@ -31,7 +36,10 @@ const createTestI18n = ({
     interpolation: { escapeValue: false },
     lng: language,
     react: { useSuspense: false },
-    resources
+    resources:
+      messages === undefined
+        ? resources
+        : { [language]: { translation: messages } }
   })
   return instance
 }
@@ -42,10 +50,11 @@ const createTestI18n = ({
  */
 export const renderWithI18n = ({
   language = DEFAULT_LANGUAGE,
+  messages,
   ui
 }: IRenderWithI18nParams) =>
   render(
-    <I18nextProvider i18n={createTestI18n({ language })}>
+    <I18nextProvider i18n={createTestI18n({ language, messages })}>
       {ui}
     </I18nextProvider>
   )

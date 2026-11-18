@@ -1,15 +1,14 @@
-import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { AuthField } from '@/components/ui/AuthField/AuthField.component'
 import { AuthShell } from '@/components/ui/AuthShell/AuthShell.component'
 import { Button } from '@/components/ui/Button/Button.component'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import { useLoginForm } from '@/screens/Login/hooks/useLoginForm.hook'
 import { LOGIN_STYLES as styles } from '@/screens/Login/Login.style'
 
 export const LoginScreen = () => {
-  const { t } = useTranslation('translation', { keyPrefix: 'auth.login' })
-  const { t: tRoot } = useTranslation()
+  const { t } = useAppTranslator()
   const {
     errors,
     isSubmitting,
@@ -21,9 +20,9 @@ export const LoginScreen = () => {
 
   return (
     <AuthShell
-      brandLabel={tRoot('app.name')}
-      subtitle={t('subtitle')}
-      title={t('title')}
+      brandLabel={t('app.name')}
+      subtitle={t('auth.login.subtitle')}
+      title={t('auth.login.title')}
     >
       <View style={styles.form}>
         <AuthField
@@ -32,13 +31,13 @@ export const LoginScreen = () => {
           helperText={
             errors.email === undefined ? undefined : t(errors.email)
           }
-          hidePasswordLabel={t('hidePassword')}
+          hidePasswordLabel={t('auth.login.hidePassword')}
           isError={errors.email !== undefined}
           keyboardType="email-address"
-          label={t('emailLabel')}
+          label={t('auth.login.emailLabel')}
           onChangeText={onEmailChange}
-          placeholder={t('emailPlaceholder')}
-          showPasswordLabel={t('showPassword')}
+          placeholder={t('auth.login.emailPlaceholder')}
+          showPasswordLabel={t('auth.login.showPassword')}
           value={values.email}
         />
 
@@ -47,13 +46,13 @@ export const LoginScreen = () => {
           helperText={
             errors.password === undefined ? undefined : t(errors.password)
           }
-          hidePasswordLabel={t('hidePassword')}
+          hidePasswordLabel={t('auth.login.hidePassword')}
           isError={errors.password !== undefined}
           isPassword
-          label={t('passwordLabel')}
+          label={t('auth.login.passwordLabel')}
           onChangeText={onPasswordChange}
-          placeholder={t('passwordPlaceholder')}
-          showPasswordLabel={t('showPassword')}
+          placeholder={t('auth.login.passwordPlaceholder')}
+          showPasswordLabel={t('auth.login.showPassword')}
           value={values.password}
         />
 
@@ -64,7 +63,7 @@ export const LoginScreen = () => {
             onPress={onSubmit}
             variant="primary"
           >
-            {t('cta')}
+            {t('auth.login.cta')}
           </Button>
         </View>
       </View>

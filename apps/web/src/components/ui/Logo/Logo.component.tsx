@@ -1,7 +1,6 @@
 'use client'
 
 import Image from 'next/image'
-import { useTranslations } from 'next-intl'
 import type { JSX } from 'react'
 
 import {
@@ -11,6 +10,7 @@ import {
 import { LOGO } from '@/components/ui/Logo/Logo.style'
 import type { ILogoProps } from '@/components/ui/Logo/Logo.type'
 import { useLogo } from '@/components/ui/Logo/useLogo.hook'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 
 /**
  * Generic brand mark: renders the per-project SVG asset slot when present and
@@ -20,9 +20,9 @@ export const Logo = ({
   brandLabel,
   size = DEFAULT_LOGO_SIZE
 }: ILogoProps): JSX.Element => {
-  const t = useTranslations('auth.logo')
+  const { t } = useAppTranslator()
   const { hasAsset, onAssetError } = useLogo()
-  const altLabel = t('label', { name: brandLabel })
+  const altLabel = t('auth.logo.label', { name: brandLabel })
 
   if (hasAsset) {
     return (

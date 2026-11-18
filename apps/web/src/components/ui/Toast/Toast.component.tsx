@@ -1,6 +1,5 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
 import type { JSX } from 'react'
 
 import {
@@ -11,6 +10,7 @@ import {
   TOAST_VIEWPORT,
   toastPillVariants
 } from '@/components/ui/Toast/Toast.style'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import {
   selectRemoveToast,
   selectToasts,
@@ -18,7 +18,7 @@ import {
 } from '@/stores/toast.store'
 
 export const Toast = (): JSX.Element => {
-  const t = useTranslations('common')
+  const { t } = useAppTranslator()
   const toasts = useToastStore(selectToasts)
   const remove = useToastStore(selectRemoveToast)
 
@@ -32,7 +32,7 @@ export const Toast = (): JSX.Element => {
           />
           <p className={TOAST_MESSAGE}>{toast.message}</p>
           <button
-            aria-label={t('dismiss')}
+            aria-label={t('common.dismiss')}
             className={TOAST_DISMISS_BTN}
             onClick={() => remove(toast.id)}
             type="button"
