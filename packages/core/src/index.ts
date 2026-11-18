@@ -31,6 +31,9 @@ export type {
   IBackendClientProvider,
   ICreateBackendClientParams
 } from '#src/ports/client/IBackendClientProvider.type'
+export type { ConsentStatusType } from '#src/ports/consent/consentStatus.type'
+export { ConsentStatusEnum } from '#src/ports/consent/consentStatus.type'
+export type { IConsentPort } from '#src/ports/consent/IConsentPort.type'
 export type { ICreatePublicImageDeliveryParams } from '#src/ports/image-delivery/createPublicImageDelivery.helper'
 export { createPublicImageDelivery } from '#src/ports/image-delivery/createPublicImageDelivery.helper'
 export type {
