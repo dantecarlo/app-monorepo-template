@@ -24,6 +24,26 @@ description: >
 
 ---
 
+## Where a Vendor May Be Imported
+
+The answer lives in one file, `.agents/contracts/dependencies.json`, and nowhere else: each
+package's entry names its category and its seam, the globs of the files that may import it
+(`docs/code-standards.md` §23). `local/dependency-seam` refuses an import outside the seam, an
+unregistered package anywhere, and a test that reaches a vendor its unit's seam does not admit.
+
+- **Before you write the wrapper**, read the package's entry. A seam that is `[]`, or a frozen
+  entry for it in `eslint-dependency-seam-allowlist.json`, is the F.8 unit this lib delivers.
+- **When the wrapper lands**, point the entry's `seam` at it (`apps/*/src/lib/{name}/**`, or the
+  one `{name}.config.ts` or hook that imports the vendor), move every importer to `@/lib/{name}`,
+  and delete their allowlist entries: `pnpm verify:dependency-seams` fails an entry whose import is
+  gone.
+- **A new vendor** is registered in the same change that adds it to a `package.json`, with its
+  category and its seam; the gate fails an unregistered dependency.
+- **Tests** of the wrapper inherit its seam and may mock the vendor; every other test mocks
+  `@/lib/{name}`.
+
+---
+
 ## Do You Need a New Lib?
 
 ```
@@ -182,7 +202,7 @@ Never add feature-specific logic to a lib — libs must be domain-agnostic.
 
 | DO                                                               | DON'T                                    |
 | ---------------------------------------------------------------- | ---------------------------------------- |
-| Import vendor package only in `{name}.config.ts` or hook        | Import vendor directly in features/screens |
+| Import vendor package only in its registered seam (`{name}.config.ts` or hook) | Import vendor directly in features/screens |
 | Expose only what the project uses (narrow surface)               | Re-export the entire vendor API          |
 | Config from environment variables                                | Hardcode API keys or base URLs           |
 | Keep lib domain-agnostic                                         | Add feature business logic to a lib      |

@@ -702,7 +702,7 @@ self-cleaning**.
 > the code is fixed, or the rule does not land. See `docs/GENERALIZATION_PLAN.md`
 > decision 1.
 >
-> **Two exceptions.** `scripts/verify-english.allow.json`, the allowlist of
+> **Three exceptions.** `scripts/verify-english.allow.json`, the allowlist of
 > `verify:english` (§15), cannot hold a backlog: it ships empty, each entry
 > names its file, its line (the text or a pattern) and the reason the line keeps
 > that text, and the gate fails an entry that excuses no line, so a stale one
@@ -710,7 +710,12 @@ self-cleaning**.
 > rules (§22), is held the same way: it ships empty, an entry names its file,
 > its rule and why the value cannot move, and `verify:allowlist-freshness` fails
 > an entry whose file no longer breaks its rule. The owner asked for it with
-> the styling pillar (2026-11-14). See `docs/harness.md`.
+> the styling pillar (2026-11-14). `eslint-dependency-seam-allowlist.json`, read
+> by `local/dependency-seam` (§23), is the one that ships with a backlog: the
+> imports that broke the rule when it landed, frozen per file and package, each
+> naming the F.8 unit that removes it, and `verify:dependency-seams` fails an
+> entry whose import is gone and every import it does not list, so it only
+> shrinks, to empty at F.8 unit 9 (decision 51). See `docs/harness.md`.
 
 > Status: **not in place.** Packages lint with `eslint .` — no
 > `--max-warnings 0`, no `reportUnusedDisableDirectives`. Tracked in §21.
@@ -770,16 +775,18 @@ This table exists so that difference is visible.
 | §22 Screens only position   | lint+script   | `local/style-positions-only` + `verify:allowlist-freshness`         |
 | §22 Values are tokens       | lint+script   | `local/style-token-values` + `verify:allowlist-freshness`           |
 | §22 The kit behind `ui/`    | lint          | `local/ui-kit-boundary` on both apps                                |
-| §22 One `tv` on web         | test          | `variants.helper.test.ts` — no web ui style file imports the kit's  |
+| §22 One `tv` on web         | lint+test     | `local/dependency-seam`: the helper is `tailwind-variants`' seam    |
 | Token outputs generated     | script        | `verify:theme-sync` (and `:test`): each equals its regeneration     |
+| §23 Packages in their seams | lint+script   | `local/dependency-seam` + `verify:dependency-seams`                 |
+| §23 Every package registered | script       | `verify:dependency-seams` — every `package.json` dependency, no stale entry |
 
 **Rows that read "none yet", "warn only" or "partial"** are not aspirations
 hidden in prose — they are named gaps with a named mechanism, tracked as
 harvest work in
 `docs/GENERALIZATION_PLAN.md` phases 2 and 3. A row moves to a real method only
 when the mechanism lands **and passes clean with no exemption file**; the
-`verify:english` and styling allowlists are the two exceptions, and §20 says
-how they stay honest.
+`verify:english`, styling and dependency-seam allowlists are the three
+exceptions, and §20 says how they stay honest.
 
 ---
 
@@ -806,7 +813,9 @@ The rule of the LAW of the same name in `AGENTS.md`, which quotes the owner's de
   `ui/` block only, so the look and the kit are one replaceable layer.
 - **A different look** is a variant or a prop of a `ui/` block, never a class in the screen.
 - **A web `ui/` style file builds its variants with the shared `tv`**
-  (`apps/web/src/components/ui/variants.helper.ts`), never the kit's own. tailwind-merge,
+  (`apps/web/src/components/ui/variants.helper.ts`), never the kit's own: the helper is the one
+  seam of `tailwind-variants` and `tailwind-merge`, so `local/dependency-seam` refuses `tv` in any
+  other file (§23). tailwind-merge,
   which `tailwind-variants` runs on every call, knows only Tailwind's own scales: it keeps both of
   two token paddings (`p-sm p-lg`), reads a token font size (`text-title`) as a colour and drops it
   next to a text colour, and drops a token shadow next to a shadow colour. The shared `tv`
@@ -830,6 +839,66 @@ export const LOGIN = { DIVIDER: 'my-6', FORM: 'flex flex-col gap-4' }
 > (`borderRadius: 18`); a class string in a `*.constant.ts`; a class a variable hides
 > (`cn(STYLE.X, tone)`), judged where it is defined only if that file is a style file; and whether
 > a `ui/` block's look is right, which is review.
+
+---
+
+## 23. Every Library Behind Its Seam
+
+Decisions 51, 52 and 58 of `docs/INIT_AND_HARNESS_PLAN.md`. The owner, 2026-11-15 (translated
+from Spanish): "every package that is not core must be decoupled and have an adapter, in ui as a
+wrapper for example", and "Not only the UI libraries, but all the libraries themselves."
+
+**Every package is registered** in `.agents/contracts/dependencies.json`, the one answer to "where
+may this be imported": one entry per package, or package subpath, that a `package.json` declares
+or source imports.
+
+| Category         | What it is                                                      | Imported from                         |
+| ---------------- | --------------------------------------------------------------- | ------------------------------------- |
+| `core`           | The language, the framework runtime, the workspace's own core packages | anywhere                       |
+| `infra`          | An infrastructure library (i18n, query, state, validation, theme) | its `src/lib/<name>/` wrapper        |
+| `ui`             | A UI kit, its primitives and class helpers                      | its `components/ui` block             |
+| `vendor`         | A vendor SDK behind a port                                      | its `*.adapter.ts`, and the framework config files it needs |
+| `vendor-package` | An `@app/*` package that wraps a vendor                         | the app's `src/lib/<name>/` adapter   |
+| `build`          | Dev tooling, Node builtins (`node:*`) included                  | tests, configs and tooling scripts only |
+| `peer`           | Installed for a framework, never imported                       | nowhere                               |
+
+- **A seam is a list of repository globs**, written by pattern where a rule holds for every app
+  (`apps/*/src/lib/query/**`). An empty seam means no file may import it yet: the import is frozen
+  until its F.8 unit builds the wrapper.
+- **Type-only imports are governed too** (decision 58). An entry may set `"types": "anywhere"` only
+  where the plan allows a type outside the seam; none does today.
+- **The most specific entry wins.** `next/navigation`, `next/cache` and `next/image` narrow the core
+  `next`; `next/server` takes `next`'s.
+- **A test inherits the seam of the unit it tests** (the unit its `__tests__/` stands beside, § 9),
+  and `src/test/**` is the test-infrastructure seam: it may import any registered package. A test
+  of anything else mocks the project module (`@/lib/*`, `@/components/ui/*`), not the vendor.
+- **A new dependency is registered in the same change** that adds it, with its category and seam;
+  an unregistered package fails at once, closed.
+- **The `lib` skill builds the wrapper**, then the entry points its seam at it.
+
+```ts
+// WRONG — a screen hook reaches the vendor (and so would its test, through vi.mock)
+import { useQuery } from '@tanstack/react-query'
+
+// RIGHT — it imports the project module that owns the seam, apps/*/src/lib/query/**
+import { useAppQuery } from '@/lib/query/useAppQuery.hook'
+```
+
+**The migration freezes, then shrinks.** Every import that broke the rule when it landed is listed,
+one entry per file and package, in `eslint-dependency-seam-allowlist.json`, with a reason that
+starts with the F.8 unit that removes it (`F.8 unit 2: …`). F.8 units 2 to 8 drive it to empty,
+and the gate fails an entry whose import is gone, so the list cannot grow back by accident.
+
+> Status: **lint + script.** `local/dependency-seam` (`eslint-local-rules/dependency-seam.detect.mjs`,
+> `error` over `apps/*/**` and `packages/*/**` by pattern, so an app added later inherits it) reads
+> imports, re-exports, `import()`, `require()`, `import()` types and the `vi.mock` family.
+> `verify:dependency-seams` holds the registry to every `package.json` (no unregistered
+> dependency, no stale entry), every seam glob to a file, the configs ESLint ignores to their
+> seams, and the allowlist to the imports that still break the rule. **Not covered:** the names
+> imported from a package (the `react-native` primitives and the `expo-router` hooks are F.8 units
+> 8 and 6); a specifier that is not a literal; triple-slash references and `declare module`; CSS
+> and JSON (an Expo plugin); a vendor type a wrapper re-exports; and whether a seam is the right
+> one, which is review.
 
 ---
 

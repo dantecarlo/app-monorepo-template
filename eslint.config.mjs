@@ -25,6 +25,7 @@ import {
   BASE_RULES,
   FILENAME_RULES,
   CONSTANT_FILE_OVERRIDE,
+  DEPENDENCY_SEAM_OVERRIDE,
   DTS_FILE_OVERRIDE,
   HOOK_FILE_OVERRIDE,
   LOGIC_IN_HOOK_OVERRIDE,
@@ -39,8 +40,7 @@ import {
   TESTING_LIBRARY_ALLOWED_OVERRIDE,
   TOKENS_SOURCE_OVERRIDE,
   TW4_NAMED_WIDTH_OVERRIDE,
-  UI_COMPONENT_OVERRIDE,
-  VENDOR_SDK_ALLOWED_OVERRIDE
+  UI_COMPONENT_OVERRIDE
 } from './eslint.rules.mjs'
 
 // typescript-eslint v8 errors when multiple candidate tsconfig roots exist
@@ -71,7 +71,10 @@ const IGNORES = [
   'packages/supabase/src/types.ts',
   // E2E tests run via dlx — Playwright is not a package dep.
   'e2e/**',
-  'playwright.config.ts'
+  'playwright.config.ts',
+  // Inputs of the lint-rule tests, which lint them under the path they stand
+  // for (eslint-local-rules/dependency-seam.cases.mjs).
+  'eslint-local-rules/__fixtures__/**'
 ]
 
 // ---------------------------------------------------------------------------
@@ -402,12 +405,12 @@ export default defineConfig([
   TW4_NAMED_WIDTH_OVERRIDE,
   TEST_FILE_OVERRIDE,
   TEST_INFRA_OVERRIDE,
-  // Import-seam allow-lists: re-enable vendor SDKs at the adapter/lib seam and
-  // @testing-library/react in the test render seam. Must come AFTER the
-  // workspace blocks (and TEST_* blocks) so the relaxed no-restricted-imports
-  // config wins by later-wins.
-  VENDOR_SDK_ALLOWED_OVERRIDE,
+  // The render seam: re-enables @testing-library/react in the test helper and
+  // the tests. Must come AFTER the workspace blocks (and TEST_* blocks) so the
+  // relaxed no-restricted-imports config wins by later-wins.
   TESTING_LIBRARY_ALLOWED_OVERRIDE,
+  // Every package inside its seam, over apps/* and packages/* by pattern.
+  DEPENDENCY_SEAM_OVERRIDE,
   DTS_FILE_OVERRIDE,
 
   // Prettier must be last to disable conflicting rules.

@@ -1,7 +1,9 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": [
+    ".agents/contracts/dependencies.json",
     ".prettierrc.json",
+    "eslint-dependency-seam-allowlist.json",
     "eslint-local-rules/**",
     "eslint-style-positioning-allowlist.json",
     "eslint.config.mjs",
