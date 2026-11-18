@@ -17,7 +17,7 @@ and `posthog-react-native` 4.87.0 (`PostHogOptions`, and `PostHogCoreOptions` of
 | Consent call | Web                                                             | Mobile                                                  |
 | ------------ | --------------------------------------------------------------- | ------------------------------------------------------- |
 | grant        | `opt_in_capturing({ captureEventName: false })`                 | open the consent storage, then `optIn()`                |
-| revoke       | `opt_out_capturing()`, then `reset(true)`                       | close the consent storage, then `optOut()` and `reset()` |
+| revoke       | `opt_out_capturing()`, then `reset({ resetDeviceID: true })`    | close the consent storage, then `optOut()` and `reset([])` |
 | status       | `get_explicit_consent_status()`                                 | the consent storage's grant                             |
 
 ### Why each choice
@@ -48,8 +48,9 @@ and `posthog-react-native` 4.87.0 (`PostHogOptions`, and `PostHogCoreOptions` of
    launch and `pending` after it, so a banner asks again. A project that wants to remember a
    refusal stores it in its banner.
 6. **A revoke resets the identity.** Without it the in-memory id survives the revoke and a later
-   grant on the same page saves it again, joining the two. The web reset also takes a new device
-   id.
+   grant on the same page saves it again, joining the two. Both resets also drop the device id:
+   `resetDeviceID: true` on web, and on mobile `reset([])`, which keeps no property (by default
+   `posthog-react-native` keeps the device id across a reset).
 7. **An unknown mode throws.** The value is checked when the client module loads with a key set.
    On web that is also true on the server, so the prerender of `next build` fails before the value
    ships; on mobile the app fails at launch. Without a key no client is built and the value is not

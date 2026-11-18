@@ -120,7 +120,8 @@ read.
 The mobile app SHALL export a consent API, the `IConsentPort` of packages/core, from its
 observability barrel, bound to PostHog in the composition root `consent.adapter.ts`. In `opt-in`
 mode with a client, `grant` SHALL open the consent storage and then opt PostHog in; `revoke`
-SHALL close the consent storage and then opt PostHog out and reset it; and `getStatus` SHALL read
+SHALL close the consent storage and then opt PostHog out and reset it keeping no property, the
+device id included; and `getStatus` SHALL read
 `granted` while the storage holds a grant, `denied` after a revoke in the same launch, and
 `pending` otherwise. In `granted` and `memory` mode and without a key, `getStatus` SHALL read
 `not-required`, and `grant` and `revoke` SHALL call nothing on PostHog.
@@ -145,8 +146,8 @@ SHALL close the consent storage and then opt PostHog out and reset it; and `getS
 
 - **GIVEN** a key, the consent mode `opt-in` and a grant
 - **WHEN** consent is revoked
-- **THEN** AsyncStorage holds nothing, PostHog is opted out and reset, and the status reads
-  `denied`
+- **THEN** AsyncStorage holds nothing, PostHog is opted out and reset keeping no property, and
+  the status reads `denied`
 - **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "revoke closes the consent storage, opts PostHog out, resets it and reads denied"
 
 #### Scenario: a mode that asks no consent
