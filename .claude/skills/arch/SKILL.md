@@ -431,8 +431,11 @@ table by hand when you edit it.
 ## 15. i18n
 
 UI copy goes through `@app/i18n`. Never hardcode user-facing strings as
-inline literals. Define keys in the translation catalog; load with the
-project's i18n hook.
+inline literals. Define keys in the translation catalog; read them through
+the app's translator, `useAppTranslator()` of
+`@/lib/i18n/useAppTranslator.hook` (`getAppTranslator()` in a web server
+component), with full keys: `t('items.dashboard.title')`. It is the same
+`IAppTranslator` in both apps; never import next-intl or react-i18next.
 
 ---
 

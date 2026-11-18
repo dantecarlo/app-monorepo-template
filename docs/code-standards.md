@@ -546,6 +546,28 @@ labels included. An adapter returns data, never a sentence (an item's age is a
 unit and a count), and the component words it through the catalog in the
 active language.
 
+**A block reads its copy through the app's translator**, never a translation runtime. Both
+apps give the same `IAppTranslator` of `@app/i18n`: `useAppTranslator()` of
+`@/lib/i18n/useAppTranslator.hook`, and on the web `getAppTranslator()` of
+`@/lib/i18n/appTranslator.adapter` in a server component. It holds `t(key, values?)`, whose
+key is a full path of the English catalog (`TranslationKeyType`, so a path the catalog lacks
+and a namespace fail typecheck); `has(key)`, which turns a string that arrives at run time,
+such as an `AppError`'s message key, into a key; and `locale`, the active language.
+
+```ts
+// WRONG — a block reaches the runtime, and reads differently in each app
+const t = useTranslations('items.dashboard') // web
+const { t } = useTranslation('translation', { keyPrefix: 'items.dashboard' }) // mobile
+
+// RIGHT — the same line in both apps, the key in full
+const { t } = useAppTranslator()
+t('items.dashboard.listResults', { count })
+```
+
+next-intl, react-i18next and the i18next family are imported only by each app's
+`src/lib/i18n/` and the framework files that must name them (§ 23). A test mocks
+`@/lib/i18n/…` or renders through the app's test helper (`renderWithIntl`, `renderWithI18n`).
+
 ---
 
 ### 15.1 i18n Catalog Conventions
@@ -760,6 +782,7 @@ This table exists so that difference is visible.
 | §14a Logic in hooks         | lint          | `local/logic-in-view` + `local/single-use-state`                    |
 | Core import boundary        | lint          | `local/core-import-boundary` on `packages/core/src/**`              |
 | §15 English everywhere      | script        | `verify:english` (allowlist: §20 exception); identifier lint `warn` |
+| §15 Copy via the translator | lint + types  | `local/dependency-seam` keeps the runtimes in `src/lib/i18n/`; `TranslationKeyType` refuses a key the catalog lacks |
 | §15.1 i18n catalogs         | test + types  | `resources.constant.test.ts` + typed `resources` — casing not yet   |
 | §16 Conventional commits    | hook          | `commitlint` on `commit-msg`                                        |
 | §17 Per-feature DoD         | review        | —                                                                   |
