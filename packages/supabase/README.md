@@ -16,6 +16,8 @@ update `src/lib/supabase/*.adapter.ts` in each app to point at it.
 // Browser / client component / React Native
 import { createSupabaseClient } from '@app/supabase'
 
+// The opaque BackendClientType: hand it to this package's adapters, which
+// alone reach the SDK through it.
 const supabase = createSupabaseClient({ anonKey, url })
 ```
 
@@ -78,9 +80,12 @@ Swapping Supabase for another backend requires three steps:
    to import from the new adapter package instead. This is the only file that
    picks the concrete adapter and wires app env into it.
 
-3. **Keep service signatures unchanged.** Services receive/import the wired
-   client and call it; error handling goes through the provider's builder
-   (e.g. `buildFirebaseServiceError`). The service contract does not change.
+3. **Keep service signatures unchanged.** The client leaves the package as the
+   opaque `BackendClientType`, so an app holds it without reaching the SDK:
+   every call to the provider lives in an adapter of the provider package,
+   which alone unwraps the client (`src/backendClient.adapter.ts` here), and
+   error handling goes through the provider's builder (e.g.
+   `buildFirebaseServiceError`). The service contract does not change.
 
 RLS policies, SQL migrations, and `supabase/config.toml` are **not
 abstracted** — they are inherently adapter-owned. Swapping providers means
