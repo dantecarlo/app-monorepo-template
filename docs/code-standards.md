@@ -754,7 +754,7 @@ This table exists so that difference is visible.
 | §9 Tests per unit, in place | script        | `verify:tests` (and `verify:tests:test`) — presence and location    |
 | §10 Auto-sort               | lint          | `simple-import-sort/*`, `perfectionist/sort-*`, `sort-keys`         |
 | §11 No JSX prop spreading   | lint          | `react/jsx-props-no-spreading`                                      |
-| §12 Component folder casing | script        | `verify:structure`                                                  |
+| §12 Component folder casing | script+lint   | `verify:structure`; `check-file/folder-naming-convention` on every app's `src/components/ui/` |
 | §13 Prettier                | **partial**   | `prettier/prettier` on workspace TS/TSX; `format:check` has no task |
 | §14 Data flow               | review        | —                                                                   |
 | §14a Logic in hooks         | lint          | `local/logic-in-view` + `local/single-use-state`                    |
@@ -774,11 +774,12 @@ This table exists so that difference is visible.
 | `AGENTS.md` LAWs and Router | review        | — no gate reads a LAW, or checks that a skill has a router row      |
 | §22 Screens only position   | lint+script   | `local/style-positions-only` + `verify:allowlist-freshness`         |
 | §22 Values are tokens       | lint+script   | `local/style-token-values` + `verify:allowlist-freshness`           |
-| §22 The kit behind `ui/`    | lint          | `local/ui-kit-boundary` on both apps                                |
+| §22 The kit behind `ui/`    | lint          | `local/ui-kit-boundary` on every app                                |
 | §22 One `tv` on web         | lint+test     | `local/dependency-seam`: the helper is `tailwind-variants`' seam    |
 | Token outputs generated     | script        | `verify:theme-sync` (and `:test`): each equals its regeneration     |
 | §23 Packages in their seams | lint+script   | `local/dependency-seam` + `verify:dependency-seams`                 |
 | §23 Every package registered | script       | `verify:dependency-seams` — every `package.json` dependency, no stale entry |
+| §24 One rule set, every app | test          | the fixture apps of `eslint-local-rules/__fixtures__/apps/` (`verify:lint-rules:test`) |
 
 **Rows that read "none yet", "warn only" or "partial"** are not aspirations
 hidden in prose — they are named gaps with a named mechanism, tracked as
@@ -899,6 +900,59 @@ and the gate fails an entry whose import is gone, so the list cannot grow back b
 > 8 and 6); a specifier that is not a literal; triple-slash references and `declare module`; CSS
 > and JSON (an Expo plugin); a vendor type a wrapper re-exports; and whether a seam is the right
 > one, which is review.
+
+---
+
+## 24. One Rule Set for Every App and Package
+
+Decision 52 of `docs/INIT_AND_HARNESS_PLAN.md`. The owner, 2026-11-15 (translated from Spanish):
+"web and app have to be standardized, and any other project, that is, they have to always follow
+the same rules and centralize it if possible, because if later plain React is added for example it
+should follow the same rules".
+
+**The rule sets live in `eslint.rules.mjs`; `eslint.config.mjs` only says where each applies.** A
+rule set more than one workspace shares applies by pattern, never by naming a workspace. What a
+framework forces applies to every app whose `package.json` declares that framework, in any
+dependency field; `scripts/eslint-config.detect.mjs` reads the `package.json` of every folder
+under `apps/` once, when the config loads, and a manifest it cannot parse fails the load, naming
+the file.
+
+| Rule set                                                        | Applies to                                                      |
+| --------------------------------------------------------------- | --------------------------------------------------------------- |
+| `BASE_RULES`, `FILENAME_RULES`                                  | every TypeScript file of `apps/*/**` and `packages/*/**`        |
+| The Node globals of a package                                   | `packages/*/**`, `packages/tokens` excepted (below)             |
+| `UI_FOLDER_CASING_RULES` (§12)                                  | every app: the block folders of its `src/components/ui/`        |
+| The styling pillar (§22)                                        | every app: `apps/*/src/**`                                      |
+| Logic-in-hook, suffix contract, adapter purity, test overrides  | every file of their suffix or folder (`**/*.component.tsx`, …)  |
+| `local/dependency-seam` (§23)                                   | every JavaScript and TypeScript file of `apps/*/**` and `packages/*/**` |
+| `REACT_RULES`, the JSX parser, the browser globals              | every app that declares `react`                                 |
+| The Next.js block: `@next/next` rules, Node globals, the App Router and middleware file names, async server screens, `next-env.d.ts` ignored | every app that declares `next` |
+| The Expo block: `expo` rules, React Native globals, the jsx-a11y relaxations, the Expo Router file names | every app that declares `expo` |
+
+**What stays scoped to one workspace**, because it is that workspace's own:
+
+- `packages/core/src`: `local/core-import-boundary`, the domain layer importing nothing external.
+- `packages/tokens/src`: literal values are allowed, since the tokens are their source.
+- `packages/tokens`: the browser globals, the JSX parser and the React rule set, which the package
+  carries without declaring `react`. **Open question:** whether it should run with the Node globals
+  of every other package and drop the React set; no finding changes either way today.
+- `packages/supabase/src/types.ts`: ignored, since its generator owns its key order.
+- `packages/tooling`: the Node globals of its `.mjs` modules, shared with the root scripts.
+
+**A new app inherits every rule with no config change.** Add its folder under `apps/` with a
+`package.json`: the shared rule sets reach it by pattern, and declaring `react`, `next` or `expo`
+brings that framework's block. Nothing in `eslint.config.mjs`, `eslint.rules.mjs` or the rules
+under `eslint-local-rules/` names an app.
+
+> Status: **test.** The fixture apps under `eslint-local-rules/__fixtures__/apps/` are linted
+> through the config `eslint.config.mjs` builds for that folder (`createConfig`), as files of
+> `apps/<fixture>/`: a plain React app is refused for a violation of each shared family (base,
+> React, filename and folder, styling pillar, logic-in-hook, suffix contract, dependency seam),
+> and one app declaring `next` and one declaring `expo` get their framework's block
+> (`pnpm verify:lint-rules:test`). A case also fails when the config or a rule names a folder
+> under `apps/`. **Not covered:** a package that declares `react` gets the shared rules, not the
+> React set; and the gates that walk the two app folders by name
+> (`scripts/verify-allowlist-freshness.mjs`, `scripts/verify-maps.mjs`) are not ESLint blocks.
 
 ---
 

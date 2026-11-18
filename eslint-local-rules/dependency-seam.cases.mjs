@@ -6,19 +6,19 @@
 // `.agents/contracts/dependencies.json`, so each one judges the seams the
 // apps live under. Their files do not exist, so no entry of the frozen
 // allowlist can silence one. The detection cases build a registry of their
-// own, for the parts of the format the real one does not use. The fixture
-// app is linted through the real eslint.config.mjs, as files of
-// `apps/fixture/`: they sit under __fixtures__/ on disk, so no app is added
-// to the workspace, and the config is read exactly as `pnpm lint` reads it.
+// own, for the parts of the format the real one does not use. The seam
+// files of the fixture app are linted through the config eslint.config.mjs
+// builds for __fixtures__/, as files of `apps/fixture/`
+// (./eslint-config.cases.mjs): they sit under __fixtures__/ on disk, so no
+// app is added to the workspace, and nothing in the config names them.
 // ---------------------------------------------------------------------------
 
 import assert from 'node:assert/strict'
-import { readdirSync, readFileSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, test } from 'node:test'
 
-import { ESLint, RuleTester } from 'eslint'
+import { RuleTester } from 'eslint'
 import tseslint from 'typescript-eslint'
 
 import {
@@ -26,12 +26,10 @@ import {
   indexRegistry,
   SEAM_FINDING
 } from './dependency-seam.detect.mjs'
+import { lintFixtureMessages } from './eslint-config.cases.mjs'
 import localRules from './index.mjs'
 
 const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url))
-const FIXTURE_ROOT = fileURLToPath(
-  new URL('__fixtures__/', import.meta.url)
-)
 const RULE_ID = 'local/dependency-seam'
 const ERROR_SEVERITY = 2
 
@@ -230,41 +228,23 @@ const registerDetectionCases = () =>
     })
   })
 
-// The fixture app: every file under __fixtures__/apps/fixture/, linted as
-// the same path under the repository root.
-const listFixture = () =>
-  readdirSync(join(FIXTURE_ROOT, 'apps'), {
-    recursive: true,
-    withFileTypes: true
-  })
-    .filter((entry) => entry.isFile())
-    .map((entry) =>
-      relative(
-        FIXTURE_ROOT,
-        join(entry.parentPath, entry.name)
-      ).replaceAll('\\', '/')
-    )
-    .sort()
+// The seam files of the fixture app, linted as the paths they stand for.
+const SEAM_FIXTURE = [
+  'apps/fixture/src/helpers/outside.helper.ts',
+  'apps/fixture/src/lib/query/createQueryClient.helper.ts',
+  'apps/fixture/src/validation/example.schema.ts'
+]
 
-const lintFixture = async () => {
-  const eslint = new ESLint({ cwd: REPO_ROOT })
-  const results = await Promise.all(
-    listFixture().map(async (path) => {
-      const [result] = await eslint.lintText(
-        readFileSync(join(FIXTURE_ROOT, path), 'utf8'),
-        { filePath: join(REPO_ROOT, path) }
-      )
-      return { path, result }
+const lintFixture = async () =>
+  (await lintFixtureMessages({ paths: SEAM_FIXTURE })).map(
+    ({ messages, path }) => ({
+      fatal: messages.filter(({ fatal }) => fatal).length,
+      path,
+      seam: messages
+        .filter(({ ruleId }) => ruleId === RULE_ID)
+        .map(({ messageId, severity }) => `${severity} ${messageId}`)
     })
   )
-  return results.map(({ path, result }) => ({
-    fatal: result.messages.filter(({ fatal }) => fatal).length,
-    path,
-    seam: result.messages
-      .filter(({ ruleId }) => ruleId === RULE_ID)
-      .map(({ messageId, severity }) => `${severity} ${messageId}`)
-  }))
-}
 
 const registerFixtureCase = () =>
   test('a new app under apps/ inherits the rule with no config change', async () => {

@@ -26,6 +26,7 @@ import tseslint from 'typescript-eslint'
 
 import { FILENAME_RULES } from '../eslint.rules.mjs'
 import { registerDependencySeamCases } from './dependency-seam.cases.mjs'
+import { registerEslintConfigCases } from './eslint-config.cases.mjs'
 import localRules from './index.mjs'
 import { toSrcAlias } from './package-src-alias.detect.mjs'
 import {
@@ -34,6 +35,7 @@ import {
   positionsOnlyScope,
   tokenValuesScope
 } from './style-positioning.detect.mjs'
+import { isOutsideUiKit } from './ui-kit.detect.mjs'
 
 RuleTester.describe = describe
 RuleTester.it = test
@@ -851,6 +853,29 @@ describe('style pillar scope', () => {
     )
   })
 
+  test('the style pillar and the UI kit boundary judge every app under apps/', () => {
+    const screenStyle = 'apps/admin/src/screens/Home/Home.style.ts'
+    const uiStyle = 'apps/admin/src/components/ui/Button/Button.style.ts'
+    const paths = [screenStyle, uiStyle]
+
+    assert.deepEqual(
+      {
+        kitOutsideUi: paths.map((path) => isOutsideUiKit(path)),
+        positionsOnly: paths.map(
+          (path) => positionsOnlyScope(path)?.kind ?? null
+        ),
+        tokenValues: paths.map(
+          (path) => tokenValuesScope(path)?.path ?? null
+        )
+      },
+      {
+        kitOutsideUi: [true, false],
+        positionsOnly: [FILE_KIND.STYLE, null],
+        tokenValues: paths
+      }
+    )
+  })
+
   test('an allowlist entry exempts its own path under its own rule only', () => {
     const allowlist = [
       { path: STYLE_FILE, reason: 'r', rule: 'style-positions-only' }
@@ -964,3 +989,7 @@ viewTester.run('ui-kit-boundary', rules['ui-kit-boundary'], {
 // The dependency seam (code-standards §23): its rule cases, its detection
 // and the fixture app that proves a new app inherits it.
 registerDependencySeamCases()
+
+// The ESLint config: which frameworks each app declares, and the fixture
+// apps that prove a new app inherits every rule.
+registerEslintConfigCases()

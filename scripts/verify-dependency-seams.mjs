@@ -46,10 +46,15 @@ import {
 } from '../eslint-local-rules/dependency-seam.detect.mjs'
 import {
   countViolations,
-  DEPENDENCY_FIELDS,
   FINDING_KIND,
   judgeSeams
 } from './dependency-seams.detect.mjs'
+import {
+  declaredPackages,
+  isWorkspaceManifest,
+  MANIFEST_FILE,
+  WORKSPACE_GROUPS
+} from './eslint-config.detect.mjs'
 import { defineGate, reportGate } from './gate/gate.mjs'
 
 export { FINDING_KIND }
@@ -57,8 +62,6 @@ export { FINDING_KIND }
 const REPO_ROOT = resolve(import.meta.dirname, '..')
 const ESLINT_CONFIG = join(REPO_ROOT, 'eslint.config.mjs')
 
-const WORKSPACE_GROUPS = ['apps', 'packages']
-const MANIFEST = 'package.json'
 const SOURCE_FILE = /\.[cm]?[jt]sx?$/u
 // Folders never walked: dependencies, caches and build output.
 const SKIPPED_DIRS = new Set([
@@ -86,7 +89,9 @@ const readJson = ({ path }) => {
   }
 }
 
-// Every file under apps/ and packages/, repository-relative, sorted.
+// Every file under apps/ and packages/, repository-relative, sorted. The
+// workspace folders, and what a manifest declares, are the ones the ESLint
+// config reads (./eslint-config.detect.mjs).
 const listFiles = ({ root }) =>
   WORKSPACE_GROUPS.flatMap((group) => {
     try {
@@ -106,25 +111,11 @@ const listFiles = ({ root }) =>
     }
   }).sort()
 
-const isWorkspaceManifest = (path) => {
-  const parts = path.split('/')
-  return (
-    parts.length === 3 &&
-    WORKSPACE_GROUPS.includes(parts[0]) &&
-    parts[2] === MANIFEST
-  )
-}
-
 const readManifests = ({ files, root }) =>
-  [MANIFEST, ...files.filter(isWorkspaceManifest)].flatMap((path) => {
+  [MANIFEST_FILE, ...files.filter(isWorkspaceManifest)].flatMap((path) => {
     const manifest = readJson({ path: join(root, path) })
     if (manifest.unreadable) return []
-    const names = DEPENDENCY_FIELDS.flatMap((field) =>
-      manifest[field] && typeof manifest[field] === 'object'
-        ? Object.keys(manifest[field])
-        : []
-    )
-    return [{ names: [...new Set(names)].sort(), path }]
+    return [{ names: declaredPackages({ manifest }), path }]
   })
 
 const parse = ({ path, root }) =>

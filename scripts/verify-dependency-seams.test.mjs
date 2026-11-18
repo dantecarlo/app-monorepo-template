@@ -157,6 +157,20 @@ export const CASES = [
   },
   {
     context: walk({
+      files: {
+        'apps/web/package.json': JSON.stringify({
+          dependencies: { react: '1', zod: '1' },
+          name: '@app/web',
+          optionalDependencies: { 'left-pad': '1' },
+          peerDependencies: { 'is-odd': '1' }
+        })
+      }
+    }),
+    expected: 2,
+    name: 'a dependency in any dependency field of a package.json is judged'
+  },
+  {
+    context: walk({
       entries: [
         ...BASE_ENTRIES,
         { category: 'infra', name: 'left-pad', seam: [] }

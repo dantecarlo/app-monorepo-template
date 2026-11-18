@@ -1,9 +1,9 @@
 # harness/dependency-seams — living spec
 
-> **Governs:** `.agents/contracts/dependencies.json`, `eslint-dependency-seam-allowlist.json`, `eslint-local-rules/dependency-seam.detect.mjs`, `scripts/dependency-seams.detect.mjs`, `scripts/verify-dependency-seams.mjs`
+> **Governs:** `.agents/contracts/dependencies.json`, `eslint-dependency-seam-allowlist.json`, `eslint-local-rules/dependency-seam.detect.mjs`, `scripts/dependency-seams.detect.mjs`, `scripts/eslint-config.detect.mjs`, `scripts/verify-dependency-seams.mjs`, `eslint.config.mjs`, `eslint.rules.mjs`
 > **ID prefix:** `SEAM`
 > **Derived from:** `docs/code-standards.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-18 at `325d441`
+> **Verified against the code:** 2026-11-18 at `c7b026f`
 
 ## Purpose
 
@@ -14,7 +14,9 @@ every app and package by pattern, the frozen allowlist of the imports that broke
 landed, and the gate that holds the registry to the `package.json` files, the seams to the files,
 the configs ESLint ignores to their seams and the allowlist to the source. Moving an import into
 its seam belongs to the later F.8 units, and the names imported from a package (the primitive
-wrappers) to F.8 unit 8; the other lint rules and their wiring are not part of this unit.
+wrappers) to F.8 unit 8. Since F.8 unit 1b it also owns how the ESLint config reaches a new app:
+every shared rule set by pattern, and each framework's block by what an app's `package.json`
+declares (SEAM-09, SEAM-10); the other lint rules themselves are not part of this unit.
 
 ## Requirements
 
@@ -285,7 +287,8 @@ package outside its seam or unregistered; it states the population it judged whe
 
 **Evidence:** `scripts/dependency-seams.detect.mjs:167-178`, `scripts/dependency-seams.detect.mjs:180-191`,
 `scripts/dependency-seams.detect.mjs:193-214`, `scripts/dependency-seams.detect.mjs:248-258`,
-`scripts/verify-dependency-seams.mjs:118-126`, `scripts/verify-dependency-seams.mjs:197-207`
+`scripts/verify-dependency-seams.mjs:114-119`, `scripts/verify-dependency-seams.mjs:188-198`,
+`scripts/eslint-config.detect.mjs:37-56`
 
 #### Scenario: an unregistered dependency
 
@@ -323,20 +326,139 @@ package outside its seam or unregistered; it states the population it judged whe
 - **THEN** it exits 0 and prints the entries, manifests, files and violations it counted
 - **Test:** `scripts/verify-dependency-seams.test.mjs` › "the gate exits 0 over a clean tree and states what it judged"
 
-### Requirement: SEAM-09 — A new app inherits the rule by pattern
+### Requirement: SEAM-09 — A new app inherits every shared rule by pattern
 
-The ESLint config SHALL run `local/dependency-seam` at `error` on every JavaScript and TypeScript
-file of `apps/*/**` and `packages/*/**` and register the plugin it needs in the same block, so an
-app added under `apps/` is judged with no config change.
+The ESLint config SHALL apply every rule set more than one workspace shares by pattern, never by
+naming a workspace: the base rules and the filename suffix rules to every TypeScript file of
+`apps/*/**` and `packages/*/**`; the casing of `src/components/ui/` folders and the styling pillar
+to every app; the fractal, logic-in-hook, suffix-contract and test overrides to every file of their
+suffix; and `local/dependency-seam` at `error` to every JavaScript and TypeScript file of
+`apps/*/**` and `packages/*/**`; each block registering the plugins it needs, so an app added under
+`apps/` is judged by every shared rule with no config change.
 
-**Evidence:** `eslint.rules.mjs:657-666`, `eslint.config.mjs:413`, `eslint-local-rules/index.mjs:909-911`,
-`eslint-local-rules/__fixtures__/apps/fixture/src/helpers/outside.helper.ts:1-2`
+**Evidence:** `eslint.config.mjs:257-266`, `eslint.config.mjs:324-327`, `eslint.config.mjs:366-386`,
+`eslint.rules.mjs:335-340`, `eslint.rules.mjs:673-689`, `eslint-local-rules/style-positioning.detect.mjs:310-314`,
+`eslint-local-rules/ui-kit.detect.mjs:63-66`, `eslint-local-rules/__fixtures__/apps/fixture/package.json:1-7`
 
-#### Scenario: the fixture app
+#### Scenario: the base rules
 
-- **GIVEN** the fixture app `eslint-local-rules/__fixtures__/apps/fixture/`, linted through the
-  real `eslint.config.mjs` as `apps/fixture/`
-- **WHEN** ESLint lints its files
+- **GIVEN** the fixture app `eslint-local-rules/__fixtures__/apps/fixture/`, whose `package.json`
+  declares `react` and neither `next` nor `expo`, linted through the config `eslint.config.mjs`
+  builds for the fixture's folder, as `apps/fixture/`; and a helper of it that declares an
+  interface without the `I` prefix
+- **WHEN** ESLint lints the helper
+- **THEN** `@typescript-eslint/naming-convention` reports it at error, and nothing else
+- **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "a new app inherits the base rules"
+
+#### Scenario: the React rules
+
+- **GIVEN** a component of the fixture app whose JSX props are not sorted
+- **WHEN** ESLint lints it
+- **THEN** `react/jsx-sort-props` reports it at error, and nothing else
+- **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "a new app that declares react inherits the React rules"
+
+#### Scenario: the filename rules
+
+- **GIVEN** a source file of the fixture app with no fractal suffix, and a block under its
+  `src/components/ui/` whose folder is not PascalCase
+- **WHEN** ESLint lints them
+- **THEN** `check-file/filename-naming-convention` reports the first and
+  `check-file/folder-naming-convention` the second, at error
+- **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "a new app inherits the filename and folder rules"
+
+#### Scenario: the styling pillar
+
+- **GIVEN** a screen style of the fixture app holding a palette colour, and a screen helper that
+  re-exports `tailwind-variants`
+- **WHEN** ESLint lints them
+- **THEN** `local/style-positions-only` and `local/style-token-values` report the colour and
+  `local/ui-kit-boundary` the re-export, at error
+- **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "a new app inherits the styling pillar"
+
+#### Scenario: the logic-in-hook rules
+
+- **GIVEN** a component of the fixture app that calls `useEffect`
+- **WHEN** ESLint lints it
+- **THEN** `no-restricted-syntax` reports it at error, and nothing else
+- **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "a new app inherits the logic-in-hook rules"
+
+#### Scenario: the suffix contract
+
+- **GIVEN** a component of the fixture app that declares a top-level SCREAMING_SNAKE const
+- **WHEN** ESLint lints it
+- **THEN** `local/suffix-contract` reports it at error, and nothing else
+- **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "a new app inherits the suffix contract"
+
+#### Scenario: the dependency seam
+
+- **GIVEN** the seam files of the fixture app
+- **WHEN** ESLint lints them
 - **THEN** an unregistered package and a registered package outside its seam are reported at
   error, and its seam files report nothing
 - **Test:** `eslint-local-rules/dependency-seam.cases.mjs` › "a new app under apps/ inherits the rule with no config change"
+
+#### Scenario: no block names an app
+
+- **GIVEN** `eslint.config.mjs`, `eslint.rules.mjs`, `scripts/eslint-config.detect.mjs` and the
+  detection modules under `eslint-local-rules/`
+- **WHEN** their text is read
+- **THEN** none names a folder under `apps/`
+- **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "no ESLint config or rule names an app"
+
+### Requirement: SEAM-10 — What an app's framework forces follows what it declares
+
+The ESLint config SHALL read the `package.json` of every folder under `apps/` once, when it loads,
+and apply the React rule set to every app that declares `react`, the Next.js block (the
+`@next/next` rules, the Node globals, the App Router and middleware file names, the async server
+screens and the generated `next-env.d.ts`) to every app that declares `next`, and the Expo block
+(the `expo` rules, the React Native globals and accessibility relaxations, the Expo Router file
+names) to every app that declares `expo`, a package named in any dependency field being declared;
+a folder with no `package.json` is no app, and a `package.json` that cannot be parsed fails the
+config load, naming the file.
+
+**Evidence:** `scripts/eslint-config.detect.mjs:47-56`, `scripts/eslint-config.detect.mjs:63-76`,
+`scripts/eslint-config.detect.mjs:80-111`, `eslint.config.mjs:140-231`, `eslint.config.mjs:235-238`,
+`eslint.config.mjs:334-336`, `eslint.config.mjs:373`
+
+#### Scenario: an app that declares next
+
+- **GIVEN** the fixture app `eslint-local-rules/__fixtures__/apps/fixture-next/`, whose
+  `package.json` declares `next` and `react`, with a route `src/app/page.tsx`, an `async` screen
+  and a screen that renders `<img>` with a dynamic `process.env` key
+- **WHEN** ESLint lints them through the config built for the fixture's folder
+- **THEN** `@next/next/no-img-element` reports the `<img>`, and nothing else is reported: the route
+  keeps its name and the screen may be `async`
+- **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "an app that declares next gets the Next.js block"
+
+#### Scenario: an app that declares expo
+
+- **GIVEN** the fixture app `eslint-local-rules/__fixtures__/apps/fixture-expo/`, whose
+  `package.json` declares `expo` and `react`, with the same three files
+- **WHEN** ESLint lints them through the config built for the fixture's folder
+- **THEN** `expo/no-dynamic-env-var` reports the dynamic key at error, the `async` screen is
+  refused, and the route keeps its name
+- **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "an app that declares expo gets the Expo block"
+
+#### Scenario: an app that declares neither
+
+- **GIVEN** the fixture app `eslint-local-rules/__fixtures__/apps/fixture/`, whose `package.json`
+  declares `react` and neither `next` nor `expo`, with the same three files
+- **WHEN** ESLint lints them through the config built for the fixture's folder
+- **THEN** the route's name and the `async` screen are refused, and no `@next/next` or `expo` rule
+  reports
+- **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "an app that declares neither next nor expo gets no framework block"
+
+#### Scenario: any dependency field, and a folder that is no app
+
+- **GIVEN** a tree whose apps declare `next` in `devDependencies`, `react` in `peerDependencies` and
+  `expo` in `optionalDependencies`, and a folder under `apps/` with no `package.json`
+- **WHEN** the detection reads the tree
+- **THEN** each app is listed under the framework it declares, and the folder under none
+- **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "a framework declared in any dependency field counts, and a folder with no package.json is no app"
+
+#### Scenario: a package.json that cannot be parsed
+
+- **GIVEN** a tree with `apps/broken/package.json` holding `{`
+- **WHEN** the ESLint config is built for that tree
+- **THEN** it throws, naming `apps/broken/package.json`
+- **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "an app package.json that cannot be parsed fails the config load, naming it"

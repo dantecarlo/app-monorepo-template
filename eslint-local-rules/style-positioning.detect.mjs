@@ -13,7 +13,7 @@
 //     base utility (the part after its variants) is a positioning utility, and
 //     a style declaration (a React Native StyleSheet entry, an inline style
 //     object) has a positioning property as its key.
-//   - token values: in every style file and view of both apps, a value comes
+//   - token values: in every style file and view of every app, a value comes
 //     from the design tokens: no raw colour literal, no Tailwind palette
 //     colour, and no arbitrary value (`[…]` or `(…)`) in a class token.
 //
@@ -307,15 +307,15 @@ const COLOR_ATTRIBUTE_RE = /(^colors?$|Color$|^fill$|^stroke$)/
 // the freshness gate, so they cannot disagree about a path.
 // ---------------------------------------------------------------------------
 
-const APP_SOURCE_RE = /(?:^|\/)(apps\/(?:web|mobile)\/src\/.+)$/
+const APP_SOURCE_RE = /(?:^|\/)(apps\/[^/]+\/src\/.+)$/
 const TEST_PATH_RE =
-  /(?:^|\/)(?:__tests__|__mocks__)\/|\.(?:test|spec)\.[cm]?[jt]sx?$|^apps\/(?:web|mobile)\/src\/test\//
+  /(?:^|\/)(?:__tests__|__mocks__)\/|\.(?:test|spec)\.[cm]?[jt]sx?$|^apps\/[^/]+\/src\/test\//
 const COMPONENT_BLOCK_RE =
-  /^apps\/(?:web|mobile)\/src\/(?:components\/ui\/|screens\/[^/]+\/components\/)/
+  /^apps\/[^/]+\/src\/(?:components\/ui\/|screens\/[^/]+\/components\/)/
 
 export const FILE_KIND = Object.freeze({ STYLE: 'style', VIEW: 'view' })
 
-// The repository-relative path of an app source file (`apps/web/src/…`),
+// The repository-relative path of an app source file (`apps/<app>/src/…`),
 // or null for any other file. Absolute paths and Windows separators are
 // accepted: only the part from `apps/` on is kept.
 export const toAppSourcePath = (filename) => {
