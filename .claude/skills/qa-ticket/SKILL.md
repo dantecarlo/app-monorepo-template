@@ -70,12 +70,14 @@ Did every check pass?
 │         architect `<id> changes requested`. Stop.
 └── YES → bring it to Ready to merge (`ticket-flow` § Ready to merge):
           1. the pull request's CI is green;
-          2. bring the detached HEAD current by merging its base, never by a rebase (a rebased
-             branch cannot be pushed unforced):
-             git fetch origin && git merge origin/<base>
+          2. bring the detached HEAD current with the ticket branch and with its base, by
+             merges, never by a rebase (a rebased branch cannot be pushed unforced):
+             git fetch origin && git merge origin/<branch> && git merge origin/<base>
+             (the dev session may have pushed since the checkout; a conflict → comment it,
+             move to Changes requested, message the architect `<id> changes requested`. Stop.)
              then push it to the ticket branch, never forced: git push origin HEAD:<branch>
-             (refused because the remote moved → git fetch origin, and repeat this step);
-          3. re-run the checks on the current branch;
+             (refused because the remote moved → repeat this step from the fetch);
+          3. re-run the checks on the current branch, the dev session's new commits included;
           4. no conflict and every check green → move to Ready to merge.
 ```
 

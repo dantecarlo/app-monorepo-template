@@ -3,7 +3,7 @@
 > **Governs:** `.claude/skills/ticket-flow`, `.claude/skills/po-ticket`, `.claude/skills/refine-ticket`, `.claude/skills/dev-ticket`, `.claude/skills/qa-ticket`, `.claude/skills/release-ticket`, `.claude/skills/process-intake`, `scripts/verify-skills.mjs`, `scripts/verify-ticket-branch.mjs`
 > **ID prefix:** `TICKET`
 > **Derived from:** `openspec/changes/archive/2026-11-16-ticket-flow/source-spec.md`, `docs/harness.md`
-> **Verified against the code:** 2026-11-18 at `79bec7e`
+> **Verified against the code:** 2026-11-18 at `c7f9118`
 
 ## Purpose
 
@@ -34,7 +34,7 @@ Ready to merge conditions and the release stage, beside two templates in its fol
 
 **Evidence:** `.claude/skills/ticket-flow/SKILL.md:29`, `.claude/skills/ticket-flow/SKILL.md:43`,
 `.claude/skills/ticket-flow/SKILL.md:77`, `.claude/skills/ticket-flow/SKILL.md:142`,
-`.claude/skills/ticket-flow/SKILL.md:293`, `.claude/skills/ticket-flow/ticket.template.md:21`,
+`.claude/skills/ticket-flow/SKILL.md:294`, `.claude/skills/ticket-flow/ticket.template.md:21`,
 `.claude/skills/ticket-flow/release.template.md:11`, `scripts/verify-skills.mjs:202`
 
 #### Scenario: the contract of the repository
@@ -521,9 +521,9 @@ that it merged under `low-risk` and the Risk line it relied on. A pull request t
 condition waits for the owner, as under `manual`. A pull request into `production` QA merges
 under no policy: it waits at Ready to merge for its release (TICKET-24).
 
-**Evidence:** `.claude/skills/qa-ticket/SKILL.md:65`, `.claude/skills/qa-ticket/SKILL.md:84`,
-`.claude/skills/qa-ticket/SKILL.md:116`, `.claude/skills/ticket-flow/SKILL.md:170`,
-`.claude/skills/ticket-flow/SKILL.md:271`
+**Evidence:** `.claude/skills/qa-ticket/SKILL.md:65`, `.claude/skills/qa-ticket/SKILL.md:86`,
+`.claude/skills/qa-ticket/SKILL.md:118`, `.claude/skills/ticket-flow/SKILL.md:170`,
+`.claude/skills/ticket-flow/SKILL.md:272`
 
 #### Scenario: a green branch behind its base
 
@@ -628,7 +628,7 @@ staging or preview, with evidence on the release ticket. `ticket-flow`'s Ready f
 the same exception.
 
 **Evidence:** `.claude/skills/refine-ticket/SKILL.md:111`, `.claude/skills/ticket-flow/SKILL.md:93`,
-`.claude/skills/ticket-flow/SKILL.md:301`, `.claude/skills/release-ticket/SKILL.md:35`,
+`.claude/skills/ticket-flow/SKILL.md:302`, `.claude/skills/release-ticket/SKILL.md:35`,
 `.claude/skills/ticket-flow/release.template.md:14`
 
 #### Scenario: an area not checked on staging
@@ -699,7 +699,7 @@ running against the new schema, and declare a migration's rollback as a forward 
 the PO confirms the architect's proposal on the ticket, refreshing the general plan.
 
 **Evidence:** `.claude/skills/po-ticket/SKILL.md:54`, `.claude/skills/po-ticket/SKILL.md:68`,
-`.claude/skills/refine-ticket/SKILL.md:32`, `.claude/skills/ticket-flow/SKILL.md:240`
+`.claude/skills/refine-ticket/SKILL.md:32`, `.claude/skills/ticket-flow/SKILL.md:241`
 
 #### Scenario: the plan cannot meet the version
 
@@ -739,8 +739,8 @@ both policies, and that section's `Policy` line SHALL give `manual`, the default
 step SHALL stay the owner's word under every policy, as `ticket-flow` rule 4 and `release-ticket`
 say; and under neither policy SHALL QA merge a pull request into `production` (TICKET-24).
 
-**Evidence:** `.claude/skills/ticket-flow/SKILL.md:170`, `.claude/skills/qa-ticket/SKILL.md:84`,
-`.claude/skills/qa-ticket/SKILL.md:86`, `.claude/skills/process-intake/SKILL.md:65`,
+**Evidence:** `.claude/skills/ticket-flow/SKILL.md:170`, `.claude/skills/qa-ticket/SKILL.md:86`,
+`.claude/skills/qa-ticket/SKILL.md:88`, `.claude/skills/process-intake/SKILL.md:65`,
 `.claude/skills/process-intake/ticket-flow.template.md:57`,
 `.claude/skills/process-intake/ticket-flow.template.md:59`,
 `.claude/skills/release-ticket/SKILL.md:24`, `scripts/verify-skills.mjs:125`,
@@ -1047,8 +1047,8 @@ because the remote moved; and QA SHALL remove its own worktree once it is done w
 QA may have pushed to it. The structural check SHALL hold `qa-ticket` § Step 2 to name
 `--detach` and § Step 5 to name `git push origin HEAD:<branch>`.
 
-**Evidence:** `.claude/skills/qa-ticket/SKILL.md:38`, `.claude/skills/qa-ticket/SKILL.md:76`,
-`.claude/skills/qa-ticket/SKILL.md:121`, `.claude/skills/dev-ticket/SKILL.md:93`,
+**Evidence:** `.claude/skills/qa-ticket/SKILL.md:38`, `.claude/skills/qa-ticket/SKILL.md:78`,
+`.claude/skills/qa-ticket/SKILL.md:123`, `.claude/skills/dev-ticket/SKILL.md:93`,
 `scripts/verify-skills.mjs:168`, `scripts/verify-skills.mjs:286`
 
 #### Scenario: the skills of the repository
@@ -1128,7 +1128,7 @@ the session that enters Done for a hotfix. The structural check SHALL hold `qa-t
 `<id> ready to merge, hotfix`, and `release-ticket` § Hotfix to say that QA leaves it at Ready to
 merge.
 
-**Evidence:** `.claude/skills/qa-ticket/SKILL.md:86`, `.claude/skills/refine-ticket/SKILL.md:83`,
+**Evidence:** `.claude/skills/qa-ticket/SKILL.md:88`, `.claude/skills/refine-ticket/SKILL.md:83`,
 `.claude/skills/refine-ticket/SKILL.md:98`, `.claude/skills/release-ticket/SKILL.md:145`,
 `.claude/skills/ticket-flow/SKILL.md:91`, `.claude/skills/ticket-flow/SKILL.md:124`,
 `scripts/verify-skills.mjs:175`, `scripts/verify-skills.mjs:289`
