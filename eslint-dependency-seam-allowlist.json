@@ -21,11 +21,6 @@
   },
   {
     "path": "apps/mobile/src/app/__tests__/layout.route.test.tsx",
-    "package": "expo-status-bar",
-    "reason": "F.8 unit 5: a components/ui/StatusBar block with its own style type takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/app/__tests__/layout.route.test.tsx",
     "package": "nativewind",
     "reason": "F.8 unit 6: lib/bootstrap takes the root layout's theme, and this import with it; the test then mocks the project module, not the vendor."
   },
@@ -61,11 +56,6 @@
   },
   {
     "path": "apps/mobile/src/app/_layout.tsx",
-    "package": "expo-status-bar",
-    "reason": "F.8 unit 5: a components/ui/StatusBar block with its own style type takes this import."
-  },
-  {
-    "path": "apps/mobile/src/app/_layout.tsx",
     "package": "react-native-safe-area-context",
     "reason": "F.8 unit 6: lib/bootstrap takes this import."
   },
@@ -98,11 +88,6 @@
     "path": "apps/mobile/src/lib/theme/theme.config.ts",
     "package": "@react-native-async-storage/async-storage",
     "reason": "F.8 unit 4: the key-value storage port and its lib/storage adapter take this import."
-  },
-  {
-    "path": "apps/mobile/src/lib/theme/useRootTheme.type.ts",
-    "package": "expo-status-bar",
-    "reason": "F.8 unit 5: a components/ui/StatusBar block with its own style type takes this import."
   },
   {
     "path": "apps/mobile/src/screens/ItemsDashboard/hooks/__tests__/useItems.hook.test.ts",

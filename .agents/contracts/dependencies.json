@@ -202,8 +202,10 @@
     {
       "name": "expo-status-bar",
       "category": "ui",
-      "seam": [],
-      "note": "Behind apps/mobile/src/components/ui/StatusBar/, with its own style type, which F.8 unit 5 creates."
+      "seam": [
+        "apps/mobile/src/components/ui/StatusBar/StatusBar.component.tsx"
+      ],
+      "note": "Behind the StatusBar block, whose StatusBarStyleType the root layout and lib/theme name instead of the library's style type."
     },
     {
       "name": "@sentry/nextjs",
