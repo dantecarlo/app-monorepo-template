@@ -505,6 +505,7 @@ defects behind them, for changes of their own.
 | F50 | both apps | test ergonomics the native review and the writer found: `posthog-react-native` cannot load under the mobile vitest setup (a shared alias would replace two per-test mocks), the Sentry adapter test leaks an env var, and `identify` takes an id it does not guard | small |
 | F51 | harness | a shipped skill named a downstream project, which that project's core-purity gate refuses on sync; the examples are neutral now (#37), but no template gate stops a skill from naming one again | small; a check in `verify:skills` or a core-purity gate |
 | F52 | harness | when `/init` drops a capability (Sentry, mobile, Supabase), its entries in `.agents/contracts/dependencies.json` and their seam globs go stale, and `verify:dependency-seams` fails in that project; the manifest should claim each capability's registry entries so the prune removes them | small; before Stage 6 |
+| F53 | harness | the native review of F.8 unit 1: `verify:dependency-seams` skips an unreadable `package.json` silently and miscounts with a malformed registry; the rule caches the registry for an editor session, untested detection branches remain, and the seam rule covers `apps/*` and `packages/*` only (root scripts import no vendor today) | small |
 
 ---
 
