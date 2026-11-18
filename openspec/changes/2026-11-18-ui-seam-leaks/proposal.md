@@ -96,8 +96,8 @@ The owner's words, verbatim:
 
 ## Affected specs
 
-- `openspec/specs/apps/web/spec.md`: added WEB-62, WEB-63, WEB-64.
-- `openspec/specs/apps/mobile/spec.md`: added MOBILE-60, MOBILE-61, MOBILE-62, MOBILE-63.
+- `openspec/specs/apps/web/spec.md`: added WEB-70, WEB-71, WEB-72.
+- `openspec/specs/apps/mobile/spec.md`: added MOBILE-70, MOBILE-71, MOBILE-72, MOBILE-73.
 
 <!--
 Status is one of: open; archived — <date>; discarded — <date>, <reason>.

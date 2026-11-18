@@ -4,7 +4,7 @@
 
 ## ADDED Requirements
 
-### Requirement: MOBILE-60 — The async boundary takes a fallback typed by its own props
+### Requirement: MOBILE-70 — The async boundary takes a fallback typed by its own props
 
 The mobile app SHALL type the error fallback an async boundary takes, and its default error
 fallback, with the block's own `IAsyncBoundaryFallbackProps`, the thrown value and a function
@@ -31,7 +31,7 @@ once the fallback resets it.
   takes nothing
 - **Test:** `apps/mobile/src/components/ui/AsyncBoundary/__tests__/AsyncBoundary.component.test.tsx` › "types its error fallback with its own props"
 
-### Requirement: MOBILE-61 — Every gradient renders through the ui Gradient block
+### Requirement: MOBILE-71 — Every gradient renders through the ui Gradient block
 
 The mobile app SHALL paint every gradient through the `Gradient` block of
 `src/components/ui/Gradient/`, which takes its colour stops and optionally a start and an end
@@ -71,7 +71,7 @@ SHALL render it, and only `src/components/ui/Gradient/Gradient.component.tsx` SH
   such an import (harness/dependency-seams SEAM-03) and `pnpm verify:dependency-seams` fails an
   allowlist entry or a violation for it (SEAM-07), both inside `pnpm validate`
 
-### Requirement: MOBILE-62 — The status bar renders through the ui StatusBar block
+### Requirement: MOBILE-72 — The status bar renders through the ui StatusBar block
 
 The mobile app SHALL set the status bar's glyphs through the `StatusBar` block of
 `src/components/ui/StatusBar/`, whose style is its own `StatusBarStyleType`, dark or light, and
@@ -106,7 +106,7 @@ included.
   such an import (harness/dependency-seams SEAM-03) and `pnpm verify:dependency-seams` fails an
   allowlist entry or a violation for it (SEAM-07), both inside `pnpm validate`
 
-### Requirement: MOBILE-63 — A theme is applied through lib/theme
+### Requirement: MOBILE-73 — A theme is applied through lib/theme
 
 The mobile app SHALL apply a theme to NativeWind's live color scheme, without storing it, through
 `applyTheme` of `src/lib/theme/colorScheme.adapter.ts`, so every theme-token consumer reads that

@@ -4,7 +4,7 @@
 
 ## ADDED Requirements
 
-### Requirement: WEB-62 — A ui block's variant props are its own unions, held to its tv config
+### Requirement: WEB-70 — A ui block's variant props are its own unions, held to its tv config
 
 The web app SHALL type the variant props of every `ui/` block that builds variants with the
 shared `tv` (Avatar, Button, Chip, ConfirmDialog, GlassCard, IconButton, LoadingSkeleton, Modal,
@@ -58,7 +58,7 @@ option names of one variant of its `tv` config, so the block's public type names
 - **Test:** Not covered — no committed test records every block's strings; the verify report
   records a one-off comparison before and after the change
 
-### Requirement: WEB-63 — The async boundary takes a fallback typed by its own props
+### Requirement: WEB-71 — The async boundary takes a fallback typed by its own props
 
 The web app SHALL type the error fallback an async boundary takes, and its default error
 fallback, with the block's own `IAsyncBoundaryFallbackProps`, the thrown value and a function
@@ -85,7 +85,7 @@ once the fallback resets it.
   takes nothing
 - **Test:** `apps/web/src/components/ui/AsyncBoundary/__tests__/AsyncBoundary.component.test.tsx` › "types its error fallback with its own props"
 
-### Requirement: WEB-64 — An image renders through the ui Image block
+### Requirement: WEB-72 — An image renders through the ui Image block
 
 The web app SHALL render an image through the `Image` block of `src/components/ui/Image/`, which
 takes a source, an alternative text, a width and a height, and optionally classes, a load-error
