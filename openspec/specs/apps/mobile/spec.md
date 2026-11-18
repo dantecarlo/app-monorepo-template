@@ -3,7 +3,7 @@
 > **Governs:** `apps/mobile/src`, `apps/mobile/app.json`
 > **ID prefix:** `MOBILE`
 > **Derived from:** `docs/architecture/mobile.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/observability.md`, `docs/e2e.md`, `docs/responsive.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-18 at `953fe86`
+> **Verified against the code:** 2026-11-18 at `a69a1b7`
 
 ## Purpose
 
@@ -14,10 +14,12 @@ light and dark themes painted from the root, the translator its blocks read thei
 through, over react-i18next behind its lib/i18n, the stores, created through its lib/store over
 zustand, a query layer of its own types over TanStack Query behind its lib/query that shows a
 failed query on its screen, toasts a failed mutation and captures both through the
-observability port, and the environment wiring of Supabase, of PostHog, the default observability provider, with its
-consent mode and the consent API, and of the optional Sentry, and the device's key-value
-storage. It leaves the error, PII-scrubbing, query-key, auth-gateway, consent and key-value
-storage contracts to packages/core, the catalogs and language constants to packages/i18n, the
+observability port, the boot of its root layout behind its lib/bootstrap (the fonts, the splash
+screen and the safe area), and the environment wiring of Supabase, whose client it holds as the
+opaque backend client and whose auth gateway it builds in its lib/supabase, of PostHog, the
+default observability provider, with its consent mode and the consent API, and of the optional
+Sentry, and the device's key-value storage. It leaves the error, PII-scrubbing, query-key,
+auth-gateway, consent and key-value storage contracts to packages/core, the catalogs and language constants to packages/i18n, the
 Supabase client and auth gateway to packages/supabase, the theme values to packages/tokens, and
 the web counterpart to apps/web.
 
@@ -28,7 +30,7 @@ the web counterpart to apps/web.
 The mobile app SHALL render the items dashboard at the root route (/) and the login screen at
 /login, under one root stack that checks no session before either renders.
 
-**Evidence:** `apps/mobile/src/app/index.tsx:7`, `apps/mobile/src/app/login.tsx:7`, `apps/mobile/src/app/_layout.tsx:69-78`
+**Evidence:** `apps/mobile/src/app/index.tsx:7`, `apps/mobile/src/app/login.tsx:7`, `apps/mobile/src/app/_layout.tsx:41-50`
 
 #### Scenario: the root route shows the dashboard
 
@@ -54,23 +56,43 @@ The mobile app SHALL render the items dashboard at the root route (/) and the lo
 ### Requirement: MOBILE-02 — Splash held until the fonts settle
 
 The mobile app SHALL keep the native splash screen up and render no route until the Inter and
-Montserrat fonts have loaded or failed to load.
+Montserrat fonts have loaded or failed to load: `useAppBootstrap` of
+`src/lib/bootstrap/useAppBootstrap.hook.ts` loads the seven faces `APP_FONTS` of
+`useAppBootstrap.constant.ts` names (Inter 400 and 500, Montserrat 400 to 800), hides the splash
+screen once they settle, and tells the root layout when it may render.
 
-**Evidence:** `apps/mobile/src/app/_layout.tsx:37`, `apps/mobile/src/app/_layout.tsx:56-64`
+**Evidence:** `apps/mobile/src/lib/bootstrap/useAppBootstrap.hook.ts:14-24`, `apps/mobile/src/lib/bootstrap/useAppBootstrap.constant.ts:14-22`, `apps/mobile/src/app/_layout.tsx:24`, `apps/mobile/src/app/_layout.tsx:32-36`
+
+#### Scenario: the faces the app loads
+
+- **GIVEN** the app has just launched
+- **WHEN** the bootstrap starts
+- **THEN** it loads Inter 400 and 500 and Montserrat 400, 500, 600, 700 and 800
+- **Test:** `apps/mobile/src/lib/bootstrap/__tests__/useAppBootstrap.constant.test.ts` › "holds the Inter and Montserrat faces the app uses"
+- **Test:** `apps/mobile/src/lib/bootstrap/__tests__/useAppBootstrap.hook.test.ts` › "loads the faces the app renders its text in"
 
 #### Scenario: fonts still loading
 
 - **GIVEN** the app has just launched
 - **WHEN** the fonts have neither loaded nor failed
-- **THEN** the root layout renders nothing and the splash screen stays visible
-- **Test:** Not covered — no test renders the root layout, and expo-splash-screen and expo-font act only in a native or web build
+- **THEN** the bootstrap is not ready, the splash screen stays visible, and the root layout renders
+  nothing
+- **Test:** `apps/mobile/src/lib/bootstrap/__tests__/useAppBootstrap.hook.test.ts` › "keeps the splash screen up and the routes back while the fonts load"
+- **Test:** `apps/mobile/src/app/__tests__/layout.route.test.tsx` › "renders no route until the bootstrap is ready"
+
+#### Scenario: the fonts load
+
+- **GIVEN** the app has just launched
+- **WHEN** the fonts load
+- **THEN** the splash screen hides and the bootstrap is ready
+- **Test:** `apps/mobile/src/lib/bootstrap/__tests__/useAppBootstrap.hook.test.ts` › "hides the splash screen and lets the routes render once the fonts load"
 
 #### Scenario: a font fails to load
 
 - **GIVEN** the app has just launched
 - **WHEN** loading a font fails
 - **THEN** the splash screen hides and the routes render with the fallback font
-- **Test:** Not covered — no test renders the root layout
+- **Test:** `apps/mobile/src/lib/bootstrap/__tests__/useAppBootstrap.hook.test.ts` › "hides the splash screen and lets the routes render when a font fails to load"
 
 ### Requirement: MOBILE-03 — Initial theme from storage, then the device
 
@@ -78,7 +100,7 @@ The mobile app SHALL start in the theme stored under the app.theme key of the de
 read through `keyValueStorage` (MOBILE-56), else in the device appearance when it is light or
 dark, else in the dark default of packages/tokens.
 
-**Evidence:** `apps/mobile/src/lib/theme/theme.config.ts:9-14`, `apps/mobile/src/lib/theme/theme.config.ts:26-46`
+**Evidence:** `apps/mobile/src/lib/theme/theme.config.ts:9-14`, `apps/mobile/src/lib/theme/theme.config.ts:27-47`
 
 #### Scenario: a stored theme wins
 
@@ -100,7 +122,7 @@ The mobile app SHALL show the theme switch on while the light theme is active, a
 store the matching theme under the app.theme key, through `keyValueStorage` (MOBILE-56), and
 apply it to the NativeWind color scheme.
 
-**Evidence:** `apps/mobile/src/components/ui/ThemeToggle/useThemeToggle.hook.ts:14-18`, `apps/mobile/src/lib/theme/theme.config.ts:21-24`
+**Evidence:** `apps/mobile/src/components/ui/ThemeToggle/useThemeToggle.hook.ts:14-18`, `apps/mobile/src/lib/theme/theme.config.ts:22-25`
 
 #### Scenario: switching to light
 
@@ -117,7 +139,7 @@ dark status bar glyphs under the light theme and light glyphs under the dark one
 routes in a view that carries the active theme's `themeVars` from packages/tokens, through
 NativeWind's `vars()`.
 
-**Evidence:** `apps/mobile/src/lib/theme/useRootTheme.hook.ts:17`, `apps/mobile/src/lib/theme/useRootTheme.hook.ts:24`, `apps/mobile/src/app/_layout.tsx:45`, `apps/mobile/src/app/_layout.tsx:70`
+**Evidence:** `apps/mobile/src/lib/theme/useRootTheme.hook.ts:17`, `apps/mobile/src/lib/theme/useRootTheme.hook.ts:24`, `apps/mobile/src/app/_layout.tsx:31`, `apps/mobile/src/app/_layout.tsx:42`
 
 #### Scenario: the light theme is active
 
@@ -566,7 +588,7 @@ against the values of `QueryKeySegmentEnum`, so the trailing params object of a 
 is always redacted, and every failed mutation to the observability port's captureError, tagged
 with the cache it came from.
 
-**Evidence:** `apps/mobile/src/lib/query/createQueryClient.helper.ts:36`, `apps/mobile/src/lib/query/queryKeys.constant.ts:29-41`, `apps/mobile/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/mobile/src/app/_layout.tsx:39`
+**Evidence:** `apps/mobile/src/lib/query/createQueryClient.helper.ts:36`, `apps/mobile/src/lib/query/queryKeys.constant.ts:29-41`, `apps/mobile/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/mobile/src/app/_layout.tsx:26`
 
 #### Scenario: a query key holding an identifier
 
@@ -673,7 +695,7 @@ The mobile app SHALL build its Supabase client from EXPO_PUBLIC_SUPABASE_URL and
 EXPO_PUBLIC_SUPABASE_ANON_KEY, and fall back to placeholder values with one console warning when
 either is unset.
 
-**Evidence:** `apps/mobile/src/lib/supabase/client.adapter.ts:5-17`, `apps/mobile/src/lib/supabase/client.adapter.ts:26`
+**Evidence:** `apps/mobile/src/lib/supabase/client.adapter.ts:8-20`, `apps/mobile/src/lib/supabase/client.adapter.ts:31-34`
 
 #### Scenario: both values set
 
@@ -695,7 +717,7 @@ The mobile app SHALL set the auth status to loading on mount, then store the ses
 Supabase auth gateway returns with the status authenticated or unauthenticated, and keep both in
 step with every later auth state change until unmount.
 
-**Evidence:** `apps/mobile/src/components/AuthProvider/useAuthBootstrap.hook.ts:12-30`, `apps/mobile/src/app/_layout.tsx:42`, `apps/mobile/src/app/_layout.tsx:69`
+**Evidence:** `apps/mobile/src/components/AuthProvider/useAuthBootstrap.hook.ts:12-30`, `apps/mobile/src/lib/supabase/authGateway.adapter.ts:11-13`, `apps/mobile/src/app/_layout.tsx:41`
 
 #### Scenario: before the gateway answers
 
@@ -831,7 +853,7 @@ The mobile app SHALL mount the toast viewport in the root layout, over every rou
 toast of the toast store as an alert with its message and a dismiss control, labelled with the
 `common.dismiss` message of the active language, that removes it.
 
-**Evidence:** `apps/mobile/src/app/_layout.tsx:79`, `apps/mobile/src/components/ui/Toast/Toast.component.tsx:13-52`, `apps/mobile/src/components/ui/Toast/Toast.component.tsx:42`
+**Evidence:** `apps/mobile/src/app/_layout.tsx:51`, `apps/mobile/src/components/ui/Toast/Toast.component.tsx:13-52`, `apps/mobile/src/components/ui/Toast/Toast.component.tsx:42`
 
 #### Scenario: a toast is added while a route is shown
 
@@ -862,7 +884,7 @@ the theme background and a retry control that re-renders the route, and reportin
 caught to the observability port once, through `reportBoundaryError` under
 `src/lib/observability/`, however often it renders.
 
-**Evidence:** `apps/mobile/src/app/_layout.tsx:35`, `apps/mobile/src/components/RootErrorBoundary/RootErrorBoundary.component.tsx:14`, `apps/mobile/src/lib/observability/reportBoundaryError.helper.ts:23`, `apps/mobile/src/lib/observability/reportBoundaryError.helper.ts:26`, `apps/mobile/src/components/ui/Screen/Screen.component.tsx:16`
+**Evidence:** `apps/mobile/src/app/_layout.tsx:22`, `apps/mobile/src/components/RootErrorBoundary/RootErrorBoundary.component.tsx:14`, `apps/mobile/src/lib/observability/reportBoundaryError.helper.ts:23`, `apps/mobile/src/lib/observability/reportBoundaryError.helper.ts:26`, `apps/mobile/src/components/ui/Screen/Screen.component.tsx:16`
 
 #### Scenario: a route crashes while rendering
 
@@ -1491,7 +1513,7 @@ device through it, the theme choice under app.theme and the language choice unde
 included, and SHALL import AsyncStorage only there, the seam the dependency registry names for
 it.
 
-**Evidence:** `apps/mobile/src/lib/storage/keyValueStorage.adapter.ts:13-22`, `apps/mobile/src/lib/storage/index.ts:1`, `apps/mobile/src/lib/theme/theme.config.ts:22`, `apps/mobile/src/lib/i18n/i18n.config.ts:32`, `.agents/contracts/dependencies.json:118-121`
+**Evidence:** `apps/mobile/src/lib/storage/keyValueStorage.adapter.ts:13-22`, `apps/mobile/src/lib/storage/index.ts:1`, `apps/mobile/src/lib/theme/theme.config.ts:23`, `apps/mobile/src/lib/i18n/i18n.config.ts:32`, `.agents/contracts/dependencies.json:118-121`
 
 #### Scenario: a value on the device
 
@@ -1748,7 +1770,7 @@ other, and runs the observed ones again, and SHALL give every hook `useIsAppMuta
 mutation whose `mutationKey` equals the one it is handed runs, and false for a mutation under a
 longer key and once that mutation settled.
 
-**Evidence:** `apps/mobile/src/lib/query/AppQueryProvider.component.tsx:10-15`, `apps/mobile/src/lib/query/useInvalidateAppQuery.hook.ts:11-18`, `apps/mobile/src/lib/query/useIsAppMutating.hook.ts:9-12`, `apps/mobile/src/lib/query/createQueryClient.helper.ts:22`, `apps/mobile/src/app/_layout.tsx:68-82`
+**Evidence:** `apps/mobile/src/lib/query/AppQueryProvider.component.tsx:10-15`, `apps/mobile/src/lib/query/useInvalidateAppQuery.hook.ts:11-18`, `apps/mobile/src/lib/query/useIsAppMutating.hook.ts:9-12`, `apps/mobile/src/lib/query/createQueryClient.helper.ts:22`, `apps/mobile/src/app/_layout.tsx:40-54`
 
 #### Scenario: the provider
 
@@ -1852,7 +1874,7 @@ which only `src/components/ui/AsyncBoundary/AsyncBoundary.component.tsx` imports
 throws, the boundary SHALL render that fallback with the thrown value, and its children again
 once the fallback resets it.
 
-**Evidence:** `apps/mobile/src/components/ui/AsyncBoundary/AsyncBoundary.type.ts:4`, `apps/mobile/src/components/ui/AsyncBoundary/AsyncBoundary.type.ts:12`, `apps/mobile/src/components/ui/AsyncBoundary/AsyncBoundary.component.tsx:2`, `apps/mobile/src/components/ui/AsyncBoundary/AsyncBoundary.component.tsx:13`, `apps/mobile/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultError.component.tsx:10`, `.agents/contracts/dependencies.json:169-174`
+**Evidence:** `apps/mobile/src/components/ui/AsyncBoundary/AsyncBoundary.type.ts:4`, `apps/mobile/src/components/ui/AsyncBoundary/AsyncBoundary.type.ts:12`, `apps/mobile/src/components/ui/AsyncBoundary/AsyncBoundary.component.tsx:2`, `apps/mobile/src/components/ui/AsyncBoundary/AsyncBoundary.component.tsx:13`, `apps/mobile/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultError.component.tsx:10`, `.agents/contracts/dependencies.json:174-179`
 
 #### Scenario: a child throws and the fallback resets
 
@@ -1879,7 +1901,7 @@ point, a style, an accessibility label and children, and renders them through
 SHALL render it, and only `src/components/ui/Gradient/Gradient.component.tsx` SHALL import
 `expo-linear-gradient`, tests included.
 
-**Evidence:** `apps/mobile/src/components/ui/Gradient/Gradient.component.tsx:1`, `apps/mobile/src/components/ui/Gradient/Gradient.component.tsx:15`, `apps/mobile/src/components/ui/AccentGradient/AccentGradient.component.tsx:12`, `apps/mobile/src/components/ui/LoadingSkeleton/LoadingSkeleton.component.tsx:40`, `apps/mobile/src/components/ui/Toggle/Toggle.component.tsx:31`, `.agents/contracts/dependencies.json:182-187`
+**Evidence:** `apps/mobile/src/components/ui/Gradient/Gradient.component.tsx:1`, `apps/mobile/src/components/ui/Gradient/Gradient.component.tsx:15`, `apps/mobile/src/components/ui/AccentGradient/AccentGradient.component.tsx:12`, `apps/mobile/src/components/ui/LoadingSkeleton/LoadingSkeleton.component.tsx:40`, `apps/mobile/src/components/ui/Toggle/Toggle.component.tsx:31`, `.agents/contracts/dependencies.json:187-192`
 
 #### Scenario: a gradient renders
 
@@ -1919,7 +1941,7 @@ which renders it through `expo-status-bar`; the root layout SHALL render it with
 `src/components/ui/StatusBar/StatusBar.component.tsx` SHALL import `expo-status-bar`, tests
 included.
 
-**Evidence:** `apps/mobile/src/components/ui/StatusBar/StatusBar.type.ts:2`, `apps/mobile/src/components/ui/StatusBar/StatusBar.component.tsx:1`, `apps/mobile/src/components/ui/StatusBar/StatusBar.component.tsx:8`, `apps/mobile/src/app/_layout.tsx:71`, `apps/mobile/src/lib/theme/useRootTheme.type.ts:8`, `.agents/contracts/dependencies.json:205-210`
+**Evidence:** `apps/mobile/src/components/ui/StatusBar/StatusBar.type.ts:2`, `apps/mobile/src/components/ui/StatusBar/StatusBar.component.tsx:1`, `apps/mobile/src/components/ui/StatusBar/StatusBar.component.tsx:8`, `apps/mobile/src/app/_layout.tsx:43`, `apps/mobile/src/lib/theme/useRootTheme.type.ts:8`, `.agents/contracts/dependencies.json:214-219`
 
 #### Scenario: the block sets the glyphs
 
@@ -1949,9 +1971,10 @@ included.
 
 The mobile app SHALL apply a theme to NativeWind's live color scheme, without storing it, through
 `applyTheme` of `src/lib/theme/colorScheme.adapter.ts`, so every theme-token consumer reads that
-theme; a block's test SHALL switch the theme through it, never through `nativewind`.
+theme; the theme config SHALL apply the start-up theme and a chosen one through it, and a block's
+or a route's test SHALL switch the theme through it, never through `nativewind`.
 
-**Evidence:** `apps/mobile/src/lib/theme/colorScheme.adapter.ts:10`, `apps/mobile/src/lib/theme/colorScheme.adapter.ts:11`, `apps/mobile/src/components/ui/Text/__tests__/Text.component.test.tsx:67`, `.agents/contracts/dependencies.json:141-149`
+**Evidence:** `apps/mobile/src/lib/theme/colorScheme.adapter.ts:10`, `apps/mobile/src/lib/theme/colorScheme.adapter.ts:11`, `apps/mobile/src/lib/theme/theme.config.ts:24`, `apps/mobile/src/lib/theme/theme.config.ts:46`, `apps/mobile/src/components/ui/Text/__tests__/Text.component.test.tsx:67`, `apps/mobile/src/app/__tests__/layout.route.test.tsx:90`, `.agents/contracts/dependencies.json:146-154`
 
 #### Scenario: a theme is applied
 
@@ -1959,6 +1982,13 @@ theme; a block's test SHALL switch the theme through it, never through `nativewi
 - **WHEN** `applyTheme` applies the light theme, then the dark one
 - **THEN** the theme tokens read the light theme and its palette, then the dark ones
 - **Test:** `apps/mobile/src/lib/theme/__tests__/colorScheme.adapter.test.ts` › "applies a theme to the live color scheme"
+
+#### Scenario: the theme config
+
+- **GIVEN** a light theme in the device storage
+- **WHEN** the theme config starts, then the dark theme is chosen
+- **THEN** it applies the light theme, then the dark one, each through `applyTheme`
+- **Test:** `apps/mobile/src/lib/theme/__tests__/theme.config.test.ts` › "applies the start-up theme and a chosen one through applyTheme"
 
 #### Scenario: a block under the light theme
 
@@ -1968,14 +1998,115 @@ theme; a block's test SHALL switch the theme through it, never through `nativewi
 - **Test:** `apps/mobile/src/components/ui/Text/__tests__/Text.component.test.tsx` › "paints a variant in the active theme's colour"
 - **Test:** `apps/mobile/src/components/ui/Screen/__tests__/Screen.component.test.tsx` › "paints the active theme's base background"
 
-#### Scenario: a block test imports nativewind
+#### Scenario: the root layout under the light theme
 
-- **GIVEN** a `ui/` block test that imports `nativewind`
+- **GIVEN** the light theme applied through `applyTheme`
+- **WHEN** the root layout renders
+- **THEN** the routes sit inside a view whose style holds the light theme's variables
+- **Test:** `apps/mobile/src/app/__tests__/layout.route.test.tsx` › "wraps the routes in the variables of the active theme"
+
+#### Scenario: a block or route test imports nativewind
+
+- **GIVEN** a `ui/` block test or the root layout's test that imports `nativewind`
 - **WHEN** ESLint and `pnpm verify:dependency-seams` run
 - **THEN** the import is reported as outside its seam, and no allowlist entry excuses it
 - **Test:** Not covered — no test of this app reads its imports; `local/dependency-seam` refuses
   such an import (harness/dependency-seams SEAM-03) and `pnpm verify:dependency-seams` fails an
   allowlist entry or a violation for it (SEAM-07), both inside `pnpm validate`
+
+### Requirement: MOBILE-74 — The root layout boots through lib/bootstrap
+
+The mobile app SHALL hold the native splash screen when the root layout loads, through
+`holdSplashScreen` of `src/lib/bootstrap/splashScreen.adapter.ts`, load its fonts and hide the
+splash through `useAppBootstrap` of `src/lib/bootstrap/useAppBootstrap.hook.ts` (MOBILE-02), and
+give its tree the device's safe area through `AppSafeAreaProvider` of
+`src/lib/bootstrap/AppSafeAreaProvider.component.tsx`. Only `splashScreen.adapter.ts` SHALL import
+`expo-splash-screen`, only `useAppBootstrap.constant.ts`, which names the faces, and
+`useAppBootstrap.hook.ts`, which loads them, the `@expo-google-fonts` packages, and only
+`AppSafeAreaProvider.component.tsx` and `ui/AuthShell` `react-native-safe-area-context`, so the
+root layout imports project modules only and its test mocks project modules, never a vendor.
+
+**Evidence:** `apps/mobile/src/lib/bootstrap/splashScreen.adapter.ts:8-10`, `apps/mobile/src/lib/bootstrap/splashScreen.adapter.ts:13-15`, `apps/mobile/src/app/_layout.tsx:24`, `apps/mobile/src/app/_layout.tsx:39`, `apps/mobile/src/lib/bootstrap/AppSafeAreaProvider.component.tsx:11-15`, `.agents/contracts/dependencies.json:124-127`, `.agents/contracts/dependencies.json:130-135`, `.agents/contracts/dependencies.json:138-144`, `.agents/contracts/dependencies.json:201-207`, `eslint-dependency-seam-allowlist.json:1`
+
+#### Scenario: the splash screen is held, then hidden
+
+- **GIVEN** the native splash screen
+- **WHEN** `holdSplashScreen` runs, then `hideSplashScreen`
+- **THEN** the splash screen is kept up once, then hidden once
+- **Test:** `apps/mobile/src/lib/bootstrap/__tests__/splashScreen.adapter.test.ts` › "keeps the native splash screen up until it is hidden"
+- **Test:** `apps/mobile/src/lib/bootstrap/__tests__/splashScreen.adapter.test.ts` › "hides the native splash screen"
+
+#### Scenario: the root layout loads
+
+- **GIVEN** the root layout's module
+- **WHEN** it loads
+- **THEN** it holds the splash screen through `lib/bootstrap`, once
+- **Test:** `apps/mobile/src/app/__tests__/layout.route.test.tsx` › "holds the splash screen through lib/bootstrap as it loads"
+
+#### Scenario: the safe area
+
+- **GIVEN** a tree
+- **WHEN** `AppSafeAreaProvider` renders around it
+- **THEN** the tree renders inside the device's safe-area provider
+- **Test:** `apps/mobile/src/lib/bootstrap/__tests__/AppSafeAreaProvider.component.test.tsx` › "renders its tree inside the device's safe-area provider"
+
+#### Scenario: the root layout or its test reaches a vendor
+
+- **GIVEN** the root layout or its test importing or mocking `expo-splash-screen`, a font package,
+  `react-native-safe-area-context`, `nativewind` or `posthog-react-native`
+- **WHEN** ESLint and `pnpm verify:dependency-seams` run
+- **THEN** the import is reported as outside its seam, and no allowlist entry excuses it
+- **Test:** Not covered — no test of this app reads its imports; `local/dependency-seam` refuses
+  such an import (harness/dependency-seams SEAM-03) and `pnpm verify:dependency-seams` fails an
+  allowlist entry or a violation for it (SEAM-07), both inside `pnpm validate`
+
+### Requirement: MOBILE-75 — The auth gateway is built in lib/supabase
+
+The mobile app SHALL build its one auth gateway in `src/lib/supabase/authGateway.adapter.ts`, a
+Supabase auth gateway over the very client `src/lib/supabase/client.adapter.ts` creates, and the
+root layout SHALL hand that gateway to the auth provider; only the `*.adapter.ts` files of
+`src/lib/supabase/` SHALL import `@app/supabase`, tests included.
+
+**Evidence:** `apps/mobile/src/lib/supabase/authGateway.adapter.ts:11-13`, `apps/mobile/src/app/_layout.tsx:18`, `apps/mobile/src/app/_layout.tsx:41`, `.agents/contracts/dependencies.json:264-267`
+
+#### Scenario: the gateway over the app's client
+
+- **GIVEN** the app's Supabase client
+- **WHEN** the auth gateway module loads
+- **THEN** one Supabase auth gateway is created over that same client, and it is the gateway the
+  module exports
+- **Test:** `apps/mobile/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "builds the auth gateway over the client the client adapter creates"
+
+#### Scenario: the root layout renders
+
+- **GIVEN** the gateway of `lib/supabase`
+- **WHEN** the root layout renders
+- **THEN** the auth provider bootstraps the session from that gateway
+- **Test:** `apps/mobile/src/app/__tests__/layout.route.test.tsx` › "hands the auth provider the gateway lib/supabase builds"
+
+#### Scenario: a file outside lib/supabase imports the package
+
+- **GIVEN** the root layout or its test importing or mocking `@app/supabase`
+- **WHEN** ESLint and `pnpm verify:dependency-seams` run
+- **THEN** the import is reported as outside its seam, and no allowlist entry excuses it
+- **Test:** Not covered — no test of this app reads its imports; `local/dependency-seam` refuses
+  such an import (harness/dependency-seams SEAM-03) and `pnpm verify:dependency-seams` fails an
+  allowlist entry or a violation for it (SEAM-07), both inside `pnpm validate`
+
+### Requirement: MOBILE-76 — The Supabase client is the opaque backend client
+
+The mobile app SHALL type its Supabase client, `supabase` of `src/lib/supabase/client.adapter.ts`,
+as the opaque `BackendClientType` of packages/supabase (SUPABASE-30), so no type of the app names
+the Supabase client or a Supabase generic.
+
+**Evidence:** `apps/mobile/src/lib/supabase/client.adapter.ts:31-34`, `packages/supabase/src/backendClient.type.ts:9-11`
+
+#### Scenario: the client's type
+
+- **GIVEN** the client adapter
+- **WHEN** the type of the client it exports is read
+- **THEN** it is `BackendClientType`
+- **Test:** `apps/mobile/src/lib/supabase/__tests__/client.adapter.test.ts` › "types the client as the opaque backend client"
 
 ## Open questions
 

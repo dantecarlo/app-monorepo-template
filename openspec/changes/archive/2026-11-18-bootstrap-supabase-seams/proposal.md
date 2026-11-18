@@ -1,6 +1,6 @@
 # Proposal: the mobile bootstrap seam and the opaque Supabase client
 
-> **Status:** open
+> **Status:** archived — 2026-11-18
 
 ## Why
 

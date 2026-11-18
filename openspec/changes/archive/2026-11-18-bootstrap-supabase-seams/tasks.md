@@ -6,7 +6,7 @@
 - [x] T4 — unit 7: `BackendClientType` and `backendClient.adapter.ts` in packages/supabase, both client factories returning it, the auth gateway taking it, and its tests · Requirements: SUPABASE-01, SUPABASE-02, SUPABASE-30 · Commit: 7455343
 - [x] T5 — unit 7: both apps' `lib/supabase` on the opaque client, the mobile `authGateway.adapter.ts`, the root layout and its test on it, the `@app/supabase` seam narrowed, and its 2 allowlist entries removed · Requirements: WEB-80, MOBILE-75, MOBILE-76 · Commit: ee31184
 - [x] T6 — unit 7: the `lib` and `arch` skills, `docs/code-standards.md` § 23, `docs/architecture/mobile.md` and `shared.md`, `packages/supabase/docs/database.md` and `docs/maps/global-map.md` · Requirements: none · Commit: d2a3ac9
-- [ ] T7 — `verify-report.md`, then the archive into the living specs · Requirements: none · Commit: —
+- [x] T7 — `verify-report.md`, then the archive into the living specs · Requirements: none · Commit: a69a1b7
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of
