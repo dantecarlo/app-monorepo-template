@@ -138,9 +138,13 @@ StyleSheet built from `@app/tokens`. A screen, a route file and a container unde
 `src/components/<Name>/` only position: their StyleSheet entries and style props carry flex,
 gap, alignment, position, size and spacing, never a colour, a font or a radius. Text is
 `ui/Text`, a labelled rule `ui/Divider`, a screen's surface `ui/Screen` (the active theme's
-base) and the accent gradient `ui/AccentGradient`; the navigator's themed background comes from
+base), a gradient `ui/Gradient`, the accent gradient `ui/AccentGradient` and the status bar
+`ui/StatusBar`; the navigator's themed background and the status bar's glyphs come from
 `useRootTheme`. Only `ui/` imports a UI kit or a drawing primitive
-(`expo-linear-gradient`, `react-native-svg`). `local/style-positions-only`,
+(`expo-linear-gradient`, `react-native-svg`), and a primitive with a wrapper only through it:
+`ui/Gradient` alone imports `expo-linear-gradient`, `ui/StatusBar` alone `expo-status-bar`, whose
+style type, `StatusBarStyleType`, is the block's own, and the async boundary alone
+`react-error-boundary`, whose fallback takes `IAsyncBoundaryFallbackProps`. `local/style-positions-only`,
 `local/style-token-values` and `local/ui-kit-boundary` hold it; a number in a StyleSheet is not
 read.
 
@@ -151,7 +155,9 @@ layout wraps the routes in a view carrying `themeVars[active]` through NativeWin
 as `var(--c-<name>)` and each shared colour as its literal. A StyleSheet that paints a themed
 colour is built once per theme with `createThemedStyles` (or `createThemedValues` for a colour
 map) from `src/lib/theme/`, and the block reads the active one through `useThemedStyles`; a view
-that reads a colour inline takes the palette from `useThemeTokens`. A module-level StyleSheet over
+that reads a colour inline takes the palette from `useThemeTokens`. `applyTheme` of
+`src/lib/theme/colorScheme.adapter.ts` applies a theme to the live scheme without storing it, and
+a block's test switches the theme through it, never through nativewind. A module-level StyleSheet over
 the static `colors` stays dark, and `createThemedStyles.helper.test.ts` fails on one. `spacing`,
 `radius`, `fontSize` and the shared colours are read from `@app/tokens` directly. A new value goes
 in the token source, then `pnpm --filter @app/tokens generate`; never edit a generated file

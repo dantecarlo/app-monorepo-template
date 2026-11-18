@@ -68,6 +68,9 @@ export interface I{Name} {
 Rules:
 - Required props first, optional after
 - Never `any` for new prop types
+- Never a type of a UI kit or a primitive (`VariantProps`, `FallbackProps`, `StatusBarStyle`): a
+  variant prop takes the block's own union (Type C), and a wrapped primitive's prop takes the
+  wrapper's own type (`IAsyncBoundaryFallbackProps`, `StatusBarStyleType`)
 - If the prop changes rendering significantly → consider a variant (see Type E)
 
 ---
@@ -129,6 +132,12 @@ Rules:
   fails `local/style-token-values`, and a value no token carries is added to
   `packages/tokens/src/tokens.constant.ts`, then `pnpm --filter @app/tokens generate` writes it
   into every output.
+- On web, a variant of a `tv` config is also a union of the block. A new option is added to the
+  config and to its tuple in `{Name}.constant.ts`; a new variant gets its tuple, its union and its
+  prop in `{Name}.type.ts`, typed by the union, never by the kit's `VariantProps`. The block's
+  `__tests__/{Name}.constant.test.ts` compares them with `VariantUnionsType` of
+  `@/components/ui/variants.helper` and fails until the config, the tuple and the union agree (see
+  the `component` skill, Step 2).
 
 ---
 

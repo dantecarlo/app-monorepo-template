@@ -834,7 +834,17 @@ The rule of the LAW of the same name in `AGENTS.md`, which quotes the owner's de
   theme variables and the theme names the shared `tv` registers. A generated file is never edited by hand (`verify:theme-sync`), and
   `apps/web/src/app/globals.css` declares no value of its own.
 - **The kit sits behind `ui/`.** A UI kit, its primitives and its class helpers are imported by a
-  `ui/` block only, so the look and the kit are one replaceable layer.
+  `ui/` block only, so the look and the kit are one replaceable layer. Each primitive has one
+  wrapper, and only its component file imports it (§23): `ui/Image` draws `next/image` on web,
+  `ui/Gradient` `expo-linear-gradient` and `ui/StatusBar` `expo-status-bar` on mobile, and
+  `ui/AsyncBoundary` wraps `react-error-boundary` in both. Every other block renders the wrapper.
+- **A block's public type names no kit type.** Its props are its own: a web block types its
+  variants with unions its `*.constant.ts` declares, one tuple of option names per variant and the
+  union it derives (`BUTTON_SIZE_VARIANTS`, `ButtonSizeType`), as the mobile constants do, never
+  with the kit's `VariantProps`; the async boundary's fallback takes `IAsyncBoundaryFallbackProps`
+  and the status bar `StatusBarStyleType`. `VariantUnionsType` of the shared variants helper reads
+  the variants a `tv` config takes, and each block's `__tests__/<Block>.constant.test.ts` compares
+  its unions and tuples with it, so typecheck fails when they disagree.
 - **A different look** is a variant or a prop of a `ui/` block, never a class in the screen.
 - **A web `ui/` style file builds its variants with the shared `tv`**
   (`apps/web/src/components/ui/variants.helper.ts`), never the kit's own: the helper is the one
@@ -859,9 +869,11 @@ export const LOGIN = { DIVIDER: 'my-6', FORM: 'flex flex-col gap-4' }
 
 > Status: **lint + script.** `local/style-positions-only`, `local/style-token-values` and
 > `local/ui-kit-boundary` (`eslint-local-rules/`, `error` over both apps), and
-> `verify:allowlist-freshness`. **Not covered:** a number in a React Native style
-> (`borderRadius: 18`); a class string in a `*.constant.ts`; a class a variable hides
-> (`cn(STYLE.X, tone)`), judged where it is defined only if that file is a style file; and whether
+> `verify:allowlist-freshness`; `local/dependency-seam` keeps a kit type out of every file but its
+> seam, and each web block's constant test holds its unions to its `tv` config. **Not covered:** a
+> number in a React Native style (`borderRadius: 18`); a class string in a `*.constant.ts`; a class
+> a variable hides (`cn(STYLE.X, tone)`), judged where it is defined only if that file is a style
+> file; a web block with variants whose constant test is missing, which review reads; and whether
 > a `ui/` block's look is right, which is review.
 
 ---
