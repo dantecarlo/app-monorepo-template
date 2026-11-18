@@ -66,11 +66,8 @@ export const createPostHogConsent = (): IConsentPort => {
       const made = choice.count
       choice.isGranted = false
       choice.isRevoked = true
-      // Read before the stop, which drops the load in flight from the client.
-      const loaded = posthogClient.settled()
       removeGrantRecord()
-      posthogClient.stop()
-      const client = await loaded
+      const client = await posthogClient.stop()
       if (!client || made !== choice.count) return
       client.opt_out_capturing()
       client.reset(POSTHOG_REVOKE_RESET_OPTIONS)

@@ -23,6 +23,9 @@ export interface IDeferredClient<TClient> {
   start(
     params: IDeferredClientStartParams<TClient>
   ): Promise<TClient | undefined>
-  /** Forgets the client, the load in flight and every held call. */
-  stop(): void
+  /**
+   * Forgets the client, the load in flight and every held call at once, and
+   * resolves to the client it forgot or to the one that load brings.
+   */
+  stop(): Promise<TClient | undefined>
 }
