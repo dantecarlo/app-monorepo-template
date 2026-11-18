@@ -3,7 +3,7 @@
 > **Governs:** `.claude/skills/ticket-flow`, `.claude/skills/po-ticket`, `.claude/skills/refine-ticket`, `.claude/skills/dev-ticket`, `.claude/skills/qa-ticket`, `.claude/skills/release-ticket`, `.claude/skills/process-intake`, `scripts/verify-skills.mjs`, `scripts/verify-ticket-branch.mjs`
 > **ID prefix:** `TICKET`
 > **Derived from:** `openspec/changes/archive/2026-11-16-ticket-flow/source-spec.md`, `docs/harness.md`
-> **Verified against the code:** 2026-11-18 at `c7f9118`
+> **Verified against the code:** 2026-11-18 at `a8d8c73`
 
 ## Purpose
 
@@ -33,9 +33,9 @@ Ready to merge conditions and the release stage, beside two templates in its fol
 `release.template.md`, the body of a release ticket, with the one version it ships.
 
 **Evidence:** `.claude/skills/ticket-flow/SKILL.md:29`, `.claude/skills/ticket-flow/SKILL.md:43`,
-`.claude/skills/ticket-flow/SKILL.md:77`, `.claude/skills/ticket-flow/SKILL.md:142`,
-`.claude/skills/ticket-flow/SKILL.md:294`, `.claude/skills/ticket-flow/ticket.template.md:21`,
-`.claude/skills/ticket-flow/release.template.md:11`, `scripts/verify-skills.mjs:202`
+`.claude/skills/ticket-flow/SKILL.md:78`, `.claude/skills/ticket-flow/SKILL.md:147`,
+`.claude/skills/ticket-flow/SKILL.md:312`, `.claude/skills/ticket-flow/ticket.template.md:21`,
+`.claude/skills/ticket-flow/release.template.md:11`, `scripts/verify-skills.mjs:226`
 
 #### Scenario: the contract of the repository
 
@@ -106,9 +106,9 @@ Ready to merge conditions and the release stage, beside two templates in its fol
 the first paragraph after their title, by sending the reader to `.claude/skills/ticket-flow/SKILL.md`, and hold
 neither the contract's states table nor its board operations table.
 
-**Evidence:** `.claude/skills/po-ticket/SKILL.md:18`, `.claude/skills/refine-ticket/SKILL.md:21`,
-`.claude/skills/dev-ticket/SKILL.md:18`, `.claude/skills/qa-ticket/SKILL.md:19`,
-`.claude/skills/release-ticket/SKILL.md:19`, `scripts/verify-skills.mjs:594`
+**Evidence:** `.claude/skills/po-ticket/SKILL.md:19`, `.claude/skills/refine-ticket/SKILL.md:26`,
+`.claude/skills/dev-ticket/SKILL.md:18`, `.claude/skills/qa-ticket/SKILL.md:20`,
+`.claude/skills/release-ticket/SKILL.md:19`, `scripts/verify-skills.mjs:650`
 
 #### Scenario: a role skill that does not open with the contract
 
@@ -137,8 +137,8 @@ Each of the seven ticket skills SHALL have a `SKILL.md` whose frontmatter `name`
 whose description holds `USE WHEN:` and `DO NOT USE:`, and which has a `## CONTRACT` and an
 `## Output` section.
 
-**Evidence:** `scripts/verify-skills.mjs:540`, `scripts/verify-skills.mjs:628`,
-`scripts/verify-skills.mjs:703`
+**Evidence:** `scripts/verify-skills.mjs:596`, `scripts/verify-skills.mjs:684`,
+`scripts/verify-skills.mjs:765`
 
 #### Scenario: healthy skills
 
@@ -207,8 +207,8 @@ targets (a table of each target's kind, trigger, order, check, rollback and secr
 branching model.
 
 **Evidence:** `.claude/skills/process-intake/ticket-flow.template.md:7`,
-`.claude/skills/process-intake/ticket-flow.template.md:98`,
-`.claude/skills/process-intake/ticket-flow.template.md:107`, `scripts/verify-skills.mjs:202`
+`.claude/skills/process-intake/ticket-flow.template.md:107`,
+`.claude/skills/process-intake/ticket-flow.template.md:116`, `scripts/verify-skills.mjs:226`
 
 #### Scenario: no board adapter section
 
@@ -498,7 +498,7 @@ The template's `pnpm validate` SHALL run `pnpm verify:ticket-branch:test` and ne
 and no ticket in flight reserves a file it reserves, the architect sequencing two such tickets by
 making the second depend on the first or re-planning one.
 
-**Evidence:** `.claude/skills/refine-ticket/SKILL.md:57`, `.claude/skills/ticket-flow/SKILL.md:77`
+**Evidence:** `.claude/skills/refine-ticket/SKILL.md:67`, `.claude/skills/ticket-flow/SKILL.md:78`
 
 #### Scenario: a dependency still in dev
 
@@ -508,58 +508,78 @@ making the second depend on the first or re-planning one.
 - **Test:** Not covered — the rule is a procedure an architect session follows; no runner drives
   a session, and the structural check only proves the contract names the state
 
-### Requirement: TICKET-11 — Ready to merge means green, conflict-free and current, merged one at a time under the merge policy
+### Requirement: TICKET-11 — Ready to merge means green, conflict-free and current, and QA stops there
 
 `qa-ticket` SHALL move a ticket to Ready to merge only when its pull request's CI is green, it has
-no conflict with its base branch (the default branch, or `production` for a hotfix) and its branch
-contains that base's current tip, brought current and re-checked by QA, and merge one ticket at a
-time, in the order the architect sets: on the owner's word, asked in QA's own session, under the
-`manual` policy or when the project layer records none; and, under the `low-risk` policy, without
-asking only a pull request into the default branch whose Risk line is `Risk: none` or that
-changes only passive files, and whose merge sets off no irreversible step, recording on the ticket
-that it merged under `low-risk` and the Risk line it relied on. A pull request that fails one
-condition waits for the owner, as under `manual`. A pull request into `production` QA merges
-under no policy: it waits at Ready to merge for its release (TICKET-24).
+no conflict with its base branch (the default branch, or the production branch the layer names for
+a hotfix) and its branch contains that base's current tip, brought current and re-checked by QA,
+with its evidence on the pull request. QA SHALL stop there: it SHALL neither ask the owner nor
+merge, and SHALL message the architect `<id> ready to merge, PR #<n>`, or
+`<id> ready to merge, hotfix` for a hotfix (TICKET-24). On the architect's `<id> bring current`,
+QA SHALL bring the branch current and re-check it again the same way, then answer
+`<id> ready to merge, PR #<n>` again, or move the ticket to Changes requested on a conflict or a
+red check. The architect merges it (TICKET-25). The structural check SHALL hold `qa-ticket`
+§ Step 6 to name `ready to merge, PR #`, and `qa-ticket` to hold no `Ready to merge → Done`.
 
-**Evidence:** `.claude/skills/qa-ticket/SKILL.md:65`, `.claude/skills/qa-ticket/SKILL.md:86`,
-`.claude/skills/qa-ticket/SKILL.md:118`, `.claude/skills/ticket-flow/SKILL.md:170`,
-`.claude/skills/ticket-flow/SKILL.md:272`
+**Evidence:** `.claude/skills/qa-ticket/SKILL.md:66`, `.claude/skills/qa-ticket/SKILL.md:85`,
+`.claude/skills/qa-ticket/SKILL.md:89`, `.claude/skills/qa-ticket/SKILL.md:105`,
+`.claude/skills/ticket-flow/SKILL.md:91`, `.claude/skills/ticket-flow/SKILL.md:287`,
+`scripts/verify-skills.mjs:187`, `scripts/verify-skills.mjs:309`, `scripts/verify-skills.mjs:492`
+
+#### Scenario: the skills of the repository
+
+- **GIVEN** the repository's seven ticket skills
+- **WHEN** `pnpm verify:skills:test` runs
+- **THEN** the structural check finds nothing: QA hands a ticket to the architect and moves none
+  to Done
+- **Test:** `scripts/verify-skills.test.mjs` › "the seven ticket skills of the repository pass"
+
+#### Scenario: QA's hand-off sends no message
+
+- **GIVEN** a `qa-ticket` whose Step 6 never names `ready to merge, PR #`
+- **WHEN** the structural check runs
+- **THEN** it reports one finding
+- **Test:** `scripts/verify-skills.test.mjs` › "a qa-ticket whose hand-off step names no ready to merge message is refused"
+
+#### Scenario: QA's hand-off step is gone
+
+- **GIVEN** a `qa-ticket` with no Step 6
+- **WHEN** the structural check runs
+- **THEN** it reports the missing section, rather than judging what it would name
+- **Test:** `scripts/verify-skills.test.mjs` › "a qa-ticket without its hand-off step is refused"
+
+#### Scenario: QA moves a ticket to Done
+
+- **GIVEN** a `qa-ticket` that holds the move `Ready to merge → Done`
+- **WHEN** the structural check runs
+- **THEN** it reports one finding, naming the file and the move
+- **Test:** `scripts/verify-skills.test.mjs` › "a qa-ticket that moves a ticket to Done is refused"
 
 #### Scenario: a green branch behind its base
 
 - **GIVEN** a ticket whose checks passed on a branch the default branch has moved past
-- **WHEN** QA would ask the owner to merge it
-- **THEN** QA brings the branch current, re-runs the checks, and asks only once they pass
+- **WHEN** QA would hand it to the architect
+- **THEN** QA brings the branch current, re-runs the checks, and messages the architect
+  `<id> ready to merge, PR #<n>` only once they pass
 - **Test:** Not covered — the rule is a procedure a QA session follows; no runner drives a
   session
 
-#### Scenario: `low-risk`, and a pull request that names a risk
+#### Scenario: another merge landed first
 
-- **GIVEN** a project whose layer records `low-risk`, and a ticket at the head of the merge order,
-  Ready to merge, whose pull request changes code and says `Risk: item 3 (a public export)`
-- **WHEN** QA reaches its merge step
-- **THEN** QA asks the owner, as under `manual`, and merges only on the owner's word
+- **GIVEN** a ticket at Ready to merge, second in the merge queue, after the architect merged the
+  first
+- **WHEN** QA receives `<id> bring current`
+- **THEN** QA merges the base into the branch, pushes it unforced, re-runs the checks and answers
+  `<id> ready to merge, PR #<n>`, or moves the ticket to Changes requested on a conflict
 - **Test:** Not covered — the rule is a procedure a QA session follows; no runner drives a
   session
-
-#### Scenario: `low-risk`, and a pull request that meets every condition
-
-- **GIVEN** a project whose layer records `low-risk`, and a ticket at the head of the merge order,
-  Ready to merge into the default branch, whose pull request says `Risk: none` and whose merge
-  sets off no irreversible step
-- **WHEN** QA reaches its merge step
-- **THEN** QA merges it without asking, comments on the ticket that it merged under `low-risk`
-  with that Risk line, moves it to Done and messages the architect `<id> merged`
-- **Test:** Not covered — the rule is a procedure a QA session follows; no runner drives a
-  session
-
 ### Requirement: TICKET-12 — QA evidence lives in a pull request comment
 
 `qa-ticket` SHALL post its evidence as a comment on the ticket's pull request, screenshots for a
 UI area and query or test output as text for a backend area, link that comment from the ticket,
 and add nothing to the repository.
 
-**Evidence:** `.claude/skills/qa-ticket/SKILL.md:55`
+**Evidence:** `.claude/skills/qa-ticket/SKILL.md:56`
 
 #### Scenario: a UI area
 
@@ -588,13 +608,15 @@ the team to confirm them.
 ### Requirement: TICKET-14 — The release skill carries the release, and the architect groups it
 
 `.claude/skills/release-ticket/SKILL.md` SHALL carry sections for the deploy targets, the
-branching (the recommended default with a `production` branch, and the tags-only alternative),
-the migrations and the hotfix, and `.claude/skills/refine-ticket/SKILL.md` a section that groups
-Done tickets into a release ticket.
+branching (the recommended default with a long-lived production branch, which the layer names and
+which is `production` by default, and the tags-only alternative), the migrations and the hotfix,
+and `.claude/skills/refine-ticket/SKILL.md` a section that groups Done tickets into a release
+ticket.
 
-**Evidence:** `.claude/skills/release-ticket/SKILL.md:87`, `.claude/skills/release-ticket/SKILL.md:108`,
-`.claude/skills/release-ticket/SKILL.md:133`, `.claude/skills/release-ticket/SKILL.md:145`,
-`.claude/skills/refine-ticket/SKILL.md:96`
+**Evidence:** `.claude/skills/release-ticket/SKILL.md:89`,
+`.claude/skills/release-ticket/SKILL.md:118`, `.claude/skills/release-ticket/SKILL.md:123`,
+`.claude/skills/release-ticket/SKILL.md:146`, `.claude/skills/release-ticket/SKILL.md:158`,
+`.claude/skills/refine-ticket/SKILL.md:171`
 
 #### Scenario: the branching is gone
 
@@ -616,19 +638,18 @@ Done tickets into a release ticket.
 - **WHEN** the structural check runs
 - **THEN** it reports the missing section
 - **Test:** `scripts/verify-skills.test.mjs` › "a refine-ticket without its release step is refused"
-
 ### Requirement: TICKET-15 — A release enters Ready for prod only when its batch is proven
 
 `refine-ticket` SHALL move the release ticket of a version V to Ready for prod only when it lists
 every ticket whose target version is V and each one is Done, except a hotfix, which is at Ready to
-merge into `production` with every Ready to merge condition met against `production`'s current
-tip; the default branch's CI is green; and the QA of each area the batch touches has checked it on
-staging or preview, with evidence on the release ticket. `ticket-flow`'s Ready for prod row and
-§ Release stage, `release-ticket` Step 1 and `release.template.md` SHALL state the same rule and
-the same exception.
+merge into the production branch the layer names with every Ready to merge condition met against
+that branch's current tip; the default branch's CI is green; and the QA of each area the batch
+touches has checked it on staging or preview, with evidence on the release ticket. `ticket-flow`'s
+Ready for prod row and § Release stage, `release-ticket` Step 1 and `release.template.md` SHALL
+state the same rule and the same exception.
 
-**Evidence:** `.claude/skills/refine-ticket/SKILL.md:111`, `.claude/skills/ticket-flow/SKILL.md:93`,
-`.claude/skills/ticket-flow/SKILL.md:302`, `.claude/skills/release-ticket/SKILL.md:35`,
+**Evidence:** `.claude/skills/refine-ticket/SKILL.md:187`, `.claude/skills/ticket-flow/SKILL.md:94`,
+`.claude/skills/ticket-flow/SKILL.md:320`, `.claude/skills/release-ticket/SKILL.md:35`,
 `.claude/skills/ticket-flow/release.template.md:14`
 
 #### Scenario: an area not checked on staging
@@ -641,23 +662,22 @@ the same exception.
 
 #### Scenario: a hotfix release
 
-- **GIVEN** a release ticket of its own that lists one hotfix at Ready to merge into
-  `production`, green and current with `production`'s tip, with its staging evidence
+- **GIVEN** a release ticket of its own that lists one hotfix at Ready to merge into the
+  production branch, green and current with that branch's tip, with its staging evidence
 - **WHEN** the architect would move it to Ready for prod
 - **THEN** it moves it, although the hotfix is not Done
 - **Test:** Not covered — the rule is a procedure an architect session follows; no runner drives
   a session
 
-#### Scenario: a hotfix behind `production`
+#### Scenario: a hotfix behind the production branch
 
-- **GIVEN** a release that lists a hotfix whose branch no longer holds `production`'s current
-  tip, because another release merged since
+- **GIVEN** a release that lists a hotfix whose branch no longer holds the production branch's
+  current tip, because another release merged since
 - **WHEN** the CI/CD session reads the release at Step 1
 - **THEN** it comments that the hotfix is behind, messages the architect `<release-id> question`,
   and stops
 - **Test:** Not covered — the rule is a procedure a CI/CD session follows; no runner drives a
   session
-
 ### Requirement: TICKET-16 — Each deploy target runs on the owner's word, in order, checked
 
 `release-ticket` SHALL run the deploy targets a release touches in the order the project layer
@@ -665,7 +685,7 @@ declares, only on the owner's word for the release and for each irreversible ste
 the release ticket, check each target, run a failed target's declared rollback and stop the
 release, and read every deploy secret from the store the target names, never from a ticket.
 
-**Evidence:** `.claude/skills/release-ticket/SKILL.md:51`, `.claude/skills/release-ticket/SKILL.md:62`
+**Evidence:** `.claude/skills/release-ticket/SKILL.md:52`, `.claude/skills/release-ticket/SKILL.md:63`
 
 #### Scenario: a target fails its check
 
@@ -682,7 +702,7 @@ release, and read every deploy secret from the store the target names, never fro
 release and contracting it in a later one, so a mobile app version already in the store keeps
 running against the new schema, and declare a migration's rollback as a forward fix.
 
-**Evidence:** `.claude/skills/release-ticket/SKILL.md:133`
+**Evidence:** `.claude/skills/release-ticket/SKILL.md:146`
 
 #### Scenario: a column the live app still reads
 
@@ -698,8 +718,8 @@ running against the new schema, and declare a migration's rollback as a forward 
 `po-ticket` SHALL set a ticket's target version when it creates the ticket, and move it only once
 the PO confirms the architect's proposal on the ticket, refreshing the general plan.
 
-**Evidence:** `.claude/skills/po-ticket/SKILL.md:54`, `.claude/skills/po-ticket/SKILL.md:68`,
-`.claude/skills/refine-ticket/SKILL.md:32`, `.claude/skills/ticket-flow/SKILL.md:241`
+**Evidence:** `.claude/skills/po-ticket/SKILL.md:55`, `.claude/skills/po-ticket/SKILL.md:70`,
+`.claude/skills/refine-ticket/SKILL.md:37`, `.claude/skills/ticket-flow/SKILL.md:249`
 
 #### Scenario: the plan cannot meet the version
 
@@ -716,7 +736,7 @@ the PO confirms the architect's proposal on the ticket, refreshing the general p
 last release whose target version is later than the release's, and go on only once each one sits
 behind a feature flag the architect names or its target version has moved to the release's.
 
-**Evidence:** `.claude/skills/release-ticket/SKILL.md:42`
+**Evidence:** `.claude/skills/release-ticket/SKILL.md:43`
 
 #### Scenario: a 1.5 feature merged before the 1.4 release
 
@@ -730,21 +750,23 @@ behind a feature flag the architect names or its target version has moved to the
 ### Requirement: TICKET-20 — The merge policy is the project's, `manual` unless it picks `low-risk`
 
 The ticket skills SHALL name the two merge policies a project layer may record: `manual`, the
-default, under which QA asks the owner before every merge, and `low-risk`, under which QA may
-merge without asking a pull request that meets every condition of `ticket-flow` rule 4.
-`ticket-flow` § Rules every role follows, `qa-ticket` § Step 6, `process-intake` § Step 3 and the
-Merge policy section of `.claude/skills/process-intake/ticket-flow.template.md` SHALL each name
-both policies, and that section's `Policy` line SHALL give `manual`, the default. A merge to
-`production`, a deploy, a production migration, a store submission and every other irreversible
-step SHALL stay the owner's word under every policy, as `ticket-flow` rule 4 and `release-ticket`
-say; and under neither policy SHALL QA merge a pull request into `production` (TICKET-24).
+default, under which the architect asks the owner before every merge, and `low-risk`, under which
+the architect may merge without asking a pull request that meets every condition of `ticket-flow`
+rule 4. `ticket-flow` § Rules every role follows, `refine-ticket` § Merge queue, `process-intake`
+§ Step 3 and the Merge policy section of `.claude/skills/process-intake/ticket-flow.template.md`
+SHALL each name both policies, and that section's `Policy` line SHALL give `manual`, the default.
+A merge into the production branch the layer names, a deploy, a production migration, a store
+submission and every other irreversible step SHALL stay the owner's word under every policy, as
+`ticket-flow` rule 4 and `release-ticket` say; and under neither policy SHALL the architect or QA
+merge a pull request into the production branch (TICKET-24).
 
-**Evidence:** `.claude/skills/ticket-flow/SKILL.md:170`, `.claude/skills/qa-ticket/SKILL.md:86`,
-`.claude/skills/qa-ticket/SKILL.md:88`, `.claude/skills/process-intake/SKILL.md:65`,
-`.claude/skills/process-intake/ticket-flow.template.md:57`,
-`.claude/skills/process-intake/ticket-flow.template.md:59`,
-`.claude/skills/release-ticket/SKILL.md:24`, `scripts/verify-skills.mjs:125`,
-`scripts/verify-skills.mjs:188`, `scripts/verify-skills.mjs:451`
+**Evidence:** `.claude/skills/ticket-flow/SKILL.md:175`,
+`.claude/skills/refine-ticket/SKILL.md:115`, `.claude/skills/refine-ticket/SKILL.md:138`,
+`.claude/skills/process-intake/SKILL.md:67`,
+`.claude/skills/process-intake/ticket-flow.template.md:63`,
+`.claude/skills/process-intake/ticket-flow.template.md:65`,
+`.claude/skills/release-ticket/SKILL.md:24`, `scripts/verify-skills.mjs:131`,
+`scripts/verify-skills.mjs:212`, `scripts/verify-skills.mjs:301`, `scripts/verify-skills.mjs:506`
 
 #### Scenario: the skills of the repository
 
@@ -761,26 +783,26 @@ say; and under neither policy SHALL QA merge a pull request into `production` (T
 - **THEN** it reports one finding
 - **Test:** `scripts/verify-skills.test.mjs` › "a ticket-flow whose rules name no low-risk merge policy is refused"
 
-#### Scenario: QA's merge step drops `manual`
+#### Scenario: the architect's merge queue drops `manual`
 
-- **GIVEN** a `qa-ticket` whose Step 6 never names `manual`
+- **GIVEN** a `refine-ticket` whose § Merge queue never names `manual`
 - **WHEN** the structural check runs
 - **THEN** it reports one finding
-- **Test:** `scripts/verify-skills.test.mjs` › "a qa-ticket whose merge step names no manual merge policy is refused"
+- **Test:** `scripts/verify-skills.test.mjs` › "a refine-ticket whose merge queue names no manual merge policy is refused"
 
-#### Scenario: QA's merge step drops `low-risk`
+#### Scenario: the architect's merge queue drops `low-risk`
 
-- **GIVEN** a `qa-ticket` whose Step 6 never names `low-risk`
+- **GIVEN** a `refine-ticket` whose § Merge queue never names `low-risk`
 - **WHEN** the structural check runs
 - **THEN** it reports one finding
-- **Test:** `scripts/verify-skills.test.mjs` › "a qa-ticket whose merge step names no low-risk merge policy is refused"
+- **Test:** `scripts/verify-skills.test.mjs` › "a refine-ticket whose merge queue names no low-risk merge policy is refused"
 
-#### Scenario: QA's merge step is gone
+#### Scenario: the architect's merge queue is gone
 
-- **GIVEN** a `qa-ticket` with no Step 6
+- **GIVEN** a `refine-ticket` with no § Merge queue
 - **WHEN** the structural check runs
 - **THEN** it reports the missing section, rather than judging the policies it would name
-- **Test:** `scripts/verify-skills.test.mjs` › "a qa-ticket without its merge step is refused"
+- **Test:** `scripts/verify-skills.test.mjs` › "a refine-ticket without its merge queue is refused"
 
 #### Scenario: the intake never offers `low-risk`
 
@@ -827,15 +849,14 @@ say; and under neither policy SHALL QA merge a pull request into `production` (T
 #### Scenario: a hotfix under `low-risk`
 
 - **GIVEN** a project whose layer records `low-risk`, and a green, current hotfix pull request
-  into `production` whose Risk line is `none`
-- **WHEN** QA reaches its merge step
+  into the production branch whose Risk line is `none`
+- **WHEN** QA brings it to Ready to merge
 - **THEN** QA merges nothing and asks the owner nothing: it leaves the ticket at Ready to merge
-  and messages the architect `<id> ready to merge, hotfix`, and the CI/CD session merges it as
-  its release's deploy step (TICKET-24)
-- **Test:** Not covered — the rule is a procedure a QA session follows; no runner drives a
-  session, and the structural check only proves the skills name both policies and the hotfix's
-  message
-
+  and messages the architect `<id> ready to merge, hotfix`; the architect keeps it out of its
+  merge queue, and the CI/CD session merges it as its release's deploy step (TICKET-24)
+- **Test:** Not covered — the rule is a procedure the QA and architect sessions follow; no runner
+  drives a session, and the structural check only proves the skills name both policies and the
+  hotfix's message
 ### Requirement: TICKET-21 — The branch check judges under the project's ticket identity
 
 `scripts/verify-ticket-branch.mjs` SHALL take its ticket identity from the one fenced block with
@@ -971,11 +992,11 @@ block, and the Ticket identity section of `.claude/skills/process-intake/ticket-
 to hold one `json ticket-identity` block that the branch check reads with no finding and whose
 fields are the branch check's defaults.
 
-**Evidence:** `scripts/verify-skills.mjs:193`, `scripts/verify-skills.mjs:253`,
-`scripts/verify-skills.mjs:331`, `scripts/verify-skills.mjs:357`, `scripts/verify-skills.mjs:484`,
-`.claude/skills/ticket-flow/SKILL.md:197`, `.claude/skills/ticket-flow/SKILL.md:203`,
-`.claude/skills/process-intake/SKILL.md:78`,
-`.claude/skills/process-intake/ticket-flow.template.md:82`
+**Evidence:** `scripts/verify-skills.mjs:217`, `scripts/verify-skills.mjs:280`,
+`scripts/verify-skills.mjs:372`, `scripts/verify-skills.mjs:398`, `scripts/verify-skills.mjs:539`,
+`.claude/skills/ticket-flow/SKILL.md:205`, `.claude/skills/ticket-flow/SKILL.md:211`,
+`.claude/skills/process-intake/SKILL.md:83`,
+`.claude/skills/process-intake/ticket-flow.template.md:91`
 
 #### Scenario: the skills of the repository
 
@@ -1047,9 +1068,9 @@ because the remote moved; and QA SHALL remove its own worktree once it is done w
 QA may have pushed to it. The structural check SHALL hold `qa-ticket` § Step 2 to name
 `--detach` and § Step 5 to name `git push origin HEAD:<branch>`.
 
-**Evidence:** `.claude/skills/qa-ticket/SKILL.md:38`, `.claude/skills/qa-ticket/SKILL.md:78`,
-`.claude/skills/qa-ticket/SKILL.md:123`, `.claude/skills/dev-ticket/SKILL.md:93`,
-`scripts/verify-skills.mjs:168`, `scripts/verify-skills.mjs:286`
+**Evidence:** `.claude/skills/qa-ticket/SKILL.md:39`, `.claude/skills/qa-ticket/SKILL.md:79`,
+`.claude/skills/qa-ticket/SKILL.md:114`, `.claude/skills/dev-ticket/SKILL.md:94`,
+`scripts/verify-skills.mjs:181`, `scripts/verify-skills.mjs:322`
 
 #### Scenario: the skills of the repository
 
@@ -1113,25 +1134,26 @@ QA may have pushed to it. The structural check SHALL hold `qa-ticket` § Step 2 
 
 ### Requirement: TICKET-24 — A hotfix ships only as its release
 
-`qa-ticket` § Step 6 SHALL merge no pull request into `production` under any merge policy,
-`manual` included: QA brings a hotfix to Ready to merge against `production`'s current tip,
-leaves it there, and messages the architect `<id> ready to merge, hotfix`. `refine-ticket`
-§ Group a release SHALL list the hotfix in a release ticket of its own. `release-ticket` SHALL
-ship that release with Steps 1 to 4, merging the hotfix's pull request into `production` as the
-release's deploy step, on the owner's word for the release and for that step, after the release's
-migrations, in their order; then move the hotfix to Done and message the architect
-`<id> merged`; and, once it is live, merge `production` back into the default branch through a
-pull request merged on the owner's word. `ticket-flow` § Messages SHALL carry the line
+`qa-ticket` § Step 6 SHALL bring a hotfix to Ready to merge against the current tip of the
+production branch the layer names, leave it there under every merge policy, `manual` included,
+and message the architect `<id> ready to merge, hotfix`. `refine-ticket` SHALL keep the hotfix
+out of its merge queue and list it in a release ticket of its own (§ Group a release).
+`release-ticket` SHALL ship that release with Steps 1 to 4, merging the hotfix's pull request into
+the production branch as the release's deploy step, on the owner's word for the release and for
+that step, after the release's migrations, in their order; then move the hotfix to Done and
+message the architect `<id> merged`, which the architect passes to the hotfix's QA and dev
+sessions; and, once it is live, merge the production branch back into the default branch through
+a pull request merged on the owner's word. `ticket-flow` § Messages SHALL carry the line
 `<id> ready to merge, hotfix`, from QA to the architect, and its states table SHALL name CI/CD as
 the session that enters Done for a hotfix. The structural check SHALL hold `qa-ticket` § Step 6,
 `refine-ticket` § Group a release and `ticket-flow` § Messages to name
 `<id> ready to merge, hotfix`, and `release-ticket` § Hotfix to say that QA leaves it at Ready to
 merge.
 
-**Evidence:** `.claude/skills/qa-ticket/SKILL.md:88`, `.claude/skills/refine-ticket/SKILL.md:83`,
-`.claude/skills/refine-ticket/SKILL.md:98`, `.claude/skills/release-ticket/SKILL.md:145`,
-`.claude/skills/ticket-flow/SKILL.md:91`, `.claude/skills/ticket-flow/SKILL.md:124`,
-`scripts/verify-skills.mjs:175`, `scripts/verify-skills.mjs:289`
+**Evidence:** `.claude/skills/qa-ticket/SKILL.md:98`, `.claude/skills/refine-ticket/SKILL.md:100`,
+`.claude/skills/refine-ticket/SKILL.md:173`, `.claude/skills/release-ticket/SKILL.md:158`,
+`.claude/skills/ticket-flow/SKILL.md:92`, `.claude/skills/ticket-flow/SKILL.md:128`,
+`scripts/verify-skills.mjs:194`, `scripts/verify-skills.mjs:325`
 
 #### Scenario: the skills of the repository
 
@@ -1141,12 +1163,12 @@ merge.
   hotfix's message, and the hotfix section leaves it at Ready to merge
 - **Test:** `scripts/verify-skills.test.mjs` › "the seven ticket skills of the repository pass"
 
-#### Scenario: QA's merge step sends no hotfix message
+#### Scenario: QA's hand-off sends no hotfix message
 
 - **GIVEN** a `qa-ticket` whose Step 6 never names `<id> ready to merge, hotfix`
 - **WHEN** the structural check runs
 - **THEN** it reports one finding
-- **Test:** `scripts/verify-skills.test.mjs` › "a qa-ticket whose merge step sends no hotfix message is refused"
+- **Test:** `scripts/verify-skills.test.mjs` › "a qa-ticket whose hand-off step sends no hotfix message is refused"
 
 #### Scenario: the architect never groups a hotfix
 
@@ -1172,9 +1194,9 @@ merge.
 
 #### Scenario: a hotfix under `manual`
 
-- **GIVEN** a project whose layer records `manual`, and a green hotfix pull request into
-  `production`, current with its tip
-- **WHEN** QA reaches its merge step
+- **GIVEN** a project whose layer records `manual`, and a green hotfix pull request into the
+  production branch, current with its tip
+- **WHEN** QA brings it to Ready to merge
 - **THEN** QA asks the owner nothing and merges nothing: it leaves the ticket at Ready to merge
   and messages the architect `<id> ready to merge, hotfix`
 - **Test:** Not covered — the rule is a procedure a QA session follows; no runner drives a
@@ -1182,11 +1204,202 @@ merge.
 
 #### Scenario: a hotfix release with a migration
 
-- **GIVEN** a release ticket of its own that lists a hotfix at Ready to merge into `production`
-  and one migration
+- **GIVEN** a release ticket of its own that lists a hotfix at Ready to merge into the production
+  branch and one migration
 - **WHEN** the CI/CD session ships it on the owner's word
-- **THEN** it pushes the migration first, then merges the hotfix's pull request into
-  `production` on the owner's word for that step, moves the hotfix to Done, messages the
-  architect `<id> merged`, and checks production before Released
+- **THEN** it pushes the migration first, then merges the hotfix's pull request into the
+  production branch on the owner's word for that step, moves the hotfix to Done, messages the
+  architect `<id> merged`, which the architect passes to the hotfix's QA and dev sessions, and
+  checks production before Released
 - **Test:** Not covered — the rule is a procedure a CI/CD session follows; no runner drives a
   session or a deploy
+### Requirement: TICKET-25 — The architect keeps the merge queue and merges one pull request at a time
+
+`refine-ticket` § Merge queue SHALL keep one merge queue: every pull request at Ready to merge
+into the default branch, each with its evidence link, in the merge order the architect sets,
+shown to the owner in the architect's session. The architect SHALL ask for or merge only the pull
+request at the head of the queue, and only while every Ready to merge condition holds (CI green,
+no conflict, the branch holding the default branch's current tip) and the project layer's merge
+gate, when it names one, passes; a pull request that fails one SHALL go back to its QA as
+`<id> bring current`. It SHALL merge on the owner's word, asked in the architect's own session,
+under the `manual` policy or when the project layer records none; and, under `low-risk`, without
+asking only a pull request whose Risk line is `Risk: none` or that changes only passive files, and
+whose merge sets off no irreversible step, recording on the ticket that it merged under
+`low-risk` and the Risk line it relied on. A pull request that fails one condition SHALL wait for
+the owner, as under `manual`. After each merge the architect SHALL move the ticket to Done,
+message the ticket's QA and dev sessions `<id> merged`, and message the QA of the next pull
+request in the queue `<id> bring current`. `ticket-flow`'s states table SHALL name the architect
+as the session that enters Done, a hotfix aside (TICKET-24), and its § Messages SHALL carry
+`<id> ready to merge, PR #<n>`, from QA to the architect, and `<id> bring current`, from the
+architect to QA. The structural check SHALL hold `refine-ticket` to have a § Merge queue.
+
+**Evidence:** `.claude/skills/refine-ticket/SKILL.md:88`,
+`.claude/skills/refine-ticket/SKILL.md:115`, `.claude/skills/refine-ticket/SKILL.md:123`,
+`.claude/skills/refine-ticket/SKILL.md:133`, `.claude/skills/refine-ticket/SKILL.md:138`,
+`.claude/skills/refine-ticket/SKILL.md:158`, `.claude/skills/refine-ticket/SKILL.md:165`,
+`.claude/skills/ticket-flow/SKILL.md:92`, `.claude/skills/ticket-flow/SKILL.md:103`,
+`.claude/skills/ticket-flow/SKILL.md:127`, `.claude/skills/ticket-flow/SKILL.md:129`,
+`.claude/skills/ticket-flow/SKILL.md:300`, `scripts/verify-skills.mjs:166`,
+`scripts/verify-skills.mjs:299`
+
+#### Scenario: the skills of the repository
+
+- **GIVEN** the repository's seven ticket skills
+- **WHEN** `pnpm verify:skills:test` runs
+- **THEN** the structural check finds nothing: the architect has its merge queue
+- **Test:** `scripts/verify-skills.test.mjs` › "the seven ticket skills of the repository pass"
+
+#### Scenario: the architect has no merge queue
+
+- **GIVEN** a `refine-ticket` with no § Merge queue
+- **WHEN** the structural check runs
+- **THEN** it reports the missing section, rather than judging the policies it would name
+- **Test:** `scripts/verify-skills.test.mjs` › "a refine-ticket without its merge queue is refused"
+
+#### Scenario: two pull requests ready
+
+- **GIVEN** two tickets at Ready to merge into the default branch, the second depending on the
+  first, under `manual`
+- **WHEN** the architect asks the owner
+- **THEN** it shows both in the queue and asks for the first only; once it merges the first, it
+  moves it to Done, messages its QA and dev sessions `<id> merged`, messages the second's QA
+  `<id> bring current`, and asks for the second only once QA answers
+  `<id> ready to merge, PR #<n>` again
+- **Test:** Not covered — the rule is a procedure an architect session follows; no runner drives
+  a session, and the structural check only proves the section exists
+
+#### Scenario: `low-risk`, and a pull request that names a risk
+
+- **GIVEN** a project whose layer records `low-risk`, and a pull request at the head of the
+  queue, Ready to merge, that changes code and says `Risk: item 3 (a public export)`
+- **WHEN** the architect reaches its merge
+- **THEN** the architect asks the owner, as under `manual`, and merges only on the owner's word
+- **Test:** Not covered — the rule is a procedure an architect session follows; no runner drives
+  a session
+
+#### Scenario: `low-risk`, and a pull request that meets every condition
+
+- **GIVEN** a project whose layer records `low-risk`, and a pull request at the head of the
+  queue, Ready to merge into the default branch, that says `Risk: none` and whose merge sets off
+  no irreversible step
+- **WHEN** the architect reaches its merge
+- **THEN** the architect merges it without asking, comments on the ticket that it merged under
+  `low-risk` with that Risk line, moves it to Done and messages its QA and dev sessions
+  `<id> merged`
+- **Test:** Not covered — the rule is a procedure an architect session follows; no runner drives
+  a session
+
+### Requirement: TICKET-26 — Every ticket carries a target version
+
+Every ticket of the flow, whatever its type (`feature`, `fix`, `tech` or `chore`; a test or docs
+ticket is a `tech` one), SHALL carry a target version, so every ticket closes through a release.
+`po-ticket` SHALL create no ticket without one, asking the client when nobody said. `refine-ticket`
+SHALL move no ticket past Refinement without one: a ticket with none (under the GitHub Issues
+adapter, an issue with no milestone) SHALL stop there while the architect proposes a version on
+the ticket, messages the PO `<id> version change` and waits for `<id> version set`. A technical
+ticket the architect files SHALL get its version the same way, the PO being the only session that
+runs `set version`. `ticket-flow` § Target version SHALL say where the rule is checked, since no
+gate reads the board. `ticket.template.md` SHALL mark the version required, and the structural
+check SHALL hold its Target version section to name `**Version (required):**`.
+
+**Evidence:** `.claude/skills/ticket-flow/SKILL.md:86`, `.claude/skills/ticket-flow/SKILL.md:249`,
+`.claude/skills/ticket-flow/SKILL.md:251`, `.claude/skills/po-ticket/SKILL.md:47`,
+`.claude/skills/po-ticket/SKILL.md:57`, `.claude/skills/refine-ticket/SKILL.md:37`,
+`.claude/skills/refine-ticket/SKILL.md:39`, `.claude/skills/refine-ticket/SKILL.md:70`,
+`.claude/skills/refine-ticket/SKILL.md:109`, `.claude/skills/ticket-flow/ticket.template.md:23`,
+`scripts/verify-skills.mjs:203`, `scripts/verify-skills.mjs:242`
+
+#### Scenario: the skills of the repository
+
+- **GIVEN** the repository's seven ticket skills
+- **WHEN** `pnpm verify:skills:test` runs
+- **THEN** the structural check finds nothing: the ticket template marks its version required
+- **Test:** `scripts/verify-skills.test.mjs` › "the seven ticket skills of the repository pass"
+
+#### Scenario: the ticket template does not mark the version required
+
+- **GIVEN** a `ticket.template.md` whose Target version section never names
+  `**Version (required):**`
+- **WHEN** the structural check runs
+- **THEN** it reports one finding
+- **Test:** `scripts/verify-skills.test.mjs` › "a ticket template that does not mark its version required is refused"
+
+#### Scenario: an issue with no milestone
+
+- **GIVEN** a project on the GitHub Issues adapter, and a ticket in Refinement whose issue has no
+  milestone
+- **WHEN** the architect would move it to Ready for dev
+- **THEN** it stays in Refinement; the architect proposes a version on the ticket, messages the
+  PO `<id> version change`, and dispatches it only after `<id> version set`
+- **Test:** Not covered — the rule is a procedure an architect session follows; no runner drives
+  a session, and no gate reads the board: `scripts/verify-ticket-branch.mjs` judges a branch and
+  a pull request body only, and a board check comes with the board-is-the-source change
+
+#### Scenario: a technical ticket
+
+- **GIVEN** a finding the architect files as a `tech` ticket
+- **WHEN** the architect creates it
+- **THEN** it proposes the ticket's version on it and messages the PO `<id> version change`; the
+  PO sets it and answers `<id> version set`
+- **Test:** Not covered — the rule is a procedure the architect and PO sessions follow; no runner
+  drives a session
+
+#### Scenario: a requirement with no version
+
+- **GIVEN** a client requirement that names no version
+- **WHEN** the PO writes its ticket
+- **THEN** the PO asks the client, and creates the ticket only with a version
+- **Test:** Not covered — the rule is a procedure a PO session follows; no runner drives a session
+
+### Requirement: TICKET-27 — The production branch is the one the layer names
+
+The Branching model section of `.claude/skills/process-intake/ticket-flow.template.md` SHALL name
+the production branch on its `Production branch` line, which SHALL give `production`, the
+default; `process-intake` § Step 3 SHALL ask the team its name; and the ticket skills and their
+templates SHALL call it "the production branch the layer names", or "the production branch" once
+named, wherever a step cuts from, merges into, checks against or deploys that branch, naming
+`production` only as its default. `release-ticket` § Deploy targets SHALL say what a host branch
+target declares about the host's production branch, with two facts of Vercel as examples, naming
+no project: its production branch is set only in its dashboard (Environments → Production →
+Branch Tracking), the API's `link.productionBranch` being read-only; and once it is switched the
+default branch deploys as a Preview, so the Preview environment variables must exist before it
+serves as staging. The structural check SHALL hold the template's Branching model to give the line
+``- **Production branch:** `production` ``.
+
+**Evidence:** `.claude/skills/process-intake/ticket-flow.template.md:116`,
+`.claude/skills/process-intake/ticket-flow.template.md:120`,
+`.claude/skills/process-intake/SKILL.md:103`, `.claude/skills/ticket-flow/SKILL.md:332`,
+`.claude/skills/release-ticket/SKILL.md:108`, `.claude/skills/release-ticket/SKILL.md:123`,
+`.claude/skills/dev-ticket/SKILL.md:50`, `.claude/skills/qa-ticket/SKILL.md:85`,
+`.claude/skills/ticket-flow/release.template.md:15`, `scripts/verify-skills.mjs:175`,
+`scripts/verify-skills.mjs:355`
+
+#### Scenario: the skills of the repository
+
+- **GIVEN** the repository's seven ticket skills
+- **WHEN** `pnpm verify:skills:test` runs
+- **THEN** the structural check finds nothing: the template names the production branch, with
+  `production` as its default
+- **Test:** `scripts/verify-skills.test.mjs` › "the seven ticket skills of the repository pass"
+
+#### Scenario: the template names no production branch
+
+- **GIVEN** a process template whose Branching model has no `Production branch` line
+- **WHEN** the structural check runs
+- **THEN** it reports one finding, naming the line and the default it owes
+- **Test:** `scripts/verify-skills.test.mjs` › "a process template whose branching model names no production branch is refused"
+
+#### Scenario: the template's default is another name
+
+- **GIVEN** a process template whose `Production branch` line gives `prod`
+- **WHEN** the structural check runs
+- **THEN** it reports one finding
+- **Test:** `scripts/verify-skills.test.mjs` › "a process template whose production branch does not default to production is refused"
+
+#### Scenario: a project that names `prod`
+
+- **GIVEN** a project layer whose Branching model names the production branch `prod`
+- **WHEN** a dev session cuts a hotfix and its QA brings it to Ready to merge
+- **THEN** the branch is cut from `origin/prod`, and QA brings it current with `prod`'s tip
+- **Test:** Not covered — the rule is a procedure dev and QA sessions follow; no runner drives a
+  session, and the structural check only proves the template's line

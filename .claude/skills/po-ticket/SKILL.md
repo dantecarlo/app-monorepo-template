@@ -3,8 +3,9 @@ name: po-ticket
 description: >
   The PO role of the ticket flow: guards scope, turns a client requirement into a ticket written
   from the ticket template with the client's words verbatim and the version it is aimed at,
-  creates it in Backlog and tells the architect; answers scope questions; confirms every move of
-  a target version; and refreshes the general plan when a ticket closes or a release ships.
+  creates it in Backlog, never without that version, and tells the architect; answers scope
+  questions; confirms every move of a target version, and the first version of a technical
+  ticket; and refreshes the general plan when a ticket closes or a release ships.
   USE WHEN: "the client asked for", "new requirement", "create a ticket for", "<id> question"
   about scope, "<id> version change", "<id> closed", "<release-id> released", a PO session of the
   ticket flow starts work.
@@ -43,8 +44,8 @@ Copy `.claude/skills/ticket-flow/ticket.template.md` and fill only the PO's part
 - **Requirement**: the client's words verbatim and dated; translated faithfully and marked
   `(translated from <language>)` when the client wrote in another language;
 - **Acceptance criteria**: one observable outcome per line, each one a thing QA can check;
-- **Target version**: the version the ticket is aimed at, the one the client expects it in; ask
-  the client when nobody said.
+- **Target version**: the version the ticket is aimed at, the one the client expects it in. It
+  is required: when nobody said, ask the client, and create nothing until the answer is in.
 
 Leave the architect's sections (Spec, Areas and subtasks, Test plan) and the later ones as the
 template has them.
@@ -53,8 +54,9 @@ template has them.
 
 ## Step 3 — Create it
 
-`create` the ticket in Backlog, `set version` to its target version, then message the architect
-`<id> new`.
+`create` the ticket in Backlog and `set version` to its target version. Then `read version`:
+it must show that version (under the GitHub Issues adapter, the issue's milestone) before you
+message the architect `<id> new`. No ticket leaves this step without one.
 
 ---
 
@@ -67,8 +69,9 @@ answer is the client's to give, ask the client and quote the reply verbatim; nev
 
 ## Step 5 — Confirm a move of the target version
 
-On `<id> version change`: `read` the architect's proposal on the ticket. A move changes what the
-client was promised, so ask the client when the date was theirs. Once it is confirmed, run
+On `<id> version change`: `read` the architect's proposal on the ticket: a move, or the first
+version of a technical ticket the architect filed. A move changes what the client was promised,
+so ask the client when the date was theirs. Once it is confirmed, run
 `set version`, `comment` the confirmation, refresh the general plan, and message the architect
 `<id> version set`. Not confirmed → `comment` why; the version stays.
 
@@ -95,7 +98,9 @@ messages: ['<id> new', '<id> scope changed', '<id> version set']
 edits:
   - docs/GENERAL_PLAN.md # through general-plan, on a close
 validated_by: review
-done_when: the ticket is in Backlog with the client's words verbatim, and the architect was told
+done_when: >-
+  the ticket is in Backlog with the client's words verbatim and its target version set, and the
+  architect was told
 ```
 
 ---
