@@ -9,7 +9,9 @@ import type {
  * loads, every call is held in order, up to `limit`, the oldest dropped
  * first; once it loads, the held calls run in order and every later call
  * runs at once. A failed load drops the held calls and leaves nothing
- * loading.
+ * loading. `stop` drops the held calls and every later call at once; a load
+ * it interrupted still resolves to its client for whoever awaits it, but the
+ * client is not kept and runs none of the dropped calls.
  */
 export const createDeferredClient = <TClient>({
   limit
@@ -48,8 +50,7 @@ export const createDeferredClient = <TClient>({
       if (state.client) return Promise.resolve(state.client)
       if (state.loading) return state.loading
       const loading: Promise<TClient | undefined> = load().then(
-        (client) =>
-          state.loading === loading ? settle(client) : undefined,
+        (client) => (state.loading === loading ? settle(client) : client),
         () => (state.loading === loading ? settle(undefined) : undefined)
       )
       state.loading = loading

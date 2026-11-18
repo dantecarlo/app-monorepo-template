@@ -98,7 +98,9 @@ test('stop forgets the client and the held calls, during a load too', async () =
   deferred.stop()
   finish()
 
-  expect(await started).toBeUndefined()
+  // The interrupted load still hands its client to whoever awaits it.
+  expect(await started).toBe(client)
+  expect(await deferred.settled()).toBeUndefined()
   deferred.run(send(2))
   expect(client.receive).not.toHaveBeenCalled()
   expect(await deferred.start({ load })).toBe(client)

@@ -26,17 +26,21 @@ const CONSENT_CALLS = [
 // observability adapter of that registry.
 const loadConsent = async ({
   consent,
-  key
+  key,
+  sdkLoaded
 }: {
   consent?: string
   key?: string
+  sdkLoaded?: Promise<void>
 }) => {
   Object.values(sdk).forEach((mock) => mock.mockClear())
   loadSdk.mockClear()
   vi.stubEnv('NEXT_PUBLIC_POSTHOG_KEY', key)
   vi.stubEnv('NEXT_PUBLIC_POSTHOG_CONSENT', consent)
   vi.resetModules()
-  vi.doMock('posthog-js', () => {
+  // A test that passes sdkLoaded holds the SDK's load until it settles.
+  vi.doMock('posthog-js', async () => {
+    await sdkLoaded
     loadSdk()
     return { default: sdk }
   })
@@ -60,6 +64,7 @@ const exercise = async ({
 }
 
 afterEach(() => {
+  vi.restoreAllMocks()
   vi.unstubAllEnvs()
   vi.unstubAllGlobals()
   localStorage.clear()
@@ -117,6 +122,42 @@ test('revoke opts PostHog out, resets it with a new device id, stops it and read
   expect(localStorage.getItem(GRANT_RECORD_KEY)).toBeNull()
   expect(sdk.captureException).not.toHaveBeenCalled()
   expect(await adapter.getStatus()).toBe('denied')
+})
+
+test('drops every call made after a revoke while the SDK loads', async () => {
+  localStorage.setItem(GRANT_RECORD_KEY, 'true')
+  const gate: { open?: () => void } = {}
+  const sdkLoaded = new Promise<void>((resolve) => {
+    gate.open = resolve
+  })
+  const { adapter, observability } = await loadConsent({
+    consent: 'opt-in',
+    key: KEY,
+    sdkLoaded
+  })
+
+  const revoked = adapter.revoke()
+  observability.captureError({ error: new Error('after the revoke') })
+  gate.open?.()
+  await revoked
+
+  expect(loadSdk).toHaveBeenCalledOnce()
+  expect(sdk.captureException).not.toHaveBeenCalled()
+  expect(sdk.opt_out_capturing).toHaveBeenCalledOnce()
+  expect(localStorage.getItem(GRANT_RECORD_KEY)).toBeNull()
+  expect(await adapter.getStatus()).toBe('denied')
+})
+
+test('reads granted after a grant while the browser blocks site data', async () => {
+  const { adapter } = await loadConsent({ consent: 'opt-in', key: KEY })
+  vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
+    throw new Error('SecurityError')
+  })
+
+  await adapter.grant()
+
+  expect(sdk.opt_in_capturing).toHaveBeenCalledOnce()
+  expect(await adapter.getStatus()).toBe('granted')
 })
 
 test('grants again after a revoke with the SDK it already loaded', async () => {
