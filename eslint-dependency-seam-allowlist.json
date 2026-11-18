@@ -105,11 +105,6 @@
     "reason": "F.8 unit 5: a components/ui/StatusBar block with its own style type takes this import."
   },
   {
-    "path": "apps/mobile/src/screens/ItemsDashboard/components/DashboardHeader/__tests__/DashboardHeader.component.test.tsx",
-    "package": "expo-linear-gradient",
-    "reason": "F.8 unit 5: the components/ui block that wraps it takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
     "path": "apps/mobile/src/screens/ItemsDashboard/hooks/__tests__/useItems.hook.test.ts",
     "package": "@tanstack/react-query",
     "reason": "F.8 unit 3: the query seam's own types and AppQueryProvider, in lib/query, take this import; the test then mocks the project module, not the vendor."

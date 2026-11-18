@@ -2,7 +2,7 @@
 
 - [x] T1 — the web variant unions: `VariantUnionsType` in `variants.helper.ts`, one tuple and union per variant in the 10 blocks' `*.constant.ts`, their props on the unions, a type test per block, and the 10 `tailwind-variants` allowlist entries removed · Requirements: WEB-70 · Commit: fd1d135
 - [x] T2 — `IAsyncBoundaryFallbackProps` in both apps, and the `react-error-boundary` seam narrowed to the boundary's component file · Requirements: WEB-71, MOBILE-70 · Commit: ee9d6a2
-- [ ] T3 — the web `ui/Image` block, the logo on it, every test mocking it instead of `next/image`, the seam narrowed and the 4 `next/image` allowlist entries removed · Requirements: WEB-72 · Commit: —
+- [x] T3 — the web `ui/Image` block, the logo on it, every test mocking it instead of `next/image`, the seam narrowed and the 4 `next/image` allowlist entries removed · Requirements: WEB-72 · Commit: b735563
 - [ ] T4 — the mobile `ui/Gradient` block, the accent gradient, the skeleton and the toggle on it, the dashboard header test without its vendor mock, the seam narrowed and the `expo-linear-gradient` allowlist entry removed · Requirements: MOBILE-71 · Commit: —
 - [ ] T5 — the mobile `ui/StatusBar` block with `StatusBarStyleType`, the root layout and the root theme's type on it, the layout test mocking it, the seam narrowed and the 3 `expo-status-bar` allowlist entries removed · Requirements: MOBILE-72 · Commit: —
 - [ ] T6 — `applyTheme` in `lib/theme`, the `Screen` and `Text` tests on it, and the 2 unit-5 `nativewind` allowlist entries removed · Requirements: MOBILE-73 · Commit: —
