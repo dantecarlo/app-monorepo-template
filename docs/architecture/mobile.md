@@ -49,7 +49,7 @@ apps/mobile/
     ├── hooks/                    # SHARED hooks (used across screens, e.g. useSession)
     ├── stores/                   # Zustand slices (auth, toast, ui) — shared by definition
     ├── lib/                      # framework wiring: i18n/, observability/, posthog/, query/,
-    │                             # supabase/, theme/
+    │                             # storage/ (the device key-value storage), supabase/, theme/
     ├── helpers/                  # shared pure helpers + layout.style.ts (positioning only)
     ├── validation/               # shared zod schemas (or per-screen in the screen's models/)
     └── test/                     # test helper, setup, MSW and native-module mocks
@@ -108,8 +108,10 @@ params object (`['items', 'list', { limit, search }]`), which the error report a
 key holds every value its query reads, so two items lists of different limits never share a cache
 entry. The observability port is bound to PostHog in
 `src/lib/observability/observability.adapter.ts`; its one client, `src/lib/posthog/posthogClient.adapter.ts`, is the only file that imports
-`posthog-react-native`, and Sentry is an optional capability `/init` can prune
-([../observability.md](../observability.md)).
+`posthog-react-native`, and Sentry is an optional capability `/init` can prune. The consent API a
+banner calls is bound in `src/lib/observability/consent.adapter.ts`, and
+`EXPO_PUBLIC_POSTHOG_CONSENT` picks PostHog's consent mode
+([../observability.md](../observability.md#consent)).
 
 ## 5. Conventions
 

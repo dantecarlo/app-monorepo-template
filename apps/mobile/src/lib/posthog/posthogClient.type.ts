@@ -1,7 +1,7 @@
-// The PostHog client as this app uses it: the five calls the observability
-// adapter makes. posthogClient.adapter.ts, the one file that imports the SDK,
-// assigns the SDK's client to it, so a call the SDK drops or renames fails
-// the type check there.
+// The PostHog client as this app uses it: the calls the observability and
+// consent adapters make. posthogClient.adapter.ts, the one file that imports
+// the SDK, assigns the SDK's client to it, so a call the SDK drops or renames
+// fails the type check there.
 
 // Every severity PostHog accepts; the port maps onto all of them but `trace`.
 export type PostHogLogLevelType =
@@ -31,5 +31,7 @@ export interface IPostHogClient {
   ): unknown
   captureLog(record: IPostHogLogRecord): void
   identify(distinctId: string, properties?: PostHogPropertiesType): void
-  reset(): void
+  optIn(): Promise<void>
+  optOut(): Promise<void>
+  reset(propertiesToKeep?: string[]): void
 }

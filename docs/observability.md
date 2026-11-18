@@ -161,6 +161,8 @@ enabled to see them.
 
 ### Privacy defaults
 
+They hold under every consent mode (below).
+
 | Setting                                  | Web (`posthog-js`)                                  | Mobile (`posthog-react-native`)                       |
 | ---------------------------------------- | --------------------------------------------------- | ----------------------------------------------------- |
 | Session recording / replay               | off (`disable_session_recording: true`)             | off (`enableSessionReplay: false`)                    |
@@ -179,6 +181,91 @@ email. On mobile, PostHog's uncaught-exception handler defers the rethrow an
 Expo web bundle's chunk loader needs, so a web bundle leaves uncaught errors to
 the browser.
 
+### Consent
+
+One setting per app chooses how PostHog treats consent:
+`NEXT_PUBLIC_POSTHOG_CONSENT` on web and `EXPO_PUBLIC_POSTHOG_CONSENT` on
+mobile, read in `apps/{web,mobile}/src/lib/posthog/posthogClient.constant.ts`.
+When a project picks PostHog, `/init` asks for the mode; a project that sets
+none keeps `granted`, the behaviour PostHog had before the setting existed.
+
+| Mode                | Captures              | Keeps on the device                                                                                     |
+| ------------------- | --------------------- | ------------------------------------------------------------------------------------------------------- |
+| `granted` (default) | from the start        | the SDK's ids and session: a cookie, local and session storage on web; the SDK's storage file on mobile |
+| `opt-in`            | nothing until a grant | nothing until a grant; after it, what `granted` keeps; after a revoke, nothing                          |
+| `memory`            | from the start        | nothing: each page load on web, and each launch on mobile, gets a new anonymous id                      |
+
+Each mode adds only these options to the `granted` ones, named as the installed
+SDK types name them:
+
+| Mode      | Web (`posthog-js`)                                                           | Mobile (`posthog-react-native`)                             |
+| --------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `granted` | none                                                                         | none                                                        |
+| `opt-in`  | `opt_out_capturing_by_default: true`, `opt_out_persistence_by_default: true` | `defaultOptIn: false`, `customStorage`: the consent storage |
+| `memory`  | `persistence: 'memory'`                                                      | `persistence: 'memory'`                                     |
+
+**An unknown value is a configuration error.** It throws, naming the variable
+and the three modes, when the client module loads with a key set: on web on
+the server too, so the prerender of `next build` fails before the value ships;
+on mobile when the app starts. Without a key no client is built and the value
+is not read.
+
+**The mobile consent storage.** `posthog-react-native` writes its ids to the
+device when it is built, even with `defaultOptIn: false`, and picks its storage
+once. In `opt-in` mode it therefore persists through
+`apps/mobile/src/lib/posthog/consentStorage.adapter.ts`, which holds every value
+in memory until a grant, then writes them to the device's key-value storage
+under the `posthog-consent:` prefix with the marker `posthog-consent:granted`,
+the key the next launch reads. A revoke stops those writes and removes every
+key. That storage is `apps/mobile/src/lib/storage/keyValueStorage.adapter.ts`,
+AsyncStorage behind the `IKeyValueStoragePort` of packages/core, and the only
+file of the app that imports AsyncStorage apart from the theme and language
+configs, which F.8 unit 4 moves onto it.
+
+**What `opt-in` still does before a grant.** Both SDKs load their remote config
+and flags at start, a request that carries the project key and an in-memory
+anonymous id. Nothing is captured and nothing is stored.
+
+**A refusal is not stored.** Nothing is stored until a grant, so a revoke clears
+the stored choice with the rest: the status reads `denied` for the rest of the
+page load or launch, then `pending`, and a banner asks again. A project that
+wants to remember a refusal keeps it in its banner.
+
+#### The consent API
+
+`IConsentPort` (packages/core) has three async calls: `grant()`, `revoke()` and
+`getStatus()`, which returns a `ConsentStatusEnum` value: `granted`, `denied`,
+`pending` or `not-required`. Each app binds it to PostHog in
+`apps/{web,mobile}/src/lib/observability/consent.adapter.ts`, the consent
+composition root, and its observability barrel exports it as `consent`. Only
+`src/lib/posthog/` imports the SDK.
+
+| Call          | `opt-in`, web                                                       | `opt-in`, mobile                                                                   | `granted`, `memory`, no key, the web server |
+| ------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------- |
+| `grant()`     | `opt_in_capturing({ captureEventName: false })`: no `$opt_in` event | opens the consent storage, then `optIn()`                                          | nothing                                     |
+| `revoke()`    | `opt_out_capturing()`, then `reset({ resetDeviceID: true })`        | closes the consent storage, then `optOut()` and `reset([])`                        | nothing                                     |
+| `getStatus()` | `granted` after a grant, `denied` after a revoke, else `pending`    | `granted` while the storage holds a grant, `denied` after a revoke, else `pending` | `not-required`                              |
+
+A revoke also resets the identity, with a new device id, so a later grant
+starts a new person.
+
+**Where a banner plugs in.** No banner ships: it is product work. One is a
+`ui/` block for the look and a container that owns the calls (`AGENTS.md`, the
+LAWs), and it calls only this API, never PostHog:
+
+```ts
+import { ConsentStatusEnum } from '@app/core'
+
+import { consent } from '@/lib/observability'
+
+// Show the banner only while the user has not chosen.
+const isAsking = (await consent.getStatus()) === ConsentStatusEnum.PENDING
+// Accept: consent.grant(). Decline, or withdraw later: consent.revoke().
+```
+
+On web, read the status in the browser, after mount: on the server there is no
+client and it reads `not-required`.
+
 ### Content-Security-Policy
 
 `apps/web/next.config.ts` sends no `Content-Security-Policy` today, so nothing
@@ -194,6 +281,13 @@ from (`https://us-assets.i.posthog.com` for the US cloud) in `script-src`.
   Sentry selected, `onRequestError` in `instrumentation.ts` captures them.
 - **Delivery from a real build.** Every test replaces the SDK at its module, so
   it proves the payload the adapter hands over, not what PostHog receives.
+- **What the SDKs store under each consent mode.** The tests prove the options
+  each mode hands the SDK and the calls the consent API makes; that the SDK
+  then stores nothing is its documented behaviour, which no test runs. The
+  mobile consent storage is the exception: its test reads the device storage
+  it writes to, replaced by the in-memory storage of packages/core.
+- **Switching a running app to `opt-in`.** What `granted` stored before the
+  switch stays where the SDK keeps it until the SDK clears it.
 
 ### Env keys
 
@@ -202,12 +296,14 @@ with every event, and it can only write events. That is why it lives under
 `NEXT_PUBLIC_` / `EXPO_PUBLIC_`, which `AGENTS.md` keeps free of secrets. A
 PostHog **personal API key** is a secret and never belongs there.
 
-| Key                        | Public | Purpose                                                         |
-| -------------------------- | ------ | --------------------------------------------------------------- |
-| `NEXT_PUBLIC_POSTHOG_KEY`  | yes    | Web project key. Absent = no client, nothing sent.              |
-| `NEXT_PUBLIC_POSTHOG_HOST` | yes    | Web ingestion host. Absent = `https://us.i.posthog.com`.        |
-| `EXPO_PUBLIC_POSTHOG_KEY`  | yes    | Mobile project key. Absent = no client, nothing sent.           |
-| `EXPO_PUBLIC_POSTHOG_HOST` | yes    | Mobile ingestion host. Absent = `https://us.i.posthog.com`.     |
+| Key                           | Public | Purpose                                                        |
+| ----------------------------- | ------ | -------------------------------------------------------------- |
+| `NEXT_PUBLIC_POSTHOG_KEY`     | yes    | Web project key. Absent = no client, nothing sent.             |
+| `NEXT_PUBLIC_POSTHOG_HOST`    | yes    | Web ingestion host. Absent = `https://us.i.posthog.com`.       |
+| `EXPO_PUBLIC_POSTHOG_KEY`     | yes    | Mobile project key. Absent = no client, nothing sent.          |
+| `EXPO_PUBLIC_POSTHOG_HOST`    | yes    | Mobile ingestion host. Absent = `https://us.i.posthog.com`.    |
+| `NEXT_PUBLIC_POSTHOG_CONSENT` | yes    | Web consent mode: `granted` (absent), `opt-in` or `memory`.    |
+| `EXPO_PUBLIC_POSTHOG_CONSENT` | yes    | Mobile consent mode: `granted` (absent), `opt-in` or `memory`. |
 
 An EU project sets the host to `https://eu.i.posthog.com`; `us.posthog.com` is
 the PostHog app and accepts no events.
@@ -358,8 +454,8 @@ repository keeps every file below; copy them from it rather than retyping.
 
 ## Graceful degradation
 
-With no PostHog key, both PostHog clients stay unbuilt and every port call is
-a no-op. With no Sentry DSN, the Sentry adapters and the `sentry.*.config`
+With no PostHog key, both PostHog clients stay unbuilt, every port call is a
+no-op and the consent API reads `not-required`. With no Sentry DSN, the Sentry adapters and the `sentry.*.config`
 files no-op (`enabled: !!dsn`) and source-map upload is disabled (no
 `SENTRY_AUTH_TOKEN`). `pnpm validate` and `pnpm build` stay green with no real
 credentials. This is intentional for local dev and CI.
