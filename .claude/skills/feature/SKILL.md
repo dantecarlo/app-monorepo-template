@@ -222,10 +222,10 @@ them all; `pnpm validate` runs a test that walks every factory of `QueryKeys`.
 ```typescript
 'use client' // web only
 
-import { useQueryClient } from '@tanstack/react-query'
 import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook' // the same in both apps
 import { useAppMutation } from '@/lib/query/useAppMutation.hook'
 import { useAppQuery } from '@/lib/query/useAppQuery.hook'
+import { useInvalidateAppQuery } from '@/lib/query/useInvalidateAppQuery.hook'
 import { QueryKeys } from '@/lib/query/queryKeys.constant'
 import {
   adapt{Domain}s,
@@ -249,7 +249,7 @@ export const use{Name} = ({ contextId }: IUse{Name}) => {
     }
   })
 
-  const queryClient = useQueryClient()
+  const invalidate = useInvalidateAppQuery()
   const { t } = useAppTranslator()
   const mutation = useAppMutation<I{Domain}ViewModel, ICreate{Domain}Payload>({
     mutationOptions: {
@@ -258,9 +258,7 @@ export const use{Name} = ({ contextId }: IUse{Name}) => {
         return adapt{Domain}(dto)
       },
       onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: QueryKeys.{featureName}.all
-        })
+        void invalidate({ queryKey: QueryKeys.{featureName}.all })
       }
     },
     // A failure's toast is its AppError's messageKey (code-standards § 19), and
