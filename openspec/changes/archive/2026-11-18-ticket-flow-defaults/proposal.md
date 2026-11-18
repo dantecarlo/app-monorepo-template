@@ -1,6 +1,6 @@
 # Proposal: the ticket flow's defaults from adoption: the architect's merge queue, a target version on every ticket, the production branch the layer names
 
-> **Status:** open
+> **Status:** archived — 2026-11-18
 
 ## Why
 
