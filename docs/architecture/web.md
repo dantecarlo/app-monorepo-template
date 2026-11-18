@@ -24,7 +24,7 @@ apps/web/
     ├── app/                       # Next App Router — ROUTING ONLY (RSC)
     │   ├── layout.tsx             # root layout: fonts, theme script, ThemeProvider, providers
     │   ├── fonts/                 # Inter and Montserrat woff2 + their OFL texts (next/font/local)
-    │   ├── providers.tsx · SupabaseProviders.tsx   # NextIntl, QueryClient, AuthProvider, Toast
+    │   ├── providers.tsx · SupabaseProviders.tsx   # AppI18nProvider, AppQueryProvider, AuthProvider, Toast
     │   ├── error.tsx              # root segment boundary: render crash → ErrorState + retry, reported once
     │   ├── global-error.tsx       # root layout crash: own html/body → ErrorState + retry, reported once
     │   ├── globals.css            # Tailwind CSS 4 entry: imports the generated @app/tokens/theme.css
@@ -41,7 +41,9 @@ apps/web/
     │                              # (Items, ItemsSummary, Auth: sign-in through IAuthGateway)
     ├── lib/                       # bot-protection, i18n (the translator over next-intl),
     │                              # image-delivery, observability, origin-guard,
-    │                              # posthog (the one PostHog client), query, supabase, theme
+    │                              # posthog (the one PostHog client), query (the query API over
+    │                              # TanStack Query), store (createAppStore, the one zustand
+    │                              # import), supabase, theme
     └── stores/  helpers/ (layout.style.ts: positioning only)  validation/  i18n/  test/
 ```
 
@@ -87,6 +89,12 @@ export default LoginPage
   `INVALID_CREDENTIALS`, `EMAIL_NOT_CONFIRMED` and `RATE_LIMITED` from the Supabase Auth code),
   and an unreachable Supabase as the network error, so the toast says what went wrong; any other
   rejection stays generic.
+- **Queries and stores behind their seams**: a hook queries through `useAppQuery` and
+  `useAppMutation` of `src/lib/query/`, which take and return the app's own types, invalidates
+  with `useInvalidateAppQuery`, and the providers render `AppQueryProvider`; only `src/lib/query/`
+  imports TanStack Query. Every store under `src/stores/` is created through `createAppStore` of
+  `src/lib/store/createAppStore.helper.ts`, the one file that imports zustand. A test that runs
+  queries renders through `createQueryWrapper` of `src/test/query.helper.tsx`.
 - **Query keys**: `src/lib/query/queryKeys.constant.ts` builds every key from
   `QueryKeySegmentEnum` and puts its dynamic values in one trailing params object
   (`['items', 'list', { limit, search }]`), which the error report always redacts. A key holds

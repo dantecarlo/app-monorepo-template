@@ -1,6 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ChangeEvent, FormEvent } from 'react'
-import React from 'react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const { mockSignIn } = vi.hoisted(() => ({ mockSignIn: vi.fn() }))
@@ -26,24 +24,14 @@ import {
   LOGIN_ERROR_KEY,
   LOGIN_MIN_PASSWORD_LENGTH
 } from '@/screens/Login/Login.constant'
+import { createQueryWrapper } from '@/test/query.helper'
 import { act, renderHook, waitFor } from '@/test/test.helper'
 
 const VALID_EMAIL = 'user@example.com'
 const VALID_PASSWORD = 'a'.repeat(LOGIN_MIN_PASSWORD_LENGTH)
 
-const makeWrapper = () => {
-  const queryClient = new QueryClient()
-  const Wrapper = ({ children }: { children: React.ReactNode }) =>
-    React.createElement(
-      QueryClientProvider,
-      { client: queryClient },
-      children
-    )
-  return Wrapper
-}
-
 const renderForm = () =>
-  renderHook(() => useLoginForm(), { wrapper: makeWrapper() })
+  renderHook(() => useLoginForm(), { wrapper: createQueryWrapper() })
 
 const changeEvent = (value: string) =>
   ({ target: { value } }) as ChangeEvent<HTMLInputElement>

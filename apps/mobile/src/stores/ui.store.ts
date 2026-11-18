@@ -1,7 +1,6 @@
 // Mobile-adapted ui.store — tracks the active bottom-nav tab and drawer state.
-// Zustand is framework-agnostic; this works unchanged in React Native.
 
-import { create } from 'zustand'
+import { createAppStore } from '@/lib/store/createAppStore.helper'
 
 export type NavTabType = 'home' | 'items' | 'search' | 'profile'
 
@@ -19,19 +18,21 @@ export const selectDrawerOpen = (s: IUiState): boolean => s.drawerOpen
 export const selectSetActiveTab = (s: IUiState) => s.setActiveTab
 export const selectToggleDrawer = (s: IUiState) => s.toggleDrawer
 
-export const useUiStore = create<IUiState>((set) => ({
-  activeTab: 'home',
-  closeDrawer() {
-    set({ drawerOpen: false })
-  },
-  drawerOpen: false,
-  openDrawer() {
-    set({ drawerOpen: true })
-  },
-  setActiveTab(tab) {
-    set({ activeTab: tab })
-  },
-  toggleDrawer() {
-    set((s) => ({ drawerOpen: !s.drawerOpen }))
-  }
-}))
+export const useUiStore = createAppStore<IUiState>({
+  initializer: ({ set }) => ({
+    activeTab: 'home',
+    closeDrawer() {
+      set({ drawerOpen: false })
+    },
+    drawerOpen: false,
+    openDrawer() {
+      set({ drawerOpen: true })
+    },
+    setActiveTab(tab) {
+      set({ activeTab: tab })
+    },
+    toggleDrawer() {
+      set((s) => ({ drawerOpen: !s.drawerOpen }))
+    }
+  })
+})

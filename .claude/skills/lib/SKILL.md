@@ -62,6 +62,27 @@ that must name it (the request config, which next-intl loads by path, and `next.
 which loads its plugin); the i18next family, `apps/mobile/src/lib/i18n/**`. Swapping either
 runtime rewrites that folder and nothing else.
 
+### Example: the query and store seams
+
+A wrapper declares its own types instead of passing the vendor's through. `useAppQuery` and
+`useAppMutation` of `src/lib/query/` take `IAppQueryOptions` and `IAppMutationOptions` and return
+`IAppQueryResult` and `IAppMutationResult`, only the fields a caller reads, and the mutation
+callbacks receive one object; `AppQueryProvider` gives a tree its client and
+`useInvalidateAppQuery` invalidates a `QueryKeys` prefix. Every store is
+`createAppStore({ initializer: ({ get, set }) => …, persist? })` of
+`src/lib/store/createAppStore.helper.ts`, the registry's whole zustand seam, with its selector
+hook, `getState`, `setState`, `getInitialState` and `useShallow`. A test reaches the query seam
+through `createQueryWrapper` of `src/test/query.helper.tsx`:
+
+```typescript
+import { useAppQuery } from '@/lib/query/useAppQuery.hook'
+import { createAppStore } from '@/lib/store/createAppStore.helper'
+
+const { data, isError, refetch } = useAppQuery<IItemViewModel[]>({
+  queryOptions: { queryFn: loadItems, queryKey: QueryKeys.items.all }
+})
+```
+
 ---
 
 ## Do You Need a New Lib?

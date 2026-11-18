@@ -3,7 +3,7 @@
 > **Governs:** `apps/mobile/src`, `apps/mobile/app.json`
 > **ID prefix:** `MOBILE`
 > **Derived from:** `docs/architecture/mobile.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/observability.md`, `docs/e2e.md`, `docs/responsive.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-18 at `68ed6e3`
+> **Verified against the code:** 2026-11-18 at `953fe86`
 
 ## Purpose
 
@@ -11,9 +11,10 @@ The mobile app is the Expo Router client of the template. It owns two routes wit
 items dashboard, backed by a sample service, and a sign-in form that validates its fields but
 signs no one in. It also owns the theme and language controls and their persistence, the
 light and dark themes painted from the root, the translator its blocks read their copy
-through, over react-i18next behind its lib/i18n, a query layer that shows a failed query on its
-screen, toasts a failed mutation and captures both through the observability port, and the
-environment wiring of Supabase, of PostHog, the default observability provider, with its
+through, over react-i18next behind its lib/i18n, the stores, created through its lib/store over
+zustand, a query layer of its own types over TanStack Query behind its lib/query that shows a
+failed query on its screen, toasts a failed mutation and captures both through the
+observability port, and the environment wiring of Supabase, of PostHog, the default observability provider, with its
 consent mode and the consent API, and of the optional Sentry, and the device's key-value
 storage. It leaves the error, PII-scrubbing, query-key, auth-gateway, consent and key-value
 storage contracts to packages/core, the catalogs and language constants to packages/i18n, the
@@ -73,38 +74,41 @@ Montserrat fonts have loaded or failed to load.
 
 ### Requirement: MOBILE-03 — Initial theme from storage, then the device
 
-The mobile app SHALL start in the theme stored under the app.theme key, else in the device
-appearance when it is light or dark, else in the dark default of packages/tokens.
+The mobile app SHALL start in the theme stored under the app.theme key of the device storage,
+read through `keyValueStorage` (MOBILE-56), else in the device appearance when it is light or
+dark, else in the dark default of packages/tokens.
 
-**Evidence:** `apps/mobile/src/lib/theme/theme.config.ts:8-13`, `apps/mobile/src/lib/theme/theme.config.ts:25-42`
+**Evidence:** `apps/mobile/src/lib/theme/theme.config.ts:9-14`, `apps/mobile/src/lib/theme/theme.config.ts:26-46`
 
 #### Scenario: a stored theme wins
 
 - **GIVEN** the user chose light in an earlier session
 - **WHEN** the app launches on a device set to dark
 - **THEN** the app applies the light theme
-- **Test:** Not covered — no test imports `apps/mobile/src/lib/theme/theme.config.ts`; the suite aliases AsyncStorage and nativewind to mocks (`apps/mobile/vitest.config.ts`)
+- **Test:** `apps/mobile/src/lib/theme/__tests__/theme.config.test.ts` › "starts in the theme the device storage holds"
 
 #### Scenario: no stored theme and no device preference
 
 - **GIVEN** nothing is stored and the device reports no color scheme
 - **WHEN** the app launches
 - **THEN** the app applies the dark theme
-- **Test:** Not covered — no test calls getSafeTheme or the theme bootstrap
+- **Test:** `apps/mobile/src/lib/theme/__tests__/theme.config.test.ts` › "starts in the dark default when nothing is stored and the device has no appearance"
 
 ### Requirement: MOBILE-04 — Theme toggle persists the choice
 
 The mobile app SHALL show the theme switch on while the light theme is active, and on a flip
-store the matching theme under the app.theme key and apply it to the NativeWind color scheme.
+store the matching theme under the app.theme key, through `keyValueStorage` (MOBILE-56), and
+apply it to the NativeWind color scheme.
 
-**Evidence:** `apps/mobile/src/components/ui/ThemeToggle/useThemeToggle.hook.ts:14-18`, `apps/mobile/src/lib/theme/theme.config.ts:20-23`
+**Evidence:** `apps/mobile/src/components/ui/ThemeToggle/useThemeToggle.hook.ts:14-18`, `apps/mobile/src/lib/theme/theme.config.ts:21-24`
 
 #### Scenario: switching to light
 
 - **GIVEN** the dark theme is active and the switch is off
 - **WHEN** the user turns the switch on
 - **THEN** light is stored and applied, and every theme-token consumer re-renders in light
-- **Test:** Not covered — no test calls useThemeToggle or setTheme
+- **Test:** Not covered — no test calls useThemeToggle; `setTheme`, which the switch calls, is
+  tested alone in MOBILE-56
 
 ### Requirement: MOBILE-05 — The root frame follows the theme
 
@@ -131,11 +135,11 @@ NativeWind's `vars()`.
 
 ### Requirement: MOBILE-06 — Initial language from storage, then the device
 
-The mobile app SHALL start in the language stored under the app.language key when packages/i18n
-supports it, else in the device locale reduced to its language code when supported, else in the
-default language.
+The mobile app SHALL start in the language stored under the app.language key of the device
+storage, read through `keyValueStorage` (MOBILE-56), when packages/i18n supports it, else in the
+device locale reduced to its language code when supported, else in the default language.
 
-**Evidence:** `apps/mobile/src/lib/i18n/i18n.config.ts:18-26`, `apps/mobile/src/lib/i18n/i18n.config.ts:35-64`
+**Evidence:** `apps/mobile/src/lib/i18n/i18n.config.ts:19-27`, `apps/mobile/src/lib/i18n/i18n.config.ts:36-67`
 
 #### Scenario: a regional tag maps to its language
 
@@ -163,22 +167,23 @@ default language.
 - **GIVEN** the user picked a supported language in an earlier session
 - **WHEN** the app launches on a device in the other language
 - **THEN** i18next starts in the stored language
-- **Test:** Not covered — no test runs the language bootstrap; the suite mocks AsyncStorage, expo-localization and i18next
+- **Test:** `apps/mobile/src/lib/i18n/__tests__/i18n.config.test.ts` › "starts i18next in the language the device storage holds"
 
 ### Requirement: MOBILE-07 — Language switcher cycles and persists
 
 The mobile app SHALL show the active language code on the language switcher and, on each press,
 move to the next language of packages/i18n in order, wrapping to the first, storing it under the
-app.language key before switching i18next.
+app.language key, through `keyValueStorage` (MOBILE-56), before switching i18next.
 
-**Evidence:** `apps/mobile/src/components/ui/LanguageSwitcher/useLanguageSwitcher.hook.ts:12-28`, `apps/mobile/src/lib/i18n/i18n.config.ts:28-33`
+**Evidence:** `apps/mobile/src/components/ui/LanguageSwitcher/useLanguageSwitcher.hook.ts:12-28`, `apps/mobile/src/lib/i18n/i18n.config.ts:29-34`
 
 #### Scenario: pressing on the last language
 
 - **GIVEN** the active language is the last supported one
 - **WHEN** the user presses the language switcher
 - **THEN** the first supported language is stored and applied, and the switcher shows its code
-- **Test:** Not covered — no test calls useLanguageSwitcher or setLanguage
+- **Test:** Not covered — no test calls useLanguageSwitcher; `setLanguage`, which the switcher
+  calls, is tested alone in MOBILE-56
 
 ### Requirement: MOBILE-08 — Plural rules polyfilled for Hermes
 
@@ -201,7 +206,7 @@ The mobile app SHALL load the dashboard items through useAppQuery under the item
 limit, 50 by default, so two limits never share a cache entry, fetching at most that many items
 from the items service and adapting them to view models.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:41-60`, `apps/mobile/src/lib/query/queryKeys.constant.ts:36-41`, `apps/mobile/src/lib/query/queryKeys.type.ts:3-6`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:41-60`, `apps/mobile/src/lib/query/queryKeys.constant.ts:36-41`, `apps/mobile/src/lib/query/queryKeys.type.ts:9-12`
 
 #### Scenario: the user types a search term
 
@@ -410,7 +415,7 @@ components observe it; the dashboard SHALL show the error state with its generic
 items list, in place of the items and the empty state, with a retry control that runs the items
 query again, and no result count in the list caption.
 
-**Evidence:** `apps/mobile/src/lib/query/useAppQuery.hook.ts:19`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:49`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:77-79`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:32-40`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:56-57`
+**Evidence:** `apps/mobile/src/lib/query/useAppQuery.hook.ts:34`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:49`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:77-79`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:32-40`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:56-57`
 
 #### Scenario: a failing query
 
@@ -482,7 +487,7 @@ The mobile app SHALL add an error toast with the resolved message when a mutatio
 useAppMutation fails, and a success toast when it succeeds with a success message given, then
 run the caller's own callback.
 
-**Evidence:** `apps/mobile/src/lib/query/useAppMutation.hook.ts:25-43`
+**Evidence:** `apps/mobile/src/lib/query/useAppMutation.hook.ts:45-75`
 
 #### Scenario: a failing mutation
 
@@ -510,7 +515,7 @@ run the caller's own callback.
 The mobile app SHALL drop each toast from the toast store 4 seconds after it is added, or
 earlier when it is removed by its id.
 
-**Evidence:** `apps/mobile/src/stores/toast.store.ts:26-42`
+**Evidence:** `apps/mobile/src/stores/toast.store.ts:27-45`
 
 #### Scenario: no one dismisses the toast
 
@@ -531,7 +536,7 @@ earlier when it is removed by its id.
 The mobile app SHALL treat query data as fresh for 30 seconds, retry a failed query once and
 never retry a failed mutation.
 
-**Evidence:** `apps/mobile/src/lib/query/createQueryClient.helper.ts:10`, `apps/mobile/src/lib/query/createQueryClient.helper.ts:22-26`
+**Evidence:** `apps/mobile/src/lib/query/createQueryClient.helper.ts:11`, `apps/mobile/src/lib/query/createQueryClient.helper.ts:23-27`
 
 #### Scenario: the stale time
 
@@ -561,7 +566,7 @@ against the values of `QueryKeySegmentEnum`, so the trailing params object of a 
 is always redacted, and every failed mutation to the observability port's captureError, tagged
 with the cache it came from.
 
-**Evidence:** `apps/mobile/src/lib/query/createQueryClient.helper.ts:35`, `apps/mobile/src/lib/query/queryKeys.constant.ts:29-41`, `apps/mobile/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/mobile/src/app/_layout.tsx:39`
+**Evidence:** `apps/mobile/src/lib/query/createQueryClient.helper.ts:36`, `apps/mobile/src/lib/query/queryKeys.constant.ts:29-41`, `apps/mobile/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/mobile/src/app/_layout.tsx:39`
 
 #### Scenario: a query key holding an identifier
 
@@ -1027,7 +1032,7 @@ when the key carries a dynamic value, by one trailing params object that holds e
 so that no string segment of a key is a value the user typed or the data supplied, and a
 feature's `all` key is a prefix of each of its keys.
 
-**Evidence:** `apps/mobile/src/lib/query/queryKeys.constant.ts:17`, `apps/mobile/src/lib/query/queryKeys.constant.ts:28`, `apps/mobile/src/lib/query/queryKeys.constant.ts:29-34`, `apps/mobile/src/lib/query/queryKeys.constant.ts:36-41`, `apps/mobile/src/lib/query/queryKeys.type.ts:3-6`
+**Evidence:** `apps/mobile/src/lib/query/queryKeys.constant.ts:17`, `apps/mobile/src/lib/query/queryKeys.constant.ts:28`, `apps/mobile/src/lib/query/queryKeys.constant.ts:29-34`, `apps/mobile/src/lib/query/queryKeys.constant.ts:36-41`, `apps/mobile/src/lib/query/queryKeys.type.ts:9-12`
 
 #### Scenario: every factory is walked
 
@@ -1057,7 +1062,7 @@ The mobile app SHALL return, from `useSession`, the same object on every read wh
 and the auth status of the auth store are unchanged, and a new object holding them after either
 changes.
 
-**Evidence:** `apps/mobile/src/hooks/useSession.hook.ts:7-10`
+**Evidence:** `apps/mobile/src/hooks/useSession.hook.ts:5-9`
 
 #### Scenario: a component re-renders
 
@@ -1481,11 +1486,12 @@ and `memory` mode and without a key, `getStatus` SHALL read `not-required`, and 
 ### Requirement: MOBILE-56 — The device keeps key-value data through one adapter
 
 The mobile app SHALL implement the `IKeyValueStoragePort` of packages/core over AsyncStorage in
-`keyValueStorage`, exported from `src/lib/storage/`, and SHALL import AsyncStorage only there,
-the seam the dependency registry names for it, apart from the theme and language configs its
-allowlist still freezes until F.8 unit 4.
+`keyValueStorage`, exported from `src/lib/storage/`, SHALL keep every value it holds on the
+device through it, the theme choice under app.theme and the language choice under app.language
+included, and SHALL import AsyncStorage only there, the seam the dependency registry names for
+it.
 
-**Evidence:** `apps/mobile/src/lib/storage/keyValueStorage.adapter.ts:13-22`, `apps/mobile/src/lib/storage/index.ts:1`, `.agents/contracts/dependencies.json:117-120`
+**Evidence:** `apps/mobile/src/lib/storage/keyValueStorage.adapter.ts:13-22`, `apps/mobile/src/lib/storage/index.ts:1`, `apps/mobile/src/lib/theme/theme.config.ts:22`, `apps/mobile/src/lib/i18n/i18n.config.ts:32`, `.agents/contracts/dependencies.json:118-121`
 
 #### Scenario: a value on the device
 
@@ -1502,12 +1508,25 @@ allowlist still freezes until F.8 unit 4.
 - **THEN** it reads `null`
 - **Test:** `apps/mobile/src/lib/storage/__tests__/keyValueStorage.adapter.test.ts` › "reads null for a key the device storage does not hold"
 
+#### Scenario: the theme choice
+
+- **GIVEN** `keyValueStorage` replaced by an in-memory storage
+- **WHEN** a theme is chosen through `setTheme`
+- **THEN** the storage holds it under app.theme, and NativeWind's color scheme is that theme
+- **Test:** `apps/mobile/src/lib/theme/__tests__/theme.config.test.ts` › "stores a chosen theme in the device storage and applies it"
+
+#### Scenario: the language choice
+
+- **GIVEN** `keyValueStorage` replaced by an in-memory storage
+- **WHEN** a language is chosen through `setLanguage`
+- **THEN** the storage holds it under app.language, and i18next switches to it
+- **Test:** `apps/mobile/src/lib/i18n/__tests__/i18n.config.test.ts` › "stores a chosen language in the device storage and switches i18next to it"
+
 #### Scenario: the seam
 
 - **GIVEN** every file under `apps/` and `packages/`
 - **WHEN** the dependency seams are checked
-- **THEN** only `keyValueStorage.adapter.ts`, its test and the frozen theme and language configs
-  import AsyncStorage
+- **THEN** only `keyValueStorage.adapter.ts` and its test import AsyncStorage
 - **Test:** Not covered — `pnpm verify:dependency-seams` and the `local/dependency-seam` lint rule hold it, a gate and a rule rather than a test
 
 ### Requirement: MOBILE-57 — A block translates through the app's translator
@@ -1601,6 +1620,228 @@ hold none of them for a later client.
 - **THEN** a client is constructed, and none of its capture calls, its identify or its reset
   receives anything
 - **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "drops every call in opt-in mode before a grant"
+
+### Requirement: MOBILE-61 — The query hooks take and return the app's own types
+
+The mobile app SHALL give every query and mutation one API of its own in
+`apps/mobile/src/lib/query/`, the same as the web app's (apps/web WEB-63): `useAppQuery` takes
+`IAppQueryOptions`, a `queryKey`, a `queryFn`, an optional `adapter` and the optional `enabled`,
+`staleTime`, `retry`, `networkMode` (`online`, `always` or `offlineFirst`) and `keepPreviousData`,
+each forwarded to the query, and returns `IAppQueryResult`, only `data`, `error`, `isError`,
+`isLoading`, `isSuccess` and `refetch`; `useAppMutation` takes `IAppMutationOptions`, a `mutationFn`
+and the optional `mutationKey`, `gcTime` and `onMutate`, `onSuccess`, `onError` and `onSettled`
+callbacks, each called with one object holding the variables and the data or the error, and returns
+`IAppMutationResult`, only `data`, `error`, `isError`, `isPending`, `isSuccess`, `mutate` and
+`reset`. An option left out SHALL keep the query client's default, each hook SHALL return the same
+result object while none of its fields changed, and no type of TanStack Query is part of either.
+
+**Evidence:** `apps/mobile/src/lib/query/useAppQuery.type.ts:8-26`, `apps/mobile/src/lib/query/useAppQuery.type.ts:38-47`, `apps/mobile/src/lib/query/useAppQuery.hook.ts:24-54`, `apps/mobile/src/lib/query/omitUndefined.helper.ts:6-11`, `apps/mobile/src/lib/query/useAppMutation.type.ts:32-48`, `apps/mobile/src/lib/query/useAppMutation.type.ts:67-77`, `apps/mobile/src/lib/query/useAppMutation.hook.ts:35-80`
+
+#### Scenario: a query's result
+
+- **GIVEN** a query that resolves
+- **WHEN** `useAppQuery` settles
+- **THEN** its result holds exactly the fields of `IAppQueryResult`, the data among them
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "returns only the fields of the app's own query result"
+
+#### Scenario: a held query
+
+- **GIVEN** a query with `enabled: false`
+- **WHEN** it mounts and every pending timer runs
+- **THEN** its `queryFn` never runs, and it holds no data and is not loading
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "never runs the queryFn while enabled is false"
+
+#### Scenario: a retried query
+
+- **GIVEN** a query with `retry: 1`, on a client that retries none, whose `queryFn` fails once
+- **WHEN** it settles
+- **THEN** it ran twice and holds the second run's data
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "retries a failed queryFn as many times as retry says"
+
+#### Scenario: the previous data while a new key loads
+
+- **GIVEN** a query with `keepPreviousData` that loaded one key
+- **WHEN** it moves to a key whose `queryFn` has not resolved
+- **THEN** it still holds the first key's data and is not loading
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "keeps the previous key's data while the next key loads, with keepPreviousData"
+
+#### Scenario: the freshness and the network mode
+
+- **GIVEN** a query with a `staleTime` of a minute and `networkMode: 'always'`
+- **WHEN** it settles
+- **THEN** the cached query holds both options and is still fresh
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "hands staleTime and networkMode to the query"
+
+#### Scenario: an option left out
+
+- **GIVEN** a query that passes none of the optional options, on the app's query client
+- **WHEN** it settles
+- **THEN** the cached query holds every default of that client
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "keeps the client's defaults for every option it leaves out"
+
+#### Scenario: a stable query result
+
+- **GIVEN** a settled query
+- **WHEN** its component renders again with nothing changed
+- **THEN** it reads the same result object
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "keeps the same result object across a rerender while its fields are unchanged"
+
+#### Scenario: a mutation's result
+
+- **GIVEN** a mutation that resolves
+- **WHEN** `useAppMutation` settles
+- **THEN** its result holds exactly the fields of `IAppMutationResult`, the data among them
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "returns only the fields of the app's own mutation result"
+
+#### Scenario: the caller's callbacks
+
+- **GIVEN** a mutation with an `onSuccess` and an `onError` callback, run once to success and
+  once to failure
+- **WHEN** each run settles
+- **THEN** `onSuccess` receives one object with the data and the variables, and `onError` one
+  object with the error and the variables
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "hands the caller's callbacks one object with the outcome and the variables"
+
+#### Scenario: before the mutation and once it settles
+
+- **GIVEN** a mutation with an `onMutate` and an `onSettled` callback, run once to success and
+  once to failure
+- **WHEN** each run settles
+- **THEN** `onMutate` received the variables before `mutationFn` ran, and `onSettled` the data,
+  the error and the variables of each run
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "runs the caller's onMutate with the variables first, and onSettled with the outcome"
+
+#### Scenario: the mutation key
+
+- **GIVEN** a mutation with a `mutationKey`
+- **WHEN** it runs
+- **THEN** the mutation cache holds it under that key
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "caches the mutation under its mutationKey"
+
+#### Scenario: the callbacks of one call
+
+- **GIVEN** a mutation run with an `onSettled` for that call
+- **WHEN** the call settles
+- **THEN** that `onSettled` runs once
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "runs the onSettled of one mutate call once that call settles"
+
+#### Scenario: a reset
+
+- **GIVEN** a mutation that succeeded
+- **WHEN** `reset` is called
+- **THEN** it holds no data and is neither a success nor an error
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "reset clears the outcome of the last run"
+
+#### Scenario: a stable mutation result
+
+- **GIVEN** a mutation
+- **WHEN** its component renders again with nothing changed
+- **THEN** it reads the same result object
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "keeps the same result object across a rerender while its fields are unchanged"
+
+### Requirement: MOBILE-62 — The app provides its query client, invalidates by key prefix and tells a keyed mutation runs
+
+The mobile app SHALL give a tree the query client `createQueryClient` builds through
+`AppQueryProvider` of `apps/mobile/src/lib/query/`, SHALL give every hook `useInvalidateAppQuery`,
+whose function marks every query whose key starts with the `queryKey` it is handed stale, and no
+other, and runs the observed ones again, and SHALL give every hook `useIsAppMutating`, true while a
+mutation whose `mutationKey` equals the one it is handed runs, and false for a mutation under a
+longer key and once that mutation settled.
+
+**Evidence:** `apps/mobile/src/lib/query/AppQueryProvider.component.tsx:10-15`, `apps/mobile/src/lib/query/useInvalidateAppQuery.hook.ts:11-18`, `apps/mobile/src/lib/query/useIsAppMutating.hook.ts:9-12`, `apps/mobile/src/lib/query/createQueryClient.helper.ts:22`, `apps/mobile/src/app/_layout.tsx:68-82`
+
+#### Scenario: the provider
+
+- **GIVEN** `AppQueryProvider` handed a query client
+- **WHEN** a hook inside it runs a query through `useAppQuery`
+- **THEN** the query's data is cached in that client
+- **Test:** `apps/mobile/src/lib/query/__tests__/AppQueryProvider.component.test.tsx` › "gives its tree the query client it is handed"
+
+#### Scenario: a prefix is invalidated
+
+- **GIVEN** a cached items list, a cached item detail and a query of another key
+- **WHEN** the function of `useInvalidateAppQuery` is called with `QueryKeys.items.all`
+- **THEN** both items queries are stale and the other is not
+- **Test:** `apps/mobile/src/lib/query/__tests__/useInvalidateAppQuery.hook.test.ts` › "marks every query under a key prefix stale and no other"
+
+#### Scenario: an observed query is invalidated
+
+- **GIVEN** a component observing the items list
+- **WHEN** the items prefix is invalidated
+- **THEN** the list's query runs again and the component reads its new data
+- **Test:** `apps/mobile/src/lib/query/__tests__/useInvalidateAppQuery.hook.test.ts` › "runs an observed query under the prefix again"
+
+#### Scenario: a running keyed mutation
+
+- **GIVEN** a mutation under the key `['items', 'save']` whose `mutationFn` has not resolved
+- **WHEN** `useIsAppMutating` reads that key and its prefix `['items']`, and then the mutation
+  resolves
+- **THEN** it is true for the exact key and false for the prefix while it runs, and false for
+  the key once it settled
+- **Test:** `apps/mobile/src/lib/query/__tests__/useIsAppMutating.hook.test.ts` › "is true while a mutation of exactly that key runs, and false once it settles"
+
+### Requirement: MOBILE-63 — Every store is created through createAppStore
+
+The mobile app SHALL create every store under `apps/mobile/src/stores/` through `createAppStore`
+of `apps/mobile/src/lib/store/createAppStore.helper.ts`, the same factory as the web app's
+(apps/web WEB-65): its initializer receives `{ get, set }`, and its store is a hook that returns
+the value its selector reads and renders again when that value changes, with `getState`,
+`setState` and `getInitialState`, and a `useShallow` that returns the same object for a selection
+while each of its fields is unchanged; a store created with `persist` SHALL keep the fields its
+`partialize` names through the key-value storage port, `keyValueStorage` of `src/lib/storage/`,
+under its `name`, and a store created later with that name SHALL start with them.
+
+**Evidence:** `apps/mobile/src/lib/store/createAppStore.helper.ts:13-19`, `apps/mobile/src/lib/store/createAppStore.helper.ts:27-57`, `apps/mobile/src/lib/store/createAppStore.type.ts:33-45`, `apps/mobile/src/hooks/useSession.hook.ts:5-9`
+
+#### Scenario: a selector's reader
+
+- **GIVEN** a component reading one value of a store through a selector
+- **WHEN** an action of the store changes that value
+- **THEN** the component reads the new value
+- **Test:** `apps/mobile/src/lib/store/__tests__/createAppStore.helper.test.ts` › "re-renders a selector's reader when its value changes"
+
+#### Scenario: a shallow selection
+
+- **GIVEN** a component reading an object of two fields through `useShallow`
+- **WHEN** it renders again, and then another field of the store changes
+- **THEN** it reads the same object each time, and a new one once a selected field changes
+- **Test:** `apps/mobile/src/lib/store/__tests__/createAppStore.helper.test.ts` › "keeps the same object for a shallow selection while its fields are unchanged"
+
+#### Scenario: the state outside React
+
+- **GIVEN** a store whose action reads the state through `get`
+- **WHEN** `setState` changes a field and the action runs
+- **THEN** `getState` reads both changes, and `getInitialState` still reads the initial state
+- **Test:** `apps/mobile/src/lib/store/__tests__/createAppStore.helper.test.ts` › "reads and updates the state outside React"
+
+#### Scenario: a persisted store
+
+- **GIVEN** a store created with `persist`, a name and a `partialize` that keeps one field, over
+  an in-memory device storage
+- **WHEN** both fields change, and a store is created again with that name
+- **THEN** the device storage holds only the kept field under the name, and the new store starts
+  with it
+- **Test:** `apps/mobile/src/lib/store/__tests__/createAppStore.helper.test.ts` › "keeps the fields partialize names in the device storage, and starts from them"
+
+### Requirement: MOBILE-64 — Only lib/query imports TanStack Query, and only createAppStore zustand
+
+The mobile app SHALL import `@tanstack/react-query` only in `apps/mobile/src/lib/query/**` and
+zustand only in `apps/mobile/src/lib/store/createAppStore.helper.ts`; every other file, the root
+layout, the hooks, the stores and their tests included, reaches them through `@/lib/query/…` and
+`createAppStore`, and a test of any other unit renders through `createQueryWrapper` of
+`apps/mobile/src/test/query.helper.tsx` or mocks the project module.
+
+**Evidence:** `.agents/contracts/dependencies.json:101-105`, `.agents/contracts/dependencies.json:107-110`
+
+#### Scenario: a file outside the seams imports either library
+
+- **GIVEN** the root layout, a hook, a store, a screen or a test outside those files that imports
+  or mocks `@tanstack/react-query` or zustand
+- **WHEN** ESLint and `pnpm verify:dependency-seams` run
+- **THEN** the import is reported as outside its seam, and no allowlist entry excuses it
+- **Test:** Not covered — no test of this app reads its imports; `local/dependency-seam` refuses
+  such an import (harness/dependency-seams SEAM-03) and `pnpm verify:dependency-seams` fails an
+  allowlist entry or a violation for it (SEAM-07), both inside `pnpm validate`
 
 ### Requirement: MOBILE-70 — The async boundary takes a fallback typed by its own props
 

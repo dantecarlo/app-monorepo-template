@@ -38,8 +38,9 @@ apps/
 │   ├── hooks/           # Shared cross-screen hooks
 │   ├── services/        # Data layer — grouped per domain (see §6)
 │   │   └── <Domain>/    # PascalCase: Items/, AuthProvider/, etc.
-│   ├── stores/          # Zustand slices (one file per slice)
-│   ├── lib/             # Third-party wrappers (query, supabase, msw, …)
+│   ├── stores/          # State slices through createAppStore (one file per slice)
+│   ├── lib/             # Third-party wrappers (query, store, supabase, …), each the one
+│   │                    # importer of its library (docs/code-standards.md §23)
 │   ├── helpers/         # Pure utility functions
 │   └── test/            # Test helper, MSW setup, mock data
 │
@@ -70,8 +71,8 @@ exist, naming and structure are mandatory.
 | Layer           | Contents                                              | Rule                                              |
 | --------------- | ----------------------------------------------------- | ------------------------------------------------- |
 | Domain / Core   | Ports (IAuthGateway, IBackendClientProvider), AppError, scrubPII | No framework or vendor imports. Lives in `@app/core`. |
-| Application     | Hooks that orchestrate ports, TanStack Query wrappers | No UI framework imports in business logic         |
-| Infrastructure  | Service functions, adapters, Zustand store slices     | May import TanStack Query, Zustand, Supabase (via port only) |
+| Application     | Hooks that orchestrate ports, the `lib/query` hooks   | No UI framework imports in business logic         |
+| Infrastructure  | Service functions, adapters, store slices             | Reach TanStack Query through `lib/query`, zustand through `createAppStore`, Supabase through its port |
 | Presentation    | Components, screens, pages                            | May import any, but no direct data fetching       |
 
 **Dependency direction**: inward only. Domain depends on nothing. Outer layers
@@ -92,7 +93,7 @@ depend inward through ports/interfaces, never the reverse.
 | Constants                   | `Name.constant.ts`       | `queryKeys.constant.ts`      |
 | Tailwind class constants     | `Name.style.ts`          | `ItemCard.style.ts`          |
 | Helper / pure utility       | `name.helper.ts`         | `formatDate.helper.ts`       |
-| Zustand store               | `name.store.ts`          | `ui.store.ts`                |
+| Store (createAppStore)      | `name.store.ts`          | `ui.store.ts`                |
 | Test file                   | `__tests__/<unit>.test.tsx` | `__tests__/ItemCard.component.test.tsx` |
 | Barrel export               | `index.ts`               |                              |
 
@@ -317,7 +318,20 @@ screens are an explicit allowlist (`RSC_ASYNC_SCREEN_OVERRIDE`). See
 ## 11. TanStack Query Wrappers
 
 Use `useAppQuery` and `useAppMutation` from `@/lib/query`. Never call
-`useQuery`/`useMutation` directly in features.
+`useQuery`/`useMutation` directly in features: only `src/lib/query/` imports TanStack Query.
+Both take and return the app's own types (`IAppQueryOptions` → `IAppQueryResult`: `data`,
+`error`, `isError`, `isLoading`, `isSuccess`, `refetch`; `IAppMutationOptions` →
+`IAppMutationResult`: `data`, `error`, `isError`, `isPending`, `isSuccess`, `mutate`, `reset`),
+and every mutation callback (`onMutate`, `onSuccess`, `onError`, `onSettled`) receives one object.
+A query also takes `enabled`, `staleTime`, `retry`, `networkMode` and `keepPreviousData`, a mutation
+`mutationKey` and `gcTime`, and `useIsAppMutating({ mutationKey })` tells whether a keyed mutation
+runs. The app root renders
+`AppQueryProvider`; a mutation invalidates a feature's keys through `useInvalidateAppQuery`:
+
+```typescript
+const invalidate = useInvalidateAppQuery()
+void invalidate({ queryKey: QueryKeys.items.all })
+```
 
 ```typescript
 const useItemList = ({ limit, search }: IUseItemList) => {
@@ -357,14 +371,16 @@ because `getItems` reads both.
 
 ---
 
-## 12. Zustand State
+## 12. Store State
 
-Use Zustand for cross-feature UI state. TanStack Query owns all async/server state.
-Context is only for framework-required providers (theme, auth session).
+Use a store for cross-feature UI state, created through `createAppStore` of
+`src/lib/store/createAppStore.helper.ts`, the only file that imports zustand. The query cache,
+through `lib/query`, owns all async/server state. Context is only for framework-required
+providers (theme, auth session).
 
 ```typescript
 // ui.store.ts
-import { create } from 'zustand'
+import { createAppStore } from '@/lib/store/createAppStore.helper'
 
 interface IUiState {
   isSidebarOpen: boolean
@@ -374,13 +390,18 @@ interface IUiState {
 export const selectIsSidebarOpen = (s: IUiState): boolean => s.isSidebarOpen
 export const selectSetIsSidebarOpen = (s: IUiState) => s.setIsSidebarOpen
 
-export const useUiStore = create<IUiState>((set) => ({
-  isSidebarOpen: false,
-  setIsSidebarOpen: (open) => set({ isSidebarOpen: open })
-}))
+export const useUiStore = createAppStore<IUiState>({
+  initializer: ({ set }) => ({
+    isSidebarOpen: false,
+    setIsSidebarOpen: (open) => set({ isSidebarOpen: open })
+  })
+})
 ```
 
-Consumers subscribe to one selector at a time: `useUiStore(selectIsSidebarOpen)`.
+Consumers subscribe to one selector at a time: `useUiStore(selectIsSidebarOpen)`. An object of
+several fields goes through `useUiStore.useShallow(…)`, the same object while they are unchanged.
+`persist: { name, partialize }` keeps fields in local storage on the web and through
+`keyValueStorage` on mobile.
 
 ---
 
@@ -446,7 +467,7 @@ component), with full keys: `t('items.dashboard.title')`. It is the same
 | Routing       | `app/` directory         | `app/` directory                   |
 | Styling       | Tailwind + `*.style.ts`  | NativeWind or StyleSheet + `*.style.ts`  |
 | Nav hook      | `useRouter` (next/navigation) | `useRouter` (expo-router)     |
-| State/query   | Zustand + TanStack Query | Same                               |
+| State/query   | `createAppStore` + `lib/query` (zustand + TanStack Query) | Same, persisting through `keyValueStorage` |
 | `'use client'`| Required for hooks/interactivity | Not applicable             |
 
 All business logic in hooks and services is framework-agnostic.

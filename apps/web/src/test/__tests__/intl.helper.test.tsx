@@ -5,10 +5,12 @@ import {
   SUPPORTED_LANGUAGES,
   type SupportedLanguageType
 } from '@app/i18n'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createTranslator } from 'next-intl'
 import type { ReactElement } from 'react'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+
+import { AppQueryProvider } from '@/lib/query/AppQueryProvider.component'
+import { createTestQueryClient } from '@/test/query.helper'
 
 // The visible text of a sample of screens and blocks, in both languages,
 // against the record taken at 571d25b, before the i18n seam moved every
@@ -128,9 +130,9 @@ interface ISample {
 const noop = () => undefined
 
 const withQueryClient = (ui: ReactElement) => (
-  <QueryClientProvider client={new QueryClient()}>
+  <AppQueryProvider client={createTestQueryClient()}>
     {ui}
-  </QueryClientProvider>
+  </AppQueryProvider>
 )
 
 const SAMPLES: ISample[] = [

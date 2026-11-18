@@ -231,10 +231,10 @@ constants, types, or test utilities from the barrel.
 ```typescript
 'use client' // web only
 
-import { useQueryClient } from '@tanstack/react-query'
 import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook' // the same in both apps
 import { useAppMutation } from '@/lib/query/useAppMutation.hook'
 import { useAppQuery } from '@/lib/query/useAppQuery.hook'
+import { useInvalidateAppQuery } from '@/lib/query/useInvalidateAppQuery.hook'
 import { QueryKeys } from '@/lib/query/queryKeys.constant'
 import { adapt{Domain}s, create{Domain}, get{Domain}List }
   from '@/services/{Domain}'
@@ -258,7 +258,7 @@ export const use{Domain}List = ({ contextId }: IUse{Domain}List) =>
 
 // Mutation (write)
 export const useCreate{Domain} = () => {
-  const queryClient = useQueryClient()
+  const invalidate = useInvalidateAppQuery()
   const { t } = useAppTranslator()
   return useAppMutation<I{Domain}ViewModel, ICreate{Domain}Payload>({
     mutationOptions: {
@@ -267,9 +267,7 @@ export const useCreate{Domain} = () => {
         return adapt{Domain}(dto)
       },
       onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: QueryKeys.{featureName}.all
-        })
+        void invalidate({ queryKey: QueryKeys.{featureName}.all })
       }
     },
     // A failure's toast is its AppError's messageKey (code-standards § 19), and
@@ -278,6 +276,15 @@ export const useCreate{Domain} = () => {
   })
 }
 ```
+
+The options are the app's own (`src/lib/query/useAppQuery.type.ts` and `useAppMutation.type.ts`).
+Besides `queryKey` and `queryFn`, a query takes `enabled`, `staleTime`, `retry`, `networkMode`
+(`'online'`, `'always'` or `'offlineFirst'`) and `keepPreviousData`; besides `mutationFn`, a mutation
+takes `mutationKey`, `gcTime` and the callbacks `onMutate({ variables })`,
+`onSuccess({ data, variables })`, `onError({ error, variables })` and
+`onSettled({ data, error, variables })`. An option left out keeps the query client's default. A
+control that waits on a keyed mutation reads `useIsAppMutating({ mutationKey })`. Each hook returns
+the same result object while none of its fields changed.
 
 A failed query queues no toast (`docs/code-standards.md` § 19): the screen reads
 `isError` and renders `ErrorState`, or wraps the block in `AsyncBoundary`, with the

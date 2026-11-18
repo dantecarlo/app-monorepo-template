@@ -38,11 +38,11 @@ description: >
 ```
 Does the test have vi.mock('@/services/...') or vi.mock('@/lib/...')?
 ├── YES → Does MSW already have a handler for this endpoint?
-│   ├── YES → Does the test use QueryClientWrapper?
+│   ├── YES → Does the test render through createQueryWrapper?
 │   │   ├── YES → Is vi.mock needed for a specific override?
 │   │   │   ├── YES (error state, forced loading, mutation, empty list) → KEEP vi.mock
 │   │   │   └── NO (just returns data MSW would return anyway) → REMOVE vi.mock
-│   │   └── NO → KEEP vi.mock (no MSW integration without QueryClientWrapper)
+│   │   └── NO → KEEP vi.mock (no MSW integration without createQueryWrapper)
 │   └── NO → KEEP vi.mock (no MSW handler exists)
 └── NO → No action needed for this vi.mock
 ```
@@ -56,7 +56,7 @@ Does the test have vi.mock('@/services/...') or vi.mock('@/lib/...')?
 
 ### Remove vi.mock when
 
-- MSW handler exists AND `QueryClientWrapper` is used AND the mock just returns
+- MSW handler exists AND `createQueryWrapper` is used AND the mock just returns
   the same data MSW would return automatically
 
 ---
@@ -144,26 +144,27 @@ beforeEach(() => {
 })
 
 // ✅ Remove it entirely
-// NOTE: testQueryClient.clear() IS required manually when using QueryClientWrapper
 ```
 
 ---
 
-### Issue 6 — Missing testQueryClient.clear() for QueryClientWrapper
+### Issue 6 — A query test that reaches TanStack Query, or shares one client
 
 ```typescript
-// ❌ Missing — query cache bleeds between tests
-describe('use{Name}', () => {
-  test('...', () => {
-    renderHook(() => use{Name}(), { wrapper: QueryClientWrapper })
-  })
-})
+// ❌ The vendor in a test outside lib/query, and one client every test shares,
+// so the query cache bleeds between tests
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+const client = new QueryClient()
 
-// ✅ Add it
-beforeEach(() => {
-  testQueryClient.clear()
-})
+// ✅ A fresh test client per render, through the app's AppQueryProvider
+import { createQueryWrapper } from '@/test/query.helper'
+
+renderHook(() => use{Name}(), { wrapper: createQueryWrapper() })
 ```
+
+`createQueryWrapper({ client })` takes a client of `createTestQueryClient()` when the test reads
+that client's cache afterwards. `local/dependency-seam` refuses `@tanstack/react-query` in a test
+outside `lib/query`.
 
 ---
 
@@ -216,7 +217,7 @@ test('given API error, shows error state', () => { ... })
 - [ ] No `data-testid` attributes in source files
 - [ ] No module-level `const` for test data (or `MOCK_*` arrays)
 - [ ] No redundant `vi.clearAllMocks()` in `beforeEach`
-- [ ] `testQueryClient.clear()` present when `QueryClientWrapper` is used
+- [ ] A test that queries renders through `createQueryWrapper`, never TanStack Query itself
 - [ ] All `vi.mock` calls are justified (not duplicating MSW)
 - [ ] Component render tests have axe as second test
 - [ ] Query results destructured inside `test()` blocks

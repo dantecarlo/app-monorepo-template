@@ -918,7 +918,24 @@ import { useQuery } from '@tanstack/react-query'
 
 // RIGHT — it imports the project module that owns the seam, apps/*/src/lib/query/**
 import { useAppQuery } from '@/lib/query/useAppQuery.hook'
+
+// WRONG — a store reaches the state library
+import { create } from 'zustand'
+
+// RIGHT — every store is created through the app's factory, the one zustand import
+import { createAppStore } from '@/lib/store/createAppStore.helper'
 ```
+
+**A wrapper owns its types.** `useAppQuery` and `useAppMutation` take and return the app's own
+`IAppQueryOptions`, `IAppQueryResult`, `IAppMutationOptions` and `IAppMutationResult`, never the
+library's, so a caller that reads them survives a swap of the library; an option a caller leaves
+out keeps the client's default, and each hook returns the same result while no field changed.
+`AppQueryProvider` gives a tree its client, `useInvalidateAppQuery` invalidates a `QueryKeys` prefix
+and `useIsAppMutating` tells whether a keyed mutation runs; a test of a hook or
+a screen that queries renders through `createQueryWrapper` of `src/test/query.helper.tsx`. A store
+is `createAppStore({ initializer: ({ get, set }) => …, persist? })`, read through a named selector
+or, for an object of several fields, through the store's `useShallow`. On mobile, every value kept
+on the device, a persisted store's included, goes through `keyValueStorage` of `src/lib/storage/`.
 
 **The migration freezes, then shrinks.** Every import that broke the rule when it landed is listed,
 one entry per file and package, in `eslint-dependency-seam-allowlist.json`, with a reason that

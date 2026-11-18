@@ -1,5 +1,4 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { createAppStore } from '@/lib/store/createAppStore.helper'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -27,28 +26,26 @@ export const selectSetActiveNavItem = (s: IUiState) => s.setActiveNavItem
 // Store — persists layout prefs to localStorage
 // ---------------------------------------------------------------------------
 
-export const useUiStore = create<IUiState>()(
-  persist(
-    (set) => ({
-      activeNavItem: 'home',
-      setActiveNavItem(item) {
-        set({ activeNavItem: item })
-      },
+export const useUiStore = createAppStore<IUiState>({
+  initializer: ({ set }) => ({
+    activeNavItem: 'home',
+    setActiveNavItem(item) {
+      set({ activeNavItem: item })
+    },
 
-      setSidebarCollapsed(collapsed) {
-        set({ sidebarCollapsed: collapsed })
-      },
+    setSidebarCollapsed(collapsed) {
+      set({ sidebarCollapsed: collapsed })
+    },
 
-      sidebarCollapsed: false,
+    sidebarCollapsed: false,
 
-      toggleSidebar() {
-        set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed }))
-      }
-    }),
-    {
-      name: 'app-ui',
-      // Only persist layout prefs — not ephemeral nav state
-      partialize: (s) => ({ sidebarCollapsed: s.sidebarCollapsed })
+    toggleSidebar() {
+      set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed }))
     }
-  )
-)
+  }),
+  persist: {
+    name: 'app-ui',
+    // Only persist layout prefs — not ephemeral nav state
+    partialize: (s) => ({ sidebarCollapsed: s.sidebarCollapsed })
+  }
+})

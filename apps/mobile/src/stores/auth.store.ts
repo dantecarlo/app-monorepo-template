@@ -1,5 +1,6 @@
 import type { IAuthSession } from '@app/core'
-import { create } from 'zustand'
+
+import { createAppStore } from '@/lib/store/createAppStore.helper'
 
 export type AuthStatusType =
   | 'authenticated'
@@ -18,16 +19,18 @@ export const selectSession = (s: IAuthState): IAuthSession | null =>
   s.session
 export const selectAuthStatus = (s: IAuthState): AuthStatusType => s.status
 
-export const useAuthStore = create<IAuthState>((set) => ({
-  reset() {
-    set({ session: null, status: 'unauthenticated' })
-  },
-  session: null,
-  setSession(session) {
-    set({ session })
-  },
-  setStatus(status) {
-    set({ status })
-  },
-  status: 'loading'
-}))
+export const useAuthStore = createAppStore<IAuthState>({
+  initializer: ({ set }) => ({
+    reset() {
+      set({ session: null, status: 'unauthenticated' })
+    },
+    session: null,
+    setSession(session) {
+      set({ session })
+    },
+    setStatus(status) {
+      set({ status })
+    },
+    status: 'loading'
+  })
+})

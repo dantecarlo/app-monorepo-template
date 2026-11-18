@@ -1,9 +1,11 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import React from 'react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { QueryKeys } from '@/lib/query/queryKeys.constant'
 import { MOCK_ITEM_DTOS } from '@/test/mocks/items.mock'
+import {
+  createQueryWrapper,
+  createTestQueryClient
+} from '@/test/query.helper'
 import { act, renderHook, waitFor } from '@/test/test.helper'
 
 // ---------------------------------------------------------------------------
@@ -41,25 +43,6 @@ vi.mock('@/services/Items', async (importActual) => {
 import { useItems } from '@/screens/ItemsDashboard/hooks/useItems.hook'
 
 // ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-const makeQueryClient = () =>
-  new QueryClient({ defaultOptions: { queries: { retry: false } } })
-
-const makeWrapper = ({
-  queryClient = makeQueryClient()
-}: { queryClient?: QueryClient } = {}) => {
-  const Wrapper = ({ children }: { children: React.ReactNode }) =>
-    React.createElement(
-      QueryClientProvider,
-      { client: queryClient },
-      children
-    )
-  return Wrapper
-}
-
-// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -72,7 +55,7 @@ describe('useItems', () => {
     mockGetItems.mockResolvedValueOnce(MOCK_ITEM_DTOS)
 
     const { result } = renderHook(() => useItems(), {
-      wrapper: makeWrapper()
+      wrapper: createQueryWrapper()
     })
 
     await waitFor(() => expect(result.current.isLoading).toBe(false))
@@ -89,7 +72,7 @@ describe('useItems', () => {
     mockGetItems.mockReturnValue(new Promise(() => {}))
 
     const { result } = renderHook(() => useItems(), {
-      wrapper: makeWrapper()
+      wrapper: createQueryWrapper()
     })
 
     expect(result.current.isLoading).toBe(true)
@@ -99,7 +82,7 @@ describe('useItems', () => {
     mockGetItems.mockResolvedValue(MOCK_ITEM_DTOS)
 
     const { result } = renderHook(() => useItems({ limit: 10 }), {
-      wrapper: makeWrapper()
+      wrapper: createQueryWrapper()
     })
 
     await waitFor(() => expect(result.current.isLoading).toBe(false))
@@ -117,11 +100,11 @@ describe('useItems', () => {
     mockGetItems.mockImplementation(async ({ limit }: { limit: number }) =>
       MOCK_ITEM_DTOS.slice(0, limit)
     )
-    const queryClient = makeQueryClient()
+    const queryClient = createTestQueryClient()
 
     const { result } = renderHook(
       () => ({ one: useItems({ limit: 1 }), two: useItems({ limit: 2 }) }),
-      { wrapper: makeWrapper({ queryClient }) }
+      { wrapper: createQueryWrapper({ client: queryClient }) }
     )
 
     await waitFor(() => {
@@ -152,7 +135,7 @@ describe('useItems', () => {
     mockGetItems.mockResolvedValueOnce(MOCK_ITEM_DTOS)
 
     const { result } = renderHook(() => useItems(), {
-      wrapper: makeWrapper()
+      wrapper: createQueryWrapper()
     })
 
     await waitFor(() => expect(result.current.isError).toBe(true))

@@ -23,7 +23,7 @@ apps/mobile/
 ├── app.json · metro.config.js · babel.config.js · tailwind.config.js · global.css
 └── src/
     ├── app/                      # Expo Router routes ONLY (thin; delegate to a screen)
-    │   ├── _layout.tsx           # root Stack + providers (SafeArea, QueryClient, AuthProvider),
+    │   ├── _layout.tsx           # root Stack + providers (SafeArea, AppQueryProvider, AuthProvider),
     │   │                         # the Toast viewport and the root ErrorBoundary export
     │   ├── index.tsx             # /       → ItemsDashboardScreen
     │   └── login.tsx             # /login  → LoginScreen
@@ -47,10 +47,11 @@ apps/mobile/
     │       ├── <domain>.constant.ts                               # optional
     │       └── index.ts          # barrel — consumers import from @/services/<Domain>
     ├── hooks/                    # SHARED hooks (used across screens, e.g. useSession)
-    ├── stores/                   # Zustand slices (auth, toast, ui) — shared by definition
+    ├── stores/                   # state slices (auth, toast, ui) through createAppStore — shared
     ├── lib/                      # framework wiring: i18n/ (the translator over react-i18next),
-    │                             # observability/, posthog/, query/,
-    │                             # storage/ (the device key-value storage), supabase/, theme/
+    │                             # observability/, posthog/, query/ (the query API over
+    │                             # TanStack Query), storage/ (the device key-value storage),
+    │                             # store/ (createAppStore, the one zustand import), supabase/, theme/
     ├── helpers/                  # shared pure helpers + layout.style.ts (positioning only)
     ├── validation/               # shared zod schemas (or per-screen in the screen's models/)
     └── test/                     # test helper, setup, MSW and native-module mocks
@@ -107,7 +108,13 @@ list does with a retry that refetches; a failed mutation is the toast
 ([code-standards § 19](../code-standards.md)). A query key holds its dynamic values in one trailing
 params object (`['items', 'list', { limit, search }]`), which the error report always redacts. A
 key holds every value its query reads, so two items lists of different limits never share a cache
-entry. The observability port is bound to PostHog in
+entry. A hook queries through `useAppQuery` and `useAppMutation` of `src/lib/query/`, which take
+and return the app's own types, and invalidates with `useInvalidateAppQuery`; the root layout
+renders `AppQueryProvider`, and only `src/lib/query/` imports TanStack Query. Every store under
+`src/stores/` is created through `createAppStore` of `src/lib/store/createAppStore.helper.ts`, the
+one file that imports zustand, and a persisted store keeps its fields on the device through
+`keyValueStorage` of `src/lib/storage/`, as the theme and language choices do; only that adapter
+imports AsyncStorage. The observability port is bound to PostHog in
 `src/lib/observability/observability.adapter.ts`; its one client, `src/lib/posthog/posthogClient.adapter.ts`, is the only file that imports
 `posthog-react-native` and constructs the client only when PostHog may run (in `opt-in` mode,
 after a grant), and Sentry is an optional capability `/init` can prune. The consent API a

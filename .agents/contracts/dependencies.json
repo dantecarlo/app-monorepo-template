@@ -100,13 +100,14 @@
     {
       "name": "@tanstack/react-query",
       "category": "infra",
-      "seam": ["apps/*/src/lib/query/**"]
+      "seam": ["apps/*/src/lib/query/**"],
+      "note": "Behind useAppQuery, useAppMutation, useInvalidateAppQuery and AppQueryProvider, whose option and result types are the project's own; tests render through createQueryWrapper of src/test/query.helper.tsx. The seam stays the folder: the tests of the key factories reach the client too."
     },
     {
       "name": "zustand",
       "category": "infra",
-      "seam": [],
-      "note": "Behind apps/*/src/lib/store/createAppStore.helper.ts, which F.8 unit 4 creates."
+      "seam": ["apps/*/src/lib/store/createAppStore.helper.ts"],
+      "note": "Behind createAppStore: every store under src/stores is created through it, which gives the store its useShallow and its optional persistence; each store declares its own named selectors."
     },
     {
       "name": "zod",
@@ -117,7 +118,7 @@
       "name": "@react-native-async-storage/async-storage",
       "category": "infra",
       "seam": ["apps/mobile/src/lib/storage/keyValueStorage.adapter.ts"],
-      "note": "Behind IKeyValueStoragePort of @app/core. The theme and language configs still import it until F.8 unit 4 moves them onto the adapter."
+      "note": "Behind IKeyValueStoragePort of @app/core: the theme and language configs and every persisted store keep their values on the device through keyValueStorage of lib/storage."
     },
     {
       "name": "expo-splash-screen",

@@ -1,7 +1,7 @@
 ---
 name: test
 description: >
-  Write Vitest test files for React components, hooks, helpers, and Zustand stores.
+  Write Vitest test files for React components, hooks, helpers, and stores.
   Aligned to docs/code-standards.md Rule 9 and the apps/*/src/test helper. Enforces:
   import from project test helper (never @testing-library/react directly), semantic
   queries only (getByRole, getByText — never data-testid), test() not it(), Given/
@@ -59,6 +59,10 @@ Before writing ANY test:
    test that asserts its own copy passes `messages: withCopy({ copy })`. A test that only
    checks which message a block asks for mocks `@/lib/i18n/useAppTranslator.hook` with a
    translator that returns the key; no test mocks next-intl or react-i18next.
+7. If the block runs a query or a mutation, render it through `createQueryWrapper()` of
+   `@/test/query.helper`, over a fresh test client with no retries, or
+   `createQueryWrapper({ client })` to read that client's cache afterwards. No test outside
+   `lib/query` imports `@tanstack/react-query`, and no test outside `lib/store` imports `zustand`.
 
 ---
 
@@ -125,19 +129,15 @@ describe('<{ComponentName} />', () => {
 ## Type B — Hook Test
 
 ```typescript
-import { describe, expect, test, beforeEach } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import { renderHook, act, waitFor } from '@/test/test.helper'
 import { use{Name} } from '@/{path}/use{Name}.hook'
-// import QueryClientWrapper if the hook uses TanStack Query
+// import { createQueryWrapper } from '@/test/query.helper' — when the hook queries
 
 describe('use{Name}', () => {
-  beforeEach(() => {
-    // testQueryClient.clear() — only when using QueryClientWrapper
-  })
-
   test('given initial state, returns empty list', () => {
     const { result } = renderHook(() => use{Name}({ contextId: 'ctx-1' }), {
-      // wrapper: QueryClientWrapper  // omit if no TanStack Query
+      // wrapper: createQueryWrapper()  // omit if the hook runs no query
     })
     expect(result.current.data).toBeUndefined()
     expect(result.current.isLoading).toBe(true)
@@ -145,7 +145,7 @@ describe('use{Name}', () => {
 
   test('given successful fetch, returns adapted data', async () => {
     const { result } = renderHook(() => use{Name}({ contextId: 'ctx-1' }), {
-      // wrapper: QueryClientWrapper
+      // wrapper: createQueryWrapper()
     })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     // MSW intercepts the HTTP call — assert on MSW mock data values
@@ -162,12 +162,12 @@ describe('use{Name}', () => {
 ```
 
 MSW rule: if MSW has a handler for the endpoint, do NOT `vi.mock` the service —
-let `QueryClientWrapper` + MSW handle it. Use `vi.mock` only for mutations,
+let `createQueryWrapper` + MSW handle it. Use `vi.mock` only for mutations,
 forced error/loading states, or endpoints without MSW handlers.
 
 ---
 
-## Type C — Zustand Store Test
+## Type C — Store Test
 
 ```typescript
 import { describe, expect, test, beforeEach } from 'vitest'
@@ -176,9 +176,7 @@ import { use{Name}Store } from '@/stores/{name}.store'
 
 describe('use{Name}Store', () => {
   beforeEach(() => {
-    use{Name}Store.setState(
-      use{Name}Store.getInitialState?.() ?? { items: [] }
-    )
+    use{Name}Store.setState(use{Name}Store.getInitialState())
   })
 
   test('given initial state, items is empty', () => {

@@ -262,7 +262,7 @@ Last updated: 2026-11-18
 
 ### store
 
-- **Description**: Generate a typed Zustand store slice in src/stores/{name}.store.ts with state interface I{Name}State, named selector functions select{Name}{Field}, actions, and optional persist middleware.
+- **Description**: Generate a typed store slice in src/stores/{name}.store.ts through createAppStore of src/lib/store, with state interface I{Name}State, named selector functions select{Name}{Field}, actions, and an optional persist.
 - **Triggers**: "create store", "new Zustand store", "add global state for [name]", "replace context with store", "add [name] slice", "cross-feature state for [name]"
 - **Path**: `.claude/skills/store/SKILL.md`
 
@@ -270,7 +270,7 @@ Last updated: 2026-11-18
 
 ### test
 
-- **Description**: Write Vitest test files for React components, hooks, helpers, and Zustand stores.
+- **Description**: Write Vitest test files for React components, hooks, helpers, and stores.
 - **Triggers**: "write tests", "add tests", "create test file", "test this component/hook", "improve coverage", "test [name]"
 - **DO NOT USE**: for auditing existing tests — use `fix-test` for that. For block-structure audits use `fractal-verify`. For post-generation harness use `validate-all`
 - **Path**: `.claude/skills/test/SKILL.md`

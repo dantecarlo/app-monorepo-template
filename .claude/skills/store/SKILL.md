@@ -1,20 +1,24 @@
 ---
 name: store
 description: >
-  Generate a typed Zustand store slice in src/stores/{name}.store.ts with state
-  interface I{Name}State, named selector functions select{Name}{Field}, actions,
-  and optional persist middleware. Arrow-only store creator and selectors, single-object
-  action params where >1 arg. Replaces Context + useReducer for cross-feature state;
-  TanStack Query for server/async state.
+  Generate a typed store slice in src/stores/{name}.store.ts through createAppStore of
+  src/lib/store, with state interface I{Name}State, named selector functions
+  select{Name}{Field}, actions, and an optional persist. Arrow-only selectors,
+  single-object action params where >1 arg. Replaces Context + useReducer for cross-feature
+  state; TanStack Query, behind lib/query, for server/async state.
   USE WHEN: "create store", "new Zustand store", "add global state for [name]",
   "replace context with store", "add [name] slice", "cross-feature state for [name]".
 ---
 
 # Create Store
 
-> Zustand replaces Context + useReducer for all application state.
+> A store replaces Context + useReducer for all application state.
 > Context is reserved for framework-required providers (theme, i18n, auth session).
-> TanStack Query owns all async / server state — do not put it in a store.
+> The query cache, through `@/lib/query`, owns all async / server state — do not put it in a store.
+
+Every store is created through `createAppStore` of `src/lib/store/createAppStore.helper.ts`, the
+only file of the app that imports zustand (`docs/code-standards.md` §23). A store never imports
+`zustand`, `zustand/middleware` or `zustand/react/shallow`: `local/dependency-seam` refuses it.
 
 ---
 
@@ -22,9 +26,9 @@ description: >
 
 ```
 Is this state shared across 2+ unrelated screens or features?
-├── YES → Zustand store (you are here)
+├── YES → a store through createAppStore (you are here)
 └── NO  → Is it server/async data?
-    ├── YES → TanStack Query cache (use `service` skill)
+    ├── YES → the query cache, through useAppQuery (use `service` skill)
     └── NO  → useState in the component or screen hook
 ```
 
@@ -40,12 +44,34 @@ Is this state shared across 2+ unrelated screens or features?
 
 ---
 
+## What createAppStore takes and returns
+
+```typescript
+createAppStore<I{Name}State>({
+  initializer: ({ get, set }) => ({ /* state + actions */ }),
+  persist: { name: '{project}-{name}', partialize: (s) => ({ /* kept fields */ }) } // optional
+})
+```
+
+- `set` takes some fields, or a function of the state that returns them; `get` reads the state
+  inside an action.
+- The store is a hook: `use{Name}Store(select{Name}{Field})` returns that value and re-renders
+  when it changes. `use{Name}Store.getState()`, `.setState({ … })` and `.getInitialState()`
+  read and change it outside React (tests, other stores).
+- `use{Name}Store.useShallow((s) => ({ a: s.a, b: s.b }))` reads an object of several fields as
+  one reference while each field is unchanged; a plain selector that builds a new object never
+  settles.
+- `persist` keeps the fields `partialize` names under `name`: in local storage on the web, on the
+  device through `keyValueStorage` of `src/lib/storage/` on mobile.
+
+---
+
 ## Generated File: `src/stores/{name}.store.ts`
 
 ### Simple store
 
 ```typescript
-import { create } from 'zustand'
+import { createAppStore } from '@/lib/store/createAppStore.helper'
 
 interface I{Name}State {
   isOpen: boolean
@@ -67,20 +93,22 @@ export const select{Name}SetIsOpen = (s: I{Name}State) =>
 export const select{Name}SetActiveItemId = (s: I{Name}State) =>
   s.setActiveItemId
 
-export const use{Name}Store = create<I{Name}State>((set) => ({
-  isOpen: false,
-  activeItemId: null,
+export const use{Name}Store = createAppStore<I{Name}State>({
+  initializer: ({ set }) => ({
+    isOpen: false,
+    activeItemId: null,
 
-  setIsOpen: (open) => set({ isOpen: open }),
-  setActiveItemId: (id) => set({ activeItemId: id }),
-  reset: () => set({ isOpen: false, activeItemId: null })
-}))
+    setIsOpen: (open) => set({ isOpen: open }),
+    setActiveItemId: (id) => set({ activeItemId: id }),
+    reset: () => set({ isOpen: false, activeItemId: null })
+  })
+})
 ```
 
 ### Stateful store (array items)
 
 ```typescript
-import { create } from 'zustand'
+import { createAppStore } from '@/lib/store/createAppStore.helper'
 
 export interface I{Item}Shape {
   id: string
@@ -100,40 +128,39 @@ export const select{Name}Add = (s: I{Name}State) => s.add
 export const select{Name}Remove = (s: I{Name}State) => s.remove
 export const select{Name}Clear = (s: I{Name}State) => s.clear
 
-export const use{Name}Store = create<I{Name}State>((set) => ({
-  items: [],
+export const use{Name}Store = createAppStore<I{Name}State>({
+  initializer: ({ set }) => ({
+    items: [],
 
-  add: ({ item }) =>
-    set((s) => ({ items: [...s.items, item] })),
+    add: ({ item }) =>
+      set((s) => ({ items: [...s.items, item] })),
 
-  remove: ({ id }) =>
-    set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
+    remove: ({ id }) =>
+      set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
 
-  clear: () => set({ items: [] })
-}))
+    clear: () => set({ items: [] })
+  })
+})
 ```
 
-### With `persist` middleware
+### With `persist`
 
 ```typescript
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { createAppStore } from '@/lib/store/createAppStore.helper'
 
 interface I{Name}State { ... }
 
-export const use{Name}Store = create<I{Name}State>()(
-  persist(
-    (set) => ({
-      // state + actions
-    }),
-    {
-      name: '{project}-{name}',        // localStorage / AsyncStorage key
-      partialize: (s) => ({            // only persist what must survive reload
-        // selected fields
-      })
-    }
-  )
-)
+export const use{Name}Store = createAppStore<I{Name}State>({
+  initializer: ({ set }) => ({
+    // state + actions
+  }),
+  persist: {
+    name: '{project}-{name}',        // the storage key, on the web and on the device
+    partialize: (s) => ({            // only persist what must survive reload
+      // selected fields
+    })
+  }
+})
 ```
 
 ---
@@ -156,8 +183,14 @@ export const MyComponent = () => {
 ```
 
 ```typescript
-// ❌ Subscribes to the whole store — re-renders on any state change
-const store = use{Name}Store()
+// ✅ Several fields as one object — the same object while they are unchanged
+export const useSession = () =>
+  useAuthStore.useShallow((s) => ({ session: s.session, status: s.status }))
+```
+
+```typescript
+// ❌ A new object on every read — the component never settles
+const session = useAuthStore((s) => ({ session: s.session, status: s.status }))
 ```
 
 ---
@@ -180,10 +213,12 @@ const store = use{Name}Store()
 
 | DO                                                  | DON'T                                                       |
 | --------------------------------------------------- | ----------------------------------------------------------- |
+| Create the store through `createAppStore`          | Import `zustand` (or its middleware) in a store or a hook   |
 | Export one named selector per subscribable value    | Inline lambda selectors inside components                   |
+| Read an object of several fields through `useShallow` | Build a new object in a plain selector                    |
 | Use `partialize` to persist only necessary fields   | Persist the entire store (includes ephemeral UI state)      |
 | Keep actions in the store — no external mutators    | Mutate state from outside the store                         |
-| Use Zustand for cross-feature UI + domain state     | Use Zustand for server/async data (use TanStack Query)      |
+| Use a store for cross-feature UI + domain state     | Use a store for server/async data (use `useAppQuery`)       |
 | Single-object params when action takes >1 argument  | Positional arguments in actions: `add(item, index)`        |
-| Arrow const for selectors and store creator         | `function` keyword anywhere in the store file               |
+| Arrow const for selectors                           | `function` keyword anywhere in the store file               |
 | Reset on logout / route change where appropriate    | Leave stale state across sessions or users                  |
