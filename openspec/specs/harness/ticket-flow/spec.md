@@ -3,7 +3,7 @@
 > **Governs:** `.claude/skills/ticket-flow`, `.claude/skills/po-ticket`, `.claude/skills/refine-ticket`, `.claude/skills/dev-ticket`, `.claude/skills/qa-ticket`, `.claude/skills/release-ticket`, `.claude/skills/process-intake`, `scripts/verify-skills.mjs`, `scripts/verify-ticket-branch.mjs`
 > **ID prefix:** `TICKET`
 > **Derived from:** `openspec/changes/archive/2026-11-16-ticket-flow/source-spec.md`, `docs/harness.md`
-> **Verified against the code:** 2026-11-18 at `d61f44a`
+> **Verified against the code:** 2026-11-18 at `79bec7e`
 
 ## Purpose
 
