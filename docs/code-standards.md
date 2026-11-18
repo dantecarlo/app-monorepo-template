@@ -942,7 +942,7 @@ on the device, a persisted store's included, goes through `keyValueStorage` of `
 the one `expo-splash-screen` import, `useAppBootstrap` loads the faces `APP_FONTS` names and tells
 the root when it may render, and `AppSafeAreaProvider` gives it the safe area. A theme is applied
 through `applyTheme` of `src/lib/theme/colorScheme.adapter.ts`, by the theme config and by every
-test that switches it.
+test outside `lib/theme` that switches it.
 
 **A vendor client crosses no package boundary.** `@app/supabase` hands out its browser and server
 clients as `BackendClientType`, a branded type that names no Supabase type, and the auth gateway
