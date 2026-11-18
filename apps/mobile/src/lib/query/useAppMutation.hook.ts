@@ -1,6 +1,8 @@
 import { useMutation } from '@tanstack/react-query'
+import { useMemo } from 'react'
 
 import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
+import { omitUndefined } from '@/lib/query/omitUndefined.helper'
 import { resolveErrorMessage } from '@/lib/query/resolveErrorMessage.helper'
 import type {
   IAppMutationOptions,
@@ -12,7 +14,8 @@ import { useToastStore } from '@/stores/toast.store'
 /**
  * A mutation whose failure is an error toast with the resolved message, and
  * whose success message, when given, is a success toast. It returns only
- * the fields of IAppMutationResult, so no caller reads the library's own.
+ * the fields of IAppMutationResult, so no caller reads the library's own,
+ * and the same object while none of them changed.
  */
 export const useAppMutation = <
   TData,
@@ -29,12 +32,21 @@ export const useAppMutation = <
 > => {
   const addToast = useToastStore((s) => s.add)
   const { has, t } = useAppTranslator()
-  const { gcTime, mutationFn, onError, onSuccess } = mutationOptions
+  const {
+    gcTime,
+    mutationFn,
+    mutationKey,
+    onError,
+    onMutate,
+    onSettled,
+    onSuccess
+  } = mutationOptions
 
   const { data, error, isError, isPending, isSuccess, mutate, reset } =
     useMutation<TData, TError, TVariables>({
-      gcTime,
+      ...omitUndefined({ gcTime, mutationKey }),
       mutationFn,
+      // eslint-disable-next-line local/single-object-params -- TanStack Query calls onError(error, variables)
       onError(failure, variables) {
         const message = resolveErrorMessage({
           error: failure,
@@ -46,6 +58,14 @@ export const useAppMutation = <
         addToast({ message, variant: 'error' })
         onError?.({ error: failure, variables })
       },
+      ...(onMutate
+        ? { onMutate: (variables: TVariables) => onMutate({ variables }) }
+        : {}),
+      // eslint-disable-next-line local/single-object-params -- TanStack Query calls onSettled(data, error, variables)
+      onSettled(result, failure, variables) {
+        onSettled?.({ data: result, error: failure, variables })
+      },
+      // eslint-disable-next-line local/single-object-params -- TanStack Query calls onSuccess(data, variables)
       onSuccess(result, variables) {
         if (successMessage) {
           addToast({ message: successMessage, variant: 'success' })
@@ -54,5 +74,8 @@ export const useAppMutation = <
       }
     })
 
-  return { data, error, isError, isPending, isSuccess, mutate, reset }
+  return useMemo(
+    () => ({ data, error, isError, isPending, isSuccess, mutate, reset }),
+    [data, error, isError, isPending, isSuccess, mutate, reset]
+  )
 }
