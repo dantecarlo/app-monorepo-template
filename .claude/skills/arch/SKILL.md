@@ -402,6 +402,8 @@ import { scrubPII, PII_KEYS, sanitizeQueryKey } from '@app/core'
 
 - Vendor SDKs (Supabase, etc.) are accessed only through these ports.
   Never import a vendor SDK directly in a feature or hook.
+- Which file may import which package is `.agents/contracts/dependencies.json`: every package's
+  category and seam, held by `local/dependency-seam` (`docs/code-standards.md` §23).
 - `IBackendClientProvider` is the port for the database client.
   `IAuthGateway` is the port for authentication.
 - `buildServiceError` / `AppError` are the standard error shapes for services.

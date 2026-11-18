@@ -69,6 +69,8 @@ The chain runs in cost order:
 | `pnpm verify:lint-rules:test`   | The local ESLint rules still report what they must        |
 | `pnpm verify:allowlist-freshness:test` | The styling allowlist gate fails a stale entry and an unlisted violation |
 | `pnpm verify:allowlist-freshness` | Every entry of `eslint-style-positioning-allowlist.json` still breaks its rule, and every violation is listed; prints the live count |
+| `pnpm verify:dependency-seams:test` | The dependency-seam gate fails each drift it names, planted in a scratch tree, and asks ESLint which files it ignores |
+| `pnpm verify:dependency-seams` | Every `package.json` dependency is in `.agents/contracts/dependencies.json` and every entry is declared; every seam glob matches a file; the configs ESLint ignores import inside their seams; every entry of `eslint-dependency-seam-allowlist.json` is still a violation and every violation is listed; prints the live counts |
 
 Structural drift fails here, before anything expensive builds. See
 [manifest.md](manifest.md). The projection check is step 1 of the chain: an agent
@@ -204,6 +206,12 @@ was being broken with nothing to notice.
 | `local/style-positions-only`         | both apps, outside the component blocks | §22 — a screen or section only positions |
 | `local/style-token-values`           | every style file and view of both apps | §22 — every value is a token        |
 | `local/ui-kit-boundary`              | both apps, outside `components/ui` | §22 — only `ui/` imports a UI kit        |
+| `local/dependency-seam`              | `apps/*/**` and `packages/*/**`, by pattern | §23 — every package registered, imported only inside its seam |
+
+`local/dependency-seam` is the only rule wired by pattern rather than per app: its block in
+`eslint.rules.mjs` registers the plugin itself, so an app added under `apps/` is judged with no
+config change. `eslint-local-rules/__fixtures__/apps/fixture/` proves it: the lint-rule tests lint
+those files through the real `eslint.config.mjs` as `apps/fixture/`.
 
 ---
 
@@ -247,7 +255,7 @@ Flexibility without weakening the gate, in order of preference (§20):
    reformat.
 3. **A justified inline disable**, with a written reason, one rule per line.
 
-**Never an allowlist file**, but for the two below. A list of blessed paths
+**Never an allowlist file**, but for the three below. A list of blessed paths
 freezes a backlog into a file nobody reads. A ceiling — one number per scope that can only go down, with
 a measurement date — is the sanctioned way to carry a backlog.
 
@@ -270,3 +278,12 @@ every violation with the rules' own detection and fails an entry whose file no
 longer breaks its rule, so the list only shrinks; a new entry is a hand edit,
 with its reason, in the diff. Turborepo does not hash the list into the lint
 task, so a lint result cached before an edit to it is reused.
+
+The third, decided with F.8 (decisions 51 and 58): `eslint-dependency-seam-allowlist.json`
+freezes the imports that broke `local/dependency-seam` when it landed, one
+`{ path, package, reason }` per file and package, the reason starting with the F.8 unit that
+removes it (`F.8 unit 2: …`). It is the one list that ships with a backlog, and units 2 to 8 drive
+it to empty. `verify:dependency-seams` re-derives every violation with the rule's own detection,
+uncached, and fails an entry whose import is gone, an import it does not list, a pair listed twice
+and an entry without its unit, so it only shrinks. Neither the list nor the registry is a
+Turborepo input of the lint task, which is why the gate does not trust a cached lint result.
