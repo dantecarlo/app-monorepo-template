@@ -137,3 +137,27 @@ theme; a block's test SHALL switch the theme through it, never through `nativewi
 - **Test:** Not covered — no test of this app reads its imports; `local/dependency-seam` refuses
   such an import (harness/dependency-seams SEAM-03) and `pnpm verify:dependency-seams` fails an
   allowlist entry or a violation for it (SEAM-07), both inside `pnpm validate`
+
+## MODIFIED Requirements
+
+### Requirement: MOBILE-41 — Only the ui blocks import a UI kit
+
+The mobile app SHALL import a UI kit or the drawing primitives the blocks wrap
+(`expo-linear-gradient`, `expo-blur`, `react-native-svg`, a future `react-native-paper`) only from
+a block under `src/components/ui/`, so a kit is swapped by rewriting that folder alone.
+
+**Evidence:** `eslint-local-rules/ui-kit.detect.mjs:17`, `apps/mobile/src/components/ui/Gradient/Gradient.component.tsx:1`, `apps/mobile/src/components/ui/AccentGradient/AccentGradient.component.tsx:12`
+
+#### Scenario: a screen-local component imports the gradient
+
+- **GIVEN** a screen's own component that imports `expo-linear-gradient`
+- **WHEN** it is linted
+- **THEN** `local/ui-kit-boundary` reports the import
+- **Test:** `eslint-local-rules/index.test.mjs` › "import { LinearGradient } from 'expo-linear-gradient'"
+
+#### Scenario: the gradient renders through its block
+
+- **GIVEN** the `AccentGradient` block around content
+- **WHEN** it renders
+- **THEN** it paints the light accent to the accent behind the content
+- **Test:** `apps/mobile/src/components/ui/AccentGradient/__tests__/AccentGradient.component.test.tsx` › "paints the accent gradient behind its children"
