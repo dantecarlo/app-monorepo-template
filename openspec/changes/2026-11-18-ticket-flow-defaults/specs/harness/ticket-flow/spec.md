@@ -143,7 +143,7 @@ no project: its production branch is set only in its dashboard (Environments →
 Branch Tracking), the API's `link.productionBranch` being read-only; and once it is switched the
 default branch deploys as a Preview, so the Preview environment variables must exist before it
 serves as staging. The structural check SHALL hold the template's Branching model to give the line
-`- **Production branch:** `production``.
+``- **Production branch:** `production` ``.
 
 **Evidence:** written at apply time, when the code exists.
 

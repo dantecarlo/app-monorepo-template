@@ -32,7 +32,7 @@ Every role runs this before it touches a ticket:
 
 1. Read the project layer, docs/process/ticket-flow.md: the board adapter, the state names, the
    roles and the sessions that fill them, the approvals, the merge policy, the ticket identity,
-   the deploy targets and the branching model.
+   the deploy targets and the branching model, with the production branch it names.
 2. No such file, or one that names no board adapter → **stop** and say: "This project has no
    ticket flow yet: run `process-intake`." Never invent a board, a label or a state.
 3. Find the role this session plays in that file. A session plays one role.
@@ -168,7 +168,7 @@ session may fill a dev role; exactly one QA session fills each dev area's QA rol
    create a technical ticket itself.
 2. **One worktree per ticket.** Dev builds in its own worktree, on the ticket's branch
    (§ Ticket identity; `<type>/<id>-<slug>` by default), cut from the default branch, or from
-   `production` for a hotfix. The pull request links the ticket.
+   the production branch the layer names for a hotfix. The pull request links the ticket.
 3. **Subagent hygiene.** A session may split its task into subagents or subsessions. Each one is
    deleted as soon as it finishes, and none is left idle. No session duplicates another session
    that already exists for a job.
@@ -289,7 +289,8 @@ Written from `ticket.template.md`, in this folder; a release ticket from `releas
 QA moves a ticket to Ready to merge only when all three hold:
 
 1. the pull request's CI is green;
-2. it has no conflict with its base branch: the default branch, or `production` for a hotfix;
+2. it has no conflict with its base branch: the default branch, or the production branch the
+   layer names for a hotfix;
 3. its branch contains the base branch's current tip. QA brings it current by merging the base
    into it (never a rebase, which could not be pushed unforced), pushes, re-runs the checks, and
    only then messages the architect `<id> ready to merge, PR #<n>`; a hotfix it leaves there for
@@ -317,9 +318,10 @@ deploys them (`release-ticket`). A project with no deploy target closes a ticket
 - A **release ticket** has the type `release`, ships one version V, is created in Refinement,
   and lists every ticket whose target version is V.
 - It enters **Ready for prod** only when every ticket it lists is Done, except a hotfix, which is
-  at Ready to merge into `production` with every § Ready to merge condition met against
-  `production`'s current tip; the default branch's CI is green; and the QA of each area the batch
-  touches has checked it on staging or preview, with evidence on the release ticket. A hotfix
+  at Ready to merge into the production branch the layer names with every § Ready to merge
+  condition met against that branch's current tip; the default branch's CI is green; and the QA
+  of each area the batch touches has checked it on staging or preview, with evidence on the
+  release ticket. A hotfix
   gets a release of its own, and the CI/CD session merges it as that release's deploy step.
 - A release ships everything merged since the last one, so before **In release** the CI/CD
   session flags every merged ticket aimed at a later version: each one sits behind a feature
@@ -327,7 +329,10 @@ deploys them (`release-ticket`). A project with no deploy target closes a ticket
 - It enters **In release** on the owner's word, and each irreversible step needs its own word,
   recorded on the release ticket.
 - It enters **Released** once every deploy target it touches passed its check in production.
-- The default branching (a long-lived `production` branch), its tags-only alternative, the deploy
+- **The production branch** is the one the layer's § Branching model names: `production` by
+  default, or the project's own name, such as `prod`. Every ticket skill means that branch when
+  it says "the production branch".
+- The default branching (a long-lived production branch), its tags-only alternative, the deploy
   target kinds, the migration rules and the hotfix live in `release-ticket`.
 
 ---

@@ -32,7 +32,9 @@
 //     the `json ticket-identity` block, and the template of the project
 //     layer, with a row for every board operation and every state, its
 //     deploy targets, a merge policy section that names both policies and
-//     gives `manual` as the default, and a ticket identity section holding
+//     gives `manual` as the default, a branching model whose production
+//     branch line gives `production` as the default, and a ticket identity
+//     section holding
 //     one block that verify-ticket-branch reads with no finding and whose
 //     fields are its defaults, so the contract, the template and the check
 //     agree.
@@ -166,6 +168,12 @@ const INTAKE_MAPPING_STEP = '## Step 3 — Map it onto the core'
 const IDENTITY_HEADING = '## Ticket identity'
 const MERGE_POLICY_HEADING = '## Merge policy'
 const POLICY_FIELD = '- **Policy:**'
+
+// The production branch is the one the project layer names; the template
+// ships `production`, the default, for a team that names no other.
+const BRANCHING_MODEL_HEADING = '## Branching model'
+const PRODUCTION_BRANCH_FIELD = '- **Production branch:**'
+const DEFAULT_PRODUCTION_BRANCH = 'production'
 
 // QA checks a ticket out detached at the remote branch, because the dev
 // session's worktree holds the branch and git refuses to check one branch out
@@ -342,6 +350,11 @@ export const SKILL_CONTRACTS = [
             field: POLICY_FIELD,
             heading: MERGE_POLICY_HEADING,
             value: codeOf({ text: DEFAULT_MERGE_POLICY })
+          },
+          {
+            field: PRODUCTION_BRANCH_FIELD,
+            heading: BRANCHING_MODEL_HEADING,
+            value: codeOf({ text: DEFAULT_PRODUCTION_BRANCH })
           }
         ],
         headings: [
@@ -353,7 +366,7 @@ export const SKILL_CONTRACTS = [
           '## Ticket identity',
           '## Branch check in CI',
           '## Deploy targets',
-          '## Branching model',
+          BRANCHING_MODEL_HEADING,
           '## Source'
         ],
         identity: { heading: IDENTITY_HEADING },
@@ -721,7 +734,9 @@ export const gate = defineGate({
     `the ${IDENTITY_INFO} block, and holds the template of the project ` +
     'layer, with a row for every board operation and every state, a deploy ' +
     'targets table, a merge policy section that names both policies and ' +
-    'whose Policy line gives manual, the default, and a ticket identity ' +
+    'whose Policy line gives manual, the default, a branching model whose ' +
+    `Production branch line gives ${DEFAULT_PRODUCTION_BRANCH}, the ` +
+    'default, and a ticket identity ' +
     `section holding one ${IDENTITY_INFO} block that verify-ticket-branch ` +
     'reads with no finding and whose fields are its defaults.',
   id: 'verify-skills',

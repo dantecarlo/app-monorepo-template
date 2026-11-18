@@ -185,9 +185,9 @@ merges it into the production branch the layer names as that release's deploy st
    wait for every `<release-id> staging checked` and its evidence on the release ticket. A failed
    check becomes a fix ticket the release then lists, or its feature is switched off by its flag.
 3. Move it to Ready for prod only when every ticket whose target version is V is Done, except a
-   hotfix, which is at Ready to merge into `production` with every Ready to merge condition met
-   against `production`'s current tip (`ticket-flow` § Ready to merge); the default branch's CI
-   is green; and every touched area's staging evidence is on the release ticket: `move`, then
+   hotfix, which is at Ready to merge into the production branch the layer names with every
+   Ready to merge condition met against that branch's current tip (`ticket-flow` § Ready to
+   merge); the default branch's CI is green; and every touched area's staging evidence is on the release ticket: `move`, then
    message the CI/CD session `<release-id> ready for prod`. A hotfix behind that tip, because
    another release merged since → message its QA `<id> bring current`, and wait for
    `<id> ready to merge, hotfix` again.

@@ -74,8 +74,8 @@ only what the document did not answer:
     each such merge on the ticket, and any other pull request waits for the owner, as under
     `manual`.
 
-  Say that neither policy covers a merge to `production`, a deploy, a production migration, a
-  store submission or any other irreversible step: those stay the owner's word. Then ask for the
+  Say that neither policy covers a merge into the production branch, a deploy, a production
+  migration, a store submission or any other irreversible step: those stay the owner's word. Then ask for the
   merge method, and for the merge gate the architect runs before each merge, if the project has
   one. A branch is always brought current by merging its base, never by a rebase: QA pushes it
   unforced to a branch the dev session also holds, and a rebased branch cannot be.
@@ -101,7 +101,9 @@ only what the document did not answer:
   migration push), trigger, order, check, rollback and the secret store it reads. None → the
   project has no release stage, and tickets close after Done.
 - **Branching model** — recommend the default of `release-ticket` § Branching, a long-lived
-  `production` branch; offer the tags-only alternative.
+  production branch, and ask its name: write `production`, the default, unless the team names
+  its own, such as `prod`. Every ticket skill reads that name wherever it says "the production
+  branch". Offer the tags-only alternative, which has none.
 
 ---
 

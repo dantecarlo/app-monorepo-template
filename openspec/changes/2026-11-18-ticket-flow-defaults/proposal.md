@@ -103,7 +103,7 @@ below on 2026-11-18.
     `Ready to merge → Done`;
   - `refine-ticket` has a § Merge queue, which names both merge policies in place of
     `qa-ticket`'s merge step;
-  - the process template's Branching model gives the line `- **Production branch:** `production``;
+  - the process template's Branching model gives the line ``- **Production branch:** `production` ``;
   - the ticket template's Target version section marks the version required.
 - **The docs and the registry.** The `verify:skills:test` row of `docs/harness.md` names what it
   now judges, and the registry entries whose descriptions change are regenerated.

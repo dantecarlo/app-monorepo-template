@@ -46,8 +46,9 @@ git worktree add <repo-parent>/<repo>-worktrees/<id> \
 - `<branch>` is the ticket's branch, `ticket-flow` § Ticket identity: `<type>/<id>-<slug>` by
   default, its prefix one of the layer's `branchTypes`, its slug as the layer's `slug` says.
 
-- A hotfix (a `fix` ticket the architect marked as one) starts from `origin/production` instead
-  (`release-ticket` § Hotfix).
+- A hotfix (a `fix` ticket the architect marked as one) starts instead from the production
+  branch the layer names, `origin/<production branch>` (`origin/production` by default;
+  `release-ticket` § Hotfix).
 - Never build in another ticket's worktree or in the main checkout.
 - `link` the branch to the ticket.
 

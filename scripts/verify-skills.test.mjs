@@ -67,6 +67,8 @@ const VERSION_REQUIRED_NAMED = 'It names **Version (required):**.'
 const HOTFIX_LEFT_NAMED = 'It names QA leaves it at Ready to merge.'
 const POLICY_FIELD = '- **Policy:**'
 const POLICY_LINE = `${POLICY_FIELD} \`manual\``
+const PRODUCTION_FIELD = '- **Production branch:**'
+const PRODUCTION_LINE = `${PRODUCTION_FIELD} \`production\``
 const IDENTITY = '## Ticket identity'
 const BRANCH_TYPES_NAMED = 'It names `branchTypes`.'
 const BLOCK_NAMED = `It names \`${IDENTITY_INFO}\`.`
@@ -592,6 +594,27 @@ export const CASES = [
     }),
     expected: 1,
     name: 'a process template whose merge policy has no Policy line is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [`${INTAKE}/${PROCESS_TEMPLATE}`]: without({ line: PRODUCTION_FIELD })
+      }
+    }),
+    expected: 1,
+    name: 'a process template whose branching model names no production branch is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [`${INTAKE}/${PROCESS_TEMPLATE}`]: replace({
+          from: PRODUCTION_LINE,
+          to: `${PRODUCTION_FIELD} \`prod\``
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a process template whose production branch does not default to production is refused'
   },
   {
     context: skills({
