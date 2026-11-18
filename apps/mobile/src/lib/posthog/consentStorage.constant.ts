@@ -1,4 +1,4 @@
-// Every key PostHog writes through the consent storage lands in AsyncStorage
+// Every key PostHog writes through the consent storage lands on the device
 // under this prefix, apart from what the rest of the app keeps there.
 export const CONSENT_STORAGE_PREFIX = 'posthog-consent:'
 

@@ -1,3 +1,4 @@
+import { createMemoryKeyValueStorage } from '@app/core'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import { POSTHOG_INGESTION_HOST_FALLBACK } from '@/lib/posthog/posthogClient.constant'
@@ -41,10 +42,15 @@ const loadClient = async ({
   vi.stubEnv('EXPO_PUBLIC_POSTHOG_CONSENT', consent)
   vi.stubEnv('EXPO_OS', platform)
   vi.resetModules()
+  // A fresh device: the project module that owns the device storage is
+  // replaced by the in-memory storage of @app/core.
+  const device = createMemoryKeyValueStorage()
+  vi.doMock('@/lib/storage', () => ({ keyValueStorage: device }))
   if (grantedEarlier) {
-    const { default: AsyncStorage } =
-      await import('@react-native-async-storage/async-storage')
-    await AsyncStorage.setItem('posthog-consent:granted', 'true')
+    await device.setItem({
+      key: 'posthog-consent:granted',
+      value: 'true'
+    })
   }
   return import('@/lib/posthog/posthogClient.adapter')
 }

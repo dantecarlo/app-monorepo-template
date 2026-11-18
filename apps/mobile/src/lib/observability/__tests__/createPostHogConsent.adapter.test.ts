@@ -1,3 +1,4 @@
+import { createMemoryKeyValueStorage } from '@app/core'
 import { afterEach, expect, test, vi } from 'vitest'
 
 // The SDK is replaced at its module: every client the module builds calls
@@ -26,8 +27,9 @@ const MARKER_ON_DEVICE = 'posthog-consent:granted'
 const CONSENT_CALLS = [sdk.optIn, sdk.optOut, sdk.reset]
 
 // The client reads the environment when its module loads, so each adapter
-// comes from a fresh module registry under its own environment, with the
-// device storage of that registry.
+// comes from a fresh module registry under its own environment, with a fresh
+// device: the project module that owns the device storage is replaced by the
+// in-memory storage of @app/core.
 const loadConsent = async ({
   consent,
   key
@@ -39,8 +41,8 @@ const loadConsent = async ({
   vi.stubEnv('EXPO_PUBLIC_POSTHOG_KEY', key)
   vi.stubEnv('EXPO_PUBLIC_POSTHOG_CONSENT', consent)
   vi.resetModules()
-  const { default: device } =
-    await import('@react-native-async-storage/async-storage')
+  const device = createMemoryKeyValueStorage()
+  vi.doMock('@/lib/storage', () => ({ keyValueStorage: device }))
   const { createPostHogConsent } =
     await import('@/lib/observability/createPostHogConsent.adapter')
   return { adapter: createPostHogConsent(), device }
@@ -67,7 +69,7 @@ test('reads pending and opts nothing in before a choice in opt-in mode', async (
 
   expect(await adapter.getStatus()).toBe('pending')
   expect(sdk.optIn).not.toHaveBeenCalled()
-  expect(await device.getItem(MARKER_ON_DEVICE)).toBeNull()
+  expect(await device.getItem({ key: MARKER_ON_DEVICE })).toBeNull()
 })
 
 test('grant opens the consent storage, opts PostHog in and reads granted', async () => {
@@ -78,7 +80,7 @@ test('grant opens the consent storage, opts PostHog in and reads granted', async
 
   await adapter.grant()
 
-  expect(await device.getItem(MARKER_ON_DEVICE)).toBe('true')
+  expect(await device.getItem({ key: MARKER_ON_DEVICE })).toBe('true')
   expect(sdk.optIn).toHaveBeenCalledOnce()
   expect(await adapter.getStatus()).toBe('granted')
 })
@@ -92,7 +94,7 @@ test('revoke closes the consent storage, opts PostHog out, resets it and reads d
 
   await adapter.revoke()
 
-  expect(await device.getItem(MARKER_ON_DEVICE)).toBeNull()
+  expect(await device.getItem({ key: MARKER_ON_DEVICE })).toBeNull()
   expect(sdk.optOut).toHaveBeenCalledOnce()
   expect(sdk.reset).toHaveBeenCalledExactlyOnceWith([])
   expect(await adapter.getStatus()).toBe('denied')

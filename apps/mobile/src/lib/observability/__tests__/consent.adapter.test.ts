@@ -4,6 +4,12 @@ const { optIn } = vi.hoisted(() => ({
   optIn: vi.fn(async () => undefined)
 }))
 
+// The device storage is replaced at the project module that owns it.
+vi.mock('@/lib/storage', async () => {
+  const { createMemoryKeyValueStorage } = await import('@app/core')
+  return { keyValueStorage: createMemoryKeyValueStorage() }
+})
+
 vi.mock('posthog-react-native', () => ({
   PostHog: class {
     optIn = optIn
