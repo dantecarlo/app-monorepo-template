@@ -1,6 +1,6 @@
 # Tasks: 2026-11-18-i18n-seam
 
-- [ ] T1 — the visible-text record of both apps, taken at the base `571d25b` before any import moves: `apps/web/src/test/__tests__/intl.helper.test.tsx` and `apps/mobile/src/test/__tests__/i18n.helper.test.tsx`, with the test helpers taking a catalog · Requirements: WEB-61, MOBILE-59 · Commit: —
+- [x] T1 — the visible-text record of both apps, taken at the base `571d25b` before any import moves: `apps/web/src/test/__tests__/intl.helper.test.tsx` and `apps/mobile/src/test/__tests__/i18n.helper.test.tsx`, with the test helpers taking a catalog · Requirements: WEB-61, MOBILE-59 · Commit: 0d14707
 - [ ] T2 — `IAppTranslator`, `TranslationKeyType` and `TranslationValuesType` in packages/i18n, exported from its entry point; the web `useAppTranslator`, `appTranslator.adapter.ts` and `AppI18nProvider`, the request config's resolution in `requestConfig.helper.ts`; the mobile `useAppTranslator`; the `next-intl` seam narrowed in the registry · Requirements: I18N-10, I18N-12, WEB-58, WEB-59 · Commit: —
 - [ ] T3 — every web importer of next-intl moved to `@/lib/i18n`, tests and mocks included, and its 51 allowlist entries removed · Requirements: WEB-60, WEB-61 · Commit: —
 - [ ] T4 — every mobile importer of react-i18next moved to `@/lib/i18n`, tests and mocks included, and its 31 allowlist entries removed · Requirements: MOBILE-57, MOBILE-58, MOBILE-59 · Commit: —

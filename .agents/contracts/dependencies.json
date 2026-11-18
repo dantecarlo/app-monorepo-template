@@ -60,33 +60,42 @@
     {
       "name": "next-intl",
       "category": "infra",
-      "seam": ["apps/web/next.config.ts"],
-      "note": "Behind apps/web/src/lib/i18n/, which F.8 unit 2 creates; the Next config loads its plugin."
+      "seam": [
+        "apps/web/src/lib/i18n/**",
+        "apps/web/src/i18n/request.config.ts",
+        "apps/web/next.config.ts"
+      ],
+      "note": "Behind IAppTranslator of @app/i18n, which apps/web/src/lib/i18n/ implements. Two framework files name it as well: the request config, whose getRequestConfig call next-intl loads by path, and the Next config, which loads the plugin."
     },
     {
       "name": "react-i18next",
       "category": "infra",
-      "seam": ["apps/mobile/src/lib/i18n/**"]
+      "seam": ["apps/mobile/src/lib/i18n/**"],
+      "note": "Behind IAppTranslator of @app/i18n, which apps/mobile/src/lib/i18n/ implements."
     },
     {
       "name": "i18next",
       "category": "infra",
-      "seam": ["apps/mobile/src/lib/i18n/**"]
+      "seam": ["apps/mobile/src/lib/i18n/**"],
+      "note": "The instance apps/mobile/src/lib/i18n/i18n.config.ts starts; blocks reach it through useAppTranslator."
     },
     {
       "name": "i18next-icu",
       "category": "infra",
-      "seam": ["apps/mobile/src/lib/i18n/**"]
+      "seam": ["apps/mobile/src/lib/i18n/**"],
+      "note": "The ICU format of the shared catalogs, plugged in by apps/mobile/src/lib/i18n/i18n.config.ts."
     },
     {
       "name": "@formatjs/intl-pluralrules",
       "category": "infra",
-      "seam": ["apps/mobile/src/lib/i18n/**"]
+      "seam": ["apps/mobile/src/lib/i18n/**"],
+      "note": "Hermes's missing plural rules, polyfilled by apps/mobile/src/lib/i18n/intlPolyfill.config.ts before i18next starts."
     },
     {
       "name": "expo-localization",
       "category": "infra",
-      "seam": ["apps/mobile/src/lib/i18n/**"]
+      "seam": ["apps/mobile/src/lib/i18n/**"],
+      "note": "The device language the first start falls back to, read by apps/mobile/src/lib/i18n/i18n.config.ts."
     },
     {
       "name": "@tanstack/react-query",

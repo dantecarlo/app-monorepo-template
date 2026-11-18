@@ -530,16 +530,6 @@
     "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
   },
   {
-    "path": "apps/web/src/i18n/__tests__/request.config.test.ts",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/i18n/request.config.ts",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
     "path": "apps/web/src/lib/query/__tests__/useAppMutation.hook.test.ts",
     "package": "next-intl",
     "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
