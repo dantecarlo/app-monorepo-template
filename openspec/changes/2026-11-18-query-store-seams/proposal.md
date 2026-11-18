@@ -89,8 +89,8 @@ The owner's words, verbatim:
 
 ## Affected specs
 
-- `openspec/specs/apps/web/spec.md`: added WEB-62, WEB-63, WEB-64, WEB-65.
-- `openspec/specs/apps/mobile/spec.md`: added MOBILE-60, MOBILE-61, MOBILE-62, MOBILE-63;
+- `openspec/specs/apps/web/spec.md`: added WEB-63, WEB-64, WEB-65, WEB-66.
+- `openspec/specs/apps/mobile/spec.md`: added MOBILE-61, MOBILE-62, MOBILE-63, MOBILE-64;
   modified MOBILE-03, MOBILE-04, MOBILE-06, MOBILE-07, MOBILE-56.
 
 <!--

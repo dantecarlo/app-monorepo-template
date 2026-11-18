@@ -4,10 +4,10 @@
 
 ## ADDED Requirements
 
-### Requirement: MOBILE-60 — The query hooks take and return the app's own types
+### Requirement: MOBILE-61 — The query hooks take and return the app's own types
 
 The mobile app SHALL give every query and mutation one API of its own in
-`apps/mobile/src/lib/query/`, the same as the web app's (apps/web WEB-62): `useAppQuery` takes
+`apps/mobile/src/lib/query/`, the same as the web app's (apps/web WEB-63): `useAppQuery` takes
 `IAppQueryOptions`, a `queryKey`, a `queryFn` and an optional `adapter`, and returns
 `IAppQueryResult`, only `data`, `error`, `isError`, `isLoading`, `isSuccess` and `refetch`;
 `useAppMutation` takes `IAppMutationOptions`, a `mutationFn`, an optional `gcTime` and `onError`
@@ -40,7 +40,7 @@ variables, and returns `IAppMutationResult`, only `data`, `error`, `isError`, `i
   object with the error and the variables
 - **Test:** `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "hands the caller's callbacks one object with the outcome and the variables"
 
-### Requirement: MOBILE-61 — The app provides its query client and invalidates by key prefix
+### Requirement: MOBILE-62 — The app provides its query client and invalidates by key prefix
 
 The mobile app SHALL give a tree the query client `createQueryClient` builds through
 `AppQueryProvider` of `apps/mobile/src/lib/query/`, and SHALL give every hook
@@ -70,11 +70,11 @@ is handed stale, and no other, and runs the observed ones again.
 - **THEN** the list's query runs again and the component reads its new data
 - **Test:** `apps/mobile/src/lib/query/__tests__/useInvalidateAppQuery.hook.test.ts` › "runs an observed query under the prefix again"
 
-### Requirement: MOBILE-62 — Every store is created through createAppStore
+### Requirement: MOBILE-63 — Every store is created through createAppStore
 
 The mobile app SHALL create every store under `apps/mobile/src/stores/` through `createAppStore`
 of `apps/mobile/src/lib/store/createAppStore.helper.ts`, the same factory as the web app's
-(apps/web WEB-64): its initializer receives `{ get, set }`, and its store is a hook that returns
+(apps/web WEB-65): its initializer receives `{ get, set }`, and its store is a hook that returns
 the value its selector reads and renders again when that value changes, with `getState`,
 `setState` and `getInitialState`, and a `useShallow` that returns the same object for a selection
 while each of its fields is unchanged; a store created with `persist` SHALL keep the fields its
@@ -113,7 +113,7 @@ under its `name`, and a store created later with that name SHALL start with them
   with it
 - **Test:** `apps/mobile/src/lib/store/__tests__/createAppStore.helper.test.ts` › "keeps the fields partialize names in the device storage, and starts from them"
 
-### Requirement: MOBILE-63 — Only lib/query imports TanStack Query, and only createAppStore zustand
+### Requirement: MOBILE-64 — Only lib/query imports TanStack Query, and only createAppStore zustand
 
 The mobile app SHALL import `@tanstack/react-query` only in `apps/mobile/src/lib/query/**` and
 zustand only in `apps/mobile/src/lib/store/createAppStore.helper.ts`; every other file, the root

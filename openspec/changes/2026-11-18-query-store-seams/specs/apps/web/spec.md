@@ -4,7 +4,7 @@
 
 ## ADDED Requirements
 
-### Requirement: WEB-62 — The query hooks take and return the app's own types
+### Requirement: WEB-63 — The query hooks take and return the app's own types
 
 The web app SHALL give every query and mutation one API of its own in `apps/web/src/lib/query/`:
 `useAppQuery` takes `IAppQueryOptions`, a `queryKey`, a `queryFn` and an optional `adapter`, and
@@ -39,7 +39,7 @@ the variables, and returns `IAppMutationResult`, only `data`, `error`, `isError`
   object with the error and the variables
 - **Test:** `apps/web/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "hands the caller's callbacks one object with the outcome and the variables"
 
-### Requirement: WEB-63 — The app provides its query client and invalidates by key prefix
+### Requirement: WEB-64 — The app provides its query client and invalidates by key prefix
 
 The web app SHALL give a tree the query client `createQueryClient` builds through
 `AppQueryProvider` of `apps/web/src/lib/query/`, and SHALL give every hook
@@ -69,7 +69,7 @@ is handed stale, and no other, and runs the observed ones again.
 - **THEN** the list's query runs again and the component reads its new data
 - **Test:** `apps/web/src/lib/query/__tests__/useInvalidateAppQuery.hook.test.ts` › "runs an observed query under the prefix again"
 
-### Requirement: WEB-64 — Every store is created through createAppStore
+### Requirement: WEB-65 — Every store is created through createAppStore
 
 The web app SHALL create every store under `apps/web/src/stores/` through `createAppStore` of
 `apps/web/src/lib/store/createAppStore.helper.ts`, whose initializer receives `{ get, set }` and
@@ -110,7 +110,7 @@ created later with that name SHALL start with them.
   with it
 - **Test:** `apps/web/src/lib/store/__tests__/createAppStore.helper.test.ts` › "keeps the fields partialize names in local storage, and starts from them"
 
-### Requirement: WEB-65 — Only lib/query imports TanStack Query, and only createAppStore zustand
+### Requirement: WEB-66 — Only lib/query imports TanStack Query, and only createAppStore zustand
 
 The web app SHALL import `@tanstack/react-query` only in `apps/web/src/lib/query/**` and zustand
 only in `apps/web/src/lib/store/createAppStore.helper.ts`; every other file, the providers, the
