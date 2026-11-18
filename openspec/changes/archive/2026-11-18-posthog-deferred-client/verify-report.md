@@ -19,6 +19,8 @@
 | WEB-57 | a grant | `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "grant loads PostHog once, opts it in without an opt-in event and reads granted" | green |
 | WEB-57 | a grant from an earlier visit | `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "reads granted after a grant from an earlier visit" | green |
 | WEB-57 | a revoke | `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "revoke opts PostHog out, resets it with a new device id, stops it and reads denied" | green |
+| WEB-57 | a call during a revoke's load | `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "drops every call made after a revoke while the SDK loads" | green |
+| WEB-57 | a grant while the browser blocks site data | `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "reads granted after a grant while the browser blocks site data" | green |
 | WEB-57 | a grant after a revoke | `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "grants again after a revoke with the SDK it already loaded" | green |
 | WEB-57 | a revoke and a grant during a load | `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "keeps a grant made while a revoke waits for the load" | green |
 | WEB-57 | a mode that asks no consent | `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "changes nothing and reads not-required outside opt-in mode" | green |
@@ -39,6 +41,7 @@
 | MOBILE-55 | before a choice | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "reads pending and constructs no client before a choice in opt-in mode" | green |
 | MOBILE-55 | a grant | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "grant constructs the client once, opens the consent storage, opts PostHog in and reads granted" | green |
 | MOBILE-55 | a revoke | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "revoke closes the consent storage, drops the client, opts it out, resets it and reads denied" | green |
+| MOBILE-55 | a revoke while the launch restores an earlier grant | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a revoke while the launch restores an earlier grant leaves PostHog opted out" | green |
 | MOBILE-55 | a grant after a revoke | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a grant after a revoke constructs a new client and opts it in" | green |
 | MOBILE-55 | a mode that asks no consent | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "changes nothing and reads not-required outside opt-in mode" | green |
 | MOBILE-55 | no key | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "changes nothing and reads not-required without a key" | green |
@@ -49,6 +52,21 @@ The observability port contract of packages/tooling ran unchanged and green agai
 adapters (WEB-54, MOBILE-51); the web harness now waits for the SDK load in `create`. The tests
 that pin the requirements this change leaves as they are, WEB-48, WEB-49, WEB-51, WEB-55,
 MOBILE-47, MOBILE-48, MOBILE-50 and MOBILE-52, ran green, the web ones on a started client.
+
+## After the native review
+
+The native review of `708e935` and `3d6ffa2` approved both, with advisory findings. Three were
+fixed in `fbdfd6f` and `15a7106`, each against a test that ran first:
+
+| Finding | Red observed, or why none |
+| ------- | ------------------------- |
+| A revoke waited for the load in flight before it stopped the client, so the calls held during that load reached PostHog | "drops every call made after a revoke while the SDK loads": `expected "vi.fn()" to not be called at all, but actually been called 1 times`, the error captured after the revoke |
+| The status read `pending` after a grant when the browser blocks site data | "reads granted after a grant while the browser blocks site data": `expected 'pending' to be 'granted'` |
+| Mobile: a revoke landing while the launch restores an earlier grant could leave PostHog opted in | none: the consent storage settles its first read before either the restore or the revoke goes on, and the restore asks first, so the revoke always opts out the client the restore built; the test pins it, and asserts the restore did opt in |
+| Mobile: the pre-grant drop test called one method | none, a coverage gap: the test now reports a message, a breadcrumb, a user and a cleared user too |
+
+Two more are row F56 of `docs/INIT_AND_HARNESS_PLAN.md`: a dropped mobile client is not shut down,
+and one held web call that throws loses the calls after it.
 
 ## Red before green
 

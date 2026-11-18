@@ -15,8 +15,10 @@ hold none of them for a later client.
 #### Scenario: before a grant
 
 - **GIVEN** a key and the consent mode `opt-in`
-- **WHEN** an error is captured, and consent is then granted
-- **THEN** a client is constructed and its exception capture receives nothing
+- **WHEN** an error, a message, a breadcrumb, a user and a cleared user are reported, and consent is
+  then granted
+- **THEN** a client is constructed, and none of its capture calls, its identify or its reset
+  receives anything
 - **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "drops every call in opt-in mode before a grant"
 
 ## MODIFIED Requirements
@@ -99,8 +101,9 @@ The mobile app SHALL export a consent API, the `IConsentPort` of packages/core, 
 observability barrel, bound to PostHog in the composition root `consent.adapter.ts`. In `opt-in`
 mode with a key, `grant` SHALL construct the client (MOBILE-49), open the consent storage and
 then opt PostHog in; `revoke` SHALL close the consent storage, drop the client so later calls are
-dropped (MOBILE-60), and opt it out and reset it keeping no property, the device id included, and
-a later grant SHALL construct a new client; and `getStatus` SHALL read `granted` while the storage
+dropped (MOBILE-60), and opt it out and reset it keeping no property, the device id included, a
+client the launch built to restore a grant from an earlier launch included, and a later grant
+SHALL construct a new client; and `getStatus` SHALL read `granted` while the storage
 holds a grant, `denied` after a revoke in the same launch, and `pending` otherwise. In `granted`
 and `memory` mode and without a key, `getStatus` SHALL read `not-required`, and `grant` and
 `revoke` SHALL construct nothing and call nothing on PostHog.
@@ -129,6 +132,15 @@ and `memory` mode and without a key, `getStatus` SHALL read `not-required`, and 
 - **THEN** the device storage holds nothing, PostHog is opted out and reset keeping no property,
   the error never reaches PostHog and the status reads `denied`
 - **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "revoke closes the consent storage, drops the client, opts it out, resets it and reads denied"
+
+#### Scenario: a revoke while the launch restores an earlier grant
+
+- **GIVEN** a key, the consent mode `opt-in` and a grant from an earlier launch, still being read
+  back
+- **WHEN** consent is revoked before that read ends
+- **THEN** the client the launch builds is opted in and then opted out, the device holds no grant
+  and the status reads `denied`
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a revoke while the launch restores an earlier grant leaves PostHog opted out"
 
 #### Scenario: a grant after a revoke
 

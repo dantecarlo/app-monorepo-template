@@ -139,12 +139,14 @@ storage. Each mode adds nothing else to the `granted` options.
 The web app SHALL export a consent API, the `IConsentPort` of packages/core, from its
 observability barrel, bound to PostHog in the composition root `consent.adapter.ts`. In `opt-in`
 mode with a key in the browser, `grant` SHALL load the SDK (WEB-50), opt it in without an
-`$opt_in` event and then record the grant in the browser's local storage; `revoke` SHALL wait for
-a load in flight, remove that record, stop the client so later calls are dropped (WEB-62), and
-opt a loaded SDK out and then reset it with a new device id, which clears every value it stored
-and its stored choice, and a later grant SHALL opt the same SDK in again; when a revoke and a
-grant overlap a load, the later one SHALL decide; and `getStatus` SHALL read `granted` while the
-record holds a grant, `denied` after a revoke on the same page, and `pending` otherwise. In `granted` and `memory` mode, without a key and on the server, `getStatus`
+`$opt_in` event and then record the grant in the browser's local storage; `revoke` SHALL remove
+that record and stop the client at once, so every call made from then on is dropped (WEB-62), a
+call held by a load in flight included, and then opt out the SDK it loaded, or the one that load
+brings, and reset it with a new device id, which clears every value it stored and its stored
+choice, and a later grant SHALL opt the same SDK in again; when a revoke and a grant overlap a
+load, the later one SHALL decide; and `getStatus` SHALL read `denied` after a revoke on the same
+page, `granted` while the record holds a grant or after a grant on the same page, the browser
+blocking the record included, and `pending` otherwise. In `granted` and `memory` mode, without a key and on the server, `getStatus`
 SHALL read `not-required`, and `grant` and `revoke` SHALL load nothing and call nothing on
 PostHog.
 
@@ -179,6 +181,22 @@ PostHog.
 - **THEN** PostHog is opted out, then reset with a new device id, the record is gone, the error
   never reaches PostHog and the status reads `denied`
 - **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "revoke opts PostHog out, resets it with a new device id, stops it and reads denied"
+
+#### Scenario: a call during a revoke's load
+
+- **GIVEN** a key, the consent mode `opt-in` and a grant recorded by an earlier visit, so the SDK
+  loads at start
+- **WHEN** consent is revoked while the SDK loads, and an error is captured after it
+- **THEN** the error never reaches PostHog, the SDK is opted out once it loads, the record is gone
+  and the status reads `denied`
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "drops every call made after a revoke while the SDK loads"
+
+#### Scenario: a grant while the browser blocks site data
+
+- **GIVEN** a key, the consent mode `opt-in` and a browser that blocks site data
+- **WHEN** consent is granted
+- **THEN** PostHog is opted in and the status reads `granted`
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "reads granted after a grant while the browser blocks site data"
 
 #### Scenario: a grant after a revoke
 

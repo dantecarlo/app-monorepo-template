@@ -37,6 +37,11 @@ The parent session's decisions for this change, applied as stated:
 - **The consent API keeps its shape**, `IConsentPort`: a grant starts the client, a revoke stops
   it and clears, and the status reads as before.
 
+> **Amended after the native review, 2026-11-18:** WEB-57 now has a revoke stop the client before it
+> waits for a load, and read `granted` after a grant whose record the browser blocks; MOBILE-55
+> and MOBILE-60 gained a scenario and a wider one. See `verify-report.md` § After the native
+> review.
+
 ## What changes
 
 - **apps/web:** `src/lib/posthog/` gains a deferred client, the holder of the one SDK client and
