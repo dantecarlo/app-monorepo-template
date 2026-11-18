@@ -181,7 +181,9 @@
     {
       "name": "expo-linear-gradient",
       "category": "ui",
-      "seam": ["apps/mobile/src/components/ui/Gradient/Gradient.component.tsx"],
+      "seam": [
+        "apps/mobile/src/components/ui/Gradient/Gradient.component.tsx"
+      ],
       "note": "Behind the Gradient block, whose props are its own; every other block paints a gradient by rendering it."
     },
     {
