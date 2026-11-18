@@ -176,7 +176,7 @@ Last updated: 2026-11-17
 
 ### qa-ticket
 
-- **Description**: The QA role of the ticket flow, one session per area: checks out a ticket's branch, runs the area's end-to-end checks with the project's own harness, posts the evidence as a pull request comment, then returns the ticket as Changes requested or brings the branch current and makes it Ready to merge, and merges one ticket at a time under the project's merge policy: on the owner's word under `manual`, the default, or without asking under `low-risk` when the pull request meets every condition; checks a release batch on staging.
+- **Description**: The QA role of the ticket flow, one session per area: checks out a ticket's branch in a detached worktree, runs the area's end-to-end checks with the project's own harness, posts the evidence as a pull request comment, then returns the ticket as Changes requested or brings the branch current and makes it Ready to merge, and merges one ticket at a time under the project's merge policy: on the owner's word under `manual`, the default, or without asking under `low-risk` when the pull request meets every condition; never merges a hotfix into `production`, which waits at Ready to merge for its release; checks a release batch on staging.
 - **Triggers**: "<id> ready for QA, branch <b>", "check ticket <id>", "<release-id> check on staging", "merge <id>", a QA session of the ticket flow starts work
 - **DO NOT USE**: a ticket this session built (rule 5 of `ticket-flow`), building a fix (use `dev-ticket`), or a deploy to production (use `release-ticket`)
 - **Path**: `.claude/skills/qa-ticket/SKILL.md`
@@ -194,8 +194,8 @@ Last updated: 2026-11-17
 
 ### refine-ticket
 
-- **Description**: The architect role of the ticket flow: refines a ticket into its specs and a technical plan (areas, subtasks, reserved files, dependencies), sequences tickets that reserve the same file, moves a ticket to Ready for dev only when every dependency is Done, confirms its target version or proposes a move through the PO, dispatches every ready state to the next session, sets the merge order, closes tickets, files technical tickets, and groups the Done tickets of one version into a release ticket for the CI/CD session.
-- **Triggers**: "<id> new", "<id> ready for QA, branch <b>", "<id> changes requested", "<id> merged", "<id> question" about the plan, "<release-id> staging checked", "<release-id> released", "<release-id> <target> failed", "group a release", "file a technical ticket", an architect session of the ticket flow starts work
+- **Description**: The architect role of the ticket flow: refines a ticket into its specs and a technical plan (areas, subtasks, reserved files, dependencies), sequences tickets that reserve the same file, moves a ticket to Ready for dev only when every dependency is Done, confirms its target version or proposes a move through the PO, dispatches every ready state to the next session, sets the merge order, closes tickets, files technical tickets, and groups the Done tickets of one version into a release ticket for the CI/CD session, or a hotfix at Ready to merge into `production` into a release ticket of its own.
+- **Triggers**: "<id> new", "<id> ready for QA, branch <b>", "<id> changes requested", "<id> merged", "<id> ready to merge, hotfix", "<id> question" about the plan, "<release-id> staging checked", "<release-id> released", "<release-id> <target> failed", "group a release", "file a technical ticket", an architect session of the ticket flow starts work
 - **DO NOT USE**: writing a ticket from a client's request (use `po-ticket`), building it (use `dev-ticket`), or running a deploy (use `release-ticket`)
 - **Path**: `.claude/skills/refine-ticket/SKILL.md`
 

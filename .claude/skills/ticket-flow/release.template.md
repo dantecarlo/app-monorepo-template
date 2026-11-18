@@ -11,13 +11,15 @@ reads.
 ## Version
 
 This release ships <V>. It lists every ticket whose target version is <V>, read from the board
-(`read version`), and each one is Done before it reaches Ready for prod.
+(`read version`), and each one is Done before it reaches Ready for prod, except a hotfix, which is
+at Ready to merge into `production` with every Ready to merge condition met against
+`production`'s current tip: the CI/CD session merges it as this release's deploy step.
 
 ## Tickets
 
 | Ticket | Title | Area | State |
 | --- | --- | --- | --- |
-| <id> | <title> | <Web> | Done |
+| <id> | <title> | <Web> | <Done, or Ready to merge into `production` for a hotfix> |
 
 Merged since the last release but aimed at a later version, each settled before In release:
 

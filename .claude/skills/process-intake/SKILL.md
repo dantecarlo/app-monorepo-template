@@ -71,8 +71,9 @@ only what the document did not answer:
     such merge on the ticket, and any other pull request waits for the owner, as under `manual`.
 
   Say that neither policy covers a merge to `production`, a deploy, a production migration, a
-  store submission or any other irreversible step: those stay the owner's word. Then ask whether
-  a branch is brought current by merge or by rebase, and the merge method.
+  store submission or any other irreversible step: those stay the owner's word. Then ask for the
+  merge method. A branch is always brought current by merging its base, never by a rebase: QA
+  pushes it unforced to a branch the dev session also holds, and a rebased branch cannot be.
 - **Ticket identity** — where the target version lives (a milestone, or a board field), and
   three answers the branch check reads, written as the template's `json ticket-identity` block
   in § Ticket identity:

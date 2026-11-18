@@ -14,14 +14,18 @@
 //   - every skill: a frontmatter `name` that is its folder, a description
 //     with USE WHEN and DO NOT USE, a CONTRACT and an Output section;
 //   - `ticket-flow`: its sections, a row for every state, role and board
-//     operation, a pre-flight that names `process-intake`, rules that name
+//     operation, a pre-flight that names `process-intake`, messages that
+//     name the hotfix's line `<id> ready to merge, hotfix`, rules that name
 //     both merge policies, a ticket identity that names `branchTypes` and
 //     the `json ticket-identity` block, and its ticket and release
 //     templates;
 //   - a role skill: a first paragraph that names ticket-flow's SKILL.md, and
-//     neither of the contract's two tables; `refine-ticket` its release step,
-//     `qa-ticket` a merge step that names both merge policies, and
-//     `release-ticket` its deploy targets, branching, migrations and hotfix;
+//     neither of the contract's two tables; `refine-ticket` a release step
+//     that names the hotfix's line, `qa-ticket` a checkout step that adds a
+//     `--detach` worktree, a decide step that pushes `HEAD:<branch>` and a
+//     merge step that names both merge policies and the hotfix's line, and
+//     `release-ticket` its deploy targets, branching, migrations and a hotfix
+//     section in which QA leaves the hotfix at Ready to merge;
 //   - `process-intake`: a mapping step that names both merge policies and
 //     the `json ticket-identity` block, and the template of the project
 //     layer, with a row for every board operation and every state, its
@@ -150,11 +154,33 @@ const STATE_NAMES_TABLE_HEADER = ['Core state', "This project's name"]
 const SHAPE_HEADINGS = ['## CONTRACT', '## Output']
 
 const RULES_HEADING = '## Rules every role follows'
+const QA_CHECKOUT_STEP = '## Step 2 — Check out the branch'
+const QA_DECIDE_STEP = '## Step 5 — Decide'
 const QA_MERGE_STEP = '## Step 6 — One merge at a time, under the merge policy'
 const INTAKE_MAPPING_STEP = '## Step 3 — Map it onto the core'
 const IDENTITY_HEADING = '## Ticket identity'
 const MERGE_POLICY_HEADING = '## Merge policy'
 const POLICY_FIELD = '- **Policy:**'
+
+// QA checks a ticket out detached at the remote branch, because the dev
+// session's worktree holds the branch and git refuses to check one branch out
+// in two worktrees; it pushes its detached HEAD back to the branch, unforced.
+const DETACHED_CHECKOUT = '--detach'
+const HEAD_PUSH = 'git push origin HEAD:<branch>'
+
+// A hotfix is never QA's to merge: QA leaves it at Ready to merge and tells
+// the architect with this line, the architect lists it in a release of its
+// own, and the CI/CD session merges it into `production` as that release's
+// deploy step.
+const HOTFIX_MESSAGE = '<id> ready to merge, hotfix'
+const HOTFIX_LEFT = 'QA leaves it at Ready to merge'
+const RELEASE_STEP = '## Group a release'
+const MESSAGES_HEADING = '## Messages'
+const HOTFIX_HEADING = '## Hotfix'
+const hotfixMention = ({ heading }) => ({
+  heading,
+  text: codeOf({ text: HOTFIX_MESSAGE })
+})
 
 const codeOf = ({ text }) => `\`${text}\``
 
@@ -210,7 +236,7 @@ export const SKILL_CONTRACTS = [
       '## Board operations',
       '## States and transitions',
       '## The architect dispatches',
-      '## Messages',
+      MESSAGES_HEADING,
       '## Roles',
       RULES_HEADING,
       '## Ticket identity',
@@ -222,6 +248,7 @@ export const SKILL_CONTRACTS = [
     mentions: [
       { heading: '## Pre-flight', text: 'docs/process/ticket-flow.md' },
       { heading: '## Pre-flight', text: 'process-intake' },
+      hotfixMention({ heading: MESSAGES_HEADING }),
       ...policyMentions({ heading: RULES_HEADING }),
       ...identityMentions({ heading: IDENTITY_HEADING })
     ],
@@ -242,14 +269,25 @@ export const SKILL_CONTRACTS = [
   { folder: 'po-ticket', headings: SHAPE_HEADINGS, role: true },
   {
     folder: 'refine-ticket',
-    headings: ['## Group a release', ...SHAPE_HEADINGS],
+    headings: [RELEASE_STEP, ...SHAPE_HEADINGS],
+    mentions: [hotfixMention({ heading: RELEASE_STEP })],
     role: true
   },
   { folder: 'dev-ticket', headings: SHAPE_HEADINGS, role: true },
   {
     folder: 'qa-ticket',
-    headings: [QA_MERGE_STEP, ...SHAPE_HEADINGS],
-    mentions: policyMentions({ heading: QA_MERGE_STEP }),
+    headings: [
+      QA_CHECKOUT_STEP,
+      QA_DECIDE_STEP,
+      QA_MERGE_STEP,
+      ...SHAPE_HEADINGS
+    ],
+    mentions: [
+      { heading: QA_CHECKOUT_STEP, text: DETACHED_CHECKOUT },
+      { heading: QA_DECIDE_STEP, text: HEAD_PUSH },
+      ...policyMentions({ heading: QA_MERGE_STEP }),
+      hotfixMention({ heading: QA_MERGE_STEP })
+    ],
     role: true
   },
   {
@@ -258,12 +296,13 @@ export const SKILL_CONTRACTS = [
       '## Deploy targets',
       '## Branching',
       '## Migrations',
-      '## Hotfix',
+      HOTFIX_HEADING,
       ...SHAPE_HEADINGS
     ],
     mentions: [
       { heading: '## Branching', text: 'production' },
-      { heading: '## Branching', text: 'tags only' }
+      { heading: '## Branching', text: 'tags only' },
+      { heading: HOTFIX_HEADING, text: HOTFIX_LEFT }
     ],
     role: true
   },
@@ -619,14 +658,18 @@ export const gate = defineGate({
     'whose frontmatter name is its folder, whose description holds USE ' +
     'WHEN and DO NOT USE, and which has a CONTRACT and an Output section; ' +
     'ticket-flow has its sections, a row for every state, role and board ' +
-    'operation, a pre-flight that names process-intake, rules that name ' +
+    'operation, a pre-flight that names process-intake, messages that name ' +
+    `${HOTFIX_MESSAGE}, rules that name ` +
     'both merge policies (manual and low-risk), a ticket identity that ' +
     `names branchTypes and the ${IDENTITY_INFO} block, and its ticket and ` +
     'release templates; each role skill opens by sending the reader to ticket-flow ' +
-    "and copies neither of the contract's tables, refine-ticket has its " +
-    'release step, qa-ticket a merge step that names both merge policies, ' +
-    'and release-ticket its deploy targets, its branching with the ' +
-    'tags-only alternative, its migrations and its hotfix; and ' +
+    "and copies neither of the contract's tables, refine-ticket has a " +
+    `release step that names ${HOTFIX_MESSAGE}, qa-ticket a checkout step ` +
+    `that names ${DETACHED_CHECKOUT}, a decide step that names ${HEAD_PUSH} ` +
+    'and a merge step that names both merge policies and ' +
+    `${HOTFIX_MESSAGE}, and release-ticket its deploy targets, its ` +
+    'branching with the tags-only alternative, its migrations and a ' +
+    `hotfix section that says ${HOTFIX_LEFT}; and ` +
     'process-intake has a mapping step that names both merge policies and ' +
     `the ${IDENTITY_INFO} block, and holds the template of the project ` +
     'layer, with a row for every board operation and every state, a deploy ' +
