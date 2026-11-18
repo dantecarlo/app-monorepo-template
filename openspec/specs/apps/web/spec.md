@@ -1172,7 +1172,7 @@ The web app SHALL keep the look of a screen, a route entry and a container outsi
 blocks in a component block (`src/components/ui/`, or a screen's own `components/`): their class
 strings and style props carry only layout, spacing, size, position, overflow and visibility.
 
-**Evidence:** `eslint-local-rules/style-positioning.detect.mjs:342`, `eslint.rules.mjs:702`, `apps/web/src/helpers/layout.style.ts:5`, `apps/web/src/screens/Login/Login.style.ts:1`, `eslint-style-positioning-allowlist.json:1`
+**Evidence:** `eslint-local-rules/style-positioning.detect.mjs:342`, `eslint.rules.mjs:685`, `apps/web/src/helpers/layout.style.ts:5`, `apps/web/src/screens/Login/Login.style.ts:1`, `eslint-style-positioning-allowlist.json:1`
 
 #### Scenario: a screen style carries a colour
 
@@ -1673,7 +1673,7 @@ every `next-<capability>.config.ts` beside `next.config.ts`, naming no capabilit
 Sentry capability's file wraps the config with `withSentryConfig`, silent, uploading source maps
 only when `SENTRY_AUTH_TOKEN` is set.
 
-**Evidence:** `apps/web/next.config.ts:52-89`, `apps/web/next-sentry.config.ts:13-19`
+**Evidence:** `apps/web/next.config.ts:52-89`, `apps/web/next-sentry.config.ts:12-18`
 
 #### Scenario: a capability file beside the config
 

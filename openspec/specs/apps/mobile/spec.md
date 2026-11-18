@@ -895,7 +895,7 @@ component blocks in a component block (`src/components/ui/`, or a screen's own `
 their NativeWind classes, StyleSheet entries and style slots carry only layout, spacing, size,
 position, overflow and visibility.
 
-**Evidence:** `eslint-local-rules/style-positioning.detect.mjs:342`, `eslint.rules.mjs:702`, `apps/mobile/src/helpers/layout.style.ts:8`, `apps/mobile/src/components/RootErrorBoundary/RootErrorBoundary.component.tsx:10`
+**Evidence:** `eslint-local-rules/style-positioning.detect.mjs:342`, `eslint.rules.mjs:685`, `apps/mobile/src/helpers/layout.style.ts:8`, `apps/mobile/src/components/RootErrorBoundary/RootErrorBoundary.component.tsx:10`
 
 #### Scenario: a screen StyleSheet entry carries a colour
 
