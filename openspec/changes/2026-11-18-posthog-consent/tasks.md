@@ -2,7 +2,7 @@
 
 - [x] T1 — packages/core: the consent port and its statuses, exported from the barrel · Requirements: CORE-27 · Commit: 018c554
 - [x] T2 — apps/web: the consent mode setting, its resolver and the SDK options of each mode, privacy defaults under every mode · Requirements: WEB-51, WEB-55, WEB-56 · Commit: faa6d0e
-- [ ] T3 — apps/web: the PostHog consent adapter and the composition root, exported from the observability barrel · Requirements: WEB-57, CORE-27 · Commit: —
+- [x] T3 — apps/web: the PostHog consent adapter and the composition root, exported from the observability barrel · Requirements: WEB-57, CORE-27 · Commit: 70130f0
 - [ ] T4 — apps/mobile: the consent storage · Requirements: MOBILE-54 · Commit: —
 - [ ] T5 — apps/mobile: the consent mode setting, its resolver and the SDK options of each mode, the opt-in at launch, privacy defaults under every mode · Requirements: MOBILE-50, MOBILE-52, MOBILE-53 · Commit: —
 - [ ] T6 — apps/mobile: the PostHog consent adapter and the composition root, exported from the observability barrel · Requirements: MOBILE-55 · Commit: —
