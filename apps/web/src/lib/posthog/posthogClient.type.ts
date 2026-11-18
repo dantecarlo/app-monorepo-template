@@ -20,9 +20,6 @@ export interface IPostHogLogRecord {
   level?: PostHogLogLevelType
 }
 
-// The choice a user made, as the SDK records it.
-export type PostHogExplicitConsentType = 'denied' | 'granted' | 'pending'
-
 export interface IPostHogOptInOptions {
   captureEventName?: false
 }
@@ -41,7 +38,6 @@ export interface IPostHogClient {
     properties?: PostHogPropertiesType
   ): unknown
   captureLog(record: IPostHogLogRecord): void
-  get_explicit_consent_status(): PostHogExplicitConsentType
   identify(distinctId: string, properties?: PostHogPropertiesType): void
   opt_in_capturing(options?: IPostHogOptInOptions): void
   opt_out_capturing(): void

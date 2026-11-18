@@ -151,8 +151,8 @@
     {
       "name": "next/image",
       "category": "ui",
-      "seam": [],
-      "note": "Behind apps/web/src/components/ui/Image/, which F.8 unit 5 creates."
+      "seam": ["apps/web/src/components/ui/Image/Image.component.tsx"],
+      "note": "Behind the Image block, whose props are its own; every other block renders it, and a test mocks it, never next/image."
     },
     {
       "name": "tailwind-variants",
@@ -169,7 +169,10 @@
     {
       "name": "react-error-boundary",
       "category": "ui",
-      "seam": ["apps/*/src/components/ui/AsyncBoundary/**"]
+      "seam": [
+        "apps/*/src/components/ui/AsyncBoundary/AsyncBoundary.component.tsx"
+      ],
+      "note": "Behind the AsyncBoundary block, whose fallback takes the block's own IAsyncBoundaryFallbackProps, so only its component file names the library."
     },
     {
       "name": "expo-blur",
@@ -179,7 +182,10 @@
     {
       "name": "expo-linear-gradient",
       "category": "ui",
-      "seam": ["apps/mobile/src/components/ui/**"]
+      "seam": [
+        "apps/mobile/src/components/ui/Gradient/Gradient.component.tsx"
+      ],
+      "note": "Behind the Gradient block, whose props are its own; every other block paints a gradient by rendering it."
     },
     {
       "name": "react-native-reanimated",
@@ -199,8 +205,10 @@
     {
       "name": "expo-status-bar",
       "category": "ui",
-      "seam": [],
-      "note": "Behind apps/mobile/src/components/ui/StatusBar/, with its own style type, which F.8 unit 5 creates."
+      "seam": [
+        "apps/mobile/src/components/ui/StatusBar/StatusBar.component.tsx"
+      ],
+      "note": "Behind the StatusBar block, whose StatusBarStyleType the root layout and lib/theme name instead of the library's style type."
     },
     {
       "name": "@sentry/nextjs",

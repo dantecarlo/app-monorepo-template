@@ -138,7 +138,12 @@ export default LoginPage
   with the shared `tv` of `components/ui/variants.helper.ts`, which registers every token name
   with tailwind-merge from the generated `themeNames` of `@app/tokens`: of two token classes of
   one utility only the last stays (`p-sm p-lg` is `p-lg`), a token size (`text-button`) is never
-  read as a colour, and a token shadow stays beside a shadow colour.
+  read as a colour, and a token shadow stays beside a shadow colour. A block's props name no kit
+  type: its variants are unions its `*.constant.ts` declares, held to its `tv` config by
+  `__tests__/<Block>.constant.test.ts` through `VariantUnionsType` of the helper, the one file
+  that imports `tailwind-variants`. An image is `ui/Image`, the only file that imports
+  `next/image`, and the async boundary's fallback takes its own `IAsyncBoundaryFallbackProps`; a
+  test mocks those blocks, never the library.
 - **i18n: `next-intl`, behind `src/lib/i18n/`**, reading the shared `@app/i18n` ICU catalogs —
   same keys and the same translator as mobile, a different runtime. A block calls
   `useAppTranslator()` (`useAppTranslator.hook.ts`), a server component awaits
@@ -166,10 +171,11 @@ export default LoginPage
   abuse-prone forms (see [../infrastructure.md](../infrastructure.md) for the full checklist).
 - **Observability**: the composition root `src/lib/observability/observability.adapter.ts` binds
   the PostHog adapter, whose one client is `src/lib/posthog/posthogClient.adapter.ts`, the only
-  file that imports `posthog-js`; Sentry is an optional capability `/init` can prune. The consent
-  composition root `src/lib/observability/consent.adapter.ts` binds the consent API a banner
-  calls, and `NEXT_PUBLIC_POSTHOG_CONSENT` picks PostHog's consent mode (see
-  [../observability.md](../observability.md#consent)).
+  file that imports `posthog-js`, by a dynamic `import()` only when PostHog may run, so the SDK
+  is not among the chunks a page loads at start; Sentry is an optional capability `/init` can
+  prune. The consent composition root `src/lib/observability/consent.adapter.ts` binds the
+  consent API a banner calls, and `NEXT_PUBLIC_POSTHOG_CONSENT` picks PostHog's consent mode
+  (see [../observability.md](../observability.md#consent)).
 
 ## 5. Differences vs mobile (quick reference)
 

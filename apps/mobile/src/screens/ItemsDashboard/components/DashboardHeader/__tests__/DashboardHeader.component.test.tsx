@@ -10,10 +10,6 @@ vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
   })
 }))
 
-vi.mock('expo-linear-gradient', () => ({
-  LinearGradient: ({ children }: { children?: unknown }) => children
-}))
-
 import { DashboardHeader } from '@/screens/ItemsDashboard/components/DashboardHeader/DashboardHeader.component'
 
 describe('DashboardHeader (mobile)', () => {

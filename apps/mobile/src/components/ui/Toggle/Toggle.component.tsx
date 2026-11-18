@@ -1,6 +1,6 @@
-import { LinearGradient } from 'expo-linear-gradient'
 import { Animated, Pressable } from 'react-native'
 
+import { Gradient } from '@/components/ui/Gradient/Gradient.component'
 import {
   GRADIENT_COLORS,
   TOGGLE_STYLES
@@ -28,7 +28,7 @@ export const Toggle = ({
       onPress={() => onValueChange(!value)}
     >
       {value ? (
-        <LinearGradient
+        <Gradient
           colors={GRADIENT_COLORS}
           end={{ x: 0, y: 1 }}
           start={{ x: 0, y: 0 }}
@@ -41,7 +41,7 @@ export const Toggle = ({
               { transform: [{ translateX }] }
             ]}
           />
-        </LinearGradient>
+        </Gradient>
       ) : (
         <Animated.View style={[styles.track, styles.trackOff]}>
           <Animated.View

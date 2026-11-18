@@ -1,10 +1,11 @@
-import type { VariantProps } from 'tailwind-variants'
+import type {
+  AvatarSizeType,
+  AvatarVariantType
+} from '@/components/ui/Avatar/Avatar.constant'
 
-import type { AvatarSizeType } from '@/components/ui/Avatar/Avatar.constant'
-import { avatarVariants } from '@/components/ui/Avatar/Avatar.style'
-
-export interface IAvatarProps extends VariantProps<typeof avatarVariants> {
+export interface IAvatarProps {
   className?: string
   initials: string
   size?: AvatarSizeType
+  variant?: AvatarVariantType
 }

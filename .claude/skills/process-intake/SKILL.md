@@ -61,19 +61,24 @@ only what the document did not answer:
   core never gains a state.
 - **Roles and sessions** — which session fills each role, per area; one QA session per dev area.
 - **Approvals** — who approves the specs and where, and whether pushing a branch or opening a
-  pull request needs the owner's word first.
+  pull request needs the owner's word first. Say that merges into the default branch are
+  approved in one place, the architect's session, from its merge queue: QA brings a ticket to
+  Ready to merge and hands it to the architect, and neither asks the owner nor merges.
 - **Merge policy** — ask which of the two (`ticket-flow` rule 4), and write `manual` unless the
   team picks the other:
-  - `manual`, the default: a human in the loop; QA asks the owner for every merge.
-  - `low-risk`: QA may merge, without asking, a pull request that is Ready to merge into the
-    default branch, at the head of the merge order, whose Risk line is `Risk: none` or that
-    changes only passive files, and whose merge sets off no irreversible step; it records each
-    such merge on the ticket, and any other pull request waits for the owner, as under `manual`.
+  - `manual`, the default: a human in the loop; the architect asks the owner for every merge,
+    in its own session.
+  - `low-risk`: the architect may merge, without asking, a pull request that is Ready to merge
+    into the default branch, at the head of its merge queue, whose Risk line is `Risk: none` or
+    that changes only passive files, and whose merge sets off no irreversible step; it records
+    each such merge on the ticket, and any other pull request waits for the owner, as under
+    `manual`.
 
-  Say that neither policy covers a merge to `production`, a deploy, a production migration, a
-  store submission or any other irreversible step: those stay the owner's word. Then ask for the
-  merge method. A branch is always brought current by merging its base, never by a rebase: QA
-  pushes it unforced to a branch the dev session also holds, and a rebased branch cannot be.
+  Say that neither policy covers a merge into the production branch, a deploy, a production
+  migration, a store submission or any other irreversible step: those stay the owner's word. Then ask for the
+  merge method, and for the merge gate the architect runs before each merge, if the project has
+  one. A branch is always brought current by merging its base, never by a rebase: QA pushes it
+  unforced to a branch the dev session also holds, and a rebased branch cannot be.
 - **Ticket identity** — where the target version lives (a milestone, or a board field), and
   three answers the branch check reads, written as the template's `json ticket-identity` block
   in § Ticket identity:
@@ -96,7 +101,9 @@ only what the document did not answer:
   migration push), trigger, order, check, rollback and the secret store it reads. None → the
   project has no release stage, and tickets close after Done.
 - **Branching model** — recommend the default of `release-ticket` § Branching, a long-lived
-  `production` branch; offer the tags-only alternative.
+  production branch, and ask its name: write `production`, the default, unless the team names
+  its own, such as `prod`. Every ticket skill reads that name wherever it says "the production
+  branch". Offer the tags-only alternative, which has none.
 
 ---
 

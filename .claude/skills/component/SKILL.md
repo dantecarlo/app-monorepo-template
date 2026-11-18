@@ -154,11 +154,43 @@ look; a screen, a route entry and a container only position. This block is where
   (`themeNames`). Plain tailwind-merge keeps both of two token paddings (`p-sm p-lg`), reads a token
   font size (`text-title`) as a colour and drops it, and drops a token shadow beside a shadow
   colour.
+- On web, a block with variants types its props with its own unions, never the kit's
+  `VariantProps`: its `{Name}.constant.ts` declares one tuple of option names per variant and the
+  union it derives, as the mobile constants do, and the props take the unions. Its
+  `__tests__/{Name}.constant.test.ts` holds them to the `tv` config through `VariantUnionsType` of
+  `@/components/ui/variants.helper`, so typecheck fails when a union and its config disagree (the
+  snippet below). Only `variants.helper.ts` imports `tailwind-variants`, type-only imports included
+  (`local/dependency-seam`).
 - Only a `ui/` block imports a UI kit or its helpers (`tailwind-variants`, Radix,
   `class-variance-authority`, `expo-linear-gradient`, …): `local/ui-kit-boundary`. A screen-local
   block that needs one renders the `ui/` wrapper, or a wrapper is added to `ui/`.
+- A primitive has one wrapper, and only its component file imports it
+  (`.agents/contracts/dependencies.json`): `ui/Image` draws `next/image` on web, `ui/Gradient`
+  `expo-linear-gradient` and `ui/StatusBar` `expo-status-bar` on mobile, and `ui/AsyncBoundary`
+  wraps `react-error-boundary` in both. Their props are their own types
+  (`IAsyncBoundaryFallbackProps`, `StatusBarStyleType`), so a block renders the wrapper, and a test
+  mocks it, never the library.
 - Text, a labelled rule and a screen surface already have blocks: `ui/Text`, `ui/Divider`,
   `ui/Screen`.
+
+```typescript
+// Button.constant.ts — one tuple per variant, in the order of the tv config's keys
+export const BUTTON_SIZE_VARIANTS = ['lg', 'md', 'sm'] as const
+export type ButtonSizeType = (typeof BUTTON_SIZE_VARIANTS)[number]
+
+// Button.type.ts — the props name the unions, no kit type
+export interface IButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  size?: ButtonSizeType
+}
+
+// __tests__/Button.constant.test.ts — fails typecheck or the run when they drift
+expectTypeOf<VariantUnionsType<typeof buttonVariants>>().toEqualTypeOf<{
+  fullWidth: boolean
+  size: ButtonSizeType
+  variant: ButtonVariantType
+}>()
+expect(BUTTON_SIZE_VARIANTS).toEqual(Object.keys(buttonVariants.variants.size))
+```
 
 ---
 
@@ -256,3 +288,5 @@ export type { I{Name} } from './{Name}.type'
 | Recreating `Avatar`, `Button`, `Chip` from scratch      | Import from `@/components/ui/`              |
 | A hex, a palette colour or `[…]` in a style             | The token (`bg-neutral-tint`, `max-w-narrow`) |
 | A UI kit imported outside `components/ui`               | Wrap it in a `ui/` block and render that    |
+| `VariantProps<typeof {name}Variants>` in a block's props | The block's own unions in `{Name}.constant.ts` |
+| `next/image`, `expo-linear-gradient` or `expo-status-bar` in a block | Render `ui/Image`, `ui/Gradient` or `ui/StatusBar` |

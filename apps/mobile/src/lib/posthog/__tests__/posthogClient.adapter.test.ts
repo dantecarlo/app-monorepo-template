@@ -83,19 +83,26 @@ afterEach(() => {
 })
 
 test('does not construct a client without a key', async () => {
-  const { posthogClient } = await loadClient({})
+  const { getPostHogClient, startPostHogClient } = await loadClient({})
 
   expect(construct).not.toHaveBeenCalled()
-  expect(posthogClient).toBeUndefined()
+  expect(startPostHogClient()).toBeUndefined()
+  expect(construct).not.toHaveBeenCalled()
+  expect(getPostHogClient()).toBeUndefined()
 })
 
 test('constructs one client with the key and the host from the environment', async () => {
-  const { posthogClient } = await loadClient({ host: HOST, key: KEY })
+  const { getPostHogClient, startPostHogClient } = await loadClient({
+    host: HOST,
+    key: KEY
+  })
 
+  expect(construct).toHaveBeenCalledOnce()
+  expect(startPostHogClient()).toBe(getPostHogClient())
   expect(construct).toHaveBeenCalledOnce()
   expect(construct.mock.calls[0]?.[0]).toBe(KEY)
   expect(options().host).toBe(HOST)
-  expect(posthogClient).toBeDefined()
+  expect(getPostHogClient()).toBeDefined()
 })
 
 test('falls back to the US ingestion host', async () => {
@@ -156,11 +163,28 @@ test('starts the granted mode with the same options as no setting', async () => 
   expect(posthogConsentStorage).toBeUndefined()
 })
 
-test('starts opt-in mode opted out, writing through the consent storage', async () => {
-  const { posthogConsentStorage } = await loadClient({
+test('constructs no client in opt-in mode before a grant', async () => {
+  const { getPostHogClient, posthogConsentStorage } = await loadClient({
     consent: 'opt-in',
     key: KEY
   })
+
+  expect(construct).not.toHaveBeenCalled()
+  // The launch has read the consent storage, which holds no grant, and
+  // every task it queued has run.
+  expect(await posthogConsentStorage?.isGranted()).toBe(false)
+  await new Promise((resolve) => setTimeout(resolve))
+  expect(construct).not.toHaveBeenCalled()
+  expect(getPostHogClient()).toBeUndefined()
+})
+
+test('starts opt-in mode opted out, writing through the consent storage', async () => {
+  const { posthogConsentStorage, startPostHogClient } = await loadClient({
+    consent: 'opt-in',
+    key: KEY
+  })
+
+  startPostHogClient()
 
   expect(posthogConsentStorage).toBeDefined()
   expect(options()).toStrictEqual({
@@ -173,9 +197,15 @@ test('starts opt-in mode opted out, writing through the consent storage', async 
 })
 
 test('opts in at launch after a grant from an earlier launch', async () => {
-  await loadClient({ consent: 'opt-in', grantedEarlier: true, key: KEY })
+  const { getPostHogClient } = await loadClient({
+    consent: 'opt-in',
+    grantedEarlier: true,
+    key: KEY
+  })
 
   await vi.waitFor(() => expect(optIn).toHaveBeenCalledOnce())
+  expect(construct).toHaveBeenCalledOnce()
+  expect(getPostHogClient()).toBeDefined()
 })
 
 test('starts memory mode with memory persistence', async () => {
@@ -194,7 +224,8 @@ test('starts memory mode with memory persistence', async () => {
 test('keeps the privacy defaults under every consent mode', async () => {
   for (const consent of CONSENT_MODES) {
     construct.mockClear()
-    await loadClient({ consent, key: KEY })
+    const { startPostHogClient } = await loadClient({ consent, key: KEY })
+    startPostHogClient()
 
     expect(options()).toMatchObject(GRANTED_OPTIONS)
   }
@@ -208,8 +239,8 @@ test('refuses to load with an unknown consent mode', async () => {
 })
 
 test('does not read the consent mode without a key', async () => {
-  const { posthogClient } = await loadClient({ consent: 'opt_in' })
+  const { getPostHogClient } = await loadClient({ consent: 'opt_in' })
 
   expect(construct).not.toHaveBeenCalled()
-  expect(posthogClient).toBeUndefined()
+  expect(getPostHogClient()).toBeUndefined()
 })

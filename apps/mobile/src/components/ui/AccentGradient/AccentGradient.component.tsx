@@ -1,20 +1,19 @@
-import { LinearGradient } from 'expo-linear-gradient'
-
 import { ACCENT_GRADIENT_COLORS } from '@/components/ui/AccentGradient/AccentGradient.style'
 import type { IAccentGradientProps } from '@/components/ui/AccentGradient/AccentGradient.type'
+import { Gradient } from '@/components/ui/Gradient/Gradient.component'
 
-// A surface painted with the accent gradient. The gradient library stays in
-// components/ui, so the screens never import it.
+// A surface painted with the accent gradient, from the light accent to the
+// accent, top to bottom.
 export const AccentGradient = ({
   accessibilityLabel,
   children,
   style
 }: IAccentGradientProps) => (
-  <LinearGradient
+  <Gradient
     accessibilityLabel={accessibilityLabel}
     colors={ACCENT_GRADIENT_COLORS}
     style={style}
   >
     {children}
-  </LinearGradient>
+  </Gradient>
 )

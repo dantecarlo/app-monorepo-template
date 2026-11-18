@@ -21,11 +21,6 @@
   },
   {
     "path": "apps/mobile/src/app/__tests__/layout.route.test.tsx",
-    "package": "expo-status-bar",
-    "reason": "F.8 unit 5: a components/ui/StatusBar block with its own style type takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/app/__tests__/layout.route.test.tsx",
     "package": "nativewind",
     "reason": "F.8 unit 6: lib/bootstrap takes the root layout's theme, and this import with it; the test then mocks the project module, not the vendor."
   },
@@ -56,33 +51,8 @@
   },
   {
     "path": "apps/mobile/src/app/_layout.tsx",
-    "package": "expo-status-bar",
-    "reason": "F.8 unit 5: a components/ui/StatusBar block with its own style type takes this import."
-  },
-  {
-    "path": "apps/mobile/src/app/_layout.tsx",
     "package": "react-native-safe-area-context",
     "reason": "F.8 unit 6: lib/bootstrap takes this import."
-  },
-  {
-    "path": "apps/mobile/src/components/ui/Screen/__tests__/Screen.component.test.tsx",
-    "package": "nativewind",
-    "reason": "F.8 unit 5: the ui block's test sets the theme through lib/theme, not the vendor; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/components/ui/Text/__tests__/Text.component.test.tsx",
-    "package": "nativewind",
-    "reason": "F.8 unit 5: the ui block's test sets the theme through lib/theme, not the vendor; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/lib/theme/useRootTheme.type.ts",
-    "package": "expo-status-bar",
-    "reason": "F.8 unit 5: a components/ui/StatusBar block with its own style type takes this import."
-  },
-  {
-    "path": "apps/mobile/src/screens/ItemsDashboard/components/DashboardHeader/__tests__/DashboardHeader.component.test.tsx",
-    "package": "expo-linear-gradient",
-    "reason": "F.8 unit 5: the components/ui block that wraps it takes this import; the test then mocks the project module, not the vendor."
   },
   {
     "path": "apps/web/src/app/__tests__/LocaleProviders.test.tsx",
@@ -96,43 +66,8 @@
   },
   {
     "path": "apps/web/src/components/ui/AuthShell/__tests__/AuthShell.component.test.tsx",
-    "package": "next/image",
-    "reason": "F.8 unit 5: a components/ui/Image block takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/components/ui/AuthShell/__tests__/AuthShell.component.test.tsx",
     "package": "next/navigation",
     "reason": "F.8 unit 6: lib/routing takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/components/ui/Avatar/Avatar.type.ts",
-    "package": "tailwind-variants",
-    "reason": "F.8 unit 5: explicit variant unions in *.constant.ts replace the VariantProps type."
-  },
-  {
-    "path": "apps/web/src/components/ui/Button/Button.type.ts",
-    "package": "tailwind-variants",
-    "reason": "F.8 unit 5: explicit variant unions in *.constant.ts replace the VariantProps type."
-  },
-  {
-    "path": "apps/web/src/components/ui/Chip/Chip.type.ts",
-    "package": "tailwind-variants",
-    "reason": "F.8 unit 5: explicit variant unions in *.constant.ts replace the VariantProps type."
-  },
-  {
-    "path": "apps/web/src/components/ui/ConfirmDialog/ConfirmDialog.type.ts",
-    "package": "tailwind-variants",
-    "reason": "F.8 unit 5: explicit variant unions in *.constant.ts replace the VariantProps type."
-  },
-  {
-    "path": "apps/web/src/components/ui/GlassCard/GlassCard.type.ts",
-    "package": "tailwind-variants",
-    "reason": "F.8 unit 5: explicit variant unions in *.constant.ts replace the VariantProps type."
-  },
-  {
-    "path": "apps/web/src/components/ui/IconButton/IconButton.type.ts",
-    "package": "tailwind-variants",
-    "reason": "F.8 unit 5: explicit variant unions in *.constant.ts replace the VariantProps type."
   },
   {
     "path": "apps/web/src/components/ui/LanguageSwitcher/__tests__/useLanguageSwitcher.hook.test.ts",
@@ -143,41 +78,6 @@
     "path": "apps/web/src/components/ui/LanguageSwitcher/useLanguageSwitcher.hook.ts",
     "package": "next/navigation",
     "reason": "F.8 unit 6: lib/routing takes this import."
-  },
-  {
-    "path": "apps/web/src/components/ui/LoadingSkeleton/LoadingSkeleton.type.ts",
-    "package": "tailwind-variants",
-    "reason": "F.8 unit 5: explicit variant unions in *.constant.ts replace the VariantProps type."
-  },
-  {
-    "path": "apps/web/src/components/ui/Logo/__tests__/Logo.component.test.tsx",
-    "package": "next/image",
-    "reason": "F.8 unit 5: a components/ui/Image block takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/components/ui/Logo/Logo.component.tsx",
-    "package": "next/image",
-    "reason": "F.8 unit 5: a components/ui/Image block takes this import."
-  },
-  {
-    "path": "apps/web/src/components/ui/Modal/Modal.type.ts",
-    "package": "tailwind-variants",
-    "reason": "F.8 unit 5: explicit variant unions in *.constant.ts replace the VariantProps type."
-  },
-  {
-    "path": "apps/web/src/components/ui/StatusBadge/StatusBadge.type.ts",
-    "package": "tailwind-variants",
-    "reason": "F.8 unit 5: explicit variant unions in *.constant.ts replace the VariantProps type."
-  },
-  {
-    "path": "apps/web/src/components/ui/Text/Text.type.ts",
-    "package": "tailwind-variants",
-    "reason": "F.8 unit 5: explicit variant unions in *.constant.ts replace the VariantProps type."
-  },
-  {
-    "path": "apps/web/src/screens/Login/__tests__/Login.screen.test.tsx",
-    "package": "next/image",
-    "reason": "F.8 unit 5: a components/ui/Image block takes this import; the test then mocks the project module, not the vendor."
   },
   {
     "path": "apps/web/src/screens/Login/__tests__/Login.screen.test.tsx",
