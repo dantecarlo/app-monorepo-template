@@ -1,6 +1,6 @@
 # Proposal: every ESLint block applied by pattern, and a new app inherits every rule
 
-> **Status:** open
+> **Status:** archived — 2026-11-18
 
 ## Why
 
