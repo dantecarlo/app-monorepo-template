@@ -87,10 +87,10 @@ The project layer maps its own state names onto these.
 | Ready for QA | Dev: build and tests done | Architect, then the architect tells the area's QA: `<id> ready for QA, branch <b>` | `ticket:ready-for-qa` |
 | In QA | QA picks it up | none | `ticket:in-qa` |
 | Changes requested | QA, with a comment; or a red CI or a conflict after Ready to merge | Architect, then the architect tells the dev session: `<id> changes requested` | `ticket:changes-requested` |
-| Ready to merge | QA: checks passed and § Ready to merge met | the owner: QA asks whether to merge, unless the `low-risk` policy covers it (rule 4) | `ticket:ready-to-merge` |
-| Done | QA merges on the owner's word, or under the `low-risk` policy (rule 4) | Architect: `<id> merged` | `ticket:done` |
+| Ready to merge | QA: checks passed and § Ready to merge met | the owner: QA asks whether to merge, unless the `low-risk` policy covers it (rule 4); for a hotfix into `production`, the architect: `<id> ready to merge, hotfix`, and QA asks no one | `ticket:ready-to-merge` |
+| Done | QA merges on the owner's word, or under the `low-risk` policy (rule 4); for a hotfix, CI/CD merges it into `production` as its release's deploy step | Architect: `<id> merged`, sent by QA, or by CI/CD for a hotfix | `ticket:done` |
 | Closed | Architect: after Done when the project declares no deploy target, or once the release that lists the ticket is Released | PO: `<id> closed`, and the PO updates the general plan | `ticket:closed` |
-| Ready for prod | Architect: a release ticket that lists Done tickets, § Release stage met | the CI/CD session: `<release-id> ready for prod` | `ticket:ready-for-prod` |
+| Ready for prod | Architect: a release ticket whose tickets are Done, or a hotfix at Ready to merge, § Release stage met | the CI/CD session: `<release-id> ready for prod` | `ticket:ready-for-prod` |
 | In release | CI/CD, on the owner's word | none (it runs each deploy target the release touches, in order) | `ticket:in-release` |
 | Released | CI/CD, after checking production | Architect: `<release-id> released`; the architect closes the tickets it lists and tells the PO `<release-id> released`, and the PO updates the plan | `ticket:released` |
 
@@ -105,7 +105,8 @@ Every "ready" state reaches the next session through the architect: dev tells th
 architect tells QA; QA tells the architect, the architect tells dev or the CI/CD session. The
 architect also sets the merge order, groups Done tickets into releases and closes tickets. The one
 exception is the merge itself: QA asks the owner directly, in its own session (rule 6), or merges
-without asking under the `low-risk` policy (rule 4).
+without asking under the `low-risk` policy (rule 4). A hotfix's merge into `production` is not
+QA's: the CI/CD session runs it as the deploy step of the hotfix's release.
 
 ---
 
@@ -120,7 +121,8 @@ needs it, the branch. It carries no requirement, decision or file list: those li
 | `<id> ready for dev` | architect to the dev session |
 | `<id> ready for QA, branch <b>` | dev to architect, then architect to the area's QA |
 | `<id> changes requested` | QA to architect, then architect to the dev session |
-| `<id> merged` | QA to architect |
+| `<id> ready to merge, hotfix` | QA to architect: a hotfix at Ready to merge into `production`, left there for its release |
+| `<id> merged` | QA to architect, or CI/CD to architect for a hotfix |
 | `<id> closed` | architect to PO |
 | `<id> question` | any session to the owner of the answer: the PO for scope, the architect for the plan, the dev session for its build |
 | `<id> scope changed` | PO to architect |
@@ -147,8 +149,8 @@ session may fill a dev role; exactly one QA session fills each dev area's QA rol
 | PO | Turns a client requirement into a ticket, quoting the client verbatim; owns scope, and every change of scope goes through it; updates the general plan when a ticket closes | `po-ticket` |
 | Architect | Refines a ticket into specs and a technical plan (areas, subtasks, reserved files, dependencies); dispatches every transition; sets the merge order; groups releases; closes tickets; creates technical tickets | `refine-ticket` |
 | Dev | One or more sessions per area (App, Web, Backend): builds a ticket in its own worktree and branch, test first | `dev-ticket` |
-| QA | One per area, Backend included: checks out the branch, runs the area's end-to-end checks with evidence, returns the ticket or makes it ready to merge, merges on the owner's word or under the `low-risk` policy; checks a release on staging | `qa-ticket` |
-| CI/CD | One session runs every deploy target and never decides whether to release: the owner's word does, per release and per irreversible step | `release-ticket` |
+| QA | One per area, Backend included: checks out the branch, runs the area's end-to-end checks with evidence, returns the ticket or makes it ready to merge, merges on the owner's word or under the `low-risk` policy, never a hotfix into `production`; checks a release on staging | `qa-ticket` |
+| CI/CD | One session runs every deploy target, a hotfix's merge into `production` included, and never decides whether to release: the owner's word does, per release and per irreversible step | `release-ticket` |
 | Independent area | Such as Marketing: works its own tickets without a PO unless the client asks, reviews its own work, gets the owner's sign-off, and joins the full flow only when it touches the product | none |
 
 ---
@@ -179,7 +181,8 @@ session may fill a dev role; exactly one QA session fills each dev area's QA rol
      for the owner, as under `manual`.
    - **Under every policy**, every deploy, every merge to `production` and anything irreversible
      (a production migration, a store submission, a release) needs the owner's word, whatever
-     the state.
+     the state. QA merges no pull request into `production`: a hotfix waits at Ready to merge,
+     and the CI/CD session merges it as its release's deploy step (`release-ticket` § Hotfix).
 5. **Independent QA.** The session that built a ticket never moves it past Ready for QA.
 6. **Approval in place.** An approval counts only in the session that asked for it. A relay from
    another session does not stand in for it.
@@ -273,8 +276,9 @@ QA moves a ticket to Ready to merge only when all three hold:
 2. it has no conflict with its base branch: the default branch, or `production` for a hotfix;
 3. its branch contains the base branch's current tip. QA brings it current (merge or rebase, as
    the project layer says), pushes, re-runs the checks, and only then asks the owner, or merges
-   under the `low-risk` policy (rule 4). A pull request that was conflict-free and green but
-   behind its base has turned a downstream project's default branch red.
+   under the `low-risk` policy (rule 4); a hotfix it leaves there for its release. A pull request
+   that was conflict-free and green but behind its base has turned a downstream project's
+   default branch red.
 
 **Merges are serialized**, one at a time, in the order the architect records on the tickets, under
 every merge policy. QA asks the owner, or merges under `low-risk`, only for the ticket at the head
@@ -288,15 +292,17 @@ comment.
 
 ## Release stage
 
-A project whose layer declares deploy targets ships its Done tickets in releases. The architect
-groups them (`refine-ticket` § Group a release) and the CI/CD session deploys them
-(`release-ticket`). A project with no deploy target closes a ticket after Done.
+A project whose layer declares deploy targets ships its Done tickets, and its hotfixes, in
+releases. The architect groups them (`refine-ticket` § Group a release) and the CI/CD session
+deploys them (`release-ticket`). A project with no deploy target closes a ticket after Done.
 
 - A **release ticket** has the type `release`, ships one version V, is created in Refinement,
   and lists every ticket whose target version is V.
-- It enters **Ready for prod** only when every ticket it lists is Done, the default branch's CI
-  is green, and the QA of each area the batch touches has checked it on staging or preview, with
-  evidence on the release ticket.
+- It enters **Ready for prod** only when every ticket it lists is Done, except a hotfix, which is
+  at Ready to merge into `production` with every § Ready to merge condition met against
+  `production`'s current tip; the default branch's CI is green; and the QA of each area the batch
+  touches has checked it on staging or preview, with evidence on the release ticket. A hotfix
+  gets a release of its own, and the CI/CD session merges it as that release's deploy step.
 - A release ships everything merged since the last one, so before **In release** the CI/CD
   session flags every merged ticket aimed at a later version: each one sits behind a feature
   flag, or its target version moves (§ Target version).

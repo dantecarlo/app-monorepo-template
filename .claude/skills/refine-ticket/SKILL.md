@@ -6,11 +6,12 @@ description: >
   moves a ticket to Ready for dev only when every dependency is Done, confirms its target
   version or proposes a move through the PO, dispatches every ready state to the next session,
   sets the merge order, closes tickets, files technical tickets, and groups the Done tickets of
-  one version into a release ticket for the CI/CD session.
+  one version into a release ticket for the CI/CD session, or a hotfix at Ready to merge into
+  `production` into a release ticket of its own.
   USE WHEN: "<id> new", "<id> ready for QA, branch <b>", "<id> changes requested", "<id> merged",
-  "<id> question" about the plan, "<release-id> staging checked", "<release-id> released",
-  "<release-id> <target> failed", "group a release", "file a technical ticket", an architect
-  session of the ticket flow starts work.
+  "<id> ready to merge, hotfix", "<id> question" about the plan, "<release-id> staging checked",
+  "<release-id> released", "<release-id> <target> failed", "group a release", "file a technical
+  ticket", an architect session of the ticket flow starts work.
   DO NOT USE: writing a ticket from a client's request (use `po-ticket`), building it (use
   `dev-ticket`), or running a deploy (use `release-ticket`).
 ---
@@ -79,6 +80,8 @@ Does a ticket in flight (Ready for dev to Ready to merge) reserve a file this on
   (dependencies first) and `comment` it on each one: "merge order: 2, after #120".
 - `<id> merged` → with no deploy target in the project layer, `move` it to Closed and message the
   PO `<id> closed`; otherwise it waits for its release (§ Group a release).
+- `<id> ready to merge, hotfix` from QA → the hotfix waits, unmerged, for a release ticket of its
+  own (§ Group a release).
 
 ---
 
@@ -92,8 +95,10 @@ its evidence, then take it from Step 1.
 
 ## Group a release
 
-When the Done tickets that should ship together are ready, and the project layer declares
-deploy targets:
+When the Done tickets that should ship together are ready, or on `<id> ready to merge, hotfix`,
+and the project layer declares deploy targets, group them as below. A hotfix gets a release
+ticket of its own and stays at Ready to merge in it: the CI/CD session merges it into
+`production` as that release's deploy step (`release-ticket` § Hotfix).
 
 1. `create` a release ticket from `.claude/skills/ticket-flow/release.template.md`, type
    `release`, in Refinement, for one version V: `read version` lists every ticket whose target
@@ -103,9 +108,11 @@ deploy targets:
 2. Message the QA session of each area the batch touches `<release-id> check on staging`, and
    wait for every `<release-id> staging checked` and its evidence on the release ticket. A failed
    check becomes a fix ticket the release then lists, or its feature is switched off by its flag.
-3. Move it to Ready for prod only when every ticket whose target version is V is Done, the
-   default branch's CI is green, and every touched area's staging evidence is on the release
-   ticket: `move`, then message the CI/CD session `<release-id> ready for prod`.
+3. Move it to Ready for prod only when every ticket whose target version is V is Done, except a
+   hotfix, which is at Ready to merge into `production` with every Ready to merge condition met
+   against `production`'s current tip (`ticket-flow` § Ready to merge); the default branch's CI
+   is green; and every touched area's staging evidence is on the release ticket: `move`, then
+   message the CI/CD session `<release-id> ready for prod`.
 4. When the CI/CD session flags a merged ticket aimed at a later version: name, on the release
    ticket, the feature flag it sits behind, or propose its move to V through the PO (Step 1,
    the target version).

@@ -59,6 +59,8 @@ const NAMES_NOTHING = 'It names nothing.'
 const DETACH = '--detach'
 const DETACH_NAMED = `It names ${DETACH}.`
 const PUSH_NAMED = 'It names git push origin HEAD:<branch>.'
+const HOTFIX_NAMED = 'It names `<id> ready to merge, hotfix`.'
+const HOTFIX_LEFT_NAMED = 'It names QA leaves it at Ready to merge.'
 const POLICY_FIELD = '- **Policy:**'
 const POLICY_LINE = `${POLICY_FIELD} \`manual\``
 const IDENTITY = '## Ticket identity'
@@ -669,6 +671,54 @@ export const CASES = [
     }),
     expected: 1,
     name: 'a qa-ticket without its decide step is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'qa-ticket' })]: replace({
+          from: HOTFIX_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a qa-ticket whose merge step sends no hotfix message is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'refine-ticket' })]: replace({
+          from: HOTFIX_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a refine-ticket whose release step names no hotfix message is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: CONTRACT })]: replace({
+          from: HOTFIX_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a ticket-flow whose messages name no hotfix line is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'release-ticket' })]: replace({
+          from: HOTFIX_LEFT_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a release-ticket whose hotfix section does not leave it at Ready to merge is refused'
   }
 ]
 
