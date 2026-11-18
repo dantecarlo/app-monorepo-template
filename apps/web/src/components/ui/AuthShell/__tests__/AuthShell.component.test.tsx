@@ -10,9 +10,9 @@ vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
   })
 }))
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ refresh: vi.fn() })
-}))
+vi.mock('@/lib/routing', async () =>
+  (await import('@/test/routing.helper')).createRoutingDouble()
+)
 
 vi.mock('@/components/ThemeProvider/useTheme.hook', () => ({
   useTheme: () => ({ setTheme: vi.fn(), theme: 'dark' })

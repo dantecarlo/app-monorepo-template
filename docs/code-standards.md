@@ -904,7 +904,9 @@ or source imports.
 - **Type-only imports are governed too** (decision 58). An entry may set `"types": "anywhere"` only
   where the plan allows a type outside the seam; none does today.
 - **The most specific entry wins.** `next/navigation`, `next/cache` and `next/image` narrow the core
-  `next`; `next/server` takes `next`'s.
+  `next`, each to one file of the web app (`lib/routing/useAppRouter.hook.ts`,
+  `lib/cache/cachePolicy.adapter.ts` and `components/ui/Image/Image.component.tsx`); `next/server`
+  takes `next`'s.
 - **A test inherits the seam of the unit it tests** (the unit its `__tests__/` stands beside, § 9),
   and `src/test/**` is the test-infrastructure seam: it may import any registered package. A test
   of anything else mocks the project module (`@/lib/*`, `@/components/ui/*`), not the vendor.
@@ -924,6 +926,14 @@ import { create } from 'zustand'
 
 // RIGHT — every store is created through the app's factory, the one zustand import
 import { createAppStore } from '@/lib/store/createAppStore.helper'
+
+// WRONG — a web hook reaches Next's router, a cached service Next's cache
+import { useRouter } from 'next/navigation'
+import { cacheLife, cacheTag } from 'next/cache'
+
+// RIGHT — the app's router and cache policy, each the one import of its subpath
+import { useAppRouter } from '@/lib/routing'
+import { applyCachePolicy, CacheLifeEnum } from '@/lib/cache'
 ```
 
 **A wrapper owns its types.** `useAppQuery` and `useAppMutation` take and return the app's own
@@ -936,6 +946,11 @@ a screen that queries renders through `createQueryWrapper` of `src/test/query.he
 is `createAppStore({ initializer: ({ get, set }) => …, persist? })`, read through a named selector
 or, for an object of several fields, through the store's `useShallow`. On mobile, every value kept
 on the device, a persisted store's included, goes through `keyValueStorage` of `src/lib/storage/`.
+On web, `useAppRouter` of `src/lib/routing/` returns `IAppRouter`, only `push(href)`,
+`replace(href)` and `refresh()`, with an `href` the typed routes check, and a test mocks
+`@/lib/routing` through `createRoutingDouble` of `src/test/routing.helper.ts`; a function under
+`'use cache'` sets its life profile, one of the app's `CacheLifeEnum`, and its tags through
+`applyCachePolicy({ life, tags })` of `src/lib/cache/`.
 
 **A root imports project modules only.** The mobile root layout boots through
 `src/lib/bootstrap/`: `holdSplashScreen` and `hideSplashScreen` of `splashScreen.adapter.ts` are
@@ -962,8 +977,8 @@ and the gate fails an entry whose import is gone, so the list cannot grow back b
 > `verify:dependency-seams` holds the registry to every `package.json` (no unregistered
 > dependency, no stale entry), every seam glob to a file, the configs ESLint ignores to their
 > seams, and the allowlist to the imports that still break the rule. **Not covered:** the names
-> imported from a package (the `react-native` primitives and the `expo-router` hooks are F.8 units
-> 8 and 6); a specifier that is not a literal; triple-slash references and `declare module`; CSS
+> imported from a package (the `react-native` primitives and the `expo-router` hooks are F.8
+> unit 8); a specifier that is not a literal; triple-slash references and `declare module`; CSS
 > and JSON (an Expo plugin); a vendor type a wrapper re-exports; and whether a seam is the right
 > one, which is review.
 

@@ -12,9 +12,11 @@ const { mockReplace, mockSignIn } = vi.hoisted(() => ({
   mockSignIn: vi.fn()
 }))
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ refresh: vi.fn(), replace: mockReplace })
-}))
+vi.mock('@/lib/routing', async () =>
+  (await import('@/test/routing.helper')).createRoutingDouble({
+    router: { replace: mockReplace }
+  })
+)
 
 vi.mock('@/lib/supabase/authGateway.adapter', () => ({
   getAuthGateway: () => ({ signIn: mockSignIn })
