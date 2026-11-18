@@ -1,6 +1,6 @@
 # Proposal: the web router and cache behind lib/routing and lib/cache
 
-> **Status:** open
+> **Status:** archived — 2026-11-18
 
 ## Why
 
