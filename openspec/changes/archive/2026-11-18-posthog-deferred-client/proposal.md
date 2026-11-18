@@ -1,6 +1,6 @@
 # Proposal: PostHog starts only when it may run
 
-> **Status:** open
+> **Status:** archived — 2026-11-18
 
 ## Why
 

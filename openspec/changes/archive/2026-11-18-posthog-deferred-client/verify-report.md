@@ -108,7 +108,7 @@ committed.
   with 9 problems, each a living-spec citation of a test title this change renamed (6 web, 3
   mobile), expected until the archive. Every step before it passed (`turbo run lint typecheck
   test build format:check`: 24 of 24 tasks), and each later step, run one by one, exited 0. The
-  run after the archive: GATE_LINE_2
+  run after the archive: exit 0, 2026-11-18, `verify:specs` PASS with 0 open changes.
 - `pnpm --filter @app/web build`: exit 0, also with a key in `opt-in` and in `granted` mode.
 - `pnpm --filter @app/mobile export:web`: exit 0; `apps/mobile/dist-web` deleted after.
 - `pnpm smoke:web`: exit 0, `HTTP 200 and marker present`.

@@ -3,7 +3,7 @@
 > **Governs:** `apps/web/src`, `apps/web/next.config.ts`, `apps/web/next-sentry.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-18 at `2dbc432`
+> **Verified against the code:** 2026-11-18 at `624a400`
 
 ## Purpose
 
@@ -1506,7 +1506,7 @@ mapped level, a breadcrumb as an exception step and a user as an `identify` by i
 context, breadcrumb payload and person property through `scrubPII` from packages/core, and SHALL
 reset the PostHog identity on `setUser(null)`.
 
-**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:21-68`, `apps/web/src/lib/observability/createPostHogObservability.constant.ts:10-19`
+**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:23-66`, `apps/web/src/lib/observability/createPostHogObservability.constant.ts:10-19`
 
 #### Scenario: an error
 
@@ -1538,28 +1538,31 @@ reset the PostHog identity on `setUser(null)`.
 - **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "setUser identifies the id with the scrubbed rest"
 - **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "setUser(null) resets the identity"
 
-### Requirement: WEB-50 — The PostHog client is inert without a key
+### Requirement: WEB-50 — The PostHog SDK is loaded only when it may run
 
-The web app SHALL initialise its one PostHog client only in the browser and only when
-`NEXT_PUBLIC_POSTHOG_KEY` is set, sending to `NEXT_PUBLIC_POSTHOG_HOST` or, without it, to the US
-ingestion host, and SHALL otherwise expose no client, so every observability call is a no-op and
-no request leaves the app.
+The web app SHALL load `posthog-js` only through a dynamic import, in the browser and with
+`NEXT_PUBLIC_POSTHOG_KEY` set: when the app starts in `granted` and `memory` mode, and in
+`opt-in` mode only once consent is granted (WEB-56, WEB-57). It SHALL load and initialise the SDK
+once however often it is started, sending to `NEXT_PUBLIC_POSTHOG_HOST` or, without it, to the
+US ingestion host. Without a key, and on the server, it SHALL never load the SDK, so every
+observability call is a no-op and no request leaves the app; and a build without a key, or in
+`opt-in` mode, SHALL ship no `posthog-js` in the client chunks a page loads at start.
 
-**Evidence:** `apps/web/src/lib/posthog/posthogClient.constant.ts:4-11`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:19`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:56-59`
+**Evidence:** `apps/web/src/lib/posthog/posthogClient.constant.ts:4-11`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:20`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:32`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:48-71`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:79-95`
 
 #### Scenario: no key
 
 - **GIVEN** no PostHog key
-- **WHEN** the client module loads and every observability method is called
-- **THEN** the SDK is never initialised and receives nothing
-- **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "does not initialise PostHog without a key"
+- **WHEN** the client module loads, is started and every observability method is called
+- **THEN** the SDK module is never loaded and receives nothing
+- **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "never loads PostHog without a key"
 
 #### Scenario: a key and a host
 
 - **GIVEN** a key and a host
-- **WHEN** the client module loads in the browser
-- **THEN** the SDK is initialised once with that key and that host
-- **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "initialises PostHog with the key and the host from the environment"
+- **WHEN** the client module loads in the browser and is started again
+- **THEN** the SDK module is loaded once and initialised once, with that key and that host
+- **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "loads and initialises PostHog once with the key and the host from the environment"
 
 #### Scenario: a key and no host
 
@@ -1571,9 +1574,17 @@ no request leaves the app.
 #### Scenario: the server
 
 - **GIVEN** a key and no `window`
-- **WHEN** the client module loads
-- **THEN** the SDK is never initialised and no client is exposed
-- **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "does not initialise PostHog on the server"
+- **WHEN** the client module loads and is started
+- **THEN** the SDK module is never loaded
+- **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "never loads PostHog on the server"
+
+#### Scenario: the initial client bundle
+
+- **GIVEN** a production build without a key, and one with a key in `opt-in` mode
+- **WHEN** the chunks each prerendered page loads at start are read
+- **THEN** none of them holds `posthog-js`
+- **Test:** Not covered — a test replaces the SDK at its module; `verify-report.md` reads the
+  built output of `next build`
 
 ### Requirement: WEB-51 — The PostHog client starts with privacy defaults
 
@@ -1581,7 +1592,7 @@ The web app SHALL initialise PostHog, under every consent mode, with session rec
 autocapture off (form inputs included), console errors off, unhandled errors and rejections
 captured, and the URL scrub as its `before_send`.
 
-**Evidence:** `apps/web/src/lib/posthog/posthogClient.adapter.ts:21-40`, `apps/web/src/lib/posthog/posthogClient.constant.ts:15-19`, `apps/web/src/lib/posthog/posthogClient.constant.ts:40-47`
+**Evidence:** `apps/web/src/lib/posthog/posthogClient.adapter.ts:48-71`, `apps/web/src/lib/posthog/posthogClient.constant.ts:15-19`, `apps/web/src/lib/posthog/posthogClient.constant.ts:40-47`
 
 #### Scenario: recording and autocapture
 
@@ -1698,7 +1709,7 @@ only when `SENTRY_AUTH_TOKEN` is set.
 The web app SHALL ship a PostHog adapter and a Sentry adapter that both pass the observability
 port contract of packages/tooling with their SDK replaced at its module.
 
-**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:21-68`, `apps/web/src/lib/observability/createSentryObservability.adapter.ts:26-65`
+**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:23-66`, `apps/web/src/lib/observability/createSentryObservability.adapter.ts:26-65`
 
 #### Scenario: the PostHog adapter
 
@@ -1722,7 +1733,7 @@ when it names one, initialising PostHog in `granted` mode with the options it ha
 setting existed. It SHALL throw a configuration error that names the variable and the accepted
 values when, with a key set, the value names anything else, on the server too.
 
-**Evidence:** `apps/web/src/lib/posthog/posthogClient.constant.ts:24-35`, `apps/web/src/lib/posthog/resolveConsentMode.helper.ts:15-26`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:47-49`
+**Evidence:** `apps/web/src/lib/posthog/posthogClient.constant.ts:24-35`, `apps/web/src/lib/posthog/resolveConsentMode.helper.ts:15-26`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:27-29`
 
 #### Scenario: no setting
 
@@ -1758,19 +1769,35 @@ values when, with a key set, the value names anything else, on the server too.
 
 ### Requirement: WEB-56 — Each consent mode maps onto the SDK's options
 
-The web app SHALL initialise PostHog in `opt-in` mode with `opt_out_capturing_by_default` and
-`opt_out_persistence_by_default` set, so it captures nothing and stores nothing until consent is
-granted, and in `memory` mode with `persistence: 'memory'`, so it captures but keeps no cookie,
-local storage or session storage; each mode adds nothing else to the `granted` options.
+The web app SHALL load no SDK in `opt-in` mode until consent is granted, through the consent API
+(WEB-57) or by a grant recorded on an earlier visit, which loads it at start; it SHALL then
+initialise PostHog with `opt_out_capturing_by_default` and `opt_out_persistence_by_default` set,
+so it captures and stores nothing until it is opted in. In `memory` mode it SHALL initialise
+PostHog with `persistence: 'memory'`, so it captures but keeps no cookie, local storage or session
+storage. Each mode adds nothing else to the `granted` options.
 
-**Evidence:** `apps/web/src/lib/posthog/posthogClient.constant.ts:40-47`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:28-38`
+**Evidence:** `apps/web/src/lib/posthog/posthogClient.constant.ts:40-47`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:57-67`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:89-95`, `apps/web/src/lib/posthog/grantRecord.adapter.ts:23-28`
+
+#### Scenario: `opt-in` before a grant
+
+- **GIVEN** a key, the consent mode `opt-in` and no recorded grant
+- **WHEN** the client module loads in the browser
+- **THEN** the SDK module is not loaded
+- **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "does not load PostHog in opt-in mode before a grant"
 
 #### Scenario: `opt-in`
 
 - **GIVEN** a key and the consent mode `opt-in`
-- **WHEN** the client is initialised
+- **WHEN** the client is started, as a grant starts it
 - **THEN** its options are the `granted` ones with capture and persistence opted out by default
 - **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "starts opt-in mode opted out of capture and persistence"
+
+#### Scenario: a grant from an earlier visit
+
+- **GIVEN** a key, the consent mode `opt-in` and a grant recorded by an earlier visit
+- **WHEN** the client module loads in the browser
+- **THEN** the SDK module is loaded and initialised
+- **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "loads PostHog at start in opt-in mode after a grant from an earlier visit"
 
 #### Scenario: `memory`
 
@@ -1783,35 +1810,63 @@ local storage or session storage; each mode adds nothing else to the `granted` o
 
 The web app SHALL export a consent API, the `IConsentPort` of packages/core, from its
 observability barrel, bound to PostHog in the composition root `consent.adapter.ts`. In `opt-in`
-mode with a client, `grant` SHALL opt PostHog in without an `$opt_in` event; `revoke` SHALL opt
-it out and then reset it with a new device id, which clears every value it stored and the stored
-choice; and `getStatus` SHALL read `granted` after a grant, `denied` after a revoke on the same
-page, and `pending` before any choice. In `granted` and `memory` mode, without a key and on the
-server, `getStatus` SHALL read `not-required`, and `grant` and `revoke` SHALL call nothing on
+mode with a key in the browser, `grant` SHALL load the SDK (WEB-50), opt it in without an
+`$opt_in` event and then record the grant in the browser's local storage; `revoke` SHALL wait for
+a load in flight, remove that record, stop the client so later calls are dropped (WEB-58), and
+opt a loaded SDK out and then reset it with a new device id, which clears every value it stored
+and its stored choice, and a later grant SHALL opt the same SDK in again; when a revoke and a
+grant overlap a load, the later one SHALL decide; and `getStatus` SHALL read `granted` while the
+record holds a grant, `denied` after a revoke on the same page, and `pending` otherwise. In `granted` and `memory` mode, without a key and on the server, `getStatus`
+SHALL read `not-required`, and `grant` and `revoke` SHALL load nothing and call nothing on
 PostHog.
 
-**Evidence:** `apps/web/src/lib/observability/createPostHogConsent.adapter.ts:26-58`, `apps/web/src/lib/observability/createPostHogConsent.constant.ts:10-26`, `apps/web/src/lib/observability/consent.adapter.ts:7`, `apps/web/src/lib/observability/index.ts:1`
+**Evidence:** `apps/web/src/lib/observability/createPostHogConsent.adapter.ts:34-74`, `apps/web/src/lib/observability/createPostHogConsent.constant.ts:7-14`, `apps/web/src/lib/posthog/grantRecord.adapter.ts:23-43`, `apps/web/src/lib/posthog/grantRecord.constant.ts:4-6`, `apps/web/src/lib/observability/consent.adapter.ts:7`, `apps/web/src/lib/observability/index.ts:1`
 
 #### Scenario: before a choice
 
 - **GIVEN** a key and the consent mode `opt-in`
 - **WHEN** the status is read before any grant or revoke
-- **THEN** it is `pending` and PostHog was not opted in
-- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "reads pending and opts nothing in before a choice in opt-in mode"
+- **THEN** it is `pending` and the SDK module was not loaded
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "reads pending and loads nothing before a choice in opt-in mode"
 
 #### Scenario: a grant
 
 - **GIVEN** a key and the consent mode `opt-in`
-- **WHEN** consent is granted
-- **THEN** PostHog is opted in with no opt-in event and the status reads `granted`
-- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "grant opts PostHog in without an opt-in event and reads granted"
+- **WHEN** consent is granted twice
+- **THEN** the SDK module is loaded and initialised once, PostHog is opted in with no opt-in
+  event, the grant is recorded and the status reads `granted`
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "grant loads PostHog once, opts it in without an opt-in event and reads granted"
+
+#### Scenario: a grant from an earlier visit
+
+- **GIVEN** a key, the consent mode `opt-in` and a grant recorded by an earlier visit
+- **WHEN** the status is read
+- **THEN** it is `granted`
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "reads granted after a grant from an earlier visit"
 
 #### Scenario: a revoke
 
 - **GIVEN** a key, the consent mode `opt-in` and a grant
-- **WHEN** consent is revoked
-- **THEN** PostHog is opted out, then reset with a new device id, and the status reads `denied`
-- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "revoke opts PostHog out, resets it with a new device id and reads denied"
+- **WHEN** consent is revoked, and an error is captured after it
+- **THEN** PostHog is opted out, then reset with a new device id, the record is gone, the error
+  never reaches PostHog and the status reads `denied`
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "revoke opts PostHog out, resets it with a new device id, stops it and reads denied"
+
+#### Scenario: a grant after a revoke
+
+- **GIVEN** a key, the consent mode `opt-in`, a grant and a revoke
+- **WHEN** consent is granted again
+- **THEN** PostHog is opted in again, the SDK module was loaded and initialised once, and the
+  status reads `granted`
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "grants again after a revoke with the SDK it already loaded"
+
+#### Scenario: a revoke and a grant during a load
+
+- **GIVEN** a key, the consent mode `opt-in` and a grant recorded by an earlier visit, so the SDK
+  loads at start
+- **WHEN** consent is revoked and then granted before the load ends
+- **THEN** PostHog is not opted out, the grant stays recorded and the status reads `granted`
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "keeps a grant made while a revoke waits for the load"
 
 #### Scenario: a mode that asks no consent
 
@@ -1824,7 +1879,7 @@ PostHog.
 
 - **GIVEN** the consent mode `opt-in` and no key, then a key and no `window`
 - **WHEN** consent is granted, revoked and read
-- **THEN** nothing throws, PostHog receives nothing and the status reads `not-required`
+- **THEN** nothing throws, the SDK module is never loaded and the status reads `not-required`
 - **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "changes nothing and reads not-required without a key"
 - **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "changes nothing and reads not-required on the server"
 
@@ -1834,6 +1889,47 @@ PostHog.
 - **WHEN** consent is granted through the barrel's `consent`
 - **THEN** PostHog is opted in
 - **Test:** `apps/web/src/lib/observability/__tests__/consent.adapter.test.ts` › "binds the PostHog consent by default"
+
+### Requirement: WEB-58 — PostHog calls wait for the SDK in a bounded queue, or are dropped
+
+The web app's PostHog observability adapter SHALL scrub every payload with `scrubPII` when it is
+called, and then: hand the call to the SDK at once while the SDK is loaded; while the SDK is
+loading, hold it in a queue of at most `POSTHOG_PENDING_CALLS_LIMIT` calls, dropping the oldest
+when the queue is full, and hand every held call to the SDK in order once it loads, or drop them
+all if it fails to load; and drop it while no load has started: without a key, on the server, in
+`opt-in` mode before a grant and after a revoke.
+
+**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:23-66`, `apps/web/src/lib/posthog/deferredClient.helper.ts:14-65`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:39-40`, `apps/web/src/lib/posthog/posthogClient.constant.ts:51`
+
+#### Scenario: the SDK loading
+
+- **GIVEN** a key, the consent mode `granted` and an SDK that has not loaded yet
+- **WHEN** an error, a message, a breadcrumb and a user are captured with an email, and the SDK
+  then loads
+- **THEN** the SDK receives each of them in the order they were made, with the email redacted
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "hands the calls made while PostHog loads to it in order, scrubbed"
+
+#### Scenario: a full queue
+
+- **GIVEN** a key, the consent mode `granted` and an SDK that has not loaded yet
+- **WHEN** one error more than `POSTHOG_PENDING_CALLS_LIMIT` is captured, and the SDK then loads
+- **THEN** the SDK receives the last `POSTHOG_PENDING_CALLS_LIMIT` errors in order, and not the
+  first
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "drops the oldest call when the queue is full"
+
+#### Scenario: a failed load
+
+- **GIVEN** a key, the consent mode `granted` and an SDK whose module fails to load
+- **WHEN** an error is captured before the failure and another after it
+- **THEN** nothing throws and nothing is delivered
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "drops the held calls when PostHog fails to load"
+
+#### Scenario: before a grant
+
+- **GIVEN** a key and the consent mode `opt-in`
+- **WHEN** an error is captured, and consent is then granted
+- **THEN** the SDK loads and receives no exception
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "drops every call in opt-in mode before a grant"
 
 ## Open questions
 
