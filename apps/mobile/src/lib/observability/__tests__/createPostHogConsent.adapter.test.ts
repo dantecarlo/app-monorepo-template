@@ -34,9 +34,13 @@ const CONSENT_CALLS = [sdk.optIn, sdk.optOut, sdk.reset]
 // in-memory storage of @app/core.
 const loadConsent = async ({
   consent,
+  deviceRead,
+  grantedEarlier = false,
   key
 }: {
   consent?: string
+  deviceRead?: Promise<void>
+  grantedEarlier?: boolean
   key?: string
 }) => {
   Object.values(sdk).forEach((mock) => mock.mockClear())
@@ -44,7 +48,19 @@ const loadConsent = async ({
   vi.stubEnv('EXPO_PUBLIC_POSTHOG_CONSENT', consent)
   vi.resetModules()
   const device = createMemoryKeyValueStorage()
-  vi.doMock('@/lib/storage', () => ({ keyValueStorage: device }))
+  if (grantedEarlier) {
+    await device.setItem({ key: MARKER_ON_DEVICE, value: 'true' })
+  }
+  // A test that passes deviceRead holds every read of the device until it
+  // settles.
+  const keyValueStorage = {
+    ...device,
+    getItem: async (params: { key: string }) => {
+      await deviceRead
+      return device.getItem(params)
+    }
+  }
+  vi.doMock('@/lib/storage', () => ({ keyValueStorage }))
   const { createPostHogConsent } =
     await import('@/lib/observability/createPostHogConsent.adapter')
   const { createPostHogObservability } =
@@ -111,6 +127,31 @@ test('revoke closes the consent storage, drops the client, opts it out, resets i
   expect(sdk.optOut).toHaveBeenCalledOnce()
   expect(sdk.reset).toHaveBeenCalledExactlyOnceWith([])
   expect(sdk.captureException).not.toHaveBeenCalled()
+  expect(await adapter.getStatus()).toBe('denied')
+})
+
+test('a revoke while the launch restores an earlier grant leaves PostHog opted out', async () => {
+  const gate: { open?: () => void } = {}
+  const deviceRead = new Promise<void>((resolve) => {
+    gate.open = resolve
+  })
+  const { adapter, device } = await loadConsent({
+    consent: 'opt-in',
+    deviceRead,
+    grantedEarlier: true,
+    key: KEY
+  })
+
+  const revoked = adapter.revoke()
+  gate.open?.()
+  await revoked
+
+  expect(sdk.optIn).toHaveBeenCalledOnce()
+  expect(sdk.optOut).toHaveBeenCalledOnce()
+  expect(sdk.optOut.mock.invocationCallOrder[0]).toBeGreaterThan(
+    sdk.optIn.mock.invocationCallOrder.at(-1) ?? 0
+  )
+  expect(await device.getItem({ key: MARKER_ON_DEVICE })).toBeNull()
   expect(await adapter.getStatus()).toBe('denied')
 })
 

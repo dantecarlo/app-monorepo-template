@@ -150,6 +150,13 @@ test('drops every call in opt-in mode before a grant', async () => {
   const adapter = await loadAdapter({ consent: 'opt-in', key: KEY })
 
   adapter.captureError({ error: new Error('before consent') })
+  adapter.captureMessage?.({
+    level: ObservabilityLevelEnum.WARNING,
+    message: 'before consent'
+  })
+  adapter.addBreadcrumb?.({ message: 'before consent' })
+  adapter.setUser?.({ user: { id: 'u1' } })
+  adapter.setUser?.({ user: null })
   const { createPostHogConsent } =
     await import('@/lib/observability/createPostHogConsent.adapter')
   await createPostHogConsent().grant()
@@ -157,6 +164,7 @@ test('drops every call in opt-in mode before a grant', async () => {
   expect(sdk.construct).toHaveBeenCalledOnce()
   expect(sdk.optIn).toHaveBeenCalledOnce()
   DELIVERING_CALLS.forEach((mock) => expect(mock).not.toHaveBeenCalled())
+  expect(sdk.reset).not.toHaveBeenCalled()
 })
 
 const lastCallOrder = (mock: typeof sdk.identify): number =>
