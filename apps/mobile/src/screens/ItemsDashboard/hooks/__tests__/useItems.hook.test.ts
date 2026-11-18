@@ -15,8 +15,12 @@ vi.mock('@/services/Items', async (importActual) => {
   return { ...actual, getItems: mockGetItems }
 })
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key })
+vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
+  useAppTranslator: () => ({
+    has: () => false,
+    locale: 'en',
+    t: (key: string) => key
+  })
 }))
 
 import { useItems } from '@/screens/ItemsDashboard/hooks/useItems.hook'

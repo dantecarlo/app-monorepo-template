@@ -70,76 +70,6 @@
     "reason": "F.8 unit 6: lib/bootstrap takes this import."
   },
   {
-    "path": "apps/mobile/src/components/RootErrorBoundary/__tests__/RootErrorBoundary.component.test.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultError.component.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/mobile/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultLoading.component.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/mobile/src/components/ui/Button/Button.component.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/mobile/src/components/ui/ConfirmDialog/ConfirmDialog.component.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/mobile/src/components/ui/EmptyState/EmptyState.component.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/mobile/src/components/ui/ErrorState/ErrorState.component.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/mobile/src/components/ui/LanguageSwitcher/LanguageSwitcher.component.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/mobile/src/components/ui/LanguageSwitcher/useLanguageSwitcher.hook.ts",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/mobile/src/components/ui/LoadingSkeleton/LoadingSkeleton.component.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/mobile/src/components/ui/Logo/Logo.component.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/mobile/src/components/ui/Modal/Modal.component.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/mobile/src/components/ui/OfflineBanner/__tests__/OfflineBanner.component.test.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/components/ui/OfflineBanner/OfflineBanner.component.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
     "path": "apps/mobile/src/components/ui/Screen/__tests__/Screen.component.test.tsx",
     "package": "nativewind",
     "reason": "F.8 unit 5: the ui block's test sets the theme through lib/theme, not the vendor; the test then mocks the project module, not the vendor."
@@ -148,16 +78,6 @@
     "path": "apps/mobile/src/components/ui/Text/__tests__/Text.component.test.tsx",
     "package": "nativewind",
     "reason": "F.8 unit 5: the ui block's test sets the theme through lib/theme, not the vendor; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/components/ui/ThemeToggle/ThemeToggle.component.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/mobile/src/components/ui/Toast/Toast.component.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
   },
   {
     "path": "apps/mobile/src/hooks/useSession.hook.ts",
@@ -175,16 +95,6 @@
     "reason": "F.8 unit 4: the key-value storage port and its lib/storage adapter take this import."
   },
   {
-    "path": "apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/lib/query/useAppMutation.hook.ts",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
     "path": "apps/mobile/src/lib/theme/theme.config.ts",
     "package": "@react-native-async-storage/async-storage",
     "reason": "F.8 unit 4: the key-value storage port and its lib/storage adapter take this import."
@@ -195,79 +105,14 @@
     "reason": "F.8 unit 5: a components/ui/StatusBar block with its own style type takes this import."
   },
   {
-    "path": "apps/mobile/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
     "path": "apps/mobile/src/screens/ItemsDashboard/components/DashboardHeader/__tests__/DashboardHeader.component.test.tsx",
     "package": "expo-linear-gradient",
     "reason": "F.8 unit 5: the components/ui block that wraps it takes this import; the test then mocks the project module, not the vendor."
   },
   {
-    "path": "apps/mobile/src/screens/ItemsDashboard/components/DashboardHeader/__tests__/DashboardHeader.component.test.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/screens/ItemsDashboard/components/DashboardHeader/DashboardHeader.component.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/mobile/src/screens/ItemsDashboard/components/DashboardNav/__tests__/DashboardNav.component.test.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/screens/ItemsDashboard/components/DashboardNav/DashboardNav.component.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/mobile/src/screens/ItemsDashboard/components/ItemCard/ItemCard.component.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/__tests__/ItemsListCard.component.test.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/mobile/src/screens/ItemsDashboard/components/StatsCard/__tests__/StatsCard.component.test.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
     "path": "apps/mobile/src/screens/ItemsDashboard/hooks/__tests__/useItems.hook.test.ts",
     "package": "@tanstack/react-query",
     "reason": "F.8 unit 3: the query seam's own types and AppQueryProvider, in lib/query, take this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/screens/ItemsDashboard/hooks/__tests__/useItems.hook.test.ts",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/screens/Login/__tests__/Login.screen.test.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/screens/Login/Login.screen.tsx",
-    "package": "react-i18next",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
   },
   {
     "path": "apps/mobile/src/stores/auth.store.ts",

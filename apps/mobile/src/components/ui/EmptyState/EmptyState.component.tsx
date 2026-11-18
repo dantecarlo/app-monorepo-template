@@ -1,14 +1,14 @@
-import { useTranslation } from 'react-i18next'
 import { Text, View } from 'react-native'
 
 import { EMPTY_STATE_STYLES } from '@/components/ui/EmptyState/EmptyState.style'
 import type { IEmptyStateProps } from '@/components/ui/EmptyState/EmptyState.type'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 
 export const EmptyState = ({ cta, message, title }: IEmptyStateProps) => {
   const styles = useThemedStyles({ styles: EMPTY_STATE_STYLES })
 
-  const { t } = useTranslation()
+  const { t } = useAppTranslator()
 
   return (
     <View style={styles.container}>

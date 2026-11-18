@@ -1,7 +1,7 @@
-import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { Text } from '@/components/ui/Text'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 import {
   ITEM_CARD,
@@ -18,7 +18,7 @@ import type { IItemCardProps } from '@/screens/ItemsDashboard/components/ItemCar
 // ---------------------------------------------------------------------------
 
 export const ItemCard = ({ isLast = false, item }: IItemCardProps) => {
-  const { t } = useTranslation()
+  const { t } = useAppTranslator()
   const styles = useThemedStyles({ styles: ITEM_CARD })
   const statusColors = useThemedStyles({ styles: STATUS_COLOR })
 

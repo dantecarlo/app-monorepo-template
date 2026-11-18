@@ -1,8 +1,8 @@
-import { useTranslation } from 'react-i18next'
 import { Modal as RNModal, Pressable, Text, View } from 'react-native'
 
 import { MODAL_STYLES } from '@/components/ui/Modal/Modal.style'
 import type { IModalProps } from '@/components/ui/Modal/Modal.type'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 
 export const Modal = ({
@@ -13,7 +13,7 @@ export const Modal = ({
 }: IModalProps) => {
   const styles = useThemedStyles({ styles: MODAL_STYLES })
 
-  const { t } = useTranslation()
+  const { t } = useAppTranslator()
 
   return (
     <RNModal
