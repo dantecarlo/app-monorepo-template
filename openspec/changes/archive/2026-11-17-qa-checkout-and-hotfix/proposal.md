@@ -1,6 +1,6 @@
 # Proposal: QA checks out a held branch detached, and a hotfix ships only as its release
 
-> **Status:** open
+> **Status:** archived — 2026-11-18
 
 ## Why
 
