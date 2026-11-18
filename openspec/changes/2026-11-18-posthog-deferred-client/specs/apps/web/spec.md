@@ -142,9 +142,9 @@ mode with a key in the browser, `grant` SHALL load the SDK (WEB-50), opt it in w
 `$opt_in` event and then record the grant in the browser's local storage; `revoke` SHALL wait for
 a load in flight, remove that record, stop the client so later calls are dropped (WEB-58), and
 opt a loaded SDK out and then reset it with a new device id, which clears every value it stored
-and its stored choice, and a later grant SHALL opt the same SDK in again; and `getStatus` SHALL
-read `granted` while the record holds a grant, `denied` after a revoke on the same page, and
-`pending` otherwise. In `granted` and `memory` mode, without a key and on the server, `getStatus`
+and its stored choice, and a later grant SHALL opt the same SDK in again; when a revoke and a
+grant overlap a load, the later one SHALL decide; and `getStatus` SHALL read `granted` while the
+record holds a grant, `denied` after a revoke on the same page, and `pending` otherwise. In `granted` and `memory` mode, without a key and on the server, `getStatus`
 SHALL read `not-required`, and `grant` and `revoke` SHALL load nothing and call nothing on
 PostHog.
 
@@ -187,6 +187,14 @@ PostHog.
 - **THEN** PostHog is opted in again, the SDK module was loaded and initialised once, and the
   status reads `granted`
 - **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "grants again after a revoke with the SDK it already loaded"
+
+#### Scenario: a revoke and a grant during a load
+
+- **GIVEN** a key, the consent mode `opt-in` and a grant recorded by an earlier visit, so the SDK
+  loads at start
+- **WHEN** consent is revoked and then granted before the load ends
+- **THEN** PostHog is not opted out, the grant stays recorded and the status reads `granted`
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "keeps a grant made while a revoke waits for the load"
 
 #### Scenario: a mode that asks no consent
 

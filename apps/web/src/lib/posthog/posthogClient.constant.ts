@@ -45,3 +45,7 @@ export const POSTHOG_CONSENT_OPTIONS_BY_MODE = {
     opt_out_persistence_by_default: true
   }
 } as const
+
+// The calls the observability adapter holds while the SDK loads; a call
+// beyond it drops the oldest held one.
+export const POSTHOG_PENDING_CALLS_LIMIT = 50
