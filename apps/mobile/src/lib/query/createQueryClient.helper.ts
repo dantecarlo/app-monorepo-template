@@ -5,6 +5,7 @@ import {
   QueryClient
 } from '@tanstack/react-query'
 
+import type { AppQueryClientType } from '@/lib/query/appQueryClient.type'
 import { STRUCTURAL_QUERY_KEY_SEGMENTS } from '@/lib/query/queryKeys.constant'
 
 const STALE_TIME_MS = 30_000
@@ -18,7 +19,7 @@ export interface ICreateQueryClientParams {
 
 export const createQueryClient = ({
   onCaptureError = () => undefined
-}: ICreateQueryClientParams = {}): QueryClient =>
+}: ICreateQueryClientParams = {}): AppQueryClientType =>
   new QueryClient({
     defaultOptions: {
       mutations: { retry: 0 },

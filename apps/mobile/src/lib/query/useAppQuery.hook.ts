@@ -1,22 +1,32 @@
-import {
-  type QueryKey,
-  useQuery,
-  type UseQueryOptions,
-  type UseQueryResult
-} from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 
-import type { IAppQueryOptions } from '@/lib/query/useAppQuery.type'
+import type {
+  IAppQueryOptions,
+  IAppQueryResult
+} from '@/lib/query/useAppQuery.type'
 
 /**
- * A query with an optional adapter. A failure adds no toast: the screen that
- * runs the query shows it, in its ErrorState or AsyncBoundary
- * (code-standards §19), and the query cache reports it once.
+ * A query with an optional adapter. A failure adds no toast: the screen
+ * that runs the query shows it, in its ErrorState or AsyncBoundary
+ * (code-standards §19), and the query cache reports it once. It returns
+ * only the fields of IAppQueryResult, so no caller reads the library's own.
  */
 export const useAppQuery = <TData, TError extends Error = Error>({
   adapter,
   queryOptions
-}: IAppQueryOptions<TData, TError>): UseQueryResult<TData, TError> =>
-  useQuery<TData, TError>({
-    ...queryOptions,
-    ...(adapter ? { select: (raw: TData) => adapter(raw) } : {})
-  } as UseQueryOptions<TData, TError, TData, QueryKey>)
+}: IAppQueryOptions<TData>): IAppQueryResult<TData, TError> => {
+  const { data, error, isError, isLoading, isSuccess, refetch } = useQuery<
+    TData,
+    TError
+  >({
+    queryFn: queryOptions.queryFn,
+    queryKey: queryOptions.queryKey,
+    ...(adapter
+      ? {
+          select: (raw: TData) => adapter(raw)
+        }
+      : {})
+  })
+
+  return { data, error, isError, isLoading, isSuccess, refetch }
+}

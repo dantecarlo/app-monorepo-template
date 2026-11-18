@@ -107,4 +107,35 @@ describe('useAppQuery', () => {
 
     expect(mockAddToast).not.toHaveBeenCalled()
   })
+
+  test("returns only the fields of the app's own query result", async () => {
+    const { result } = renderHook(
+      () =>
+        useAppQuery<number>({
+          queryOptions: {
+            queryFn: async () => 42,
+            queryKey: ['fields']
+          }
+        }),
+      { wrapper: makeWrapper() }
+    )
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(Object.keys(result.current).sort()).toEqual([
+      'data',
+      'error',
+      'isError',
+      'isLoading',
+      'isSuccess',
+      'refetch'
+    ])
+    expect(result.current).toEqual({
+      data: 42,
+      error: null,
+      isError: false,
+      isLoading: false,
+      isSuccess: true,
+      refetch: expect.any(Function)
+    })
+  })
 })
