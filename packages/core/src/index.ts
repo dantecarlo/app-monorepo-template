@@ -31,6 +31,9 @@ export type {
   IBackendClientProvider,
   ICreateBackendClientParams
 } from '#src/ports/client/IBackendClientProvider.type'
+export type { ConsentStatusType } from '#src/ports/consent/consentStatus.type'
+export { ConsentStatusEnum } from '#src/ports/consent/consentStatus.type'
+export type { IConsentPort } from '#src/ports/consent/IConsentPort.type'
 export type { ICreatePublicImageDeliveryParams } from '#src/ports/image-delivery/createPublicImageDelivery.helper'
 export { createPublicImageDelivery } from '#src/ports/image-delivery/createPublicImageDelivery.helper'
 export type {
@@ -59,4 +62,10 @@ export type {
 } from '#src/ports/origin-guard/IOriginGuardPort.type'
 export type { OriginGuardReasonType } from '#src/ports/origin-guard/originGuardReason.type'
 export { OriginGuardReasonEnum } from '#src/ports/origin-guard/originGuardReason.type'
+export { createMemoryKeyValueStorage } from '#src/ports/storage/createMemoryKeyValueStorage.helper'
+export type {
+  IKeyValueStoragePort,
+  IStorageItemParams,
+  IStorageKeyParams
+} from '#src/ports/storage/IKeyValueStoragePort.type'
 export { PII_KEYS, scrubPII } from '#src/utils/scrubPII.helper'

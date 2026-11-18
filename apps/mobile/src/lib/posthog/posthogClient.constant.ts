@@ -26,3 +26,28 @@ export const POSTHOG_ERROR_TRACKING = {
     unhandledRejections: true
   }
 } as const
+
+// The consent mode: `granted` captures from the start, the default; `opt-in`
+// captures and stores nothing until consent is granted; `memory` captures but
+// keeps nothing on the device. docs/observability.md describes each.
+export const POSTHOG_CONSENT = process.env.EXPO_PUBLIC_POSTHOG_CONSENT
+
+export const POSTHOG_CONSENT_ENV_NAME = 'EXPO_PUBLIC_POSTHOG_CONSENT'
+
+export const PostHogConsentModeEnum = {
+  GRANTED: 'granted',
+  MEMORY: 'memory',
+  OPT_IN: 'opt-in'
+} as const
+
+export type PostHogConsentModeType =
+  (typeof PostHogConsentModeEnum)[keyof typeof PostHogConsentModeEnum]
+
+// What each consent mode adds to the granted options. Opt-in also hands
+// PostHog the consent storage, which writes nothing to the device before a
+// grant; memory persistence keeps nothing there.
+export const POSTHOG_CONSENT_OPTIONS_BY_MODE = {
+  [PostHogConsentModeEnum.GRANTED]: {},
+  [PostHogConsentModeEnum.MEMORY]: { persistence: 'memory' },
+  [PostHogConsentModeEnum.OPT_IN]: { defaultOptIn: false }
+} as const

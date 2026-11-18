@@ -151,8 +151,10 @@ export default LoginPage
   abuse-prone forms (see [../infrastructure.md](../infrastructure.md) for the full checklist).
 - **Observability**: the composition root `src/lib/observability/observability.adapter.ts` binds
   the PostHog adapter, whose one client is `src/lib/posthog/posthogClient.adapter.ts`, the only
-  file that imports `posthog-js`; Sentry is an optional capability `/init` can prune (see
-  [../observability.md](../observability.md)).
+  file that imports `posthog-js`; Sentry is an optional capability `/init` can prune. The consent
+  composition root `src/lib/observability/consent.adapter.ts` binds the consent API a banner
+  calls, and `NEXT_PUBLIC_POSTHOG_CONSENT` picks PostHog's consent mode (see
+  [../observability.md](../observability.md#consent)).
 
 ## 5. Differences vs mobile (quick reference)
 

@@ -10,11 +10,12 @@
 The core package is the framework-agnostic domain layer the apps and the adapter packages build
 on. It holds the typed `AppError` and its service-error mapping, and the PII scrubber and
 query-key sanitizer that observability sinks rely on. It declares the ports (auth gateway,
-backend client, bot protection, image delivery, observability, origin guard) and ships
-vendor-free defaults for four of them. The vendor implementations live elsewhere: the auth
-gateway, backend client and service-error mapper in packages/supabase; the origin guard, bot
-protection and image delivery in packages/cloudflare; the catalogs the message keys resolve in,
-in packages/i18n; the Sentry adapters and the error resolver in apps/web and apps/mobile.
+backend client, bot protection, consent, image delivery, key-value storage, observability, origin
+guard) and ships vendor-free defaults for five of them. The vendor implementations live
+elsewhere: the auth gateway, backend client and service-error mapper in packages/supabase; the
+origin guard, bot protection and image delivery in packages/cloudflare; the catalogs the message
+keys resolve in, in packages/i18n; the observability and consent adapters and the error resolver
+in apps/web and apps/mobile; the key-value storage over AsyncStorage in apps/mobile.
 
 ## Requirements
 
@@ -789,6 +790,58 @@ every payload scrubbed, logs nothing while switched off, and logs a `null` user 
 - **WHEN** the port contract runs against it
 - **THEN** every case passes
 - **Test:** `packages/core/src/ports/observability/__tests__/createConsoleObservability.helper.test.ts` › "the observability port contract"
+
+### Requirement: CORE-27 — The consent port
+
+The core package SHALL declare the consent port, `IConsentPort`, whose `grant`, `revoke` and
+`getStatus` each return a promise, and `ConsentStatusEnum` with the statuses `granted`,
+`denied`, `pending` and `not-required`, both exported from its barrel and free of any vendor.
+
+**Evidence:** `packages/core/src/ports/consent/IConsentPort.type.ts:5-9`, `packages/core/src/ports/consent/consentStatus.type.ts:3-11`, `packages/core/src/index.ts:34-36`
+
+#### Scenario: the statuses
+
+- **GIVEN** the core barrel
+- **WHEN** `ConsentStatusEnum` is read
+- **THEN** it holds exactly `granted`, `denied`, `pending` and `not-required`
+- **Test:** `packages/core/src/ports/consent/__tests__/consentStatus.type.test.ts` › "names the four consent statuses"
+
+#### Scenario: an app implements the port
+
+- **GIVEN** the web app's consent composition root, typed as `IConsentPort`
+- **WHEN** consent is granted through it
+- **THEN** its provider receives the grant
+- **Test:** `apps/web/src/lib/observability/__tests__/consent.adapter.test.ts` › "binds the PostHog consent by default"
+
+### Requirement: CORE-28 — The key-value storage port
+
+The core package SHALL declare the key-value storage port, `IKeyValueStoragePort`, whose
+`getItem`, `setItem` and `removeItem` each take one object and return a promise, and SHALL ship
+`createMemoryKeyValueStorage`, a vendor-free implementation that holds its values in memory,
+each storage apart from every other, both exported from its barrel.
+
+**Evidence:** `packages/core/src/ports/storage/IKeyValueStoragePort.type.ts:1-16`, `packages/core/src/ports/storage/createMemoryKeyValueStorage.helper.ts:11-26`, `packages/core/src/index.ts:65-70`
+
+#### Scenario: a value and a missing key
+
+- **GIVEN** an in-memory storage
+- **WHEN** a value is set and read back, and a key it never held is read
+- **THEN** it reads the value back, and `null` for the missing key
+- **Test:** `packages/core/src/ports/storage/__tests__/createMemoryKeyValueStorage.helper.test.ts` › "reads back what it was handed, and null for a key it never held"
+
+#### Scenario: a removed key
+
+- **GIVEN** an in-memory storage holding a value
+- **WHEN** its key is removed
+- **THEN** the key reads `null`
+- **Test:** `packages/core/src/ports/storage/__tests__/createMemoryKeyValueStorage.helper.test.ts` › "removes a key"
+
+#### Scenario: two storages
+
+- **GIVEN** two in-memory storages
+- **WHEN** a value is set in the first
+- **THEN** the second does not hold it
+- **Test:** `packages/core/src/ports/storage/__tests__/createMemoryKeyValueStorage.helper.test.ts` › "keeps the values of each storage apart"
 
 ## Open questions
 

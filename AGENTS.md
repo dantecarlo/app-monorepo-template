@@ -495,11 +495,11 @@ pnpm --filter @app/supabase gen:types
 
 ### Env layout
 
-| File                     | Read by                | Holds                                                                                                                                                              |
-| ------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `packages/supabase/.env` | Supabase CLI (sourced) | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF`                                                                                            |
-| `apps/web/.env.local`    | Next.js                | `NEXT_PUBLIC_SUPABASE_URL`, `_ANON_KEY`, `CF_ORIGIN_SECRET`, `TURNSTILE_SECRET_KEY`, `R2_*`, `NEXT_PUBLIC_POSTHOG_KEY`, `_HOST`, optional `NEXT_PUBLIC_SENTRY_DSN` |
-| `apps/mobile/.env`       | Expo                   | `EXPO_PUBLIC_SUPABASE_URL`, `_ANON_KEY`, `EXPO_PUBLIC_POSTHOG_KEY`, `_HOST`, optional `EXPO_PUBLIC_SENTRY_DSN`                                                     |
+| File                     | Read by                | Holds                                                                                                                                                                          |
+| ------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `packages/supabase/.env` | Supabase CLI (sourced) | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF`                                                                                                        |
+| `apps/web/.env.local`    | Next.js                | `NEXT_PUBLIC_SUPABASE_URL`, `_ANON_KEY`, `CF_ORIGIN_SECRET`, `TURNSTILE_SECRET_KEY`, `R2_*`, `NEXT_PUBLIC_POSTHOG_KEY`, `_HOST`, `_CONSENT`, optional `NEXT_PUBLIC_SENTRY_DSN` |
+| `apps/mobile/.env`       | Expo                   | `EXPO_PUBLIC_SUPABASE_URL`, `_ANON_KEY`, `EXPO_PUBLIC_POSTHOG_KEY`, `_HOST`, `_CONSENT`, optional `EXPO_PUBLIC_SENTRY_DSN`                                                     |
 
 A root `.env` is not read by either framework. Never put secrets in
 `NEXT_PUBLIC_` or `EXPO_PUBLIC_` namespaces.
