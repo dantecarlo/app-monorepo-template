@@ -5,7 +5,7 @@
 - [x] T3 — `createAppStore` in both apps, every store and the mobile `useSession` moved onto it, zustand's seam narrowed to the helper, and its 8 allowlist entries removed · Requirements: WEB-65, WEB-66, MOBILE-63, MOBILE-64 · Commit: aef02d1
 - [x] T4 — the mobile theme and language configs keep their choice through `keyValueStorage`, the language config's test mocks `@/lib/storage`, and the 3 AsyncStorage allowlist entries removed · Requirements: MOBILE-03, MOBILE-04, MOBILE-06, MOBILE-07, MOBILE-56 · Commit: 14bf385
 - [x] T5 — the `store`, `service`, `screen`, `feature`, `arch`, `lib`, `test` and `fix-test` skills, `docs/code-standards.md`, `docs/architecture/web.md` and `mobile.md`, and `docs/maps/global-map.md` · Requirements: none · Commit: fef945a
-- [ ] T6 — `verify-report.md`, then the archive into the living specs · Requirements: none · Commit: —
+- [x] T6 — `verify-report.md`, then the archive into the living specs · Requirements: none · Commit: e3dc683
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of

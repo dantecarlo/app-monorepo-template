@@ -1,6 +1,6 @@
 # Proposal: the query, store and storage seams of both apps
 
-> **Status:** open
+> **Status:** archived — 2026-11-18
 
 ## Why
 
