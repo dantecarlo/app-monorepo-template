@@ -48,7 +48,8 @@ apps/mobile/
     │       └── index.ts          # barrel — consumers import from @/services/<Domain>
     ├── hooks/                    # SHARED hooks (used across screens, e.g. useSession)
     ├── stores/                   # Zustand slices (auth, toast, ui) — shared by definition
-    ├── lib/                      # framework wiring: i18n/, observability/, posthog/, query/,
+    ├── lib/                      # framework wiring: i18n/ (the translator over react-i18next),
+    │                             # observability/, posthog/, query/,
     │                             # storage/ (the device key-value storage), supabase/, theme/
     ├── helpers/                  # shared pure helpers + layout.style.ts (positioning only)
     ├── validation/               # shared zod schemas (or per-screen in the screen's models/)
@@ -122,8 +123,14 @@ strings via i18n, screens handle loading/empty/error states. Every user-facing s
 is a catalog message of the active language, accessibility labels included (the toast's dismiss
 control, the busy labels of `Button`, `LoadingSkeleton` and the async boundary); an adapter
 returns data, never a sentence, so the items adapter gives an item's age as a unit and a count,
-which the item card words through `items.age`. A component test reads that copy through
-`renderWithI18n` in `src/test/i18n.helper.tsx`, an i18next instance on the real catalogs.
+which the item card words through `items.age`. A block reads its copy through
+`useAppTranslator()` of `src/lib/i18n/useAppTranslator.hook.ts`, the `IAppTranslator` of
+`@app/i18n` the web gives too, with full keys (`t('items.dashboard.title')`); only
+`src/lib/i18n/` imports react-i18next, i18next, its ICU plugin, the plural rules polyfill and
+expo-localization, and the language setter is `setLanguage` of `src/lib/i18n/i18n.config.ts`
+(code-standards § 15). A component test reads that copy through `renderWithI18n` in
+`src/test/i18n.helper.tsx`, an i18next instance on the real catalogs, or mocks
+`@/lib/i18n/useAppTranslator.hook`, never react-i18next.
 
 **Styling lives in the components** (`AGENTS.md` LAW, `docs/code-standards.md` §22). A block under
 `src/components/ui/`, or a screen's own `components/`, owns its look, in NativeWind classes or a

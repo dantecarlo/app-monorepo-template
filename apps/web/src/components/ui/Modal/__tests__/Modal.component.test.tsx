@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { NextIntlClientProvider } from 'next-intl'
 import { describe, expect, test, vi } from 'vitest'
 
 import { Modal } from '@/components/ui/Modal/Modal.component'
+import { AppI18nProvider } from '@/lib/i18n/AppI18nProvider.component'
+import { withCopy } from '@/test/intl.helper'
 
 const messages = {
   components: { modal: { close: 'Close' } }
@@ -12,9 +13,9 @@ const renderModal = (
   props: Partial<React.ComponentProps<typeof Modal>> = {}
 ) =>
   render(
-    <NextIntlClientProvider locale="en" messages={messages}>
+    <AppI18nProvider locale="en" messages={withCopy({ copy: messages })}>
       <Modal isOpen={true} onClose={vi.fn()} {...props} />
-    </NextIntlClientProvider>
+    </AppI18nProvider>
   )
 
 describe('Modal', () => {
@@ -25,11 +26,11 @@ describe('Modal', () => {
 
   test('returns null when closed', () => {
     const { container } = render(
-      <NextIntlClientProvider locale="en" messages={messages}>
+      <AppI18nProvider locale="en" messages={withCopy({ copy: messages })}>
         <Modal isOpen={false} onClose={vi.fn()}>
           content
         </Modal>
-      </NextIntlClientProvider>
+      </AppI18nProvider>
     )
     expect(container.firstChild).toBeNull()
   })

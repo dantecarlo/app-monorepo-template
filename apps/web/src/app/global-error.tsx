@@ -4,12 +4,11 @@ import '@/app/globals.css'
 
 import { resources } from '@app/i18n'
 import { DEFAULT_THEME } from '@app/tokens'
-import { NextIntlClientProvider } from 'next-intl'
 import type { ComponentProps } from 'react'
 
 import RouteError from '@/app/error'
-import { I18N_TIME_ZONE } from '@/i18n/i18n.constant'
 import { useCookieLanguage } from '@/i18n/useCookieLanguage.hook'
+import { AppI18nProvider } from '@/lib/i18n/AppI18nProvider.component'
 
 type GlobalErrorPropsType = ComponentProps<typeof RouteError>
 
@@ -26,13 +25,12 @@ const GlobalError = ({
   return (
     <html data-theme={DEFAULT_THEME} lang={locale}>
       <body className="min-h-screen">
-        <NextIntlClientProvider
+        <AppI18nProvider
           locale={locale}
           messages={resources[locale].translation}
-          timeZone={I18N_TIME_ZONE}
         >
           <RouteError error={error} reset={reset} unstable_retry={retry} />
-        </NextIntlClientProvider>
+        </AppI18nProvider>
       </body>
     </html>
   )

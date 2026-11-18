@@ -2,8 +2,12 @@ import { describe, expect, test, vi } from 'vitest'
 
 import { render, screen } from '@/test/test.helper'
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key })
+vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
+  useAppTranslator: () => ({
+    has: () => false,
+    locale: 'en',
+    t: (key: string) => key
+  })
 }))
 
 vi.mock('@/screens/ItemsDashboard/hooks/useItems.hook', () => ({
@@ -44,7 +48,7 @@ describe('ItemsDashboardScreen (mobile)', () => {
   test('shows no View all button', () => {
     render(<ItemsDashboardScreen />)
 
-    expect(screen.queryByText('viewAll')).toBeNull()
+    expect(screen.queryByText('items.dashboard.viewAll')).toBeNull()
     expect(screen.queryByRole('button')).toBeNull()
   })
 })

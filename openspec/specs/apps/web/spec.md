@@ -3,7 +3,7 @@
 > **Governs:** `apps/web/src`, `apps/web/next.config.ts`, `apps/web/next-sentry.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-18 at `2dbc432`
+> **Verified against the code:** 2026-11-18 at `deaf52a`
 
 ## Purpose
 
@@ -12,7 +12,8 @@ items summary server screen and the client items dashboard), the sign-in route a
 verify API route, and renders their loading, empty and error states. It owns the edge guarantees
 wired in its own code: the origin-lock middleware, the security and image cache headers, the
 PostHog observability default and the optional Sentry setup, both with PII scrubbing, PostHog's
-consent mode and the consent API, and the single query-error capture path. It leaves the domain
+consent mode and the consent API, the single query-error capture path, and the translator its
+blocks read their copy through, over next-intl behind its lib/i18n. It leaves the domain
 types, ports, `scrubPII` and `sanitizeQueryKey` to packages/core, the origin guard and Turnstile
 verdicts to packages/cloudflare, the Supabase clients and auth gateway to packages/supabase, the
 translation catalogs to packages/i18n, and the theme values to packages/tokens.
@@ -54,7 +55,7 @@ boundary followed by the client items dashboard screen, inside the page's `main`
 The web app SHALL render, on the server, a summary card with the total, active, draft and archived
 item counts computed from the items service, labelled with the `items.summary` translation keys.
 
-**Evidence:** `apps/web/src/screens/ItemsSummary/ItemsSummary.screen.tsx:7-41`, `apps/web/src/services/ItemsSummary/itemsSummary.service.ts:24-31`, `apps/web/src/services/ItemsSummary/ItemsSummary.adapter.ts:8-15`
+**Evidence:** `apps/web/src/screens/ItemsSummary/ItemsSummary.screen.tsx:6-40`, `apps/web/src/services/ItemsSummary/itemsSummary.service.ts:24-31`, `apps/web/src/services/ItemsSummary/ItemsSummary.adapter.ts:8-15`
 
 #### Scenario: the counts follow the item statuses
 
@@ -96,7 +97,7 @@ profile under the `items-summary` cache tag.
 The web app SHALL, while the items query is loading, render skeleton rows with the status role in
 the items list and a dash in place of each count on the stats card.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:48-58`, `apps/web/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.tsx:28-32`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:51-61`, `apps/web/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.tsx:27-33`
 
 #### Scenario: the list shows skeletons
 
@@ -118,7 +119,7 @@ the items list and a dash in place of each count on the stats card.
 The web app SHALL, once the items load, render one item card per item, the result count in the
 list header, the total item count and the count of items whose status is active.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:64-70`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:33-37`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:63-64`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:64-70`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:32-40`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:66-67`
 
 #### Scenario: the item cards appear
 
@@ -147,7 +148,7 @@ list header, the total item count and the count of items whose status is active.
 The web app SHALL render the empty state with the `items.dashboard.listEmpty` message when the
 loaded item list is empty.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:61-62`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:64-65`
 
 #### Scenario: the service returns no items
 
@@ -163,7 +164,7 @@ The web app SHALL, when the items query fails, render the error state with its g
 the items list, in place of the items and the empty state, with a Try again button that runs the
 items query again, show no result count in the list header, and queue no toast.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:51`, `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:79-81`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:33-37`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:59-60`, `apps/web/src/lib/query/useAppQuery.hook.ts:21`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:51`, `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:79-81`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:32-40`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:62-63`, `apps/web/src/lib/query/useAppQuery.hook.ts:21`
 
 #### Scenario: the items service rejects
 
@@ -238,7 +239,7 @@ item's age unit and the `items.status` message of its status, in the active lang
 adapter SHALL describe the age as a unit and a count: just now under one minute, then whole
 minutes, hours or days.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/components/ItemCard/ItemCard.component.tsx:19-52`, `apps/web/src/screens/ItemsDashboard/components/ItemCard/ItemCard.component.tsx:44`, `apps/web/src/screens/ItemsDashboard/components/ItemCard/ItemCard.component.tsx:47`, `apps/web/src/services/Items/Items.adapter.ts:17-23`, `apps/web/src/services/Items/Items.adapter.ts:27-45`, `apps/web/src/services/Items/Items.adapter.ts:51-61`, `apps/web/src/services/Items/items.constant.ts:12-17`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/components/ItemCard/ItemCard.component.tsx:18-51`, `apps/web/src/screens/ItemsDashboard/components/ItemCard/ItemCard.component.tsx:43`, `apps/web/src/screens/ItemsDashboard/components/ItemCard/ItemCard.component.tsx:46`, `apps/web/src/services/Items/Items.adapter.ts:17-23`, `apps/web/src/services/Items/Items.adapter.ts:27-45`, `apps/web/src/services/Items/Items.adapter.ts:51-61`, `apps/web/src/services/Items/items.constant.ts:12-17`
 
 #### Scenario: the card content
 
@@ -306,7 +307,7 @@ The web app SHALL render, at the login route, the login screen inside the auth s
 and language controls, the logo and app name, the `auth.login` title and subtitle, labelled email
 and password fields, a submit button and a Google sign-in button.
 
-**Evidence:** `apps/web/src/app/login/page.tsx:3`, `apps/web/src/components/ui/AuthShell/AuthShell.component.tsx:30-47`, `apps/web/src/screens/Login/Login.screen.tsx:27-78`
+**Evidence:** `apps/web/src/app/login/page.tsx:3`, `apps/web/src/components/ui/AuthShell/AuthShell.component.tsx:30-47`, `apps/web/src/screens/Login/Login.screen.tsx:26-80`
 
 #### Scenario: the login screen renders
 
@@ -328,7 +329,7 @@ The web app SHALL reject a login submit whose email does not match the email pat
 password is shorter than 8 characters, and show the `auth.login.errors.email` or
 `auth.login.errors.password` message on the offending field.
 
-**Evidence:** `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:19-33`, `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:63-68`, `apps/web/src/screens/Login/Login.constant.ts:4-7`, `apps/web/src/screens/Login/Login.screen.tsx:34-39`
+**Evidence:** `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:19-33`, `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:63-68`, `apps/web/src/screens/Login/Login.constant.ts:6-9`, `apps/web/src/screens/Login/Login.screen.tsx:33-38`
 
 #### Scenario: empty fields are submitted
 
@@ -354,7 +355,7 @@ and when it rejects it SHALL queue an error toast with the message resolved from
 no field error and leave the route unchanged. The sign-in result the screen keeps holds the user
 id and not the access token.
 
-**Evidence:** `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:45`, `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:69`, `apps/web/src/screens/Login/hooks/useSignIn.hook.ts:33-45`, `apps/web/src/services/Auth/auth.service.ts:19-21`, `apps/web/src/services/Auth/Auth.adapter.ts:10`, `apps/web/src/screens/Login/Login.constant.ts:22`, `apps/web/src/lib/query/useAppMutation.hook.ts:37`, `apps/web/src/lib/supabase/authGateway.adapter.ts:73-86`
+**Evidence:** `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:45`, `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:69`, `apps/web/src/screens/Login/hooks/useSignIn.hook.ts:33-45`, `apps/web/src/services/Auth/auth.service.ts:19-21`, `apps/web/src/services/Auth/Auth.adapter.ts:10`, `apps/web/src/screens/Login/Login.constant.ts:24`, `apps/web/src/lib/query/useAppMutation.hook.ts:37`, `apps/web/src/lib/supabase/authGateway.adapter.ts:73-86`
 
 #### Scenario: the gateway accepts the credentials
 
@@ -419,7 +420,7 @@ The web app SHALL resolve the locale of server-rendered translations from the `N
 cookie, else the routing locale, falling back to the default language for a missing or unsupported
 value, and load that locale's catalog with the UTC time zone.
 
-**Evidence:** `apps/web/src/i18n/request.config.ts:12-23`, `apps/web/src/i18n/locale.helper.ts:23-28`, `apps/web/next.config.ts:12`
+**Evidence:** `apps/web/src/i18n/requestConfig.helper.ts:15-28`, `apps/web/src/i18n/request.config.ts:7`, `apps/web/src/i18n/locale.helper.ts:23-28`, `apps/web/next.config.ts:12`
 
 #### Scenario: no cookie is set
 
@@ -451,7 +452,7 @@ that locale: the static document shell writes the default language, a pre-paint 
 it with the supported language the `NEXT_LOCALE` cookie names, and the providers set it whenever
 their locale changes.
 
-**Evidence:** `apps/web/src/app/layout.tsx:64-91`, `apps/web/src/app/layout.tsx:68`, `apps/web/src/app/layout.tsx:79-81`, `apps/web/src/app/layout.tsx:85-87`, `apps/web/src/app/LocaleProviders.tsx:15-26`, `apps/web/src/app/providers.tsx:44`, `apps/web/src/app/providers.tsx:47-51`, `apps/web/src/i18n/noFlashLocale.constant.ts:12-18`, `apps/web/src/i18n/useDocumentLanguage.hook.ts:12-18`, `apps/web/src/i18n/locale.helper.ts:23-34`
+**Evidence:** `apps/web/src/app/layout.tsx:64-91`, `apps/web/src/app/layout.tsx:68`, `apps/web/src/app/layout.tsx:79-81`, `apps/web/src/app/layout.tsx:85-87`, `apps/web/src/app/LocaleProviders.tsx:17-30`, `apps/web/src/app/providers.tsx:44`, `apps/web/src/app/providers.tsx:47`, `apps/web/src/i18n/noFlashLocale.constant.ts:12-18`, `apps/web/src/i18n/useDocumentLanguage.hook.ts:12-18`, `apps/web/src/i18n/locale.helper.ts:23-34`
 
 #### Scenario: the providers receive a locale
 
@@ -504,7 +505,7 @@ the active locale to the `NEXT_LOCALE` cookie for one year on the root path with
 refresh the router, so the server renders the next language and every client component receives
 it; the button shows the active locale.
 
-**Evidence:** `apps/web/src/components/ui/LanguageSwitcher/useLanguageSwitcher.hook.ts:19-26`, `apps/web/src/components/ui/LanguageSwitcher/useLanguageSwitcher.hook.ts:32-43`, `apps/web/src/i18n/i18n.constant.ts:3`, `apps/web/src/i18n/i18n.constant.ts:6`, `apps/web/src/components/ui/LanguageSwitcher/LanguageSwitcher.component.tsx:19`, `apps/web/src/components/ui/LanguageSwitcher/LanguageSwitcher.component.tsx:24`
+**Evidence:** `apps/web/src/components/ui/LanguageSwitcher/useLanguageSwitcher.hook.ts:18-25`, `apps/web/src/components/ui/LanguageSwitcher/useLanguageSwitcher.hook.ts:31-42`, `apps/web/src/i18n/i18n.constant.ts:3`, `apps/web/src/i18n/i18n.constant.ts:6`, `apps/web/src/components/ui/LanguageSwitcher/LanguageSwitcher.component.tsx:19`, `apps/web/src/components/ui/LanguageSwitcher/LanguageSwitcher.component.tsx:24`
 
 #### Scenario: from the first language to the next
 
@@ -594,7 +595,7 @@ The web app SHALL set the auth status to loading on mount, then to authenticated
 unauthenticated from the auth gateway's current session and from every auth state change, and
 unsubscribe from those changes on unmount.
 
-**Evidence:** `apps/web/src/components/AuthProvider/useAuthBootstrap.hook.ts:8-33`, `apps/web/src/app/providers.tsx:53`
+**Evidence:** `apps/web/src/components/AuthProvider/useAuthBootstrap.hook.ts:8-33`, `apps/web/src/app/providers.tsx:49`
 
 #### Scenario: the gateway holds a session
 
@@ -698,7 +699,7 @@ store for reading and writing the session cookies.
 The web app SHALL create its query client with a 30-second stale time and one retry for queries,
 and no retry for mutations.
 
-**Evidence:** `apps/web/src/lib/query/createQueryClient.helper.ts:10`, `apps/web/src/lib/query/createQueryClient.helper.ts:22-32`, `apps/web/src/app/providers.tsx:20-27`
+**Evidence:** `apps/web/src/lib/query/createQueryClient.helper.ts:10`, `apps/web/src/lib/query/createQueryClient.helper.ts:22-32`, `apps/web/src/app/providers.tsx:19-26`
 
 #### Scenario: the defaults of a new client
 
@@ -716,7 +717,7 @@ cache error handlers, to the observability port, passing the query key through
 `sanitizeQueryKey` from packages/core with the values of `QueryKeySegmentEnum` as its structural
 segments, so the trailing params object of a key (WEB-45) is always redacted, whatever it holds.
 
-**Evidence:** `apps/web/src/lib/query/createQueryClient.helper.ts:41`, `apps/web/src/lib/query/queryKeys.constant.ts:37-49`, `apps/web/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/web/src/app/providers.tsx:20-27`
+**Evidence:** `apps/web/src/lib/query/createQueryClient.helper.ts:41`, `apps/web/src/lib/query/queryKeys.constant.ts:37-49`, `apps/web/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/web/src/app/providers.tsx:19-26`
 
 #### Scenario: a query fails
 
@@ -827,7 +828,7 @@ message while the children suspend, and, when they throw, an alert with the erro
 the `helper.error.generic` message for a non-error value, and a button labelled with the
 `common.retry` message that resets the boundary, every message in the active language.
 
-**Evidence:** `apps/web/src/components/ui/AsyncBoundary/AsyncBoundary.component.tsx:11-19`, `apps/web/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultLoading.component.tsx:8-17`, `apps/web/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultError.component.tsx:7-25`
+**Evidence:** `apps/web/src/components/ui/AsyncBoundary/AsyncBoundary.component.tsx:11-19`, `apps/web/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultLoading.component.tsx:8-17`, `apps/web/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultError.component.tsx:8-26`
 
 #### Scenario: the children render
 
@@ -867,7 +868,7 @@ The web app SHALL render the error state as an alert whose title and message com
 `components.errorState` catalog entry of the given error code, or its generic entry when no code is
 given, with a retry button only when a retry or reset handler is given.
 
-**Evidence:** `apps/web/src/components/ui/ErrorState/ErrorState.component.tsx:11-51`, `apps/web/src/components/ui/ErrorState/ErrorState.constant.ts:3-8`
+**Evidence:** `apps/web/src/components/ui/ErrorState/ErrorState.component.tsx:11-56`, `apps/web/src/components/ui/ErrorState/ErrorState.constant.ts:3-8`
 
 #### Scenario: no code is given
 
@@ -1086,7 +1087,7 @@ The web app SHALL mount the toast viewport inside the root providers, rendering 
 toast store, with its message and a dismiss button, labelled with the `common.dismiss` message of
 the active language, that removes it, in a polite status region.
 
-**Evidence:** `apps/web/src/app/providers.tsx:54`, `apps/web/src/components/ui/Toast/Toast.component.tsx:20-46`, `apps/web/src/components/ui/Toast/Toast.component.tsx:35`
+**Evidence:** `apps/web/src/app/providers.tsx:50`, `apps/web/src/components/ui/Toast/Toast.component.tsx:20-46`, `apps/web/src/components/ui/Toast/Toast.component.tsx:35`
 
 #### Scenario: a queued error toast is shown and dismissed
 
@@ -1119,7 +1120,7 @@ again button that retries the segment, and report the error it caught to the obs
 once, through `reportBoundaryError` under `src/lib/observability/`, however often the boundary
 renders.
 
-**Evidence:** `apps/web/src/app/error.tsx:19`, `apps/web/src/app/global-error.tsx:24`, `apps/web/src/app/global-error.tsx:27`, `apps/web/src/app/global-error.tsx:34`, `apps/web/src/i18n/useCookieLanguage.hook.ts:22-27`, `apps/web/src/lib/observability/useReportBoundaryError.hook.ts:13`, `apps/web/src/lib/observability/reportBoundaryError.helper.ts:23`, `apps/web/src/lib/observability/reportBoundaryError.helper.ts:26`, `apps/web/src/components/ui/ErrorState/ErrorState.component.tsx:27-49`
+**Evidence:** `apps/web/src/app/error.tsx:19`, `apps/web/src/app/global-error.tsx:23`, `apps/web/src/app/global-error.tsx:26`, `apps/web/src/app/global-error.tsx:32`, `apps/web/src/i18n/useCookieLanguage.hook.ts:22-27`, `apps/web/src/lib/observability/useReportBoundaryError.hook.ts:13`, `apps/web/src/lib/observability/reportBoundaryError.helper.ts:23`, `apps/web/src/lib/observability/reportBoundaryError.helper.ts:26`, `apps/web/src/components/ui/ErrorState/ErrorState.component.tsx:27-54`
 
 #### Scenario: a route crashes while rendering
 
@@ -1222,7 +1223,7 @@ The web app SHALL render text in a screen through the `Text` block, whose varian
 set its typography and colour, a labelled rule through the `Divider` block, and a screen's
 surface through the `Screen` block, which fills the viewport and paints the base background.
 
-**Evidence:** `apps/web/src/components/ui/Text/Text.style.ts:10`, `apps/web/src/components/ui/Text/Text.component.tsx:4`, `apps/web/src/components/ui/Divider/Divider.component.tsx:4`, `apps/web/src/components/ui/Screen/Screen.component.tsx:4`, `apps/web/src/screens/Login/Login.screen.tsx:66`
+**Evidence:** `apps/web/src/components/ui/Text/Text.style.ts:10`, `apps/web/src/components/ui/Text/Text.component.tsx:4`, `apps/web/src/components/ui/Divider/Divider.component.tsx:4`, `apps/web/src/components/ui/Screen/Screen.component.tsx:4`, `apps/web/src/screens/Login/Login.screen.tsx:65`
 
 #### Scenario: a text variant renders
 
@@ -1468,7 +1469,7 @@ generic error (WEB-13).
 The web app SHALL label the busy indicator of `Button` and the `LoadingSkeleton` with the
 `common.loading` message of the active language.
 
-**Evidence:** `apps/web/src/components/ui/Button/Button.component.tsx:24`, `apps/web/src/components/ui/Button/Button.component.tsx:44`, `apps/web/src/components/ui/LoadingSkeleton/LoadingSkeleton.component.tsx:13`, `apps/web/src/components/ui/LoadingSkeleton/LoadingSkeleton.component.tsx:19`
+**Evidence:** `apps/web/src/components/ui/Button/Button.component.tsx:23`, `apps/web/src/components/ui/Button/Button.component.tsx:43`, `apps/web/src/components/ui/LoadingSkeleton/LoadingSkeleton.component.tsx:13`, `apps/web/src/components/ui/LoadingSkeleton/LoadingSkeleton.component.tsx:19`
 
 #### Scenario: a busy button
 
@@ -1834,6 +1835,121 @@ PostHog.
 - **WHEN** consent is granted through the barrel's `consent`
 - **THEN** PostHog is opted in
 - **Test:** `apps/web/src/lib/observability/__tests__/consent.adapter.test.ts` › "binds the PostHog consent by default"
+
+### Requirement: WEB-58 — A client block translates through the app's translator
+
+The web app SHALL give every client component one translator, `useAppTranslator()` of
+`apps/web/src/lib/i18n/`, that implements IAppTranslator of packages/i18n over the translation
+context `AppI18nProvider` gives: `t` returns the message of a key in the active locale's catalog
+with its ICU values filled, `has` tells a key that catalog holds from a string it lacks, and
+`locale` is the active supported language. `AppI18nProvider` gives its children the locale and the
+catalog it is handed, formatting in the UTC time zone.
+
+**Evidence:** `apps/web/src/lib/i18n/useAppTranslator.hook.ts:11-21`, `apps/web/src/lib/i18n/AppI18nProvider.component.tsx:14-26`, `apps/web/src/lib/i18n/AppI18nProvider.type.ts:5`, `apps/web/src/i18n/locale.helper.ts:23-28`
+
+#### Scenario: a message with a value
+
+- **GIVEN** a block inside `AppI18nProvider` given the Spanish locale and its catalog
+- **WHEN** it calls `t` with a key and an ICU value
+- **THEN** it gets the Spanish message with the value in place
+- **Test:** `apps/web/src/lib/i18n/__tests__/useAppTranslator.hook.test.tsx` › "formats a message of the active catalog with its values"
+
+#### Scenario: a key the catalog lacks
+
+- **GIVEN** the same block
+- **WHEN** it calls `has` with a key of the catalog and with a string the catalog lacks
+- **THEN** the first is true and the second false
+- **Test:** `apps/web/src/lib/i18n/__tests__/useAppTranslator.hook.test.tsx` › "tells a key the active catalog holds from one it lacks"
+
+#### Scenario: the active locale
+
+- **GIVEN** the same block
+- **WHEN** it reads `locale`
+- **THEN** it is the Spanish language code
+- **Test:** `apps/web/src/lib/i18n/__tests__/useAppTranslator.hook.test.tsx` › "reports the active locale"
+
+#### Scenario: the provider
+
+- **GIVEN** `AppI18nProvider` given a locale and its catalog
+- **WHEN** a block inside it renders a message
+- **THEN** the block shows that catalog's message
+- **Test:** `apps/web/src/lib/i18n/__tests__/AppI18nProvider.component.test.tsx` › "gives its children the locale and the catalog it is given"
+
+### Requirement: WEB-59 — A server component translates through the same shape
+
+The web app SHALL give every server component `getAppTranslator()` of
+`apps/web/src/lib/i18n/appTranslator.adapter.ts`, an IAppTranslator of the request's locale and
+catalog, and SHALL read the request's locale, reduced to a supported language, through
+`getAppLocale()` and its catalog through `getAppMessages()`, the values the request config
+resolves (WEB-14).
+
+**Evidence:** `apps/web/src/lib/i18n/appTranslator.adapter.ts:16-21`, `apps/web/src/lib/i18n/appTranslator.adapter.ts:24-36`, `apps/web/src/app/LocaleProviders.tsx:17-30`, `apps/web/src/screens/ItemsSummary/ItemsSummary.screen.tsx:7-8`
+
+#### Scenario: a server component translates
+
+- **GIVEN** a request whose locale is Spanish
+- **WHEN** a server component awaits `getAppTranslator()` and calls `t`, `has` and `locale`
+- **THEN** it gets the Spanish message with its values, true for a catalog key and false for
+  another string, and the Spanish code
+- **Test:** `apps/web/src/lib/i18n/__tests__/appTranslator.adapter.test.ts` › "gives a server component the translator of the request's locale"
+
+#### Scenario: an unsupported request locale
+
+- **GIVEN** a request locale the app does not support
+- **WHEN** `getAppLocale()` resolves
+- **THEN** it is the default language
+- **Test:** `apps/web/src/lib/i18n/__tests__/appTranslator.adapter.test.ts` › "reduces the request's locale to a supported language"
+
+#### Scenario: the request's catalog
+
+- **GIVEN** a request whose catalog is the Spanish one
+- **WHEN** `getAppMessages()` resolves
+- **THEN** it is that catalog
+- **Test:** `apps/web/src/lib/i18n/__tests__/appTranslator.adapter.test.ts` › "hands the request's catalog over"
+
+### Requirement: WEB-60 — Only lib/i18n and the framework config files import next-intl
+
+The web app SHALL import next-intl only in `apps/web/src/lib/i18n/**`, in the request config
+`apps/web/src/i18n/request.config.ts`, which next-intl loads by path, and in
+`apps/web/next.config.ts`, which loads its plugin; every other file, tests included, reaches
+translation through `@/lib/i18n/…`, and a test of any other unit mocks that module or renders
+through `renderWithIntl`, never next-intl.
+
+**Evidence:** `.agents/contracts/dependencies.json:60-69`, `apps/web/src/i18n/request.config.ts:1-7`, `apps/web/next.config.ts:5`, `apps/web/next.config.ts:12`, `eslint-dependency-seam-allowlist.json:1`
+
+#### Scenario: a block outside the seam imports next-intl
+
+- **GIVEN** a component, screen, hook or test outside those files that imports or mocks next-intl
+- **WHEN** ESLint and `pnpm verify:dependency-seams` run
+- **THEN** the import is reported as outside its seam, and no allowlist entry excuses it
+- **Test:** Not covered — no test of this app reads its imports; `local/dependency-seam` refuses
+  such an import (harness/dependency-seams SEAM-03) and `pnpm verify:dependency-seams` fails an
+  allowlist entry or a violation for it (SEAM-07), both inside `pnpm validate`
+
+### Requirement: WEB-61 — The sampled screens keep their messages in both languages
+
+The web app SHALL render the sign-in screen, the items dashboard with items, the items summary
+and the error, empty, confirmation and offline blocks with the catalog messages, in the order
+and with the values, that the record in `apps/web/src/test/__tests__/intl.helper.test.tsx` holds
+for each language, taken at `571d25b`, and each of those messages SHALL show the copy its
+language's catalog holds.
+
+**Evidence:** `apps/web/src/test/__tests__/intl.helper.test.tsx:136-174`, `apps/web/src/test/__tests__/intl.helper.test.tsx:176-272`, `apps/web/src/test/intl.helper.tsx:77-86`
+
+#### Scenario: the messages behind the text
+
+- **GIVEN** a catalog whose every message is its own key, in English and in Spanish
+- **WHEN** each sample renders with it
+- **THEN** its visible text and accessible labels equal the record for that language
+- **Test:** `apps/web/src/test/__tests__/intl.helper.test.tsx` › "every sample shows the messages it showed at the base, in both languages"
+
+#### Scenario: the copy of each language
+
+- **GIVEN** the real English and Spanish catalogs
+- **WHEN** each sample renders with one of them
+- **THEN** its visible text and accessible labels are the record with every message in that
+  catalog's copy
+- **Test:** `apps/web/src/test/__tests__/intl.helper.test.tsx` › "every sample shows the copy its catalog holds, in both languages"
 
 ## Open questions
 

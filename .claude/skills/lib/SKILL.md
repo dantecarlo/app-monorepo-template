@@ -42,6 +42,26 @@ unregistered package anywhere, and a test that reaches a vendor its unit's seam 
 - **Tests** of the wrapper inherit its seam and may mock the vendor; every other test mocks
   `@/lib/{name}`.
 
+### Example: the i18n seam
+
+One API, one implementation per app. `IAppTranslator` (`t(key, values?)`, `has(key)`,
+`locale`) is a vendor-free type in `@app/i18n`, its keys the paths of the English catalog.
+Each app implements it in `src/lib/i18n/`: the web's `useAppTranslator.hook.ts` and
+`appTranslator.adapter.ts` over next-intl, with `AppI18nProvider` for the client tree; the
+mobile's `useAppTranslator.hook.ts` over react-i18next. A block reads the same in either app:
+
+```typescript
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
+
+const { t } = useAppTranslator()
+t('items.dashboard.listResults', { count })
+```
+
+The registry gives next-intl the seam `apps/web/src/lib/i18n/**` plus the two framework files
+that must name it (the request config, which next-intl loads by path, and `next.config.ts`,
+which loads its plugin); the i18next family, `apps/mobile/src/lib/i18n/**`. Swapping either
+runtime rewrites that folder and nothing else.
+
 ---
 
 ## Do You Need a New Lib?

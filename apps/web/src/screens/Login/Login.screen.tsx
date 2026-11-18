@@ -1,6 +1,5 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
 import type { JSX } from 'react'
 
 import { AuthField } from '@/components/ui/AuthField/AuthField.component'
@@ -8,13 +7,13 @@ import { AuthShell } from '@/components/ui/AuthShell/AuthShell.component'
 import { Button } from '@/components/ui/Button'
 import { Divider } from '@/components/ui/Divider'
 import { SocialAuthButton } from '@/components/ui/SocialAuthButton/SocialAuthButton.component'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import { useLoginForm } from '@/screens/Login/hooks/useLoginForm.hook'
 import { LOGIN_FIELD_ID } from '@/screens/Login/Login.constant'
 import { LOGIN } from '@/screens/Login/Login.style'
 
 export const LoginScreen = (): JSX.Element => {
-  const t = useTranslations('auth.login')
-  const tApp = useTranslations('app')
+  const { t } = useAppTranslator()
   const {
     errors,
     isSubmitting,
@@ -26,9 +25,9 @@ export const LoginScreen = (): JSX.Element => {
 
   return (
     <AuthShell
-      brandLabel={tApp('name')}
-      subtitle={t('subtitle')}
-      title={t('title')}
+      brandLabel={t('app.name')}
+      subtitle={t('auth.login.subtitle')}
+      title={t('auth.login.title')}
     >
       <form className={LOGIN.FORM} onSubmit={onSubmit}>
         <AuthField
@@ -36,13 +35,13 @@ export const LoginScreen = (): JSX.Element => {
           helperText={
             errors.email === undefined ? undefined : t(errors.email)
           }
-          hidePasswordLabel={t('hidePassword')}
+          hidePasswordLabel={t('auth.login.hidePassword')}
           id={LOGIN_FIELD_ID.EMAIL}
           isError={errors.email !== undefined}
-          label={t('emailLabel')}
+          label={t('auth.login.emailLabel')}
           onChange={onEmailChange}
-          placeholder={t('emailPlaceholder')}
-          showPasswordLabel={t('showPassword')}
+          placeholder={t('auth.login.emailPlaceholder')}
+          showPasswordLabel={t('auth.login.showPassword')}
           type="email"
           value={values.email}
         />
@@ -52,27 +51,30 @@ export const LoginScreen = (): JSX.Element => {
           helperText={
             errors.password === undefined ? undefined : t(errors.password)
           }
-          hidePasswordLabel={t('hidePassword')}
+          hidePasswordLabel={t('auth.login.hidePassword')}
           id={LOGIN_FIELD_ID.PASSWORD}
           isError={errors.password !== undefined}
           isPassword
-          label={t('passwordLabel')}
+          label={t('auth.login.passwordLabel')}
           onChange={onPasswordChange}
-          placeholder={t('passwordPlaceholder')}
-          showPasswordLabel={t('showPassword')}
+          placeholder={t('auth.login.passwordPlaceholder')}
+          showPasswordLabel={t('auth.login.showPassword')}
           value={values.password}
         />
 
         <Button disabled={isSubmitting} fullWidth type="submit">
-          {isSubmitting ? t('submitting') : t('cta')}
+          {isSubmitting ? t('auth.login.submitting') : t('auth.login.cta')}
         </Button>
       </form>
 
-      <Divider className={LOGIN.DIVIDER} label={t('dividerOr')} />
+      <Divider
+        className={LOGIN.DIVIDER}
+        label={t('auth.login.dividerOr')}
+      />
 
       <SocialAuthButton
-        label={t('googleCta')}
-        loadingLabel={t('googleLoading')}
+        label={t('auth.login.googleCta')}
+        loadingLabel={t('auth.login.googleLoading')}
       />
     </AuthShell>
   )

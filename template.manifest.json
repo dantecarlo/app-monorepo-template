@@ -153,7 +153,11 @@
         },
         {
           "verb": "remove",
-          "paths": ["apps/mobile/src/lib/i18n/**", "apps/web/src/i18n/**"]
+          "paths": [
+            "apps/mobile/src/lib/i18n/**",
+            "apps/web/src/i18n/**",
+            "apps/web/src/lib/i18n/**"
+          ]
         }
       ]
     },

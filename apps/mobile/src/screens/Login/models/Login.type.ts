@@ -1,13 +1,15 @@
+import type { TranslationKeyType } from '@app/i18n'
+
 /** Login form field values. */
 export interface ILoginFormValues {
   email: string
   password: string
 }
 
-/** Per-field validation messages, keyed to translation lookups. */
+/** Per-field validation messages, as the keys of their translations. */
 export interface ILoginFormErrors {
-  email?: string
-  password?: string
+  email?: TranslationKeyType
+  password?: TranslationKeyType
 }
 
 /** Public surface returned by the useLoginForm hook. */

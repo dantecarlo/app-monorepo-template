@@ -1,5 +1,4 @@
 import { colors } from '@app/tokens'
-import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, View } from 'react-native'
 
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -7,6 +6,7 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { SearchBar } from '@/components/ui/SearchBar'
 import { Text } from '@/components/ui/Text'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 import { ItemCard } from '@/screens/ItemsDashboard/components/ItemCard'
 import { ITEMS_LIST_CARD_STYLES } from '@/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.style'
@@ -22,25 +22,27 @@ export const ItemsListCard = ({
 }: IItemsListCardProps) => {
   const styles = useThemedStyles({ styles: ITEMS_LIST_CARD_STYLES })
 
-  const { t } = useTranslation('translation', {
-    keyPrefix: 'items.dashboard'
-  })
+  const { t } = useAppTranslator()
 
   return (
     <GlassCard padding="none" radius="xl">
       <View style={[{ padding: 20 }, styles.cardHeader]}>
         <View style={styles.cardHeaderRow}>
-          <Text variant="title">{t('listTitle')}</Text>
+          <Text variant="title">{t('items.dashboard.listTitle')}</Text>
           {!isError && (
             <Text variant="caption">
-              {isLoading ? '…' : t('listResults', { count: items.length })}
+              {isLoading
+                ? '…'
+                : t('items.dashboard.listResults', {
+                    count: items.length
+                  })}
             </Text>
           )}
         </View>
         <SearchBar
-          accessibilityLabel={t('searchLabel')}
+          accessibilityLabel={t('items.dashboard.searchLabel')}
           onChangeText={onSearchChange}
-          placeholder={t('searchPlaceholder')}
+          placeholder={t('items.dashboard.searchPlaceholder')}
           value={search}
         />
       </View>

@@ -2,8 +2,12 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { fireEvent, render, screen, within } from '@/test/test.helper'
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key })
+vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
+  useAppTranslator: () => ({
+    has: () => false,
+    locale: 'en',
+    t: (key: string) => key
+  })
 }))
 
 const { mockCaptureError } = vi.hoisted(() => ({

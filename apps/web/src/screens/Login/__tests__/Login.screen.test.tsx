@@ -1,8 +1,10 @@
 import { AppError, type IAuthSession } from '@app/core'
 import { DEFAULT_LANGUAGE, resources } from '@app/i18n'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { NextIntlClientProvider } from 'next-intl'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+
+import { AppI18nProvider } from '@/lib/i18n/AppI18nProvider.component'
+import { withCopy } from '@/test/intl.helper'
 
 const { mockReplace, mockSignIn } = vi.hoisted(() => ({
   mockReplace: vi.fn(),
@@ -78,9 +80,9 @@ const messages = {
 const renderLogin = () =>
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <NextIntlClientProvider locale="en" messages={messages}>
+      <AppI18nProvider locale="en" messages={withCopy({ copy: messages })}>
         <LoginScreen />
-      </NextIntlClientProvider>
+      </AppI18nProvider>
     </QueryClientProvider>
   )
 

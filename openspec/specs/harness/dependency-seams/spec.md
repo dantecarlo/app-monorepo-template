@@ -3,7 +3,7 @@
 > **Governs:** `.agents/contracts/dependencies.json`, `eslint-dependency-seam-allowlist.json`, `eslint-local-rules/dependency-seam.detect.mjs`, `scripts/dependency-seams.detect.mjs`, `scripts/eslint-config.detect.mjs`, `scripts/verify-dependency-seams.mjs`, `eslint.config.mjs`, `eslint.rules.mjs`
 > **ID prefix:** `SEAM`
 > **Derived from:** `docs/code-standards.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-18 at `c7b026f`
+> **Verified against the code:** 2026-11-18 at `deaf52a`
 
 ## Purpose
 
@@ -82,7 +82,7 @@ builtin resolves to the registry's `node:*` entry.
 any other registered package only in a file one of its seam globs matches; a type-only import is
 judged the same way unless the entry sets `types` to `anywhere`.
 
-**Evidence:** `eslint-local-rules/dependency-seam.detect.mjs:195-201`, `.agents/contracts/dependencies.json:103-105`
+**Evidence:** `eslint-local-rules/dependency-seam.detect.mjs:195-201`, `.agents/contracts/dependencies.json:112-114`
 
 #### Scenario: outside the seam
 

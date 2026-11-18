@@ -11,3 +11,8 @@ export {
   SUPPORTED_LANGUAGES
 } from '#src/locales/i18n.constant'
 export { APP_NAME, resources } from '#src/locales/resources.constant'
+export type {
+  IAppTranslator,
+  TranslationKeyType,
+  TranslationValuesType
+} from '#src/translator/appTranslator.type'

@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { NextIntlClientProvider } from 'next-intl'
 import { describe, expect, test, vi } from 'vitest'
 
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog/ConfirmDialog.component'
+import { AppI18nProvider } from '@/lib/i18n/AppI18nProvider.component'
+import { withCopy } from '@/test/intl.helper'
 
 const messages = {
   common: { cancel: 'Cancel', confirm: 'Confirm' },
@@ -13,7 +14,7 @@ const renderDialog = (
   props: Partial<React.ComponentProps<typeof ConfirmDialog>> = {}
 ) =>
   render(
-    <NextIntlClientProvider locale="en" messages={messages}>
+    <AppI18nProvider locale="en" messages={withCopy({ copy: messages })}>
       <ConfirmDialog
         isOpen={true}
         message="Are you sure?"
@@ -21,7 +22,7 @@ const renderDialog = (
         onConfirm={vi.fn()}
         {...props}
       />
-    </NextIntlClientProvider>
+    </AppI18nProvider>
   )
 
 describe('ConfirmDialog', () => {

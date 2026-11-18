@@ -1,7 +1,8 @@
-import { NextIntlClientProvider } from 'next-intl'
 import { describe, expect, test } from 'vitest'
 
+import { AppI18nProvider } from '@/lib/i18n/AppI18nProvider.component'
 import { DashboardHeader } from '@/screens/ItemsDashboard/components/DashboardHeader/DashboardHeader.component'
+import { withCopy } from '@/test/intl.helper'
 import { render, screen } from '@/test/test.helper'
 
 const messages = {
@@ -20,9 +21,9 @@ const messages = {
 describe('DashboardHeader', () => {
   test('renders the wordmark and settings button', () => {
     render(
-      <NextIntlClientProvider locale="en" messages={messages}>
+      <AppI18nProvider locale="en" messages={withCopy({ copy: messages })}>
         <DashboardHeader />
-      </NextIntlClientProvider>
+      </AppI18nProvider>
     )
     expect(screen.getByText('Welcome back')).toBeInTheDocument()
     expect(screen.getByText('Dashboard')).toBeInTheDocument()

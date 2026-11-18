@@ -27,13 +27,10 @@ vi.mock('next/headers', () => ({
   })
 }))
 
-vi.mock('next-intl/server', () => ({
-  getRequestConfig: (factory: unknown) => factory
-}))
-
 import { Providers } from '@/app/providers'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { LOCALE_COOKIE_NAME } from '@/i18n/i18n.constant'
+import { resolveRequestConfig } from '@/i18n/requestConfig.helper'
 import { useToastStore } from '@/stores/toast.store'
 import {
   act,
@@ -47,10 +44,6 @@ interface IRequestConfigType {
   locale: SupportedLanguageType
   messages: (typeof resources)[SupportedLanguageType]['translation']
 }
-
-type RequestConfigFactoryType = (args: {
-  requestLocale: Promise<string | undefined>
-}) => Promise<IRequestConfigType>
 
 const makeGateway = (): IAuthGateway => ({
   getSession: vi.fn().mockResolvedValue(null),
@@ -120,10 +113,8 @@ describe('Providers', () => {
   })
 
   test('switches the client components to the next language and back', async () => {
-    const requestConfig = (await import('@/i18n/request.config'))
-      .default as unknown as RequestConfigFactoryType
     const resolveRequest = () =>
-      requestConfig({ requestLocale: Promise.resolve(undefined) })
+      resolveRequestConfig({ requestLocale: Promise.resolve(undefined) })
     const page = ({ locale, messages }: IRequestConfigType) => (
       <Providers
         gateway={makeGateway()}

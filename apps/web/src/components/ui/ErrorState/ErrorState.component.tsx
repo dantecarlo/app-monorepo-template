@@ -1,12 +1,12 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
 import type { JSX } from 'react'
 
 import { Button } from '@/components/ui/Button/Button.component'
 import { errorStateVariants } from '@/components/ui/ErrorState/ErrorState.style'
 import type { IErrorStateProps } from '@/components/ui/ErrorState/ErrorState.type'
 import { ErrorStateIcon } from '@/components/ui/ErrorState/ErrorStateIcon.component'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 
 export const ErrorState = ({
   code,
@@ -15,7 +15,7 @@ export const ErrorState = ({
   resetErrorBoundary,
   title
 }: IErrorStateProps): JSX.Element => {
-  const t = useTranslations('components.errorState')
+  const { t } = useAppTranslator()
   const {
     action,
     container,
@@ -25,10 +25,15 @@ export const ErrorState = ({
   } = errorStateVariants()
 
   const resolvedTitle =
-    title ?? (code !== undefined ? t(`byCode.${code}.title`) : t('title'))
+    title ??
+    (code !== undefined
+      ? t(`components.errorState.byCode.${code}.title`)
+      : t('components.errorState.title'))
   const resolvedMessage =
     message ??
-    (code !== undefined ? t(`byCode.${code}.message`) : t('message'))
+    (code !== undefined
+      ? t(`components.errorState.byCode.${code}.message`)
+      : t('components.errorState.message'))
 
   const handleRetry = onRetry ?? resetErrorBoundary
 
@@ -42,7 +47,7 @@ export const ErrorState = ({
       {handleRetry !== undefined && (
         <div className={action()}>
           <Button onClick={handleRetry} size="sm" variant="secondary">
-            {t('retry')}
+            {t('components.errorState.retry')}
           </Button>
         </div>
       )}

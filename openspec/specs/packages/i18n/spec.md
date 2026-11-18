@@ -3,15 +3,16 @@
 > **Governs:** `packages/i18n/src`
 > **ID prefix:** `I18N`
 > **Derived from:** `docs/code-standards.md`, `docs/architecture/shared.md`
-> **Verified against the code:** 2026-11-16 at `bc46d55`
+> **Verified against the code:** 2026-11-18 at `7bb32cc`
 
 ## Purpose
 
 The i18n package owns the shared English and Spanish catalogs and their key parity, the language
 constants (the supported, default and fallback languages and the formatting locale), the
-resources map and APP_NAME. It holds no translation runtime: apps/web uses next-intl and
-apps/mobile uses react-i18next, and the message keys it must carry come from the service-error
-map of packages/core.
+resources map, APP_NAME and IAppTranslator, the translator type both apps implement with its key
+type taken from the English catalog. It holds no translation runtime: apps/web implements the
+translator over next-intl and apps/mobile over react-i18next, each in its lib/i18n, and the
+message keys it must carry come from the service-error map of packages/core.
 
 ## Requirements
 
@@ -112,7 +113,7 @@ The i18n package SHALL define, in every catalog, the five keys the service-error
 - **GIVEN** an AppError whose message key comes from the packages/core service-error map
 - **WHEN** an app translates that key
 - **THEN** both catalogs hold a value for it
-- **Test:** Not covered — no test compares the packages/core message keys with the catalogs; `docs/code-standards.md:664` records that check as not built
+- **Test:** Not covered — no test compares the packages/core message keys with the catalogs; `docs/code-standards.md:686` records that check as not built
 
 ### Requirement: I18N-08 — Interpolations are single-brace ICU arguments
 
@@ -125,7 +126,7 @@ The i18n package SHALL write every interpolated value as a single-brace ICU argu
 - **GIVEN** a catalog value with an argument
 - **WHEN** an app formats it with that argument
 - **THEN** the argument is written in single braces, in both catalogs
-- **Test:** Not covered — the parity test compares keys, not values; `docs/code-standards.md:573` records brace balance as not enforced
+- **Test:** Not covered — the parity test compares keys, not values; `docs/code-standards.md:595` records brace balance as not enforced
 
 ### Requirement: I18N-09 — The translation key type is the default language's catalog shape
 
@@ -144,16 +145,19 @@ resource, so that a catalog lacking a key of the English one fails the type chec
 
 ### Requirement: I18N-10 — The entry point exposes the language contract
 
-The i18n package SHALL expose from its entry point LanguageEnum, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE, FALLBACK_LANGUAGE, FORMATTING_LOCALE, resources and APP_NAME, and the types ILocaleResources, LanguageEnumType and SupportedLanguageType.
+The i18n package SHALL expose from its entry point LanguageEnum, SUPPORTED_LANGUAGES,
+DEFAULT_LANGUAGE, FALLBACK_LANGUAGE, FORMATTING_LOCALE, resources and APP_NAME, and the types
+ILocaleResources, LanguageEnumType, SupportedLanguageType, IAppTranslator, TranslationKeyType and
+TranslationValuesType.
 
-**Evidence:** `packages/i18n/src/index.ts:1`, `packages/i18n/src/index.ts:6`, `packages/i18n/src/index.ts:13`
+**Evidence:** `packages/i18n/src/index.ts:1`, `packages/i18n/src/index.ts:6`, `packages/i18n/src/index.ts:13`, `packages/i18n/src/index.ts:14-18`
 
 #### Scenario: an app imports the package
 
 - **GIVEN** an app that depends on the i18n package
 - **WHEN** it imports from the package entry point
 - **THEN** those constants and types are available, and TranslationKeysType is not
-- **Test:** Not covered — the parity test imports the catalogs directly; only the consumers' typecheck reads the entry point
+- **Test:** `packages/i18n/src/__tests__/index.test.ts` › "the entry point exposes the language contract and the translator types"
 
 ### Requirement: I18N-11 — The catalogs carry a message per sign-in failure
 
@@ -170,9 +174,42 @@ auth.error.notConfigured and auth.error.rateLimited.
 - **THEN** each catalog holds a value for every key
 - **Test:** `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "names a message every catalog holds for each sign-in failure"
 
+### Requirement: I18N-12 — One translator type for both apps
+
+The i18n package SHALL define IAppTranslator, the translator both apps give their blocks, with no
+translation runtime in it: `t(key, values?)` returns the message of a key in the active language
+with its ICU arguments filled, `has(key)` tells whether the active catalog holds a string and
+narrows it to a key, and `locale` is the active supported language. A key is
+TranslationKeyType, a dot-separated path to a leaf of the English catalog, the catalog of the
+default language, so a path the catalog lacks and a namespace are not keys; the values are
+TranslationValuesType, the arguments by name, each a string or a number.
+
+**Evidence:** `packages/i18n/src/translator/appTranslator.type.ts:8-18`, `packages/i18n/src/translator/appTranslator.type.ts:21-23`, `packages/i18n/src/translator/appTranslator.type.ts:29-36`, `packages/i18n/src/index.ts:14-18`
+
+#### Scenario: a leaf of the English catalog
+
+- **GIVEN** a dot-separated path to a leaf of the English catalog, a numeric segment included
+- **WHEN** it is passed to `t` or typed as TranslationKeyType
+- **THEN** the type check accepts it
+- **Test:** `packages/i18n/src/translator/__tests__/appTranslator.type.test.ts` › "a key is a dot-separated path to a leaf of the English catalog"
+
+#### Scenario: a namespace or an unknown path
+
+- **GIVEN** the path of a namespace, which holds messages, and a path the catalog lacks
+- **WHEN** either is passed to `t`
+- **THEN** the type check refuses it
+- **Test:** `packages/i18n/src/translator/__tests__/appTranslator.type.test.ts` › "a namespace or a path the catalog lacks is not a key"
+
+#### Scenario: a key that arrives as a string
+
+- **GIVEN** a string, such as the message key of an AppError
+- **WHEN** `has` returns true for it
+- **THEN** the string is a TranslationKeyType inside that branch, and `t` accepts it
+- **Test:** `packages/i18n/src/translator/__tests__/appTranslator.type.test.ts` › "has narrows a string to a key"
+
 ## Open questions
 
-- **Q1** — `docs/code-standards.md:553` requires PascalCase namespace segments in catalog keys,
+- **Q1** — `docs/code-standards.md:575` requires PascalCase namespace segments in catalog keys,
   but the catalogs use camelCase ones (`packages/i18n/src/locales/en.json:2`).
 - **Q2** — Closed on 2026-11-16 by `openspec/changes/archive/2026-11-15-i18n/`: the key type
   comes from the English catalog, the catalog of the default language, and types every entry of

@@ -12,9 +12,10 @@ vi.mock('@/stores/toast.store', () => ({
   ) => selector({ add: mockAddToast })
 }))
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    i18n: { exists: () => false },
+vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
+  useAppTranslator: () => ({
+    has: () => false,
+    locale: 'en',
     t: (key: string) => key
   })
 }))

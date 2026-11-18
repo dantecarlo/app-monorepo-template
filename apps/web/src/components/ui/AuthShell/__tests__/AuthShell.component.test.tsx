@@ -1,11 +1,13 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
 
-vi.mock('next-intl', () => ({
-  useLocale: () => 'en',
-  // eslint-disable-next-line local/single-object-params -- mirrors next-intl's t(key, values) callback shape
-  useTranslations: () => (key: string, values?: Record<string, string>) =>
-    values?.name ? `${values.name} ${key}` : key
+vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
+  useAppTranslator: () => ({
+    has: () => false,
+    locale: 'en',
+    t: (...[key, values]: [string, Record<string, string>?]) =>
+      values?.name ? `${values.name} ${key}` : key
+  })
 }))
 
 vi.mock('next/navigation', () => ({
