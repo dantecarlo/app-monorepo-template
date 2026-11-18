@@ -1,13 +1,12 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
-
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
 import { SearchBar } from '@/components/ui/SearchBar'
 import { Text } from '@/components/ui/Text'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import { ItemCard } from '@/screens/ItemsDashboard/components/ItemCard'
 import {
   ITEMS_LIST_CARD,
@@ -23,23 +22,27 @@ export const ItemsListCard = ({
   onSearchChange,
   search
 }: IItemsListCardProps) => {
-  const t = useTranslations('items.dashboard')
+  const { t } = useAppTranslator()
 
   return (
     <GlassCard padding="none">
       <div className={ITEMS_LIST_CARD.TOP}>
         <div className={ITEMS_LIST_CARD.HEADER}>
-          <Text variant="title">{t('listTitle')}</Text>
+          <Text variant="title">{t('items.dashboard.listTitle')}</Text>
           {!isError && (
             <span className={ITEMS_LIST_CARD.COUNT_LABEL}>
-              {isLoading ? '…' : t('listResults', { count: items.length })}
+              {isLoading
+                ? '…'
+                : t('items.dashboard.listResults', {
+                    count: items.length
+                  })}
             </span>
           )}
         </div>
         <SearchBar
-          accessibilityLabel={t('searchLabel')}
+          accessibilityLabel={t('items.dashboard.searchLabel')}
           onChangeText={onSearchChange}
-          placeholder={t('searchPlaceholder')}
+          placeholder={t('items.dashboard.searchPlaceholder')}
           value={search}
         />
       </div>
@@ -59,7 +62,7 @@ export const ItemsListCard = ({
         ) : isError ? (
           <ErrorState onRetry={onRetry} />
         ) : items.length === 0 ? (
-          <EmptyState message={t('listEmpty')} />
+          <EmptyState message={t('items.dashboard.listEmpty')} />
         ) : (
           items.map((item) => <ItemCard item={item} key={item.id} />)
         )}

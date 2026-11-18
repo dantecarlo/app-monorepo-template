@@ -285,64 +285,19 @@
     "reason": "F.8 unit 4: createAppStore, in lib/store, takes this import."
   },
   {
-    "path": "apps/web/src/app/__tests__/error.test.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/app/__tests__/LocaleProviders.test.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
     "path": "apps/web/src/app/__tests__/LocaleProviders.test.tsx",
     "package": "next/navigation",
     "reason": "F.8 unit 6: lib/routing takes this import; the test then mocks the project module, not the vendor."
   },
   {
     "path": "apps/web/src/app/__tests__/providers.test.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/app/__tests__/providers.test.tsx",
     "package": "next/navigation",
     "reason": "F.8 unit 6: lib/routing takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/app/global-error.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/web/src/app/LocaleProviders.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
   },
   {
     "path": "apps/web/src/app/providers.tsx",
     "package": "@tanstack/react-query",
     "reason": "F.8 unit 3: the query seam's own types and AppQueryProvider, in lib/query, take this import."
-  },
-  {
-    "path": "apps/web/src/app/providers.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/web/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultError.component.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/web/src/components/ui/AsyncBoundary/AsyncBoundaryDefaultLoading.component.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/web/src/components/ui/AuthShell/__tests__/AuthShell.component.test.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
   },
   {
     "path": "apps/web/src/components/ui/AuthShell/__tests__/AuthShell.component.test.tsx",
@@ -360,11 +315,6 @@
     "reason": "F.8 unit 5: explicit variant unions in *.constant.ts replace the VariantProps type."
   },
   {
-    "path": "apps/web/src/components/ui/Button/Button.component.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
     "path": "apps/web/src/components/ui/Button/Button.type.ts",
     "package": "tailwind-variants",
     "reason": "F.8 unit 5: explicit variant unions in *.constant.ts replace the VariantProps type."
@@ -375,39 +325,9 @@
     "reason": "F.8 unit 5: explicit variant unions in *.constant.ts replace the VariantProps type."
   },
   {
-    "path": "apps/web/src/components/ui/ConfirmDialog/__tests__/ConfirmDialog.component.test.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/components/ui/ConfirmDialog/ConfirmDialog.component.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
     "path": "apps/web/src/components/ui/ConfirmDialog/ConfirmDialog.type.ts",
     "package": "tailwind-variants",
     "reason": "F.8 unit 5: explicit variant unions in *.constant.ts replace the VariantProps type."
-  },
-  {
-    "path": "apps/web/src/components/ui/EmptyState/__tests__/EmptyState.component.test.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/components/ui/EmptyState/EmptyState.component.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/web/src/components/ui/ErrorState/__tests__/ErrorState.component.test.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/components/ui/ErrorState/ErrorState.component.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
   },
   {
     "path": "apps/web/src/components/ui/GlassCard/GlassCard.type.ts",
@@ -420,39 +340,14 @@
     "reason": "F.8 unit 5: explicit variant unions in *.constant.ts replace the VariantProps type."
   },
   {
-    "path": "apps/web/src/components/ui/LanguageSwitcher/__tests__/LanguageSwitcher.component.test.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/components/ui/LanguageSwitcher/__tests__/useLanguageSwitcher.hook.test.ts",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
     "path": "apps/web/src/components/ui/LanguageSwitcher/__tests__/useLanguageSwitcher.hook.test.ts",
     "package": "next/navigation",
     "reason": "F.8 unit 6: lib/routing takes this import; the test then mocks the project module, not the vendor."
   },
   {
-    "path": "apps/web/src/components/ui/LanguageSwitcher/LanguageSwitcher.component.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/web/src/components/ui/LanguageSwitcher/useLanguageSwitcher.hook.ts",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
     "path": "apps/web/src/components/ui/LanguageSwitcher/useLanguageSwitcher.hook.ts",
     "package": "next/navigation",
     "reason": "F.8 unit 6: lib/routing takes this import."
-  },
-  {
-    "path": "apps/web/src/components/ui/LoadingSkeleton/LoadingSkeleton.component.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
   },
   {
     "path": "apps/web/src/components/ui/LoadingSkeleton/LoadingSkeleton.type.ts",
@@ -461,18 +356,8 @@
   },
   {
     "path": "apps/web/src/components/ui/Logo/__tests__/Logo.component.test.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/components/ui/Logo/__tests__/Logo.component.test.tsx",
     "package": "next/image",
     "reason": "F.8 unit 5: a components/ui/Image block takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/components/ui/Logo/Logo.component.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
   },
   {
     "path": "apps/web/src/components/ui/Logo/Logo.component.tsx",
@@ -480,29 +365,9 @@
     "reason": "F.8 unit 5: a components/ui/Image block takes this import."
   },
   {
-    "path": "apps/web/src/components/ui/Modal/__tests__/Modal.component.test.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/components/ui/Modal/Modal.component.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
     "path": "apps/web/src/components/ui/Modal/Modal.type.ts",
     "package": "tailwind-variants",
     "reason": "F.8 unit 5: explicit variant unions in *.constant.ts replace the VariantProps type."
-  },
-  {
-    "path": "apps/web/src/components/ui/OfflineBanner/__tests__/OfflineBanner.component.test.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/components/ui/OfflineBanner/OfflineBanner.component.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
   },
   {
     "path": "apps/web/src/components/ui/StatusBadge/StatusBadge.type.ts",
@@ -515,84 +380,9 @@
     "reason": "F.8 unit 5: explicit variant unions in *.constant.ts replace the VariantProps type."
   },
   {
-    "path": "apps/web/src/components/ui/ThemeToggle/__tests__/ThemeToggle.component.test.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/components/ui/ThemeToggle/ThemeToggle.component.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/web/src/components/ui/Toast/Toast.component.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/web/src/lib/query/__tests__/useAppMutation.hook.test.ts",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/lib/query/useAppMutation.hook.ts",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
     "path": "apps/web/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx",
     "package": "@tanstack/react-query",
     "reason": "F.8 unit 3: the query seam's own types and AppQueryProvider, in lib/query, take this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/screens/ItemsDashboard/components/DashboardHeader/__tests__/DashboardHeader.component.test.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/screens/ItemsDashboard/components/DashboardHeader/DashboardHeader.component.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/web/src/screens/ItemsDashboard/components/DashboardNav/__tests__/DashboardNav.component.test.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/screens/ItemsDashboard/components/DashboardNav/DashboardNav.component.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/web/src/screens/ItemsDashboard/components/ItemCard/ItemCard.component.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/web/src/screens/ItemsDashboard/components/ItemsListCard/__tests__/ItemsListCard.component.test.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/web/src/screens/ItemsDashboard/components/StatsCard/__tests__/StatsCard.component.test.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
   },
   {
     "path": "apps/web/src/screens/ItemsDashboard/hooks/__tests__/useItems.hook.test.ts",
@@ -600,29 +390,9 @@
     "reason": "F.8 unit 3: the query seam's own types and AppQueryProvider, in lib/query, take this import; the test then mocks the project module, not the vendor."
   },
   {
-    "path": "apps/web/src/screens/ItemsDashboard/hooks/__tests__/useItems.hook.test.ts",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/screens/ItemsDashboard/ItemsDashboard.screen.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
-    "path": "apps/web/src/screens/ItemsSummary/ItemsSummary.screen.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
-  },
-  {
     "path": "apps/web/src/screens/Login/__tests__/Login.screen.test.tsx",
     "package": "@tanstack/react-query",
     "reason": "F.8 unit 3: the query seam's own types and AppQueryProvider, in lib/query, take this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/screens/Login/__tests__/Login.screen.test.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
   },
   {
     "path": "apps/web/src/screens/Login/__tests__/Login.screen.test.tsx",
@@ -641,11 +411,6 @@
   },
   {
     "path": "apps/web/src/screens/Login/hooks/__tests__/useLoginForm.hook.test.ts",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/screens/Login/hooks/__tests__/useLoginForm.hook.test.ts",
     "package": "next/navigation",
     "reason": "F.8 unit 6: lib/routing takes this import; the test then mocks the project module, not the vendor."
   },
@@ -656,11 +421,6 @@
   },
   {
     "path": "apps/web/src/screens/Login/hooks/__tests__/useSignIn.hook.test.ts",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/web/src/screens/Login/hooks/__tests__/useSignIn.hook.test.ts",
     "package": "next/navigation",
     "reason": "F.8 unit 6: lib/routing takes this import; the test then mocks the project module, not the vendor."
   },
@@ -668,11 +428,6 @@
     "path": "apps/web/src/screens/Login/hooks/useSignIn.hook.ts",
     "package": "next/navigation",
     "reason": "F.8 unit 6: lib/routing takes this import."
-  },
-  {
-    "path": "apps/web/src/screens/Login/Login.screen.tsx",
-    "package": "next-intl",
-    "reason": "F.8 unit 2: the i18n seam, one IAppTranslator behind lib/i18n, takes this import."
   },
   {
     "path": "apps/web/src/services/ItemsSummary/__tests__/itemsSummary.service.test.ts",

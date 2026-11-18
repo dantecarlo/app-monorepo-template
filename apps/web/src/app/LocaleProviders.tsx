@@ -1,8 +1,10 @@
-import { getLocale, getMessages } from 'next-intl/server'
 import type { ReactNode } from 'react'
 
 import { SupabaseProviders } from '@/app/SupabaseProviders'
-import { toSupportedLanguage } from '@/i18n/locale.helper'
+import {
+  getAppLocale,
+  getAppMessages
+} from '@/lib/i18n/appTranslator.adapter'
 
 interface ILocaleProvidersProps {
   children: ReactNode
@@ -15,8 +17,10 @@ interface ILocaleProvidersProps {
 export const LocaleProviders = async ({
   children
 }: ILocaleProvidersProps): Promise<React.JSX.Element> => {
-  const locale = toSupportedLanguage({ value: await getLocale() })
-  const messages = await getMessages()
+  const [locale, messages] = await Promise.all([
+    getAppLocale(),
+    getAppMessages()
+  ])
 
   return (
     <SupabaseProviders locale={locale} messages={messages}>

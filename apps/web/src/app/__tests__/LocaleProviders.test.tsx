@@ -1,9 +1,9 @@
 import { LanguageEnum, resources } from '@app/i18n'
 import { describe, expect, test, vi } from 'vitest'
 
-vi.mock('next-intl/server', () => ({
-  getLocale: async () => LanguageEnum.ES,
-  getMessages: async () => resources[LanguageEnum.ES].translation
+vi.mock('@/lib/i18n/appTranslator.adapter', () => ({
+  getAppLocale: async () => LanguageEnum.ES,
+  getAppMessages: async () => resources[LanguageEnum.ES].translation
 }))
 
 vi.mock('next/navigation', () => ({

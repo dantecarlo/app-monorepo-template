@@ -6,7 +6,6 @@ import {
   type SupportedLanguageType
 } from '@app/i18n'
 import { useRouter } from 'next/navigation'
-import { useLocale } from 'next-intl'
 import { useCallback } from 'react'
 
 import type { IUseLanguageSwitcherResult } from '@/components/ui/LanguageSwitcher/LanguageSwitcher.type'
@@ -14,7 +13,7 @@ import {
   LOCALE_COOKIE_MAX_AGE_SECONDS,
   LOCALE_COOKIE_NAME
 } from '@/i18n/i18n.constant'
-import { toSupportedLanguage } from '@/i18n/locale.helper'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 
 const toNextLanguage = (
   current: SupportedLanguageType
@@ -27,11 +26,11 @@ const toNextLanguage = (
 
 // Cycles through SUPPORTED_LANGUAGES from the active locale, persists the
 // choice in the NEXT_LOCALE cookie, and triggers a server refresh so the
-// next-intl request config re-resolves the locale and messages, which
+// request config re-resolves the locale and messages, which
 // LocaleProviders hands to the client providers.
 export const useLanguageSwitcher = (): IUseLanguageSwitcherResult => {
   const router = useRouter()
-  const locale = toSupportedLanguage({ value: useLocale() })
+  const { locale } = useAppTranslator()
 
   const cycleLanguage = useCallback(() => {
     const next = toNextLanguage(locale)

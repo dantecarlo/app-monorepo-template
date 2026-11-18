@@ -1,15 +1,13 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
-
 import { IconButton } from '@/components/ui/IconButton'
 import { Text } from '@/components/ui/Text'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import { DASHBOARD_HEADER } from '@/screens/ItemsDashboard/components/DashboardHeader/DashboardHeader.style'
 
 export const DashboardHeader = () => {
-  const t = useTranslations('items.dashboard')
-  const tApp = useTranslations('app')
-  const appName = tApp('name')
+  const { t } = useAppTranslator()
+  const appName = t('app.name')
 
   return (
     <header className={DASHBOARD_HEADER.ROOT}>
@@ -18,14 +16,16 @@ export const DashboardHeader = () => {
           {appName.charAt(0)}
         </div>
         <div>
-          <p className={DASHBOARD_HEADER.SUBTITLE}>{t('welcomeBack')}</p>
+          <p className={DASHBOARD_HEADER.SUBTITLE}>
+            {t('items.dashboard.welcomeBack')}
+          </p>
           <Text as="p" variant="title">
-            {t('title')}
+            {t('items.dashboard.title')}
           </Text>
         </div>
       </div>
       <IconButton
-        accessibilityLabel={t('settingsLabel')}
+        accessibilityLabel={t('items.dashboard.settingsLabel')}
         name="settings"
       />
     </header>

@@ -5,8 +5,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 const refresh = vi.fn()
 let currentLocale: string = LanguageEnum.EN
 
-vi.mock('next-intl', () => ({
-  useLocale: () => currentLocale
+vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
+  useAppTranslator: () => ({ locale: currentLocale })
 }))
 
 vi.mock('next/navigation', () => ({

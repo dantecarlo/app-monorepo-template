@@ -1,3 +1,5 @@
+import type { TranslationKeyType } from '@app/i18n'
+
 import type { ILoginFormValues } from '@/screens/Login/models/Login.type'
 
 /** Minimum acceptable password length for client-side validation. */
@@ -14,9 +16,9 @@ export const LOGIN_FIELD_ID = {
 
 /** Translation keys returned by the validator for each field error. */
 export const LOGIN_ERROR_KEY = {
-  EMAIL: 'errors.email',
-  PASSWORD: 'errors.password'
-} as const
+  EMAIL: 'auth.login.errors.email',
+  PASSWORD: 'auth.login.errors.password'
+} as const satisfies Record<string, TranslationKeyType>
 
 /** The route a sign-in replaces the login route with: the home page. */
 export const SIGN_IN_REDIRECT_PATH = '/'

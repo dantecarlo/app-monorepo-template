@@ -1,7 +1,6 @@
-import { useTranslations } from 'next-intl'
-
 import { buttonVariants } from '@/components/ui/Button/Button.style'
 import type { IButtonProps } from '@/components/ui/Button/Button.type'
+import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -21,7 +20,7 @@ export const Button = ({
   variant,
   ...props
 }: IButtonProps) => {
-  const t = useTranslations('common')
+  const { t } = useAppTranslator()
 
   return (
     <button
@@ -41,7 +40,7 @@ export const Button = ({
             aria-hidden="true"
             className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
           />
-          <span className="sr-only">{t('loading')}</span>
+          <span className="sr-only">{t('common.loading')}</span>
         </>
       ) : (
         children

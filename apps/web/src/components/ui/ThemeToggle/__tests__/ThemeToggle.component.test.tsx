@@ -1,8 +1,12 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
 
-vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key
+vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
+  useAppTranslator: () => ({
+    has: () => false,
+    locale: 'en',
+    t: (key: string) => key
+  })
 }))
 
 const onValueChange = vi.fn()

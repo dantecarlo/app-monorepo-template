@@ -2,10 +2,13 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import type { ImgHTMLAttributes } from 'react'
 import { describe, expect, test, vi } from 'vitest'
 
-vi.mock('next-intl', () => ({
-  // eslint-disable-next-line local/single-object-params -- mirrors next-intl's t(key, values) callback shape
-  useTranslations: () => (key: string, values?: Record<string, string>) =>
-    values?.name ? `${values.name} ${key}` : key
+vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
+  useAppTranslator: () => ({
+    has: () => false,
+    locale: 'en',
+    t: (...[key, values]: [string, Record<string, string>?]) =>
+      values?.name ? `${values.name} ${key}` : key
+  })
 }))
 
 vi.mock('next/image', () => ({
@@ -25,7 +28,7 @@ describe('Logo', () => {
 
   test('labels the asset with the brand name', () => {
     render(<Logo brandLabel="Acme" />)
-    expect(screen.getByAltText('Acme label')).toBeTruthy()
+    expect(screen.getByAltText('Acme auth.logo.label')).toBeTruthy()
   })
 
   test('falls back to the brand wordmark when the asset errors', () => {
