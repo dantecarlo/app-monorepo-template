@@ -87,3 +87,78 @@ their assertions; only the wrapper they render through changed, from TanStack's 
   outside `lib/query` and the tests never calls it.
 - No device run: the mobile bundle was exported for the web, not started on iOS or Android, so the
   persisted store over AsyncStorage ran only against its in-memory mock.
+
+## After the native review
+
+> **Verified:** 2026-11-18 at `953fe86`
+
+The native review approved the change with warnings, and a read of Certifipago, the downstream
+that adopts this template, showed the query seam dropping options its app code passes:
+`enabled` 53 times, `networkMode` 4, `staleTime` 3, `retry` 1 and `placeholderData:
+keepPreviousData` 1 to its query hooks, and `mutationKey` 3, `onSettled` 3 and `onMutate` 1 to its
+mutation hooks, with `useSignOut` calling `useIsMutating({ exact: true, mutationKey })`. WEB-63,
+WEB-64, MOBILE-61 and MOBILE-62 were amended whole, in the deltas and in the living specs; the
+earlier rows above stay green.
+
+| Requirement | Scenario | Test | Result |
+| ----------- | -------- | ---- | ------ |
+| WEB-63 | a held query | `apps/web/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "never runs the queryFn while enabled is false" | green |
+| WEB-63 | a retried query | `apps/web/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "retries a failed queryFn as many times as retry says" | green |
+| WEB-63 | the previous data while a new key loads | `apps/web/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "keeps the previous key's data while the next key loads, with keepPreviousData" | green |
+| WEB-63 | the freshness and the network mode | `apps/web/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "hands staleTime and networkMode to the query" | green |
+| WEB-63 | an option left out | `apps/web/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "keeps the client's defaults for every option it leaves out" | green |
+| WEB-63 | a stable query result | `apps/web/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "keeps the same result object across a rerender while its fields are unchanged" | green |
+| WEB-63 | before the mutation and once it settles | `apps/web/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "runs the caller's onMutate with the variables first, and onSettled with the outcome" | green |
+| WEB-63 | the mutation key | `apps/web/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "caches the mutation under its mutationKey" | green |
+| WEB-63 | the callbacks of one call | `apps/web/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "runs the onSettled of one mutate call once that call settles" | green |
+| WEB-63 | a reset | `apps/web/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "reset clears the outcome of the last run" | green |
+| WEB-63 | a stable mutation result | `apps/web/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "keeps the same result object across a rerender while its fields are unchanged" | green |
+| WEB-64 | a running keyed mutation | `apps/web/src/lib/query/__tests__/useIsAppMutating.hook.test.ts` › "is true while a mutation of exactly that key runs, and false once it settles" | green |
+| MOBILE-61 | a held query | `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "never runs the queryFn while enabled is false" | green |
+| MOBILE-61 | a retried query | `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "retries a failed queryFn as many times as retry says" | green |
+| MOBILE-61 | the previous data while a new key loads | `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "keeps the previous key's data while the next key loads, with keepPreviousData" | green |
+| MOBILE-61 | the freshness and the network mode | `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "hands staleTime and networkMode to the query" | green |
+| MOBILE-61 | an option left out | `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "keeps the client's defaults for every option it leaves out" | green |
+| MOBILE-61 | a stable query result | `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "keeps the same result object across a rerender while its fields are unchanged" | green |
+| MOBILE-61 | before the mutation and once it settles | `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "runs the caller's onMutate with the variables first, and onSettled with the outcome" | green |
+| MOBILE-61 | the mutation key | `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "caches the mutation under its mutationKey" | green |
+| MOBILE-61 | the callbacks of one call | `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "runs the onSettled of one mutate call once that call settles" | green |
+| MOBILE-61 | a reset | `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "reset clears the outcome of the last run" | green |
+| MOBILE-61 | a stable mutation result | `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "keeps the same result object across a rerender while its fields are unchanged" | green |
+| MOBILE-62 | a running keyed mutation | `apps/mobile/src/lib/query/__tests__/useIsAppMutating.hook.test.ts` › "is true while a mutation of exactly that key runs, and false once it settles" | green |
+
+### Red before green
+
+Each rule's test failed for its reason, in both apps, before the code that satisfies it:
+
+- **enabled**: the `queryFn` of a query with `enabled: false` ran (`expected "vi.fn()" to not be
+  called at all, but actually been called 1 times`): the option was dropped.
+- **retry**: a query with `retry: 1` settled in error after one run (`expected false to be
+  true`).
+- **keepPreviousData**: the result held no data while the next key loaded (`expected undefined to
+  be 'page one'`).
+- **staleTime and networkMode**: the cached query's options held neither (`expected { retry:
+  false, …(7) } to deeply equal ObjectContaining{…}`).
+- **Result identity**: each hook returned a new object on every render (`expected { data: 5,
+  error: null, …(4) } to be { data: 5, error: null, …(4) }`, and the same for the mutation).
+- **onMutate and onSettled**: neither callback ran (`expected "vi.fn()" to be called once, but got
+  0 times`).
+- **mutationKey**: the mutation cache held no mutation under the key (`expected undefined to be
+  defined`).
+- **useIsAppMutating**: the hook did not exist (`Failed to resolve import`).
+- Three tests pin behaviour the change touches and passed before it too: an option left out keeps
+  the client's defaults (a naive forward of `undefined` would replace the 30-second stale time and
+  the one retry), the `onSettled` of one `mutate` call, and `reset`.
+
+### Gate
+
+- `ATL_TEMPLATE_SELF=1 pnpm validate`: exit 0, 2026-11-18, at `953fe86`; the web suite 118 files
+  and 461 tests, the mobile suite 83 files and 248 tests.
+
+### Not verified
+
+- `networkMode` and `staleTime` are seen through the cached query's options and its freshness,
+  not through a device that goes offline.
+- An `onMutate` that returns a rollback context: the context does not reach `onError`, and no
+  helper reads or writes the cache (`setQueryData`, `cancelQueries`), which Certifipago's
+  optimistic updates use; out of scope.

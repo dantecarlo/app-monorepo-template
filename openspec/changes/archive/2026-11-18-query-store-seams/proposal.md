@@ -38,6 +38,14 @@ The owner's words, verbatim:
 
 ## What changes
 
+> **Amended after the native review (2026-11-18).** The query hooks forward the options real
+> projects pass, through project types only: `enabled`, `staleTime`, `retry`, `networkMode` and
+> `keepPreviousData` on a query, `mutationKey`, `onMutate({ variables })` and
+> `onSettled({ data, error, variables })` on a mutation, each left out keeping the client's
+> default; `useIsAppMutating({ mutationKey })` tells whether a keyed mutation runs; both hooks
+> return the same result while no field changed. WEB-63, WEB-64, MOBILE-61 and MOBILE-62 are
+> amended whole in the deltas and the living specs; `verify-report.md` records the rest.
+
 - **The query API owns its types (unit 3).** In each app's `src/lib/query/`, `useAppQuery` takes
   `IAppQueryOptions` (a `queryKey`, a `queryFn` and the optional `adapter`) and returns
   `IAppQueryResult` (`data`, `error`, `isError`, `isLoading`, `isSuccess`, `refetch`);
@@ -80,9 +88,10 @@ The owner's words, verbatim:
 - **The query client's own type.** `AppQueryClientType` is TanStack's `QueryClient` under a
   project name: the roots only pass it on, and the tests that read the cache keep their
   assertions. An opaque client would rewrite those assertions; nothing asks for it yet.
-- **More query options.** The options are the ones a caller passes today (`queryKey`,
-  `queryFn`, `gcTime`, `mutationFn` and the callbacks); `enabled`, `staleTime` or a per-call
-  `onError` join `lib/query` when a caller needs them.
+- **Optimistic updates.** `onMutate` runs before the mutation, but its return does not reach
+  `onError`, and no helper reads or writes the cache (`setQueryData`, `cancelQueries`); a project
+  that updates optimistically adds them to `lib/query`. A per-call `onError` waits for a caller
+  too.
 - **The other frozen imports**, units 5 to 8, and the `ui/` blocks another writer owns.
 - **The web's local storage.** The web persists through zustand's own local storage; a web
   key-value adapter waits for a caller.

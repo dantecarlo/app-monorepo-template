@@ -8,12 +8,15 @@
 
 The mobile app SHALL give every query and mutation one API of its own in
 `apps/mobile/src/lib/query/`, the same as the web app's (apps/web WEB-63): `useAppQuery` takes
-`IAppQueryOptions`, a `queryKey`, a `queryFn` and an optional `adapter`, and returns
-`IAppQueryResult`, only `data`, `error`, `isError`, `isLoading`, `isSuccess` and `refetch`;
-`useAppMutation` takes `IAppMutationOptions`, a `mutationFn`, an optional `gcTime` and `onError`
-and `onSuccess` callbacks, each called with one object holding the error or the data and the
-variables, and returns `IAppMutationResult`, only `data`, `error`, `isError`, `isPending`,
-`isSuccess`, `mutate` and `reset`. No type of TanStack Query is part of either.
+`IAppQueryOptions`, a `queryKey`, a `queryFn`, an optional `adapter` and the optional `enabled`,
+`staleTime`, `retry`, `networkMode` (`online`, `always` or `offlineFirst`) and `keepPreviousData`,
+each forwarded to the query, and returns `IAppQueryResult`, only `data`, `error`, `isError`,
+`isLoading`, `isSuccess` and `refetch`; `useAppMutation` takes `IAppMutationOptions`, a `mutationFn`
+and the optional `mutationKey`, `gcTime` and `onMutate`, `onSuccess`, `onError` and `onSettled`
+callbacks, each called with one object holding the variables and the data or the error, and returns
+`IAppMutationResult`, only `data`, `error`, `isError`, `isPending`, `isSuccess`, `mutate` and
+`reset`. An option left out SHALL keep the query client's default, each hook SHALL return the same
+result object while none of its fields changed, and no type of TanStack Query is part of either.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -23,6 +26,48 @@ variables, and returns `IAppMutationResult`, only `data`, `error`, `isError`, `i
 - **WHEN** `useAppQuery` settles
 - **THEN** its result holds exactly the fields of `IAppQueryResult`, the data among them
 - **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "returns only the fields of the app's own query result"
+
+#### Scenario: a held query
+
+- **GIVEN** a query with `enabled: false`
+- **WHEN** it mounts and every pending timer runs
+- **THEN** its `queryFn` never runs, and it holds no data and is not loading
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "never runs the queryFn while enabled is false"
+
+#### Scenario: a retried query
+
+- **GIVEN** a query with `retry: 1`, on a client that retries none, whose `queryFn` fails once
+- **WHEN** it settles
+- **THEN** it ran twice and holds the second run's data
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "retries a failed queryFn as many times as retry says"
+
+#### Scenario: the previous data while a new key loads
+
+- **GIVEN** a query with `keepPreviousData` that loaded one key
+- **WHEN** it moves to a key whose `queryFn` has not resolved
+- **THEN** it still holds the first key's data and is not loading
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "keeps the previous key's data while the next key loads, with keepPreviousData"
+
+#### Scenario: the freshness and the network mode
+
+- **GIVEN** a query with a `staleTime` of a minute and `networkMode: 'always'`
+- **WHEN** it settles
+- **THEN** the cached query holds both options and is still fresh
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "hands staleTime and networkMode to the query"
+
+#### Scenario: an option left out
+
+- **GIVEN** a query that passes none of the optional options, on the app's query client
+- **WHEN** it settles
+- **THEN** the cached query holds every default of that client
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "keeps the client's defaults for every option it leaves out"
+
+#### Scenario: a stable query result
+
+- **GIVEN** a settled query
+- **WHEN** its component renders again with nothing changed
+- **THEN** it reads the same result object
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppQuery.hook.test.ts` › "keeps the same result object across a rerender while its fields are unchanged"
 
 #### Scenario: a mutation's result
 
@@ -40,12 +85,51 @@ variables, and returns `IAppMutationResult`, only `data`, `error`, `isError`, `i
   object with the error and the variables
 - **Test:** `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "hands the caller's callbacks one object with the outcome and the variables"
 
-### Requirement: MOBILE-62 — The app provides its query client and invalidates by key prefix
+#### Scenario: before the mutation and once it settles
+
+- **GIVEN** a mutation with an `onMutate` and an `onSettled` callback, run once to success and
+  once to failure
+- **WHEN** each run settles
+- **THEN** `onMutate` received the variables before `mutationFn` ran, and `onSettled` the data,
+  the error and the variables of each run
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "runs the caller's onMutate with the variables first, and onSettled with the outcome"
+
+#### Scenario: the mutation key
+
+- **GIVEN** a mutation with a `mutationKey`
+- **WHEN** it runs
+- **THEN** the mutation cache holds it under that key
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "caches the mutation under its mutationKey"
+
+#### Scenario: the callbacks of one call
+
+- **GIVEN** a mutation run with an `onSettled` for that call
+- **WHEN** the call settles
+- **THEN** that `onSettled` runs once
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "runs the onSettled of one mutate call once that call settles"
+
+#### Scenario: a reset
+
+- **GIVEN** a mutation that succeeded
+- **WHEN** `reset` is called
+- **THEN** it holds no data and is neither a success nor an error
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "reset clears the outcome of the last run"
+
+#### Scenario: a stable mutation result
+
+- **GIVEN** a mutation
+- **WHEN** its component renders again with nothing changed
+- **THEN** it reads the same result object
+- **Test:** `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "keeps the same result object across a rerender while its fields are unchanged"
+
+### Requirement: MOBILE-62 — The app provides its query client, invalidates by key prefix and tells a keyed mutation runs
 
 The mobile app SHALL give a tree the query client `createQueryClient` builds through
-`AppQueryProvider` of `apps/mobile/src/lib/query/`, and SHALL give every hook
-`useInvalidateAppQuery`, whose function marks every query whose key starts with the `queryKey` it
-is handed stale, and no other, and runs the observed ones again.
+`AppQueryProvider` of `apps/mobile/src/lib/query/`, SHALL give every hook `useInvalidateAppQuery`,
+whose function marks every query whose key starts with the `queryKey` it is handed stale, and no
+other, and runs the observed ones again, and SHALL give every hook `useIsAppMutating`, true while a
+mutation whose `mutationKey` equals the one it is handed runs, and false for a mutation under a
+longer key and once that mutation settled.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -69,6 +153,15 @@ is handed stale, and no other, and runs the observed ones again.
 - **WHEN** the items prefix is invalidated
 - **THEN** the list's query runs again and the component reads its new data
 - **Test:** `apps/mobile/src/lib/query/__tests__/useInvalidateAppQuery.hook.test.ts` › "runs an observed query under the prefix again"
+
+#### Scenario: a running keyed mutation
+
+- **GIVEN** a mutation under the key `['items', 'save']` whose `mutationFn` has not resolved
+- **WHEN** `useIsAppMutating` reads that key and its prefix `['items']`, and then the mutation
+  resolves
+- **THEN** it is true for the exact key and false for the prefix while it runs, and false for
+  the key once it settled
+- **Test:** `apps/mobile/src/lib/query/__tests__/useIsAppMutating.hook.test.ts` › "is true while a mutation of exactly that key runs, and false once it settles"
 
 ### Requirement: MOBILE-63 — Every store is created through createAppStore
 
