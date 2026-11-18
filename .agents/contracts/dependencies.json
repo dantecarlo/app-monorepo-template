@@ -54,8 +54,8 @@
     {
       "name": "next/navigation",
       "category": "infra",
-      "seam": [],
-      "note": "Behind apps/web/src/lib/routing/, which F.8 unit 6 creates."
+      "seam": ["apps/web/src/lib/routing/useAppRouter.hook.ts"],
+      "note": "Behind useAppRouter of lib/routing, whose IAppRouter (push, replace, refresh) is the app's own; every other test mocks @/lib/routing through createRoutingDouble of src/test/routing.helper.ts."
     },
     {
       "name": "next-intl",
