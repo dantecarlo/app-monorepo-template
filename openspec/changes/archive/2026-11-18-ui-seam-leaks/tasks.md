@@ -7,7 +7,7 @@
 - [x] T5 — the mobile `ui/StatusBar` block with `StatusBarStyleType`, the root layout and the root theme's type on it, the layout test mocking it, the seam narrowed and the 3 `expo-status-bar` allowlist entries removed · Requirements: MOBILE-72 · Commit: a1eb12a
 - [x] T6 — `applyTheme` in `lib/theme`, the `Screen` and `Text` tests on it, and the 2 unit-5 `nativewind` allowlist entries removed · Requirements: MOBILE-73 · Commit: 8ec65af
 - [x] T7 — the `component` and `modify` skills, `docs/code-standards.md` § 22, `docs/architecture/web.md` and `mobile.md`, and `docs/maps/global-map.md` · Requirements: none · Commit: 2b2b35c
-- [ ] T8 — `verify-report.md`, then the archive into the living specs · Requirements: none · Commit: —
+- [x] T8 — `verify-report.md`, then the archive into the living specs · Requirements: none · Commit: d990d11
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of
