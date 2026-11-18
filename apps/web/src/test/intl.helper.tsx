@@ -1,5 +1,6 @@
 import {
   DEFAULT_LANGUAGE,
+  type ILocaleResources,
   resources,
   type SupportedLanguageType
 } from '@app/i18n'
@@ -11,6 +12,8 @@ import { render } from '@/test/test.helper'
 
 export interface IRenderWithIntlParams {
   locale?: SupportedLanguageType
+  /** The catalog to read the copy from: the locale's own one by default. */
+  messages?: ILocaleResources['translation']
   ui: ReactElement
 }
 
@@ -21,12 +24,13 @@ export interface IRenderWithIntlParams {
  */
 export const renderWithIntl = ({
   locale = DEFAULT_LANGUAGE,
+  messages = resources[locale].translation,
   ui
 }: IRenderWithIntlParams) =>
   render(
     <NextIntlClientProvider
       locale={locale}
-      messages={resources[locale].translation}
+      messages={messages}
       timeZone={I18N_TIME_ZONE}
     >
       {ui}
