@@ -34,9 +34,11 @@ The branch is the one the ticket names, in the shape the project layer's ticket 
 
 ```bash
 git fetch origin
-git worktree add <repo-parent>/<repo>-worktrees/qa-<id> <branch>
+git worktree add --detach <repo-parent>/<repo>-worktrees/qa-<id> origin/<branch>
 ```
 
+The worktree is detached at the remote branch because the dev session's worktree still holds
+`<branch>` until the ticket is Done, and git refuses to check out one branch in two worktrees.
 Never check a ticket in the dev session's worktree.
 
 ---
@@ -67,9 +69,10 @@ Did every check pass?
 │         architect `<id> changes requested`. Stop.
 └── YES → bring it to Ready to merge (`ticket-flow` § Ready to merge):
           1. the pull request's CI is green;
-          2. bring the branch current with its base, as the project layer says:
+          2. bring the detached HEAD current with its base, as the project layer says:
              git fetch origin && git merge origin/<base>   (or: git rebase origin/<base>)
-             then push;
+             then push it to the ticket branch, never forced: git push origin HEAD:<branch>
+             (refused because the remote moved → git fetch origin, and repeat this step);
           3. re-run the checks on the current branch;
           4. no conflict and every check green → move to Ready to merge.
 ```

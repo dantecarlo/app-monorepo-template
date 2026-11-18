@@ -20,8 +20,10 @@
 //     templates;
 //   - a role skill: a first paragraph that names ticket-flow's SKILL.md, and
 //     neither of the contract's two tables; `refine-ticket` its release step,
-//     `qa-ticket` a merge step that names both merge policies, and
-//     `release-ticket` its deploy targets, branching, migrations and hotfix;
+//     `qa-ticket` a checkout step that adds a `--detach` worktree, a decide
+//     step that pushes `HEAD:<branch>` and a merge step that names both merge
+//     policies, and `release-ticket` its deploy targets, branching, migrations
+//     and hotfix;
 //   - `process-intake`: a mapping step that names both merge policies and
 //     the `json ticket-identity` block, and the template of the project
 //     layer, with a row for every board operation and every state, its
@@ -150,11 +152,19 @@ const STATE_NAMES_TABLE_HEADER = ['Core state', "This project's name"]
 const SHAPE_HEADINGS = ['## CONTRACT', '## Output']
 
 const RULES_HEADING = '## Rules every role follows'
+const QA_CHECKOUT_STEP = '## Step 2 — Check out the branch'
+const QA_DECIDE_STEP = '## Step 5 — Decide'
 const QA_MERGE_STEP = '## Step 6 — One merge at a time, under the merge policy'
 const INTAKE_MAPPING_STEP = '## Step 3 — Map it onto the core'
 const IDENTITY_HEADING = '## Ticket identity'
 const MERGE_POLICY_HEADING = '## Merge policy'
 const POLICY_FIELD = '- **Policy:**'
+
+// QA checks a ticket out detached at the remote branch, because the dev
+// session's worktree holds the branch and git refuses to check one branch out
+// in two worktrees; it pushes its detached HEAD back to the branch, unforced.
+const DETACHED_CHECKOUT = '--detach'
+const HEAD_PUSH = 'git push origin HEAD:<branch>'
 
 const codeOf = ({ text }) => `\`${text}\``
 
@@ -248,8 +258,17 @@ export const SKILL_CONTRACTS = [
   { folder: 'dev-ticket', headings: SHAPE_HEADINGS, role: true },
   {
     folder: 'qa-ticket',
-    headings: [QA_MERGE_STEP, ...SHAPE_HEADINGS],
-    mentions: policyMentions({ heading: QA_MERGE_STEP }),
+    headings: [
+      QA_CHECKOUT_STEP,
+      QA_DECIDE_STEP,
+      QA_MERGE_STEP,
+      ...SHAPE_HEADINGS
+    ],
+    mentions: [
+      { heading: QA_CHECKOUT_STEP, text: DETACHED_CHECKOUT },
+      { heading: QA_DECIDE_STEP, text: HEAD_PUSH },
+      ...policyMentions({ heading: QA_MERGE_STEP })
+    ],
     role: true
   },
   {
@@ -624,7 +643,9 @@ export const gate = defineGate({
     `names branchTypes and the ${IDENTITY_INFO} block, and its ticket and ` +
     'release templates; each role skill opens by sending the reader to ticket-flow ' +
     "and copies neither of the contract's tables, refine-ticket has its " +
-    'release step, qa-ticket a merge step that names both merge policies, ' +
+    `release step, qa-ticket a checkout step that names ${DETACHED_CHECKOUT}, ` +
+    `a decide step that names ${HEAD_PUSH} and a merge step that names ` +
+    'both merge policies, ' +
     'and release-ticket its deploy targets, its branching with the ' +
     'tags-only alternative, its migrations and its hotfix; and ' +
     'process-intake has a mapping step that names both merge policies and ' +

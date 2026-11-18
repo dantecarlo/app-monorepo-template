@@ -89,9 +89,11 @@ Stop there: the session that built a ticket never moves it further.
 
 ## Changes requested
 
-On `<id> changes requested`: `read` QA's comment, `move` the ticket to In dev, fix it in the same
-worktree test first, run Step 5 again, push, then Step 7. Once the ticket is Done, remove the
-worktree (`git worktree remove <path>`).
+On `<id> changes requested`: `read` QA's comment and `move` the ticket to In dev. Before any later
+change in this worktree, pull the branch (`git pull origin <branch>`): QA may have pushed to it
+when it brought the branch current (`qa-ticket` Step 5). Then fix it in the same worktree test
+first, run Step 5 again, push, then Step 7. Once the ticket is Done, remove the worktree
+(`git worktree remove <path>`).
 
 ---
 
