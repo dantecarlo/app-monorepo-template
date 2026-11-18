@@ -15,8 +15,10 @@ import { posthogClient } from '@/lib/posthog/posthogClient.adapter'
  * PostHog adapter for IObservabilityPort, the default of the composition
  * root. An error is a PostHog exception, a message a PostHog log record, a
  * breadcrumb an exception step that rides with the next exception, and the
- * user an identify by id; every payload passes through scrubPII first.
- * Every method is a no-op while the app holds no PostHog client.
+ * user an identify by id; every payload passes through scrubPII when the
+ * method is called. The client makes each call at once while the SDK is
+ * loaded, holds it while the SDK loads, and drops it while nothing is
+ * loading: without a key, on the server, and in opt-in mode without a grant.
  */
 export const createPostHogObservability = (): IObservabilityPort => ({
   addBreadcrumb: ({
@@ -25,19 +27,17 @@ export const createPostHogObservability = (): IObservabilityPort => ({
     level = ObservabilityLevelEnum.INFO,
     message
   }: IAddBreadcrumbParams): void => {
-    if (!posthogClient) return
-    posthogClient.addExceptionStep(
-      message,
-      scrubPII({ ...data, category, level })
+    const properties = scrubPII({ ...data, category, level })
+    posthogClient.run((client) =>
+      client.addExceptionStep(message, properties)
     )
   },
 
   captureError: ({ context, error }: ICaptureErrorParams): void => {
-    if (!posthogClient) return
-    posthogClient.captureException(
-      error,
-      context ? scrubPII(context) : undefined
-    )
+    const properties = context ? scrubPII(context) : undefined
+    posthogClient.run((client) => {
+      client.captureException(error, properties)
+    })
   },
 
   captureMessage: ({
@@ -45,24 +45,22 @@ export const createPostHogObservability = (): IObservabilityPort => ({
     level = ObservabilityLevelEnum.INFO,
     message
   }: ICaptureMessageParams): void => {
-    if (!posthogClient) return
-    posthogClient.captureLog({
+    const record = {
       attributes: context ? scrubPII(context) : undefined,
       body: message,
       level: POSTHOG_LOG_LEVEL_BY_LEVEL[level]
-    })
+    }
+    posthogClient.run((client) => client.captureLog(record))
   },
 
   setUser: ({ user }: ISetUserParams): void => {
-    if (!posthogClient) return
     if (!user) {
-      posthogClient.reset()
+      posthogClient.run((client) => client.reset())
       return
     }
     const { id, ...properties } = user
-    posthogClient.identify(
-      id,
+    const scrubbed =
       Object.keys(properties).length > 0 ? scrubPII(properties) : undefined
-    )
+    posthogClient.run((client) => client.identify(id, scrubbed))
   }
 })

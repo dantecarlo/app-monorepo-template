@@ -1,4 +1,7 @@
-import { ObservabilityLevelEnum } from '@app/core'
+import {
+  createMemoryKeyValueStorage,
+  ObservabilityLevelEnum
+} from '@app/core'
 import {
   type IObservabilityPortHarness,
   runObservabilityPortContract
@@ -11,7 +14,9 @@ const sdk = vi.hoisted(() => ({
   addExceptionStep: vi.fn(),
   captureException: vi.fn(),
   captureLog: vi.fn(),
+  construct: vi.fn(),
   identify: vi.fn(),
+  optIn: vi.fn(async () => undefined),
   reset: vi.fn()
 }))
 
@@ -21,7 +26,11 @@ vi.mock('posthog-react-native', () => ({
     captureException = sdk.captureException
     captureLog = sdk.captureLog
     identify = sdk.identify
+    optIn = sdk.optIn
     reset = sdk.reset
+    constructor(...args: unknown[]) {
+      sdk.construct(...args)
+    }
   }
 }))
 
@@ -31,10 +40,21 @@ const REDACTED = '[redacted]'
 
 // The client reads the key when its module loads, so each adapter comes from
 // a fresh module registry under its own environment.
-const loadAdapter = async ({ key }: { key?: string }) => {
+const loadAdapter = async ({
+  consent,
+  key
+}: {
+  consent?: string
+  key?: string
+}) => {
   Object.values(sdk).forEach((mock) => mock.mockClear())
   vi.stubEnv('EXPO_PUBLIC_POSTHOG_KEY', key)
+  vi.stubEnv('EXPO_PUBLIC_POSTHOG_CONSENT', consent)
   vi.resetModules()
+  // A fresh device: the project module that owns the device storage is
+  // replaced by the in-memory storage of @app/core.
+  const device = createMemoryKeyValueStorage()
+  vi.doMock('@/lib/storage', () => ({ keyValueStorage: device }))
   const { createPostHogObservability } =
     await import('@/lib/observability/createPostHogObservability.adapter')
   return createPostHogObservability()
@@ -125,6 +145,27 @@ const DELIVERING_CALLS = [
   sdk.captureLog,
   sdk.identify
 ]
+
+test('drops every call in opt-in mode before a grant', async () => {
+  const adapter = await loadAdapter({ consent: 'opt-in', key: KEY })
+
+  adapter.captureError({ error: new Error('before consent') })
+  adapter.captureMessage?.({
+    level: ObservabilityLevelEnum.WARNING,
+    message: 'before consent'
+  })
+  adapter.addBreadcrumb?.({ message: 'before consent' })
+  adapter.setUser?.({ user: { id: 'u1' } })
+  adapter.setUser?.({ user: null })
+  const { createPostHogConsent } =
+    await import('@/lib/observability/createPostHogConsent.adapter')
+  await createPostHogConsent().grant()
+
+  expect(sdk.construct).toHaveBeenCalledOnce()
+  expect(sdk.optIn).toHaveBeenCalledOnce()
+  DELIVERING_CALLS.forEach((mock) => expect(mock).not.toHaveBeenCalled())
+  expect(sdk.reset).not.toHaveBeenCalled()
+})
 
 const lastCallOrder = (mock: typeof sdk.identify): number =>
   mock.mock.invocationCallOrder.at(-1) ?? 0

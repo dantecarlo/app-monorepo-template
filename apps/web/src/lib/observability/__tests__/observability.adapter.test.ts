@@ -32,8 +32,11 @@ test('binds the PostHog adapter by default', async () => {
 
   bound.captureError({ error })
 
-  expect(sdk.captureException).toHaveBeenCalledExactlyOnceWith(
-    error,
-    undefined
+  // The SDK loads on demand; the capture reaches it once it has.
+  await vi.waitFor(() =>
+    expect(sdk.captureException).toHaveBeenCalledExactlyOnceWith(
+      error,
+      undefined
+    )
   )
 })

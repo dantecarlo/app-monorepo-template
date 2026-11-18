@@ -9,14 +9,16 @@ import {
 } from '@app/core'
 
 import { POSTHOG_LOG_LEVEL_BY_LEVEL } from '@/lib/observability/createPostHogObservability.constant'
-import { posthogClient } from '@/lib/posthog/posthogClient.adapter'
+import { getPostHogClient } from '@/lib/posthog/posthogClient.adapter'
 
 /**
  * PostHog adapter for IObservabilityPort, the default of the composition
  * root. An error is a PostHog exception, a message a PostHog log record, a
  * breadcrumb an exception step that rides with the next exception, and the
  * user an identify by id; every payload passes through scrubPII first.
- * Every method is a no-op while the app holds no PostHog client.
+ * Every method is a no-op while the app holds no PostHog client: without a
+ * key, and in opt-in mode before a grant and after a revoke. Nothing is held
+ * for a later client.
  */
 export const createPostHogObservability = (): IObservabilityPort => ({
   addBreadcrumb: ({
@@ -25,19 +27,18 @@ export const createPostHogObservability = (): IObservabilityPort => ({
     level = ObservabilityLevelEnum.INFO,
     message
   }: IAddBreadcrumbParams): void => {
-    if (!posthogClient) return
-    posthogClient.addExceptionStep(
+    const client = getPostHogClient()
+    if (!client) return
+    client.addExceptionStep(
       message,
       scrubPII({ ...data, category, level })
     )
   },
 
   captureError: ({ context, error }: ICaptureErrorParams): void => {
-    if (!posthogClient) return
-    posthogClient.captureException(
-      error,
-      context ? scrubPII(context) : undefined
-    )
+    const client = getPostHogClient()
+    if (!client) return
+    client.captureException(error, context ? scrubPII(context) : undefined)
   },
 
   captureMessage: ({
@@ -45,8 +46,9 @@ export const createPostHogObservability = (): IObservabilityPort => ({
     level = ObservabilityLevelEnum.INFO,
     message
   }: ICaptureMessageParams): void => {
-    if (!posthogClient) return
-    posthogClient.captureLog({
+    const client = getPostHogClient()
+    if (!client) return
+    client.captureLog({
       attributes: context ? scrubPII(context) : undefined,
       body: message,
       level: POSTHOG_LOG_LEVEL_BY_LEVEL[level]
@@ -54,13 +56,14 @@ export const createPostHogObservability = (): IObservabilityPort => ({
   },
 
   setUser: ({ user }: ISetUserParams): void => {
-    if (!posthogClient) return
+    const client = getPostHogClient()
+    if (!client) return
     if (!user) {
-      posthogClient.reset()
+      client.reset()
       return
     }
     const { id, ...properties } = user
-    posthogClient.identify(
+    client.identify(
       id,
       Object.keys(properties).length > 0 ? scrubPII(properties) : undefined
     )
