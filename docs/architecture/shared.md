@@ -54,7 +54,10 @@ The deliberate middle ground: a **shared base** + **everything UI-specific separ
 - **i18n-first** — all user-facing strings from the shared catalogs.
 - **Error-handling DoD** — every screen handles loading/empty/error + boundary; PII scrubbed.
 - **Code standards** — arrow-only, alias imports, suffixes, naming, single-object params
-  ([code-standards.md](../code-standards.md)), enforced by ESLint/Prettier/Husky.
+  ([code-standards.md](../code-standards.md)), enforced by ESLint/Prettier/Husky. One ESLint
+  config applies every shared rule set to `apps/*` and `packages/*` by pattern, and each
+  framework's rules to the apps that declare it, so a new app inherits them all
+  ([code-standards.md §24](../code-standards.md#24-one-rule-set-for-every-app-and-package)).
 - **Imports inside a package** — a package's sources reach each other through the `#src/` key
   of its `package.json` `"imports"`, never `@/` (it resolves in the consuming app) or a relative
   path ([code-standards.md §2](../code-standards.md#2-imports--alias-only-never-relative)).
