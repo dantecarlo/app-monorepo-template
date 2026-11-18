@@ -944,6 +944,13 @@ the root when it may render, and `AppSafeAreaProvider` gives it the safe area. A
 through `applyTheme` of `src/lib/theme/colorScheme.adapter.ts`, by the theme config and by every
 test that switches it.
 
+**A vendor client crosses no package boundary.** `@app/supabase` hands out its browser and server
+clients as `BackendClientType`, a branded type that names no Supabase type, and the auth gateway
+takes one; only `packages/supabase/src/backendClient.adapter.ts` turns it back into the SDK
+client, so an adapter that reads data over the client is a `packages/supabase/src/*.adapter.ts`.
+Each app's `src/lib/supabase/*.adapter.ts` is the one importer of `@app/supabase`: the client,
+typed `BackendClientType`, and the auth gateway its auth provider receives.
+
 **The migration freezes, then shrinks.** Every import that broke the rule when it landed is listed,
 one entry per file and package, in `eslint-dependency-seam-allowlist.json`, with a reason that
 starts with the F.8 unit that removes it (`F.8 unit 2: …`). F.8 units 2 to 8 drive it to empty,

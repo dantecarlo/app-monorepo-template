@@ -52,7 +52,8 @@ apps/mobile/
     │                             # the safe area the root boots with), i18n/ (the translator over
     │                             # react-i18next), observability/, posthog/, query/ (the query API over
     │                             # TanStack Query), storage/ (the device key-value storage),
-    │                             # store/ (createAppStore, the one zustand import), supabase/, theme/
+    │                             # store/ (createAppStore, the one zustand import), supabase/ (the
+    │                             # opaque client and the auth gateway), theme/
     ├── helpers/                  # shared pure helpers + layout.style.ts (positioning only)
     ├── validation/               # shared zod schemas (or per-screen in the screen's models/)
     └── test/                     # test helper, setup, MSW and native-module mocks
@@ -105,7 +106,10 @@ splash screen with `holdSplashScreen` as it loads, renders nothing until `useApp
 loaded the faces `APP_FONTS` names (or one failed to load) and hidden the splash, and wraps its tree
 in `AppSafeAreaProvider`. Only those files import `expo-splash-screen`, the font packages and, with
 `ui/AuthShell`, `react-native-safe-area-context`, so the route's test mocks `@/lib/bootstrap/*`,
-never a vendor. The root `_layout.tsx` exports `RootErrorBoundary` as its `ErrorBoundary` (Expo
+never a vendor. The auth provider receives `authGateway` of
+`src/lib/supabase/authGateway.adapter.ts`, a Supabase auth gateway over the app's one client, which
+is the opaque `BackendClientType` of `@app/supabase`; only `src/lib/supabase/*.adapter.ts` imports
+that package, and the route's test mocks the gateway's module. The root `_layout.tsx` exports `RootErrorBoundary` as its `ErrorBoundary` (Expo
 Router convention), so a
 render crash in any route shows the `ErrorState` with a retry and is reported to observability
 once, through `useReportBoundaryError` and `reportBoundaryError` in `src/lib/observability/`; a

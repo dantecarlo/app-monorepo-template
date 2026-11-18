@@ -21,6 +21,13 @@ All database-level concerns live here:
 with a new adapter that implements the same ports; the service layer stays
 unchanged.
 
+The clients leave this package as the opaque `BackendClientType`
+(`src/backendClient.type.ts`): an app holds one and hands it to this
+package's factories, but names no Supabase type and cannot reach the SDK
+through it. Only `src/backendClient.adapter.ts` turns it back into the
+SDK client, typed by the `Database` schema, so an adapter that reads or
+writes these tables over the client is a `src/*.adapter.ts` of this package.
+
 ---
 
 ## 2. Migration conventions

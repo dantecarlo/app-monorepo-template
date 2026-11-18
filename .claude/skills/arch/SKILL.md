@@ -59,7 +59,7 @@ packages/
 ├── core/                # @app/core — agnostic domain layer (ports, errors, PII)
 ├── i18n/                # @app/i18n — translation catalog
 ├── tokens/              # @app/tokens — design tokens
-└── supabase/            # @app/supabase — Supabase client factory
+└── supabase/            # @app/supabase — Supabase client factories (the opaque BackendClientType)
 ```
 
 **Key rule**: folders are optional — create them only when needed. When they
@@ -426,8 +426,10 @@ import { scrubPII, PII_KEYS, sanitizeQueryKey } from '@app/core'
   Never import a vendor SDK directly in a feature or hook.
 - Which file may import which package is `.agents/contracts/dependencies.json`: every package's
   category and seam, held by `local/dependency-seam` (`docs/code-standards.md` §23).
-- `IBackendClientProvider` is the port for the database client.
-  `IAuthGateway` is the port for authentication.
+- `IBackendClientProvider` is the port for the database client, whose client is the opaque
+  `BackendClientType` of `@app/supabase`: only that package's adapters unwrap it, so no app type
+  names the vendor's client. `IAuthGateway` is the port for authentication, which each app builds
+  in its `src/lib/supabase/authGateway.adapter.ts`.
 - `buildServiceError` / `AppError` are the standard error shapes for services.
 
 ---

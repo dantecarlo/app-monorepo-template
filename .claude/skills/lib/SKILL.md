@@ -18,9 +18,10 @@ description: >
 > layer contract in `arch`.
 >
 > The canonical example in the template is the Supabase client:
-> features never `import { createClient } from '@supabase/supabase-js'` — they
-> import from `@app/supabase` or access the client via `IBackendClientProvider` from
-> `@app/core`.
+> features never `import { createClient } from '@supabase/supabase-js'` — each app's
+> `src/lib/supabase/*.adapter.ts` imports `@app/supabase`, whose factories hand the client
+> out as the opaque `BackendClientType` (behind `IBackendClientProvider` from `@app/core`),
+> so no app type names the vendor's client.
 
 ---
 
@@ -214,16 +215,33 @@ interface in `@app/core` and let the lib implement it:
 
 ```typescript
 // packages/core/src/ports/client/IBackendClientProvider.type.ts
-export interface IBackendClientProvider {
-  // narrow, project-specific surface — not the full vendor API
+export interface IBackendClientProvider<TClient = unknown> {
+  createClient(params: ICreateBackendClientParams): TClient
 }
 
-// packages/supabase/index.ts  (or src/lib/supabase/supabase.config.ts)
-import type { IBackendClientProvider } from '@app/core'
-// export a factory that satisfies the port
+// packages/supabase/src/backendClient.type.ts — the client as it leaves the package
+declare const BACKEND_CLIENT_BRAND: unique symbol
+export type BackendClientType = {
+  readonly [BACKEND_CLIENT_BRAND]: typeof BACKEND_CLIENT_BRAND
+}
+
+// packages/supabase/src/client.adapter.ts — a factory that satisfies the port
+export const createSupabaseClient = ({
+  anonKey,
+  url
+}: ICreateBackendClientParams): BackendClientType =>
+  toBackendClient({ client: createClient<Database>(url, anonKey) })
+
+// apps/mobile/src/lib/supabase/authGateway.adapter.ts — the app's adapter
+export const authGateway: IAuthGateway = createSupabaseAuthGateway({
+  client: supabase
+})
 ```
 
-Features then depend on `IBackendClientProvider`, not on Supabase concretely.
+Features then depend on the ports (`IAuthGateway`, `IBackendClientProvider`), not on
+Supabase concretely. The client is opaque: only `packages/supabase/src/backendClient.adapter.ts`
+turns it back into the SDK client, so a vendor type never leaks through the wrapper, and an
+adapter that reads data over the client lives in the vendor package's own `*.adapter.ts`.
 
 ---
 
