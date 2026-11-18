@@ -39,11 +39,13 @@ apps/web/
     │                              # ui/variants.helper.ts: the one tv the ui blocks build with
     ├── services/<Domain>/         # SHARED transversal services — service + adapter + barrel
     │                              # (Items, ItemsSummary, Auth: sign-in through IAuthGateway)
-    ├── lib/                       # bot-protection, i18n (the translator over next-intl),
+    ├── lib/                       # bot-protection, cache (applyCachePolicy, the one next/cache
+    │                              # import), i18n (the translator over next-intl),
     │                              # image-delivery, observability, origin-guard,
     │                              # posthog (the one PostHog client), query (the query API over
-    │                              # TanStack Query), store (createAppStore, the one zustand
-    │                              # import), supabase, theme
+    │                              # TanStack Query), routing (useAppRouter, the one
+    │                              # next/navigation import), store (createAppStore, the one
+    │                              # zustand import), supabase, theme
     └── stores/  helpers/ (layout.style.ts: positioning only)  validation/  i18n/  test/
 ```
 
@@ -95,6 +97,13 @@ export default LoginPage
   imports TanStack Query. Every store under `src/stores/` is created through `createAppStore` of
   `src/lib/store/createAppStore.helper.ts`, the one file that imports zustand. A test that runs
   queries renders through `createQueryWrapper` of `src/test/query.helper.tsx`.
+- **Navigation and the cache behind their seams**: a client block navigates through
+  `useAppRouter` of `src/lib/routing/`, whose `IAppRouter` is only `push(href)`, `replace(href)`
+  and `refresh()`, with an `href` the typed routes check; only `useAppRouter.hook.ts` imports
+  `next/navigation`, and a test mocks `@/lib/routing` through `createRoutingDouble` of
+  `src/test/routing.helper.ts`. A function under `'use cache'`, such as `getItemsSummary`, sets
+  its life profile (`CacheLifeEnum`) and tags through `applyCachePolicy({ life, tags })` of
+  `src/lib/cache/`, the one file that imports `next/cache`; its test mocks `@/lib/cache`.
 - **Query keys**: `src/lib/query/queryKeys.constant.ts` builds every key from
   `QueryKeySegmentEnum` and puts its dynamic values in one trailing params object
   (`['items', 'list', { limit, search }]`), which the error report always redacts. A key holds
@@ -183,6 +192,7 @@ export default LoginPage
 | -------------- | -------------------------------- | ------------------------------------------------ |
 | Routing        | Expo Router `src/app/`           | Next App Router `src/app/` (RSC)                 |
 | Route → screen | route file renders `<Screen/>`   | `page.tsx` renders `<Screen/>`                   |
+| Navigation     | `useRouter` of expo-router       | `useAppRouter()`, behind `lib/routing`           |
 | Boundaries     | per-route `ErrorBoundary` export | `error.tsx` / `global-error.tsx` / `loading.tsx` |
 | UI             | React Native + NativeWind        | DOM + Tailwind CSS 4                             |
 | i18n runtime   | react-i18next, behind `lib/i18n` | next-intl, behind `lib/i18n`                     |

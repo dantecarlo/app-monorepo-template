@@ -83,6 +83,36 @@ const { data, isError, refetch } = useAppQuery<IItemViewModel[]>({
 })
 ```
 
+### Example: the routing and cache seams (web)
+
+A framework subpath the registry narrows gets a wrapper of the app's own, even though `next` is
+core. `useAppRouter` of `src/lib/routing/` returns `IAppRouter`, only `push(href)`,
+`replace(href)` and `refresh()`, the same object while Next's router is the same; an `href` is an
+`AppRouteType`, which the typed routes check. A function under `'use cache'` sets its life and
+tags once through `applyCachePolicy({ life, tags })` of `src/lib/cache/`, `life` one of the app's
+`CacheLifeEnum` profiles. Only `useAppRouter.hook.ts` imports `next/navigation` and only
+`cachePolicy.adapter.ts` imports `next/cache`; every other test mocks the project module, the
+router through `createRoutingDouble` of `src/test/routing.helper.ts`:
+
+```typescript
+import { applyCachePolicy, CacheLifeEnum } from '@/lib/cache'
+import { useAppRouter } from '@/lib/routing'
+
+const router = useAppRouter()
+router.replace('/')
+
+applyCachePolicy({ life: CacheLifeEnum.MINUTES, tags: [CACHE_TAG] })
+
+vi.mock('@/lib/routing', async () =>
+  (await import('@/test/routing.helper')).createRoutingDouble({
+    router: { replace }
+  })
+)
+```
+
+A wrapper exposes what its callers use: the pathname, the search params, `redirect` and
+`revalidateTag` join it with their first caller.
+
 ---
 
 ## Do You Need a New Lib?

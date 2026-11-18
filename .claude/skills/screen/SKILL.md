@@ -275,3 +275,4 @@ keeps a named export.
 | A colour, type or radius class in the screen style  | Render the `ui/` block that owns it (`ui/Text`, `ui/Screen`) |
 | `function {Name}Screen(...)` keyword               | Arrow const: `const {Name}Screen = () => ...`   |
 | Default export on the screen component              | Named export on screen; default only for route page |
+| `useRouter` of `next/navigation` in a screen hook (web) | `useAppRouter` of `@/lib/routing` (`push`, `replace`, `refresh`); its test mocks `@/lib/routing` through `createRoutingDouble` of `@/test/routing.helper` |
