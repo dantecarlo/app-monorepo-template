@@ -75,11 +75,6 @@
     "reason": "F.8 unit 5: the ui block's test sets the theme through lib/theme, not the vendor; the test then mocks the project module, not the vendor."
   },
   {
-    "path": "apps/mobile/src/hooks/useSession.hook.ts",
-    "package": "zustand",
-    "reason": "F.8 unit 4: createAppStore, in lib/store, takes this import."
-  },
-  {
     "path": "apps/mobile/src/lib/i18n/__tests__/i18n.config.test.ts",
     "package": "@react-native-async-storage/async-storage",
     "reason": "F.8 unit 4: the key-value storage port and its lib/storage adapter take this import; the test then mocks the project module, not the vendor."
@@ -103,21 +98,6 @@
     "path": "apps/mobile/src/screens/ItemsDashboard/components/DashboardHeader/__tests__/DashboardHeader.component.test.tsx",
     "package": "expo-linear-gradient",
     "reason": "F.8 unit 5: the components/ui block that wraps it takes this import; the test then mocks the project module, not the vendor."
-  },
-  {
-    "path": "apps/mobile/src/stores/auth.store.ts",
-    "package": "zustand",
-    "reason": "F.8 unit 4: createAppStore, in lib/store, takes this import."
-  },
-  {
-    "path": "apps/mobile/src/stores/toast.store.ts",
-    "package": "zustand",
-    "reason": "F.8 unit 4: createAppStore, in lib/store, takes this import."
-  },
-  {
-    "path": "apps/mobile/src/stores/ui.store.ts",
-    "package": "zustand",
-    "reason": "F.8 unit 4: createAppStore, in lib/store, takes this import."
   },
   {
     "path": "apps/web/src/app/__tests__/LocaleProviders.test.tsx",
@@ -243,25 +223,5 @@
     "path": "apps/web/src/services/ItemsSummary/itemsSummary.service.ts",
     "package": "next/cache",
     "reason": "F.8 unit 6: lib/cache takes this import."
-  },
-  {
-    "path": "apps/web/src/stores/auth.store.ts",
-    "package": "zustand",
-    "reason": "F.8 unit 4: createAppStore, in lib/store, takes this import."
-  },
-  {
-    "path": "apps/web/src/stores/theme.store.ts",
-    "package": "zustand",
-    "reason": "F.8 unit 4: createAppStore, in lib/store, takes this import."
-  },
-  {
-    "path": "apps/web/src/stores/toast.store.ts",
-    "package": "zustand",
-    "reason": "F.8 unit 4: createAppStore, in lib/store, takes this import."
-  },
-  {
-    "path": "apps/web/src/stores/ui.store.ts",
-    "package": "zustand",
-    "reason": "F.8 unit 4: createAppStore, in lib/store, takes this import."
   }
 ]

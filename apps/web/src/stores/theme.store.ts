@@ -1,5 +1,6 @@
 import { DEFAULT_THEME, type ThemeEnumType } from '@app/tokens'
-import { create } from 'zustand'
+
+import { createAppStore } from '@/lib/store/createAppStore.helper'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -23,9 +24,11 @@ export const selectSetTheme = (s: IThemeState) => s.setTheme
 // paint; localStorage would be invisible to SSR and reintroduce a flash.
 // ---------------------------------------------------------------------------
 
-export const useThemeStore = create<IThemeState>()((set) => ({
-  setTheme(theme) {
-    set({ theme })
-  },
-  theme: DEFAULT_THEME
-}))
+export const useThemeStore = createAppStore<IThemeState>({
+  initializer: ({ set }) => ({
+    setTheme(theme) {
+      set({ theme })
+    },
+    theme: DEFAULT_THEME
+  })
+})

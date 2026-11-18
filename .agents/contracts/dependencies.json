@@ -106,8 +106,8 @@
     {
       "name": "zustand",
       "category": "infra",
-      "seam": [],
-      "note": "Behind apps/*/src/lib/store/createAppStore.helper.ts, which F.8 unit 4 creates."
+      "seam": ["apps/*/src/lib/store/createAppStore.helper.ts"],
+      "note": "Behind createAppStore, which creates every store under src/stores with its selectors, its useShallow and its optional persistence."
     },
     {
       "name": "zod",

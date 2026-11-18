@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { createAppStore } from '@/lib/store/createAppStore.helper'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -35,25 +35,27 @@ export const selectRemoveToast = (s: IToastState) => s.remove
 let nextId = 1
 const AUTO_DISMISS_MS = 4_000
 
-export const useToastStore = create<IToastState>((set) => ({
-  add(payload) {
-    const id = String(nextId++)
-    const toast: IToast = { ...payload, id }
-    set((s) => ({ toasts: [...s.toasts, toast] }))
+export const useToastStore = createAppStore<IToastState>({
+  initializer: ({ set }) => ({
+    add(payload) {
+      const id = String(nextId++)
+      const toast: IToast = { ...payload, id }
+      set((s) => ({ toasts: [...s.toasts, toast] }))
 
-    // Auto-dismiss after 4 seconds
-    setTimeout(() => {
+      // Auto-dismiss after 4 seconds
+      setTimeout(() => {
+        set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }))
+      }, AUTO_DISMISS_MS)
+    },
+
+    clear() {
+      set({ toasts: [] })
+    },
+
+    remove(id) {
       set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }))
-    }, AUTO_DISMISS_MS)
-  },
+    },
 
-  clear() {
-    set({ toasts: [] })
-  },
-
-  remove(id) {
-    set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }))
-  },
-
-  toasts: []
-}))
+    toasts: []
+  })
+})

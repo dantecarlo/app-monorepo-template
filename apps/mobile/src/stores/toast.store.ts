@@ -1,7 +1,7 @@
-// Mirrors apps/web/src/stores/toast.store.ts — identical.
-// Zustand is framework-agnostic; this file works unchanged in RN.
+// Mirrors apps/web/src/stores/toast.store.ts — identical: both apps create
+// their stores through the same createAppStore.
 
-import { create } from 'zustand'
+import { createAppStore } from '@/lib/store/createAppStore.helper'
 
 export type ToastVariantType = 'success' | 'error' | 'info' | 'warning'
 
@@ -25,20 +25,23 @@ export const selectRemoveToast = (s: IToastState) => s.remove
 let nextId = 1
 const AUTO_DISMISS_MS = 4_000
 
-export const useToastStore = create<IToastState>((set) => ({
-  add(payload) {
-    const id = String(nextId++)
-    set((s) => ({ toasts: [...s.toasts, { ...payload, id }] }))
-    setTimeout(
-      () => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
-      AUTO_DISMISS_MS
-    )
-  },
-  clear() {
-    set({ toasts: [] })
-  },
-  remove(id) {
-    set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }))
-  },
-  toasts: []
-}))
+export const useToastStore = createAppStore<IToastState>({
+  initializer: ({ set }) => ({
+    add(payload) {
+      const id = String(nextId++)
+      set((s) => ({ toasts: [...s.toasts, { ...payload, id }] }))
+      setTimeout(
+        () =>
+          set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+        AUTO_DISMISS_MS
+      )
+    },
+    clear() {
+      set({ toasts: [] })
+    },
+    remove(id) {
+      set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }))
+    },
+    toasts: []
+  })
+})
