@@ -2,12 +2,16 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import { POSTHOG_INGESTION_HOST_FALLBACK } from '@/lib/posthog/posthogClient.constant'
 
-const { construct } = vi.hoisted(() => ({ construct: vi.fn() }))
+const { construct, optIn } = vi.hoisted(() => ({
+  construct: vi.fn(),
+  optIn: vi.fn()
+}))
 
 // The real package cannot load under the test environment; the client is
 // built from this stand-in, which records how it was constructed.
 vi.mock('posthog-react-native', () => ({
   PostHog: class {
+    optIn = optIn
     constructor(...args: unknown[]) {
       construct(...args)
     }
@@ -20,25 +24,52 @@ const HOST = 'https://eu.i.posthog.com'
 // The client reads the environment once, when its module loads: each test
 // loads a fresh copy under its own environment.
 const loadClient = async ({
+  consent,
+  grantedEarlier = false,
   host,
   key,
   platform
 }: {
+  consent?: string
+  grantedEarlier?: boolean
   host?: string
   key?: string
   platform?: string
 }) => {
   vi.stubEnv('EXPO_PUBLIC_POSTHOG_KEY', key)
   vi.stubEnv('EXPO_PUBLIC_POSTHOG_HOST', host)
+  vi.stubEnv('EXPO_PUBLIC_POSTHOG_CONSENT', consent)
   vi.stubEnv('EXPO_OS', platform)
   vi.resetModules()
+  if (grantedEarlier) {
+    const { default: AsyncStorage } =
+      await import('@react-native-async-storage/async-storage')
+    await AsyncStorage.setItem('posthog-consent:granted', 'true')
+  }
   return import('@/lib/posthog/posthogClient.adapter')
 }
 
 const options = () => construct.mock.calls[0]?.[1]
 
+// The options the client had before the consent mode existed, on native.
+const GRANTED_OPTIONS = {
+  captureAppLifecycleEvents: false,
+  enableSessionReplay: false,
+  errorTracking: {
+    autocapture: {
+      console: false,
+      uncaughtExceptions: true,
+      unhandledRejections: true
+    }
+  },
+  host: 'https://us.i.posthog.com'
+}
+
+const CONSENT_MODES = ['granted', 'opt-in', 'memory']
+
 beforeEach(() => {
   construct.mockClear()
+  optIn.mockClear()
 })
 
 afterEach(() => {
@@ -100,4 +131,79 @@ test('leaves uncaught exception capture off in a web bundle', async () => {
       unhandledRejections: true
     }
   })
+})
+
+test('keeps the granted options when no consent mode is set', async () => {
+  const { posthogConsentStorage } = await loadClient({ key: KEY })
+
+  expect(options()).toStrictEqual(GRANTED_OPTIONS)
+  expect(posthogConsentStorage).toBeUndefined()
+})
+
+test('starts the granted mode with the same options as no setting', async () => {
+  const { posthogConsentStorage } = await loadClient({
+    consent: 'granted',
+    key: KEY
+  })
+
+  expect(options()).toStrictEqual(GRANTED_OPTIONS)
+  expect(posthogConsentStorage).toBeUndefined()
+})
+
+test('starts opt-in mode opted out, writing through the consent storage', async () => {
+  const { posthogConsentStorage } = await loadClient({
+    consent: 'opt-in',
+    key: KEY
+  })
+
+  expect(posthogConsentStorage).toBeDefined()
+  expect(options()).toStrictEqual({
+    ...GRANTED_OPTIONS,
+    customStorage: posthogConsentStorage,
+    defaultOptIn: false
+  })
+  expect(await posthogConsentStorage?.isGranted()).toBe(false)
+  expect(optIn).not.toHaveBeenCalled()
+})
+
+test('opts in at launch after a grant from an earlier launch', async () => {
+  await loadClient({ consent: 'opt-in', grantedEarlier: true, key: KEY })
+
+  await vi.waitFor(() => expect(optIn).toHaveBeenCalledOnce())
+})
+
+test('starts memory mode with memory persistence', async () => {
+  const { posthogConsentStorage } = await loadClient({
+    consent: 'memory',
+    key: KEY
+  })
+
+  expect(options()).toStrictEqual({
+    ...GRANTED_OPTIONS,
+    persistence: 'memory'
+  })
+  expect(posthogConsentStorage).toBeUndefined()
+})
+
+test('keeps the privacy defaults under every consent mode', async () => {
+  for (const consent of CONSENT_MODES) {
+    construct.mockClear()
+    await loadClient({ consent, key: KEY })
+
+    expect(options()).toMatchObject(GRANTED_OPTIONS)
+  }
+})
+
+test('refuses to load with an unknown consent mode', async () => {
+  await expect(
+    loadClient({ consent: 'opt_in', key: KEY })
+  ).rejects.toThrow('EXPO_PUBLIC_POSTHOG_CONSENT')
+  expect(construct).not.toHaveBeenCalled()
+})
+
+test('does not read the consent mode without a key', async () => {
+  const { posthogClient } = await loadClient({ consent: 'opt_in' })
+
+  expect(construct).not.toHaveBeenCalled()
+  expect(posthogClient).toBeUndefined()
 })
