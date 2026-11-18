@@ -11,7 +11,8 @@ The mobile app SHALL hold the native splash screen when the root layout loads, t
 splash through `useAppBootstrap` of `src/lib/bootstrap/useAppBootstrap.hook.ts` (MOBILE-02), and
 give its tree the device's safe area through `AppSafeAreaProvider` of
 `src/lib/bootstrap/AppSafeAreaProvider.component.tsx`. Only `splashScreen.adapter.ts` SHALL import
-`expo-splash-screen`, only `useAppBootstrap.hook.ts` the `@expo-google-fonts` packages, and only
+`expo-splash-screen`, only `useAppBootstrap.constant.ts`, which names the faces, and
+`useAppBootstrap.hook.ts`, which loads them, the `@expo-google-fonts` packages, and only
 `AppSafeAreaProvider.component.tsx` and `ui/AuthShell` `react-native-safe-area-context`, so the
 root layout imports project modules only and its test mocks project modules, never a vendor.
 
@@ -103,9 +104,9 @@ the Supabase client or a Supabase generic.
 
 The mobile app SHALL keep the native splash screen up and render no route until the Inter and
 Montserrat fonts have loaded or failed to load: `useAppBootstrap` of
-`src/lib/bootstrap/useAppBootstrap.hook.ts` loads the seven faces the app uses (Inter 400 and 500,
-Montserrat 400 to 800), hides the splash screen once they settle, and tells the root layout when it
-may render.
+`src/lib/bootstrap/useAppBootstrap.hook.ts` loads the seven faces `APP_FONTS` of
+`useAppBootstrap.constant.ts` names (Inter 400 and 500, Montserrat 400 to 800), hides the splash
+screen once they settle, and tells the root layout when it may render.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -114,7 +115,8 @@ may render.
 - **GIVEN** the app has just launched
 - **WHEN** the bootstrap starts
 - **THEN** it loads Inter 400 and 500 and Montserrat 400, 500, 600, 700 and 800
-- **Test:** `apps/mobile/src/lib/bootstrap/__tests__/useAppBootstrap.hook.test.ts` › "loads the Inter and Montserrat faces the app uses"
+- **Test:** `apps/mobile/src/lib/bootstrap/__tests__/useAppBootstrap.constant.test.ts` › "holds the Inter and Montserrat faces the app uses"
+- **Test:** `apps/mobile/src/lib/bootstrap/__tests__/useAppBootstrap.hook.test.ts` › "loads the faces the app renders its text in"
 
 #### Scenario: fonts still loading
 

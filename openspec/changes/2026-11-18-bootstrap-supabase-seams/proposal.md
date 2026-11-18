@@ -44,9 +44,10 @@ The owner's words, verbatim:
 
 - **`lib/bootstrap` (unit 6).** `apps/mobile/src/lib/bootstrap/` holds what the root layout boots
   with: `holdSplashScreen` and `hideSplashScreen` of `splashScreen.adapter.ts`, the one
-  `expo-splash-screen` import; `useAppBootstrap` of `useAppBootstrap.hook.ts`, the one import of
-  the font packages, which loads the seven faces, hides the splash once they settle and returns
-  `isReady`; and `AppSafeAreaProvider`, which with `ui/AuthShell` is the one import of the
+  `expo-splash-screen` import; `useAppBootstrap` of `useAppBootstrap.hook.ts`, which loads the
+  seven faces `APP_FONTS` of `useAppBootstrap.constant.ts` names (the two files the font packages
+  are imported in), hides the splash once they settle and returns `isReady`; and
+  `AppSafeAreaProvider`, which with `ui/AuthShell` is the one import of the
   safe-area package. One hook, not a fonts hook and a splash hook: the splash staying up until the
   fonts settle is one rule (MOBILE-02), and the hold is a module-load call no hook can make, so it
   is the adapter's.
