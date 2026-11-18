@@ -35,6 +35,7 @@ import {
   positionsOnlyScope,
   tokenValuesScope
 } from './style-positioning.detect.mjs'
+import { isOutsideUiKit } from './ui-kit.detect.mjs'
 
 RuleTester.describe = describe
 RuleTester.it = test
@@ -849,6 +850,29 @@ describe('style pillar scope', () => {
         null,
         null
       ]
+    )
+  })
+
+  test('the style pillar and the UI kit boundary judge every app under apps/', () => {
+    const screenStyle = 'apps/admin/src/screens/Home/Home.style.ts'
+    const uiStyle = 'apps/admin/src/components/ui/Button/Button.style.ts'
+    const paths = [screenStyle, uiStyle]
+
+    assert.deepEqual(
+      {
+        kitOutsideUi: paths.map((path) => isOutsideUiKit(path)),
+        positionsOnly: paths.map(
+          (path) => positionsOnlyScope(path)?.kind ?? null
+        ),
+        tokenValues: paths.map(
+          (path) => tokenValuesScope(path)?.path ?? null
+        )
+      },
+      {
+        kitOutsideUi: [true, false],
+        positionsOnly: [FILE_KIND.STYLE, null],
+        tokenValues: paths
+      }
     )
   })
 

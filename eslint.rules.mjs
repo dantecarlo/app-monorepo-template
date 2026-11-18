@@ -6,16 +6,16 @@ import localRules from './eslint-local-rules/index.mjs'
 //
 // Shared ESLint rule sets for the whole monorepo.
 //
-// Every workspace block in eslint.config.mjs consumes BASE_RULES (and, for
-// React workspaces, REACT_RULES) from this single module so NO workspace can
-// escape the binding fractal-architecture guardrails described in
-// docs/code-standards.md.
+// eslint.config.mjs applies BASE_RULES to every app and package by pattern,
+// and REACT_RULES to every app that declares react (code-standards §24), all
+// from this single module, so NO workspace can escape the binding
+// fractal-architecture guardrails described in docs/code-standards.md.
 //
 // Rule groups:
 //   BASE_RULES        — arrow-only, I-prefix naming, alias-only imports,
 //                       import/key/prop sorting, prettier, max-lines,
 //                       no-magic-numbers (error).
-//   REACT_RULES       — jsx-a11y + react + react-hooks for web/mobile/tokens.
+//   REACT_RULES       — jsx-a11y + react + react-hooks for React apps + tokens.
 //   FILENAME_RULES    — check-file suffix contract (.component/.screen/...).
 //   LOGIC_IN_HOOK_*   — bans useEffect/useMemo/useCallback outside *.hook.ts.
 //   NO_JSX_LITERAL_*  — discourages magic literals in component/screen JSX.
@@ -246,7 +246,7 @@ export const BASE_RULES = {
 }
 
 // ---------------------------------------------------------------------------
-// React rules — applied to web + mobile + packages/tokens.
+// React rules — applied to every app that declares react, and packages/tokens.
 // Includes the React Compiler rule set from react-hooks recommended-latest
 // (eslint-plugin-react-hooks 7.1.1). The two core rules are pinned after the
 // spread so they cannot be silently downgraded by a future update.
@@ -295,7 +295,7 @@ export const REACT_RULES = {
 // Every source file under src/ must end with a recognised fractal suffix
 // (or be a barrel `index.ts`). The match glob is cwd-independent: `eslint .`
 // runs from each workspace root (path seen as `src/...`) while the root
-// `eslint . --fix` sees `apps/web/src/...` — `**/src/**` covers both.
+// `eslint . --fix` sees `apps/<app>/src/...` — `**/src/**` covers both.
 // ---------------------------------------------------------------------------
 const FILENAME_MATCH_GLOB = '**/src/**/!(index).{ts,tsx}'
 
@@ -312,9 +312,8 @@ const FILENAME_NAMING_MESSAGE =
   '.test.{ts,tsx} — or be an index.ts barrel (code-standards Rule 4).'
 
 /**
- * The check-file filename suffix rule. Shared by every workspace; each
- * workspace block already scopes `files:` so this single rule object is safe
- * to reuse everywhere.
+ * The check-file filename suffix rule. Applied to every app and package by
+ * the shared block of eslint.config.mjs, which scopes `files:`.
  */
 export const FILENAME_RULES = {
   'check-file/filename-naming-convention': [
@@ -324,6 +323,19 @@ export const FILENAME_RULES = {
       errorMessage: FILENAME_NAMING_MESSAGE,
       ignoreMiddleExtensions: false
     }
+  ]
+}
+
+// PascalCase on the block folders inside an app's components/ui (shadcn keeps
+// ui/ itself lowercase by convention; this matches its CONTENTS only). A
+// block's __tests__/ folder keeps its own name. check-file matches the glob
+// anywhere in the folder path (`contains`) and checks every part a wildcard
+// captures, so the glob starts at src/ and names no app: the app folder would
+// be a captured part, and lowercase.
+export const UI_FOLDER_CASING_RULES = {
+  'check-file/folder-naming-convention': [
+    'error',
+    { 'src/components/ui/**/!(__tests__)/': 'PASCAL_CASE' }
   ]
 }
 
@@ -358,16 +370,17 @@ const LOGIC_IN_HOOK_SELECTORS = FORBIDDEN_HOOK_CALLEES.map((hook) => ({
 // already bans bare fetch(); this extends the ban to client async arrows used
 // as component bodies / event handlers and to raw promise `.then(...)` chains.
 //
-// IMPORTANT: RSC async server components (apps/web *.screen.tsx that are
-// `async () => { await getX() }`) are a legitimate framework pattern and are
-// NOT statically distinguishable from a client component by file suffix alone.
-// They are re-allowed via RSC_ASYNC_SCREEN_OVERRIDE (apps/web screens), which
-// re-spreads the component/screen selector set MINUS these async selectors.
+// IMPORTANT: RSC async server components (the *.screen.tsx of a Next.js app
+// that are `async () => { await getX() }`) are a legitimate framework pattern
+// and are NOT statically distinguishable from a client component by file
+// suffix alone. They are re-allowed via RSC_ASYNC_SCREEN_OVERRIDE (the screens
+// of every app that declares next), which re-spreads the component/screen
+// selector set MINUS these async selectors.
 // ---------------------------------------------------------------------------
 const NO_ASYNC_VIEW_SELECTORS = [
   {
     message:
-      'No async component/handler in a client screen/component — move async data orchestration into a *.hook.ts that calls a *.service.ts (code-standards: logic-in-hook). RSC async server components are exempt via the apps/web screen allowlist.',
+      'No async component/handler in a client screen/component — move async data orchestration into a *.hook.ts that calls a *.service.ts (code-standards: logic-in-hook). RSC async server components are exempt in the screens of every Next.js app.',
     selector: 'VariableDeclarator > ArrowFunctionExpression[async=true]'
   },
   {
@@ -480,18 +493,19 @@ export const LOGIC_IN_HOOK_OVERRIDE = {
   }
 }
 
-// RSC async server components: apps/web *.screen.tsx may be `async () => {
-// await getX() }` (a Next.js App Router data-loading pattern). This is NOT
-// distinguishable from a client async component by suffix, so apps/web screens
+// RSC async server components: a Next.js app's *.screen.tsx may be `async ()
+// => { await getX() }` (an App Router data-loading pattern). This is NOT
+// distinguishable from a client async component by suffix, so those screens
 // re-declare the component/screen selector set WITHOUT the async-view ban.
 // Everything else (fetch ban, useRef/useEffect ban, derivation/handler rules)
 // still applies — a NAKED service call belongs behind a loader/use-case, which
 // the screen still composes, so the structural rules keep guarding it.
 //
-// This block MUST come AFTER LOGIC_IN_HOOK_OVERRIDE in eslint.config.mjs so the
-// relaxed selector set wins by later-wins for apps/web screens only.
+// Its `files` are relative to an app's folder: eslint.config.mjs roots them
+// at every app that declares next, AFTER LOGIC_IN_HOOK_OVERRIDE, so the
+// relaxed selector set wins by later-wins for those screens only.
 export const RSC_ASYNC_SCREEN_OVERRIDE = {
-  files: ['apps/web/**/*.screen.tsx'],
+  files: ['**/*.screen.tsx'],
   rules: {
     'no-restricted-syntax': [
       'error',
@@ -635,8 +649,8 @@ export const PURE_DOMAIN_ADAPTER_OVERRIDE = {
 
 // ---------------------------------------------------------------------------
 // The styling pillar (AGENTS.md § Styling lives in the components;
-// code-standards §22). Wired over every source file of both apps: the two
-// rules read their scope from the file's path in
+// code-standards §22). Wired over every source file of every app under
+// apps/, by pattern: the two rules read their scope from the file's path in
 // eslint-local-rules/style-positioning.detect.mjs, the definition the
 // allowlist freshness gate also reads, so the lint and the gate cannot judge
 // a different set of files. local/ui-kit-boundary keeps every UI kit import
@@ -648,7 +662,7 @@ export const PURE_DOMAIN_ADAPTER_OVERRIDE = {
 // only inside its seam; an unregistered one fails, closed. Wired by pattern
 // over every app and every package, with the plugin registered here too, so
 // an app added under apps/ is judged with no change to eslint.config.mjs
-// (eslint-local-rules/__fixtures__/apps/fixture/ proves it). It replaces the
+// (the fixture apps of eslint-local-rules/__fixtures__/ prove it). It replaces the
 // @supabase/@stripe/@sentry patterns no-restricted-imports used to carry:
 // that rule is replace-not-merge across blocks, so a pattern had to be
 // repeated in every override that touched it. The files ESLint ignores (the
@@ -666,7 +680,7 @@ export const DEPENDENCY_SEAM_OVERRIDE = {
 }
 
 export const STYLE_PILLAR_OVERRIDE = {
-  files: ['apps/web/src/**/*.{ts,tsx}', 'apps/mobile/src/**/*.{ts,tsx}'],
+  files: ['apps/*/src/**/*.{ts,tsx}'],
   rules: {
     'local/style-positions-only': 'error',
     'local/style-token-values': 'error',

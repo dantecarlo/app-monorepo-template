@@ -26,14 +26,14 @@ const APPS_GROUP = 'apps'
 const WORKSPACE_MANIFEST_DEPTH = 3
 
 // The frameworks an app may declare, each with its own block in the config.
-export const FRAMEWORK = Object.freeze({
+const FRAMEWORK = Object.freeze({
   EXPO: 'expo',
   NEXT: 'next',
   REACT: 'react'
 })
 
-// `apps/web/package.json` or `packages/core/package.json`: the manifest of a
-// workspace package, as a repository-relative path.
+// `apps/<app>/package.json` or `packages/<package>/package.json`: the
+// manifest of a workspace package, as a repository-relative path.
 export const isWorkspaceManifest = (path) => {
   const parts = path.split('/')
   return (
@@ -77,7 +77,7 @@ const readManifest = ({ path, root }) => {
 
 // `[{ dir, manifest }]` for every folder under apps/ that holds a
 // package.json, sorted by folder. A folder without one is no app.
-export const readAppManifests = ({ root }) => {
+const readAppManifests = ({ root }) => {
   const appsDir = join(root, APPS_GROUP)
   if (!existsSync(appsDir)) return []
   return readdirSync(appsDir, { withFileTypes: true })
@@ -93,7 +93,7 @@ export const readAppManifests = ({ root }) => {
 
 // `{ expo, next, react }`: the folders of the apps that declare each
 // framework, in any dependency field.
-export const appsByFramework = ({ apps }) =>
+const appsByFramework = ({ apps }) =>
   Object.fromEntries(
     Object.values(FRAMEWORK)
       .sort()
