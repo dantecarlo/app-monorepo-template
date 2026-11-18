@@ -4,7 +4,7 @@
 
 ## ADDED Requirements
 
-### Requirement: WEB-58 — PostHog calls wait for the SDK in a bounded queue, or are dropped
+### Requirement: WEB-62 — PostHog calls wait for the SDK in a bounded queue, or are dropped
 
 The web app's PostHog observability adapter SHALL scrub every payload with `scrubPII` when it is
 called, and then: hand the call to the SDK at once while the SDK is loaded; while the SDK is
@@ -140,7 +140,7 @@ The web app SHALL export a consent API, the `IConsentPort` of packages/core, fro
 observability barrel, bound to PostHog in the composition root `consent.adapter.ts`. In `opt-in`
 mode with a key in the browser, `grant` SHALL load the SDK (WEB-50), opt it in without an
 `$opt_in` event and then record the grant in the browser's local storage; `revoke` SHALL wait for
-a load in flight, remove that record, stop the client so later calls are dropped (WEB-58), and
+a load in flight, remove that record, stop the client so later calls are dropped (WEB-62), and
 opt a loaded SDK out and then reset it with a new device id, which clears every value it stored
 and its stored choice, and a later grant SHALL opt the same SDK in again; when a revoke and a
 grant overlap a load, the later one SHALL decide; and `getStatus` SHALL read `granted` while the

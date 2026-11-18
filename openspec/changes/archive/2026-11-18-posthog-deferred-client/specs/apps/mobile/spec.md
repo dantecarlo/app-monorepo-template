@@ -4,7 +4,7 @@
 
 ## ADDED Requirements
 
-### Requirement: MOBILE-57 — PostHog calls made while no client exists are dropped
+### Requirement: MOBILE-60 — PostHog calls made while no client exists are dropped
 
 The mobile app's PostHog observability adapter SHALL drop every call while the app holds no
 PostHog client, without a key and in `opt-in` mode before a grant and after a revoke, and SHALL
@@ -99,7 +99,7 @@ The mobile app SHALL export a consent API, the `IConsentPort` of packages/core, 
 observability barrel, bound to PostHog in the composition root `consent.adapter.ts`. In `opt-in`
 mode with a key, `grant` SHALL construct the client (MOBILE-49), open the consent storage and
 then opt PostHog in; `revoke` SHALL close the consent storage, drop the client so later calls are
-dropped (MOBILE-57), and opt it out and reset it keeping no property, the device id included, and
+dropped (MOBILE-60), and opt it out and reset it keeping no property, the device id included, and
 a later grant SHALL construct a new client; and `getStatus` SHALL read `granted` while the storage
 holds a grant, `denied` after a revoke in the same launch, and `pending` otherwise. In `granted`
 and `memory` mode and without a key, `getStatus` SHALL read `not-required`, and `grant` and

@@ -64,5 +64,8 @@ The parent session's decisions for this change, applied as stated:
 
 ## Affected specs
 
-- `openspec/specs/apps/web/spec.md`: WEB-50, WEB-56 and WEB-57 modified; WEB-58 added
-- `openspec/specs/apps/mobile/spec.md`: MOBILE-49, MOBILE-53 and MOBILE-55 modified; MOBILE-57 added
+> Renumbered at merge, 2026-11-18: this change added WEB-58 and MOBILE-57, and `2026-11-18-i18n-seam`
+> took both IDs first, so they are WEB-62 and MOBILE-60 here and in the living specs.
+
+- `openspec/specs/apps/web/spec.md`: WEB-50, WEB-56 and WEB-57 modified; WEB-62 added
+- `openspec/specs/apps/mobile/spec.md`: MOBILE-49, MOBILE-53 and MOBILE-55 modified; MOBILE-60 added
