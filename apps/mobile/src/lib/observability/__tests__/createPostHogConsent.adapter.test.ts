@@ -4,6 +4,7 @@ import { afterEach, expect, test, vi } from 'vitest'
 // The SDK is replaced at its module: every client the module builds calls
 // these spies.
 const sdk = vi.hoisted(() => ({
+  captureException: vi.fn(),
   construct: vi.fn(),
   optIn: vi.fn(async () => undefined),
   optOut: vi.fn(async () => undefined),
@@ -12,6 +13,7 @@ const sdk = vi.hoisted(() => ({
 
 vi.mock('posthog-react-native', () => ({
   PostHog: class {
+    captureException = sdk.captureException
     optIn = sdk.optIn
     optOut = sdk.optOut
     reset = sdk.reset
@@ -45,7 +47,13 @@ const loadConsent = async ({
   vi.doMock('@/lib/storage', () => ({ keyValueStorage: device }))
   const { createPostHogConsent } =
     await import('@/lib/observability/createPostHogConsent.adapter')
-  return { adapter: createPostHogConsent(), device }
+  const { createPostHogObservability } =
+    await import('@/lib/observability/createPostHogObservability.adapter')
+  return {
+    adapter: createPostHogConsent(),
+    device,
+    observability: createPostHogObservability()
+  }
 }
 
 // Grants, revokes and reads the status once, as a banner would.
@@ -61,43 +69,61 @@ afterEach(() => {
   vi.unstubAllEnvs()
 })
 
-test('reads pending and opts nothing in before a choice in opt-in mode', async () => {
+test('reads pending and constructs no client before a choice in opt-in mode', async () => {
   const { adapter, device } = await loadConsent({
     consent: 'opt-in',
     key: KEY
   })
 
+  expect(sdk.construct).not.toHaveBeenCalled()
   expect(await adapter.getStatus()).toBe('pending')
   expect(sdk.optIn).not.toHaveBeenCalled()
   expect(await device.getItem({ key: MARKER_ON_DEVICE })).toBeNull()
 })
 
-test('grant opens the consent storage, opts PostHog in and reads granted', async () => {
+test('grant constructs the client once, opens the consent storage, opts PostHog in and reads granted', async () => {
   const { adapter, device } = await loadConsent({
     consent: 'opt-in',
     key: KEY
   })
+  expect(sdk.construct).not.toHaveBeenCalled()
 
   await adapter.grant()
+  await adapter.grant()
 
+  expect(sdk.construct).toHaveBeenCalledOnce()
   expect(await device.getItem({ key: MARKER_ON_DEVICE })).toBe('true')
-  expect(sdk.optIn).toHaveBeenCalledOnce()
+  expect(sdk.optIn).toHaveBeenCalled()
   expect(await adapter.getStatus()).toBe('granted')
 })
 
-test('revoke closes the consent storage, opts PostHog out, resets it and reads denied', async () => {
-  const { adapter, device } = await loadConsent({
+test('revoke closes the consent storage, drops the client, opts it out, resets it and reads denied', async () => {
+  const { adapter, device, observability } = await loadConsent({
     consent: 'opt-in',
     key: KEY
   })
   await adapter.grant()
 
   await adapter.revoke()
+  observability.captureError({ error: new Error('after the revoke') })
 
   expect(await device.getItem({ key: MARKER_ON_DEVICE })).toBeNull()
   expect(sdk.optOut).toHaveBeenCalledOnce()
   expect(sdk.reset).toHaveBeenCalledExactlyOnceWith([])
+  expect(sdk.captureException).not.toHaveBeenCalled()
   expect(await adapter.getStatus()).toBe('denied')
+})
+
+test('a grant after a revoke constructs a new client and opts it in', async () => {
+  const { adapter } = await loadConsent({ consent: 'opt-in', key: KEY })
+  await adapter.grant()
+  await adapter.revoke()
+
+  await adapter.grant()
+
+  expect(sdk.construct).toHaveBeenCalledTimes(2)
+  expect(sdk.optIn).toHaveBeenCalledTimes(2)
+  expect(await adapter.getStatus()).toBe('granted')
 })
 
 test('changes nothing and reads not-required outside opt-in mode', async () => {
