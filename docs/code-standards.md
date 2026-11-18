@@ -937,6 +937,13 @@ is `createAppStore({ initializer: ({ get, set }) => …, persist? })`, read thro
 or, for an object of several fields, through the store's `useShallow`. On mobile, every value kept
 on the device, a persisted store's included, goes through `keyValueStorage` of `src/lib/storage/`.
 
+**A root imports project modules only.** The mobile root layout boots through
+`src/lib/bootstrap/`: `holdSplashScreen` and `hideSplashScreen` of `splashScreen.adapter.ts` are
+the one `expo-splash-screen` import, `useAppBootstrap` loads the faces `APP_FONTS` names and tells
+the root when it may render, and `AppSafeAreaProvider` gives it the safe area. A theme is applied
+through `applyTheme` of `src/lib/theme/colorScheme.adapter.ts`, by the theme config and by every
+test that switches it.
+
 **The migration freezes, then shrinks.** Every import that broke the rule when it landed is listed,
 one entry per file and package, in `eslint-dependency-seam-allowlist.json`, with a reason that
 starts with the F.8 unit that removes it (`F.8 unit 2: …`). F.8 units 2 to 8 drive it to empty,

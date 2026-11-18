@@ -23,8 +23,8 @@ apps/mobile/
 ├── app.json · metro.config.js · babel.config.js · tailwind.config.js · global.css
 └── src/
     ├── app/                      # Expo Router routes ONLY (thin; delegate to a screen)
-    │   ├── _layout.tsx           # root Stack + providers (SafeArea, AppQueryProvider, AuthProvider),
-    │   │                         # the Toast viewport and the root ErrorBoundary export
+    │   ├── _layout.tsx           # root Stack + providers (AppSafeAreaProvider, AppQueryProvider,
+    │   │                         # AuthProvider), the Toast viewport and the root ErrorBoundary export
     │   ├── index.tsx             # /       → ItemsDashboardScreen
     │   └── login.tsx             # /login  → LoginScreen
     │
@@ -48,8 +48,9 @@ apps/mobile/
     │       └── index.ts          # barrel — consumers import from @/services/<Domain>
     ├── hooks/                    # SHARED hooks (used across screens, e.g. useSession)
     ├── stores/                   # state slices (auth, toast, ui) through createAppStore — shared
-    ├── lib/                      # framework wiring: i18n/ (the translator over react-i18next),
-    │                             # observability/, posthog/, query/ (the query API over
+    ├── lib/                      # framework wiring: bootstrap/ (the fonts, the splash screen and
+    │                             # the safe area the root boots with), i18n/ (the translator over
+    │                             # react-i18next), observability/, posthog/, query/ (the query API over
     │                             # TanStack Query), storage/ (the device key-value storage),
     │                             # store/ (createAppStore, the one zustand import), supabase/, theme/
     ├── helpers/                  # shared pure helpers + layout.style.ts (positioning only)
@@ -99,7 +100,13 @@ export default HomePage
 Expo Router resolves `src/app/` automatically (no root `app/`). The shipped routes are flat —
 `/` and `/login` under the root `Stack` in `_layout.tsx`, with no route guard. When an area needs
 shared chrome, add a route group (`(auth)`, `(tabs)`, …) with its own `_layout.tsx`. The root
-`_layout.tsx` exports `RootErrorBoundary` as its `ErrorBoundary` (Expo Router convention), so a
+`_layout.tsx` boots through `src/lib/bootstrap/` and imports project modules only: it holds the
+splash screen with `holdSplashScreen` as it loads, renders nothing until `useAppBootstrap` has
+loaded the faces `APP_FONTS` names (or one failed to load) and hidden the splash, and wraps its tree
+in `AppSafeAreaProvider`. Only those files import `expo-splash-screen`, the font packages and, with
+`ui/AuthShell`, `react-native-safe-area-context`, so the route's test mocks `@/lib/bootstrap/*`,
+never a vendor. The root `_layout.tsx` exports `RootErrorBoundary` as its `ErrorBoundary` (Expo
+Router convention), so a
 render crash in any route shows the `ErrorState` with a retry and is reported to observability
 once, through `useReportBoundaryError` and `reportBoundaryError` in `src/lib/observability/`; a
 route can export its own `ErrorBoundary`, re-exported from its screen barrel, to catch its crashes
@@ -164,8 +171,9 @@ as `var(--c-<name>)` and each shared colour as its literal. A StyleSheet that pa
 colour is built once per theme with `createThemedStyles` (or `createThemedValues` for a colour
 map) from `src/lib/theme/`, and the block reads the active one through `useThemedStyles`; a view
 that reads a colour inline takes the palette from `useThemeTokens`. `applyTheme` of
-`src/lib/theme/colorScheme.adapter.ts` applies a theme to the live scheme without storing it, and
-a block's test switches the theme through it, never through nativewind. A module-level StyleSheet over
+`src/lib/theme/colorScheme.adapter.ts` applies a theme to the live scheme without storing it; the
+theme config applies the start-up and the chosen theme through it, and a block's or a route's test
+switches the theme through it, never through nativewind. A module-level StyleSheet over
 the static `colors` stays dark, and `createThemedStyles.helper.test.ts` fails on one. `spacing`,
 `radius`, `fontSize` and the shared colours are read from `@app/tokens` directly. A new value goes
 in the token source, then `pnpm --filter @app/tokens generate`; never edit a generated file

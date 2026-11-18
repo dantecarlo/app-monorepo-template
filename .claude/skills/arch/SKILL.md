@@ -45,13 +45,14 @@ apps/
 │   └── test/            # Test helper, MSW setup, mock data
 │
 ├── mobile/src/
-│   ├── app/             # Expo Router screens
+│   ├── app/             # Expo Router screens; _layout.tsx imports project modules only
 │   ├── screens/
 │   ├── components/
 │   ├── hooks/
 │   ├── services/
 │   ├── stores/
-│   ├── lib/
+│   ├── lib/             # The same wrappers, plus bootstrap/ (the fonts, the splash screen and
+│   │                    # the safe area the root layout boots with)
 │   └── test/
 │
 packages/
