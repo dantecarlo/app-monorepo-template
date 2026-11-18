@@ -9,9 +9,11 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 
 const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }))
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ refresh, replace: vi.fn() })
-}))
+vi.mock('@/lib/routing', async () =>
+  (await import('@/test/routing.helper')).createRoutingDouble({
+    router: { refresh }
+  })
+)
 
 // The request config reads the cookie through next/headers; here it reads
 // the cookie the language button writes to the document.

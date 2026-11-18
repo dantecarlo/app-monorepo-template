@@ -2,16 +2,18 @@ import { LanguageEnum } from '@app/i18n'
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-const refresh = vi.fn()
+const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }))
 let currentLocale: string = LanguageEnum.EN
 
 vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
   useAppTranslator: () => ({ locale: currentLocale })
 }))
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ refresh })
-}))
+vi.mock('@/lib/routing', async () =>
+  (await import('@/test/routing.helper')).createRoutingDouble({
+    router: { refresh }
+  })
+)
 
 import { useLanguageSwitcher } from '@/components/ui/LanguageSwitcher/useLanguageSwitcher.hook'
 

@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const { mockSignIn } = vi.hoisted(() => ({ mockSignIn: vi.fn() }))
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: vi.fn() })
-}))
+vi.mock('@/lib/routing', async () =>
+  (await import('@/test/routing.helper')).createRoutingDouble()
+)
 
 vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
   useAppTranslator: () => ({

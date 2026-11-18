@@ -17,9 +17,11 @@ const { mockReplace, mockSignInWithPassword } = vi.hoisted(() => ({
   mockSignInWithPassword: vi.fn()
 }))
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: mockReplace })
-}))
+vi.mock('@/lib/routing', async () =>
+  (await import('@/test/routing.helper')).createRoutingDouble({
+    router: { replace: mockReplace }
+  })
+)
 
 vi.mock('@/lib/supabase/client.adapter', () => ({
   getSupabaseClient: () => ({
