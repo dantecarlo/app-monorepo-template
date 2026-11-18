@@ -729,7 +729,7 @@ The core package SHALL reach the host console only through `hostConsole`, which 
 The core package SHALL import, in its production files, nothing from outside itself: no
 package, no `@/` alias, no `#` key but `#src/`, and no `node:` builtin.
 
-**Evidence:** `eslint-local-rules/index.mjs:504-531`, `eslint.config.mjs:138-140`,
+**Evidence:** `eslint-local-rules/index.mjs:504-531`, `eslint.config.mjs:299-301`,
 `packages/core/package.json:12-14`
 
 #### Scenario: a framework import
