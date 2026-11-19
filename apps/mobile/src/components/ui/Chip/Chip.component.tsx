@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 
 import { CHIP_DOT_SIZE_CLASS } from '@/components/ui/Chip/Chip.constant'
 import {
@@ -8,6 +8,7 @@ import {
   CHIP_VARIANT_CLASS
 } from '@/components/ui/Chip/Chip.style'
 import type { IChipProps } from '@/components/ui/Chip/Chip.type'
+import { Text } from '@/components/ui/Text/Text.component'
 
 export const Chip = ({
   children,

@@ -1,5 +1,5 @@
 import { fontFamily } from '@app/tokens'
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 
 import {
   AVATAR_DEFAULT_SIZE,
@@ -10,6 +10,7 @@ import {
   AVATAR_VARIANT_COLORS
 } from '@/components/ui/Avatar/Avatar.style'
 import type { IAvatarProps } from '@/components/ui/Avatar/Avatar.type'
+import { Text } from '@/components/ui/Text/Text.component'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 
 export const Avatar = ({

@@ -1,7 +1,8 @@
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
 import { LIST_ROW_STYLES } from '@/components/ui/ListRow/ListRow.style'
 import type { IListRowProps } from '@/components/ui/ListRow/ListRow.type'
+import { Text } from '@/components/ui/Text/Text.component'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 
 /** Generic list item with optional leading/trailing slots and divider. */

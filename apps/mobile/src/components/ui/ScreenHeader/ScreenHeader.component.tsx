@@ -1,8 +1,9 @@
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 
 import { IconButton } from '@/components/ui/IconButton/IconButton.component'
 import { SCREEN_HEADER_STYLES } from '@/components/ui/ScreenHeader/ScreenHeader.style'
 import type { IScreenHeaderProps } from '@/components/ui/ScreenHeader/ScreenHeader.type'
+import { Text } from '@/components/ui/Text/Text.component'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 
 /**

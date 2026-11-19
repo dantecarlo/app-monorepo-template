@@ -1,7 +1,8 @@
-import { Modal as RNModal, Pressable, Text, View } from 'react-native'
+import { Modal as RNModal, Pressable, View } from 'react-native'
 
 import { MODAL_STYLES } from '@/components/ui/Modal/Modal.style'
 import type { IModalProps } from '@/components/ui/Modal/Modal.type'
+import { Text } from '@/components/ui/Text/Text.component'
 import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 

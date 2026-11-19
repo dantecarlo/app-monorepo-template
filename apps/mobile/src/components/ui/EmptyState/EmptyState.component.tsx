@@ -1,7 +1,8 @@
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 
 import { EMPTY_STATE_STYLES } from '@/components/ui/EmptyState/EmptyState.style'
 import type { IEmptyStateProps } from '@/components/ui/EmptyState/EmptyState.type'
+import { Text } from '@/components/ui/Text/Text.component'
 import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 

@@ -1,7 +1,8 @@
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
 import { ERROR_STATE_STYLES } from '@/components/ui/ErrorState/ErrorState.style'
 import type { IErrorStateProps } from '@/components/ui/ErrorState/ErrorState.type'
+import { Text } from '@/components/ui/Text/Text.component'
 import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 

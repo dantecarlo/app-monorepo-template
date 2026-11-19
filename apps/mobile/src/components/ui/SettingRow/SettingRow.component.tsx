@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
 import { Icon } from '@/components/ui/Icon/Icon.component'
 import {
@@ -6,6 +6,7 @@ import {
   SETTING_ROW_STYLES
 } from '@/components/ui/SettingRow/SettingRow.style'
 import type { ISettingRowProps } from '@/components/ui/SettingRow/SettingRow.type'
+import { Text } from '@/components/ui/Text/Text.component'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 
 /**

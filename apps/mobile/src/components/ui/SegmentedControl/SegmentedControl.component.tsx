@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
 import { PRESSED_OPACITY } from '@/components/ui/SegmentedControl/SegmentedControl.constant'
 import {
@@ -6,6 +6,7 @@ import {
   SEGMENTED_CONTROL_STYLES
 } from '@/components/ui/SegmentedControl/SegmentedControl.style'
 import type { ISegmentedControlProps } from '@/components/ui/SegmentedControl/SegmentedControl.type'
+import { Text } from '@/components/ui/Text/Text.component'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 
 export const SegmentedControl = ({
