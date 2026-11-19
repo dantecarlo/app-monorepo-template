@@ -19,7 +19,7 @@ export const DRIFT_KIND = {
   unknownCommit: 'unknown-commit'
 }
 
-// The governed paths of a spec, in the order its Governs line names them,
+// The governed paths of a spec, in the order its Governs lines name them,
 // and the commit its Verified line names, or null.
 export const readSpecAnchor = ({ text }) => {
   const verified = text
