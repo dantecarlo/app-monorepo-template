@@ -288,7 +288,7 @@ export const CASES = [
   },
   {
     context: walk({
-      entries: [core('react'), { ...zod(), owner: 'web' }, vitest]
+      entries: [core('react'), { ...zod(), module: 'web' }, vitest]
     }),
     expected: 1,
     name: 'an entry with a key the registry does not define is malformed'
@@ -309,6 +309,17 @@ export const CASES = [
     }),
     expected: 1,
     name: 'an entry whose note is not text is malformed'
+  },
+  {
+    context: walk({
+      entries: [
+        { ...core('react'), owner: 'core' },
+        { ...zod(), owner: 'web-next' },
+        { ...vitest, owner: 'core' }
+      ]
+    }),
+    expected: 0,
+    name: 'an entry that names its owner passes'
   },
   {
     context: walk({
@@ -386,6 +397,20 @@ export const CASES = [
 const findingsOf = (tree) => gate.run(walk(tree)())
 
 const checks = [
+  {
+    name: 'an entry whose owner is not text is malformed',
+    run: () => {
+      const findings = findingsOf({
+        entries: [core('react'), { ...zod(), owner: 7 }, vitest]
+      })
+      assert.equal(findings.length, 1)
+      assert.equal(findings[0].kind, FINDING_KIND.registryMalformed)
+      assert.match(
+        findings[0].detail,
+        /zod has an owner that is not text/u
+      )
+    }
+  },
   {
     name: 'a stale finding names the file, the package and the remedy',
     run: () => {

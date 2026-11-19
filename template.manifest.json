@@ -89,6 +89,7 @@
     "scripts/git-free-env.test.mjs",
     "scripts/init-project.mjs",
     "scripts/init-project.test.mjs",
+    "scripts/manifest-owners.mjs",
     "scripts/manifest.mjs",
     "scripts/manifest.test.mjs",
     "scripts/mcp-docs.detect.mjs",
@@ -193,7 +194,10 @@
         },
         {
           "verb": "remove",
-          "paths": ["apps/web/**"]
+          "paths": [
+            "apps/web/**",
+            "openspec/specs/apps/web/sentry/spec.md"
+          ]
         }
       ]
     },
@@ -230,6 +234,10 @@
           "file": "package.json",
           "op": "unset",
           "path": "scripts.verify:expo"
+        },
+        {
+          "verb": "remove",
+          "paths": ["openspec/specs/apps/mobile/sentry/spec.md"]
         }
       ]
     },
@@ -253,6 +261,36 @@
             "apps/web/src/app/SupabaseProviders.tsx",
             "apps/web/src/lib/supabase/**"
           ]
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/web/package.json",
+          "name": "@app/supabase",
+          "scope": "dependencies"
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/web/package.json",
+          "name": "@supabase/ssr",
+          "scope": "dependencies"
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/web/package.json",
+          "name": "@supabase/supabase-js",
+          "scope": "dependencies"
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/mobile/package.json",
+          "name": "@app/supabase",
+          "scope": "dependencies"
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/mobile/package.json",
+          "name": "@supabase/supabase-js",
+          "scope": "dependencies"
         }
       ]
     },
@@ -292,7 +330,9 @@
         "apps/web/next-sentry.config.ts",
         "apps/web/sentry.client.config.ts",
         "apps/web/sentry.edge.config.ts",
-        "apps/web/sentry.server.config.ts"
+        "apps/web/sentry.server.config.ts",
+        "openspec/specs/apps/mobile/sentry/spec.md",
+        "openspec/specs/apps/web/sentry/spec.md"
       ],
       "onAbsent": [
         {

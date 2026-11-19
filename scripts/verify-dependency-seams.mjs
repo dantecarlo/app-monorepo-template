@@ -8,8 +8,9 @@
 // Fails, one finding per problem:
 //   - a registry that cannot be read, or an entry that breaks its shape (a
 //     category outside the seven, a non-core entry with no seam, a core
-//     entry with one, a name listed twice); reported alone, since every other
-//     check reads the registry;
+//     entry with one, an owner that is not text, a name listed twice);
+//     reported alone, since every other check reads the registry. Whether
+//     an owner names a capability is verify-manifest-coverage's to judge;
 //   - a dependency of the root, an apps/* or a packages/* package.json that
 //     no entry names, and such a package.json that cannot be read or is not
 //     a JSON object, which also stops the stale-entry check below;

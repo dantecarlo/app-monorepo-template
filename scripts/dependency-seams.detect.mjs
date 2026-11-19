@@ -49,7 +49,14 @@ const REGISTRY_KEYS = new Set([
   'packages',
   'testInfrastructure'
 ])
-const ENTRY_KEYS = new Set(['category', 'name', 'note', 'seam', 'types'])
+const ENTRY_KEYS = new Set([
+  'category',
+  'name',
+  'note',
+  'owner',
+  'seam',
+  'types'
+])
 const ALLOWLIST_KEYS = new Set(['package', 'path', 'reason'])
 const CATEGORIES = new Set(Object.values(CATEGORY))
 const TYPE_POLICIES = new Set(Object.values(TYPES))
@@ -122,6 +129,11 @@ const entryProblem = ({ entry }) => {
   }
   if (Object.hasOwn(entry, 'note') && !isText(entry.note)) {
     return 'has a note that is not text'
+  }
+  // Which capability's prune removes the entry is the manifest's question:
+  // verify-manifest-coverage holds the owner to template.manifest.json.
+  if (Object.hasOwn(entry, 'owner') && !isText(entry.owner)) {
+    return 'has an owner that is not text'
   }
   return null
 }

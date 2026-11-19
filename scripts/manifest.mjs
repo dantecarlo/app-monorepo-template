@@ -405,3 +405,14 @@ export const analyzeCoverage = ({ files, manifest }) => {
     unclaimed: unclaimed.sort()
   }
 }
+
+// The owners of what is smaller than a file, registry entries and regions,
+// live in their own module; the engine exports them with the rest.
+export {
+  analyzeRegions,
+  analyzeRegistryOwners,
+  CORE_OWNER,
+  dropRegions,
+  parseRegions,
+  REGISTRY_FILE
+} from './manifest-owners.mjs'

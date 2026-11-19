@@ -33,10 +33,12 @@ export default defineConfig({
         __dirname,
         './src/test/mocks/async-storage.ts'
       ),
+      // region sentry
       '@sentry/react-native': path.resolve(
         __dirname,
         './src/test/mocks/sentry-react-native.ts'
       ),
+      // endregion sentry
       'expo-blur': path.resolve(
         __dirname,
         './src/test/mocks/expo-blur.ts'

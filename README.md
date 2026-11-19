@@ -118,7 +118,7 @@ class names + direct token imports for RN `StyleSheet.create()`.
 Pure TypeScript — no React/RN/DOM. Safe to import from both apps.
 
 - `AppError` — typed application error with a `code` (NETWORK / NOT_FOUND / UNAUTHORIZED / VALIDATION / UNKNOWN).
-- `scrubPII` — recursive PII redactor; wire into Sentry `beforeSend` + `beforeBreadcrumb`.
+- `scrubPII` — recursive PII redactor; every observability adapter passes each payload through it before sending.
 
 ### `@app/i18n`
 

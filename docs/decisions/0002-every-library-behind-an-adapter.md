@@ -14,8 +14,9 @@ and put it in the plan".
 
 ADR 0001 put the providers (the backend, observability, edge security) behind ports. Every other
 library was imported where it was used: when F.8 started, `no-restricted-imports` guarded only
-`@supabase/*`, `@stripe/*` and `@sentry/*`, so nothing guarded the i18n, query, state, UI or Expo
-packages, and the rule froze 143 imports outside the seam each package was given. A library
+three vendor scopes, the backend's, the payments' and the error monitor's, so nothing guarded the
+i18n, query, state, UI or Expo packages, and the rule froze 143 imports outside the seam each
+package was given. A library
 imported from a hundred files cannot be replaced; one imported from its wrapper can.
 
 **Certifipago, evaluated.** Certifipago already did much of it, so the template read it first.
