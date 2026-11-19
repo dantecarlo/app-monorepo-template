@@ -5,7 +5,26 @@ import {
   ThemeEnum,
   themes
 } from '@app/tokens'
-import { afterEach, describe, expect, test } from 'vitest'
+import { createElement } from 'react'
+import { afterEach, describe, expect, test, vi } from 'vitest'
+
+// Every prop the native text receives, kept as it renders through the
+// stand-in, so a test reads what the block handed it. The Text block is the
+// one wrapper of react-native's Text, so only its own test stands in for it.
+const { nativeTextProps } = vi.hoisted(() => ({
+  nativeTextProps: [] as Array<Record<string, unknown>>
+}))
+
+vi.mock('react-native', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-native')>()
+  return {
+    ...actual,
+    Text: (props: Record<string, unknown>) => {
+      nativeTextProps.push(props)
+      return createElement(actual.Text, props)
+    }
+  }
+})
 
 import { Text } from '@/components/ui/Text/Text.component'
 import { applyTheme } from '@/lib/theme/colorScheme.adapter'
@@ -73,5 +92,37 @@ describe('Text', () => {
       fontSize: fontSize.caption.size,
       lineHeight: fontSize.caption.lineHeight
     })
+  })
+
+  test('hands its accessibility role to the native text', () => {
+    render(
+      <>
+        <Text accessibilityRole="header" variant="title">
+          Items
+        </Text>
+        <Text>Updated</Text>
+      </>
+    )
+
+    expect(screen.getByRole('header')).toBe(screen.getByText('Items'))
+    expect(
+      host(screen.getByText('Updated')).getAttribute('role')
+    ).toBeNull()
+  })
+
+  test('hands the classes a block sets to the native text', () => {
+    nativeTextProps.length = 0
+    render(
+      <>
+        <Text className="font-bold text-accent-ink">Go</Text>
+        <Text>Stop</Text>
+      </>
+    )
+
+    const propsOf = (children: string) =>
+      nativeTextProps.find((props) => props['children'] === children)
+
+    expect(propsOf('Go')?.['className']).toBe('font-bold text-accent-ink')
+    expect(propsOf('Stop')?.['className']).toBeUndefined()
   })
 })
