@@ -3,7 +3,7 @@
 > **Governs:** `apps/web/src`, `apps/web/next.config.ts`, `apps/web/next-sentry.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-18 at `7e6a1d0`
+> **Verified against the code:** 2026-11-18 at `2c3eea0`
 
 ## Purpose
 
@@ -669,7 +669,7 @@ The web app SHALL create the browser Supabase client on first use from `NEXT_PUB
 and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, return that same client afterwards, and throw an error naming
 both variables when either is missing.
 
-**Evidence:** `apps/web/src/lib/supabase/client.adapter.ts:17-40`
+**Evidence:** `apps/web/src/lib/supabase/client.adapter.ts:21-42`
 
 #### Scenario: the settings are present
 
@@ -691,7 +691,7 @@ both variables when either is missing.
 The web app SHALL create a new server Supabase client on every call, wired to the request cookie
 store for reading and writing the session cookies.
 
-**Evidence:** `apps/web/src/lib/supabase/server.adapter.ts:12-28`
+**Evidence:** `apps/web/src/lib/supabase/server.adapter.ts:14-30`
 
 #### Scenario: the client is created on the server
 
@@ -2522,6 +2522,38 @@ included; every other file, tests included, reaches them through `@/lib/routing`
 - **Test:** Not covered — no test of this app reads its imports; `local/dependency-seam` refuses
   such an import (harness/dependency-seams SEAM-03) and `pnpm verify:dependency-seams` fails an
   allowlist entry or a violation for it (SEAM-07), both inside `pnpm validate`
+
+### Requirement: WEB-80 — The Supabase clients are the opaque backend client
+
+The web app SHALL type the clients of `src/lib/supabase/` as the opaque `BackendClientType` of
+packages/supabase (SUPABASE-30): `getSupabaseClient` of `client.adapter.ts` returns one and
+`createServerClient` of `server.adapter.ts` resolves to one, so no type of the app names the
+Supabase client or a Supabase generic; the browser's auth gateway SHALL be built over the very
+client `getSupabaseClient` creates (WEB-20).
+
+**Evidence:** `apps/web/src/lib/supabase/client.adapter.ts:21-23`, `apps/web/src/lib/supabase/server.adapter.ts:14`, `apps/web/src/lib/supabase/authGateway.adapter.ts:114-116`, `packages/supabase/src/backendClient.type.ts:9-11`
+
+#### Scenario: the browser client's type
+
+- **GIVEN** the browser client adapter
+- **WHEN** the type of the client it returns is read
+- **THEN** it is `BackendClientType`
+- **Test:** `apps/web/src/lib/supabase/__tests__/client.adapter.test.ts` › "types the client as the opaque backend client"
+
+#### Scenario: the server client's type
+
+- **GIVEN** the server client adapter
+- **WHEN** the type of the client it resolves to is read
+- **THEN** it is `BackendClientType`
+- **Test:** `apps/web/src/lib/supabase/__tests__/server.adapter.test.ts` › "types the server client as the opaque backend client"
+
+#### Scenario: the gateway over the browser client
+
+- **GIVEN** a browser with both public Supabase settings
+- **WHEN** the gateway is requested
+- **THEN** the Supabase auth gateway is created over the same client the browser client adapter
+  created and returns
+- **Test:** `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "hands the gateway the very client the browser client adapter creates"
 
 ## Open questions
 

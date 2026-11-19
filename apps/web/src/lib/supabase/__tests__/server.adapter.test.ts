@@ -1,4 +1,12 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import type { BackendClientType } from '@app/supabase'
+import {
+  beforeEach,
+  describe,
+  expect,
+  expectTypeOf,
+  test,
+  vi
+} from 'vitest'
 
 // ---------------------------------------------------------------------------
 // Mock next/headers cookies and the typed server factory so we can assert the
@@ -61,5 +69,11 @@ describe('supabase server client adapter', () => {
     expect(a).toEqual({ tag: 'server-client' })
     expect(b).toEqual({ tag: 'server-client' })
     expect(mockCreateServerClient).toHaveBeenCalledTimes(2)
+  })
+
+  test('types the server client as the opaque backend client', () => {
+    expectTypeOf(
+      createServerClient
+    ).returns.resolves.toEqualTypeOf<BackendClientType>()
   })
 })

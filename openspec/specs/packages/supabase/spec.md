@@ -3,51 +3,51 @@
 > **Governs:** `packages/supabase/src`, `packages/supabase/supabase/migrations`, `packages/supabase/supabase/config.toml`
 > **ID prefix:** `SUPABASE`
 > **Derived from:** `packages/supabase/docs/database.md`, `AGENTS.md`, `docs/code-standards.md`
-> **Verified against the code:** 2026-11-15 at `00496d7`
+> **Verified against the code:** 2026-11-18 at `a69a1b7`
 
 ## Purpose
 
 The supabase package is the default backend adapter: the anon-key browser client and the SSR
-server client, the auth gateway, the Postgrest error mapper and the AppError builder, and the
-database, with row-level security enabled and forced on four tables, the API roles' privileges
-narrowed where row-level security does not reach, the RBAC tables and helpers, the append-only
-audit log and the seed. The ports, AppError and the message-key map belong to
+server client, handed out as one opaque backend client type, the auth gateway, the Postgrest
+error mapper and the AppError builder, and the database, with row-level security enabled and
+forced on four tables, the API roles' privileges narrowed where row-level security does not
+reach, the RBAC tables and helpers, the append-only audit log and the seed. The ports, AppError and the message-key map belong to
 packages/core, and the catalogs that translate the keys to packages/i18n.
 
 ## Requirements
 
 ### Requirement: SUPABASE-01 — Entry points expose the backend adapter
 
-The supabase package SHALL expose from its main entry point buildSupabaseServiceError, createSupabaseClient, mapSupabaseError, createSupabaseAuthGateway and the Database type, and from its server entry point createSupabaseServerClient.
+The supabase package SHALL expose from its main entry point buildSupabaseServiceError, createSupabaseClient, mapSupabaseError, createSupabaseAuthGateway, the BackendClientType of its clients and the Database type, and from its server entry point createSupabaseServerClient.
 
-**Evidence:** `packages/supabase/src/index.ts:1`, `packages/supabase/src/index.ts:5`, `packages/supabase/package.json:8`
+**Evidence:** `packages/supabase/src/index.ts:1`, `packages/supabase/src/index.ts:6`, `packages/supabase/package.json:8`
 
 #### Scenario: an app imports the package
 
 - **GIVEN** an app that depends on the supabase package
 - **WHEN** it imports from the main entry point and from its server entry point
-- **THEN** the main entry point gives the four factories and the Database type, and the server entry point gives the server client factory
+- **THEN** the main entry point gives the four factories, the BackendClientType and the Database type, and the server entry point gives the server client factory
 - **Test:** Not covered — every test imports its module directly; only the consumers' typecheck reads the entry points
 
 ### Requirement: SUPABASE-02 — Clients are built over the anon key
 
-The supabase package SHALL build its clients from a URL and an anon key the caller passes, typed by the Database schema: a browser client that satisfies the backend client provider port of packages/core, and a server client that also takes the caller's cookie methods so the user's session reaches RLS.
+The supabase package SHALL build its clients from a URL and an anon key the caller passes, typed by the Database schema inside the package and returned as the opaque BackendClientType (SUPABASE-30): a browser client that satisfies the backend client provider port of packages/core, and a server client that also takes the caller's cookie methods so the user's session reaches RLS.
 
-**Evidence:** `packages/supabase/src/client.adapter.ts:25`, `packages/supabase/src/client.adapter.ts:27`, `packages/supabase/src/server.adapter.ts:46`
+**Evidence:** `packages/supabase/src/client.adapter.ts:24-28`, `packages/supabase/src/client.adapter.ts:30-32`, `packages/supabase/src/server.adapter.ts:44-51`
 
 #### Scenario: a browser client
 
 - **GIVEN** a URL and an anon key read by an app from its public environment
 - **WHEN** the app calls createSupabaseClient
-- **THEN** it gets a Supabase client for that project, typed by the Database schema
-- **Test:** Not covered — no test exercises the client factory
+- **THEN** the SDK creates a client for that project with that key, and the backend client returned is that SDK client
+- **Test:** `packages/supabase/src/__tests__/client.adapter.test.ts` › "creates the client for the URL and anon key it is handed"
 
 #### Scenario: a server client
 
 - **GIVEN** a URL, an anon key and the request's cookie methods
 - **WHEN** server code calls createSupabaseServerClient
-- **THEN** it gets an SSR client that reads and writes the session through those cookie methods
-- **Test:** Not covered — no test exercises the server client factory
+- **THEN** the SSR SDK creates a client for that project with that key and those cookie methods, and the backend client returned is that SDK client
+- **Test:** `packages/supabase/src/__tests__/server.adapter.test.ts` › "creates the SSR client over the cookie methods it is handed"
 
 ### Requirement: SUPABASE-03 — A Postgrest error maps to a service code by HTTP status
 
@@ -162,7 +162,7 @@ The supabase package SHALL turn any thrown value into an AppError through the se
 
 The supabase package SHALL make the auth gateway's getSession return the SDK session as the neutral auth session of packages/core (accessToken, expiresAt, userId), with expiresAt null when the SDK gives none, and null when there is no session.
 
-**Evidence:** `packages/supabase/src/supabaseAuth.adapter.ts:16`, `packages/supabase/src/supabaseAuth.adapter.ts:18`, `packages/supabase/src/supabaseAuth.adapter.ts:29`
+**Evidence:** `packages/supabase/src/supabaseAuth.adapter.ts:16`, `packages/supabase/src/supabaseAuth.adapter.ts:18`, `packages/supabase/src/supabaseAuth.adapter.ts:35`
 
 #### Scenario: no session
 
@@ -189,7 +189,7 @@ The supabase package SHALL make the auth gateway's getSession return the SDK ses
 
 The supabase package SHALL make the auth gateway's signIn sign in with email and password and resolve the neutral session, and reject with the SDK's own error, unmapped, when the SDK reports one.
 
-**Evidence:** `packages/supabase/src/supabaseAuth.adapter.ts:46`, `packages/supabase/src/supabaseAuth.adapter.ts:50`, `packages/supabase/src/supabaseAuth.adapter.ts:51`
+**Evidence:** `packages/supabase/src/supabaseAuth.adapter.ts:52`, `packages/supabase/src/supabaseAuth.adapter.ts:56`, `packages/supabase/src/supabaseAuth.adapter.ts:57`
 
 #### Scenario: valid credentials
 
@@ -209,7 +209,7 @@ The supabase package SHALL make the auth gateway's signIn sign in with email and
 
 The supabase package SHALL relay every SDK auth change to the subscriber of onAuthStateChange, as the neutral session or null, and return a subscription whose unsubscribe ends the SDK subscription.
 
-**Evidence:** `packages/supabase/src/supabaseAuth.adapter.ts:37`, `packages/supabase/src/supabaseAuth.adapter.ts:39`
+**Evidence:** `packages/supabase/src/supabaseAuth.adapter.ts:43`, `packages/supabase/src/supabaseAuth.adapter.ts:45`
 
 #### Scenario: a sign-in event
 
@@ -236,7 +236,7 @@ The supabase package SHALL relay every SDK auth change to the subscriber of onAu
 
 The supabase package SHALL make the auth gateway's signOut call the SDK's sign-out.
 
-**Evidence:** `packages/supabase/src/supabaseAuth.adapter.ts:55`
+**Evidence:** `packages/supabase/src/supabaseAuth.adapter.ts:61`
 
 #### Scenario: the user signs out
 
@@ -840,3 +840,42 @@ The supabase database SHALL let no API role execute tg_audit_immutable or tg_aud
 - **WHEN** it updates the row
 - **THEN** the immutability exception is raised
 - **Test:** `packages/supabase/supabase/tests/rls_profile.test.sql` › "audit_log UPDATE by service_role raises immutability exception"
+
+### Requirement: SUPABASE-30 — The client leaves the package opaque
+
+The supabase package SHALL hand out its clients as `BackendClientType`, a branded type of
+`src/backendClient.type.ts` that names no Supabase type, so an app that holds a client cannot name
+or reach the SDK client; only `src/backendClient.adapter.ts` SHALL turn the SDK client into a
+`BackendClientType` and back, for the package's own `*.adapter.ts` files, and the auth gateway
+SHALL take the client as a `BackendClientType` and reach the SDK through it.
+
+**Evidence:** `packages/supabase/src/backendClient.type.ts:1`, `packages/supabase/src/backendClient.type.ts:9-11`, `packages/supabase/src/backendClient.adapter.ts:11-22`, `packages/supabase/src/client.adapter.ts:28`, `packages/supabase/src/server.adapter.ts:49-51`, `packages/supabase/src/supabaseAuth.adapter.ts:29-31`
+
+#### Scenario: the client is wrapped and unwrapped
+
+- **GIVEN** an SDK client
+- **WHEN** it is wrapped as a backend client and unwrapped again
+- **THEN** the unwrapped client is the very client that was wrapped
+- **Test:** `packages/supabase/src/__tests__/backendClient.adapter.test.ts` › "hands back the very client it wrapped"
+
+#### Scenario: the type names no Supabase type
+
+- **GIVEN** `BackendClientType` and the SDK client typed by the Database schema
+- **WHEN** each is checked against the other
+- **THEN** neither is assignable to the other, and the wrapper hands out `BackendClientType`
+- **Test:** `packages/supabase/src/__tests__/backendClient.adapter.test.ts` › "names no Supabase type in the client it hands out"
+
+#### Scenario: the factories' types
+
+- **GIVEN** the browser and the server client factories
+- **WHEN** the type each returns is read
+- **THEN** both are `BackendClientType`
+- **Test:** `packages/supabase/src/__tests__/client.adapter.test.ts` › "returns the opaque backend client"
+- **Test:** `packages/supabase/src/__tests__/server.adapter.test.ts` › "returns the opaque backend client"
+
+#### Scenario: the gateway over an opaque client
+
+- **GIVEN** a backend client whose SDK session holds a user
+- **WHEN** the auth gateway built over it reads the session
+- **THEN** it returns the neutral session mapped from the SDK's (SUPABASE-06)
+- **Test:** `packages/supabase/src/__tests__/supabaseAuth.adapter.test.ts` › "getSession maps the SDK session to IAuthSession"

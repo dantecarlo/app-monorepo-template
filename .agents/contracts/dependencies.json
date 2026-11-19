@@ -123,20 +123,25 @@
     {
       "name": "expo-splash-screen",
       "category": "infra",
-      "seam": [],
-      "note": "Behind apps/mobile/src/lib/bootstrap/, which F.8 unit 6 creates."
+      "seam": ["apps/mobile/src/lib/bootstrap/splashScreen.adapter.ts"],
+      "note": "Behind holdSplashScreen and hideSplashScreen: the root layout holds the splash as it loads, and useAppBootstrap hides it once the fonts settle."
     },
     {
       "name": "@expo-google-fonts/inter",
       "category": "infra",
-      "seam": [],
-      "note": "Behind apps/mobile/src/lib/bootstrap/, which F.8 unit 6 creates."
+      "seam": [
+        "apps/mobile/src/lib/bootstrap/useAppBootstrap.constant.ts"
+      ],
+      "note": "Behind useAppBootstrap: APP_FONTS names every face the app renders its text in, which the hook loads before the root layout renders a route."
     },
     {
       "name": "@expo-google-fonts/montserrat",
       "category": "infra",
-      "seam": [],
-      "note": "Behind apps/mobile/src/lib/bootstrap/, which F.8 unit 6 creates."
+      "seam": [
+        "apps/mobile/src/lib/bootstrap/useAppBootstrap.constant.ts",
+        "apps/mobile/src/lib/bootstrap/useAppBootstrap.hook.ts"
+      ],
+      "note": "Behind useAppBootstrap: APP_FONTS names its faces, and the hook loads them through its useFonts."
     },
     {
       "name": "nativewind",
@@ -195,7 +200,11 @@
     {
       "name": "react-native-safe-area-context",
       "category": "ui",
-      "seam": ["apps/mobile/src/components/ui/**"]
+      "seam": [
+        "apps/mobile/src/components/ui/AuthShell/AuthShell.component.tsx",
+        "apps/mobile/src/lib/bootstrap/AppSafeAreaProvider.component.tsx"
+      ],
+      "note": "The root's provider is AppSafeAreaProvider of lib/bootstrap, and the AuthShell block reads its insets."
     },
     {
       "name": "react-native-svg",
@@ -242,17 +251,20 @@
     {
       "name": "@supabase/supabase-js",
       "category": "vendor",
-      "seam": ["packages/supabase/src/*.adapter.ts"]
+      "seam": ["packages/supabase/src/*.adapter.ts"],
+      "note": "Its client leaves the package as the opaque BackendClientType, which only packages/supabase/src/backendClient.adapter.ts turns back into the SDK client."
     },
     {
       "name": "@supabase/ssr",
       "category": "vendor",
-      "seam": ["packages/supabase/src/*.adapter.ts"]
+      "seam": ["packages/supabase/src/*.adapter.ts"],
+      "note": "The SSR client leaves the package as the opaque BackendClientType, as the browser client does."
     },
     {
       "name": "@app/supabase",
       "category": "vendor-package",
-      "seam": ["apps/*/src/lib/supabase/**"]
+      "seam": ["apps/*/src/lib/supabase/*.adapter.ts"],
+      "note": "Each app's lib/supabase adapters: the client, typed BackendClientType, and the auth gateway the app's auth provider receives."
     },
     {
       "name": "@app/cloudflare",

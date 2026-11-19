@@ -2,12 +2,15 @@ import type {
   IBackendClientProvider,
   ICreateBackendClientParams
 } from '@app/core'
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 
+import { toBackendClient } from '#src/backendClient.adapter'
+import type { BackendClientType } from '#src/backendClient.type'
 import type { Database } from '#src/types'
 
 /**
- * Typed browser/client Supabase factory (anon key).
+ * Browser/client Supabase factory (anon key), typed by the Database schema
+ * inside this package and handed out as the opaque BackendClientType.
  *
  * Single source of truth for the monorepo: apps pass their own env
  * (EXPO_PUBLIC_* on mobile, NEXT_PUBLIC_* on web) into this factory rather
@@ -21,10 +24,10 @@ import type { Database } from '#src/types'
 export const createSupabaseClient = ({
   anonKey,
   url
-}: ICreateBackendClientParams): SupabaseClient<Database> =>
-  createClient<Database>(url, anonKey)
+}: ICreateBackendClientParams): BackendClientType =>
+  toBackendClient({ client: createClient<Database>(url, anonKey) })
 
-const _providerCheck: IBackendClientProvider<SupabaseClient<Database>> = {
+const _providerCheck: IBackendClientProvider<BackendClientType> = {
   createClient: createSupabaseClient
 }
 

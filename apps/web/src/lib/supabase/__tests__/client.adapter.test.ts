@@ -1,4 +1,13 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import type { BackendClientType } from '@app/supabase'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  expectTypeOf,
+  test,
+  vi
+} from 'vitest'
 
 const { mockCreateSupabaseClient } = vi.hoisted(() => ({
   mockCreateSupabaseClient: vi.fn(() => ({ tag: 'client' }))
@@ -54,5 +63,14 @@ describe('supabase browser client adapter', () => {
     expect(() => getSupabaseClient()).toThrow(
       /Missing NEXT_PUBLIC_SUPABASE/
     )
+  })
+
+  test('types the client as the opaque backend client', async () => {
+    const { getSupabaseClient } =
+      await import('@/lib/supabase/client.adapter')
+
+    expectTypeOf(
+      getSupabaseClient
+    ).returns.toEqualTypeOf<BackendClientType>()
   })
 })

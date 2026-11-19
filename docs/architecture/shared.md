@@ -14,7 +14,8 @@ app/                              # pnpm workspaces + Turborepo
     ├── tokens/    # design tokens (colors/spacing/type) + tailwind preset — VALUES, no components
     ├── core/      # domain/app logic: AppError, scrubPII, shared types/contracts (no React/RN/DOM)
     ├── i18n/      # shared ICU catalogs (es/en) + locale constants
-    ├── supabase/  # Supabase client, schema types and the service-error mapper (backend adapter)
+    ├── supabase/  # Supabase clients (handed out as the opaque BackendClientType), schema types,
+    │              # the auth gateway and the service-error mapper (backend adapter)
     └── cloudflare/ # Cloudflare adapters: origin guard, Turnstile, R2 and image delivery
 ```
 
@@ -41,7 +42,7 @@ The deliberate middle ground: a **shared base** + **everything UI-specific separ
 | Design tokens (values)                    | `packages/tokens`        |   ✅    | Platform-agnostic values; consumed by NativeWind (mobile) + Tailwind (web) presets |
 | Domain/app logic, `AppError`, contracts   | `packages/core`          |   ✅    | Pure TS, no framework                                                              |
 | i18n catalogs (ICU JSON)                  | `packages/i18n`          |   ✅    | Same keys both apps; adapter differs (react-i18next vs next-intl)                  |
-| Optional backend client + generated types | project-specific package |   ✅    | One backend contract                                                               |
+| Optional backend client + generated types | project-specific package |   ✅    | One backend contract; the client is opaque to the apps (`BackendClientType`)       |
 | Test and process tooling                  | `packages/tooling`       |   ✅    | Plain ESM every workspace imports by name: Vitest base, shuffled order, tree kill  |
 | **UI components, screens, navigation**    | `apps/<app>/src`         |   ❌    | **RN/NativeWind vs DOM/Tailwind — never shared**                                   |
 | Hooks/stores/lib wiring                   | `apps/<app>/src`         |   ❌    | App-specific (Expo Router vs Next App Router)                                      |
