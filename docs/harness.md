@@ -195,10 +195,11 @@ On a pull request, the `commitlint` job lints the commits of the pull request,
 from its base SHA to its head SHA, with `commitlint.config.js`, on a checkout
 of the whole history. A commit made with `git commit --no-verify` skips the
 `commit-msg` hook, so this is where it is caught, with one gap: commitlint's
-default ignores pass, unlinted, a message that starts with `Merge` (or
-`Merged`, `Automatic merge`, `Auto-merged`), `Revert`, `Reapply`, `fixup!`,
-`squash!` or `amend!`, or that is only a version number, in the hook and in CI
-alike. The same check runs locally as
+default ignores pass, unlinted, a message with any line that starts
+`Merge pull request`, `Merge branch …`, `Merge … into …` or `Merge tag …` (so a
+body line can excuse a bad subject), one whose first line starts with `Merged`,
+`Automatic merge`, `Auto-merged`, `Revert`, `Reapply`, `fixup!`, `squash!` or
+`amend!`, or one that is only a version number, in the hook and in CI alike. The same check runs locally as
 `pnpm exec commitlint --from origin/main --to HEAD`.
 
 Every action a workflow runs is pinned to a full commit SHA, the tag it was

@@ -601,7 +601,7 @@ lacks a key of the English one fails typecheck.
 
 ## 16. Conventional Commits
 
-Enforced by commitlint on the `commit-msg` hook, and on the commits of a pull request by CI's `commitlint` job, which also catches a `--no-verify` commit; in both, commitlint's default ignores pass, unlinted, a message that starts with `Merge`, `Revert`, `Reapply`, `fixup!`, `squash!` or `amend!`, or that is only a version number.
+Enforced by commitlint on the `commit-msg` hook, and on the commits of a pull request by CI's `commitlint` job, which also catches a `--no-verify` commit; in both, commitlint's default ignores pass, unlinted, a message with any line that starts `Merge pull request`, `Merge branch …`, `Merge … into …` or `Merge tag …`, one whose first line starts with `Merged`, `Merge remote-tracking branch`, `Automatic merge`, `Auto-merged`, `Revert`, `Reapply`, `fixup!`, `squash!` or `amend!`, or one that is only a version number.
 
 ```
 feat(items): add search filter

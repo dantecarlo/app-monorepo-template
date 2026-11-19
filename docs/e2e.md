@@ -162,8 +162,9 @@ pnpm smoke:web      # next build + next start probe
 
 `.github/workflows/ci.yml` defines eight jobs: `validate` and, on a pull request,
 `commitlint`, which lints the commits of the pull request (not a message its
-default ignores pass: one that starts with `Merge`, `Revert`, `Reapply`,
-`fixup!`, `squash!` or `amend!`, or that is only a version), both blocking; and
+default ignores pass: one with any line that starts `Merge pull request`,
+`Merge branch …` or `Merge tag …`, one whose first line starts with `Revert`,
+`Reapply`, `fixup!`, `squash!` or `amend!`, or a version alone), both blocking; and
 six runtime jobs that ship as advisory — `expo-health`, `mobile-export`,
 `web-render`, `e2e`, `responsive` and `mobile-web`, each with
 `continue-on-error: true` (for `responsive`, unless `RESPONSIVE_BLOCKING` is
