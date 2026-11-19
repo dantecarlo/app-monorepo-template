@@ -77,9 +77,9 @@ responsive:
   runs-on: ubuntu-latest
   continue-on-error: ${{ vars.RESPONSIVE_BLOCKING != 'true' }}
   steps:
-    - uses: actions/checkout@v4
-    - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
-    - uses: actions/setup-node@v4
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+    - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
       with:
         node-version: '24'
         cache: 'pnpm'
@@ -89,7 +89,7 @@ responsive:
     - run: pnpm exec playwright test --project=mobile-390 --project=tablet-768 --project=desktop-1280 --project=desktop-1920
       env:
         E2E_BASE_URL: ${{ vars.E2E_BASE_URL }}
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       if: failure()
       with:
         name: playwright-report-responsive
