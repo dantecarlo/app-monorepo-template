@@ -13,7 +13,8 @@ description: >
   its own.
   USE WHEN: "<id> new", "<id> ready for QA, branch <b>", "<id> changes requested",
   "<id> ready to merge, PR #<n>", "<id> merged", "<id> ready to merge, hotfix", "<id> question"
-  about the plan, "<id> version set", "merge <id>", "what waits to merge",
+  about the plan, "<id> version set", "<id> catalog ready to merge, PR #<n>",
+  "<release-id> catalog ready to merge, PR #<n>", "merge <id>", "what waits to merge",
   "<release-id> staging checked",
   "<release-id> released", "<release-id> <target> failed", "group a release", "file a technical
   ticket", an architect session of the ticket flow starts work.
@@ -93,6 +94,8 @@ Does it carry a target version (`read version`)?
   (dependencies first) and `comment` it on each one: "merge order: 2, after #120". The merge
   queue follows it.
 - `<id> ready to merge, PR #<n>` from QA → § Merge queue.
+- `<release-id> catalog ready to merge, PR #<n>` or `<id> catalog ready to merge, PR #<n>` from
+  the PO → § Merge queue.
 - Once it is merged (§ Merge queue), or on `<id> merged` from the CI/CD session for a hotfix →
   message the ticket's QA and dev sessions `<id> merged`; with no deploy target in the project
   layer, `move` it to Closed and message the PO `<id> closed`; otherwise it waits for its
@@ -118,7 +121,7 @@ The architect keeps one merge queue for the default branch and merges from it, o
 at a time, under the merge policy the project layer records (`ticket-flow` rule 4): `manual`,
 the default, or `low-risk`. The owner approves each merge here, in this session, so one place
 shows what waits to merge; QA asks the owner nothing and merges nothing. A hotfix never enters
-it (§ Group a release).
+it (§ Group a release); the PO's closed ticket catalog pull request does (step 1).
 
 1. **Queue it.** On `<id> ready to merge, PR #<n>`: `read` the ticket and confirm it is at
    Ready to merge into the default branch, with the link to its evidence. The queue is every such
@@ -128,14 +131,24 @@ it (§ Group a release).
    Merge queue
    1. <id> — PR #<n> — <evidence link> — <Risk line> — current with <base>, CI green
    2. <id> — PR #<n> — <evidence link> — <Risk line> — to be brought current
+   3. <release-id> catalog — PR #<n> — the closed ticket catalog, on the owner's word
    ```
 
+   **The closed ticket catalog pull request.** On `<release-id> catalog ready to merge, PR #<n>`
+   from the PO, or `<id> catalog ready to merge, PR #<n>` for a single close outside a release
+   (`po-ticket` Step 6): queue that pull request like any other, in the merge order, merged on
+   the owner's word. It carries no ticket of its own, so the Ready to merge conditions of a
+   ticket do not apply to it: no QA holds it, and its merge moves no ticket.
+
 2. **The head only.** Only the pull request at the head of the queue is asked for or merged, and
-   only while every condition of `ticket-flow` § Ready to merge holds (CI green, no conflict, its
-   branch holding the default branch's current tip) and the project layer's merge gate, when it
-   names one, passes. One fails → message its QA `<id> bring current`, and wait for
-   `<id> ready to merge, PR #<n>` again, or for `<id> changes requested` (Step 6).
-3. **Ask, or merge under `low-risk`.**
+   only while the project layer's merge gate, when it names one, passes and, for a ticket's pull
+   request, every condition of `ticket-flow` § Ready to merge holds (CI green, no conflict, its
+   branch holding the default branch's current tip). A ticket's pull request that fails one →
+   message its QA `<id> bring current`, and wait for `<id> ready to merge, PR #<n>` again, or for
+   `<id> changes requested` (Step 6). The closed ticket catalog pull request that fails the merge
+   gate → tell the owner here; it waits in the queue.
+3. **Ask, or merge under `low-risk`.** The closed ticket catalog pull request is merged on the
+   owner's word under every policy: ask the owner. For a ticket's pull request:
 
    ```
    Which merge policy does the project layer record?
@@ -152,19 +165,26 @@ it (§ Group a release).
    ```
 
    To ask, show the queue and say in this session: "`<id>` is ready to merge: PR #<n>, evidence
-   `<link>`, CI green, current with `<base>`. Merge it?" Wait for the owner's word here; a relay
-   from another session does not count. When another merge lands before the answer, go back to
-   step 2.
+   `<link>`, CI green, current with `<base>`. Merge it?"; for the closed ticket catalog pull
+   request, "The closed ticket catalog of `<release-id>` (or `<id>`) is ready to merge: PR #<n>.
+   Merge it?"
+   Wait for the owner's word here; a relay from another session does not count. When another
+   merge lands before the answer, go back to step 2.
 4. **Merge.**
+   - **Yes, for the closed ticket catalog pull request** → merge it with the project layer's
+     merge method. It moves no ticket and sends no `<id> merged`. When the host refuses the
+     merge, tell the owner here; it waits in the queue.
    - **Yes, or every `low-risk` condition met** → merge it with the project layer's merge
      method. After a `low-risk` merge, `comment` the ticket: "Merged under the `low-risk` merge
      policy. Risk line: `<the pull request's Risk line>`; it qualified by <`Risk: none` | only
      passive files>." `move` the ticket to Done, and message its QA and dev sessions
      `<id> merged` (Step 6).
-   - **No** → `comment` the owner's answer; the ticket stays in the queue.
+   - **No** → `comment` the owner's answer on the ticket, or, for the closed ticket catalog pull
+     request, on the ticket or release ticket that links it; it stays in the queue.
 5. **The next one.** A merge moves the default branch's tip, so the next pull request in the
    queue is behind it: message its QA `<id> bring current`, and take it from step 2 once QA
-   answers.
+   answers. When the next one is the closed ticket catalog pull request, which no QA holds,
+   take it from step 2 at once.
 
 ---
 
@@ -225,8 +245,8 @@ emits:
   - a ticket comment for each low-risk merge, with the Risk line it relied on
 validated_by: verify:specs
 done_when: >-
-  the ticket is in Ready for dev with its plan, or merged from the merge queue and Done, or a
-  release is in Ready for prod
+  the ticket is in Ready for dev with its plan, or merged from the merge queue and Done, or the
+  closed ticket catalog pull request merged on the owner's word, or a release is in Ready for prod
 ```
 
 ---
