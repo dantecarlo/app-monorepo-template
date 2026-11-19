@@ -7,6 +7,12 @@ description: >
   context, skips unavailable ones with an explicit logged reason, and reports a
   per-environment PASS / FAIL / SKIPPED verdict. Run AFTER validate-all; this
   skill covers only the runtime smokes that pnpm validate deliberately excludes.
+  USE WHEN: "does this render?", "is the build healthy?", "run all smokes",
+  "prove it works in the running app", "smoke the web and mobile builds",
+  before a release cut, after a native dependency, Metro, Next.js build or
+  Expo SDK change.
+  DO NOT USE: deciding a change is done against the standards (use
+  `validate-all`, which runs first), or writing unit tests (use `test`).
 ---
 
 # runtime-verify — Runtime & Render Smoke Harness
