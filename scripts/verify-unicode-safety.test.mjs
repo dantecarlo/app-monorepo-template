@@ -172,6 +172,30 @@ const runGate = ({ files, staged = Object.keys(files) }) =>
     }
   })
 
+// The environment with its search path, in any case, replaced by `path`.
+const PATH_KEY = /^path$/iu
+const envWithPath = ({ path }) => ({
+  ...Object.fromEntries(
+    Object.entries(gitFreeEnv()).filter(([key]) => !PATH_KEY.test(key))
+  ),
+  PATH: path
+})
+
+// The gate over a scratch tree that is no repository, or, with `noGit`, a
+// repository the gate cannot list because no git is on its search path.
+const runGateWithout = ({ noGit = false }) =>
+  withScratchTree({
+    files: { [DOC]: '# Notes\n' },
+    prefix: 'unicode-safety-nogit-',
+    use: ({ root }) => {
+      if (noGit) git({ args: ['init', '-q'], root })
+      return spawnSync(process.execPath, [GATE, '--root', root], {
+        encoding: 'utf8',
+        env: noGit ? envWithPath({ path: root }) : gitFreeEnv()
+      })
+    }
+  })
+
 const checks = [
   {
     name: 'a finding names the file, the line, the column and the code point',
@@ -236,6 +260,25 @@ const checks = [
       assert.equal(result.status, PASSED, result.stderr)
       assert.match(result.stdout, /1 tracked text file\(s\)/u)
       assert.match(result.stdout, /1 binary file\(s\)/u)
+    }
+  },
+  {
+    name: 'the gate with no git on its path names the cause',
+    run: () => {
+      const result = runGateWithout({ noGit: true })
+      assert.notEqual(result.status, PASSED, result.stdout)
+      assert.match(result.stderr, /verify-unicode-safety cannot run git/u)
+      assert.match(result.stderr, /ENOENT/u)
+      assert.doesNotMatch(result.stderr, /undefined/u)
+    }
+  },
+  {
+    name: 'the gate over a folder that is no repository names what git said',
+    run: () => {
+      const result = runGateWithout({})
+      assert.notEqual(result.status, PASSED, result.stdout)
+      assert.match(result.stderr, /verify-unicode-safety lists the tracked/u)
+      assert.match(result.stderr, /not a git repository/iu)
     }
   },
   {

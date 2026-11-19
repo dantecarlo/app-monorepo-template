@@ -140,6 +140,55 @@ export const CASES = [
   {
     context: one({
       step: [
+        '      - name: >-',
+        '          A long step name',
+        '        uses: actions/checkout@v4'
+      ].join('\n')
+    }),
+    expected: 1,
+    name: 'a uses: after a block scalar that opens a step is still judged'
+  },
+  {
+    context: one({
+      step: [
+        '      - if: |',
+        "          github.event_name == 'push'",
+        '        uses: actions/checkout@v4'
+      ].join('\n')
+    }),
+    expected: 1,
+    name: 'a uses: after an if: block that opens a step is still judged'
+  },
+  {
+    context: one({
+      step: ['    # Note: |', '      - uses: actions/checkout@v4'].join('\n')
+    }),
+    expected: 1,
+    name: 'a comment ending in a block indicator opens no block scalar'
+  },
+  {
+    context: one({
+      step: [
+        '      - name: x # see: >',
+        '        uses: actions/checkout@v4'
+      ].join('\n')
+    }),
+    expected: 1,
+    name: 'a trailing comment ending in a block indicator opens no block scalar'
+  },
+  {
+    context: one({ step: '      - "uses": actions/checkout@v4' }),
+    expected: 1,
+    name: 'a double-quoted uses: key is judged'
+  },
+  {
+    context: one({ step: "      - 'uses': actions/checkout@v4" }),
+    expected: 1,
+    name: 'a single-quoted uses: key is judged'
+  },
+  {
+    context: one({
+      step: [
         '      - uses: actions/checkout@v4',
         '      - uses: actions/upload-artifact@v4'
       ].join('\n')

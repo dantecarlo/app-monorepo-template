@@ -601,7 +601,7 @@ lacks a key of the English one fails typecheck.
 
 ## 16. Conventional Commits
 
-Enforced by commitlint on the `commit-msg` hook, and on every commit of a pull request by CI's `commitlint` job, which `--no-verify` cannot skip.
+Enforced by commitlint on the `commit-msg` hook, and on the commits of a pull request by CI's `commitlint` job, which also catches a `--no-verify` commit; in both, commitlint's default ignores pass, unlinted, a message that starts with `Merge`, `Revert`, `Reapply`, `fixup!`, `squash!` or `amend!`, or that is only a version number.
 
 ```
 feat(items): add search filter
@@ -787,7 +787,7 @@ This table exists so that difference is visible.
 | §15 English everywhere      | script        | `verify:english` (allowlist: §20 exception); identifier lint `warn` |
 | §15 Copy via the translator | lint + types  | `local/dependency-seam` keeps the runtimes in `src/lib/i18n/`; `TranslationKeyType` refuses a key the catalog lacks |
 | §15.1 i18n catalogs         | test + types  | `resources.constant.test.ts` + typed `resources` — casing not yet   |
-| §16 Conventional commits    | hook + CI     | `commitlint` on `commit-msg`, and the CI job `commitlint` over every commit of a pull request |
+| §16 Conventional commits    | hook + CI     | `commitlint` on `commit-msg`, and the CI job `commitlint` over the commits of a pull request; not a message its default ignores pass (`Merge`, `Revert`, `fixup!` and the like) |
 | §17 Per-feature DoD         | review        | —                                                                   |
 | §18 Validation gate         | script        | the `pnpm validate` chain                                           |
 | §19 Error surfacing         | **none yet**  | needs an `error-contract` verify script                             |

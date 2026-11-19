@@ -152,9 +152,18 @@ const listTrackedFiles = ({ root }) => {
     env: gitFreeEnv(),
     maxBuffer: GIT_OUTPUT_LIMIT
   })
+  // A git that never started (none on the path, or the output past the
+  // buffer) leaves no exit status and no stderr, only the error.
+  if (result.error) {
+    throw new Error(
+      'verify-unicode-safety cannot run git to list the tracked files: ' +
+        result.error.message
+    )
+  }
   if (result.status !== 0) {
     throw new Error(
-      `verify-unicode-safety lists the tracked files with git: ${result.stderr}`
+      `verify-unicode-safety lists the tracked files with git, which exited ${result.status}: ` +
+        result.stderr.trim()
     )
   }
   return result.stdout.split(PATH_SEPARATOR).filter((path) => path !== '')

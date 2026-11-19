@@ -161,7 +161,9 @@ pnpm smoke:web      # next build + next start probe
 ## Promotion to blocking
 
 `.github/workflows/ci.yml` defines eight jobs: `validate` and, on a pull request,
-`commitlint`, which lints every commit of the pull request, both blocking; and
+`commitlint`, which lints the commits of the pull request (not a message its
+default ignores pass: one that starts with `Merge`, `Revert`, `Reapply`,
+`fixup!`, `squash!` or `amend!`, or that is only a version), both blocking; and
 six runtime jobs that ship as advisory — `expo-health`, `mobile-export`,
 `web-render`, `e2e`, `responsive` and `mobile-web`, each with
 `continue-on-error: true` (for `responsive`, unless `RESPONSIVE_BLOCKING` is

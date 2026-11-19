@@ -12,8 +12,9 @@
 // exempt: the first is in the repository, the second is no git ref.
 //
 // The tag a SHA was resolved from stays on its line as a comment, as in
-// `# v4.4.0`, for the reader; the gate does not read it. A line inside a
-// block scalar (a `run: |` script) is text, not a key, and is not judged.
+// `# v4.4.0`, for the reader; the gate does not read it. A line inside any
+// block scalar (`|` or `>`, a `run: |` script or a `name: >-` alike) is text,
+// not a key, and is not judged; a key written in quotes (`"uses":`) is.
 //
 // Usage:
 //   node scripts/verify-workflow-pins.mjs [--root <directory>]
@@ -34,37 +35,51 @@ const WORKFLOWS = '.github/workflows'
 const WORKFLOW_FILE = /\.ya?ml$/u
 const REF_SEPARATOR = '@'
 
-// A `uses:` key, as a step's first key (`- uses:`) or as a job's.
-const USES_LINE = /^\s*(?:-\s+)?uses:(?<value>.*)$/u
+// A `uses:` key, as a step's first key (`- uses:`) or as a job's, its name
+// bare or quoted.
+const USES_LINE = /^\s*(?:-\s+)?(?<quote>["']?)uses\k<quote>:(?<value>.*)$/u
 // A YAML comment: a `#` that opens the value or follows a space.
 const COMMENT = /(?:^|\s+)#.*$/u
 const QUOTED = /^(?<quote>["'])(?<inner>.*)\k<quote>$/u
-// A key whose value is a block scalar, `|` or `>` with its indicators: the
-// lines indented under it are its text.
-const BLOCK_SCALAR = /:\s*[|>][-+\d]*\s*(?:#.*)?$/u
+// A key whose value is a block scalar, `|` or `>` with its indicators, once
+// the line's comment is stripped: the lines indented past the key's column
+// are its text.
+const BLOCK_SCALAR = /:\s*[|>][-+\d]*$/u
 const INDENT = /^\s*/u
+// Where a line's key starts: past its indent and a sequence dash, if any.
+const KEY_START = /^\s*(?:-\s+)?/u
 const FULL_SHA = /^[\da-f]{40}$/u
 const EXEMPT_PREFIXES = ['./', 'docker://']
 
 const indentOf = ({ line }) => line.match(INDENT)[0].length
 
+const keyColumnOf = ({ line }) => line.match(KEY_START)[0].length
+
+const withoutComment = ({ text }) => text.replace(COMMENT, '').trim()
+
 const valueOf = ({ raw }) => {
-  const text = raw.replace(COMMENT, '').trim()
+  const text = withoutComment({ text: raw })
   return text.match(QUOTED)?.groups.inner ?? text
 }
 
+// A comment-only line, or one whose `: |` sits in its comment, opens none.
+const opensBlock = ({ line }) => {
+  const content = withoutComment({ text: line })
+  return content !== '' && BLOCK_SCALAR.test(content)
+}
+
 // Every `uses:` key of a workflow, with its line number, skipping the text
-// of a block scalar.
+// of a block scalar: the lines indented past the column of the key that
+// opens it, `- name: >-` included, whose key starts past the dash.
 export const usesOf = ({ text }) => {
   const found = []
   let blockIndent = null
   text.split(LINE_BREAK).forEach((line, index) => {
-    const indent = indentOf({ line })
     if (blockIndent !== null) {
-      if (line.trim() === '' || indent > blockIndent) return
+      if (line.trim() === '' || indentOf({ line }) > blockIndent) return
       blockIndent = null
     }
-    if (BLOCK_SCALAR.test(line)) blockIndent = indent
+    if (opensBlock({ line })) blockIndent = keyColumnOf({ line })
     const match = line.match(USES_LINE)
     if (match) {
       found.push({
@@ -107,9 +122,10 @@ const judgeUse = ({ line, path, value }) => {
 export const gate = defineGate({
   claims:
     `every uses: of every workflow under ${WORKFLOWS}/ (.yml or .yaml), ` +
-    'a step and a reusable workflow alike, quoted or not, is pinned to a ' +
-    'full 40-character commit SHA; a local action (./) and a Docker image ' +
-    '(docker://) are exempt, and a line inside a block scalar is not a key.',
+    'a step and a reusable workflow alike, its key and its value quoted or ' +
+    'not, is pinned to a full 40-character commit SHA; a local action (./) ' +
+    'and a Docker image (docker://) are exempt, and a line inside a block ' +
+    'scalar (| or >, a comment never opening one) is not a key.',
   id: 'verify-workflow-pins',
   notCovered:
     'whether a SHA exists, is the commit its tag comment names, or comes ' +
