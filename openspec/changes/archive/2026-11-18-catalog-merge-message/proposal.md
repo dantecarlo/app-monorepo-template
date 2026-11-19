@@ -1,6 +1,6 @@
 # Proposal: the PO's closed ticket catalog pull request joins the architect's merge queue
 
-> **Status:** open
+> **Status:** archived — 2026-11-18
 
 ## Why
 

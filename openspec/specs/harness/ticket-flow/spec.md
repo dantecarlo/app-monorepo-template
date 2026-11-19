@@ -3,7 +3,7 @@
 > **Governs:** `.claude/skills/ticket-flow`, `.claude/skills/po-ticket`, `.claude/skills/refine-ticket`, `.claude/skills/dev-ticket`, `.claude/skills/qa-ticket`, `.claude/skills/release-ticket`, `.claude/skills/process-intake`, `.claude/skills/general-plan`, `scripts/verify-skills.mjs`, `scripts/verify-ticket-branch.mjs`
 > **ID prefix:** `TICKET`
 > **Derived from:** `openspec/changes/archive/2026-11-16-ticket-flow/source-spec.md`, `docs/harness.md`
-> **Verified against the code:** 2026-11-18 at `5d64e9d`
+> **Verified against the code:** 2026-11-18 at `4540b62`
 
 ## Purpose
 
@@ -36,9 +36,9 @@ Ready to merge conditions and the release stage, beside two templates in its fol
 `release.template.md`, the body of a release ticket, with the one version it ships.
 
 **Evidence:** `.claude/skills/ticket-flow/SKILL.md:29`, `.claude/skills/ticket-flow/SKILL.md:43`,
-`.claude/skills/ticket-flow/SKILL.md:83`, `.claude/skills/ticket-flow/SKILL.md:152`,
-`.claude/skills/ticket-flow/SKILL.md:317`, `.claude/skills/ticket-flow/ticket.template.md:21`,
-`.claude/skills/ticket-flow/release.template.md:11`, `scripts/verify-skills.mjs:244`
+`.claude/skills/ticket-flow/SKILL.md:83`, `.claude/skills/ticket-flow/SKILL.md:154`,
+`.claude/skills/ticket-flow/SKILL.md:323`, `.claude/skills/ticket-flow/ticket.template.md:21`,
+`.claude/skills/ticket-flow/release.template.md:11`, `scripts/verify-skills.mjs:261`
 
 #### Scenario: the contract of the repository
 
@@ -109,9 +109,9 @@ Ready to merge conditions and the release stage, beside two templates in its fol
 the first paragraph after their title, by sending the reader to `.claude/skills/ticket-flow/SKILL.md`, and hold
 neither the contract's states table nor its board operations table.
 
-**Evidence:** `.claude/skills/po-ticket/SKILL.md:20`, `.claude/skills/refine-ticket/SKILL.md:26`,
+**Evidence:** `.claude/skills/po-ticket/SKILL.md:21`, `.claude/skills/refine-ticket/SKILL.md:27`,
 `.claude/skills/dev-ticket/SKILL.md:18`, `.claude/skills/qa-ticket/SKILL.md:20`,
-`.claude/skills/release-ticket/SKILL.md:19`, `scripts/verify-skills.mjs:680`
+`.claude/skills/release-ticket/SKILL.md:19`, `scripts/verify-skills.mjs:700`
 
 #### Scenario: a role skill that does not open with the contract
 
@@ -140,8 +140,8 @@ Each of the seven ticket skills SHALL have a `SKILL.md` whose frontmatter `name`
 whose description holds `USE WHEN:` and `DO NOT USE:`, and which has a `## CONTRACT` and an
 `## Output` section.
 
-**Evidence:** `scripts/verify-skills.mjs:626`, `scripts/verify-skills.mjs:714`,
-`scripts/verify-skills.mjs:799`
+**Evidence:** `scripts/verify-skills.mjs:646`, `scripts/verify-skills.mjs:734`,
+`scripts/verify-skills.mjs:821`
 
 #### Scenario: healthy skills
 
@@ -211,7 +211,7 @@ branching model.
 
 **Evidence:** `.claude/skills/process-intake/ticket-flow.template.md:7`,
 `.claude/skills/process-intake/ticket-flow.template.md:110`,
-`.claude/skills/process-intake/ticket-flow.template.md:119`, `scripts/verify-skills.mjs:244`
+`.claude/skills/process-intake/ticket-flow.template.md:119`, `scripts/verify-skills.mjs:261`
 
 #### Scenario: no board adapter section
 
@@ -501,7 +501,7 @@ The template's `pnpm validate` SHALL run `pnpm verify:ticket-branch:test` and ne
 and no ticket in flight reserves a file it reserves, the architect sequencing two such tickets by
 making the second depend on the first or re-planning one.
 
-**Evidence:** `.claude/skills/refine-ticket/SKILL.md:67`, `.claude/skills/ticket-flow/SKILL.md:83`
+**Evidence:** `.claude/skills/refine-ticket/SKILL.md:68`, `.claude/skills/ticket-flow/SKILL.md:83`
 
 #### Scenario: a dependency still in dev
 
@@ -526,8 +526,8 @@ red check. The architect merges it (TICKET-25). The structural check SHALL hold 
 
 **Evidence:** `.claude/skills/qa-ticket/SKILL.md:66`, `.claude/skills/qa-ticket/SKILL.md:85`,
 `.claude/skills/qa-ticket/SKILL.md:89`, `.claude/skills/qa-ticket/SKILL.md:105`,
-`.claude/skills/ticket-flow/SKILL.md:96`, `.claude/skills/ticket-flow/SKILL.md:292`,
-`scripts/verify-skills.mjs:191`, `scripts/verify-skills.mjs:336`, `scripts/verify-skills.mjs:522`
+`.claude/skills/ticket-flow/SKILL.md:96`, `.claude/skills/ticket-flow/SKILL.md:294`,
+`scripts/verify-skills.mjs:191`, `scripts/verify-skills.mjs:356`, `scripts/verify-skills.mjs:542`
 
 #### Scenario: the skills of the repository
 
@@ -619,7 +619,7 @@ ticket.
 **Evidence:** `.claude/skills/release-ticket/SKILL.md:89`,
 `.claude/skills/release-ticket/SKILL.md:118`, `.claude/skills/release-ticket/SKILL.md:123`,
 `.claude/skills/release-ticket/SKILL.md:146`, `.claude/skills/release-ticket/SKILL.md:158`,
-`.claude/skills/refine-ticket/SKILL.md:171`
+`.claude/skills/refine-ticket/SKILL.md:191`
 
 #### Scenario: the branching is gone
 
@@ -651,8 +651,8 @@ touches has checked it on staging or preview, with evidence on the release ticke
 Ready for prod row and § Release stage, `release-ticket` Step 1 and `release.template.md` SHALL
 state the same rule and the same exception.
 
-**Evidence:** `.claude/skills/refine-ticket/SKILL.md:187`, `.claude/skills/ticket-flow/SKILL.md:99`,
-`.claude/skills/ticket-flow/SKILL.md:325`, `.claude/skills/release-ticket/SKILL.md:35`,
+**Evidence:** `.claude/skills/refine-ticket/SKILL.md:207`, `.claude/skills/ticket-flow/SKILL.md:99`,
+`.claude/skills/ticket-flow/SKILL.md:331`, `.claude/skills/release-ticket/SKILL.md:35`,
 `.claude/skills/ticket-flow/release.template.md:14`
 
 #### Scenario: an area not checked on staging
@@ -723,9 +723,9 @@ the PO confirms the architect's proposal on the ticket. A move SHALL change the 
 general plan names no open ticket (TICKET-29), so neither `po-ticket` § Step 5 nor `ticket-flow`
 § Target version edits it.
 
-**Evidence:** `.claude/skills/po-ticket/SKILL.md:56`, `.claude/skills/po-ticket/SKILL.md:71`,
-`.claude/skills/po-ticket/SKILL.md:77`, `.claude/skills/refine-ticket/SKILL.md:37`,
-`.claude/skills/ticket-flow/SKILL.md:254`, `.claude/skills/ticket-flow/SKILL.md:268`
+**Evidence:** `.claude/skills/po-ticket/SKILL.md:57`, `.claude/skills/po-ticket/SKILL.md:72`,
+`.claude/skills/po-ticket/SKILL.md:78`, `.claude/skills/refine-ticket/SKILL.md:38`,
+`.claude/skills/ticket-flow/SKILL.md:256`, `.claude/skills/ticket-flow/SKILL.md:270`
 
 #### Scenario: the plan cannot meet the version
 
@@ -774,13 +774,13 @@ submission and every other irreversible step SHALL stay the owner's word under e
 `ticket-flow` rule 4 and `release-ticket` say; and under neither policy SHALL the architect or QA
 merge a pull request into the production branch (TICKET-24).
 
-**Evidence:** `.claude/skills/ticket-flow/SKILL.md:180`,
-`.claude/skills/refine-ticket/SKILL.md:115`, `.claude/skills/refine-ticket/SKILL.md:138`,
+**Evidence:** `.claude/skills/ticket-flow/SKILL.md:182`,
+`.claude/skills/refine-ticket/SKILL.md:118`, `.claude/skills/refine-ticket/SKILL.md:150`,
 `.claude/skills/process-intake/SKILL.md:69`,
 `.claude/skills/process-intake/ticket-flow.template.md:66`,
 `.claude/skills/process-intake/ticket-flow.template.md:68`,
 `.claude/skills/release-ticket/SKILL.md:24`, `scripts/verify-skills.mjs:135`,
-`scripts/verify-skills.mjs:230`, `scripts/verify-skills.mjs:328`, `scripts/verify-skills.mjs:536`
+`scripts/verify-skills.mjs:240`, `scripts/verify-skills.mjs:347`, `scripts/verify-skills.mjs:556`
 
 #### Scenario: the skills of the repository
 
@@ -1006,9 +1006,9 @@ block, and the Ticket identity section of `.claude/skills/process-intake/ticket-
 to hold one `json ticket-identity` block that the branch check reads with no finding and whose
 fields are the branch check's defaults.
 
-**Evidence:** `scripts/verify-skills.mjs:235`, `scripts/verify-skills.mjs:299`,
-`scripts/verify-skills.mjs:399`, `scripts/verify-skills.mjs:428`, `scripts/verify-skills.mjs:569`,
-`.claude/skills/ticket-flow/SKILL.md:210`, `.claude/skills/ticket-flow/SKILL.md:216`,
+**Evidence:** `scripts/verify-skills.mjs:252`, `scripts/verify-skills.mjs:317`,
+`scripts/verify-skills.mjs:419`, `scripts/verify-skills.mjs:448`, `scripts/verify-skills.mjs:589`,
+`.claude/skills/ticket-flow/SKILL.md:212`, `.claude/skills/ticket-flow/SKILL.md:218`,
 `.claude/skills/process-intake/SKILL.md:85`,
 `.claude/skills/process-intake/ticket-flow.template.md:94`
 
@@ -1084,7 +1084,7 @@ QA may have pushed to it. The structural check SHALL hold `qa-ticket` § Step 2 
 
 **Evidence:** `.claude/skills/qa-ticket/SKILL.md:39`, `.claude/skills/qa-ticket/SKILL.md:79`,
 `.claude/skills/qa-ticket/SKILL.md:114`, `.claude/skills/dev-ticket/SKILL.md:94`,
-`scripts/verify-skills.mjs:185`, `scripts/verify-skills.mjs:349`
+`scripts/verify-skills.mjs:185`, `scripts/verify-skills.mjs:369`
 
 #### Scenario: the skills of the repository
 
@@ -1164,10 +1164,10 @@ the session that enters Done for a hotfix. The structural check SHALL hold `qa-t
 `<id> ready to merge, hotfix`, and `release-ticket` § Hotfix to say that QA leaves it at Ready to
 merge.
 
-**Evidence:** `.claude/skills/qa-ticket/SKILL.md:98`, `.claude/skills/refine-ticket/SKILL.md:100`,
-`.claude/skills/refine-ticket/SKILL.md:173`, `.claude/skills/release-ticket/SKILL.md:158`,
+**Evidence:** `.claude/skills/qa-ticket/SKILL.md:98`, `.claude/skills/refine-ticket/SKILL.md:103`,
+`.claude/skills/refine-ticket/SKILL.md:193`, `.claude/skills/release-ticket/SKILL.md:158`,
 `.claude/skills/ticket-flow/SKILL.md:97`, `.claude/skills/ticket-flow/SKILL.md:133`,
-`scripts/verify-skills.mjs:198`, `scripts/verify-skills.mjs:352`
+`scripts/verify-skills.mjs:198`, `scripts/verify-skills.mjs:372`
 
 #### Scenario: the skills of the repository
 
@@ -1230,31 +1230,36 @@ merge.
 ### Requirement: TICKET-25 — The architect keeps the merge queue and merges one pull request at a time
 
 `refine-ticket` § Merge queue SHALL keep one merge queue: every pull request at Ready to merge
-into the default branch, each with its evidence link, in the merge order the architect sets,
-shown to the owner in the architect's session. The architect SHALL ask for or merge only the pull
-request at the head of the queue, and only while every Ready to merge condition holds (CI green,
-no conflict, the branch holding the default branch's current tip) and the project layer's merge
-gate, when it names one, passes; a pull request that fails one SHALL go back to its QA as
+into the default branch, each with its evidence link, and the PO's closed ticket catalog pull
+request (TICKET-31), in the merge order the architect sets, shown to the owner in the architect's
+session. The architect SHALL ask for or merge only the pull request at the head of the queue, and
+only while the project layer's merge gate, when it names one, passes and, for a ticket's pull
+request, every Ready to merge condition holds (CI green, no conflict, the branch holding the
+default branch's current tip); a ticket's pull request that fails one SHALL go back to its QA as
 `<id> bring current`. It SHALL merge on the owner's word, asked in the architect's own session,
-under the `manual` policy or when the project layer records none; and, under `low-risk`, without
-asking only a pull request whose Risk line is `Risk: none` or that changes only passive files, and
-whose merge sets off no irreversible step, recording on the ticket that it merged under
-`low-risk` and the Risk line it relied on. A pull request that fails one condition SHALL wait for
-the owner, as under `manual`. After each merge the architect SHALL move the ticket to Done,
-message the ticket's QA and dev sessions `<id> merged`, and message the QA of the next pull
-request in the queue `<id> bring current`. `ticket-flow`'s states table SHALL name the architect
-as the session that enters Done, a hotfix aside (TICKET-24), and its § Messages SHALL carry
-`<id> ready to merge, PR #<n>`, from QA to the architect, and `<id> bring current`, from the
-architect to QA. The structural check SHALL hold `refine-ticket` to have a § Merge queue.
+under the `manual` policy or when the project layer records none, and the closed ticket catalog
+pull request under every policy; and, under `low-risk`, without asking only a ticket's pull
+request whose Risk line is `Risk: none` or that changes only passive files, and whose merge sets
+off no irreversible step, recording on the ticket that it merged under `low-risk` and the Risk
+line it relied on. A pull request that fails one condition SHALL wait for the owner, as under
+`manual`. After each merge of a ticket's pull request the architect SHALL move the ticket to
+Done and message the ticket's QA and dev sessions `<id> merged`, and after every merge it SHALL
+message the QA of the next pull request in the queue `<id> bring current`, unless that one is the
+closed ticket catalog pull request, which no QA holds.
+`ticket-flow`'s states table SHALL name the architect as the session that enters Done, a hotfix
+aside (TICKET-24), and its § Messages SHALL carry `<id> ready to merge, PR #<n>`, from QA to the
+architect, and `<id> bring current`, from the architect to QA. The structural check SHALL hold
+`refine-ticket` to have a § Merge queue.
 
-**Evidence:** `.claude/skills/refine-ticket/SKILL.md:88`,
-`.claude/skills/refine-ticket/SKILL.md:115`, `.claude/skills/refine-ticket/SKILL.md:123`,
-`.claude/skills/refine-ticket/SKILL.md:133`, `.claude/skills/refine-ticket/SKILL.md:138`,
-`.claude/skills/refine-ticket/SKILL.md:158`, `.claude/skills/refine-ticket/SKILL.md:165`,
+**Evidence:** `.claude/skills/refine-ticket/SKILL.md:89`,
+`.claude/skills/refine-ticket/SKILL.md:118`, `.claude/skills/refine-ticket/SKILL.md:124`,
+`.claude/skills/refine-ticket/SKILL.md:126`, `.claude/skills/refine-ticket/SKILL.md:137`,
+`.claude/skills/refine-ticket/SKILL.md:143`, `.claude/skills/refine-ticket/SKILL.md:150`,
+`.claude/skills/refine-ticket/SKILL.md:173`, `.claude/skills/refine-ticket/SKILL.md:184`,
 `.claude/skills/ticket-flow/SKILL.md:97`, `.claude/skills/ticket-flow/SKILL.md:108`,
 `.claude/skills/ticket-flow/SKILL.md:132`, `.claude/skills/ticket-flow/SKILL.md:134`,
-`.claude/skills/ticket-flow/SKILL.md:305`, `scripts/verify-skills.mjs:170`,
-`scripts/verify-skills.mjs:326`
+`.claude/skills/ticket-flow/SKILL.md:307`, `.claude/skills/ticket-flow/SKILL.md:314`,
+`scripts/verify-skills.mjs:170`, `scripts/verify-skills.mjs:345`
 
 #### Scenario: the skills of the repository
 
@@ -1316,12 +1321,12 @@ runs `set version`. `ticket-flow` § Target version SHALL say where the rule is 
 gate reads the board. `ticket.template.md` SHALL mark the version required, and the structural
 check SHALL hold its Target version section to name `**Version (required):**`.
 
-**Evidence:** `.claude/skills/ticket-flow/SKILL.md:91`, `.claude/skills/ticket-flow/SKILL.md:254`,
-`.claude/skills/ticket-flow/SKILL.md:256`, `.claude/skills/po-ticket/SKILL.md:48`,
-`.claude/skills/po-ticket/SKILL.md:58`, `.claude/skills/refine-ticket/SKILL.md:37`,
-`.claude/skills/refine-ticket/SKILL.md:39`, `.claude/skills/refine-ticket/SKILL.md:70`,
-`.claude/skills/refine-ticket/SKILL.md:109`, `.claude/skills/ticket-flow/ticket.template.md:23`,
-`scripts/verify-skills.mjs:221`, `scripts/verify-skills.mjs:260`
+**Evidence:** `.claude/skills/ticket-flow/SKILL.md:91`, `.claude/skills/ticket-flow/SKILL.md:256`,
+`.claude/skills/ticket-flow/SKILL.md:258`, `.claude/skills/po-ticket/SKILL.md:49`,
+`.claude/skills/po-ticket/SKILL.md:59`, `.claude/skills/refine-ticket/SKILL.md:38`,
+`.claude/skills/refine-ticket/SKILL.md:40`, `.claude/skills/refine-ticket/SKILL.md:71`,
+`.claude/skills/refine-ticket/SKILL.md:112`, `.claude/skills/ticket-flow/ticket.template.md:23`,
+`scripts/verify-skills.mjs:231`, `scripts/verify-skills.mjs:277`
 
 #### Scenario: the skills of the repository
 
@@ -1383,11 +1388,11 @@ serves as staging. The structural check SHALL hold the template's Branching mode
 
 **Evidence:** `.claude/skills/process-intake/ticket-flow.template.md:119`,
 `.claude/skills/process-intake/ticket-flow.template.md:123`,
-`.claude/skills/process-intake/SKILL.md:105`, `.claude/skills/ticket-flow/SKILL.md:337`,
+`.claude/skills/process-intake/SKILL.md:105`, `.claude/skills/ticket-flow/SKILL.md:343`,
 `.claude/skills/release-ticket/SKILL.md:108`, `.claude/skills/release-ticket/SKILL.md:123`,
 `.claude/skills/dev-ticket/SKILL.md:50`, `.claude/skills/qa-ticket/SKILL.md:85`,
 `.claude/skills/ticket-flow/release.template.md:15`, `scripts/verify-skills.mjs:179`,
-`scripts/verify-skills.mjs:382`
+`scripts/verify-skills.mjs:402`
 
 #### Scenario: the skills of the repository
 
@@ -1431,7 +1436,7 @@ both sections to name `source of every open ticket`.
 **Evidence:** `.claude/skills/ticket-flow/SKILL.md:48`,
 `.claude/skills/process-intake/ticket-flow.template.md:11`,
 `.claude/skills/process-intake/SKILL.md:58`, `scripts/verify-skills.mjs:208`,
-`scripts/verify-skills.mjs:296`, `scripts/verify-skills.mjs:401`
+`scripts/verify-skills.mjs:313`, `scripts/verify-skills.mjs:421`
 
 #### Scenario: the skills of the repository
 
@@ -1476,10 +1481,10 @@ records the closed tickets in that catalog. The structural check SHALL hold `po-
 § Step 6 — Record the closed tickets, naming `§ Closed Ticket Catalog` and
 `one pull request per close or release`.
 
-**Evidence:** `.claude/skills/po-ticket/SKILL.md:82`, `.claude/skills/po-ticket/SKILL.md:88`,
-`.claude/skills/po-ticket/SKILL.md:91`, `.claude/skills/ticket-flow/SKILL.md:98`,
-`.claude/skills/ticket-flow/SKILL.md:101`, `.claude/skills/ticket-flow/SKILL.md:159`,
-`scripts/verify-skills.mjs:214`, `scripts/verify-skills.mjs:317`
+**Evidence:** `.claude/skills/po-ticket/SKILL.md:83`, `.claude/skills/po-ticket/SKILL.md:89`,
+`.claude/skills/po-ticket/SKILL.md:92`, `.claude/skills/ticket-flow/SKILL.md:98`,
+`.claude/skills/ticket-flow/SKILL.md:101`, `.claude/skills/ticket-flow/SKILL.md:161`,
+`scripts/verify-skills.mjs:214`, `scripts/verify-skills.mjs:335`
 
 #### Scenario: the skills of the repository
 
@@ -1613,3 +1618,80 @@ validator with a ticket flow and without one.
 - **THEN** it exits 0: nothing tells an open ticket from a closed one without the board
 - **Test:** Not covered — only the review of the plan's pull request reads which tickets it names;
   no gate reads the board
+
+### Requirement: TICKET-31 — The PO's closed ticket catalog pull request joins the architect's merge queue
+
+Once the pull request of `po-ticket` § Step 6 — Record the closed tickets is open, the PO SHALL
+message the architect `<release-id> catalog ready to merge, PR #<n>` for the close of a release,
+or `<id> catalog ready to merge, PR #<n>` for a single close outside a release. `ticket-flow`
+§ Messages SHALL carry both lines, from the PO to the architect. `refine-ticket` § Merge queue
+SHALL take that pull request into the merge queue like any other, in the merge order, and SHALL
+merge it only on the owner's word, asked in the architect's session, under every merge policy. It
+carries no ticket of its own, so the architect SHALL hold it to none of a ticket's Ready to merge
+conditions: no QA session is told `<id> bring current` for it, and its merge moves no ticket and
+sends no `<id> merged`. When the project layer's merge gate fails for it, or the host refuses its
+merge, the architect SHALL tell the owner, and the pull request SHALL wait in the queue. The
+structural check SHALL hold `ticket-flow` § Messages, `po-ticket` § Step 6 — Record the closed
+tickets and `refine-ticket` § Merge queue each to name both lines.
+
+**Evidence:** `.claude/skills/po-ticket/SKILL.md:93`, `.claude/skills/po-ticket/SKILL.md:96`,
+`.claude/skills/po-ticket/SKILL.md:97`, `.claude/skills/po-ticket/SKILL.md:99`,
+`.claude/skills/po-ticket/SKILL.md:115`, `.claude/skills/ticket-flow/SKILL.md:137`,
+`.claude/skills/ticket-flow/SKILL.md:147`, `.claude/skills/ticket-flow/SKILL.md:314`,
+`.claude/skills/refine-ticket/SKILL.md:97`, `.claude/skills/refine-ticket/SKILL.md:124`,
+`.claude/skills/refine-ticket/SKILL.md:137`, `.claude/skills/refine-ticket/SKILL.md:138`,
+`.claude/skills/refine-ticket/SKILL.md:148`, `.claude/skills/refine-ticket/SKILL.md:150`,
+`.claude/skills/refine-ticket/SKILL.md:174`, `.claude/skills/refine-ticket/SKILL.md:176`,
+`.claude/skills/refine-ticket/SKILL.md:182`, `.claude/skills/refine-ticket/SKILL.md:186`,
+`scripts/verify-skills.mjs:222`, `scripts/verify-skills.mjs:244`, `scripts/verify-skills.mjs:315`,
+`scripts/verify-skills.mjs:339`, `scripts/verify-skills.mjs:348`
+
+#### Scenario: the skills of the repository
+
+- **GIVEN** the repository's seven ticket skills
+- **WHEN** `pnpm verify:skills:test` runs
+- **THEN** the structural check finds nothing: the contract carries both catalog lines, the PO
+  sends them and the architect's merge queue takes them
+- **Test:** `scripts/verify-skills.test.mjs` › "the seven ticket skills of the repository pass"
+
+#### Scenario: the contract carries no catalog line
+
+- **GIVEN** a `ticket-flow` whose § Messages names neither
+  `<release-id> catalog ready to merge, PR #<n>` nor `<id> catalog ready to merge, PR #<n>`
+- **WHEN** the structural check runs
+- **THEN** it reports two findings, one per line
+- **Test:** `scripts/verify-skills.test.mjs` › "a ticket-flow whose messages name no catalog line is refused"
+
+#### Scenario: the PO's close step sends no catalog line
+
+- **GIVEN** a `po-ticket` whose § Step 6 — Record the closed tickets names neither catalog line
+- **WHEN** the structural check runs
+- **THEN** it reports two findings, one per line
+- **Test:** `scripts/verify-skills.test.mjs` › "a po-ticket whose close step sends no catalog message is refused"
+
+#### Scenario: the merge queue takes no catalog pull request
+
+- **GIVEN** a `refine-ticket` whose § Merge queue names neither catalog line
+- **WHEN** the structural check runs
+- **THEN** it reports two findings, one per line
+- **Test:** `scripts/verify-skills.test.mjs` › "a refine-ticket whose merge queue takes no catalog pull request is refused"
+
+#### Scenario: a release's catalog under `low-risk`
+
+- **GIVEN** a project whose layer records `low-risk`, and the PO's catalog pull request of a
+  release, `PR #88`, that changes only docs/GENERAL_PLAN.md
+- **WHEN** the PO opens it and the architect reaches it at the head of the queue
+- **THEN** the PO messages the architect `<release-id> catalog ready to merge, PR #88`, the
+  architect queues it in the merge order and asks the owner, merges it only on the owner's word,
+  moves no ticket and sends no `<id> merged`
+- **Test:** Not covered — the rule is a procedure the PO and architect sessions follow; no runner
+  drives a session
+
+#### Scenario: a single close outside a release
+
+- **GIVEN** a project whose layer declares no deploy target, and the architect's `<id> closed`
+- **WHEN** the PO opens the catalog pull request of that close
+- **THEN** it messages the architect `<id> catalog ready to merge, PR #<n>`, and the pull request
+  joins the merge queue
+- **Test:** Not covered — the rule is a procedure the PO and architect sessions follow; no runner
+  drives a session
