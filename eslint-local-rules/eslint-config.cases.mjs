@@ -13,6 +13,7 @@
 // ---------------------------------------------------------------------------
 
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -331,21 +332,66 @@ const CONFIG_SOURCES = [
 ]
 const NAMED_APP_RE = /apps(?:\/|\\\/)(?:\(\?:)?[a-z]/u
 
-const registerNamingCase = () =>
+// The gates that walk the apps, which read them from the workspace list of
+// scripts/eslint-config.detect.mjs.
+const GATE_SOURCES = [
+  'scripts/verify-allowlist-freshness.mjs',
+  'scripts/verify-maps.mjs',
+  'scripts/verify-tests.mjs'
+]
+
+const namedApps = ({ paths }) =>
+  paths.flatMap((path) =>
+    readFileSync(join(REPO_ROOT, path), 'utf8')
+      .split(/\r?\n/u)
+      .flatMap((line, index) =>
+        NAMED_APP_RE.test(line) ? [`${path}:${index + 1}`] : []
+      )
+  )
+
+const registerNamingCases = () => {
   test('no ESLint config or rule names an app', () => {
-    const named = CONFIG_SOURCES.flatMap((path) =>
-      readFileSync(join(REPO_ROOT, path), 'utf8')
-        .split(/\r?\n/u)
-        .flatMap((line, index) =>
-          NAMED_APP_RE.test(line) ? [`${path}:${index + 1}`] : []
-        )
+    assert.deepEqual(namedApps({ paths: CONFIG_SOURCES }), [])
+  })
+
+  test('no gate that walks the apps names one', () => {
+    assert.deepEqual(namedApps({ paths: GATE_SOURCES }), [])
+  })
+}
+
+const VERIFY_MAPS = join(REPO_ROOT, 'scripts/verify-maps.mjs')
+// A screen with a magic number, in an app and in a folder that is no app.
+const MAGIC_SCREEN =
+  'export const wait = () => setTimeout(() => {}, 800)\n'
+
+const registerGateWalkCase = () =>
+  test('verify:maps walks every app of the workspace list, and no folder that is no app', () => {
+    const result = withScratchTree({
+      files: {
+        'apps/admin/package.json': manifest({ name: '@app/admin' }),
+        'apps/admin/src/screens/Admin/Admin.screen.tsx': MAGIC_SCREEN,
+        'apps/notes/src/screens/Notes/Notes.screen.tsx': MAGIC_SCREEN,
+        'docs/maps/global-map.md': '# Map\n'
+      },
+      prefix: SCRATCH_PREFIX,
+      use: ({ root }) =>
+        spawnSync(process.execPath, [VERIFY_MAPS, '--root', root], {
+          encoding: 'utf8'
+        })
+    })
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stderr, /Admin\.screen\.tsx:1 -> 800/u)
+    assert.match(
+      result.stderr,
+      /"apps\/admin\/src\/screens\/Admin" exists on disk but is not referenced/u
     )
-    assert.deepEqual(named, [])
+    assert.doesNotMatch(result.stderr, /notes/iu)
   })
 
 export const registerEslintConfigCases = () => {
   registerDetectionCases()
   registerFixtureCases()
   registerTokensCase()
-  registerNamingCase()
+  registerNamingCases()
+  registerGateWalkCase()
 }

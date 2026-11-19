@@ -38,7 +38,7 @@ const WEB_PACKAGE = 'apps/web/package.json'
 const MOBILE_PACKAGE = 'apps/mobile/package.json'
 const WEB_MANIFEST = JSON.stringify({ name: '@app/web' })
 const MOBILE_MANIFEST = JSON.stringify({
-  dependencies: { 'expo-router': '*' },
+  dependencies: { expo: '*', 'expo-router': '*' },
   name: '@app/mobile'
 })
 
@@ -67,25 +67,27 @@ const ROUTE_INDEX = 'apps/mobile/src/app/index.tsx'
 const ROUTE_LOGIN = 'apps/mobile/src/app/login.tsx'
 const NESTED_LAYOUT = 'apps/mobile/src/app/(auth)/_layout.tsx'
 
-const tree = (files) =>
+// `manifests` adds or replaces a package.json, by path, beside the two apps.
+const tree = ({ files, manifests = {} }) =>
   Object.fromEntries([
     [WEB_PACKAGE, WEB_MANIFEST],
     [MOBILE_PACKAGE, MOBILE_MANIFEST],
+    ...Object.entries(manifests),
     ...files.map((path) => [path, path.includes('.test.') ? TEST : UNIT])
   ])
 
 const walk =
-  ({ files, frozen = [] }) =>
+  ({ files, frozen = [], manifests }) =>
   () =>
     withScratchTree({
-      files: tree(files),
+      files: tree({ files, manifests }),
       prefix: 'verify-tests-',
       use: ({ root }) => collectContext({ frozen, root })
     })
 
-const runGate = ({ files }) =>
+const runGate = ({ files, manifests }) =>
   withScratchTree({
-    files: tree(files),
+    files: tree({ files, manifests }),
     prefix: 'verify-tests-run-',
     use: ({ root }) =>
       spawnSync(process.execPath, [GATE, '--root', root], {
@@ -246,6 +248,22 @@ export const CASES = [
   },
   {
     context: walk({
+      files: [
+        'apps/kiosk/src/components/ui/Chip/Chip.component.tsx',
+        'apps/kiosk/src/hooks/useScan.hook.ts'
+      ],
+      manifests: {
+        'apps/kiosk/package.json': JSON.stringify({
+          dependencies: { expo: '*' },
+          name: '@app/kiosk'
+        })
+      }
+    }),
+    expected: 0,
+    name: 'the components and hooks of any app that declares expo stay exempt'
+  },
+  {
+    context: walk({
       files: ['packages/core/src/utils/scrubPII.helper.ts']
     }),
     expected: 0,
@@ -370,6 +388,20 @@ const checks = [
       assert.match(
         result.stderr,
         /createQueryClient\.helper\.test\.ts sits beside its unit/u
+      )
+    }
+  },
+  {
+    name: 'an app package.json that cannot be parsed fails the gate, naming it',
+    run: () => {
+      const result = runGate({
+        files: [HELPER, HELPER_OWN],
+        manifests: { 'apps/broken/package.json': '{' }
+      })
+      assert.equal(result.status, FAILED, result.stderr)
+      assert.match(
+        result.stderr,
+        /^verify-tests: apps\/broken\/package\.json cannot be parsed: /u
       )
     }
   },

@@ -6,8 +6,8 @@
 // The rule (owner decision 57, 2026-11-15): `X/Y.<ext>` is tested by
 // `X/__tests__/Y.test.<ext>`, the test carrying the unit's stem, whether `X`
 // is a block folder, a hook's own folder, a folder of plain units or a
-// workspace folder outside `src/` (`apps/web/next.config.ts` by
-// `apps/web/__tests__/next.config.test.ts`). An index file is a unit like any
+// workspace folder outside `src/` (`apps/<app>/next.config.ts` by
+// `apps/<app>/__tests__/next.config.test.ts`). An index file is a unit like any
 // other. In an Expo Router tree (the `src/app/` of a workspace that depends on
 // `expo-router`) a test is named after its route file as `<route>.route`:
 // `_layout.tsx` by `layout.route.test.tsx`, `index.tsx` by
@@ -34,6 +34,10 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, posix, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
+import {
+  readFrameworks,
+  WORKSPACE_GROUPS
+} from './eslint-config.detect.mjs'
 import { defineGate, reportGate } from './gate/gate.mjs'
 
 // Repo-relative paths are POSIX on every platform.
@@ -50,7 +54,6 @@ const SOURCE_FOLDER = 'src'
 const ROUTE_FOLDER = 'app'
 const ROUTER_PACKAGE = 'expo-router'
 const ROUTE_PRIVATE_PREFIX = '_'
-const WORKSPACE_GROUPS = ['apps', 'packages']
 // The presence check judges the apps' `src/`; packages hold no tracked units
 // it requires a test for.
 const PRESENCE_GROUP = 'apps'
@@ -85,17 +88,17 @@ const TRACKED_SUFFIXES = [
 ]
 
 // Documented exemptions from the presence check. Keep this list SMALL and
-// justified — every entry is a gap. Mobile `.component.tsx` and `.hook.ts`
-// units are exempt: their render tests are written where the React Native
-// mocks under src/test/ cover them, and nothing yet requires one per unit.
-// Mobile `.service`, `.adapter` and `.helper` units, and every web unit, are
-// required.
-const isMobile = (path) => path.startsWith('apps/mobile/')
+// justified — every entry is a gap. The `.component.tsx` and `.hook.ts`
+// units of an app that declares expo, as scripts/eslint-config.detect.mjs
+// reads it, are exempt: their render tests are written where the React
+// Native mocks under src/test/ cover them, and nothing yet requires one per
+// unit. Its `.service`, `.adapter` and `.helper` units, and every unit of
+// any other app, are required.
+const EXEMPT_SUFFIXES = ['.component.tsx', '.hook.ts']
 
-const EXEMPT_PREDICATES = [
-  (path) => isMobile(path) && path.endsWith('.component.tsx'),
-  (path) => isMobile(path) && path.endsWith('.hook.ts')
-]
+const isExempt = ({ expoApps, path }) =>
+  expoApps.some((app) => path.startsWith(`${app}/`)) &&
+  EXEMPT_SUFFIXES.some((suffix) => path.endsWith(suffix))
 
 // Frozen exceptions: tests the location rule lets stay where they are. Each
 // entry names its path and the reason it cannot move yet; an entry without a
@@ -348,7 +351,7 @@ export const classifyTests = ({ files, routeTrees }) => {
   }
 }
 
-const isPresenceUnit = (path) =>
+const isPresenceUnit = ({ expoApps, path }) =>
   path.startsWith(`${PRESENCE_GROUP}/`) &&
   segmentsOf(path)[2] === SOURCE_FOLDER &&
   TRACKED_SUFFIXES.some((suffix) => path.endsWith(suffix)) &&
@@ -356,11 +359,11 @@ const isPresenceUnit = (path) =>
   !segmentsOf(path).includes(TESTS_FOLDER) &&
   !isSharedInfrastructure(path) &&
   !segmentsOf(path).includes('test') &&
-  !EXEMPT_PREDICATES.some((predicate) => predicate(path))
+  !isExempt({ expoApps, path })
 
 // A unit is satisfied by a test of its stem in its own `__tests__/`, or by one
 // beside it, which the location check reports instead.
-const missingTests = ({ files }) => {
+const missingTests = ({ expoApps = [], files }) => {
   const present = new Set(files)
   const testNames = new Map()
   files
@@ -375,7 +378,7 @@ const missingTests = ({ files }) => {
     (testNames.get(folder) ?? []).some(
       (name) => testParts(name).stem === stem
     )
-  const units = files.filter(isPresenceUnit)
+  const units = files.filter((path) => isPresenceUnit({ expoApps, path }))
   return {
     findings: units
       .filter((path) => present.has(path))
@@ -453,16 +456,16 @@ export const gate = defineGate({
   notCovered:
     'the root tooling tests under scripts/ and eslint-local-rules/, which keep their own layout; ' +
     'the e2e specs and the SQL tests; whether a test named after a unit tests that unit; a unit ' +
-    'with two tests under different names, the second named after another file; mobile ' +
-    'components and hooks, which the presence check exempts; and package units, which it does ' +
-    'not judge.',
-  run: ({ files, frozen, routeTrees }) => {
+    'with two tests under different names, the second named after another file; the ' +
+    'components and hooks of an app that declares expo, which the presence check exempts; and ' +
+    'package units, which it does not judge.',
+  run: ({ expoApps, files, frozen, routeTrees }) => {
     const { misplaced } = classifyTests({ files, routeTrees })
     const exempt = exemptPaths({ frozen })
     return [
       ...frozenFindings({ frozen, misplaced }),
       ...misplaced.filter(({ path }) => !exempt.has(path)),
-      ...missingTests({ files }).findings
+      ...missingTests({ expoApps, files }).findings
     ]
   }
 })
@@ -547,6 +550,7 @@ export const collectContext = ({ frozen, root }) => {
     .map(toPosix)
     .sort()
   return {
+    expoApps: readFrameworks({ root }).expo,
     files,
     frozen: frozen ?? frozenFor({ root }),
     routeTrees: routeTreesOf({ root, workspaces }),
@@ -564,7 +568,14 @@ const main = () => {
     process.exitCode = 1
     return
   }
-  const context = collectContext({ root })
+  let context
+  try {
+    context = collectContext({ root })
+  } catch (error) {
+    console.error(`verify-tests: ${error.message}`)
+    process.exitCode = 1
+    return
+  }
   const { tests } = classifyTests(context)
   const { units } = missingTests(context)
   reportGate({

@@ -30,12 +30,16 @@
 //       Fix: move color values into packages/tokens, a *.constant.ts, or a
 //       *.style.ts.
 //
-//   (D) Reverse map coverage. For each app root (apps/web, apps/mobile),
-//       lists PascalCase child directories under src/services/<Domain> and
+//   (D) Reverse map coverage. For each app, lists PascalCase child
+//       directories under src/services/<Domain> and
 //       src/screens/<Screen>. Each on-disk domain/screen MUST be referenced
 //       by at least one path substring in docs/maps/global-map.md. Catches
 //       real domains/screens that were added to the codebase but never
 //       documented in the map (the inverse of check A).
+//
+// The apps are the ones the ESLint config reads: every folder under apps/
+// that holds a package.json (scripts/eslint-config.detect.mjs). Check (B)
+// and (C) scan the src/ of each, and every package.
 //
 // Why the TS AST and not a regex: a line scanner cannot tell `borderRadius: 8`
 // (object value, allowed) from `setTimeout(fn, 800)` (standalone, magic), nor
@@ -44,20 +48,30 @@
 // (typescript is already a devDependency).
 //
 // Usage:
-//   node scripts/verify-maps.mjs              # full repo
-//   node scripts/verify-maps.mjs apps/web/src # restrict the literal scan
+//   node scripts/verify-maps.mjs                 # full repo
+//   node scripts/verify-maps.mjs apps/<app>/src  # restrict the literal scan
+//   node scripts/verify-maps.mjs --root <dir>    # another tree
 // ---------------------------------------------------------------------------
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parseArgs } from 'node:util'
 
 import tsModule from 'typescript'
+
+import { listApps } from './eslint-config.detect.mjs'
 
 const ts = tsModule.default ?? tsModule
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(HERE, '..')
+
+const { positionals, values } = parseArgs({
+  allowPositionals: true,
+  options: { root: { default: REPO_ROOT, type: 'string' } }
+})
+const ROOT = resolve(values.root)
 
 const GLOBAL_MAP = 'docs/maps/global-map.md'
 
@@ -109,9 +123,15 @@ const IGNORED_DIRS = new Set([
 // audit (fixtures and assertions legitimately carry literals).
 const TEST_INFRA_SEGMENTS = ['__tests__', '__mocks__', '/test/']
 
-const DEFAULT_SCAN_ROOTS = ['apps/web/src', 'apps/mobile/src', 'packages']
+// The apps, and the sources the literal audit scans: every app's src/ and
+// every package.
+const APP_ROOTS = listApps({ root: ROOT })
+const DEFAULT_SCAN_ROOTS = [
+  ...APP_ROOTS.map((app) => `${app}/src`),
+  'packages'
+]
 
-const toRepoRel = (absPath) => absPath.replace(`${REPO_ROOT}/`, '')
+const toRepoRel = (absPath) => absPath.replace(`${ROOT}/`, '')
 
 const isTestFile = (name) => /\.test\.[cm]?[jt]sx?$/.test(name)
 
@@ -122,7 +142,7 @@ const isTestInfra = (path) => {
 
 const exists = (repoRelPath) => {
   try {
-    statSync(resolve(REPO_ROOT, repoRelPath))
+    statSync(resolve(ROOT, repoRelPath))
     return true
   } catch {
     return false
@@ -134,7 +154,7 @@ const exists = (repoRelPath) => {
 // ---------------------------------------------------------------------------
 
 // A backtick token is treated as a referenced path ONLY when it is rooted at a
-// real top-level repo directory (e.g. `apps/web/src/...`, `packages/...`).
+// real top-level repo directory (e.g. `apps/<app>/src/...`, `packages/...`).
 // This deliberately ignores: bare suffix descriptors used in table columns
 // (`.cjs`, `.helper.ts`), partial folder fragments (`src/`, `hooks/`), aliases
 // (`@app/*`), globs, and prose backticks (`yes`, `useAppQuery`) — none of which
@@ -161,7 +181,7 @@ const verifyMapPaths = () => {
     return { missing: [], ok: false, reason: `${GLOBAL_MAP} not found` }
   }
 
-  const content = readFileSync(resolve(REPO_ROOT, GLOBAL_MAP), 'utf8')
+  const content = readFileSync(resolve(ROOT, GLOBAL_MAP), 'utf8')
   const referenced = new Set()
 
   for (const match of content.matchAll(PATH_TOKEN)) {
@@ -338,7 +358,7 @@ const auditFile = ({ file, hexOffenders, numericOffenders }) => {
 const auditLiterals = (roots) => {
   const files = []
   for (const root of roots) {
-    const abs = resolve(REPO_ROOT, root)
+    const abs = resolve(ROOT, root)
     try {
       if (statSync(abs).isDirectory()) collectFiles(abs, files)
     } catch {
@@ -378,14 +398,12 @@ const listPascalDirs = ({ parentPath }) => {
   }
 }
 
-const APP_ROOTS = ['apps/web', 'apps/mobile']
-
 const verifyReverseMapCoverage = ({ mapContent }) => {
   const uncovered = []
 
   for (const appRoot of APP_ROOTS) {
     for (const subdir of ['services', 'screens']) {
-      const parentPath = resolve(REPO_ROOT, appRoot, 'src', subdir)
+      const parentPath = resolve(ROOT, appRoot, 'src', subdir)
       const domains = listPascalDirs({ parentPath })
       for (const domain of domains) {
         const stem = `${appRoot}/src/${subdir}/${domain}`
@@ -405,9 +423,7 @@ const verifyReverseMapCoverage = ({ mapContent }) => {
 // Run.
 // ---------------------------------------------------------------------------
 
-const scanRoots = process.argv.slice(2).length
-  ? process.argv.slice(2)
-  : DEFAULT_SCAN_ROOTS
+const scanRoots = positionals.length ? positionals : DEFAULT_SCAN_ROOTS
 
 const map = verifyMapPaths()
 const literals = auditLiterals(scanRoots)
@@ -415,7 +431,7 @@ const literals = auditLiterals(scanRoots)
 // Load map content once for check (D).
 const mapContent = (() => {
   try {
-    return readFileSync(resolve(REPO_ROOT, GLOBAL_MAP), 'utf8')
+    return readFileSync(resolve(ROOT, GLOBAL_MAP), 'utf8')
   } catch {
     return ''
   }
@@ -490,7 +506,9 @@ if (!reverse.ok) {
     `\n  [D] reverse coverage: FAIL — ${reverse.uncovered.length} domain/screen(s) on disk not referenced in ${GLOBAL_MAP}:`
   )
   for (const stem of reverse.uncovered) {
-    console.error(`        - "${stem}" exists on disk but is not referenced in docs/maps/global-map.md`)
+    console.error(
+      `        - "${stem}" exists on disk but is not referenced in docs/maps/global-map.md`
+    )
   }
   console.error(
     '\n      Add a row for each missing domain/screen to docs/maps/global-map.md.'
