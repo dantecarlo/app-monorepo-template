@@ -40,6 +40,9 @@ The <unit> SHALL <one observable behaviour, in the present tense of what the cod
 
 <!--
 Rules (openspec/README.md § 2.2; verify:specs checks the shape):
+- The header may hold several Governs lines, read as one list; at least one names a path.
+- The part an optional capability adds (its own Governs line, its Purpose paragraph and its
+  requirements) sits in this spec, inside a region the capability owns (docs/manifest.md).
 - IDs are <PREFIX>-NN, unique, never reused once removed.
 - One SHALL per requirement; split a requirement that needs two.
 - Every path in backticks must exist; a `path:line` must name a line the file has.

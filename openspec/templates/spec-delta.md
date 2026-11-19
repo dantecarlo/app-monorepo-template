@@ -34,6 +34,8 @@ not only the lines that differ.>
 Rules (openspec/README.md § 3.1):
 - The file sits under the change's specs/ at the same path the living spec has.
 - Keep only the sections the change needs.
+- A requirement of the part an optional capability adds sits inside that capability's region,
+  here as in the living spec; the archive copies the region with it (openspec/README.md § 2.2).
 - A modified or removed ID must exist in the living spec; an added ID must not.
 - Archive appends ADDED, replaces MODIFIED and deletes REMOVED; a removed ID is never reused.
 - A test named here may not exist until apply; verify:specs checks it from the verify report on.

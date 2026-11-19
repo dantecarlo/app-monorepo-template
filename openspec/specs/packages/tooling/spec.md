@@ -3,7 +3,7 @@
 > **Governs:** `packages/tooling/src`
 > **ID prefix:** `TOOLING`
 > **Derived from:** `docs/code-standards.md`, `docs/architecture/shared.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-19 at `58af488`
+> **Verified against the code:** 2026-11-19 at `dd38b99`
 
 ## Purpose
 
@@ -511,12 +511,22 @@ path.
 - **THEN** the kept spec is listed with both files
 - **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a kept spec that governs or cites a pruned file as evidence is a leak"
 
-#### Scenario: the Sentry specs of this repository after an app prune
+#### Scenario: the Sentry part of this repository's app specs
 
-- **GIVEN** the repository's specs, among them the ones the `sentry` capability claims
-- **WHEN** the prune of `mobile-expo` and of `web-next` is checked, Sentry kept
-- **THEN** no spec the `sentry` capability claims is listed
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning mobile-expo or web-next of this repository leaves no Sentry spec citing a pruned file"
+- **GIVEN** the repository's web and mobile specs, each holding the Sentry part of its app, its
+  `Governs` line and its requirements, in a `sentry` region
+- **WHEN** the prune of `sentry` is checked with its regions dropped, and again with them kept
+- **THEN** with the regions dropped neither spec is listed, and with them kept both are, with the
+  Sentry files their regions cite
+- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry of this repository drops the Sentry part of each app spec with its region"
+
+#### Scenario: an app prune of this repository, Sentry kept
+
+- **GIVEN** the repository's tracked files and its `template.manifest.json`
+- **WHEN** the prune of `mobile-expo` and of `web-next` is simulated, Sentry kept: the files the
+  app claims or removes deleted, and the app gone from the manifest
+- **THEN** no claim the `sentry` capability makes on a living spec is left matching no file
+- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning mobile-expo or web-next of this repository leaves no sentry claim on a spec stale"
 
 ### Requirement: TOOLING-19 — A kept file names no pruned file and keeps no orphaned key
 

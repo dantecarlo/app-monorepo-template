@@ -200,10 +200,7 @@
         },
         {
           "verb": "remove",
-          "paths": [
-            "apps/web/**",
-            "openspec/specs/apps/web/sentry/spec.md"
-          ]
+          "paths": ["apps/web/**"]
         }
       ]
     },
@@ -240,10 +237,6 @@
           "file": "package.json",
           "op": "unset",
           "path": "scripts.verify:expo"
-        },
-        {
-          "verb": "remove",
-          "paths": ["openspec/specs/apps/mobile/sentry/spec.md"]
         }
       ]
     },
@@ -336,9 +329,7 @@
         "apps/web/next-sentry.config.ts",
         "apps/web/sentry.client.config.ts",
         "apps/web/sentry.edge.config.ts",
-        "apps/web/sentry.server.config.ts",
-        "openspec/specs/apps/mobile/sentry/spec.md",
-        "openspec/specs/apps/web/sentry/spec.md"
+        "apps/web/sentry.server.config.ts"
       ],
       "onAbsent": [
         {

@@ -19,7 +19,7 @@ import { parseSpec } from './specs.detect.mjs'
 import { TEMPLATE_CASES } from './specs-templates.cases.mjs'
 import { gate } from './verify-specs.mjs'
 import { CHANGE_CASES } from './verify-specs.change.cases.mjs'
-import { requirement } from './verify-specs.fixtures.mjs'
+import { regionedSpec, requirement } from './verify-specs.fixtures.mjs'
 import { SPEC_CASES } from './verify-specs.spec.cases.mjs'
 
 export const CASES = [...SPEC_CASES, ...CHANGE_CASES, ...TEMPLATE_CASES]
@@ -32,6 +32,29 @@ const checks = [
         text: ['## ADDED Requirements', '', requirement()].join('\n')
       })
       assert.equal(requirements[0].section, 'ADDED Requirements')
+    }
+  },
+  {
+    name: 'a spec reads the union of its Governs lines, region markers between them',
+    run: () => {
+      const { governs, prefix, requirements } = parseSpec({
+        text: regionedSpec()
+      })
+      assert.equal(governs, '`pkg/src/`, `pkg/vendor.ts`')
+      assert.equal(prefix, 'PKG')
+      assert.deepEqual(
+        requirements.map(({ id, scenarios }) => ({
+          id,
+          scenarios: scenarios.map(({ steps, tests }) => ({
+            steps: [...steps],
+            tests: tests.length
+          }))
+        })),
+        ['PKG-01', 'PKG-02'].map((id) => ({
+          id,
+          scenarios: [{ steps: ['GIVEN', 'WHEN', 'THEN'], tests: 1 }]
+        }))
+      )
     }
   },
   {
