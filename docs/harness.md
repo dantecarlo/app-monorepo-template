@@ -40,6 +40,9 @@ Managed by Husky, in `.husky/`.
 | `pre-commit` | `pnpm exec lint-staged` | ESLint + Prettier on staged files |
 | `commit-msg` | `pnpm exec commitlint`  | Conventional commits              |
 
+`git commit --no-verify` skips both hooks; CI's `commitlint` job lints the
+message of every commit of a pull request again (Layer 4).
+
 Hooks are deliberately thin. Semantic checks belong in the gate, where they can
 see the whole repo — a hook that reads only staged files cannot tell you that a
 file you did not touch now has no owner.
@@ -186,6 +189,16 @@ them.
 
 `.github/workflows/ci.yml` runs `pnpm install` then the same gate, with
 `ATL_TEMPLATE_SELF=1`. CI runs no check that a developer cannot run locally.
+
+On a pull request, the `commitlint` job lints every commit of the pull request,
+from its base SHA to its head SHA, with `commitlint.config.js`, on a checkout
+of the whole history. A commit made with `git commit --no-verify` skips the
+`commit-msg` hook, so this is where it is caught. The same check runs locally
+as `pnpm exec commitlint --from origin/main --to HEAD`.
+
+Every action a workflow runs is pinned to a full commit SHA, the tag it was
+resolved from kept as a comment, and `verify:workflow-pins` fails one that is
+not.
 
 ---
 

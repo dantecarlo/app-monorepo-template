@@ -44,6 +44,36 @@ jobs:
       - name: Run validation gate
         run: pnpm validate
 
+  # A commit made with `git commit --no-verify` skipped the commit-msg hook.
+  # This job lints every commit of the pull request, from its base to its
+  # head, with the repository's own commitlint.config.js, whose default
+  # ignores (merge commits among them) still apply.
+  commitlint:
+    name: commitlint
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      # The whole history, so the base and the head commit are both there.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint the pull request's commits
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: pnpm exec commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+
   expo-health:
     name: expo-health
     runs-on: ubuntu-latest
