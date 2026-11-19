@@ -7,10 +7,10 @@ description: >
   queries only (getByRole, getByText — never data-testid), test() not it(), Given/
   pattern naming, constants from MSW mocks/domain not inline, MSW-first for HTTP,
   axe as 2nd test in every component describe block, one file per unit.
-  DO NOT USE for auditing existing tests — use `fix-test` for that. For block-structure
-  audits use `fractal-verify`. For post-generation harness use `validate-all`.
   USE WHEN: "write tests", "add tests", "create test file", "test this component/hook",
   "improve coverage", "test [name]".
+  DO NOT USE: auditing or migrating existing tests (use `fix-test`), a block-structure
+  audit (use `fractal-verify`), or the post-generation harness (use `validate-all`).
 ---
 
 # Create Test

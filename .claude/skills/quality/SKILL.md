@@ -7,10 +7,10 @@ description: >
   pairing, barrel exports, file suffixes, no inline components, no && with numbers in
   JSX, aria-label on icon-only elements, English-only, max 500 lines. Cites rule numbers
   from docs/code-standards.md. Reports violations with file:line references. Does NOT fix.
-  DO NOT USE for single-block structural audits — use `fractal-verify` for that.
-  For post-generation harness use `validate-all` (this skill feeds its G-standards group).
   USE WHEN: "audit code", "check quality", "validate patterns", "check conventions",
   "code review for [file/dir]", "quality check [scope]".
+  DO NOT USE: a single-block structural audit (use `fractal-verify`), or the
+  post-generation harness (use `validate-all`, whose G-standards group this skill feeds).
 ---
 
 # Code Quality Audit

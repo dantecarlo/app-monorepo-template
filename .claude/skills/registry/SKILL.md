@@ -7,6 +7,8 @@ description: >
   cat/grep/find. Bare names only — no plugin-namespaced prefixes.
   USE WHEN: "build skill registry", "index skills", "list all skills",
   "what skills are available", "update skill registry", "regenerate registry".
+  DO NOT USE: creating a skill (use `new-skill`), or auditing or improving one (use
+  `improve-skill`).
 ---
 
 # Skill Registry

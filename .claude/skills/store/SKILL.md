@@ -8,6 +8,8 @@ description: >
   state; TanStack Query, behind lib/query, for server/async state.
   USE WHEN: "create store", "new Zustand store", "add global state for [name]",
   "replace context with store", "add [name] slice", "cross-feature state for [name]".
+  DO NOT USE: server or async data, which belongs in the query cache through
+  `useAppQuery` (use `service`).
 ---
 
 # Create Store

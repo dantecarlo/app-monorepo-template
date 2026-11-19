@@ -10,6 +10,9 @@ description: >
   adapter (provider-behind-ports). Arrow-only, single-object params, alias imports.
   USE WHEN: "create service", "new service [name]", "add data fetching for [name]",
   "hook for [name] API", "add [name] mutation", "scaffold the data layer for [name]".
+  DO NOT USE: wrapping a third-party library behind a project API (use `lib`), the MSW
+  mock of an endpoint (use `mock`), or a whole slice from domain types to route (use
+  `feature`).
 ---
 
 # Create Service

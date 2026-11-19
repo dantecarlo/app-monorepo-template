@@ -11,6 +11,8 @@ description: >
   This skill feeds validate-all's G-security group.
   USE WHEN: "audit security", "check edge security", "security review", "check origin lock",
   "security headers", "rate limiting", "cache safety", "check CSP", "PII exposure".
+  DO NOT USE: an accessibility or performance review (use `a11y` or `perf`), or a done
+  verdict over a whole change (use `validate-all`).
 ---
 
 # Security Audit
