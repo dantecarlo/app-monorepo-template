@@ -86,6 +86,11 @@ const CATALOG_MESSAGES_NAMED = [
   'It names `<release-id> catalog ready to merge, PR #<n>`.',
   'It names `<id> catalog ready to merge, PR #<n>`.'
 ]
+// Before the architect asks the owner for that pull request, it checks each
+// row the pull request adds against the ticket's board page.
+const CATALOG_BOARD_CHECK =
+  'matches its board page in id, title, target version and closing pull request'
+const CATALOG_BOARD_CHECK_NAMED = `It names ${CATALOG_BOARD_CHECK}.`
 
 // The block a process template's Ticket identity section ships: the branch
 // check's defaults, as JSON.
@@ -1089,6 +1094,39 @@ const checks = [
       assert.ok(
         finding.detail.includes(DONE_MOVE),
         `the finding does not name the move: ${finding.detail}`
+      )
+    }
+  },
+  {
+    name: 'a refine-ticket whose merge queue does not check the catalog rows against the board is refused',
+    run: () => {
+      const findings = gate.run(
+        skills({
+          edits: {
+            [SKILL({ folder: 'refine-ticket' })]: replace({
+              from: CATALOG_BOARD_CHECK_NAMED,
+              to: NAMES_NOTHING
+            })
+          }
+        })()
+      )
+      assert.equal(findings.length, 1, JSON.stringify(findings))
+      const [finding] = findings
+      assert.equal(finding.kind, FINDING_KIND.mention)
+      assert.equal(finding.folder, 'refine-ticket')
+      assert.ok(
+        finding.detail.startsWith(
+          `${SKILLS_ROOT}/refine-ticket/${SKILL_FILE}`
+        ),
+        `the finding does not name the file: ${finding.detail}`
+      )
+      assert.ok(
+        finding.detail.includes(MERGE_QUEUE),
+        `the finding does not name the section: ${finding.detail}`
+      )
+      assert.ok(
+        finding.detail.includes(CATALOG_BOARD_CHECK),
+        `the finding does not name the check it owes: ${finding.detail}`
       )
     }
   },

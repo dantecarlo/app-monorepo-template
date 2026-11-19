@@ -313,7 +313,8 @@ architect asks for it or merges it.
 
 The PO's closed ticket catalog pull request (`po-ticket` Step 6) joins the same queue, merged on
 the owner's word. It carries no ticket of its own, so it owes none of the three conditions and no
-QA brings it current (`refine-ticket` § Merge queue).
+QA brings it current; before the owner is asked for it, the architect checks each row it adds
+against its board page (`refine-ticket` § Merge queue).
 
 A red CI or a conflict after Ready to merge sends the ticket back to Changes requested, with a
 comment: QA moves it, when it brings the branch current.
