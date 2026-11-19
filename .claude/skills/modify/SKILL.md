@@ -8,6 +8,8 @@ description: >
   lint:fix/test. Arrow-only snippets, I-prefix interfaces, no-semi, alias imports.
   USE WHEN: "modify component", "update component", "add prop to [name]",
   "refactor [component]", "change [component] behavior", "edit existing [name]".
+  DO NOT USE: creating a new component or screen (use `component` or `screen`), or
+  repairing a test file (use `fix-test`).
 ---
 
 # Modify Component

@@ -7,6 +7,8 @@ description: >
   src/test/mocks/. Arrow-only handlers where applicable, alias imports.
   USE WHEN: "create MSW handler", "mock API endpoint", "add mock for [endpoint]",
   "MSW handler for [domain]", "new mock data for [resource]", "add test fixture for [name]".
+  DO NOT USE: writing the tests that use the mock (use `test`), or the real service and
+  adapter of the endpoint (use `service`).
 ---
 
 # Create MSW Mock

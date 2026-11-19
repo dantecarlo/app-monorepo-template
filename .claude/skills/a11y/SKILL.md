@@ -9,6 +9,9 @@ description: >
   through all 4 categories. This skill is consumed by validate-all's G-a11y-design-dod group.
   USE WHEN: "a11y audit", "accessibility review", "check accessibility for [X]",
   "WCAG compliance", "screen reader support", "is [component] accessible?".
+  DO NOT USE: applying the fixes it reports (use `modify`), a performance or security
+  review (use `perf` or `security`), or a done verdict over a whole change (use
+  `validate-all`).
 ---
 
 # Accessibility Review (WCAG 2.1 AA)

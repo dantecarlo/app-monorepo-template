@@ -9,6 +9,7 @@ description: >
   making changes. Aligned to docs/code-standards.md Rule 9.
   USE WHEN: "fix test", "migrate test", "update test to current patterns",
   "test uses wrong pattern", "repair test file", "test is broken after refactor".
+  DO NOT USE: writing tests for a unit that has none yet (use `test`).
 ---
 
 # Fix Test

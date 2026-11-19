@@ -8,9 +8,10 @@ description: >
   {Name}.style.ts, optional useName.hook.ts, arrow-const named export in
   {Name}.component.tsx, and index.ts barrel. Arrow-only, no-semi, alias imports,
   no inline Tailwind, no default export, aria-label on icon-only elements.
-  DO NOT USE for screens or data-fetching containers — use `screen` instead.
   USE WHEN: "create component", "new component [name]", "generate component",
   "add a [name] component", "build the [name] UI block".
+  DO NOT USE: screens or data-fetching containers (use `screen`), or changing a
+  component that already exists (use `modify`).
 ---
 
 # Create Component
