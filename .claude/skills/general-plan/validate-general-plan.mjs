@@ -10,14 +10,28 @@
 //   - the PENDING section is non-empty
 //   - a "Needs from user" / "NEEDS FROM OWNER" section exists
 //
+// A project has a ticket flow when process/ticket-flow.md sits beside the
+// plan, in its docs/ folder. Its board is then the source of every open
+// ticket, and the plan names none, so three more checks run, on the text
+// outside HTML comments:
+//
+//   - a "## Closed Ticket Catalog" section, where the PO records each ticket
+//     once it closes
+//   - that section holds the catalog table, CATALOG_HEADER below
+//   - the PENDING section names process/ticket-flow.md, its pointer to the
+//     board
+//
+// A project with no ticket flow keeps its done and pending lists, and none of
+// the three runs. A plan checked out with CRLF line endings reads as LF.
+//
 // Prints a PASS/FAIL line per check. Exits 1 on any failure, 0 on success.
 //
 // Usage:
 //   node validate-general-plan.mjs docs/GENERAL_PLAN.md
 // ---------------------------------------------------------------------------
 
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { existsSync, readFileSync, statSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 
 const target = process.argv[2]
 
@@ -131,6 +145,81 @@ check({
   ok: pendingHasContent,
   detail: pendingHasContent ? '' : 'no content between the PENDING heading and the next section'
 })
+
+// ---------------------------------------------------------------------------
+// Ticket flow — the board owns every open ticket, so the plan records closed
+// tickets in its catalog and points its pending work at the board.
+// ---------------------------------------------------------------------------
+
+const TICKET_FLOW_LAYER = resolve(dirname(absPath), 'process', 'ticket-flow.md')
+const BOARD_POINTER = 'process/ticket-flow.md'
+const CATALOG_HEADING = '## Closed Ticket Catalog'
+const CATALOG_HEADER = ['Ticket', 'Title', 'Type', 'Version', 'Closed', 'Pull request']
+const TICKET_FLOW_MARK = '(ticket flow)'
+const NOT_FOUND = -1
+const HTML_COMMENT = /<!--[\s\S]*?-->/gu
+
+const hasTicketFlow = existsSync(TICKET_FLOW_LAYER) && statSync(TICKET_FLOW_LAYER).isFile()
+
+// The lines under the first heading the pattern matches, up to the next
+// "## " heading, from the plan's text with its HTML comments removed; null
+// when no heading matches.
+const uncommentedSection = ({ headingPattern }) => {
+  const lines = raw.replace(HTML_COMMENT, '').split('\n')
+  const start = lines.findIndex((line) => headingPattern.test(line))
+  if (start === NOT_FOUND) return null
+  const rest = lines.slice(start + 1)
+  const end = rest.findIndex((line) => /^##\s+/.test(line))
+  return end === NOT_FOUND ? rest : rest.slice(0, end)
+}
+
+const cellsOf = ({ line }) =>
+  line
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/\|$/, '')
+    .split('|')
+    .map((cell) => cell.trim())
+
+const isCatalogHeader = ({ line }) => {
+  const cells = cellsOf({ line })
+  return (
+    line.trim().startsWith('|') &&
+    cells.length === CATALOG_HEADER.length &&
+    cells.every((cell, index) => cell === CATALOG_HEADER[index])
+  )
+}
+
+if (hasTicketFlow) {
+  const catalog = uncommentedSection({ headingPattern: /^##\s+closed ticket catalog\b/i })
+  check({
+    name: `Section "Closed Ticket Catalog" present ${TICKET_FLOW_MARK}`,
+    ok: catalog !== null,
+    detail:
+      catalog !== null
+        ? ''
+        : `${BOARD_POINTER} exists beside the plan, so it owes a ${CATALOG_HEADING} section`
+  })
+
+  if (catalog !== null) {
+    const hasTable = catalog.some((line) => isCatalogHeader({ line }))
+    check({
+      name: `Closed Ticket Catalog holds its table ${TICKET_FLOW_MARK}`,
+      ok: hasTable,
+      detail: hasTable ? '' : `no table | ${CATALOG_HEADER.join(' | ')} | under ${CATALOG_HEADING}`
+    })
+  }
+
+  const pending = uncommentedSection({ headingPattern: /^##\s+.*\bpending\b/i }) ?? []
+  const pointsAtBoard = pending.some((line) => line.includes(BOARD_POINTER))
+  check({
+    name: `PENDING section points at the board ${TICKET_FLOW_MARK}`,
+    ok: pointsAtBoard,
+    detail: pointsAtBoard
+      ? ''
+      : `the board holds every open ticket, so PENDING names ${BOARD_POINTER} instead of listing one`
+  })
+}
 
 // ---------------------------------------------------------------------------
 // Report.

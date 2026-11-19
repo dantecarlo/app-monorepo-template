@@ -9,6 +9,9 @@ status: <planning | in-progress | launch-ready | shipped>
   always at docs/GENERAL_PLAN.md. Refresh it in place; never fork it.
   Prose may be neutral Spanish if that's the product-doc language; code,
   identifiers, paths, env var names, and UI labels stay English/real form.
+  With a ticket flow (docs/process/ticket-flow.md exists) the board is the
+  source of every open ticket: this plan names none, and records a ticket
+  only once it is closed, in § Closed Ticket Catalog.
   Validate with: node .claude/skills/general-plan/validate-general-plan.mjs docs/GENERAL_PLAN.md
 -->
 
@@ -148,11 +151,17 @@ agent-fixable or an owner call>.
 ## What's PENDING (the agent's backlog)
 
 <!--
-  The heart of the doc. Organize by phase or area. Every row: technical detail
-  (files, tables, RPCs, endpoints), effort S/M/L, 🔴 BLOCKING for launch-
-  critical items, ⛔ blocked-by dependency. Call out schema-blocked / not-just-
-  UI gaps with the exact missing objects.
+  The heart of the doc. WITH A TICKET FLOW (docs/process/ticket-flow.md
+  exists) the board is the source of every open ticket: keep the pointer line
+  below, name no open ticket, and drop the backlog tables. WITHOUT ONE, drop
+  the pointer line and organize the backlog by phase or area. Every row:
+  technical detail (files, tables, RPCs, endpoints), effort S/M/L, 🔴 BLOCKING
+  for launch-critical items, ⛔ blocked-by dependency. Call out schema-blocked
+  / not-just-UI gaps with the exact missing objects.
 -->
+
+Every open ticket lives on the board: read it there, through
+docs/process/ticket-flow.md § Board adapter.
 
 ### Phase / Area: <name>
 
@@ -163,10 +172,25 @@ agent-fixable or an owner call>.
 **Schema-blocked gaps** — <items that need missing DB objects, with the exact
 tables/columns/RPCs to add — not just UI>.
 
+## Closed Ticket Catalog
+
+<!--
+  REQUIRED WITH A TICKET FLOW (docs/process/ticket-flow.md exists); drop it
+  otherwise. The board is the source of every open ticket, so this section
+  records a ticket only once it is closed: one row per ticket, copied from the
+  board, added by the PO in one pull request per close or release (po-ticket
+  Step 6). Never list an open ticket here.
+-->
+
+| Ticket | Title | Type | Version | Closed | Pull request |
+|---|---|---|---|---|---|
+| <#123> | <the title, as on the board> | <feature / fix / tech / chore> | <1.4.0> | <YYYY-MM-DD> | <#456> |
+
 ## Agent Build Plan (ordered)
 
 <!--
-  OPTIONAL — skip if PENDING above is already strictly phase-ordered. The
+  OPTIONAL — skip it with a ticket flow, where the board orders the open
+  tickets, or if PENDING above is already strictly phase-ordered. The
   "what I'll do next, in order" view, with explicit dependencies.
 -->
 
@@ -221,8 +245,10 @@ tables/columns/RPCs to add — not just UI>.
 
 <!--
   Hard, ordered gates so launch readiness is unambiguous. Each gate: its content
-  (mapped to backlog items), what it unlocks, and a validation checkpoint that
-  MUST pass before the next gate. Mark owner-driven gates parallel/blocking.
+  (mapped to backlog items; with a ticket flow, the target versions it ships,
+  whose tickets the board lists, never an open ticket), what it unlocks, and a
+  validation checkpoint that MUST pass before the next gate. Mark owner-driven
+  gates parallel/blocking.
 -->
 
 | Gate | Content (backlog items) | Unlocks | Checkpoint |

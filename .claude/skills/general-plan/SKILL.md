@@ -69,6 +69,14 @@ single-feature spec, or pure refactor/code tasks.
 - **Required vs optional sections:** keep all REQUIRED headings even if a
   subsection is "none yet"; drop OPTIONAL ones only when the project genuinely
   has nothing for them.
+- **With a ticket flow, the board owns every open ticket.** A project has one
+  when `docs/process/ticket-flow.md` exists (`process-intake` writes it). Its
+  board is the source of every open ticket, its content included, so the plan
+  names no open ticket: What's PENDING points at the board through that file,
+  the Path to Launch names target versions, and § Closed Ticket Catalog
+  records each ticket once it closes, one row per ticket, which the PO adds in
+  one pull request per close or release (`po-ticket` Step 6). Without a ticket
+  flow, PENDING keeps its backlog rows and the catalog is dropped.
 
 ## Required vs Optional Sections
 
@@ -84,11 +92,13 @@ Required (must be present and non-trivial):
 - Path to Launch (gated roadmap)
 - Technical Details, Conventions & Gotchas
 - Risks & Open Decisions
+- Closed Ticket Catalog — with a ticket flow only; dropped without one
 
 Optional (keep only if the project has content):
 
 - Locked Decisions & ADRs
-- Agent Build Plan (ordered) — skip if PENDING is already strictly phase-ordered
+- Agent Build Plan (ordered) — skip if PENDING is already strictly phase-ordered,
+  or with a ticket flow, where the board orders the open tickets
 - Agent-Blocking Decisions — fold into NEEDS FROM OWNER if there are few
 
 ## Standard Section Structure
@@ -117,28 +127,33 @@ Use these `##` headings, in this order (mirrors the template file):
 7. **What's PENDING (the agent's backlog)** — by phase or area; every row has
    technical detail, effort size (S/M/L), a 🔴 BLOCKING marker for launch-
    critical items, and any ⛔ blocked-by dependency. Call out schema-blocked /
-   not-just-UI gaps with the exact missing objects.
-8. **Agent Build Plan (ordered)** *(optional)* — numbered table
+   not-just-UI gaps with the exact missing objects. With a ticket flow, one
+   line instead, pointing at the board through `docs/process/ticket-flow.md`,
+   and no open ticket.
+8. **Closed Ticket Catalog** *(with a ticket flow only)* — the table
+   `Ticket | Title | Type | Version | Closed | Pull request`, one row per
+   closed ticket, copied from the board when it closes; never an open ticket.
+9. **Agent Build Plan (ordered)** *(optional)* — numbered table
    `# | Task | Layer | Depends on`.
-9. **NEEDS FROM OWNER (blockers the agent cannot resolve)** — four subsections:
-   (1) Accounts & credentials (`item | env vars | target .env file | what it
-   blocks`), (2) Env files (exact key names per file), (3) Product decisions,
-   (4) Legal/compliance (separate the code chokepoint from the non-code legal
-   blocker).
-10. **Agent-Blocking Decisions** *(optional)* — `question | module/phase | risk
+10. **NEEDS FROM OWNER (blockers the agent cannot resolve)** — four subsections:
+    (1) Accounts & credentials (`item | env vars | target .env file | what it
+    blocks`), (2) Env files (exact key names per file), (3) Product decisions,
+    (4) Legal/compliance (separate the code chokepoint from the non-code legal
+    blocker).
+11. **Agent-Blocking Decisions** *(optional)* — `question | module/phase | risk
     if unanswered` for technical forks the agent needs steered.
-11. **Path to Launch (gated roadmap)** — ordered GATEs; each states its content
-    (mapped to backlog items), what it unlocks, and a validation checkpoint
-    that must pass before the next gate. Mark owner-driven gates as parallel/
-    blocking.
-12. **Technical Details, Conventions & Gotchas** — env/secrets layout (which
+12. **Path to Launch (gated roadmap)** — ordered GATEs; each states its content
+    (mapped to backlog items; with a ticket flow, the target versions it
+    ships), what it unlocks, and a validation checkpoint that must pass before
+    the next gate. Mark owner-driven gates as parallel/blocking.
+13. **Technical Details, Conventions & Gotchas** — env/secrets layout (which
     framework reads which file), coding conventions, validation-gate breakdown,
     and confirmed GOTCHAS with root cause + fix.
-13. **Risks & Open Decisions** — numbered risk table (R1, R2…) with severity +
+14. **Risks & Open Decisions** — numbered risk table (R1, R2…) with severity +
     mitigation, cross-referenced from dependent phases; then a short list of
     still-open decisions with an owner column.
 
-The template heads section 9 `## Needs from user`; the validator finds that
+The template heads section 10 `## Needs from user`; the validator finds that
 section by the words "needs from" in its heading.
 
 ## Execution Steps
@@ -149,7 +164,8 @@ Run in order. Reading code is the point — do not write the doc from memory.
    you are REFRESHING (preserve owner-authored vision/decisions, update the
    factual sections). If absent, copy `general-plan.template.md` to
    `docs/GENERAL_PLAN.md` and fill the frontmatter (`project`, `last_updated`
-   = today, `status`).
+   = today, `status`). Check for `docs/process/ticket-flow.md`: when it
+   exists, the project has a ticket flow (Hard Rules).
 2. **Establish the baseline fact.** Run the project's validation gate (e.g.
    `pnpm validate`) and record GREEN/RED + test count in the Header snapshot.
    This is the trust anchor for everything below.
@@ -165,6 +181,10 @@ Run in order. Reading code is the point — do not write the doc from memory.
 6. **Derive PENDING from the gap.** Everything the product needs that the
    inventory did not find becomes a backlog row with technical detail, S/M/L,
    🔴 BLOCKING, and ⛔ dependencies. Flag schema-blocked items explicitly.
+   With a ticket flow, a gap becomes a ticket on the board through the flow
+   (`ticket-flow` rule 1), never a row here: PENDING keeps its one line that
+   points at the board, and § Closed Ticket Catalog gains a row only when a
+   ticket closes (`po-ticket` Step 6).
 7. **Separate the blockers.** Sort what only the human can supply into the four
    NEEDS FROM OWNER subsections; sort technical forks into Agent-Blocking
    Decisions (or fold them into owner asks if few).
@@ -180,7 +200,9 @@ Run in order. Reading code is the point — do not write the doc from memory.
     ```
 
     The doc is not done until the validator prints all PASS and exits 0. On a
-    refresh, bump `last_updated` to today.
+    refresh, bump `last_updated` to today. With `process/ticket-flow.md` beside
+    the plan, the validator also requires § Closed Ticket Catalog, its table,
+    and a PENDING section that names `process/ticket-flow.md`.
 
 ## DO vs DON'T
 
@@ -195,9 +217,11 @@ Run in order. Reading code is the point — do not write the doc from memory.
 | Add a `Source` column to the versions table | List versions with no provenance |
 | Keep secrets out of `NEXT_PUBLIC_`/`EXPO_PUBLIC_` | Suggest admin keys in public env namespaces |
 | Run the validator and leave it green | Call it done with the validator red |
+| With a ticket flow, point PENDING at the board and record closed tickets in § Closed Ticket Catalog | Copy an open ticket, its state or its version into the plan |
 
 ## References
 
 - `general-plan.template.md` — copy-paste skeleton, all section headings with
   inline guidance comments.
 - `validate-general-plan.mjs` — zero-dep structural validator.
+- `validate-general-plan.test.mjs` — its tests, run by `pnpm verify:skills:test`.
