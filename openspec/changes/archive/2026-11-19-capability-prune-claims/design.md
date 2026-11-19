@@ -78,6 +78,11 @@ smaller than a file.
   `report:spec-drift` read a spec, and keep a spec's path under the code it governs: the Sentry
   part of apps/web sits in `openspec/specs/apps/web/sentry/spec.md`. One spec for both apps
   failed the case a project meets when it keeps Sentry and drops an app.
+  The layout is an exception to § 2.1 of `openspec/README.md`, one spec per architectural unit,
+  and the owner approved it as interim on 2026-11-19 (translated from Spanish): "I approve
+  option 1, continue with the plan, but we also have to find a way to centralize it anyway.
+  Because rather than opening exceptions, we have to see how we can adapt it." Follow-up F63
+  of `docs/INIT_AND_HARNESS_PLAN.md` adapts the rule and folds the two specs back.
 - **Regions** are the smallest mechanism that keeps the verbs closed: one grammar, no verb, and
   it closes every text place F49 lists that a file claim cannot (the `.env.example` keys, the
   alias, `allowBuilds`, the global map's rows), where a verb would close only YAML. It is the
