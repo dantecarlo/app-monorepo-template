@@ -84,6 +84,13 @@ export const analyzeRegistryOwners = ({ manifest, registry }) => {
 
 const REGION_MARKER =
   /^\s*(?:(?:#|\/\/)\s*(?<lineKind>region|endregion) (?<lineOwner>[a-z0-9]+(?:-[a-z0-9]+)*)|<!--\s*(?<blockKind>region|endregion) (?<blockOwner>[a-z0-9]+(?:-[a-z0-9]+)*)\s*-->)\s*$/u
+// A comment line that is a marker in all but its spelling: a capitalised or
+// malformed owner, a doubled space, a capitalised keyword. It is reported
+// rather than read as text, so a misspelled marker cannot leave a region's
+// lines behind a prune while the gate passes. A comment of several words
+// that only mentions a region is prose and matches neither pattern.
+const NEAR_REGION_MARKER =
+  /^\s*(?:#|\/\/|<!--)\s*(?:end)?region\s+\S+\s*(?:-->)?\s*$/iu
 const REGION_OPEN = 'region'
 const LINE_BREAK = '\n'
 const CARRIAGE_RETURN = /\r$/u
@@ -108,8 +115,17 @@ export const parseRegions = ({ text }) => {
 
   text.split(LINE_BREAK).forEach((line, index) => {
     const marker = markerOf(line)
-    if (!marker) return
     const lineNumber = index + 1
+    if (!marker) {
+      const bare = line.replace(CARRIAGE_RETURN, '')
+      if (NEAR_REGION_MARKER.test(bare)) {
+        problems.push({
+          detail: `"${bare.trim()}" does not follow the marker grammar: \`region <capability>\` or \`endregion <capability>\`, lowercase, one space before the capability`,
+          line: lineNumber
+        })
+      }
+      return
+    }
 
     if (marker.opens) {
       if (current) {

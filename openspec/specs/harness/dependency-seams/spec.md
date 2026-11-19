@@ -28,8 +28,9 @@ package subpath, each with a category among `core`, `infra`, `ui`, `vendor`, `ve
 `build` and `peer`, a seam of repository globs for every non-core entry, no seam for a core
 entry, `types` either `seam` (the default) or `anywhere`, and an `owner` that names, as text, the
 capability of `template.manifest.json` whose prune removes the entry, or `core`;
-`pnpm verify:dependency-seams` refuses an entry that breaks this shape and a name listed twice,
-and `pnpm verify:manifest:coverage` holds each owner to the manifest.
+`pnpm verify:dependency-seams` refuses an entry that breaks this shape, an owner that is not text
+included, and a name listed twice; whether an entry has an owner, and whether the manifest
+declares it, is `pnpm verify:manifest:coverage`'s to refuse.
 
 **Evidence:** `.agents/contracts/dependencies.json:2-9`, `scripts/dependency-seams.detect.mjs:99-139`,
 `scripts/dependency-seams.detect.mjs:144-168`, `scripts/dependency-seams.detect.mjs:370-375`,
@@ -142,7 +143,8 @@ judged the same way unless the entry sets `types` to `anywhere`.
 
 - **GIVEN** a web screen that imports `@sentry/nextjs`, and another that imports `@stripe/stripe-js`
 - **WHEN** ESLint lints them
-- **THEN** the first is outside its seam and the second unregistered
+- **THEN** the first is outside its seam while the registry names `@sentry/nextjs`, and
+  unregistered once a `sentry` prune has taken its entry; the second is unregistered
 - **Test:** `eslint-local-rules/dependency-seam.cases.mjs` › "a vendor SDK the old import patterns refused is still refused"
 
 ### Requirement: SEAM-04 — Every way a file reaches a package is read

@@ -123,8 +123,9 @@ const registryOwnerFindings = ({ manifest }) => {
 }
 
 // The text of every tracked file that may hold a region. A binary file (one
-// with a NUL byte) holds none, and a file without the word cannot.
-const REGION_WORD = 'region'
+// with a NUL byte) holds none, and a file without the word, in any case,
+// cannot: a capitalised near-miss marker is still read, and reported.
+const REGION_WORD = /region/iu
 const NUL_BYTE = 0
 const regionTexts = ({ files }) =>
   files.flatMap((path) => {
@@ -136,7 +137,7 @@ const regionTexts = ({ files }) =>
     }
     if (buffer.includes(NUL_BYTE)) return []
     const text = buffer.toString('utf8')
-    return text.includes(REGION_WORD) ? [{ path, text }] : []
+    return REGION_WORD.test(text) ? [{ path, text }] : []
   })
 
 const manifest = readManifest()

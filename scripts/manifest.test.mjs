@@ -611,6 +611,41 @@ test('a well-formed region of a declared capability reports nothing', () => {
   )
 })
 
+test('a line that reads as a region marker but breaks its grammar is reported', () => {
+  const nearMisses = [
+    open({ owner: 'Sentry' }),
+    open({ owner: ' sentry' }),
+    open({ owner: 'sentry-' }),
+    `<!--${close({ mark: '', owner: 'Sentry' })} -->`
+  ]
+  const findings = analyzeRegions({
+    files: [{ path: 'pnpm-workspace.yaml', text: linesOf(...nearMisses) }],
+    manifest: SENTRY_MANIFEST
+  })
+  assert.deepEqual(
+    findings.map(({ line }) => line),
+    [1, 2, 3, 4]
+  )
+  findings.forEach(({ detail }) =>
+    assert.match(detail, /does not follow the marker grammar/u)
+  )
+})
+
+test('a prose comment that only mentions a region is not a marker', () => {
+  assert.deepEqual(
+    analyzeRegions({
+      files: [
+        {
+          path: 'a.test.mjs',
+          text: linesOf('// region of this file.', '# regions stay closed')
+        }
+      ],
+      manifest: SENTRY_MANIFEST
+    }),
+    []
+  )
+})
+
 test('a region whose owner the manifest does not declare is reported, core included', () => {
   assert.deepEqual(
     analyzeRegions({

@@ -83,6 +83,7 @@ between; the regions of other capabilities stay.
 | No nesting        | A region closes before the next one opens                                  |
 | Balanced          | Every region closes, under the name it opened with                         |
 | Outside a table   | A Markdown table row cannot hold a marker: the region wraps a whole table  |
+| Exact spelling    | A comment that reads as a marker but breaks its grammar (a capitalised keyword or owner, a doubled space) is a finding, never text |
 
 `verify:manifest:coverage` fails a region that breaks a rule, naming the file
 and the line. No verb is added: a region owns lines the way a claim owns a
@@ -195,7 +196,7 @@ Walks every `git ls-files` path and fails on:
 | `conflicts`   | Two owners. Pruning would depend on evaluation order           |
 | `staleClaims` | Drift. The manifest describes a repo that no longer exists     |
 | `unowned`     | A registry entry with no owner, or one the manifest does not declare |
-| `regions`     | A region whose owner is unknown, or whose markers do not balance |
+| `regions`     | A region whose owner is unknown, whose markers do not balance, or a misspelled marker |
 
 Together they close the door in both directions: the manifest cannot omit
 reality, and it cannot invent it.

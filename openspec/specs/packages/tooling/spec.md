@@ -547,7 +547,7 @@ The tooling package SHALL judge every kept file without the lines of the pruned 
 regions, read with the region reader of the manifest engine, and keep the regions of every other
 capability.
 
-**Evidence:** `packages/tooling/src/prune-boundary.mjs:347-358`, `scripts/manifest-owners.mjs:159-178`
+**Evidence:** `packages/tooling/src/prune-boundary.mjs:347-358`, `scripts/manifest-owners.mjs:175-194`
 
 #### Scenario: a leak inside a region
 
