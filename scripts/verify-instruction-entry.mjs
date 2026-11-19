@@ -102,9 +102,18 @@ const listRepositoryFiles = ({ root }) => {
       maxBuffer: GIT_OUTPUT_LIMIT
     }
   )
+  // A git that never started (none on the path, or the output past the
+  // buffer) leaves no exit status and no stderr, only the error.
+  if (result.error) {
+    throw new Error(
+      'verify-instruction-entry cannot run git to list the repository files: ' +
+        result.error.message
+    )
+  }
   if (result.status !== 0) {
     throw new Error(
-      `verify-instruction-entry lists the repository files with git: ${result.stderr}`
+      `verify-instruction-entry lists the repository files with git, which exited ${result.status}: ` +
+        result.stderr.trim()
     )
   }
   return result.stdout.split(PATH_SEPARATOR).filter((path) => path !== '')

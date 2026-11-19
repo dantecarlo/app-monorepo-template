@@ -12,7 +12,9 @@
 // ---------------------------------------------------------------------------
 
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -20,11 +22,39 @@ import { ENGLISH_CASES } from './english.cases.mjs'
 import { findSpanishLines, SPANISH_WORDS } from './english.detect.mjs'
 import { registerCases, runCases } from './gate/cases.mjs'
 import { blindGate } from './gate/gate.mjs'
+import { gitFreeEnv } from './git-free-env.mjs'
 import { gate } from './verify-english.mjs'
 
 export const CASES = ENGLISH_CASES
 
 const HERE = dirname(fileURLToPath(import.meta.url))
+const PASSED = 0
+
+// The gate run with a search path that holds no git, an empty scratch
+// folder, so its file listing cannot start.
+const PATH_KEY = /^path$/iu
+const runGateWithoutGit = () => {
+  const empty = mkdtempSync(join(tmpdir(), 'english-nogit-'))
+  try {
+    return spawnSync(
+      process.execPath,
+      [join(HERE, 'verify-english.mjs')],
+      {
+        encoding: 'utf8',
+        env: {
+          ...Object.fromEntries(
+            Object.entries(gitFreeEnv()).filter(
+              ([key]) => !PATH_KEY.test(key)
+            )
+          ),
+          PATH: empty
+        }
+      }
+    )
+  } finally {
+    rmSync(empty, { force: true, recursive: true })
+  }
+}
 const OWN_SOURCES = [
   'english.cases.mjs',
   'english.detect.mjs',
@@ -71,6 +101,16 @@ const checks = [
         gate: blindGate({ gate })
       })
       assert.ok(failures.length > 0, 'every case passed a blinded gate')
+    }
+  },
+  {
+    name: 'the gate with no git on its path names the cause',
+    run: () => {
+      const result = runGateWithoutGit()
+      assert.notEqual(result.status, PASSED, result.stdout)
+      assert.match(result.stderr, /verify-english cannot run git/u)
+      assert.match(result.stderr, /ENOENT/u)
+      assert.doesNotMatch(result.stderr, /undefined/u)
     }
   }
 ]
