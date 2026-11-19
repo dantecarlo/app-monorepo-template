@@ -30,8 +30,9 @@ Before writing anything:
 2. Look for a wrapper that already exists: `src/lib/` of each app, the app's
    `src/components/ui/`, and the workspace packages (`docs/code-standards.md` §0). If one does,
    extend it: never a second wrapper for one package.
-3. List the files that import the package today (`rg "from '{package}'" apps packages`): each
-   one moves to the project module in Step 3.
+3. List the files that name the package today (`rg "'{package}" apps packages`, which finds the
+   imports, `require` calls and `vi.mock` calls alike): each one moves to the project module in
+   Step 3 or Step 4.
 4. Read the worked example below, `lib/cache`: it is the shape every wrapper takes.
 
 ---
@@ -52,8 +53,8 @@ Is the package core (the language, the framework runtime, an @app/* core package
     │     seam: apps/*/src/lib/{name}/*.adapter.ts
     ├── an infrastructure library (i18n, query, state, storage, validation, theme)
     │     → category "infra", seam: the app's src/lib/{name}/ wrapper
-    ├── dev tooling (lint, test, build) → category "build",
-    │     seam: the tests, configs and scripts that run it
+    ├── dev tooling (lint, test, build) → category "build", seam: the tests, configs and
+    │     scripts under apps/* or packages/* that import it, [] when none does
     └── installed for a framework, never imported → category "peer", seam: []
 ```
 
