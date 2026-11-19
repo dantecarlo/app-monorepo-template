@@ -106,7 +106,8 @@ pair.
 
 #### Scenario: a package.json that cannot be read
 
-- **GIVEN** an app `package.json` holding `{`, the only manifest that declares `zod`
+- **GIVEN** an app `package.json` cut off mid-object, the only manifest that declares `react`
+  and `zod`
 - **WHEN** `pnpm verify:dependency-seams` runs
 - **THEN** it fails once, naming the `package.json`, and calls no entry stale
 - **Test:** `scripts/verify-dependency-seams.test.mjs` › "a package.json that cannot be parsed fails, naming it, and no entry is called stale"
@@ -212,8 +213,8 @@ the file.
 
 - **GIVEN** `packages/tokens`, whose `package.json` declares no `react`
 - **WHEN** the repository's ESLint config is computed for `packages/tokens/src/tokens.constant.ts`
-- **THEN** it holds the Node globals, and no browser global, no JSX parser and no React,
-  React Hooks or jsx-a11y plugin or rule
+- **THEN** it holds the Node globals, and no browser global, no JSX parser, no React, React
+  Hooks or jsx-a11y plugin, and none of their rules on
 - **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "a package that declares no react, packages/tokens among them, gets the Node globals and no React rule"
 
 #### Scenario: any dependency field, and a folder that is no app
