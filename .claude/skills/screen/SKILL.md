@@ -276,3 +276,5 @@ keeps a named export.
 | `function {Name}Screen(...)` keyword               | Arrow const: `const {Name}Screen = () => ...`   |
 | Default export on the screen component              | Named export on screen; default only for route page |
 | `useRouter` of `next/navigation` in a screen hook (web) | `useAppRouter` of `@/lib/routing` (`push`, `replace`, `refresh`); its test mocks `@/lib/routing` through `createRoutingDouble` of `@/test/routing.helper` |
+| An `expo-router` hook (`useRouter`, `useLocalSearchParams`) or its `router` in a screen (mobile) | The app's own hook of `@/lib/routing`, added there under the app's own types for its first caller; only `src/lib/routing/` imports them (`local/wrapped-import`). `Stack`, `Tabs`, `Slot`, `Redirect` and `Link` stay direct |
+| `Text` of `react-native` in a screen or a screen-local block (mobile) | `Text` of `@/components/ui/Text/Text.component`; a primitive a `ui/` block is named after is imported only under that block (`local/wrapped-import`) |

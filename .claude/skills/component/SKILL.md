@@ -172,6 +172,25 @@ look; a screen, a route entry and a container only position. This block is where
   mocks it, never the library.
 - Text, a labelled rule and a screen surface already have blocks: `ui/Text`, `ui/Divider`,
   `ui/Screen`.
+- A `react-native` primitive a `ui/` block is named after is imported only under that block's
+  folder, every other file renders the block, other `ui/` blocks included (`local/wrapped-import`,
+  which reads the blocks from disk): on mobile `Text`, `Modal`, `Button` and `StatusBar`. A block
+  that shows text renders `Text` of `@/components/ui/Text/Text.component`, which takes the
+  block's NativeWind classes (`className`), its `accessibilityRole`, a variant, a style and a line
+  limit. `View`, `ScrollView`, `Pressable`, `TextInput` and every primitive no block is named
+  after are imported from `react-native` directly.
+
+```tsx
+// WRONG — a mobile block draws react-native's Text itself
+import { Pressable, Text } from 'react-native'
+
+// RIGHT — it renders the Text block, with the classes its own style file holds
+import { Pressable } from 'react-native'
+
+import { Text } from '@/components/ui/Text/Text.component'
+
+<Text className={BADGE_TEXT_CLASS}>{label}</Text>
+```
 
 ```typescript
 // Button.constant.ts — one tuple per variant, in the order of the tv config's keys

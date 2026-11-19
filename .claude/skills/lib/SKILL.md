@@ -114,6 +114,23 @@ vi.mock('@/lib/routing', async () =>
 A wrapper exposes what its callers use: the pathname, the search params, `redirect` and
 `revalidateTag` join it with their first caller.
 
+### Example: the routing seam (mobile)
+
+`expo-router` is core: its layout components (`Stack`, `Tabs`, `Slot`, `Redirect`, `Link`) and its
+types are imported directly. Its hooks, every `use…` name, and its `router` object are not:
+`local/wrapped-import` passes them only under the app's `src/lib/routing/`, by the names a file
+imports, a `vi.mock` factory included. The mobile app calls no hook yet, so its `lib/routing`
+holds no module; the first caller adds the hook there, under the app's own types, as web's
+`useAppRouter` is, with its own test, and every other test mocks `@/lib/routing`:
+
+```typescript
+// apps/mobile/src/lib/routing/useAppRouter.hook.ts — the one file that names the hook
+import { useRouter } from 'expo-router'
+
+// apps/mobile/src/screens/Items/hooks/useOpenItem.hook.ts
+import { useAppRouter } from '@/lib/routing'
+```
+
 ---
 
 ## Do You Need a New Lib?

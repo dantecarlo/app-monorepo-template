@@ -53,7 +53,8 @@ apps/mobile/
     │                             # react-i18next), observability/, posthog/, query/ (the query API over
     │                             # TanStack Query), storage/ (the device key-value storage),
     │                             # store/ (createAppStore, the one zustand import), supabase/ (the
-    │                             # opaque client and the auth gateway), theme/
+    │                             # opaque client and the auth gateway), theme/; routing/ is where
+    │                             # a hook over expo-router goes, none yet
     ├── helpers/                  # shared pure helpers + layout.style.ts (positioning only)
     ├── validation/               # shared zod schemas (or per-screen in the screen's models/)
     └── test/                     # test helper, setup, MSW and native-module mocks
@@ -100,7 +101,11 @@ export default HomePage
 
 Expo Router resolves `src/app/` automatically (no root `app/`). The shipped routes are flat —
 `/` and `/login` under the root `Stack` in `_layout.tsx`, with no route guard. When an area needs
-shared chrome, add a route group (`(auth)`, `(tabs)`, …) with its own `_layout.tsx`. The root
+shared chrome, add a route group (`(auth)`, `(tabs)`, …) with its own `_layout.tsx`. The layout
+components of `expo-router` (`Stack`, `Tabs`, `Slot`, `Redirect`, `Link`) and its types are
+imported directly; its hooks and its `router` only under `src/lib/routing/`
+(`local/wrapped-import`), where the app's own hook over them goes, under its own types, with its
+first caller: the app calls none yet. The root
 `_layout.tsx` boots through `src/lib/bootstrap/` and imports project modules only: it holds the
 splash screen with `holdSplashScreen` as it loads, renders nothing until `useAppBootstrap` has
 loaded the faces `APP_FONTS` names (or one failed to load) and hidden the splash, and wraps its tree
@@ -158,7 +163,11 @@ StyleSheet built from `@app/tokens`. A screen, a route file and a container unde
 gap, alignment, position, size and spacing, never a colour, a font or a radius. Text is
 `ui/Text`, a labelled rule `ui/Divider`, a screen's surface `ui/Screen` (the active theme's
 base), a gradient `ui/Gradient`, the accent gradient `ui/AccentGradient` and the status bar
-`ui/StatusBar`; the navigator's themed background and the status bar's glyphs come from
+`ui/StatusBar`; every block that shows text renders `ui/Text`, which takes the block's classes
+(`className`) and its `accessibilityRole`, because a `react-native` primitive a `ui/` block is
+named after (`Text`, `Modal`, `Button`, `StatusBar`) is imported only under that block's folder
+(`local/wrapped-import`, reading the blocks from disk), while `View`, `ScrollView`, `Pressable`
+and `TextInput` stay direct; the navigator's themed background and the status bar's glyphs come from
 `useRootTheme`. Only `ui/` imports a UI kit or a drawing primitive
 (`expo-linear-gradient`, `react-native-svg`), and a primitive with a wrapper only through it:
 `ui/Gradient` alone imports `expo-linear-gradient`, `ui/StatusBar` alone `expo-status-bar`, whose

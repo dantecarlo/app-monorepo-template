@@ -37,8 +37,9 @@ is `modify` — never scaffold a duplicate.
 
 Enforcement is **review**. No linter can verify "did you look first". The
 mechanical backstops (`knip` for dead and duplicate exports, `verify:maps` for
-coverage) only catch leftovers _after_ the duplicate exists — this rule is what
-prevents it.
+coverage) only catch leftovers _after_ the duplicate exists, and
+`local/wrapped-import` only a `react-native` primitive drawn outside the `ui/`
+block named after it — this rule is what prevents it.
 
 > Duplication born of not knowing what already exists is the most expensive
 > kind: it survives review and rots the architecture from the inside.
@@ -760,7 +761,7 @@ This table exists so that difference is visible.
 
 | Rule                        | Method        | Mechanism                                                           |
 | --------------------------- | ------------- | ------------------------------------------------------------------- |
-| §0 Reuse before scaffolding | review        | backstops: `knip`, `verify:maps`                                    |
+| §0 Reuse before scaffolding | review        | backstops: `knip`, `verify:maps`; `local/wrapped-import` refuses a primitive its `ui/` block wraps |
 | §1 Arrow only               | lint          | `func-style` + `no-restricted-syntax`                               |
 | §1.1 ES6+ over ES5          | **none yet**  | needs `no-var`, `prefer-const`, ES5-shape selectors                 |
 | §1.2 Comment discipline     | lint          | `local/no-justifying-comment` — narrow set; broad tell stays review |
@@ -798,10 +799,12 @@ This table exists so that difference is visible.
 | §22 Screens only position   | lint+script   | `local/style-positions-only` + `verify:allowlist-freshness`         |
 | §22 Values are tokens       | lint+script   | `local/style-token-values` + `verify:allowlist-freshness`           |
 | §22 The kit behind `ui/`    | lint          | `local/ui-kit-boundary` on every app                                |
+| §22 A primitive through its block | lint    | `local/wrapped-import`: a `react-native` primitive a `ui/` block is named after, only under that block |
 | §22 One `tv` on web         | lint+test     | `local/dependency-seam`: the helper is `tailwind-variants`' seam    |
 | Token outputs generated     | script        | `verify:theme-sync` (and `:test`): each equals its regeneration     |
 | §23 Packages in their seams | lint+script   | `local/dependency-seam` + `verify:dependency-seams`                 |
 | §23 Every package registered | script       | `verify:dependency-seams` — every `package.json` dependency, no stale entry |
+| §23 The names a wrapper owns | lint         | `local/wrapped-import`: the `expo-router` hooks and `router`, only under `src/lib/routing/` |
 | §24 One rule set, every app | test          | the fixture apps of `eslint-local-rules/__fixtures__/apps/` (`verify:lint-rules:test`) |
 
 **Rows that read "none yet", "warn only" or "partial"** are not aspirations
@@ -838,6 +841,14 @@ The rule of the LAW of the same name in `AGENTS.md`, which quotes the owner's de
   wrapper, and only its component file imports it (§23): `ui/Image` draws `next/image` on web,
   `ui/Gradient` `expo-linear-gradient` and `ui/StatusBar` `expo-status-bar` on mobile, and
   `ui/AsyncBoundary` wraps `react-error-boundary` in both. Every other block renders the wrapper.
+- **A `react-native` primitive a `ui/` block is named after** is imported only under that block's
+  folder, and every other file renders the block, another `ui/` block included: on mobile
+  `ui/Text` for `Text`, `ui/Modal` for `Modal`, and `ui/Button` and `ui/StatusBar`, which stand in
+  for theirs. `local/wrapped-import` reads the blocks from each app's `src/components/ui/` on disk,
+  so a block added later covers its primitive with no list to edit. `ui/Text` takes the classes
+  (`className`) and the `accessibilityRole` a block sets, beside its variant, style and line limit.
+  `View`, `ScrollView`, `Pressable`, `TextInput` and every primitive no block is named after stay
+  direct.
 - **A block's public type names no kit type.** Its props are its own: a web block types its
   variants with unions its `*.constant.ts` declares, one tuple of option names per variant and the
   union it derives (`BUTTON_SIZE_VARIANTS`, `ButtonSizeType`), as the mobile constants do, never
@@ -870,7 +881,11 @@ export const LOGIN = { DIVIDER: 'my-6', FORM: 'flex flex-col gap-4' }
 > Status: **lint + script.** `local/style-positions-only`, `local/style-token-values` and
 > `local/ui-kit-boundary` (`eslint-local-rules/`, `error` over both apps), and
 > `verify:allowlist-freshness`; `local/dependency-seam` keeps a kit type out of every file but its
-> seam, and each web block's constant test holds its unions to its `tv` config. **Not covered:** a
+> seam, `local/wrapped-import` a `react-native` primitive out of every file but the folder of the
+> block named after it, and each web block's constant test holds its unions to its `tv` config.
+> **Not covered:** a block that stands in for a primitive under another name (`ui/Toggle` for
+> `Switch`), and a primitive no block wraps alone (`Pressable`, `TextInput`); a raw HTML element a
+> web block wraps (`<button>`), which is no import; a
 > number in a React Native style (`borderRadius: 18`); a class string in a `*.constant.ts`; a class
 > a variable hides (`cn(STYLE.X, tone)`), judged where it is defined only if that file is a style
 > file; a web block with variants whose constant test is missing, which review reads; and whether
@@ -907,6 +922,15 @@ or source imports.
   `next`, each to one file of the web app (`lib/routing/useAppRouter.hook.ts`,
   `lib/cache/cachePolicy.adapter.ts` and `components/ui/Image/Image.component.tsx`); `next/server`
   takes `next`'s.
+- **A name a wrapper owns stays in that wrapper**, though its package is core
+  (`local/wrapped-import`, decision 58). A `react-native` primitive a `ui/` block is named after
+  passes only under that block's folder (§22). An `expo-router` hook, every `use…` name, and its
+  `router` object pass only under the app's `src/lib/routing/`; its layout components (`Stack`,
+  `Tabs`, `Slot`, `Redirect`, `Link`) and its types pass anywhere. The rule reads the names a file
+  imports or re-exports, type-only ones included and judged by the name the module exports, the
+  keys a `vi.mock` factory returns and the names a dynamic `import()` or `require()` is read by; a
+  reach of the whole module (a namespace import, `export *`, a factory-less `vi.mock`) is refused
+  where one of those names would be.
 - **A test inherits the seam of the unit it tests** (the unit its `__tests__/` stands beside, § 9),
   and `src/test/**` is the test-infrastructure seam: it may import any registered package. A test
   of anything else mocks the project module (`@/lib/*`, `@/components/ui/*`), not the vendor.
@@ -950,7 +974,9 @@ On web, `useAppRouter` of `src/lib/routing/` returns `IAppRouter`, only `push(hr
 `replace(href)` and `refresh()`, with an `href` the typed routes check, and a test mocks
 `@/lib/routing` through `createRoutingDouble` of `src/test/routing.helper.ts`; a function under
 `'use cache'` sets its life profile, one of the app's `CacheLifeEnum`, and its tags through
-`applyCachePolicy({ life, tags })` of `src/lib/cache/`.
+`applyCachePolicy({ life, tags })` of `src/lib/cache/`. On mobile, `src/lib/routing/` is where a
+hook over `expo-router` goes, under the app's own types; the app calls none yet, so it holds no
+module, and its first caller adds one with its test.
 
 **A root imports project modules only.** The mobile root layout boots through
 `src/lib/bootstrap/`: `holdSplashScreen` and `hideSplashScreen` of `splashScreen.adapter.ts` are
@@ -976,11 +1002,16 @@ and the gate fails an entry whose import is gone, so the list cannot grow back b
 > imports, re-exports, `import()`, `require()`, `import()` types and the `vi.mock` family.
 > `verify:dependency-seams` holds the registry to every `package.json` (no unregistered
 > dependency, no stale entry), every seam glob to a file, the configs ESLint ignores to their
-> seams, and the allowlist to the imports that still break the rule. **Not covered:** the names
-> imported from a package (the `react-native` primitives and the `expo-router` hooks are F.8
-> unit 8); a specifier that is not a literal; triple-slash references and `declare module`; CSS
-> and JSON (an Expo plugin); a vendor type a wrapper re-exports; and whether a seam is the right
-> one, which is review.
+> seams, and the allowlist to the imports that still break the rule. `local/wrapped-import`
+> (`eslint-local-rules/wrapped-import.detect.mjs`, `error` over the same pattern, with the ui
+> blocks of the workspace the config is built for) holds the names a wrapper owns. **Not
+> covered:** a name no wrapper owns by the rule's detection (`Pressable`, `TextInput`, a block
+> that stands in for a primitive under another name); a subpath of `react-native` or
+> `expo-router`, a `vi.importActual` and an `import()` type, whose names are not read; a ui block
+> added while an editor session runs, which its ESLint server reads only on restart; a
+> specifier that is not a literal; triple-slash references and `declare module`; CSS and JSON
+> (an Expo plugin); a vendor type a wrapper re-exports; and whether a seam is the right one,
+> which is review.
 
 ---
 
