@@ -1,6 +1,6 @@
 # Proposal: the board is the source of every open ticket, and the general plan records closed tickets only
 
-> **Status:** open
+> **Status:** archived — 2026-11-18
 
 ## Why
 
