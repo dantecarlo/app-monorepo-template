@@ -53,6 +53,10 @@ export default defineConfig({
         __dirname,
         './src/test/mocks/nativewind.ts'
       ),
+      'posthog-react-native': path.resolve(
+        __dirname,
+        './src/test/mocks/posthog-react-native.ts'
+      ),
       'react-native': path.resolve(
         __dirname,
         './src/test/mocks/react-native.ts'

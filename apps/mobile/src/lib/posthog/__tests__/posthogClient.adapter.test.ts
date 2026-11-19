@@ -8,8 +8,8 @@ const { construct, optIn } = vi.hoisted(() => ({
   optIn: vi.fn()
 }))
 
-// The real package cannot load under the test environment; the client is
-// built from this stand-in, which records how it was constructed.
+// The client is built from this stand-in, in place of the shared one of
+// vitest.config.ts: it records how the client was constructed.
 vi.mock('posthog-react-native', () => ({
   PostHog: class {
     optIn = optIn
