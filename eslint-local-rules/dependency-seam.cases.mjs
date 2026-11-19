@@ -57,6 +57,15 @@ const refused = ({ code, kinds, name, path }) => ({
 const SENTRY_SDK = ['@sentry', 'nextjs'].join('/')
 const STRIPE_SDK = ['@stripe', 'stripe-js'].join('/')
 
+// A sentry prune takes the SDK's registry entry, so the kind of its refusal
+// follows the registry this repository carries: outside its seam while the
+// registry names it, unregistered once a prune has taken it.
+const SENTRY_KIND = indexRegistry({
+  registry: readSeamInputs({ root: REPO_ROOT }).registry
+}).entries.has(SENTRY_SDK)
+  ? OUTSIDE_SEAM
+  : UNREGISTERED
+
 const WEB_SCREEN = 'apps/web/src/screens/Example/Example.screen.tsx'
 const WEB_SCREEN_TEST =
   'apps/web/src/screens/Example/__tests__/Example.screen.test.tsx'
@@ -92,7 +101,7 @@ const RULE_CASES = {
         `import * as Sentry from '${SENTRY_SDK}'`,
         `import { loadStripe } from '${STRIPE_SDK}'`
       ].join('\n'),
-      kinds: [OUTSIDE_SEAM, UNREGISTERED],
+      kinds: [SENTRY_KIND, UNREGISTERED],
       name: 'a vendor SDK the old import patterns refused is still refused',
       path: WEB_SCREEN
     }),
