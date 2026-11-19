@@ -95,10 +95,10 @@ The project layer maps its own state names onto these.
 | Changes requested | QA, with a comment: from In QA, or from Ready to merge on a red CI or a conflict when it brings the branch current | Architect, then the architect tells the dev session: `<id> changes requested` | `ticket:changes-requested` |
 | Ready to merge | QA: checks passed and § Ready to merge met; QA asks no one and merges nothing | Architect: `<id> ready to merge, PR #<n>`, and the architect queues it; for a hotfix into the production branch, `<id> ready to merge, hotfix` | `ticket:ready-to-merge` |
 | Done | Architect: merges it from its merge queue, on the owner's word or under the `low-risk` policy (rule 4); for a hotfix, CI/CD merges it into the production branch as its release's deploy step | QA and the dev session: `<id> merged`, sent by the architect; for a hotfix, CI/CD tells the architect, and the architect tells them | `ticket:done` |
-| Closed | Architect: after Done when the project declares no deploy target, or once the release that lists the ticket is Released | PO: `<id> closed`, and the PO updates the general plan | `ticket:closed` |
+| Closed | Architect: after Done when the project declares no deploy target, or once the release that lists the ticket is Released | PO: `<id> closed`, and the PO records it in the general plan's closed ticket catalog | `ticket:closed` |
 | Ready for prod | Architect: a release ticket whose tickets are Done, or a hotfix at Ready to merge, § Release stage met | the CI/CD session: `<release-id> ready for prod` | `ticket:ready-for-prod` |
 | In release | CI/CD, on the owner's word | none (it runs each deploy target the release touches, in order) | `ticket:in-release` |
-| Released | CI/CD, after checking production | Architect: `<release-id> released`; the architect closes the tickets it lists and tells the PO `<release-id> released`, and the PO updates the plan | `ticket:released` |
+| Released | CI/CD, after checking production | Architect: `<release-id> released`; the architect closes the tickets it lists and tells the PO `<release-id> released`, and the PO records the tickets it lists in the general plan's closed ticket catalog | `ticket:released` |
 
 A failed deploy target sends the release ticket back to Refinement, with a comment. No other
 transition exists.
@@ -156,7 +156,7 @@ session may fill a dev role; exactly one QA session fills each dev area's QA rol
 
 | Role | Responsibility | Skill |
 | --- | --- | --- |
-| PO | Turns a client requirement into a ticket, quoting the client verbatim; owns scope, and every change of scope goes through it; updates the general plan when a ticket closes | `po-ticket` |
+| PO | Turns a client requirement into a ticket, quoting the client verbatim; owns scope, and every change of scope goes through it; records each closed ticket in the general plan's closed ticket catalog, never an open one | `po-ticket` |
 | Architect | Refines a ticket into specs and a technical plan (areas, subtasks, reserved files, dependencies); dispatches every transition; sets the merge order, keeps the merge queue and merges one pull request at a time, on the owner's word or under the `low-risk` policy; groups releases; closes tickets; creates technical tickets | `refine-ticket` |
 | Dev | One or more sessions per area (App, Web, Backend): builds a ticket in its own worktree and branch, test first | `dev-ticket` |
 | QA | One per area, Backend included: checks out the branch, runs the area's end-to-end checks with evidence, returns the ticket or brings it to Ready to merge and hands it to the architect, brings it current again when the architect asks; merges nothing; checks a release on staging | `qa-ticket` |
@@ -265,8 +265,8 @@ their dependencies, so each ticket has one dev session, one branch and one QA se
   technical ticket the architect files goes through it like a move.
 - Moving a target version changes a commitment, so it goes through the PO: the architect proposes
   the move on the ticket (`comment`) and messages the PO `<id> version change`; the PO confirms
-  it, sets it (`set version`), updates the general plan and messages the architect
-  `<id> version set`.
+  it, sets it (`set version`) and messages the architect `<id> version set`. The board carries
+  the move; the general plan names no open ticket, so it does not change.
 - A release is one version: its release ticket lists every ticket whose target version is that
   version (`read version`).
 

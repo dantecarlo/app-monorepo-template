@@ -74,6 +74,9 @@ const BRANCH_TYPES_NAMED = 'It names `branchTypes`.'
 const BLOCK_NAMED = `It names \`${IDENTITY_INFO}\`.`
 const REQUIRED_SLUG = '"slug": "required"'
 const SOURCE_NAMED = 'It names source of every open ticket.'
+const PO_CLOSE_STEP = '## Step 6 — Record the closed tickets'
+const CATALOG_NAMED = 'It names § Closed Ticket Catalog.'
+const ONE_PULL_REQUEST_NAMED = 'It names one pull request per close or release.'
 
 // The block a process template's Ticket identity section ships: the branch
 // check's defaults, as JSON.
@@ -806,6 +809,41 @@ export const CASES = [
     }),
     expected: 1,
     name: 'a process template whose board adapter does not make the board the source of open tickets is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'po-ticket' })]: withoutSection({
+          heading: PO_CLOSE_STEP
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a po-ticket without its close step is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'po-ticket' })]: replace({
+          from: CATALOG_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a po-ticket whose close step names no closed ticket catalog is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'po-ticket' })]: replace({
+          from: ONE_PULL_REQUEST_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a po-ticket whose close step does not open one pull request per close or release is refused'
   }
 ]
 

@@ -5,7 +5,8 @@ description: >
   from the ticket template with the client's words verbatim and the version it is aimed at,
   creates it in Backlog, never without that version, and tells the architect; answers scope
   questions; confirms every move of a target version, and the first version of a technical
-  ticket; and refreshes the general plan when a ticket closes or a release ships.
+  ticket; and, when a ticket closes or a release ships, records each closed ticket in the
+  general plan's closed ticket catalog, the board staying the source of every open one.
   USE WHEN: "the client asked for", "new requirement", "create a ticket for", "<id> question"
   about scope, "<id> version change", "<id> closed", "<release-id> released", a PO session of the
   ticket flow starts work.
@@ -14,7 +15,7 @@ description: >
   ticket (`refine-ticket`).
 ---
 
-# PO ticket — a client requirement becomes a ticket; the plan follows every close
+# PO ticket — a client requirement becomes a ticket; the plan records every close
 
 Read `ticket-flow` first (`.claude/skills/ticket-flow/SKILL.md`), its pre-flight included: this
 procedure uses its board operations, states, messages and rules and never restates them.
@@ -72,16 +73,24 @@ answer is the client's to give, ask the client and quote the reply verbatim; nev
 On `<id> version change`: `read` the architect's proposal on the ticket: a move, or the first
 version of a technical ticket the architect filed. A move changes what the client was promised,
 so ask the client when the date was theirs. Once it is confirmed, run
-`set version`, `comment` the confirmation, refresh the general plan, and message the architect
-`<id> version set`. Not confirmed → `comment` why; the version stays.
+`set version`, `comment` the confirmation, and message the architect `<id> version set`. The
+board carries the move: the general plan names no open ticket, so it does not change. Not
+confirmed → `comment` why; the version stays.
 
 ---
 
-## Step 6 — Refresh the plan on every close
+## Step 6 — Record the closed tickets
+
+The board is the source of every open ticket (`ticket-flow` § Board operations): the plan
+records a ticket only once it is closed.
 
 On `<id> closed` or `<release-id> released`: `read` the ticket, or every ticket the release
-lists, and refresh the general plan with `general-plan`, so the plan's done and pending lists
-match the board.
+lists, and record each one as a row of docs/GENERAL_PLAN.md § Closed Ticket Catalog, through
+`general-plan`, copied from the board: its id, title, type, target version, the day it closed and
+its pull request. Commit the rows on a branch of their own, in
+one pull request per close or release, and `comment` its link on the ticket, or on the release
+ticket. Copy no open ticket into the plan, and never refresh its pending work from the board: the
+plan points at the board.
 
 ---
 
@@ -96,11 +105,12 @@ board_operations: [create, read, comment, read version, set version]
 moves: [none → Backlog]
 messages: ['<id> new', '<id> scope changed', '<id> version set']
 edits:
-  - docs/GENERAL_PLAN.md # through general-plan, on a close
+  - docs/GENERAL_PLAN.md # § Closed Ticket Catalog only, through general-plan, one pull request per close or release
 validated_by: review
 done_when: >-
   the ticket is in Backlog with the client's words verbatim and its target version set, and the
-  architect was told
+  architect was told; or, on a close or a release, each closed ticket is a row of the plan's
+  Closed Ticket Catalog in its one pull request
 ```
 
 ---

@@ -21,7 +21,9 @@
 //     the `json ticket-identity` block, and its ticket and release
 //     templates, the ticket's target version marked required;
 //   - a role skill: a first paragraph that names ticket-flow's SKILL.md, and
-//     neither of the contract's two tables; `refine-ticket` a merge queue
+//     neither of the contract's two tables; `po-ticket` a close step that
+//     records the closed tickets in the plan's closed ticket catalog, one
+//     pull request per close or release; `refine-ticket` a merge queue
 //     that names both merge policies and a release step that names the
 //     hotfix's line; `qa-ticket` a checkout step that adds a `--detach`
 //     worktree, a decide step that pushes `HEAD:<branch>`, a hand-off step
@@ -207,6 +209,12 @@ const BOARD_SOURCE = 'source of every open ticket'
 const BOARD_OPERATIONS_HEADING = '## Board operations'
 const BOARD_ADAPTER_HEADING = '## Board adapter'
 
+// On a close or a release the PO records each closed ticket in the general
+// plan's catalog, in one pull request, and copies no open ticket there.
+const PO_CLOSE_STEP = '## Step 6 — Record the closed tickets'
+const CLOSED_CATALOG = '§ Closed Ticket Catalog'
+const ONE_PULL_REQUEST = 'one pull request per close or release'
+
 // Every ticket carries a target version, so every ticket closes through a
 // release: the ticket template marks the field required.
 const TARGET_VERSION_HEADING = '## Target version'
@@ -304,7 +312,15 @@ export const SKILL_CONTRACTS = [
       { header: ROLES_TABLE_HEADER, heading: '## Roles', keys: ROLES }
     ]
   },
-  { folder: 'po-ticket', headings: SHAPE_HEADINGS, role: true },
+  {
+    folder: 'po-ticket',
+    headings: [PO_CLOSE_STEP, ...SHAPE_HEADINGS],
+    mentions: [
+      { heading: PO_CLOSE_STEP, text: CLOSED_CATALOG },
+      { heading: PO_CLOSE_STEP, text: ONE_PULL_REQUEST }
+    ],
+    role: true
+  },
   {
     folder: 'refine-ticket',
     headings: [MERGE_QUEUE, RELEASE_STEP, ...SHAPE_HEADINGS],
@@ -736,7 +752,9 @@ export const gate = defineGate({
     'release templates, the ticket template naming its target version ' +
     `${VERSION_REQUIRED}; each role skill opens by sending the reader to ` +
     'ticket-flow ' +
-    "and copies neither of the contract's tables, refine-ticket has a " +
+    "and copies neither of the contract's tables, po-ticket has a close " +
+    `step that names ${CLOSED_CATALOG} and ${ONE_PULL_REQUEST}, ` +
+    'refine-ticket has a ' +
     'merge queue that names both merge policies and a release step that ' +
     `names ${HOTFIX_MESSAGE}, qa-ticket a checkout step that names ` +
     `${DETACHED_CHECKOUT}, a decide step that names ${HEAD_PUSH}, a ` +
