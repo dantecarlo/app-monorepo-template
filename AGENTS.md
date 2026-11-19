@@ -68,7 +68,8 @@ ATL_TEMPLATE_SELF=1 pnpm validate
 `pnpm agent-harness:test`, runs `turbo run lint typecheck test build format:check`, then
 `pnpm verify:tests`, the spec gates (`verify:specs`, and `report:spec-drift`, which
 only reports), `pnpm verify:english`, `pnpm verify:instruction-entry`,
-`pnpm codex-budget:test` and `pnpm verify:maps`. All must pass.
+`pnpm verify:unicode-safety`, `pnpm codex-budget:test` and `pnpm verify:maps`.
+All must pass.
 
 The projection check and the manifest gates run first (they are instant, so
 structural drift fails before anything expensive). An agent is written once, in

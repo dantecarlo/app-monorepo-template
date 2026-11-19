@@ -119,6 +119,8 @@
     "scripts/verify-theme-sync.test.mjs",
     "scripts/verify-ticket-branch.mjs",
     "scripts/verify-ticket-branch.test.mjs",
+    "scripts/verify-unicode-safety.mjs",
+    "scripts/verify-unicode-safety.test.mjs",
     "template.manifest.json",
     "tsconfig.base.json",
     "turbo.json"
