@@ -116,7 +116,7 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 **Next:** F.11 and the rest of Stage F.
 
 **Pending, in order:**
-- F.8 and F.11 of Stage F, and the small follow-ups F43, F44 and F48 to F50.
+- F.11 of Stage F, and the small follow-ups F43, F44, F49 and F50.
 - F33, when the owner decides it.
 - Step 3.2 part B: `gradedBy`, `sdd-steward` and `verify:router-coverage` (F27).
 - Step 3.3, then Stages 4 to 7.
@@ -275,11 +275,11 @@ F.8 work units, in order:
 1. the registry, the rule and the gate, with the frozen allowlist (done: 143 frozen imports, by unit: 2 → 82, 3 → 8, 4 → 11, 5 → 20, 6 → 20, 7 → 2);
 1b. every ESLint block applied to `apps/*` and `packages/*` by pattern, not per app (decision 52), so the fixture app inherits every rule, not only `local/dependency-seam` (done: framework blocks by what each app declares; identical findings before and after);
 2. the i18n seam in both apps (done: one `IAppTranslator` in `@app/i18n`, the 82 frozen imports migrated, the allowlist from 143 to 61);
-3. the query seam's own types and provider;
-4. `createAppStore` and the key-value storage port;
-5. the `ui/` leaks (AsyncBoundary, variant unions, Gradient, StatusBar, Image);
-6. `lib/bootstrap`, `lib/cache` and `lib/routing`;
-7. the opaque Supabase client;
+3. the query seam's own types and provider (done: project-owned option and result types, `AppQueryProvider`, `useInvalidateAppQuery` and `useIsAppMutating`, #48);
+4. `createAppStore` and the key-value storage port (done: #48; the allowlist from 61 to 42);
+5. the `ui/` leaks (AsyncBoundary, variant unions, Gradient, StatusBar, Image) (done: #47; with units 3 and 4, the allowlist at 22);
+6. `lib/bootstrap`, `lib/cache` and `lib/routing` (done: web #49, mobile #50; mobile calls no `expo-router` hook, so its `lib/routing` waits for the first one);
+7. the opaque Supabase client (done: `BackendClientType`, #50; the allowlist empty);
 8. the primitive-wrapper rule (done: `local/wrapped-import` holds the `react-native` primitives a `ui/` block is named after, read from disk, and the `expo-router` hooks; every mobile text through `ui/Text`; the allowlist stays empty);
 9. an empty allowlist and the docs, ADR and `lib` skill, then the parity hand-off to Certifipago (done: the allowlist empty since unit 7, `docs/decisions/0002-every-library-behind-an-adapter.md`, the `lib` skill as the one procedure, and the F.8 row of the Template → Certifipago parity ledger).
 
@@ -528,6 +528,7 @@ defects behind them, for changes of their own.
 | F56 | both apps, privacy | the native review of the deferred PostHog client (F54), two advisory findings left open: on mobile, a revoke drops the client without shutting it down, so its flush timer lives on beside the client a later grant builds, while `reset` keeps the event queue, so a `shutdown` would send it after the revoke; on web, one held call that throws when the SDK loads loses the calls after it and rejects the start | small; decide what a revoke does with the queued events, then shut the dropped client down, and run each held call on its own |
 | F57 | packages/supabase | `test:db` (`supabase test db --linked`) runs pgTAP against the linked project's applied schema, so the tests of a branch's new migration fail until `db push`; Certifipago #878 applies the pending migrations inside the rolled-back transaction instead | a change of its own |
 | F58 | harness | no ticket-flow message tells the architect about the PO's closed ticket catalog pull request, so nothing routes it to the merge queue (found by `2026-11-18-board-is-the-source`, its Q1; Certifipago has the same gap) | small; the owner decides the message |
+| F59 | harness | with F.8 closed and the allowlist empty, `verify:dependency-seams` still accepts a new allowlist entry whose reason names an F.8 unit from 2 to 8 while its import breaks the rule, so only review keeps the allowlist empty (found by F.8 unit 9) | small; the owner decides whether the gate refuses every entry |
 
 ---
 
