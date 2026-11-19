@@ -58,10 +58,13 @@ The owner's words, verbatim:
   not declare, and one opened and never closed, closed and never opened, or opened inside
   another. No verb is added. The `sentry` capability claims, with regions, its keys in both
   `.env.example`, its mobile Vitest alias, its `allowBuilds` entry and its rows of the global map.
-- **The Sentry requirements move into a spec the capability claims (F49).** A new living spec,
-  `openspec/specs/capabilities/sentry/spec.md` (prefix `SENTRY`), takes WEB-29, WEB-30, MOBILE-26,
-  MOBILE-27 and the Sentry scenarios of WEB-53, WEB-54 and MOBILE-51, and governs the Sentry
-  files; the `sentry` capability claims it, so its prune deletes them with the tests they cite.
+- **The Sentry requirements move into specs the capability claims (F49).** Two new living specs,
+  `openspec/specs/apps/web/sentry/spec.md` (prefix `WEBSENTRY`) and
+  `openspec/specs/apps/mobile/sentry/spec.md` (prefix `MOBILESENTRY`), take WEB-29, WEB-30,
+  MOBILE-26, MOBILE-27 and the Sentry scenarios of WEB-53, WEB-54 and MOBILE-51, and govern each
+  app's Sentry files. The `sentry` capability claims both, and each app's prune removes its own
+  with a `remove`, so a Sentry prune deletes them with the tests they cite, and a project that
+  keeps Sentry and drops an app loses that app's part.
 - **`prune-boundary` sees what F49 found.** It also lists a kept spec that cites a file the prune
   deletes (a scenario's test, an evidence path or a governed path), a kept source file that names
   a pruned file by a relative path string, and a key of a kept `.env.example` that only pruned
@@ -84,7 +87,7 @@ The owner's words, verbatim:
   optional capability or list its key, and they sit outside this change's edit surface; the
   known-gaps table names them.
 - **The `openspec/README.md` § 2.1 row of a pruned spec.** A table row cannot hold a region, so
-  the row of the new spec stays after a prune, as the rows of every other capability's spec do
+  the rows of the new specs stay after a prune, as the rows of every other capability's spec do
   (the known-gaps row "any with a spec").
 
 ## Affected specs
@@ -94,4 +97,5 @@ The owner's words, verbatim:
 - `openspec/specs/harness/dependency-seams/spec.md`: modifies SEAM-01
 - `openspec/specs/apps/web/spec.md`: removes WEB-29 and WEB-30; modifies WEB-53 and WEB-54
 - `openspec/specs/apps/mobile/spec.md`: removes MOBILE-26 and MOBILE-27; modifies MOBILE-51
-- `openspec/specs/capabilities/sentry/spec.md` (new): adds SENTRY-01 to SENTRY-06
+- `openspec/specs/apps/web/sentry/spec.md` (new): adds WEBSENTRY-01 to WEBSENTRY-04
+- `openspec/specs/apps/mobile/sentry/spec.md` (new): adds MOBILESENTRY-01 to MOBILESENTRY-03

@@ -23,11 +23,16 @@ smaller than a file.
    `sentry` capability's `remove-dep` takes it; a web-only project that keeps Sentry loses the
    `@sentry/react-native` entry with `mobile-expo`. Found at apply: with `sentry` as their owner,
    the `mobile-expo` prune of this repository left the `@sentry/react-native` entry stale.
-3. **The Sentry requirements move into a spec the capability claims.** A new living spec,
-   `openspec/specs/capabilities/sentry/spec.md` (prefix `SENTRY`), holds the requirements whose
-   tests the `sentry` prune deletes and governs the Sentry files; the capability claims the
-   file. The web and mobile specs keep their other requirements and stop citing or governing a
-   Sentry file.
+3. **The Sentry requirements move into specs the capability claims, one per app.**
+   `openspec/specs/apps/web/sentry/spec.md` (prefix `WEBSENTRY`) and
+   `openspec/specs/apps/mobile/sentry/spec.md` (prefix `MOBILESENTRY`) hold the requirements
+   whose tests the `sentry` prune deletes and govern each app's Sentry files. The `sentry`
+   capability claims both; `web-next` and `mobile-expo` each remove their own with a `remove`, the
+   way the capability's code files are split between a claim and a verb. The web and mobile specs
+   keep their other requirements and stop citing or governing a Sentry file. Found at apply: one
+   spec for both apps, capabilities/sentry, kept citing the mobile Sentry files when a project
+   kept Sentry and pruned `mobile-expo` (2 citations), and the web ones when it pruned `web-next`
+   (8).
 4. **Q2: a capability owns regions, and no verb is added.** A region is the lines from a
    `region <capability>` comment to the matching `endregion <capability>` comment, the comment
    written in the file's own syntax: `# region sentry` in YAML and dotenv, `// region sentry` in
@@ -54,7 +59,8 @@ smaller than a file.
 | Registry owner rule   | **The claims decide; a `remove-dep` takes the entries of the package it removes last** | One owner per entry, as for files; the `sentry` entries go with either the Sentry prune or the app's prune | An entry owned by `web-next` goes with the `sentry` prune, which reads as indirect until `docs/manifest.md` says why |
 | Registry owner rule   | The capability that adds the package owns it (`sentry` owns `@sentry/*`) | Reads naturally in the registry                                                                                                                                                | A prune of the app alone (a web-only project with Sentry) leaves `@sentry/react-native` stale: two capabilities remove it, and one field holds one |
 | Registry ownership    | A manifest claim per entry (`"registry": ["@sentry/nextjs"]`)           | The manifest stays the only file that names an owner                                                                                                                           | Every package is named twice, in two files; the gate needs the unclaimed, conflict and stale-claim classes again for entries; a package registered without a claim drifts until the gate runs |
-| Spec claim            | **Move the requirements into a spec the capability claims**             | The existing file claim prunes them; the web spec's `Governs` line, one field that `scripts/specs.detect.mjs` reads whole, stops naming Sentry files; `verify:specs` unchanged | IDs WEB-29, WEB-30, MOBILE-26 and MOBILE-27 retire; the new spec's row in `openspec/README.md` § 2.1 stays after a prune, like every capability spec's row                                     |
+| Spec claim            | **Move the requirements into one spec per app the capability claims, which each app's prune removes** | A Sentry prune and an app prune each take exactly the requirements whose files they delete; each spec sits under the app whose code it governs | Two specs and two prefixes for one capability; a `remove` per app in the manifest |
+| Spec claim            | Move the requirements into one spec the capability claims (capabilities/sentry) | The existing file claim prunes them; the web spec's `Governs` line, one field that `scripts/specs.detect.mjs` reads whole, stops naming Sentry files; `verify:specs` unchanged | IDs WEB-29, WEB-30, MOBILE-26 and MOBILE-27 retire; the new spec's row in `openspec/README.md` § 2.1 stays after a prune, like every capability spec's row                                     |
 | Spec claim            | The capability claims the requirements' lines with regions              | The requirements stay in the spec of the unit that enforces them                                                                                                               | The `Governs` line names the five Sentry root files and cannot be split by a region, so `report:spec-drift` lists the web spec as governing missing files after every Sentry prune             |
 | Q2: the YAML key      | A new verb (`remove-yaml-key`, with `file` and `path`)                  | Declared in the manifest, checked by `verify:manifest` like every verb                                                                                                         | Solves one file kind; the keys of both `.env.example`, the Vitest alias and the global map's rows each need another verb or a rewrite; an executor must edit YAML and keep its comments          |
 | Q2: the YAML key      | **A capability-owned region**                                           | One mechanism for every text file that has comments: YAML, dotenv, TypeScript and Markdown; the text stays where it is read; the vocabulary of six verbs stays closed           | A grammar to hold (markers, balance, known owners), which the coverage gate checks; a Markdown table row cannot sit in a region, so a table is split or kept whole                              |
@@ -67,12 +73,11 @@ smaller than a file.
   is added. The coverage gate already reads the manifest; reading the registry beside it closes
   the same two doors the file claims close: an entry nobody owns fails, and an owner nobody
   declares fails. The owner decided per entry on 2026-11-19 ("Ownership per entry").
-- **The capability spec** is the only option that leaves the web and mobile specs with no Sentry
-  file in their `Governs` lines, their evidence or their tests, and it needs no change to how
-  `verify:specs` or `report:spec-drift` read a spec. The unit is the optional Sentry provider,
-  whose files the `sentry` capability claims or removes in both apps; like the harness specs,
-  whose units span folders, its spec is named after the unit (`capabilities/sentry`) and its
-  `Governs` line lists the files.
+- **The per-app capability specs** leave the web and mobile specs with no Sentry file in their
+  `Governs` lines, their evidence or their tests, need no change to how `verify:specs` or
+  `report:spec-drift` read a spec, and keep a spec's path under the code it governs: the Sentry
+  part of apps/web sits in `openspec/specs/apps/web/sentry/spec.md`. One spec for both apps
+  failed the case a project meets when it keeps Sentry and drops an app.
 - **Regions** are the smallest mechanism that keeps the verbs closed: one grammar, no verb, and
   it closes every text place F49 lists that a file claim cannot (the `.env.example` keys, the
   alias, `allowBuilds`, the global map's rows), where a verb would close only YAML. It is the

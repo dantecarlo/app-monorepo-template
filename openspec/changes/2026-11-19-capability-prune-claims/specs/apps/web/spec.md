@@ -43,10 +43,11 @@ packages/tooling with its SDK replaced at its module.
 
 ### Requirement: WEB-29 — The Sentry adapter scrubs PII and stays silent without a DSN
 
-**Reason:** moved, whole, to capabilities/sentry as SENTRY-01, a spec the `sentry` capability
-claims, so the capability's prune takes the requirement with the test it cites.
+**Reason:** moved, whole, to apps/web/sentry as WEBSENTRY-01, a spec the `sentry` capability
+claims and the `web-next` prune removes, so either prune takes the requirement with the test it
+cites.
 
 ### Requirement: WEB-30 — The Sentry SDK scrubs every event in every runtime
 
-**Reason:** moved, whole, to capabilities/sentry as SENTRY-02, so the capability's prune takes the
+**Reason:** moved, whole, to apps/web/sentry as WEBSENTRY-02, so either prune takes the
 requirement with the files it cites.

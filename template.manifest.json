@@ -194,7 +194,10 @@
         },
         {
           "verb": "remove",
-          "paths": ["apps/web/**"]
+          "paths": [
+            "apps/web/**",
+            "openspec/specs/apps/web/sentry/spec.md"
+          ]
         }
       ]
     },
@@ -231,6 +234,10 @@
           "file": "package.json",
           "op": "unset",
           "path": "scripts.verify:expo"
+        },
+        {
+          "verb": "remove",
+          "paths": ["openspec/specs/apps/mobile/sentry/spec.md"]
         }
       ]
     },

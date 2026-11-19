@@ -525,3 +525,27 @@ test(
     assert.deepEqual(leaks, [])
   }
 )
+
+// A project may keep Sentry and drop one app: the specs the sentry
+// capability claims must then lose the dropped app's part with it.
+const APP_PRUNES = ['mobile-expo', 'web-next']
+
+test(
+  'pruning mobile-expo or web-next of this repository leaves no Sentry spec citing a pruned file',
+  { skip: skipUnless('sentry') },
+  () => {
+    const sentryClaims = REPOSITORY_MANIFEST.capabilities.find(
+      ({ id }) => id === 'sentry'
+    ).claims
+    const leaks = APP_PRUNES.filter(declares).flatMap((capabilityId) =>
+      pruneRepository({ capabilityId })
+        .filter(({ kind }) => kind === 'spec')
+        .filter(({ file }) =>
+          matchesAny({ path: file, patterns: sentryClaims })
+        )
+        .map((leak) => ({ capabilityId, ...leak }))
+    )
+
+    assert.deepEqual(leaks, [])
+  }
+)

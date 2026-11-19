@@ -22,10 +22,11 @@ packages/tooling with its SDK replaced at its module.
 
 ### Requirement: MOBILE-26 — PII scrubbed before Sentry
 
-**Reason:** moved, whole, to capabilities/sentry as SENTRY-04, a spec the `sentry` capability
-claims, so the capability's prune takes the requirement with the tests it cites.
+**Reason:** moved, whole, to apps/mobile/sentry as MOBILESENTRY-01, a spec the `sentry`
+capability claims and the `mobile-expo` prune removes, so either prune takes the requirement with
+the tests it cites.
 
 ### Requirement: MOBILE-27 — Sentry off without a DSN
 
-**Reason:** moved, whole, to capabilities/sentry as SENTRY-05, so the capability's prune takes the
+**Reason:** moved, whole, to apps/mobile/sentry as MOBILESENTRY-02, so either prune takes the
 requirement with the test it cites.

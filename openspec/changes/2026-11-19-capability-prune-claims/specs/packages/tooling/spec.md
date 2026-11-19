@@ -87,6 +87,13 @@ path.
 - **THEN** the kept spec is listed with both files
 - **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a kept spec that governs or cites a pruned file as evidence is a leak"
 
+#### Scenario: the Sentry specs of this repository after an app prune
+
+- **GIVEN** the repository's specs, among them the ones the `sentry` capability claims
+- **WHEN** the prune of `mobile-expo` and of `web-next` is checked, Sentry kept
+- **THEN** no spec the `sentry` capability claims is listed
+- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning mobile-expo or web-next of this repository leaves no Sentry spec citing a pruned file"
+
 ### Requirement: TOOLING-19 — A kept file names no pruned file and keeps no orphaned key
 
 The tooling package SHALL list every kept source file that names a file the prune deletes by a

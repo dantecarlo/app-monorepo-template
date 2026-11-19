@@ -8,7 +8,8 @@ Every test below ran in `ATL_TEMPLATE_SELF=1 pnpm validate` at `993aea5`, or on 
 `node --test` where that run stopped first: `verify:manifest:test` 37 of 37,
 `verify:dependency-seams:test` 41 of 41, the `@app/tooling` suite 36 of 37. The one red is the
 repository scenario of TOOLING-20, which T5 turned red on purpose: the web and mobile specs cite
-ten Sentry files until the archive moves their Sentry requirements into capabilities/sentry.
+ten Sentry files until the archive moves their Sentry requirements into apps/web/sentry and
+apps/mobile/sentry.
 
 | Requirement | Scenario | Test | Result |
 | ----------- | -------- | ---- | ------ |
@@ -20,6 +21,7 @@ ten Sentry files until the archive moves their Sentry requirements into capabili
 | TOOLING-17 | the three prunes of this repository | `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, mobile-expo or supabase of this repository leaves the registry true" | green |
 | TOOLING-18 | a test the prune deletes | `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a kept spec that cites a pruned test is a leak" | green |
 | TOOLING-18 | an evidence or governed path | `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a kept spec that governs or cites a pruned file as evidence is a leak" | green |
+| TOOLING-18 | the Sentry specs of this repository after an app prune | `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning mobile-expo or web-next of this repository leaves no Sentry spec citing a pruned file" | green |
 | TOOLING-19 | a relative path string | `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a kept file that names a pruned file by a relative path is a leak" | green |
 | TOOLING-19 | an orphaned environment key | `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a kept .env.example key that only pruned files read is a leak" | green |
 | TOOLING-20 | a leak inside a region | `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a leak inside a region of the pruned capability is no leak" | green |
@@ -33,21 +35,21 @@ ten Sentry files until the archive moves their Sentry requirements into capabili
 | WEB-53 | no capability file | `apps/web/__tests__/next.config.test.ts` › "keeps the config as built when no capability file is beside it" | green |
 | WEB-54 | the PostHog adapter | `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "the observability port contract" | green |
 | MOBILE-51 | the PostHog adapter | `apps/mobile/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "the observability port contract" | green |
-| SENTRY-01 | an error is captured | `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "captureError forwards the exception to Sentry", "captureError scrubs PII from the context before sending" | green |
-| SENTRY-01 | the user and breadcrumbs are scrubbed | `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "setUser scrubs PII from the user payload", "addBreadcrumb scrubs PII from breadcrumb data" | green |
-| SENTRY-01 | no DSN | `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "all methods no-op when the DSN is absent" | green |
-| SENTRY-02 | an event leaves the app | Not covered | — |
-| SENTRY-03 | the web app's own folder | `apps/web/__tests__/next-sentry.config.test.ts` › "next.config.ts applies the Sentry capability's file of the web app" | green |
-| SENTRY-03 | the Sentry wrapper | `apps/web/__tests__/next-sentry.config.test.ts` › "wraps the config with Sentry, uploading source maps only with a token" | green |
-| SENTRY-04 | an error context with an email | `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "captureError scrubs PII from the context" | green |
-| SENTRY-04 | the user payload | `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "setUser scrubs PII from the user payload" | green |
-| SENTRY-04 | an automatically captured event | `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "Sentry.init registers beforeSend that scrubs auto-captured events" | green |
-| SENTRY-04 | an automatically captured breadcrumb | `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "Sentry.init registers beforeBreadcrumb that scrubs auto-captured breadcrumbs" | green |
-| SENTRY-04 | delivery from a native build | Not covered | — |
-| SENTRY-05 | no DSN | `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "methods no-op when the DSN is absent" | green |
-| SENTRY-05 | no environment tag | Not covered | — |
-| SENTRY-06 | the web Sentry adapter | `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "the observability port contract" | green |
-| SENTRY-06 | the mobile Sentry adapter | `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "the observability port contract" | green |
+| WEBSENTRY-01 | an error is captured | `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "captureError forwards the exception to Sentry", "captureError scrubs PII from the context before sending" | green |
+| WEBSENTRY-01 | the user and breadcrumbs are scrubbed | `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "setUser scrubs PII from the user payload", "addBreadcrumb scrubs PII from breadcrumb data" | green |
+| WEBSENTRY-01 | no DSN | `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "all methods no-op when the DSN is absent" | green |
+| WEBSENTRY-02 | an event leaves the app | Not covered | — |
+| WEBSENTRY-03 | the web app's own folder | `apps/web/__tests__/next-sentry.config.test.ts` › "next.config.ts applies the Sentry capability's file of the web app" | green |
+| WEBSENTRY-03 | the Sentry wrapper | `apps/web/__tests__/next-sentry.config.test.ts` › "wraps the config with Sentry, uploading source maps only with a token" | green |
+| MOBILESENTRY-01 | an error context with an email | `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "captureError scrubs PII from the context" | green |
+| MOBILESENTRY-01 | the user payload | `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "setUser scrubs PII from the user payload" | green |
+| MOBILESENTRY-01 | an automatically captured event | `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "Sentry.init registers beforeSend that scrubs auto-captured events" | green |
+| MOBILESENTRY-01 | an automatically captured breadcrumb | `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "Sentry.init registers beforeBreadcrumb that scrubs auto-captured breadcrumbs" | green |
+| MOBILESENTRY-01 | delivery from a native build | Not covered | — |
+| MOBILESENTRY-02 | no DSN | `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "methods no-op when the DSN is absent" | green |
+| MOBILESENTRY-02 | no environment tag | Not covered | — |
+| WEBSENTRY-04 | the Sentry adapter | `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "the observability port contract" | green |
+| MOBILESENTRY-03 | the Sentry adapter | `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "the observability port contract" | green |
 
 The coverage gate's rules, which no living spec states yet (the manifest gates are among the
 harness units `openspec/README.md` § 2.1 lists as not specified), ran green in
@@ -73,6 +75,7 @@ entries and regions it cannot drop.
 | T4 | the sentry prune of this repository | five `.env.example` keys (`NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN`, `NEXT_PUBLIC_APP_ENV`, `EXPO_PUBLIC_SENTRY_DSN`, `EXPO_PUBLIC_APP_ENV`) and `./src/test/mocks/sentry-react-native.ts` in `apps/mobile/vitest.config.ts` |
 | T5 | the two spec cases | no `spec` finding existed |
 | T5 | the sentry prune of this repository | the web spec cited eight Sentry files and the mobile spec two |
+| T8 | "pruning mobile-expo or web-next of this repository leaves no Sentry spec citing a pruned file" | run against the first archive (one capabilities/sentry spec, `64828b7`): the `mobile-expo` prune left it citing 2 mobile Sentry files and the `web-next` prune 8 web ones |
 
 ## Gate
 
@@ -82,7 +85,7 @@ entries and regions it cannot drop.
 
 ## Not verified
 
-- SENTRY-02, SENTRY-04 "delivery from a native build" and SENTRY-05 "no environment tag" stay
+- WEBSENTRY-02, MOBILESENTRY-01 "delivery from a native build" and MOBILESENTRY-02 "no environment tag" stay
   `Not covered`, with the reasons the web and mobile specs gave them.
 - No executor applies a prune yet (Stage 6, step 6.2). The proof prunes scratch worktrees with a
   scratch simulator of the verbs, the regions and the registry owners, outside the repository.
