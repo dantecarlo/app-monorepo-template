@@ -92,7 +92,7 @@ Last updated: 2026-11-18
 
 ### lib
 
-- **Description**: Wrap a third-party vendor behind a project-internal API in src/lib/{name}/ or a workspace package.
+- **Description**: Wrap a third-party library behind a project-internal API: register the package and its seam in .agents/contracts/dependencies.json, write the src/lib/{name}/ wrapper, the vendor adapter behind a port, or the components/ui block that owns it, under the project's own types, move every caller onto it, and mock the project module in tests, never the vendor.
 - **Triggers**: "wrap library", "create lib for [vendor]", "abstract [library]", "add [name] lib", "create a wrapper for [package]", "hide [vendor] behind a port"
 - **Path**: `.claude/skills/lib/SKILL.md`
 
