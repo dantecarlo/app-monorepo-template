@@ -459,3 +459,134 @@ export const analyzeRegistryOwners = ({ manifest, registry }) => {
     return []
   })
 }
+
+// ---------------------------------------------------------------------------
+// Regions — the lines of a file another owner keeps that a capability owns.
+//
+// A region runs from a `region <capability>` comment to the matching
+// `endregion <capability>` comment, each alone on its line and written in
+// the file's own comment syntax: `# region sentry` (YAML, dotenv),
+// `// region sentry` (JavaScript, TypeScript) or `<!-- region sentry -->`
+// (Markdown). The prune of that capability drops both markers and every
+// line between; the regions of other capabilities stay. Regions do not
+// nest. A region owns lines the way a claim owns a file, so the closed set
+// of verbs needs no seventh one to edit the text a capability adds to a
+// file it does not own.
+// ---------------------------------------------------------------------------
+
+const REGION_MARKER =
+  /^\s*(?:(?:#|\/\/)\s*(?<lineKind>region|endregion) (?<lineOwner>[a-z0-9]+(?:-[a-z0-9]+)*)|<!--\s*(?<blockKind>region|endregion) (?<blockOwner>[a-z0-9]+(?:-[a-z0-9]+)*)\s*-->)\s*$/u
+const REGION_OPEN = 'region'
+const LINE_BREAK = '\n'
+const CARRIAGE_RETURN = /\r$/u
+
+const markerOf = (line) => {
+  const groups = line
+    .replace(CARRIAGE_RETURN, '')
+    .match(REGION_MARKER)?.groups
+  if (!groups) return null
+  return {
+    opens: (groups.lineKind ?? groups.blockKind) === REGION_OPEN,
+    owner: groups.lineOwner ?? groups.blockOwner
+  }
+}
+
+// Every region of a text with its 1-based first and last line, and every
+// marker that leaves the text unbalanced.
+export const parseRegions = ({ text }) => {
+  const regions = []
+  const problems = []
+  let current = null
+
+  text.split(LINE_BREAK).forEach((line, index) => {
+    const marker = markerOf(line)
+    if (!marker) return
+    const lineNumber = index + 1
+
+    if (marker.opens) {
+      if (current) {
+        problems.push({
+          detail: `region "${marker.owner}" opens inside region "${current.owner}", opened at line ${current.start}: regions do not nest`,
+          line: lineNumber
+        })
+        return
+      }
+      current = { owner: marker.owner, start: lineNumber }
+      return
+    }
+
+    if (!current) {
+      problems.push({
+        detail: `endregion "${marker.owner}" closes no open region`,
+        line: lineNumber
+      })
+      return
+    }
+
+    if (current.owner !== marker.owner) {
+      problems.push({
+        detail: `endregion "${marker.owner}" closes region "${current.owner}", opened at line ${current.start}`,
+        line: lineNumber
+      })
+      current = null
+      return
+    }
+
+    regions.push({ ...current, end: lineNumber })
+    current = null
+  })
+
+  if (current) {
+    problems.push({
+      detail: `region "${current.owner}" is never closed`,
+      line: current.start
+    })
+  }
+
+  return { problems, regions }
+}
+
+// The text without the regions of `owner`. A text whose regions are
+// unbalanced cannot be pruned by line, so it throws rather than guess.
+export const dropRegions = ({ owner, text }) => {
+  const { problems, regions } = parseRegions({ text })
+  if (problems.length > 0) {
+    throw new Error(
+      `cannot drop the regions of "${owner}": ${problems
+        .map(({ detail, line }) => `line ${line}: ${detail}`)
+        .join('; ')}`
+    )
+  }
+  const dropped = regions.filter((region) => region.owner === owner)
+  if (dropped.length === 0) return text
+  return text
+    .split(LINE_BREAK)
+    .filter((_, index) =>
+      dropped.every(
+        ({ end, start }) => index + 1 < start || index + 1 > end
+      )
+    )
+    .join(LINE_BREAK)
+}
+
+// Every region of `files` (`{ path, text }`) a prune could not drop
+// cleanly: an owner the manifest does not declare (core is never pruned,
+// so it owns no region), and every marker that leaves a file unbalanced.
+export const analyzeRegions = ({ files, manifest }) => {
+  const owners = new Set(
+    asArray(manifest?.capabilities).map(({ id }) => id)
+  )
+
+  return files.flatMap(({ path, text }) => {
+    const { problems, regions } = parseRegions({ text })
+    const unknown = regions
+      .filter(({ owner }) => !owners.has(owner))
+      .map(({ owner, start }) => ({
+        detail: `region "${owner}" names a capability template.manifest.json does not declare`,
+        line: start
+      }))
+    return [...unknown, ...problems]
+      .sort((a, b) => a.line - b.line)
+      .map(({ detail, line }) => ({ detail, line, path }))
+  })
+}

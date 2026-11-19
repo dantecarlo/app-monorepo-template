@@ -17,7 +17,9 @@ import { withScratchTree } from './gate/scratch.mjs'
 import { gitFreeEnv } from './git-free-env.mjs'
 import {
   analyzeCoverage,
+  analyzeRegions,
   analyzeRegistryOwners,
+  dropRegions,
   matchesAny,
   validateManifest
 } from './manifest.mjs'
@@ -539,5 +541,184 @@ test('the coverage gate fails a registry entry with no owner or an undeclared on
   assert.match(
     result.stderr,
     /expo is owned by "mobile-expo", which template\.manifest\.json does not declare/u
+  )
+})
+
+// ---------------------------------------------------------------------------
+// Regions — the lines of a file another owner keeps that a capability owns.
+// A fixture line is built with join, never written as a line of this file:
+// a marker on a line of its own here would be a region of this file.
+// ---------------------------------------------------------------------------
+
+const linesOf = (...lines) => lines.join('\n')
+const open = ({ mark = '#', owner }) => `${mark} region ${owner}`
+const close = ({ mark = '#', owner }) => `${mark} endregion ${owner}`
+const SENTRY_MANIFEST = manifestOf({
+  capabilities: [
+    capability({ claims: ['apps/web/**'], id: 'web-next' }),
+    capability({ claims: ['apps/web/sentry.ts'], id: 'sentry' })
+  ]
+})
+
+test('a prune drops its own regions, markers included, and keeps the others', () => {
+  const text = linesOf(
+    'kept: 1',
+    open({ owner: 'sentry' }),
+    'sentry: 1',
+    close({ owner: 'sentry' }),
+    `  ${open({ mark: '//', owner: 'web-next' })}`,
+    'web: 1',
+    `  ${close({ mark: '//', owner: 'web-next' })}`,
+    '<!-- region sentry -->',
+    'more: 1',
+    '<!-- endregion sentry -->',
+    'last: 1'
+  )
+
+  assert.equal(
+    dropRegions({ owner: 'sentry', text }),
+    linesOf(
+      'kept: 1',
+      `  ${open({ mark: '//', owner: 'web-next' })}`,
+      'web: 1',
+      `  ${close({ mark: '//', owner: 'web-next' })}`,
+      'last: 1'
+    )
+  )
+  assert.equal(dropRegions({ owner: 'i18n', text }), text)
+})
+
+test('a well-formed region of a declared capability reports nothing', () => {
+  assert.deepEqual(
+    analyzeRegions({
+      files: [
+        {
+          path: '.env.example',
+          text: linesOf(
+            open({ owner: 'sentry' }),
+            'A=1',
+            close({ owner: 'sentry' })
+          )
+        },
+        {
+          path: 'README.md',
+          text: 'no region here, nor a region sentry\n'
+        }
+      ],
+      manifest: SENTRY_MANIFEST
+    }),
+    []
+  )
+})
+
+test('a region whose owner the manifest does not declare is reported, core included', () => {
+  assert.deepEqual(
+    analyzeRegions({
+      files: [
+        {
+          path: 'pnpm-workspace.yaml',
+          text: linesOf(
+            open({ owner: 'stripe' }),
+            'x: 1',
+            close({ owner: 'stripe' }),
+            open({ owner: 'core' }),
+            close({ owner: 'core' })
+          )
+        }
+      ],
+      manifest: SENTRY_MANIFEST
+    }),
+    [
+      {
+        detail:
+          'region "stripe" names a capability template.manifest.json does not declare',
+        line: 1,
+        path: 'pnpm-workspace.yaml'
+      },
+      {
+        detail:
+          'region "core" names a capability template.manifest.json does not declare',
+        line: 4,
+        path: 'pnpm-workspace.yaml'
+      }
+    ]
+  )
+})
+
+test('an unbalanced or nested region is reported', () => {
+  const findings = analyzeRegions({
+    files: [
+      { path: 'a.yaml', text: linesOf(open({ owner: 'sentry' }), 'x: 1') },
+      {
+        path: 'b.yaml',
+        text: linesOf('x: 1', close({ owner: 'sentry' }))
+      },
+      {
+        path: 'c.yaml',
+        text: linesOf(
+          open({ owner: 'sentry' }),
+          open({ owner: 'web-next' }),
+          close({ owner: 'web-next' }),
+          close({ owner: 'sentry' })
+        )
+      },
+      {
+        path: 'd.yaml',
+        text: linesOf(
+          open({ owner: 'sentry' }),
+          close({ owner: 'web-next' })
+        )
+      }
+    ],
+    manifest: SENTRY_MANIFEST
+  })
+
+  assert.deepEqual(
+    findings.map(({ detail, line, path }) => `${path}:${line} ${detail}`),
+    [
+      'a.yaml:1 region "sentry" is never closed',
+      'b.yaml:2 endregion "sentry" closes no open region',
+      'c.yaml:2 region "web-next" opens inside region "sentry", opened at line 1: regions do not nest',
+      'c.yaml:3 endregion "web-next" closes region "sentry", opened at line 1',
+      'c.yaml:4 endregion "sentry" closes no open region',
+      'd.yaml:2 endregion "web-next" closes region "sentry", opened at line 1'
+    ]
+  )
+})
+
+test('dropping the regions of a file whose regions are unbalanced throws', () => {
+  assert.throws(
+    () =>
+      dropRegions({
+        owner: 'sentry',
+        text: linesOf(open({ owner: 'sentry' }), 'x: 1')
+      }),
+    /region "sentry" is never closed/u
+  )
+})
+
+test('the coverage gate fails a region it cannot drop cleanly, naming the file and line', () => {
+  const result = runCoverageGate({
+    files: {
+      [REGISTRY]: OWNED_REGISTRY,
+      'apps/web/a.ts': linesOf(
+        'export {}',
+        open({ mark: '//', owner: 'mobile-expo' }),
+        'export const x = 1',
+        close({ mark: '//', owner: 'mobile-expo' }),
+        open({ mark: '//', owner: 'web-next' })
+      )
+    }
+  })
+
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /REGIONS \(2\)/u)
+  assert.match(
+    result.stderr,
+    /apps\/web\/a\.ts:2 {2}→ {2}region "mobile-expo" names a capability template\.manifest\.json does not declare/u
+  )
+  assert.match(
+    result.stderr,
+    /apps\/web\/a\.ts:5 {2}→ {2}region "web-next" is never closed/u
   )
 })

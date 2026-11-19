@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path'
 import { test } from 'node:test'
 
 import { gitFreeEnv } from '../../../../scripts/git-free-env.mjs'
-import { matchesAny } from '../../../../scripts/manifest.mjs'
+import { dropRegions, matchesAny } from '../../../../scripts/manifest.mjs'
 import { findPruneLeaks } from '../prune-boundary.mjs'
 
 const REPO_ROOT = resolve(import.meta.dirname, '../../../..')
@@ -30,6 +30,7 @@ const check = ({ files, manifest }) =>
     capabilityId: CAPABILITY,
     files: Object.keys(files),
     manifest,
+    dropRegions,
     matches: matchesAny,
     readText: ({ path }) => files[path]
   })
@@ -334,6 +335,35 @@ test('a kept dependency whose entry the prune removes is a leak', () => {
   ])
 })
 
+// A marker is built with join: alone on a line of this file it would be a
+// region of this file.
+const regionOf = ({ lines, owner }) =>
+  [`// region ${owner}`, ...lines, `// endregion ${owner}`].join('\n')
+
+test('a leak inside a region of the pruned capability is no leak', () => {
+  const IMPORT_PRUNED = "import plugin from './vendor.config'"
+  const files = {
+    'apps/web/a.config.ts': [
+      'export const a = 1',
+      regionOf({ lines: [IMPORT_PRUNED], owner: CAPABILITY })
+    ].join('\n'),
+    'apps/web/b.config.ts': regionOf({
+      lines: [IMPORT_PRUNED],
+      owner: 'other'
+    }),
+    'apps/web/vendor.config.ts': 'export default 1\n'
+  }
+  const manifest = manifestWith({ claims: ['apps/web/vendor.config.ts'] })
+
+  assert.deepEqual(check({ files, manifest }), [
+    {
+      file: 'apps/web/b.config.ts',
+      kind: 'import',
+      specifier: './vendor.config'
+    }
+  ])
+})
+
 // git lists the tracked files and the ones not yet added; a tracked file
 // deleted in the work tree is gone after the prune too.
 const listRepositoryFiles = () =>
@@ -362,6 +392,7 @@ const pruneRepository = ({ capabilityId }) =>
     capabilityId,
     files: listRepositoryFiles(),
     manifest: REPOSITORY_MANIFEST,
+    dropRegions,
     matches: matchesAny,
     readText: ({ path }) => readFileSync(join(REPO_ROOT, path), 'utf8')
   })

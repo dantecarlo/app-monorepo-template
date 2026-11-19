@@ -10,16 +10,21 @@
 // A `patch-json` that sets `expo.plugins` must leave exactly the app's
 // plugins without the removed ones, or it drifts from `app.json`.
 //
-// Pure: the caller hands in the file list, the reader and the glob matcher
-// of the manifest engine (scripts/manifest.mjs), so the claims match here
-// exactly as the coverage gate matches them.
+// The prune also drops the capability's regions from every file it keeps
+// (docs/manifest.md), so a kept file is judged without them.
+//
+// Pure: the caller hands in the file list, the reader, and the glob matcher
+// and region reader of the manifest engine (scripts/manifest.mjs), so the
+// claims and the regions read here exactly as the coverage gate reads them.
 //
 // The registry the prune leaves must stay true too: the prune drops every
 // entry of .agents/contracts/dependencies.json the capability owns, with its
-// seam globs, and then no kept entry may name a package no kept package.json
-// declares, no kept seam glob may match no kept file under apps/ or
-// packages/, and no kept package.json may declare a package no kept entry
-// names: the three findings verify:dependency-seams would report.
+// seam globs, and every entry whose package one of its `remove-dep` actions
+// takes from the last package.json declaring it (a `core` entry excepted).
+// Then no kept entry may name a package no kept package.json declares, no
+// kept seam glob may match no kept file under apps/ or packages/, and no
+// kept package.json may declare a package no kept entry names: the three
+// findings verify:dependency-seams would report.
 //
 // An import is any `from '…'`, `import '…'`, `import('…')` or `require('…')`
 // with a literal specifier. A specifier resolves relative to its file, `@/`
@@ -242,6 +247,7 @@ const byFileThenSpecifier = (a, b) =>
  */
 export const findPruneLeaks = ({
   capabilityId,
+  dropRegions = ({ text }) => text,
   files,
   manifest,
   matches,
@@ -269,7 +275,18 @@ export const findPruneLeaks = ({
     ({ name }) => name
   )
   const kept = files.filter((path) => !pruned.has(path))
-  const readKept = (path) => readText({ path })
+  // A kept file is judged as the prune leaves it: without the regions of
+  // the capability, read with the region reader of the manifest engine.
+  const keptTexts = new Map()
+  const readKept = (path) => {
+    if (!keptTexts.has(path)) {
+      keptTexts.set(
+        path,
+        dropRegions({ owner: capabilityId, text: readText({ path }) })
+      )
+    }
+    return keptTexts.get(path)
+  }
 
   const importLeaks = kept
     .filter((file) => SOURCE_FILE.test(file))
@@ -278,7 +295,7 @@ export const findPruneLeaks = ({
         dependencies,
         file,
         pruned,
-        text: readText({ path: file })
+        text: readKept(file)
       })
     )
   const pluginLeaks = kept
@@ -288,7 +305,7 @@ export const findPruneLeaks = ({
         capability,
         dependencies,
         file,
-        text: readText({ path: file })
+        text: readKept(file)
       })
     )
 

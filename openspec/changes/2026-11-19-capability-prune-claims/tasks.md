@@ -1,7 +1,7 @@
 # Tasks: 2026-11-19-capability-prune-claims
 
 - [x] T1 — F52: an `owner` on every entry of `.agents/contracts/dependencies.json`; `verify:dependency-seams` accepts it and refuses one that is not text; `verify:manifest:coverage` fails an entry with no owner or with an owner the manifest does not declare · Requirements: SEAM-01 · Commit: 5c285e6
-- [ ] T2 — F52: `prune-boundary` drops the entries the pruned capability owns and lists the registry findings the prune leaves; the `supabase` capability removes `@app/supabase` and `@supabase/*` from the apps' `package.json` · Requirements: TOOLING-17 · Commit: —
+- [x] T2 — F52: `prune-boundary` drops the entries the pruned capability owns and lists the registry findings the prune leaves; the `supabase` capability removes `@app/supabase` and `@supabase/*` from the apps' `package.json` · Requirements: TOOLING-17 · Commit: bea3d34
 - [ ] T3 — Q2: the region grammar in `scripts/manifest.mjs`; `verify:manifest:coverage` fails a region with an unknown owner or unbalanced markers; `prune-boundary` drops the pruned capability's regions before it judges a kept file · Requirements: TOOLING-20 · Commit: —
 - [ ] T4 — F49: `prune-boundary` lists a relative path string to a pruned file and a `.env.example` key only pruned files read; the `sentry` regions of both `.env.example`, `apps/mobile/vitest.config.ts` and `pnpm-workspace.yaml` · Requirements: TOOLING-19, TOOLING-20 · Commit: —
 - [ ] T5 — F49: `prune-boundary` lists a kept spec that cites a file the prune deletes; seen red on the web and mobile specs, green at the archive, which moves their Sentry requirements · Requirements: TOOLING-18 · Commit: —
