@@ -8,7 +8,9 @@
 // contracts the check exports, each case differing from the healthy set by
 // one thing. The checks then run the check as a process over a scratch tree
 // in the OS temp directory, which `withScratchTree` removes, and over the
-// repository itself.
+// repository itself. It also runs the checks of the general plan's
+// validator, which the PO's close step writes through, since no other script
+// runs a test under .claude/skills/.
 //
 // Usage:
 //   node --test scripts/verify-skills.test.mjs
@@ -19,6 +21,7 @@ import { spawnSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { GENERAL_PLAN_CHECKS } from '../.claude/skills/general-plan/validate-general-plan.test.mjs'
 import { registerCases, runCases } from './gate/cases.mjs'
 import { blindGate } from './gate/gate.mjs'
 import { withScratchTree } from './gate/scratch.mjs'
@@ -73,6 +76,10 @@ const IDENTITY = '## Ticket identity'
 const BRANCH_TYPES_NAMED = 'It names `branchTypes`.'
 const BLOCK_NAMED = `It names \`${IDENTITY_INFO}\`.`
 const REQUIRED_SLUG = '"slug": "required"'
+const SOURCE_NAMED = 'It names source of every open ticket.'
+const PO_CLOSE_STEP = '## Step 6 — Record the closed tickets'
+const CATALOG_NAMED = 'It names § Closed Ticket Catalog.'
+const ONE_PULL_REQUEST_NAMED = 'It names one pull request per close or release.'
 
 // The block a process template's Ticket identity section ships: the branch
 // check's defaults, as JSON.
@@ -781,6 +788,65 @@ export const CASES = [
     }),
     expected: 1,
     name: 'a release-ticket whose hotfix section does not leave it at Ready to merge is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: CONTRACT })]: replace({
+          from: SOURCE_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a ticket-flow whose board operations do not make the board the source of open tickets is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [`${INTAKE}/${PROCESS_TEMPLATE}`]: replace({
+          from: SOURCE_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a process template whose board adapter does not make the board the source of open tickets is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'po-ticket' })]: withoutSection({
+          heading: PO_CLOSE_STEP
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a po-ticket without its close step is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'po-ticket' })]: replace({
+          from: CATALOG_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a po-ticket whose close step names no closed ticket catalog is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'po-ticket' })]: replace({
+          from: ONE_PULL_REQUEST_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a po-ticket whose close step does not open one pull request per close or release is refused'
   }
 ]
 
@@ -1034,4 +1100,9 @@ const checks = [
   }
 ]
 
-registerCases({ cases: CASES, checks, gate, meta: import.meta })
+registerCases({
+  cases: CASES,
+  checks: [...checks, ...GENERAL_PLAN_CHECKS],
+  gate,
+  meta: import.meta
+})

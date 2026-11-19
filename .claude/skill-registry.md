@@ -132,7 +132,7 @@ Last updated: 2026-11-18
 
 ### po-ticket
 
-- **Description**: The PO role of the ticket flow: guards scope, turns a client requirement into a ticket written from the ticket template with the client's words verbatim and the version it is aimed at, creates it in Backlog, never without that version, and tells the architect; answers scope questions; confirms every move of a target version, and the first version of a technical ticket; and refreshes the general plan when a ticket closes or a release ships.
+- **Description**: The PO role of the ticket flow: guards scope, turns a client requirement into a ticket written from the ticket template with the client's words verbatim and the version it is aimed at, creates it in Backlog, never without that version, and tells the architect; answers scope questions; confirms every move of a target version, and the first version of a technical ticket; and, when a ticket closes or a release ships, records each closed ticket in the general plan's closed ticket catalog, the board staying the source of every open one.
 - **Triggers**: "the client asked for", "new requirement", "create a ticket for", "<id> question" about scope, "<id> version change", "<id> closed", "<release-id> released", a PO session of the ticket flow starts work
 - **DO NOT USE**: refining a ticket into specs and a plan (use `refine-ticket`), building it (use `dev-ticket`), or a change with no client behind it, which the architect files as a technical ticket (`refine-ticket`)
 - **Path**: `.claude/skills/po-ticket/SKILL.md`
