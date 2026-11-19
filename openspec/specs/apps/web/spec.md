@@ -3,7 +3,7 @@
 > **Governs:** `apps/web/src`, `apps/web/next.config.ts`, `apps/web/next-sentry.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-18 at `2c3eea0`
+> **Verified against the code:** 2026-11-19 at `bbe5851`
 
 ## Purpose
 
@@ -110,7 +110,7 @@ profile under the `items-summary` cache tag, which `getItemsSummary` sets once p
 The web app SHALL, while the items query is loading, render skeleton rows with the status role in
 the items list and a dash in place of each count on the stats card.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:51-61`, `apps/web/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.tsx:27-33`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:51-61`, `apps/web/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.tsx:30-40`
 
 #### Scenario: the list shows skeletons
 
@@ -175,9 +175,10 @@ loaded item list is empty.
 
 The web app SHALL, when the items query fails, render the error state with its generic copy in
 the items list, in place of the items and the empty state, with a Try again button that runs the
-items query again, show no result count in the list header, and queue no toast.
+items query again, show no result count in the list header and no count on the stats card (no
+total, no active count, and neither of their labels), and queue no toast.
 
-**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:51`, `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:79-81`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:32-40`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:62-63`, `apps/web/src/lib/query/useAppQuery.hook.ts:36`
+**Evidence:** `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:51`, `apps/web/src/screens/ItemsDashboard/hooks/useItems.hook.ts:79-81`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:32-40`, `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:62-63`, `apps/web/src/lib/query/useAppQuery.hook.ts:36`, `apps/web/src/screens/ItemsDashboard/ItemsDashboard.screen.tsx:35-40`, `apps/web/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.tsx:28-46`
 
 #### Scenario: the items service rejects
 
@@ -192,6 +193,20 @@ items query again, show no result count in the list header, and queue no toast.
 - **WHEN** it renders
 - **THEN** it shows the error state alert with its generic title, and no result count
 - **Test:** `apps/web/src/screens/ItemsDashboard/components/ItemsListCard/__tests__/ItemsListCard.component.test.tsx` › "shows the error state and no result count when the items failed to load"
+
+#### Scenario: the dashboard's stats card shows no total
+
+- **GIVEN** the items service rejects
+- **WHEN** the dashboard settles
+- **THEN** the stats card shows its overview label, and no total, no "total items" label and no active count
+- **Test:** `apps/web/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx` › "shows no total on the stats card when the items query fails"
+
+#### Scenario: the stats card shows no count
+
+- **GIVEN** the stats card told the items failed to load
+- **WHEN** it renders
+- **THEN** it shows its overview label and live chip, and no total, no dash, no "total items" label, no active count and no "updated" label
+- **Test:** `apps/web/src/screens/ItemsDashboard/components/StatsCard/__tests__/StatsCard.component.test.tsx` › "shows no total and no active count when the items failed to load"
 
 #### Scenario: Try again after a failure
 
@@ -1518,9 +1533,11 @@ binds another adapter.
 The web app SHALL send an error as a PostHog exception, a message as a PostHog log record at the
 mapped level, a breadcrumb as an exception step and a user as an `identify` by id, passing every
 context, breadcrumb payload and person property through `scrubPII` from packages/core, and SHALL
-reset the PostHog identity on `setUser(null)`.
+reset the PostHog identity on `setUser(null)`. It SHALL make no `identify` call and no reset for
+a user whose id is not a string holding a character other than whitespace, so the identity
+PostHog holds stays as it was.
 
-**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:23-66`, `apps/web/src/lib/observability/createPostHogObservability.constant.ts:10-19`
+**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:14-73`, `apps/web/src/lib/observability/createPostHogObservability.constant.ts:10-19`
 
 #### Scenario: an error
 
@@ -1551,6 +1568,13 @@ reset the PostHog identity on `setUser(null)`.
 - **THEN** PostHog identifies the id with the email redacted, then resets the identity
 - **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "setUser identifies the id with the scrubbed rest"
 - **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "setUser(null) resets the identity"
+
+#### Scenario: a blank id
+
+- **GIVEN** a PostHog key, and a user identified by an id
+- **WHEN** a user whose id is empty, only whitespace or not a string is set, with an email
+- **THEN** PostHog receives no further `identify` and no reset, and the method does not throw
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "setUser identifies nobody for a blank id"
 
 ### Requirement: WEB-50 — The PostHog SDK is loaded only when it may run
 
@@ -1723,7 +1747,7 @@ only when `SENTRY_AUTH_TOKEN` is set.
 The web app SHALL ship a PostHog adapter and a Sentry adapter that both pass the observability
 port contract of packages/tooling with their SDK replaced at its module.
 
-**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:23-66`, `apps/web/src/lib/observability/createSentryObservability.adapter.ts:26-65`
+**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:29-73`, `apps/web/src/lib/observability/createSentryObservability.adapter.ts:26-65`
 
 #### Scenario: the PostHog adapter
 
@@ -2046,7 +2070,7 @@ when the queue is full, and hand every held call to the SDK in order once it loa
 all if it fails to load; and drop it while no load has started: without a key, on the server, in
 `opt-in` mode before a grant and after a revoke.
 
-**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:23-66`, `apps/web/src/lib/posthog/deferredClient.helper.ts:17-78`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:39-40`, `apps/web/src/lib/posthog/posthogClient.constant.ts:51`
+**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:29-73`, `apps/web/src/lib/posthog/deferredClient.helper.ts:17-78`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:39-40`, `apps/web/src/lib/posthog/posthogClient.constant.ts:51`
 
 #### Scenario: the SDK loading
 

@@ -225,6 +225,13 @@ const CATALOG_MESSAGES = [
 ]
 const CATALOG_LINES = CATALOG_MESSAGES.join(' and ')
 
+// Before the architect asks the owner for that pull request, it reads on
+// the board every ticket the pull request adds a row for and checks each
+// row against the ticket's board page, commenting the check on the pull
+// request; no QA session checks it.
+const CATALOG_BOARD_CHECK =
+  'matches its board page in id, title, target version and closing pull request'
+
 // Every ticket carries a target version, so every ticket closes through a
 // release: the ticket template marks the field required.
 const TARGET_VERSION_HEADING = '## Target version'
@@ -346,6 +353,7 @@ export const SKILL_CONTRACTS = [
     mentions: [
       ...policyMentions({ heading: MERGE_QUEUE }),
       ...catalogMentions({ heading: MERGE_QUEUE }),
+      { heading: MERGE_QUEUE, text: CATALOG_BOARD_CHECK },
       hotfixMention({ heading: RELEASE_STEP })
     ],
     role: true
@@ -777,7 +785,8 @@ export const gate = defineGate({
     `${CATALOG_LINES}, ` +
     'refine-ticket has a ' +
     'merge queue that names both merge policies and ' +
-    `${CATALOG_LINES}, and a release step that ` +
+    `${CATALOG_LINES} and says that each row the catalog pull request ` +
+    `adds ${CATALOG_BOARD_CHECK}, and a release step that ` +
     `names ${HOTFIX_MESSAGE}, qa-ticket a checkout step that names ` +
     `${DETACHED_CHECKOUT}, a decide step that names ${HEAD_PUSH}, a ` +
     `hand-off step that names ${READY_TO_MERGE_MESSAGE} and ` +

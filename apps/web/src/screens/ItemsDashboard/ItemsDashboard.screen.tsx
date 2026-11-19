@@ -34,6 +34,7 @@ export const ItemsDashboardScreen = () => {
           <DashboardHeader />
           <StatsCard
             activeCount={activeCount}
+            isError={isError}
             isLoading={isLoading}
             totalCount={totalCount}
           />

@@ -9,6 +9,7 @@ import type { IStatsCardProps } from '@/screens/ItemsDashboard/components/StatsC
 
 export const StatsCard = ({
   activeCount,
+  isError = false,
   isLoading,
   totalCount
 }: IStatsCardProps) => {
@@ -28,22 +29,26 @@ export const StatsCard = ({
         </View>
       </View>
 
-      <Text variant="amountHero">{isLoading ? '—' : totalCount}</Text>
-      <Text style={styles.statsLabel} variant="label">
-        {t('items.dashboard.statsTotalItems')}
-      </Text>
-
-      <View style={styles.subRow}>
-        <View style={styles.activePill}>
-          <Text style={styles.activePillText} variant="caption">
-            {isLoading ? '—' : activeCount}{' '}
-            {t('items.dashboard.statsActive')}
+      {!isError && (
+        <>
+          <Text variant="amountHero">{isLoading ? '—' : totalCount}</Text>
+          <Text style={styles.statsLabel} variant="label">
+            {t('items.dashboard.statsTotalItems')}
           </Text>
-        </View>
-        <Text variant="caption">
-          · {t('items.dashboard.statsUpdated')}
-        </Text>
-      </View>
+
+          <View style={styles.subRow}>
+            <View style={styles.activePill}>
+              <Text style={styles.activePillText} variant="caption">
+                {isLoading ? '—' : activeCount}{' '}
+                {t('items.dashboard.statsActive')}
+              </Text>
+            </View>
+            <Text variant="caption">
+              · {t('items.dashboard.statsUpdated')}
+            </Text>
+          </View>
+        </>
+      )}
     </GlassCard>
   )
 }

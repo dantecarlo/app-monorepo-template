@@ -36,4 +36,24 @@ describe('StatsCard', () => {
     )
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
   })
+
+  test('shows no total and no active count when the items failed to load', () => {
+    render(
+      <AppI18nProvider locale="en" messages={withCopy({ copy: messages })}>
+        <StatsCard
+          activeCount={0}
+          isError
+          isLoading={false}
+          totalCount={0}
+        />
+      </AppI18nProvider>
+    )
+    expect(screen.getByText('Overview')).toBeInTheDocument()
+    expect(screen.getByText('Live')).toBeInTheDocument()
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
+    expect(screen.queryByText('—')).not.toBeInTheDocument()
+    expect(screen.queryByText('total items')).not.toBeInTheDocument()
+    expect(screen.queryByText(/active/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/updated just now/)).not.toBeInTheDocument()
+  })
 })

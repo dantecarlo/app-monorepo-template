@@ -2,15 +2,6 @@ import { afterEach, expect, test, vi } from 'vitest'
 
 import { observability } from '@/lib/observability/observability.adapter'
 
-const sdk = vi.hoisted(() => ({ captureException: vi.fn() }))
-
-// The real package cannot load under the test environment.
-vi.mock('posthog-react-native', () => ({
-  PostHog: class {
-    captureException = sdk.captureException
-  }
-}))
-
 afterEach(() => {
   vi.unstubAllEnvs()
 })
@@ -28,13 +19,17 @@ test('captureError does not throw', () => {
 test('binds the PostHog adapter by default', async () => {
   vi.stubEnv('EXPO_PUBLIC_POSTHOG_KEY', 'phc_contract_key')
   vi.resetModules()
+  // The package is the shared stand-in of vitest.config.ts, loaded in the
+  // registry the adapter loads in next.
+  const { PostHog } = await import('posthog-react-native')
+  const captureException = vi.spyOn(PostHog.prototype, 'captureException')
   const { observability: bound } =
     await import('@/lib/observability/observability.adapter')
   const error = new Error('boom')
 
   bound.captureError({ error })
 
-  expect(sdk.captureException).toHaveBeenCalledExactlyOnceWith(
+  expect(captureException).toHaveBeenCalledExactlyOnceWith(
     error,
     undefined
   )

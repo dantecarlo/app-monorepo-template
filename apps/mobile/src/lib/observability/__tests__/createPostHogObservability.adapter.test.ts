@@ -128,6 +128,21 @@ test('setUser identifies the id with the scrubbed rest', async () => {
   expect(sdk.reset).not.toHaveBeenCalled()
 })
 
+test('setUser identifies nobody for a blank id', async () => {
+  const adapter = await loadAdapter({ key: KEY })
+  adapter.setUser?.({ user: { id: 'u1' } })
+  const blankIds = ['', '   ', '\t\n', undefined as unknown as string]
+
+  blankIds.forEach((id) => {
+    expect(() =>
+      adapter.setUser?.({ user: { email: EMAIL, id } })
+    ).not.toThrow()
+  })
+
+  expect(sdk.identify.mock.calls).toEqual([['u1', undefined]])
+  expect(sdk.reset).not.toHaveBeenCalled()
+})
+
 test('setUser(null) resets the identity', async () => {
   const adapter = await loadAdapter({ key: KEY })
 
