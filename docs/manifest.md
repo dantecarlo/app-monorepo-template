@@ -111,9 +111,10 @@ their detectors and tests, and the `sdd` skill. Every preset selects it. The
 two helpers the gates import, `scripts/gate/**` and `scripts/git-free-env.mjs`,
 belong to `core`: other gates are built on them.
 
-`openspec/specs/**` is not claimed yet. No living spec exists, and a claim that
-matches no tracked file fails the coverage gate as stale; the claim lands with
-the first spec.
+Each living spec under `openspec/specs/` is claimed by the capability whose
+unit it governs (`design-tokens`, `i18n`, `web-next`, `mobile-expo`,
+`supabase`, `cloudflare`, `sentry`), or by `sdd`, whose `onAbsent` removes
+`openspec/specs/**`.
 
 ### The optional Sentry capability
 
@@ -127,6 +128,12 @@ prunes Sentry unless the project picks it (`docs/observability.md`).
   `web-next` therefore claims its own root files by name instead of
   `apps/web/**`, and its `onAbsent` removes `apps/web/**`, which keeps what an
   absent `web-next` deletes.
+- It **claims** the Sentry part of each app's spec,
+  `openspec/specs/apps/web/sentry/spec.md` and
+  `openspec/specs/apps/mobile/sentry/spec.md`, which hold every requirement whose
+  tests or files the prune deletes; `web-next` and `mobile-expo` each `remove`
+  their own, so a project that keeps Sentry and drops an app loses that part.
+  The web and mobile specs cite and govern no Sentry file.
 - It **removes** what sits inside the apps' `src/`, which `web-next` and
   `mobile-expo` own: both Sentry adapters, their tests and the SDK mock.
 - It **drops** `@sentry/nextjs` and `@sentry/react-native` with `remove-dep`,
@@ -252,7 +259,7 @@ injected adapter (blocker B4); a delete-only executor cannot close it.
 | `diagrams`            | `pnpm validate` still calls `docs:diagrams:check` (B2); the global map rows for `docs/diagrams/` and `build-diagrams` fail `verify:maps`            |
 | `sdd`                 | `pnpm validate` still calls `verify:specs`, `report:spec-drift` and their tests (B2); the global map rows for them and the skill fail `verify:maps` |
 | `english-artifacts`   | `pnpm validate` still calls `verify:english` and its test (B2); the global map rows for the gate fail `verify:maps`                                 |
-| `sentry`              | `openspec/specs/apps/web/spec.md` and `openspec/specs/apps/mobile/spec.md` keep the Sentry requirements and cite the removed tests: `verify:specs` fails |
+| `sentry`              | `docs/observability.md`, `docs/architecture/web.md`, `docs/architecture/mobile.md` and the env table of `AGENTS.md` still describe the Sentry files and keys; the `pnpm-workspace.yaml` comment on the isolated linker names `@sentry/core` as its evidence |
 | any with a spec       | its spec under `openspec/specs/` goes, and its row in the `openspec/README.md` § 2.1 table stays                                                    |
 | `template-maintainer` | Never selected, so always absent: the global map rows for the plans and `docs/audits/`, and the plan citations in code-standards, go stale          |
 

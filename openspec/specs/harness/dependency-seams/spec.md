@@ -3,7 +3,7 @@
 > **Governs:** `.agents/contracts/dependencies.json`, `eslint-dependency-seam-allowlist.json`, `eslint-local-rules/dependency-seam.detect.mjs`, `eslint-local-rules/wrapped-import.detect.mjs`, `scripts/dependency-seams.detect.mjs`, `scripts/eslint-config.detect.mjs`, `scripts/verify-dependency-seams.mjs`, `eslint.config.mjs`, `eslint.rules.mjs`
 > **ID prefix:** `SEAM`
 > **Derived from:** `docs/code-standards.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-19 at `fb1a60c`
+> **Verified against the code:** 2026-11-19 at `58af488`
 
 ## Purpose
 
@@ -26,12 +26,14 @@ declares (SEAM-09, SEAM-10); the other lint rules themselves are not part of thi
 The dependency registry `.agents/contracts/dependencies.json` SHALL hold one entry per package or
 package subpath, each with a category among `core`, `infra`, `ui`, `vendor`, `vendor-package`,
 `build` and `peer`, a seam of repository globs for every non-core entry, no seam for a core
-entry, and `types` either `seam` (the default) or `anywhere`; `pnpm verify:dependency-seams`
-refuses an entry that breaks this shape and a name listed twice.
+entry, `types` either `seam` (the default) or `anywhere`, and an `owner` that names, as text, the
+capability of `template.manifest.json` whose prune removes the entry, or `core`;
+`pnpm verify:dependency-seams` refuses an entry that breaks this shape and a name listed twice,
+and `pnpm verify:manifest:coverage` holds each owner to the manifest.
 
-**Evidence:** `.agents/contracts/dependencies.json:3-4`, `scripts/dependency-seams.detect.mjs:92-127`,
-`scripts/dependency-seams.detect.mjs:132-156`, `scripts/dependency-seams.detect.mjs:358-363`,
-`scripts/dependency-seams.detect.mjs:376-377`
+**Evidence:** `.agents/contracts/dependencies.json:2-9`, `scripts/dependency-seams.detect.mjs:99-139`,
+`scripts/dependency-seams.detect.mjs:144-168`, `scripts/dependency-seams.detect.mjs:370-375`,
+`scripts/dependency-seams.detect.mjs:388-389`, `scripts/manifest-owners.mjs:28-69`
 
 #### Scenario: a non-core entry without a seam
 
@@ -53,6 +55,20 @@ refuses an entry that breaks this shape and a name listed twice.
 - **WHEN** `pnpm verify:dependency-seams` runs
 - **THEN** it fails, naming the package
 - **Test:** `scripts/verify-dependency-seams.test.mjs` › "a registry that names one package twice is malformed"
+
+#### Scenario: an entry that names its owner
+
+- **GIVEN** registry entries that each name an `owner`
+- **WHEN** `pnpm verify:dependency-seams` runs
+- **THEN** it passes
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "an entry that names its owner passes"
+
+#### Scenario: an owner that is not text
+
+- **GIVEN** a registry entry whose `owner` is a number
+- **WHEN** `pnpm verify:dependency-seams` runs
+- **THEN** it fails, naming the entry and its owner
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "an entry whose owner is not text is malformed"
 
 ### Requirement: SEAM-02 — An unregistered package fails, closed
 

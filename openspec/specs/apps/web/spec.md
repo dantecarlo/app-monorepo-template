@@ -1,9 +1,9 @@
 # apps/web — living spec
 
-> **Governs:** `apps/web/src`, `apps/web/next.config.ts`, `apps/web/next-sentry.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
+> **Governs:** `apps/web/src`, `apps/web/next.config.ts`
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-19 at `bbe5851`
+> **Verified against the code:** 2026-11-19 at `58af488`
 
 ## Purpose
 
@@ -11,8 +11,7 @@ The web app is the Next.js App Router consumer surface. It serves the home route
 items summary server screen and the client items dashboard), the sign-in route and the Turnstile
 verify API route, and renders their loading, empty and error states. It owns the edge guarantees
 wired in its own code: the origin-lock middleware, the security and image cache headers, the
-PostHog observability default and the optional Sentry setup, both with PII scrubbing, PostHog's
-consent mode and the consent API, the single query-error capture path, the query API of its own
+PostHog observability default with its PII scrubbing, PostHog's consent mode and the consent API, the single query-error capture path, the query API of its own
 types over TanStack Query behind its lib/query, the store factory over zustand behind its
 lib/store, the router over next/navigation behind its lib/routing, the cache policy over
 next/cache behind its lib/cache, and the translator its blocks read their copy through, over
@@ -922,52 +921,6 @@ given, with a retry button only when a retry or reset handler is given.
 - **Test:** `apps/web/src/components/ui/ErrorState/__tests__/ErrorState.component.test.tsx` › "calls resetErrorBoundary as fallback retry"
 - **Test:** `apps/web/src/components/ui/ErrorState/__tests__/ErrorState.component.test.tsx` › "does not render retry button when neither onRetry nor resetErrorBoundary given"
 
-### Requirement: WEB-29 — The Sentry adapter scrubs PII and stays silent without a DSN
-
-The web app's Sentry adapter, the optional provider of the `sentry` capability, SHALL send
-errors, messages, breadcrumbs and the user to Sentry only when `NEXT_PUBLIC_SENTRY_DSN` is set,
-passing every context, breadcrumb payload and user through `scrubPII` from packages/core first.
-
-**Evidence:** `apps/web/src/lib/observability/createSentryObservability.adapter.ts:24-65`
-
-#### Scenario: an error is captured
-
-- **GIVEN** a DSN is set
-- **WHEN** an error is captured with a context holding an email
-- **THEN** Sentry receives the error with the email redacted
-- **Test:** `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "captureError forwards the exception to Sentry"
-- **Test:** `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "captureError scrubs PII from the context before sending"
-
-#### Scenario: the user and breadcrumbs are scrubbed
-
-- **GIVEN** a DSN is set
-- **WHEN** a user or a breadcrumb holding an email is sent
-- **THEN** Sentry receives it with the email redacted
-- **Test:** `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "setUser scrubs PII from the user payload"
-- **Test:** `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "addBreadcrumb scrubs PII from breadcrumb data"
-
-#### Scenario: no DSN
-
-- **GIVEN** no DSN
-- **WHEN** every observability method is called
-- **THEN** Sentry receives nothing
-- **Test:** `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "all methods no-op when the DSN is absent"
-
-### Requirement: WEB-30 — The Sentry SDK scrubs every event in every runtime
-
-The web app SHALL initialise Sentry in the browser, Node and edge runtimes, the last two loaded by
-the instrumentation hook, enabled only when `NEXT_PUBLIC_SENTRY_DSN` is set, with every event and
-breadcrumb passed through `scrubPII` before sending.
-
-**Evidence:** `apps/web/sentry.client.config.ts:6-12`, `apps/web/sentry.server.config.ts:6-12`, `apps/web/sentry.edge.config.ts:6-12`, `apps/web/instrumentation.ts:3-10`
-
-#### Scenario: an event leaves the app
-
-- **GIVEN** a DSN is set
-- **WHEN** the SDK sends an event or a breadcrumb holding personal data
-- **THEN** the personal data is redacted
-- **Test:** Not covered — no test loads the Sentry config files; `scripts/verify-security-static.mjs` only checks that the client and server configs name `scrubPII` at `beforeSend`.
-
 ### Requirement: WEB-31 — The middleware rejects requests from an untrusted origin
 
 The web app SHALL answer 403 with an empty body to every request outside `_next/static`,
@@ -1707,11 +1660,9 @@ heatmap data, merging the points of two URLs that scrub to the same key.
 ### Requirement: WEB-53 — The Next config applies every optional capability's file
 
 The web app SHALL build its Next.js config and then apply, in name order, the default export of
-every `next-<capability>.config.ts` beside `next.config.ts`, naming no capability itself; the
-Sentry capability's file wraps the config with `withSentryConfig`, silent, uploading source maps
-only when `SENTRY_AUTH_TOKEN` is set.
+every `next-<capability>.config.ts` beside `next.config.ts`, naming no capability itself.
 
-**Evidence:** `apps/web/next.config.ts:52-89`, `apps/web/next-sentry.config.ts:12-18`
+**Evidence:** `apps/web/next.config.ts:52-89`
 
 #### Scenario: a capability file beside the config
 
@@ -1727,27 +1678,12 @@ only when `SENTRY_AUTH_TOKEN` is set.
 - **THEN** the config is returned as built
 - **Test:** `apps/web/__tests__/next.config.test.ts` › "keeps the config as built when no capability file is beside it"
 
-#### Scenario: the web app's own folder
+### Requirement: WEB-54 — The PostHog adapter keeps the port contract
 
-- **GIVEN** the web app as the template ships it, with `@sentry/nextjs` replaced at its module
-- **WHEN** its config is built
-- **THEN** the Sentry capability's file is applied, and the built config is what it returned
-- **Test:** `apps/web/__tests__/next-sentry.config.test.ts` › "next.config.ts applies the Sentry capability's file of the web app"
+The web app SHALL ship a PostHog adapter that passes the observability port contract of
+packages/tooling with its SDK replaced at its module.
 
-#### Scenario: the Sentry wrapper
-
-- **GIVEN** `@sentry/nextjs` replaced at its module
-- **WHEN** the Sentry capability's file wraps a config, with and without `SENTRY_AUTH_TOKEN`
-- **THEN** `withSentryConfig` receives the config, `silent: true`, and source maps disabled only
-  without the token
-- **Test:** `apps/web/__tests__/next-sentry.config.test.ts` › "wraps the config with Sentry, uploading source maps only with a token"
-
-### Requirement: WEB-54 — Both observability adapters keep the port contract
-
-The web app SHALL ship a PostHog adapter and a Sentry adapter that both pass the observability
-port contract of packages/tooling with their SDK replaced at its module.
-
-**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:29-73`, `apps/web/src/lib/observability/createSentryObservability.adapter.ts:26-65`
+**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:29-73`
 
 #### Scenario: the PostHog adapter
 
@@ -1755,13 +1691,6 @@ port contract of packages/tooling with their SDK replaced at its module.
 - **WHEN** the port contract runs against it
 - **THEN** every case passes
 - **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "the observability port contract"
-
-#### Scenario: the Sentry adapter
-
-- **GIVEN** the Sentry adapter, with and without a DSN
-- **WHEN** the port contract runs against it
-- **THEN** every case passes
-- **Test:** `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "the observability port contract"
 
 ### Requirement: WEB-55 — One setting chooses the PostHog consent mode
 
