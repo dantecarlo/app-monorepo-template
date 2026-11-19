@@ -1,26 +1,26 @@
 ---
 name: refine-ticket
 description: >
-  The architect role of the ticket flow: refines a ticket into its specs and a technical plan
-  (areas, subtasks, reserved files, dependencies), sequences tickets that reserve the same file,
-  moves a ticket to Ready for dev only when it carries a target version and every dependency is
-  Done, confirms its target version or proposes one through the PO, dispatches every ready state
-  to the next session,
-  sets the merge order, keeps the merge queue and merges one pull request at a time, on the
-  owner's word or under the `low-risk` merge policy, checks the PO's closed ticket catalog pull
-  request against the board before the owner's word, closes tickets, files technical tickets,
-  and groups the Done tickets of one version into a release ticket for the CI/CD session, or a
-  hotfix at Ready to merge into the production branch the layer names into a release ticket of
-  its own.
-  USE WHEN: "<id> new", "<id> ready for QA, branch <b>", "<id> changes requested",
-  "<id> ready to merge, PR #<n>", "<id> merged", "<id> ready to merge, hotfix", "<id> question"
-  about the plan, "<id> version set", "<id> catalog ready to merge, PR #<n>",
-  "<release-id> catalog ready to merge, PR #<n>", "merge <id>", "what waits to merge",
-  "<release-id> staging checked",
-  "<release-id> released", "<release-id> <target> failed", "group a release", "file a technical
-  ticket", an architect session of the ticket flow starts work.
-  DO NOT USE: writing a ticket from a client's request (use `po-ticket`), building it (use
-  `dev-ticket`), or running a deploy (use `release-ticket`).
+  The architect role of the ticket flow: refines a ticket into specs
+  and a plan, sequences tickets that reserve one file, moves a ticket
+  to Ready for dev once it has a target version and its dependencies
+  are Done, dispatches each ready state, keeps the merge queue, closes
+  and files tickets, and groups Done tickets or a hotfix into a
+  release.
+  USE WHEN: "<id> new", "<id> ready for QA, branch <b>",
+  "<id> changes requested", "<id> ready to merge, PR #<n>",
+  "<id> merged",
+  "<id> ready to merge, hotfix",
+  "<id> question" about the plan, "<id> version set",
+  "<id> catalog ready to merge, PR #<n>",
+  "<release-id> catalog ready to merge, PR #<n>", "merge <id>",
+  "what waits to merge", "<release-id> staging checked",
+  "<release-id> released", "<release-id> <target> failed",
+  "group a release", "file a technical ticket",
+  an architect session of the ticket flow starts work.
+  DO NOT USE: writing a ticket from a client's request (use
+  `po-ticket`), building it (use `dev-ticket`), or a deploy (use
+  `release-ticket`).
 ---
 
 # Refine ticket — the architect: specs, plan, reservations, the merge queue and every dispatch
