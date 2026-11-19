@@ -270,6 +270,37 @@ export const CASES = [
     name: 'an entry whose types are neither seam nor anywhere is malformed'
   },
   {
+    context: walk({
+      entries: [core('react'), { ...zod(), owner: 'web' }, vitest]
+    }),
+    expected: 1,
+    name: 'an entry with a key the registry does not define is malformed'
+  },
+  {
+    context: walk({
+      entries: [
+        ...BASE_ENTRIES,
+        { category: 'infra', name: 'zod/*', seam: [] }
+      ]
+    }),
+    expected: 1,
+    name: 'an entry whose name is a glob, not a package, is malformed'
+  },
+  {
+    context: walk({
+      entries: [core('react'), { ...zod(), note: 3 }, vitest]
+    }),
+    expected: 1,
+    name: 'an entry whose note is not text is malformed'
+  },
+  {
+    context: walk({
+      entries: [core('react'), zod(), { ...vitest, seam: 'apps/**' }]
+    }),
+    expected: 1,
+    name: 'an entry whose seam is not an array of globs is malformed'
+  },
+  {
     context: walk({ registry: '{ "packages": [' }),
     expected: 1,
     name: 'a registry that is not JSON is refused, and nothing else is judged'
@@ -319,6 +350,14 @@ export const CASES = [
     }),
     expected: 1,
     name: 'a file and package listed twice is a duplicate'
+  },
+  {
+    context: walk({
+      allowlist: [{ ...entry(), since: '2026-11-18' }],
+      files: ZOD_IN_SCREEN
+    }),
+    expected: 2,
+    name: 'an allowlist entry with a key the allowlist does not define is malformed'
   },
   {
     context: walk({ allowlist: '{ "path": "x" }' }),
