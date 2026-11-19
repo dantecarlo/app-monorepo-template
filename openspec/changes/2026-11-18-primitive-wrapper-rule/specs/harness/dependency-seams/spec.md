@@ -101,12 +101,14 @@ file's app; its layout components and its types SHALL pass anywhere.
 ### Requirement: SEAM-13 — Every way a file reaches a wrapped name is read
 
 `local/wrapped-import` SHALL judge, besides the named imports of SEAM-11 and SEAM-12, every named
-re-export and every key of the object a `vi.mock` or `vi.doMock` factory returns; and it SHALL
-refuse a reach of the whole module where a name it narrows would be refused: of `react-native`
-in an app with `ui/` blocks, of `expo-router` outside `src/lib/routing/`. A reach of the whole
-module is a namespace import, `export *`, `import x = require()`, a dynamic `import()` or
-`require()` with a literal specifier, and a `vi.mock` or `vi.doMock` with no factory or one whose
-returned object it cannot read.
+re-export, every key of the object a `vi.mock` or `vi.doMock` factory returns, and the names a
+dynamic `import()` or a `require()` is read by: the keys of the object pattern it is destructured
+into, or the one property read off it. It SHALL refuse a reach of the whole module where a name it
+narrows would be refused: of `react-native` in an app with `ui/` blocks, of `expo-router` outside
+`src/lib/routing/`. A reach of the whole module is a namespace import, `export *`,
+`import x = require()`, a dynamic `import()` or `require()` with a literal specifier read any
+other way, and a `vi.mock` or `vi.doMock` with no factory or one whose returned object it cannot
+read.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -131,6 +133,16 @@ returned object it cannot read.
 - **WHEN** ESLint lints it
 - **THEN** nothing is reported
 - **Test:** `eslint-local-rules/wrapped-import.cases.mjs` › "a vi.mock that replaces only names no wrapper owns passes"
+
+#### Scenario: a dynamic import read by name
+
+- **GIVEN** a mobile screen test that destructures `Text` from `await import('react-native')` and
+  `useRouter` from `require('expo-router')`, and reads `router` off `await import('expo-router')`;
+  and the theme config's test, which destructures `Appearance` from `await import('react-native')`
+- **WHEN** ESLint lints them
+- **THEN** the three names of the first are reported, and nothing in the second
+- **Test:** `eslint-local-rules/wrapped-import.cases.mjs` › "a dynamic import or a require read by name is judged by those names"
+- **Test:** `eslint-local-rules/wrapped-import.cases.mjs` › "a dynamic import read only for names no wrapper owns passes"
 
 #### Scenario: the whole module
 
