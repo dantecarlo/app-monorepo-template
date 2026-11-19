@@ -9,13 +9,24 @@
 // ---------------------------------------------------------------------------
 
 import assert from 'node:assert/strict'
+import { execFileSync, spawnSync } from 'node:child_process'
+import { join } from 'node:path'
 import { test } from 'node:test'
 
+import { withScratchTree } from './gate/scratch.mjs'
+import { gitFreeEnv } from './git-free-env.mjs'
 import {
   analyzeCoverage,
+  analyzeRegistryOwners,
   matchesAny,
   validateManifest
 } from './manifest.mjs'
+
+const COVERAGE_GATE = join(
+  import.meta.dirname,
+  'verify-manifest-coverage.mjs'
+)
+const REGISTRY = '.agents/contracts/dependencies.json'
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -368,4 +379,165 @@ test('a stale core claim is reported too', () => {
   assert.deepEqual(result.staleClaims, [
     { claim: 'nope.json', owner: 'core' }
   ])
+})
+
+// ---------------------------------------------------------------------------
+// analyzeRegistryOwners — every registry entry has one owner the manifest
+// knows, so a prune knows which entries go with it
+// ---------------------------------------------------------------------------
+
+const registryOf = (packages) => ({ packages })
+const WEB_MANIFEST = manifestOf({
+  capabilities: [capability({ claims: ['apps/web/**'], id: 'web-next' })]
+})
+
+test('a registry entry owned by core or by a declared capability passes', () => {
+  assert.deepEqual(
+    analyzeRegistryOwners({
+      manifest: WEB_MANIFEST,
+      registry: registryOf([
+        { category: 'core', name: 'react', owner: 'core' },
+        { category: 'core', name: 'next', owner: 'web-next' }
+      ])
+    }),
+    []
+  )
+})
+
+test('a registry entry that names no owner is unowned', () => {
+  assert.deepEqual(
+    analyzeRegistryOwners({
+      manifest: WEB_MANIFEST,
+      registry: registryOf([
+        { category: 'core', name: 'react', owner: 'core' },
+        { category: 'core', name: 'next' },
+        { category: 'core', name: 'expo', owner: '' }
+      ])
+    }),
+    [
+      {
+        detail:
+          'next names no owner: name the capability whose prune removes it, or core',
+        name: 'next'
+      },
+      {
+        detail:
+          'expo names no owner: name the capability whose prune removes it, or core',
+        name: 'expo'
+      }
+    ]
+  )
+})
+
+test('a registry entry whose owner the manifest does not declare is unowned', () => {
+  assert.deepEqual(
+    analyzeRegistryOwners({
+      manifest: WEB_MANIFEST,
+      registry: registryOf([
+        { category: 'core', name: 'expo', owner: 'mobile-expo' }
+      ])
+    }),
+    [
+      {
+        detail:
+          'expo is owned by "mobile-expo", which template.manifest.json does not declare',
+        name: 'expo'
+      }
+    ]
+  )
+})
+
+test('a registry with no packages array is reported, not skipped', () => {
+  assert.deepEqual(
+    analyzeRegistryOwners({ manifest: WEB_MANIFEST, registry: {} }),
+    [
+      {
+        detail:
+          'the registry holds no "packages" array, so no entry has an owner',
+        name: REGISTRY
+      }
+    ]
+  )
+})
+
+// ---------------------------------------------------------------------------
+// verify-manifest-coverage, as a process over a scratch git repository
+// ---------------------------------------------------------------------------
+
+const GATE_MANIFEST = JSON.stringify(
+  manifestOf({
+    capabilities: [
+      capability({ claims: ['apps/web/**'], id: 'web-next' })
+    ],
+    core: ['.agents/**', 'template.manifest.json']
+  })
+)
+
+const runCoverageGate = ({ files }) =>
+  withScratchTree({
+    files: { 'template.manifest.json': GATE_MANIFEST, ...files },
+    prefix: 'manifest-coverage-',
+    use: ({ root }) => {
+      const env = gitFreeEnv()
+      execFileSync('git', ['init', '-q'], { cwd: root, env })
+      execFileSync('git', ['add', '-A'], { cwd: root, env })
+      return spawnSync(process.execPath, [COVERAGE_GATE, '--root', root], {
+        encoding: 'utf8',
+        env
+      })
+    }
+  })
+
+const OWNED_REGISTRY = JSON.stringify(
+  registryOf([
+    { category: 'core', name: 'react', owner: 'core' },
+    { category: 'core', name: 'next', owner: 'web-next' }
+  ])
+)
+
+test('the coverage gate passes a tree whose files and registry entries each have one owner', () => {
+  const result = runCoverageGate({
+    files: { [REGISTRY]: OWNED_REGISTRY, 'apps/web/a.ts': 'export {}\n' }
+  })
+
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(
+    result.stdout,
+    /all 3 tracked file\(s\) owned exactly once, no stale claims, 2 registry entries each owned once/u
+  )
+})
+
+test('the coverage gate fails an unclaimed file, naming it', () => {
+  const result = runCoverageGate({
+    files: {
+      [REGISTRY]: OWNED_REGISTRY,
+      'apps/web/a.ts': 'export {}\n',
+      'stray.md': '# stray\n'
+    }
+  })
+
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /UNCLAIMED \(1\)[^\n]*\n {4}stray\.md/u)
+})
+
+test('the coverage gate fails a registry entry with no owner or an undeclared one, naming each', () => {
+  const result = runCoverageGate({
+    files: {
+      [REGISTRY]: JSON.stringify(
+        registryOf([
+          { category: 'core', name: 'react' },
+          { category: 'core', name: 'expo', owner: 'mobile-expo' }
+        ])
+      ),
+      'apps/web/a.ts': 'export {}\n'
+    }
+  })
+
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /UNOWNED ENTRIES \(2\)/u)
+  assert.match(result.stderr, /react names no owner/u)
+  assert.match(
+    result.stderr,
+    /expo is owned by "mobile-expo", which template\.manifest\.json does not declare/u
+  )
 })

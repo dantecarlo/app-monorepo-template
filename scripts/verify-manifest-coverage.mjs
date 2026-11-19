@@ -18,6 +18,12 @@
 //                → the manifest has drifted. It describes a repo that no
 //                  longer exists.
 //
+//   unowned      an entry of .agents/contracts/dependencies.json that names
+//                no owner, or an owner the manifest does not declare
+//                → no prune would ever remove it, or it names a capability
+//                  that cannot be pruned. The owner is a capability id or
+//                  `core`, the way a file claim names it.
+//
 // Together those close the door in both directions: the manifest cannot omit
 // reality, and it cannot invent it.
 //
@@ -30,18 +36,26 @@
 // not by this gate.
 //
 // Usage:
-//   node scripts/verify-manifest-coverage.mjs
+//   node scripts/verify-manifest-coverage.mjs [--root <dir>]
 // ---------------------------------------------------------------------------
 
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parseArgs } from 'node:util'
 
-import { analyzeCoverage } from './manifest.mjs'
+import {
+  analyzeCoverage,
+  analyzeRegistryOwners,
+  REGISTRY_FILE
+} from './manifest.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
-const REPO_ROOT = resolve(HERE, '..')
+const { values } = parseArgs({
+  options: { root: { default: resolve(HERE, '..'), type: 'string' } }
+})
+const REPO_ROOT = resolve(values.root)
 const MANIFEST_PATH = resolve(REPO_ROOT, 'template.manifest.json')
 
 const fail = ({ message }) => {
@@ -78,18 +92,44 @@ const trackedFiles = () => {
   }
 }
 
+// The registry is read here, not in the engine, so a registry that cannot
+// be read is a finding with its reason, never a skipped check.
+const registryOwnerFindings = ({ manifest }) => {
+  let registry
+  try {
+    registry = JSON.parse(
+      readFileSync(resolve(REPO_ROOT, REGISTRY_FILE), 'utf8')
+    )
+  } catch (error) {
+    return {
+      entries: 0,
+      unowned: [
+        { detail: `cannot be read: ${error.message}`, name: REGISTRY_FILE }
+      ]
+    }
+  }
+  return {
+    entries: Array.isArray(registry?.packages)
+      ? registry.packages.length
+      : 0,
+    unowned: analyzeRegistryOwners({ manifest, registry })
+  }
+}
+
 const manifest = readManifest()
 const files = trackedFiles()
 const { conflicts, staleClaims, unclaimed } = analyzeCoverage({
   files,
   manifest
 })
+const { entries, unowned } = registryOwnerFindings({ manifest })
 
-const total = unclaimed.length + conflicts.length + staleClaims.length
+const total =
+  unclaimed.length + conflicts.length + staleClaims.length + unowned.length
 
 if (total === 0) {
   console.log(
-    `verify-manifest-coverage: PASS — all ${files.length} tracked file(s) owned exactly once, no stale claims.`
+    `verify-manifest-coverage: PASS — all ${files.length} tracked file(s) owned exactly once, no stale claims, ${entries} registry entries each owned once.`
   )
   process.exit(0)
 }
@@ -128,10 +168,21 @@ if (staleClaims.length > 0) {
   console.error('')
 }
 
+if (unowned.length > 0) {
+  console.error(
+    `  UNOWNED ENTRIES (${unowned.length}) — registry entries no prune can remove:`
+  )
+  for (const { detail } of unowned) {
+    console.error(`    ${REGISTRY_FILE}  →  ${detail}`)
+  }
+  console.error('')
+}
+
 console.error(
-  'Fix by editing template.manifest.json:\n' +
+  'Fix by editing template.manifest.json, or the owner of a registry entry:\n' +
     '  • unclaimed   → decide the owner. A new file belongs to a capability, or to core.\n' +
     '  • conflicts   → narrow one of the claims. Ownership is single by design.\n' +
-    '  • stale claim → drop it, or restore the path it was describing.\n'
+    '  • stale claim → drop it, or restore the path it was describing.\n' +
+    `  • unowned     → name the capability whose prune removes the package, or core.\n`
 )
 process.exit(1)

@@ -1,65 +1,78 @@
 {
-  "$comment": "Every package, or package subpath, the workspace declares or imports, with its category and its seam: the repository globs of the files that may import it (decisions 51, 52 and 58). A core entry is imported anywhere; every other entry only inside its seam, type-only imports included unless \"types\" is \"anywhere\", and an empty seam means no file may import it yet. The most specific entry wins (next/navigation before next), and every Node builtin is the entry node:*. A test also imports what the seam of the unit it tests admits, and a testInfrastructure file any registered package. local/dependency-seam enforces it on apps/* and packages/*, and local/wrapped-import the names a wrapper owns of two core packages (react-native, expo-router); pnpm verify:dependency-seams holds it to every package.json and file. See docs/code-standards.md section 23.",
+  "$comment": "Every package, or package subpath, the workspace declares or imports, with its category and its seam: the repository globs of the files that may import it (decisions 51, 52 and 58). A core entry is imported anywhere; every other entry only inside its seam, type-only imports included unless \"types\" is \"anywhere\", and an empty seam means no file may import it yet. The most specific entry wins (next/navigation before next), and every Node builtin is the entry node:*. A test also imports what the seam of the unit it tests admits, and a testInfrastructure file any registered package. local/dependency-seam enforces it on apps/* and packages/*, and local/wrapped-import the names a wrapper owns of two core packages (react-native, expo-router); pnpm verify:dependency-seams holds it to every package.json and file. Every entry names its owner: the capability of template.manifest.json whose prune removes its package, which takes the entry and its seam with it, or core; pnpm verify:manifest:coverage holds each owner to the manifest (docs/manifest.md). See docs/code-standards.md section 23.",
   "testInfrastructure": ["{apps,packages}/*/src/test/**"],
   "packages": [
     {
       "name": "@app/core",
-      "category": "core"
+      "category": "core",
+      "owner": "core"
     },
     {
       "name": "@app/i18n",
-      "category": "core"
+      "category": "core",
+      "owner": "i18n"
     },
     {
       "name": "@app/tokens",
-      "category": "core"
+      "category": "core",
+      "owner": "design-tokens"
     },
     {
       "name": "expo",
-      "category": "core"
+      "category": "core",
+      "owner": "mobile-expo"
     },
     {
       "name": "expo-router",
       "category": "core",
+      "owner": "mobile-expo",
       "note": "Its hooks (every use name) and its router object are imported only under an app's src/lib/routing/, which local/wrapped-import holds by the names imported; its layout components (Stack, Tabs, Slot, Redirect, Link) and its types stay direct. The mobile app calls no hook yet, so its lib/routing holds no module."
     },
     {
       "name": "next",
       "category": "core",
+      "owner": "web-next",
       "note": "next/cache, next/navigation and next/image are narrowed by entries of their own."
     },
     {
       "name": "react",
-      "category": "core"
+      "category": "core",
+      "owner": "core"
     },
     {
       "name": "react-dom",
-      "category": "core"
+      "category": "core",
+      "owner": "core"
     },
     {
       "name": "react-native",
       "category": "core",
+      "owner": "mobile-expo",
       "note": "A primitive a components/ui block is named after (on mobile Text, Modal, Button and StatusBar) is imported only under that block's folder, which local/wrapped-import holds by the names imported, reading the blocks from disk; every other file renders the block. View, ScrollView, Pressable, TextInput and every primitive no block is named after stay direct."
     },
     {
       "name": "typescript",
-      "category": "core"
+      "category": "core",
+      "owner": "core"
     },
     {
       "name": "next/cache",
       "category": "infra",
+      "owner": "web-next",
       "seam": ["apps/web/src/lib/cache/cachePolicy.adapter.ts"],
       "note": "Behind applyCachePolicy of lib/cache, which a 'use cache' function calls with one of the app's CacheLifeEnum profiles and its tags; its tests mock @/lib/cache."
     },
     {
       "name": "next/navigation",
       "category": "infra",
+      "owner": "web-next",
       "seam": ["apps/web/src/lib/routing/useAppRouter.hook.ts"],
       "note": "Behind useAppRouter of lib/routing, whose IAppRouter (push, replace, refresh) is the app's own; every other test mocks @/lib/routing through createRoutingDouble of src/test/routing.helper.ts."
     },
     {
       "name": "next-intl",
       "category": "infra",
+      "owner": "web-next",
       "seam": [
         "apps/web/src/lib/i18n/**",
         "apps/web/src/i18n/request.config.ts",
@@ -70,65 +83,76 @@
     {
       "name": "react-i18next",
       "category": "infra",
+      "owner": "mobile-expo",
       "seam": ["apps/mobile/src/lib/i18n/**"],
       "note": "Behind IAppTranslator of @app/i18n, which apps/mobile/src/lib/i18n/ implements."
     },
     {
       "name": "i18next",
       "category": "infra",
+      "owner": "mobile-expo",
       "seam": ["apps/mobile/src/lib/i18n/**"],
       "note": "The instance apps/mobile/src/lib/i18n/i18n.config.ts starts; blocks reach it through useAppTranslator."
     },
     {
       "name": "i18next-icu",
       "category": "infra",
+      "owner": "mobile-expo",
       "seam": ["apps/mobile/src/lib/i18n/**"],
       "note": "The ICU format of the shared catalogs, plugged in by apps/mobile/src/lib/i18n/i18n.config.ts."
     },
     {
       "name": "@formatjs/intl-pluralrules",
       "category": "infra",
+      "owner": "mobile-expo",
       "seam": ["apps/mobile/src/lib/i18n/**"],
       "note": "Hermes's missing plural rules, polyfilled by apps/mobile/src/lib/i18n/intlPolyfill.config.ts before i18next starts."
     },
     {
       "name": "expo-localization",
       "category": "infra",
+      "owner": "mobile-expo",
       "seam": ["apps/mobile/src/lib/i18n/**"],
       "note": "The device language the first start falls back to, read by apps/mobile/src/lib/i18n/i18n.config.ts."
     },
     {
       "name": "@tanstack/react-query",
       "category": "infra",
+      "owner": "core",
       "seam": ["apps/*/src/lib/query/**"],
       "note": "Behind useAppQuery, useAppMutation, useInvalidateAppQuery and AppQueryProvider, whose option and result types are the project's own; tests render through createQueryWrapper of src/test/query.helper.tsx. The seam stays the folder: the tests of the key factories reach the client too."
     },
     {
       "name": "zustand",
       "category": "infra",
+      "owner": "core",
       "seam": ["apps/*/src/lib/store/createAppStore.helper.ts"],
       "note": "Behind createAppStore: every store under src/stores is created through it, which gives the store its useShallow and its optional persistence; each store declares its own named selectors."
     },
     {
       "name": "zod",
       "category": "infra",
+      "owner": "core",
       "seam": ["apps/*/src/validation/**"]
     },
     {
       "name": "@react-native-async-storage/async-storage",
       "category": "infra",
+      "owner": "mobile-expo",
       "seam": ["apps/mobile/src/lib/storage/keyValueStorage.adapter.ts"],
       "note": "Behind IKeyValueStoragePort of @app/core: the theme and language configs and every persisted store keep their values on the device through keyValueStorage of lib/storage."
     },
     {
       "name": "expo-splash-screen",
       "category": "infra",
+      "owner": "mobile-expo",
       "seam": ["apps/mobile/src/lib/bootstrap/splashScreen.adapter.ts"],
       "note": "Behind holdSplashScreen and hideSplashScreen: the root layout holds the splash as it loads, and useAppBootstrap hides it once the fonts settle."
     },
     {
       "name": "@expo-google-fonts/inter",
       "category": "infra",
+      "owner": "mobile-expo",
       "seam": [
         "apps/mobile/src/lib/bootstrap/useAppBootstrap.constant.ts"
       ],
@@ -137,6 +161,7 @@
     {
       "name": "@expo-google-fonts/montserrat",
       "category": "infra",
+      "owner": "mobile-expo",
       "seam": [
         "apps/mobile/src/lib/bootstrap/useAppBootstrap.constant.ts",
         "apps/mobile/src/lib/bootstrap/useAppBootstrap.hook.ts"
@@ -146,6 +171,7 @@
     {
       "name": "nativewind",
       "category": "infra",
+      "owner": "mobile-expo",
       "seam": [
         "apps/mobile/src/lib/theme/**",
         "apps/mobile/metro.config.js",
@@ -156,24 +182,28 @@
     {
       "name": "next/image",
       "category": "ui",
+      "owner": "web-next",
       "seam": ["apps/web/src/components/ui/Image/Image.component.tsx"],
       "note": "Behind the Image block, whose props are its own; every other block renders it, and a test mocks it, never next/image."
     },
     {
       "name": "tailwind-variants",
       "category": "ui",
+      "owner": "web-next",
       "seam": ["apps/web/src/components/ui/variants.helper.ts"],
       "note": "The one value-import site of tv (F30): every other file builds its variants with the shared tv."
     },
     {
       "name": "tailwind-merge",
       "category": "ui",
+      "owner": "web-next",
       "seam": ["apps/web/src/components/ui/variants.helper.ts"],
       "note": "The peer tailwind-variants runs on every call; the shared tv configures it."
     },
     {
       "name": "react-error-boundary",
       "category": "ui",
+      "owner": "core",
       "seam": [
         "apps/*/src/components/ui/AsyncBoundary/AsyncBoundary.component.tsx"
       ],
@@ -182,11 +212,13 @@
     {
       "name": "expo-blur",
       "category": "ui",
+      "owner": "mobile-expo",
       "seam": ["apps/mobile/src/components/ui/**"]
     },
     {
       "name": "expo-linear-gradient",
       "category": "ui",
+      "owner": "mobile-expo",
       "seam": [
         "apps/mobile/src/components/ui/Gradient/Gradient.component.tsx"
       ],
@@ -195,11 +227,13 @@
     {
       "name": "react-native-reanimated",
       "category": "ui",
+      "owner": "mobile-expo",
       "seam": ["apps/mobile/src/components/ui/**"]
     },
     {
       "name": "react-native-safe-area-context",
       "category": "ui",
+      "owner": "mobile-expo",
       "seam": [
         "apps/mobile/src/components/ui/AuthShell/AuthShell.component.tsx",
         "apps/mobile/src/lib/bootstrap/AppSafeAreaProvider.component.tsx"
@@ -209,11 +243,13 @@
     {
       "name": "react-native-svg",
       "category": "ui",
+      "owner": "mobile-expo",
       "seam": ["apps/mobile/src/components/ui/**"]
     },
     {
       "name": "expo-status-bar",
       "category": "ui",
+      "owner": "mobile-expo",
       "seam": [
         "apps/mobile/src/components/ui/StatusBar/StatusBar.component.tsx"
       ],
@@ -222,6 +258,7 @@
     {
       "name": "@sentry/nextjs",
       "category": "vendor",
+      "owner": "sentry",
       "seam": [
         "apps/web/src/lib/observability/*.adapter.ts",
         "apps/web/instrumentation.ts",
@@ -233,47 +270,55 @@
     {
       "name": "@sentry/react-native",
       "category": "vendor",
+      "owner": "sentry",
       "seam": ["apps/mobile/src/lib/observability/*.adapter.ts"],
       "note": "An optional capability (decision 53)."
     },
     {
       "name": "posthog-js",
       "category": "vendor",
+      "owner": "web-next",
       "seam": ["apps/web/src/lib/{observability,posthog}/*.adapter.ts"],
       "note": "The default observability adapter (F.7)."
     },
     {
       "name": "posthog-react-native",
       "category": "vendor",
+      "owner": "mobile-expo",
       "seam": ["apps/mobile/src/lib/{observability,posthog}/*.adapter.ts"],
       "note": "The default observability adapter (F.7)."
     },
     {
       "name": "@supabase/supabase-js",
       "category": "vendor",
+      "owner": "supabase",
       "seam": ["packages/supabase/src/*.adapter.ts"],
       "note": "Its client leaves the package as the opaque BackendClientType, which only packages/supabase/src/backendClient.adapter.ts turns back into the SDK client."
     },
     {
       "name": "@supabase/ssr",
       "category": "vendor",
+      "owner": "supabase",
       "seam": ["packages/supabase/src/*.adapter.ts"],
       "note": "The SSR client leaves the package as the opaque BackendClientType, as the browser client does."
     },
     {
       "name": "@app/supabase",
       "category": "vendor-package",
+      "owner": "supabase",
       "seam": ["apps/*/src/lib/supabase/*.adapter.ts"],
       "note": "Each app's lib/supabase adapters: the client, typed BackendClientType, and the auth gateway the app's auth provider receives."
     },
     {
       "name": "@app/cloudflare",
       "category": "vendor-package",
+      "owner": "cloudflare",
       "seam": ["apps/web/src/lib/{bot-protection,origin-guard}/**"]
     },
     {
       "name": "node:*",
       "category": "build",
+      "owner": "core",
       "seam": [
         "{apps,packages}/*/**/__tests__/**",
         "{apps,packages}/*/*.config.{js,mjs,cjs,ts}",
@@ -285,6 +330,7 @@
     {
       "name": "@app/tooling",
       "category": "build",
+      "owner": "core",
       "seam": [
         "{apps,packages}/*/**/__tests__/**",
         "{apps,packages}/*/vitest.config.ts"
@@ -294,6 +340,7 @@
     {
       "name": "vitest",
       "category": "build",
+      "owner": "core",
       "seam": [
         "{apps,packages}/*/**/__tests__/**",
         "{apps,packages}/*/vitest.config.ts"
@@ -302,268 +349,321 @@
     {
       "name": "@vitejs/plugin-react",
       "category": "build",
+      "owner": "web-next",
       "seam": ["apps/web/vitest.config.ts"]
     },
     {
       "name": "@testing-library/react",
       "category": "build",
+      "owner": "core",
       "seam": ["{apps,packages}/*/**/__tests__/**"],
       "note": "Tests render through the local test.helper, which re-exports it; no-restricted-imports keeps that path."
     },
     {
       "name": "@testing-library/jest-dom",
       "category": "build",
+      "owner": "web-next",
       "seam": ["{apps,packages}/*/**/__tests__/**"]
     },
     {
       "name": "msw",
       "category": "build",
+      "owner": "core",
       "seam": ["{apps,packages}/*/**/__tests__/**"]
     },
     {
       "name": "vitest-axe",
       "category": "build",
+      "owner": "web-next",
       "seam": ["{apps,packages}/*/**/__tests__/**"]
     },
     {
       "name": "tailwindcss",
       "category": "build",
+      "owner": "core",
       "seam": ["{apps,packages}/*/**/__tests__/**"],
       "note": "The CSS compiler: the web loads it from CSS and PostCSS, never from source, and a test may compile with it. The class dialect is core (decision 58)."
     },
     {
       "name": "@axe-core/playwright",
       "category": "build",
+      "owner": "e2e-playwright",
       "seam": []
     },
     {
       "name": "@babel/plugin-transform-class-static-block",
       "category": "build",
+      "owner": "mobile-expo",
       "seam": []
     },
     {
       "name": "@commitlint/cli",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "@commitlint/config-conventional",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "@next/eslint-plugin-next",
       "category": "build",
+      "owner": "web-next",
       "seam": []
     },
     {
       "name": "@playwright/test",
       "category": "build",
+      "owner": "e2e-playwright",
       "seam": []
     },
     {
       "name": "@tailwindcss/postcss",
       "category": "build",
+      "owner": "web-next",
       "seam": []
     },
     {
       "name": "@types/node",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "@types/react",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "@types/react-dom",
       "category": "build",
+      "owner": "web-next",
       "seam": []
     },
     {
       "name": "babel-plugin-module-resolver",
       "category": "build",
+      "owner": "mobile-expo",
       "seam": []
     },
     {
       "name": "babel-plugin-react-compiler",
       "category": "build",
+      "owner": "web-next",
       "seam": []
     },
     {
       "name": "babel-preset-expo",
       "category": "build",
+      "owner": "mobile-expo",
       "seam": []
     },
     {
       "name": "eslint",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "eslint-config-next",
       "category": "build",
+      "owner": "web-next",
       "seam": []
     },
     {
       "name": "eslint-config-prettier",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "eslint-plugin-check-file",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "eslint-plugin-expo",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "eslint-plugin-import",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "eslint-plugin-jsx-a11y",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "eslint-plugin-no-relative-import-paths",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "eslint-plugin-perfectionist",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "eslint-plugin-prettier",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "eslint-plugin-react",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "eslint-plugin-react-hooks",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "eslint-plugin-simple-import-sort",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "eslint-plugin-sort-destructure-keys",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "eslint-plugin-sort-keys-fix",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "eslint-plugin-vitest",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "globals",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "happy-dom",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "husky",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "knip",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "lint-staged",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "postcss",
       "category": "build",
+      "owner": "web-next",
       "seam": []
     },
     {
       "name": "prettier",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "serve",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "turbo",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "typescript-eslint",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "vite",
       "category": "build",
+      "owner": "core",
       "seam": []
     },
     {
       "name": "@expo/metro-runtime",
       "category": "peer",
+      "owner": "mobile-expo",
       "seam": []
     },
     {
       "name": "expo-constants",
       "category": "peer",
+      "owner": "mobile-expo",
       "seam": []
     },
     {
       "name": "expo-font",
       "category": "peer",
+      "owner": "mobile-expo",
       "seam": []
     },
     {
       "name": "expo-linking",
       "category": "peer",
+      "owner": "mobile-expo",
       "seam": []
     },
     {
       "name": "react-native-screens",
       "category": "peer",
+      "owner": "mobile-expo",
       "seam": []
     },
     {
       "name": "react-native-web",
       "category": "peer",
+      "owner": "mobile-expo",
       "seam": []
     },
     {
       "name": "react-native-worklets",
       "category": "peer",
+      "owner": "mobile-expo",
       "seam": []
     }
   ]

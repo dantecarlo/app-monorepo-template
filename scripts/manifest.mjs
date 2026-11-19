@@ -405,3 +405,57 @@ export const analyzeCoverage = ({ files, manifest }) => {
     unclaimed: unclaimed.sort()
   }
 }
+
+// ---------------------------------------------------------------------------
+// Registry ownership — every entry of .agents/contracts/dependencies.json
+// names one owner the manifest knows: the capability whose prune removes the
+// entry's package from the workspace, or `core`. An absent capability takes
+// every entry it owns, with its seam globs, the way it takes the files it
+// claims. A field cannot hold two owners, so a conflict cannot be written.
+// ---------------------------------------------------------------------------
+
+export const CORE_OWNER = 'core'
+export const REGISTRY_FILE = '.agents/contracts/dependencies.json'
+
+export const analyzeRegistryOwners = ({ manifest, registry }) => {
+  if (!Array.isArray(registry?.packages)) {
+    return [
+      {
+        detail:
+          'the registry holds no "packages" array, so no entry has an owner',
+        name: REGISTRY_FILE
+      }
+    ]
+  }
+
+  const owners = new Set([
+    CORE_OWNER,
+    ...asArray(manifest?.capabilities).map(({ id }) => id)
+  ])
+
+  return registry.packages.flatMap((entry, index) => {
+    const name = isNonEmptyString(entry?.name)
+      ? entry.name
+      : `entry ${index}`
+
+    if (!isNonEmptyString(entry?.owner)) {
+      return [
+        {
+          detail: `${name} names no owner: name the capability whose prune removes it, or ${CORE_OWNER}`,
+          name
+        }
+      ]
+    }
+
+    if (!owners.has(entry.owner)) {
+      return [
+        {
+          detail: `${name} is owned by "${entry.owner}", which template.manifest.json does not declare`,
+          name
+        }
+      ]
+    }
+
+    return []
+  })
+}
