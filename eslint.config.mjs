@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url'
 import tseslint from 'typescript-eslint'
 
 import localRules from './eslint-local-rules/index.mjs'
-import { readAppFrameworks } from './scripts/eslint-config.detect.mjs'
+import { readFrameworks } from './scripts/eslint-config.detect.mjs'
 
 import {
   BASE_RULES,
@@ -51,14 +51,14 @@ import {
 //
 // A rule set more than one workspace shares applies by pattern: apps/*/**
 // and packages/*/**, or a suffix (`**/*.screen.tsx`). What a framework forces
-// applies to the apps whose package.json declares it, read once here
-// (scripts/eslint-config.detect.mjs): the React rules to every app that
-// declares react, the Next.js block to every app that declares next, the
-// Expo block to every app that declares expo. So an app added under apps/,
-// plain React for example, is judged with no change to this file; the
-// fixture apps of eslint-local-rules/__fixtures__/ prove it. The only blocks
-// that name a workspace are that workspace's own (packages/core, tokens,
-// supabase, tooling), each saying why.
+// applies to the workspaces whose package.json declares it, read once here
+// (scripts/eslint-config.detect.mjs): the React rules to every app and
+// package that declares react, the Next.js block to every app that declares
+// next, the Expo block to every app that declares expo. So an app added under
+// apps/, or a package under packages/, plain React for example, is judged
+// with no change to this file; the fixtures of eslint-local-rules/__fixtures__/
+// prove it. The only blocks that name a workspace are that workspace's own
+// (packages/core, tokens, supabase, tooling), each saying why.
 // ---------------------------------------------------------------------------
 
 // typescript-eslint v8 errors when multiple candidate tsconfig roots exist
@@ -96,8 +96,8 @@ const IGNORES = [
 
 // ---------------------------------------------------------------------------
 // Shared plugin maps. Every workspace registers the TypeScript set, check-file
-// included, so the filename suffix contract is enforced everywhere; a React
-// app adds the React plugins.
+// included, so the filename suffix contract is enforced everywhere; an app or
+// package that declares react adds the React plugins.
 // ---------------------------------------------------------------------------
 const TS_PLUGINS = {
   '@typescript-eslint': tseslint.plugin,
@@ -133,8 +133,9 @@ const ROUTER_FILE_NAMES = {
 }
 
 // ---------------------------------------------------------------------------
-// What each framework adds to an app that declares it. `files` and `ignores`
-// are relative to the app's folder; `forApps` roots them at each app.
+// What each framework adds to a workspace that declares it. `files` and
+// `ignores` are relative to the workspace's folder; `forWorkspaces` roots
+// them at each one.
 // ---------------------------------------------------------------------------
 
 // React: the JSX parser, the browser globals, the React plugins and rules.
@@ -212,9 +213,9 @@ const NEXT_LATE_BLOCKS = [RSC_ASYNC_SCREEN_OVERRIDE]
 const rootAt = ({ dir, patterns }) =>
   patterns.map((pattern) => `${dir}/${pattern}`)
 
-// Each block rooted at every app of `dirs`; none when no app declares the
-// framework. A block with `ignores` alone stays a global ignore.
-const forApps = ({ blocks, dirs }) =>
+// Each block rooted at every workspace of `dirs`; none when no workspace
+// declares the framework. A block with `ignores` alone stays a global ignore.
+const forWorkspaces = ({ blocks, dirs }) =>
   dirs.length === 0
     ? []
     : blocks.map((block) => ({
@@ -236,7 +237,7 @@ const forApps = ({ blocks, dirs }) =>
 export const createConfig = ({
   workspaceRoot = TSCONFIG_ROOT_DIR
 } = {}) => {
-  const apps = readAppFrameworks({ root: workspaceRoot })
+  const frameworks = readFrameworks({ root: workspaceRoot })
 
   return defineConfig([
     { ignores: IGNORES },
@@ -266,27 +267,12 @@ export const createConfig = ({
       rules: { ...BASE_RULES, ...FILENAME_RULES }
     },
 
-    // Every package runs on Node: core, i18n, supabase and cloudflare, and
-    // any package added later. packages/tokens sets its own globals below.
+    // Every package runs on Node: core, i18n, supabase, cloudflare, tokens
+    // and tooling, and any package added later. A package that declares
+    // react adds the React set below, as an app does.
     {
       files: [PACKAGE_SOURCES],
-      ignores: ['packages/tokens/**'],
       languageOptions: { globals: { ...globals.node, ...globals.es2021 } }
-    },
-
-    // packages/tokens — its own: the design tokens carry the browser globals,
-    // the JSX parser and the React rule set, though the package declares no
-    // react (code-standards §24 names it as an open question).
-    // @ts-expect-error - Plugin type incompatibility
-    {
-      files: ['packages/tokens/**/*.{ts,tsx}'],
-      languageOptions: {
-        globals: { ...globals.browser, ...globals.es2021 },
-        parserOptions: JSX_PARSER_OPTIONS
-      },
-      plugins: REACT_PLUGINS,
-      rules: REACT_RULES,
-      settings: REACT_SETTINGS
     },
 
     // -----------------------------------------------------------------------
@@ -328,13 +314,14 @@ export const createConfig = ({
     },
 
     // -----------------------------------------------------------------------
-    // What each app's framework forces, by what its package.json declares.
+    // What each workspace's framework forces, by what its package.json
+    // declares: React in every app and package, Next.js and Expo in the apps.
     // React first: the Expo block relaxes jsx-a11y rules it sets.
     // -----------------------------------------------------------------------
     // @ts-expect-error - Plugin type incompatibility
-    ...forApps({ blocks: REACT_BLOCKS, dirs: apps.react }),
-    ...forApps({ blocks: NEXT_BLOCKS, dirs: apps.next }),
-    ...forApps({ blocks: EXPO_BLOCKS, dirs: apps.expo }),
+    ...forWorkspaces({ blocks: REACT_BLOCKS, dirs: frameworks.react }),
+    ...forWorkspaces({ blocks: NEXT_BLOCKS, dirs: frameworks.next }),
+    ...forWorkspaces({ blocks: EXPO_BLOCKS, dirs: frameworks.expo }),
 
     // -----------------------------------------------------------------------
     // Node tooling scripts (scripts/**/*.mjs, root *.mjs, .claude/skills/**,
@@ -371,7 +358,7 @@ export const createConfig = ({
     STYLE_PILLAR_OVERRIDE,
     // The async server screens of every Next.js app: after
     // LOGIC_IN_HOOK_OVERRIDE, so they win by later-wins.
-    ...forApps({ blocks: NEXT_LATE_BLOCKS, dirs: apps.next }),
+    ...forWorkspaces({ blocks: NEXT_LATE_BLOCKS, dirs: frameworks.next }),
     HOOK_FILE_OVERRIDE,
     CONSTANT_FILE_OVERRIDE,
     STYLE_FILE_OVERRIDE,

@@ -1,0 +1,7 @@
+{
+  "name": "@fixture/react-package",
+  "private": true,
+  "dependencies": {
+    "react": "*"
+  }
+}
