@@ -121,6 +121,8 @@
     "scripts/verify-ticket-branch.test.mjs",
     "scripts/verify-unicode-safety.mjs",
     "scripts/verify-unicode-safety.test.mjs",
+    "scripts/verify-workflow-pins.mjs",
+    "scripts/verify-workflow-pins.test.mjs",
     "template.manifest.json",
     "tsconfig.base.json",
     "turbo.json"

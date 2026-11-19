@@ -796,6 +796,7 @@ This table exists so that difference is visible.
 | File ownership / init prune | script        | `verify:manifest` + `verify:manifest:coverage`                      |
 | One instruction entry       | script        | `verify:instruction-entry` — `AGENTS.md` present, no `CLAUDE.md`    |
 | No invisible Unicode        | script        | `verify:unicode-safety` — no zero-width, direction, tag or filler character in a tracked text file; the emoji joiner only in the i18n catalogs |
+| CI actions pinned           | script        | `verify:workflow-pins` — every `uses:` a full commit SHA; local and `docker://` exempt; not whether the SHA is the tag its comment names |
 | `AGENTS.md` fits Codex      | test          | `codex-budget:test` — CRLF bytes within `project_doc_max_bytes`     |
 | Agent projections in sync   | script        | `agent-harness:projection-check` — each projection equals its source |
 | `AGENTS.md` LAWs and Router | review        | — no gate reads a LAW, or checks that a skill has a router row      |
