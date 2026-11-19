@@ -14,7 +14,8 @@
 //   - every skill: a frontmatter `name` that is its folder, a description
 //     with USE WHEN and DO NOT USE, a CONTRACT and an Output section;
 //   - `ticket-flow`: its sections, a row for every state, role and board
-//     operation, a pre-flight that names `process-intake`, messages that
+//     operation, board operations that name the board the source of every
+//     open ticket, a pre-flight that names `process-intake`, messages that
 //     name the hotfix's line `<id> ready to merge, hotfix`, rules that name
 //     both merge policies, a ticket identity that names `branchTypes` and
 //     the `json ticket-identity` block, and its ticket and release
@@ -30,7 +31,8 @@
 //     section in which QA leaves the hotfix at Ready to merge;
 //   - `process-intake`: a mapping step that names both merge policies and
 //     the `json ticket-identity` block, and the template of the project
-//     layer, with a row for every board operation and every state, its
+//     layer, with a row for every board operation and every state, a board
+//     adapter that names the board the source of every open ticket, its
 //     deploy targets, a merge policy section that names both policies and
 //     gives `manual` as the default, a branching model whose production
 //     branch line gives `production` as the default, and a ticket identity
@@ -197,6 +199,14 @@ const RELEASE_STEP = '## Group a release'
 const MESSAGES_HEADING = '## Messages'
 const HOTFIX_HEADING = '## Hotfix'
 
+// The board is the source of every open ticket, its content included:
+// nothing in the repository writes or mirrors one, and the general plan
+// records a ticket only once it is closed. The contract and the template of
+// the project layer say so where they name the board.
+const BOARD_SOURCE = 'source of every open ticket'
+const BOARD_OPERATIONS_HEADING = '## Board operations'
+const BOARD_ADAPTER_HEADING = '## Board adapter'
+
 // Every ticket carries a target version, so every ticket closes through a
 // release: the ticket template marks the field required.
 const TARGET_VERSION_HEADING = '## Target version'
@@ -260,7 +270,7 @@ export const SKILL_CONTRACTS = [
     folder: 'ticket-flow',
     headings: [
       '## Pre-flight',
-      '## Board operations',
+      BOARD_OPERATIONS_HEADING,
       '## States and transitions',
       '## The architect dispatches',
       MESSAGES_HEADING,
@@ -275,6 +285,7 @@ export const SKILL_CONTRACTS = [
     mentions: [
       { heading: '## Pre-flight', text: 'docs/process/ticket-flow.md' },
       { heading: '## Pre-flight', text: 'process-intake' },
+      { heading: BOARD_OPERATIONS_HEADING, text: BOARD_SOURCE },
       hotfixMention({ heading: MESSAGES_HEADING }),
       ...policyMentions({ heading: RULES_HEADING }),
       ...identityMentions({ heading: IDENTITY_HEADING })
@@ -282,7 +293,7 @@ export const SKILL_CONTRACTS = [
     tables: [
       {
         header: OPERATIONS_TABLE_HEADER,
-        heading: '## Board operations',
+        heading: BOARD_OPERATIONS_HEADING,
         keys: OPERATIONS
       },
       {
@@ -358,7 +369,7 @@ export const SKILL_CONTRACTS = [
           }
         ],
         headings: [
-          '## Board adapter',
+          BOARD_ADAPTER_HEADING,
           '## States',
           '## Roles and sessions',
           '## Approvals',
@@ -370,12 +381,15 @@ export const SKILL_CONTRACTS = [
           '## Source'
         ],
         identity: { heading: IDENTITY_HEADING },
-        mentions: policyMentions({ heading: MERGE_POLICY_HEADING }),
+        mentions: [
+          { heading: BOARD_ADAPTER_HEADING, text: BOARD_SOURCE },
+          ...policyMentions({ heading: MERGE_POLICY_HEADING })
+        ],
         name: 'ticket-flow.template.md',
         tables: [
           {
             header: ADAPTER_TABLE_HEADER,
-            heading: '## Board adapter',
+            heading: BOARD_ADAPTER_HEADING,
             keys: OPERATIONS
           },
           {
@@ -714,7 +728,8 @@ export const gate = defineGate({
     'whose frontmatter name is its folder, whose description holds USE ' +
     'WHEN and DO NOT USE, and which has a CONTRACT and an Output section; ' +
     'ticket-flow has its sections, a row for every state, role and board ' +
-    'operation, a pre-flight that names process-intake, messages that name ' +
+    'operation, board operations that name the board the ' +
+    `${BOARD_SOURCE}, a pre-flight that names process-intake, messages that name ` +
     `${HOTFIX_MESSAGE}, rules that name ` +
     'both merge policies (manual and low-risk), a ticket identity that ' +
     `names branchTypes and the ${IDENTITY_INFO} block, and its ticket and ` +
@@ -732,7 +747,8 @@ export const gate = defineGate({
     `hotfix section that says ${HOTFIX_LEFT}; and ` +
     'process-intake has a mapping step that names both merge policies and ' +
     `the ${IDENTITY_INFO} block, and holds the template of the project ` +
-    'layer, with a row for every board operation and every state, a deploy ' +
+    'layer, with a row for every board operation and every state, a board ' +
+    `adapter that names the board the ${BOARD_SOURCE}, a deploy ` +
     'targets table, a merge policy section that names both policies and ' +
     'whose Policy line gives manual, the default, a branching model whose ' +
     `Production branch line gives ${DEFAULT_PRODUCTION_BRANCH}, the ` +

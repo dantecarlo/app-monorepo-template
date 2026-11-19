@@ -55,7 +55,9 @@ only what the document did not answer:
 - **Board adapter** — its kind and, for each of the seven operations, the command or tool call:
   (a) `gh`, GitHub Issues, the default, with the mapping the template holds; (b) an MCP
   connector, each operation named by the connector's tool; (c) the project's own scripts, each
-  operation named by its command.
+  operation named by its command. Say that the board is the source of every open ticket, its
+  content included: nothing in the repository writes or mirrors one, and the general plan records
+  a ticket only once it is closed.
 - **States** — each core state to the board's name for it. A core state the team has no name for
   keeps the core name; a board state with no core state is asked about, and maps onto one; the
   core never gains a state.

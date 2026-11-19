@@ -45,6 +45,11 @@ Every role runs this before it touches a ticket:
 The skills speak only in these seven operations. The project layer names the adapter that
 performs them: its kind, and for each operation the command or tool call.
 
+**The board is the source of every open ticket**, its content included: the requirement, the
+acceptance criteria, the state, the target version, the plan and every comment. Nothing in the
+repository writes or mirrors an open ticket. The general plan records a ticket only once it is
+closed, in its § Closed Ticket Catalog (`po-ticket` Step 6); read an open ticket on the board.
+
 | Operation | What it does | GitHub Issues, through `gh` |
 | --- | --- | --- |
 | create | Creates a ticket from `ticket.template.md` or `release.template.md`, in its first state, with its type | `gh issue create --title "<title>" --body-file <file> --label ticket:backlog --label type:<type>` |

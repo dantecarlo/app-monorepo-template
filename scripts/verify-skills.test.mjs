@@ -73,6 +73,7 @@ const IDENTITY = '## Ticket identity'
 const BRANCH_TYPES_NAMED = 'It names `branchTypes`.'
 const BLOCK_NAMED = `It names \`${IDENTITY_INFO}\`.`
 const REQUIRED_SLUG = '"slug": "required"'
+const SOURCE_NAMED = 'It names source of every open ticket.'
 
 // The block a process template's Ticket identity section ships: the branch
 // check's defaults, as JSON.
@@ -781,6 +782,30 @@ export const CASES = [
     }),
     expected: 1,
     name: 'a release-ticket whose hotfix section does not leave it at Ready to merge is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: CONTRACT })]: replace({
+          from: SOURCE_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a ticket-flow whose board operations do not make the board the source of open tickets is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [`${INTAKE}/${PROCESS_TEMPLATE}`]: replace({
+          from: SOURCE_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a process template whose board adapter does not make the board the source of open tickets is refused'
   }
 ]
 
