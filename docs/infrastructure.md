@@ -125,7 +125,7 @@ const securityHeaders = [
 ## Edge providers behind ports (Turnstile + origin-lock)
 
 The two Cloudflare edge behaviours are wired the same way as the backend
-(Supabase) and observability (Sentry) providers: a provider-agnostic **port**
+(Supabase) and observability (PostHog) providers: a provider-agnostic **port**
 in `@app/core`, a **vendor adapter** in `packages/cloudflare`, and a per-app
 **composition root** where the one-line swap happens.
 
@@ -180,8 +180,9 @@ bot-protection or origin-guard adapters on mobile.
 
 > **Production footgun:** the permissive/pass-through degrades are correct for
 > dev and CI but must NOT silently ship to production. Set `TURNSTILE_SECRET_KEY`
-> and `CF_ORIGIN_SECRET` (and `NEXT_PUBLIC_SENTRY_DSN`) in the production
-> environment. As a backstop, `createTurnstileBotProtection` fails CLOSED when
+> and `CF_ORIGIN_SECRET`, and the key of each observability provider the
+> project keeps (`docs/observability.md`), in the production environment. As
+> a backstop, `createTurnstileBotProtection` fails CLOSED when
 > `NODE_ENV === 'production'` and no secret is configured (it returns
 > `success: false` and logs the misconfiguration instead of waving the request
 > through).

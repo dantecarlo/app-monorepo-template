@@ -43,6 +43,52 @@ So cross-cutting removal is a declared `remove` action instead. Ownership stays
 single; secondary effects stay explicit; the **preset CI matrix** (clean clone →
 init → `pnpm validate`, planned) is what will prove they are complete.
 
+### Registry entries have owners too
+
+Every entry of `.agents/contracts/dependencies.json` names an `owner`: a
+capability id, or `core`. An absent capability takes every entry it owns, with
+its seam globs, the way it takes the files it claims; the owner decided it
+per entry on 2026-11-19.
+
+- **Which owner.** Ownership follows the claims, as it does for files: the
+  capability that claims every `package.json` declaring the package, or, for a
+  workspace package (`@app/*`), its folder. When no capability's claims alone
+  remove the package, the one whose claims and `remove-dep` actions together
+  remove it (`supabase` for `@supabase/supabase-js`, `e2e-playwright` for
+  `@playwright/test`). Otherwise `core`, as is `node:*`.
+- **The cross-cutting case is a verb.** A `remove-dep` that takes a package
+  from the last `package.json` declaring it also takes the package's entries,
+  unless their owner is `core`. So `@sentry/nextjs` belongs to `web-next`,
+  whose `package.json` declares it, and the `sentry` prune's `remove-dep`
+  takes it; a web-only project that keeps Sentry loses the
+  `@sentry/react-native` entry with `mobile-expo`.
+- **The gate.** `verify:manifest:coverage` fails an entry with no owner and an
+  owner the manifest does not declare; `verify:dependency-seams` refuses an
+  owner that is not text.
+
+### Regions: the lines a capability owns in a file it does not claim
+
+A capability often adds a few lines to a file another owner keeps: a key in an
+`.env.example`, an alias in a Vitest config, an entry in
+`pnpm-workspace.yaml`. A **region** claims those lines. It runs from a line
+`# region <capability>` to a line `# endregion <capability>`, each marker alone
+on its line and written in the file's own comment syntax: `#` in YAML and
+dotenv, `//` in JavaScript and TypeScript, `<!-- region <capability> -->` in
+Markdown. The prune of that capability drops both markers and every line
+between; the regions of other capabilities stay.
+
+| Rule              | Meaning                                                                    |
+| ----------------- | -------------------------------------------------------------------------- |
+| One owner         | A region names one declared capability; `core` owns none, it is never pruned |
+| No nesting        | A region closes before the next one opens                                  |
+| Balanced          | Every region closes, under the name it opened with                         |
+| Outside a table   | A Markdown table row cannot hold a marker: the region wraps a whole table  |
+
+`verify:manifest:coverage` fails a region that breaks a rule, naming the file
+and the line. No verb is added: a region owns lines the way a claim owns a
+file. Documentation quotes a marker inside a sentence, as here, never alone on
+a line, where it would open a region of its own file.
+
 ### Maintainer material
 
 The `template-maintainer` capability (group `maintainer`) owns the template's
@@ -84,14 +130,23 @@ prunes Sentry unless the project picks it (`docs/observability.md`).
 - It **removes** what sits inside the apps' `src/`, which `web-next` and
   `mobile-expo` own: both Sentry adapters, their tests and the SDK mock.
 - It **drops** `@sentry/nextjs` and `@sentry/react-native` with `remove-dep`,
-  and sets `expo.plugins` of `apps/mobile/app.json` to the list without
-  `@sentry/react-native/expo` with `patch-json`.
+  which takes their registry entries too, and sets `expo.plugins` of
+  `apps/mobile/app.json` to the list without `@sentry/react-native/expo` with
+  `patch-json`.
+- It **owns regions** of files other owners keep: its keys in both
+  `.env.example`, the `@sentry/react-native` alias of
+  `apps/mobile/vitest.config.ts`, the `@sentry/cli` entry of `allowBuilds` in
+  `pnpm-workspace.yaml`, and its rows of `docs/maps/global-map.md`.
 
 `packages/tooling/src/__tests__/prune-boundary.test.mjs` proves the prune
-leaves no dangling reference: it fails when a file the prune keeps imports a
-file the prune deletes or a dependency it removes, when a kept `app.json`
-would list a plugin of a removed dependency, and when the patched plugin list
-drifts from `app.json`. A Next.js config cannot be pruned by deleting a file
+leaves no dangling reference. With the capability's regions dropped, it fails
+when a file the prune keeps imports a file the prune deletes or a dependency it
+removes, names a pruned file by a quoted relative path, keeps an
+`.env.example` key only pruned files read, or is a living spec that cites a
+pruned file; when a kept `app.json` would list a plugin of a removed
+dependency, or the patched plugin list drifts from `app.json`; and when the
+registry the prune leaves would fail `verify:dependency-seams`. The same test
+holds the registry true for the `mobile-expo` and `supabase` prunes. A Next.js config cannot be pruned by deleting a file
 it imports, so `apps/web/next.config.ts` applies every
 `next-<capability>.config.ts` beside it and names none.
 
@@ -108,7 +163,7 @@ an ad-hoc script — that is the entire point.
 | `copy`             | `from`, `to`            | Brings a file in from `templates/` (planned)    |
 | `render`           | `from`, `to`            | Same as `copy`, with answer substitution        |
 | `patch-json`       | `file`, `op`, `path`    | Sets or unsets a key (`set` also needs `value`) |
-| `remove-dep`       | `file`, `name`, `scope` | Drops one dependency record                     |
+| `remove-dep`       | `file`, `name`, `scope` | Drops one dependency record, and from the last `package.json` declaring it the package's registry entries |
 | `remove-workspace` | `entry`                 | Drops one `pnpm-workspace.yaml` entry           |
 
 ---
@@ -132,6 +187,8 @@ Walks every `git ls-files` path and fails on:
 | `unclaimed`   | A hole. Init would leave this file behind whatever the answers |
 | `conflicts`   | Two owners. Pruning would depend on evaluation order           |
 | `staleClaims` | Drift. The manifest describes a repo that no longer exists     |
+| `unowned`     | A registry entry with no owner, or one the manifest does not declare |
+| `regions`     | A region whose owner is unknown, or whose markers do not balance |
 
 Together they close the door in both directions: the manifest cannot omit
 reality, and it cannot invent it.
@@ -181,8 +238,9 @@ validation step. This blocks the init executor and is tracked as harvest work
 ### `onAbsent` holes (blocker B4)
 
 Deleting files cannot remove a stale import, a doc section or a CI job inside a
-file another owner keeps. Each hole below needs region markers or an injected
-adapter (blocker B4); a delete-only executor cannot close it.
+file another owner keeps. Each hole below needs a region, a rewrite or an
+injected adapter (blocker B4); a delete-only executor cannot close it.
+`prune-boundary` lists most of them for any capability.
 
 | Absent capability     | What breaks                                                                                                                                         |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -194,10 +252,7 @@ adapter (blocker B4); a delete-only executor cannot close it.
 | `diagrams`            | `pnpm validate` still calls `docs:diagrams:check` (B2); the global map rows for `docs/diagrams/` and `build-diagrams` fail `verify:maps`            |
 | `sdd`                 | `pnpm validate` still calls `verify:specs`, `report:spec-drift` and their tests (B2); the global map rows for them and the skill fail `verify:maps` |
 | `english-artifacts`   | `pnpm validate` still calls `verify:english` and its test (B2); the global map rows for the gate fail `verify:maps`                                 |
-| `sentry`              | `verify:security` CHECK 42 fails: `scripts/verify-security-static.mjs` requires `apps/web/sentry.client.config.ts` and `sentry.server.config.ts`   |
-| `sentry`              | The Sentry keys stay in both `.env.example`; `@sentry/cli` stays in `pnpm-workspace.yaml` `allowBuilds`; the mobile Vitest alias names the removed mock |
 | `sentry`              | `openspec/specs/apps/web/spec.md` and `openspec/specs/apps/mobile/spec.md` keep the Sentry requirements and cite the removed tests: `verify:specs` fails |
-| `sentry`              | `README.md`, `docs/infrastructure.md` and `docs/decisions/0001-pluggable-providers.md` still name Sentry; the `eslint.rules.mjs` vendor override names its files |
 | any with a spec       | its spec under `openspec/specs/` goes, and its row in the `openspec/README.md` § 2.1 table stays                                                    |
 | `template-maintainer` | Never selected, so always absent: the global map rows for the plans and `docs/audits/`, and the plan citations in code-standards, go stale          |
 
