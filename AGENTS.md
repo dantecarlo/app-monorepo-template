@@ -144,7 +144,9 @@ copying a primitive into a screen to tweak it; rendering, in a view, a raw
 element or primitive that a `ui/` block already wraps; and creating in one app
 what the other already solved, without at least reading how.
 
-**Enforced by review**: no lint rule or gate checks it yet. `knip` and
+**Enforced by review**, except the one part `local/wrapped-import` checks: it
+refuses a `react-native` primitive imported outside the folder of the `ui/`
+block that has the primitive's name. `knip` and
 `verify:maps` catch only the leftovers once a duplicate exists, and a duplicate
 under a different name has no import to detect.
 
@@ -192,8 +194,12 @@ route's style; a hex or an arbitrary value in any style file; restyling a
 `ui/` block from outside through `className` or `style`; importing a kit
 primitive outside `ui/`.
 
-**Backed by** three ESLint rules at `error`, `local/style-positions-only`,
-`local/style-token-values` and `local/ui-kit-boundary`, and by
+**Backed by** five ESLint rules at `error`, `local/style-positions-only`,
+`local/style-token-values`, `local/ui-kit-boundary`, `local/dependency-seam`,
+which keeps each kit package, its types included, inside its registered seam,
+and `local/wrapped-import`, which keeps a `react-native` primitive inside the
+`ui/` block named after it; by `verify:dependency-seams`, which fails a
+dependency the registry does not list; and by
 `verify:allowlist-freshness`, which keeps `eslint-style-positioning-allowlist.json`
 shrinking: it ships empty, an entry names its file, its rule and why the value
 cannot move, and the gate fails an entry whose file no longer breaks its rule.

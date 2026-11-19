@@ -39,7 +39,9 @@ Enforcement is **review**. No linter can verify "did you look first". The
 mechanical backstops (`knip` for dead and duplicate exports, `verify:maps` for
 coverage) only catch leftovers _after_ the duplicate exists, and
 `local/wrapped-import` only a `react-native` primitive drawn outside the `ui/`
-block named after it — this rule is what prevents it.
+block named after it — this rule is what prevents it. The wrapper of a library
+is found the same way: its entry in `.agents/contracts/dependencies.json` names
+the seam that holds it (`docs/decisions/0002-every-library-behind-an-adapter.md`).
 
 > Duplication born of not knowing what already exists is the most expensive
 > kind: it survives review and rots the architecture from the inside.
@@ -799,12 +801,12 @@ This table exists so that difference is visible.
 | §22 Screens only position   | lint+script   | `local/style-positions-only` + `verify:allowlist-freshness`         |
 | §22 Values are tokens       | lint+script   | `local/style-token-values` + `verify:allowlist-freshness`           |
 | §22 The kit behind `ui/`    | lint          | `local/ui-kit-boundary` on every app                                |
-| §22 A primitive through its block | lint    | `local/wrapped-import`: a `react-native` primitive a `ui/` block is named after, only under that block |
+| §22 A primitive through its block | lint    | `local/wrapped-import`: a `react-native` primitive a `ui/` block is named after, only under that block; not `Pressable`, `TextInput` or a block that stands in under another name (`ui/Toggle` for `Switch`) |
 | §22 One `tv` on web         | lint+test     | `local/dependency-seam`: the helper is `tailwind-variants`' seam    |
 | Token outputs generated     | script        | `verify:theme-sync` (and `:test`): each equals its regeneration     |
-| §23 Packages in their seams | lint+script   | `local/dependency-seam` + `verify:dependency-seams`                 |
-| §23 Every package registered | script       | `verify:dependency-seams` — every `package.json` dependency, no stale entry |
-| §23 The names a wrapper owns | lint         | `local/wrapped-import`: the `expo-router` hooks and `router`, only under `src/lib/routing/` |
+| §23 Packages in their seams | lint+script   | `local/dependency-seam`: every import, re-export, `import()`, `require()`, `import()` type and `vi.mock` of a package, type-only ones included, only inside its seam, and an unregistered package nowhere; `verify:dependency-seams` the same for the configs ESLint ignores; not a specifier that is not a literal, a triple-slash reference, `declare module`, CSS or JSON, or a vendor type a wrapper re-exports |
+| §23 Every package registered | script       | `verify:dependency-seams`: every `package.json` dependency registered, no stale or malformed entry, every seam glob matching a file, and the allowlist holding only the imports that still break the rule; not a subpath entry no file imports any longer, a new allowlist entry for a new import, or whether a seam is the right one, which review reads |
+| §23 The names a wrapper owns | lint         | `local/wrapped-import`: the `expo-router` hooks and `router`, only under `src/lib/routing/`; not a subpath of `react-native` or `expo-router`, a `vi.importActual` or an `import()` type, whose names it does not read, or a `ui/` block added while an editor's ESLint server runs |
 | §24 One rule set, every app | test          | the fixture apps of `eslint-local-rules/__fixtures__/apps/` (`verify:lint-rules:test`) |
 
 **Rows that read "none yet", "warn only" or "partial"** are not aspirations
@@ -820,7 +822,8 @@ exceptions, and §20 says how they stay honest.
 ## 22. Styling Lives in the Components
 
 The rule of the LAW of the same name in `AGENTS.md`, which quotes the owner's decisions of
-2026-11-14 and 2026-11-15.
+2026-11-14 and 2026-11-15. Why a kit and each primitive have one wrapper, and what stays
+direct: `docs/decisions/0002-every-library-behind-an-adapter.md`.
 
 | Who                                                                   | Holds                                                                                                            |
 | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -895,7 +898,9 @@ export const LOGIN = { DIVIDER: 'my-6', FORM: 'flex flex-col gap-4' }
 
 ## 23. Every Library Behind Its Seam
 
-Decisions 51, 52 and 58 of `docs/INIT_AND_HARNESS_PLAN.md`. The owner, 2026-11-15 (translated
+Decisions 51, 52 and 58 of `docs/INIT_AND_HARNESS_PLAN.md`, recorded with the registry, the two
+rules, the gate and what stays out in `docs/decisions/0002-every-library-behind-an-adapter.md`.
+The owner, 2026-11-15 (translated
 from Spanish): "every package that is not core must be decoupled and have an adapter, in ui as a
 wrapper for example", and "Not only the UI libraries, but all the libraries themselves."
 
@@ -936,7 +941,9 @@ or source imports.
   of anything else mocks the project module (`@/lib/*`, `@/components/ui/*`), not the vendor.
 - **A new dependency is registered in the same change** that adds it, with its category and seam;
   an unregistered package fails at once, closed.
-- **The `lib` skill builds the wrapper**, then the entry points its seam at it.
+- **The `lib` skill wraps a library**, in one change: it registers the package and its seam,
+  builds the wrapper under the project's own types, moves every caller and test onto it, and
+  adds no allowlist entry.
 
 ```ts
 // WRONG — a screen hook reaches the vendor (and so would its test, through vi.mock)
@@ -994,8 +1001,10 @@ typed `BackendClientType`, and the auth gateway its auth provider receives.
 
 **The migration freezes, then shrinks.** Every import that broke the rule when it landed is listed,
 one entry per file and package, in `eslint-dependency-seam-allowlist.json`, with a reason that
-starts with the F.8 unit that removes it (`F.8 unit 2: …`). F.8 units 2 to 8 drive it to empty,
-and the gate fails an entry whose import is gone, so the list cannot grow back by accident.
+starts with the F.8 unit that removes it (`F.8 unit 2: …`). F.8 units 2 to 7 drove it to empty,
+and the gate fails an entry whose import is gone, so the list cannot grow back by accident. It
+ships empty: a new import is wrapped, never listed, which review holds, since the gate accepts
+an entry whose reason names an F.8 unit.
 
 > Status: **lint + script.** `local/dependency-seam` (`eslint-local-rules/dependency-seam.detect.mjs`,
 > `error` over `apps/*/**` and `packages/*/**` by pattern, so an app added later inherits it) reads
