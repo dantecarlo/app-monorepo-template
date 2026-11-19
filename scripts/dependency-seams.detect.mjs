@@ -32,6 +32,7 @@ export const FINDING_KIND = Object.freeze({
   unlinted: 'unlinted',
   unmatchedGlob: 'unmatched-glob',
   unparsed: 'unparsed',
+  unreadableManifest: 'unreadable-manifest',
   unregisteredDependency: 'unregistered-dependency'
 })
 
@@ -163,6 +164,20 @@ const validEntries = ({ registry }) =>
 
 const declaredBy = ({ manifests }) =>
   new Set(manifests.flatMap(({ names }) => names))
+
+// A manifest that cannot be read declares packages nobody can name, so its
+// dependencies go unjudged and every entry it alone declares would read as
+// stale: the gate names the file and calls no entry stale until it reads.
+export const unreadableManifestFindings = ({ manifests }) =>
+  manifests
+    .filter(({ problem }) => problem)
+    .map(({ path, problem }) => ({
+      detail:
+        `${path} ${problem}: its dependencies are not judged, and no ` +
+        'registry entry is called stale until it reads',
+      kind: FINDING_KIND.unreadableManifest,
+      path
+    }))
 
 export const unregisteredDependencyFindings = ({ index, manifests }) =>
   manifests.flatMap(({ names, path }) =>
@@ -338,6 +353,15 @@ export const allowlistFindings = ({ allowlist, violations }) => {
 // The whole verdict
 // ---------------------------------------------------------------------------
 
+// Why the gate refuses the registry, as findings: none for a registry every
+// other check may read.
+const refusalOf = ({ registry }) => {
+  const unreadable = registryUnreadable({ registry })
+  return unreadable
+    ? [malformed(unreadable)]
+    : registryFindings({ registry })
+}
+
 // The registry is the input of every other check, so a registry that cannot
 // be read, or holds a malformed entry, is reported alone: nothing else is
 // judged against it.
@@ -349,28 +373,33 @@ export const judgeSeams = ({
   sites,
   unparsed = []
 }) => {
-  const unreadable = registryUnreadable({ registry })
-  if (unreadable) return [malformed(unreadable)]
-  const shape = registryFindings({ registry })
-  if (shape.length > 0) return shape
+  const refusal = refusalOf({ registry })
+  if (refusal.length > 0) return refusal
   const index = indexRegistry({ registry })
   const violations = collectViolations({ index, sites })
+  const read = manifests.filter(({ problem }) => !problem)
+  const unreadable = unreadableManifestFindings({ manifests })
   return [
     ...unparsed.map(({ message, path }) => ({
       detail: `${path} cannot be parsed, so its imports are not judged: ${message}`,
       kind: FINDING_KIND.unparsed,
       path
     })),
-    ...unregisteredDependencyFindings({ index, manifests }),
-    ...staleEntryFindings({ manifests, registry }),
+    ...unreadable,
+    ...unregisteredDependencyFindings({ index, manifests: read }),
+    ...(unreadable.length > 0
+      ? []
+      : staleEntryFindings({ manifests: read, registry })),
     ...unmatchedGlobFindings({ files, registry }),
     ...unlintedFindings({ violations }),
     ...allowlistFindings({ allowlist, violations })
   ]
 }
 
+// The file-package pairs outside their seam, or null against a registry the
+// gate refuses: a count taken from it would judge what nothing else does.
 export const countViolations = ({ registry, sites }) =>
-  registryUnreadable({ registry })
-    ? 0
+  refusalOf({ registry }).length > 0
+    ? null
     : collectViolations({ index: indexRegistry({ registry }), sites })
         .length

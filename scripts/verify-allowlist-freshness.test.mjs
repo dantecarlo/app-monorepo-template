@@ -4,10 +4,10 @@
 // empty, so its cases are the only evidence the gate can go red: a detector
 // never seen failing is indistinguishable from one that cannot.
 //
-// The cases build a throwaway tree in the OS temp directory, an app source
-// file and an allowlist each, and drive the gate's own collector over it, so
-// the walk, the parse and the detection the ESLint rules run are each part of
-// the verdict. The checks then run the gate as a process over a stale entry,
+// The cases build a throwaway tree in the OS temp directory, the manifests
+// of its apps, an app source file and an allowlist each, and drive the gate's
+// own collector over it, so the walk of the apps the ESLint config reads, the
+// parse and the detection the ESLint rules run are each part of the verdict. The checks then run the gate as a process over a stale entry,
 // so the report and the exit code are seen failing, and re-run every case
 // against a blinded gate.
 //
@@ -57,7 +57,15 @@ const entry = ({ path, reason = 'cannot move yet', rule }) => ({
   rule
 })
 
+// The apps of every tree: a folder under apps/ is an app when it holds a
+// package.json, as scripts/eslint-config.detect.mjs reads it.
+const APP_MANIFESTS = {
+  'apps/mobile/package.json': JSON.stringify({ name: '@app/mobile' }),
+  'apps/web/package.json': JSON.stringify({ name: '@app/web' })
+}
+
 const treeOf = ({ entries, files }) => ({
+  ...APP_MANIFESTS,
   ...files,
   [ALLOWLIST]:
     typeof entries === 'string' ? entries : JSON.stringify(entries)
@@ -207,6 +215,25 @@ export const CASES = [
     }),
     expected: 0,
     name: 'tests and constant files are outside both rules'
+  },
+  {
+    context: walk({
+      files: {
+        'apps/admin/package.json': JSON.stringify({ name: '@app/admin' }),
+        'apps/admin/src/screens/Login/Login.style.ts': LOOK_IN_SCREEN
+      }
+    }),
+    expected: 1,
+    name: 'a style file of an app added under apps/ is judged'
+  },
+  {
+    context: walk({
+      files: {
+        'apps/notes/src/screens/Login/Login.style.ts': LOOK_IN_SCREEN
+      }
+    }),
+    expected: 0,
+    name: 'a folder under apps/ with no package.json is no app'
   }
 ]
 

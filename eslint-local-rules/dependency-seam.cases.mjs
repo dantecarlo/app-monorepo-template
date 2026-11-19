@@ -21,9 +21,13 @@ import { describe, test } from 'node:test'
 import { RuleTester } from 'eslint'
 import tseslint from 'typescript-eslint'
 
+import { withScratchTree } from '../scripts/gate/scratch.mjs'
 import {
   collectSeamViolations,
+  DEPENDENCY_REGISTRY_FILE,
   indexRegistry,
+  readSeamInputs,
+  SEAM_ALLOWLIST_FILE,
   SEAM_FINDING
 } from './dependency-seam.detect.mjs'
 import { lintFixtureMessages } from './eslint-config.cases.mjs'
@@ -99,9 +103,27 @@ const RULE_CASES = {
       path: WEB_SCREEN
     }),
     refused({
+      code: 'export const load = async () => await import(`zod`)',
+      kinds: [OUTSIDE_SEAM],
+      name: 'a dynamic import with a template literal outside the seam is refused',
+      path: WEB_SCREEN
+    }),
+    refused({
       code: "const zod = require('zod')",
       kinds: [OUTSIDE_SEAM],
       name: 'a require outside the seam is refused',
+      path: WEB_SCREEN
+    }),
+    refused({
+      code: "import zod = require('zod')",
+      kinds: [OUTSIDE_SEAM],
+      name: 'an import-equals require outside the seam is refused',
+      path: WEB_SCREEN
+    }),
+    refused({
+      code: "type Schema = import('zod').ZodType",
+      kinds: [OUTSIDE_SEAM],
+      name: 'an import() type outside the seam is refused',
       path: WEB_SCREEN
     }),
     refused({
@@ -114,6 +136,12 @@ const RULE_CASES = {
       code: "export { z } from 'zod'",
       kinds: [OUTSIDE_SEAM],
       name: 'a re-export outside the seam is refused',
+      path: 'apps/web/src/screens/Example/index.ts'
+    }),
+    refused({
+      code: "export * from 'zod'",
+      kinds: [OUTSIDE_SEAM],
+      name: 'an export-all re-export outside the seam is refused',
       path: 'apps/web/src/screens/Example/index.ts'
     }),
     refused({
@@ -144,6 +172,11 @@ const RULE_CASES = {
     at({
       code: "import { useState } from 'react'\nimport { AppError } from '@app/core'",
       name: 'a core package passes anywhere',
+      path: WEB_SCREEN
+    }),
+    at({
+      code: "import { x } from './x'\nimport { y } from '../y'\nimport { z } from '@/lib/z'\nimport { w } from '#src/w'",
+      name: 'a path of the project is never judged as a package',
       path: WEB_SCREEN
     }),
     at({
@@ -182,15 +215,20 @@ const parse = ({ code }) =>
     sourceType: 'module'
   }).ast
 
-const detect = ({ allowlist = [], code, entries }) =>
+const findingsOf = ({ allowlist, code, registry }) =>
   collectSeamViolations({
     allowlist,
-    index: indexRegistry({
-      registry: { packages: entries, testInfrastructure: [] }
-    }),
+    index: indexRegistry({ registry }),
     path: SCREEN,
     program: parse({ code })
   }).map(({ kind, package: name }) => `${kind} ${name}`)
+
+const detect = ({ allowlist = [], code, entries }) =>
+  findingsOf({
+    allowlist,
+    code,
+    registry: { packages: entries, testInfrastructure: [] }
+  })
 
 const VALIDATION_SEAM = ['apps/*/src/validation/**']
 
@@ -225,6 +263,27 @@ const registerDetectionCases = () =>
         }),
         [`${OUTSIDE_SEAM} zod`]
       )
+    })
+
+    test('a registry the rule cannot read leaves every package unregistered', () => {
+      withScratchTree({
+        files: {
+          [DEPENDENCY_REGISTRY_FILE]: '{ "packages": [',
+          [SEAM_ALLOWLIST_FILE]: '{'
+        },
+        prefix: 'dependency-seam-inputs-',
+        use: ({ root }) => {
+          const inputs = readSeamInputs({ root })
+          assert.deepEqual(inputs, { allowlist: [], registry: null })
+          assert.deepEqual(
+            findingsOf({
+              ...inputs,
+              code: "import { useState } from 'react'"
+            }),
+            [`${UNREGISTERED} react`]
+          )
+        }
+      })
     })
   })
 

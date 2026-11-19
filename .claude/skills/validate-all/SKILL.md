@@ -5,6 +5,13 @@ description: >
   deterministic gate (pnpm validate) + grouped adversarial validator
   subagents in parallel. Produces a single aggregated report with an
   overall DONE / NOT-DONE verdict. Nothing is DONE until this is green.
+  USE WHEN: "is this done?", "does this pass standards?", "validate the
+  change", "run the validation harness", after a scaffold or a multi-file
+  edit, before marking an SDD apply task complete.
+  DO NOT USE: proving a change works in the running app (use
+  `runtime-verify`, after this is green), a report-only audit of one concern
+  (use `quality`, `security`, `a11y` or `fractal-verify`), or a review of a
+  staged diff before a commit (use `pre-commit`).
 ---
 
 # validate-all — Validation Harness

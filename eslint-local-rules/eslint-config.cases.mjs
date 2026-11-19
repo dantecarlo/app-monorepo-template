@@ -2,15 +2,18 @@
 // The cases of the ESLint config itself, run by ./index.test.mjs through
 // `registerEslintConfigCases` (SEAM-09, SEAM-10).
 //
-// The fixture apps under __fixtures__/apps/ are linted through the config
-// eslint.config.mjs builds, for the __fixtures__/ folder instead of the
-// repository's: the config reads the apps of that folder, and every file is
-// linted under the path it stands for, `apps/<fixture>/…`. Nothing in the
-// config names a fixture, so each one is judged exactly as a new app under
-// apps/ would be. The detection and load cases build scratch trees.
+// The fixture apps under __fixtures__/apps/, and the fixture package under
+// __fixtures__/packages/, are linted through the config eslint.config.mjs
+// builds, for the __fixtures__/ folder instead of the repository's: the
+// config reads the workspaces of that folder, and every file is linted under
+// the path it stands for, `apps/<fixture>/…` or `packages/<fixture>/…`.
+// Nothing in the config names a fixture, so each one is judged exactly as a
+// new app or package would be. The detection and load cases build scratch
+// trees; the case of packages/tokens reads the repository's own config.
 // ---------------------------------------------------------------------------
 
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -19,7 +22,7 @@ import { test } from 'node:test'
 import { ESLint } from 'eslint'
 
 import { createConfig } from '../eslint.config.mjs'
-import { readAppFrameworks } from '../scripts/eslint-config.detect.mjs'
+import { readFrameworks } from '../scripts/eslint-config.detect.mjs'
 import { withScratchTree } from '../scripts/gate/scratch.mjs'
 
 const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url))
@@ -172,15 +175,61 @@ const FRAMEWORK_CASES = [
   }
 ]
 
+// A package that declares react gets the React set, as an app does.
+const PACKAGE_CASES = [
+  {
+    expected: {
+      'packages/fixture-react/src/components/Card/Card.component.tsx': [
+        `${ERROR} react/jsx-sort-props`
+      ]
+    },
+    name: 'a package that declares react gets the React rules'
+  }
+]
+
 const registerFixtureCases = () =>
-  [...FAMILY_CASES, ...FRAMEWORK_CASES].forEach(({ expected, name }) =>
-    test(name, async () => {
-      assert.deepEqual(
-        await lintFixture({ paths: Object.keys(expected) }),
-        expected
-      )
-    })
+  [...FAMILY_CASES, ...FRAMEWORK_CASES, ...PACKAGE_CASES].forEach(
+    ({ expected, name }) =>
+      test(name, async () => {
+        assert.deepEqual(
+          await lintFixture({ paths: Object.keys(expected) }),
+          expected
+        )
+      })
   )
+
+// The plugins of the React rule set, and whether a rule is one of theirs and
+// on: eslint-config-prettier turns the React formatting rules off in every
+// file, which reports nothing.
+const REACT_PLUGIN_NAMES = ['jsx-a11y', 'react', 'react-hooks']
+const OFF = new Set([0, 'off'])
+const isReactRuleOn = ([rule, entry]) =>
+  REACT_PLUGIN_NAMES.some((plugin) => rule.startsWith(`${plugin}/`)) &&
+  !OFF.has(Array.isArray(entry) ? entry[0] : entry)
+
+const registerTokensCase = () =>
+  test('a package that declares no react, packages/tokens among them, gets the Node globals and no React rule', async () => {
+    const config = await new ESLint({
+      cwd: REPO_ROOT
+    }).calculateConfigForFile(
+      join(REPO_ROOT, 'packages/tokens/src/tokens.constant.ts')
+    )
+    const { globals, parserOptions } = config.languageOptions
+    assert.deepEqual(
+      {
+        browser: Object.hasOwn(globals, 'window'),
+        jsx: parserOptions?.ecmaFeatures?.jsx === true,
+        node: Object.hasOwn(globals, 'process'),
+        plugins: Object.keys(config.plugins).filter((name) =>
+          REACT_PLUGIN_NAMES.includes(name)
+        ),
+        rules: Object.entries(config.rules)
+          .filter(isReactRuleOn)
+          .map(([rule]) => rule)
+      },
+      { browser: false, jsx: false, node: true, plugins: [], rules: [] }
+    )
+  })
 
 const manifest = (fields) => JSON.stringify({ private: true, ...fields })
 
@@ -202,9 +251,31 @@ const registerDetectionCases = () => {
           })
         },
         prefix: SCRATCH_PREFIX,
-        use: ({ root }) => readAppFrameworks({ root })
+        use: ({ root }) => readFrameworks({ root })
       }),
       { expo: ['apps/kiosk'], next: ['apps/admin'], react: ['apps/admin'] }
+    )
+  })
+
+  test('a package that declares react is listed under react, and never under next or expo', () => {
+    assert.deepEqual(
+      withScratchTree({
+        files: {
+          'apps/web/package.json': manifest({
+            dependencies: { next: '1', react: '1' }
+          }),
+          'packages/plain/package.json': manifest({
+            dependencies: { zod: '1' }
+          }),
+          'packages/ui/package.json': manifest({
+            dependencies: { expo: '1', next: '1' },
+            peerDependencies: { react: '1' }
+          })
+        },
+        prefix: SCRATCH_PREFIX,
+        use: ({ root }) => readFrameworks({ root })
+      }),
+      { expo: [], next: ['apps/web'], react: ['apps/web', 'packages/ui'] }
     )
   })
 
@@ -216,6 +287,30 @@ const registerDetectionCases = () => {
         assert.throws(
           () => createConfig({ workspaceRoot: root }),
           /apps\/broken\/package\.json cannot be parsed/u
+        )
+    })
+  })
+
+  test('a package package.json that cannot be parsed fails the config load, naming it', () => {
+    withScratchTree({
+      files: { 'packages/broken/package.json': '{' },
+      prefix: SCRATCH_PREFIX,
+      use: ({ root }) =>
+        assert.throws(
+          () => createConfig({ workspaceRoot: root }),
+          /packages\/broken\/package\.json cannot be parsed/u
+        )
+    })
+  })
+
+  test('an app package.json that is not a JSON object fails the config load, naming it', () => {
+    withScratchTree({
+      files: { 'apps/list/package.json': '[]' },
+      prefix: SCRATCH_PREFIX,
+      use: ({ root }) =>
+        assert.throws(
+          () => createConfig({ workspaceRoot: root }),
+          /apps\/list\/package\.json is not a JSON object/u
         )
     })
   })
@@ -237,20 +332,66 @@ const CONFIG_SOURCES = [
 ]
 const NAMED_APP_RE = /apps(?:\/|\\\/)(?:\(\?:)?[a-z]/u
 
-const registerNamingCase = () =>
+// The gates that walk the apps, which read them from the workspace list of
+// scripts/eslint-config.detect.mjs.
+const GATE_SOURCES = [
+  'scripts/verify-allowlist-freshness.mjs',
+  'scripts/verify-maps.mjs',
+  'scripts/verify-tests.mjs'
+]
+
+const namedApps = ({ paths }) =>
+  paths.flatMap((path) =>
+    readFileSync(join(REPO_ROOT, path), 'utf8')
+      .split(/\r?\n/u)
+      .flatMap((line, index) =>
+        NAMED_APP_RE.test(line) ? [`${path}:${index + 1}`] : []
+      )
+  )
+
+const registerNamingCases = () => {
   test('no ESLint config or rule names an app', () => {
-    const named = CONFIG_SOURCES.flatMap((path) =>
-      readFileSync(join(REPO_ROOT, path), 'utf8')
-        .split(/\r?\n/u)
-        .flatMap((line, index) =>
-          NAMED_APP_RE.test(line) ? [`${path}:${index + 1}`] : []
-        )
+    assert.deepEqual(namedApps({ paths: CONFIG_SOURCES }), [])
+  })
+
+  test('no gate that walks the apps names one', () => {
+    assert.deepEqual(namedApps({ paths: GATE_SOURCES }), [])
+  })
+}
+
+const VERIFY_MAPS = join(REPO_ROOT, 'scripts/verify-maps.mjs')
+// A screen with a magic number, in an app and in a folder that is no app.
+const MAGIC_SCREEN =
+  'export const wait = () => setTimeout(() => {}, 800)\n'
+
+const registerGateWalkCase = () =>
+  test('verify:maps walks every app of the workspace list, and no folder that is no app', () => {
+    const result = withScratchTree({
+      files: {
+        'apps/admin/package.json': manifest({ name: '@app/admin' }),
+        'apps/admin/src/screens/Admin/Admin.screen.tsx': MAGIC_SCREEN,
+        'apps/notes/src/screens/Notes/Notes.screen.tsx': MAGIC_SCREEN,
+        'docs/maps/global-map.md': '# Map\n'
+      },
+      prefix: SCRATCH_PREFIX,
+      use: ({ root }) =>
+        spawnSync(process.execPath, [VERIFY_MAPS, '--root', root], {
+          encoding: 'utf8'
+        })
+    })
+    assert.equal(result.status, 1, result.stdout)
+    assert.match(result.stderr, /Admin\.screen\.tsx:1 -> 800/u)
+    assert.match(
+      result.stderr,
+      /"apps\/admin\/src\/screens\/Admin" exists on disk but is not referenced/u
     )
-    assert.deepEqual(named, [])
+    assert.doesNotMatch(result.stderr, /notes/iu)
   })
 
 export const registerEslintConfigCases = () => {
   registerDetectionCases()
   registerFixtureCases()
-  registerNamingCase()
+  registerTokensCase()
+  registerNamingCases()
+  registerGateWalkCase()
 }

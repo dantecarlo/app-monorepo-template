@@ -3,7 +3,7 @@
 > **Governs:** `.agents/contracts/dependencies.json`, `eslint-dependency-seam-allowlist.json`, `eslint-local-rules/dependency-seam.detect.mjs`, `eslint-local-rules/wrapped-import.detect.mjs`, `scripts/dependency-seams.detect.mjs`, `scripts/eslint-config.detect.mjs`, `scripts/verify-dependency-seams.mjs`, `eslint.config.mjs`, `eslint.rules.mjs`
 > **ID prefix:** `SEAM`
 > **Derived from:** `docs/code-standards.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-18 at `3b2e6c5`
+> **Verified against the code:** 2026-11-19 at `fb1a60c`
 
 ## Purpose
 
@@ -15,8 +15,8 @@ landed, and the gate that holds the registry to the `package.json` files, the se
 the configs ESLint ignores to their seams and the allowlist to the source. Moving an import into
 its seam belongs to the later F.8 units. Since F.8 unit 8 it also judges the names imported from
 two core packages, which `local/wrapped-import` keeps inside the wrapper that owns them
-(SEAM-11 to SEAM-15). Since F.8 unit 1b it also owns how the ESLint config reaches a new app:
-every shared rule set by pattern, and each framework's block by what an app's `package.json`
+(SEAM-11 to SEAM-15). Since F.8 unit 1b it also owns how the ESLint config reaches a new app or package:
+every shared rule set by pattern, and each framework's block by what a workspace's `package.json`
 declares (SEAM-09, SEAM-10); the other lint rules themselves are not part of this unit.
 
 ## Requirements
@@ -29,8 +29,9 @@ package subpath, each with a category among `core`, `infra`, `ui`, `vendor`, `ve
 entry, and `types` either `seam` (the default) or `anywhere`; `pnpm verify:dependency-seams`
 refuses an entry that breaks this shape and a name listed twice.
 
-**Evidence:** `.agents/contracts/dependencies.json:3-4`, `scripts/dependency-seams.detect.mjs:91-126`,
-`scripts/dependency-seams.detect.mjs:131-155`, `scripts/dependency-seams.detect.mjs:352-355`
+**Evidence:** `.agents/contracts/dependencies.json:3-4`, `scripts/dependency-seams.detect.mjs:92-127`,
+`scripts/dependency-seams.detect.mjs:132-156`, `scripts/dependency-seams.detect.mjs:358-363`,
+`scripts/dependency-seams.detect.mjs:376-377`
 
 #### Scenario: a non-core entry without a seam
 
@@ -136,6 +137,8 @@ and the module argument of `vi.mock`, `vi.doMock`, `vi.unmock`, `vi.doUnmock`,
 `vi.importActual` and `vi.importMock`.
 
 **Evidence:** `eslint-local-rules/dependency-seam.detect.mjs:78-85`,
+`eslint-local-rules/dependency-seam.detect.mjs:132-145`,
+`eslint-local-rules/dependency-seam.detect.mjs:217-225`,
 `eslint-local-rules/dependency-seam.detect.mjs:247-291`,
 `eslint-local-rules/dependency-seam.detect.mjs:304-319`
 
@@ -146,12 +149,33 @@ and the module argument of `vi.mock`, `vi.doMock`, `vi.unmock`, `vi.doUnmock`,
 - **THEN** it is reported as outside its seam
 - **Test:** `eslint-local-rules/dependency-seam.cases.mjs` › "a dynamic import outside the seam is refused"
 
+#### Scenario: a dynamic import with a template literal
+
+- **GIVEN** a web screen with ``import(`zod`)``, a template literal with no expression
+- **WHEN** ESLint lints it
+- **THEN** it is reported as outside its seam
+- **Test:** `eslint-local-rules/dependency-seam.cases.mjs` › "a dynamic import with a template literal outside the seam is refused"
+
 #### Scenario: a require
 
 - **GIVEN** a web screen with `require('zod')`
 - **WHEN** ESLint lints it
 - **THEN** it is reported as outside its seam
 - **Test:** `eslint-local-rules/dependency-seam.cases.mjs` › "a require outside the seam is refused"
+
+#### Scenario: an import-equals require
+
+- **GIVEN** a web screen with `import zod = require('zod')`
+- **WHEN** ESLint lints it
+- **THEN** it is reported as outside its seam
+- **Test:** `eslint-local-rules/dependency-seam.cases.mjs` › "an import-equals require outside the seam is refused"
+
+#### Scenario: an import() type
+
+- **GIVEN** a web screen with `type Schema = import('zod').ZodType`
+- **WHEN** ESLint lints it
+- **THEN** it is reported as outside its seam
+- **Test:** `eslint-local-rules/dependency-seam.cases.mjs` › "an import() type outside the seam is refused"
 
 #### Scenario: a mocked vendor
 
@@ -166,6 +190,20 @@ and the module argument of `vi.mock`, `vi.doMock`, `vi.unmock`, `vi.doUnmock`,
 - **WHEN** ESLint lints it
 - **THEN** it is reported as outside its seam
 - **Test:** `eslint-local-rules/dependency-seam.cases.mjs` › "a re-export outside the seam is refused"
+
+#### Scenario: an export-all re-export
+
+- **GIVEN** a web barrel with `export * from 'zod'`
+- **WHEN** ESLint lints it
+- **THEN** it is reported as outside its seam
+- **Test:** `eslint-local-rules/dependency-seam.cases.mjs` › "an export-all re-export outside the seam is refused"
+
+#### Scenario: a path of the project
+
+- **GIVEN** a web screen importing `./x`, `../y`, `@/lib/z` and `#src/w`
+- **WHEN** ESLint lints it
+- **THEN** nothing is reported: a path of the project names no package
+- **Test:** `eslint-local-rules/dependency-seam.cases.mjs` › "a path of the project is never judged as a package"
 
 ### Requirement: SEAM-05 — The most specific entry wins
 
@@ -238,8 +276,8 @@ does not carry, a pair listed twice, and an entry without a path, a package, or 
 starts with the F.8 unit, 2 to 8, that removes it.
 
 **Evidence:** `eslint-local-rules/dependency-seam.detect.mjs:207-211`,
-`eslint-local-rules/dependency-seam.detect.mjs:323-341`, `scripts/dependency-seams.detect.mjs:56`,
-`scripts/dependency-seams.detect.mjs:260-272`, `scripts/dependency-seams.detect.mjs:279-335`,
+`eslint-local-rules/dependency-seam.detect.mjs:323-341`, `scripts/dependency-seams.detect.mjs:57`,
+`scripts/dependency-seams.detect.mjs:275-287`, `scripts/dependency-seams.detect.mjs:294-350`,
 `eslint-dependency-seam-allowlist.json:1`
 
 #### Scenario: a listed pair
@@ -284,12 +322,18 @@ starts with the F.8 unit, 2 to 8, that removes it.
 `packages/*` `package.json` has no registry entry, when an entry names a package no such
 `package.json` declares (the `node:*` entry excepted), when a seam or test-infrastructure glob
 matches no file under `apps/` or `packages/`, and when a file ESLint does not lint imports a
-package outside its seam or unregistered; it states the population it judged when it passes.
+package outside its seam or unregistered; it SHALL fail, naming the file, when one of those
+`package.json` files cannot be read or parsed or is not a JSON object, and then call no entry
+stale, and when a source file under `apps/` or `packages/` cannot be parsed. It states the
+population it judged when it passes, and against a registry it refuses it counts no file-package
+pair.
 
-**Evidence:** `scripts/dependency-seams.detect.mjs:167-178`, `scripts/dependency-seams.detect.mjs:180-191`,
-`scripts/dependency-seams.detect.mjs:193-214`, `scripts/dependency-seams.detect.mjs:248-258`,
-`scripts/verify-dependency-seams.mjs:114-119`, `scripts/verify-dependency-seams.mjs:188-198`,
-`scripts/eslint-config.detect.mjs:37-56`
+**Evidence:** `scripts/dependency-seams.detect.mjs:171-180`, `scripts/dependency-seams.detect.mjs:182-193`,
+`scripts/dependency-seams.detect.mjs:195-206`, `scripts/dependency-seams.detect.mjs:208-229`,
+`scripts/dependency-seams.detect.mjs:263-273`, `scripts/dependency-seams.detect.mjs:358-397`,
+`scripts/dependency-seams.detect.mjs:401-406`, `scripts/verify-dependency-seams.mjs:119-125`,
+`scripts/verify-dependency-seams.mjs:136-151`, `scripts/verify-dependency-seams.mjs:226-245`,
+`scripts/eslint-config.detect.mjs:68-84`
 
 #### Scenario: an unregistered dependency
 
@@ -304,6 +348,28 @@ package outside its seam or unregistered; it states the population it judged whe
 - **WHEN** `pnpm verify:dependency-seams` runs
 - **THEN** it fails, naming the entry
 - **Test:** `scripts/verify-dependency-seams.test.mjs` › "a registry entry for a package nothing declares is stale"
+
+#### Scenario: a package.json that cannot be read
+
+- **GIVEN** an app `package.json` cut off mid-object, the only manifest that declares `react`
+  and `zod`
+- **WHEN** `pnpm verify:dependency-seams` runs
+- **THEN** it fails once, naming the `package.json`, and calls no entry stale
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "a package.json that cannot be parsed fails, naming it, and no entry is called stale"
+
+#### Scenario: a package.json that is not an object
+
+- **GIVEN** an app `package.json` holding `null`
+- **WHEN** `pnpm verify:dependency-seams` runs
+- **THEN** it fails, naming the `package.json`
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "a package.json that is not a JSON object fails, naming it"
+
+#### Scenario: a source that cannot be parsed
+
+- **GIVEN** a web screen whose text is not valid TypeScript
+- **WHEN** `pnpm verify:dependency-seams` runs
+- **THEN** it fails, naming the file, since its imports are not judged
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "a source file that cannot be parsed fails, naming it"
 
 #### Scenario: a glob that matches nothing
 
@@ -327,6 +393,15 @@ package outside its seam or unregistered; it states the population it judged whe
 - **THEN** it exits 0 and prints the entries, manifests, files and violations it counted
 - **Test:** `scripts/verify-dependency-seams.test.mjs` › "the gate exits 0 over a clean tree and states what it judged"
 
+#### Scenario: a registry the gate refuses
+
+- **GIVEN** a registry whose `zod` entry names no seam, with a screen importing `zod`, and then a
+  registry that is JSON `null`
+- **WHEN** `node scripts/verify-dependency-seams.mjs --root <tree>` runs over each
+- **THEN** it exits 1 naming the registry, prints that no file-package pair was judged, and never
+  crashes
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "the gate counts no file-package pair against a registry it refuses"
+
 ### Requirement: SEAM-09 — A new app inherits every shared rule by pattern
 
 The ESLint config SHALL apply every rule set more than one workspace shares by pattern, never by
@@ -337,7 +412,7 @@ suffix; and `local/dependency-seam` at `error` to every JavaScript and TypeScrip
 `apps/*/**` and `packages/*/**`; each block registering the plugins it needs, so an app added under
 `apps/` is judged by every shared rule with no config change.
 
-**Evidence:** `eslint.config.mjs:257-266`, `eslint.config.mjs:324-327`, `eslint.config.mjs:366-386`,
+**Evidence:** `eslint.config.mjs:258-267`, `eslint.config.mjs:310-313`, `eslint.config.mjs:353-373`,
 `eslint.rules.mjs:335-340`, `eslint.rules.mjs:673-689`, `eslint-local-rules/style-positioning.detect.mjs:310-314`,
 `eslint-local-rules/ui-kit.detect.mjs:63-66`, `eslint-local-rules/__fixtures__/apps/fixture/package.json:1-7`
 
@@ -406,20 +481,25 @@ suffix; and `local/dependency-seam` at `error` to every JavaScript and TypeScrip
 - **THEN** none names a folder under `apps/`
 - **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "no ESLint config or rule names an app"
 
-### Requirement: SEAM-10 — What an app's framework forces follows what it declares
+### Requirement: SEAM-10 — What a workspace's framework forces follows what it declares
 
-The ESLint config SHALL read the `package.json` of every folder under `apps/` once, when it loads,
-and apply the React rule set to every app that declares `react`, the Next.js block (the
+The ESLint config SHALL read the `package.json` of every folder under `apps/` and `packages/`
+once, when it loads, and apply the React rule set (the JSX parser, the browser globals, the React
+plugins and rules) to every app and every package that declares `react`, the Next.js block (the
 `@next/next` rules, the Node globals, the App Router and middleware file names, the async server
 screens and the generated `next-env.d.ts`) to every app that declares `next`, and the Expo block
 (the `expo` rules, the React Native globals and accessibility relaxations, the Expo Router file
 names) to every app that declares `expo`, a package named in any dependency field being declared;
-a folder with no `package.json` is no app, and a `package.json` that cannot be parsed fails the
-config load, naming the file.
+a package that declares no `react`, `packages/tokens` among them, gets the Node globals of every
+package and no React rule or browser global; a folder with no `package.json` is no workspace, and
+a `package.json` that cannot be parsed, or is not a JSON object, fails the config load, naming
+the file.
 
-**Evidence:** `scripts/eslint-config.detect.mjs:47-56`, `scripts/eslint-config.detect.mjs:63-76`,
-`scripts/eslint-config.detect.mjs:80-111`, `eslint.config.mjs:140-231`, `eslint.config.mjs:235-238`,
-`eslint.config.mjs:334-336`, `eslint.config.mjs:373`
+**Evidence:** `scripts/eslint-config.detect.mjs:51-60`, `scripts/eslint-config.detect.mjs:68-92`,
+`scripts/eslint-config.detect.mjs:96-106`, `scripts/eslint-config.detect.mjs:116-143`,
+`eslint.config.mjs:142-153`, `eslint.config.mjs:159-176`, `eslint.config.mjs:181-207`,
+`eslint.config.mjs:218-233`, `eslint.config.mjs:240`, `eslint.config.mjs:273-276`,
+`eslint.config.mjs:322-324`, `eslint.config.mjs:361`
 
 #### Scenario: an app that declares next
 
@@ -449,6 +529,22 @@ config load, naming the file.
   reports
 - **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "an app that declares neither next nor expo gets no framework block"
 
+#### Scenario: a package that declares react
+
+- **GIVEN** the fixture package `eslint-local-rules/__fixtures__/packages/fixture-react/`, whose
+  `package.json` declares `react`, with a component whose JSX props are not sorted
+- **WHEN** ESLint lints it through the config built for the fixture's folder
+- **THEN** `react/jsx-sort-props` reports it at error, and nothing else
+- **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "a package that declares react gets the React rules"
+
+#### Scenario: a package that declares no react
+
+- **GIVEN** `packages/tokens`, whose `package.json` declares no `react`
+- **WHEN** the repository's ESLint config is computed for `packages/tokens/src/tokens.constant.ts`
+- **THEN** it holds the Node globals, and no browser global, no JSX parser, no React, React
+  Hooks or jsx-a11y plugin, and none of their rules on
+- **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "a package that declares no react, packages/tokens among them, gets the Node globals and no React rule"
+
 #### Scenario: any dependency field, and a folder that is no app
 
 - **GIVEN** a tree whose apps declare `next` in `devDependencies`, `react` in `peerDependencies` and
@@ -457,12 +553,35 @@ config load, naming the file.
 - **THEN** each app is listed under the framework it declares, and the folder under none
 - **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "a framework declared in any dependency field counts, and a folder with no package.json is no app"
 
+#### Scenario: a package is listed under react only
+
+- **GIVEN** a tree whose package `packages/ui` declares `react`, `next` and `expo`, and whose
+  package `packages/plain` declares none
+- **WHEN** the detection reads the tree
+- **THEN** `packages/ui` is listed under `react` and under neither `next` nor `expo`, and
+  `packages/plain` under none
+- **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "a package that declares react is listed under react, and never under next or expo"
+
 #### Scenario: a package.json that cannot be parsed
 
 - **GIVEN** a tree with `apps/broken/package.json` holding `{`
 - **WHEN** the ESLint config is built for that tree
 - **THEN** it throws, naming `apps/broken/package.json`
 - **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "an app package.json that cannot be parsed fails the config load, naming it"
+
+#### Scenario: a package's package.json that cannot be parsed
+
+- **GIVEN** a tree with `packages/broken/package.json` holding `{`
+- **WHEN** the ESLint config is built for that tree
+- **THEN** it throws, naming `packages/broken/package.json`
+- **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "a package package.json that cannot be parsed fails the config load, naming it"
+
+#### Scenario: a package.json that is not an object
+
+- **GIVEN** a tree with `apps/list/package.json` holding `[]`
+- **WHEN** the ESLint config is built for that tree
+- **THEN** it throws, naming `apps/list/package.json`
+- **Test:** `eslint-local-rules/eslint-config.cases.mjs` › "an app package.json that is not a JSON object fails the config load, naming it"
 
 ### Requirement: SEAM-11 — A react-native primitive a ui block is named after passes only inside that block
 
@@ -648,7 +767,7 @@ and `packages/*` by pattern, with the workspace root the config is built for, so
 under `apps/` is judged by its own `src/components/ui/` folders and its own `src/lib/routing/`
 with no change to the config; a file outside `apps/*` and `packages/*` SHALL NOT be judged.
 
-**Evidence:** `eslint.rules.mjs:691-698`, `eslint.config.mjs:390`, `eslint-local-rules/index.mjs:991`, `eslint-local-rules/index.mjs:1001`
+**Evidence:** `eslint.rules.mjs:691-698`, `eslint.config.mjs:377`, `eslint-local-rules/index.mjs:991`, `eslint-local-rules/index.mjs:1001`
 
 #### Scenario: a new app
 

@@ -136,6 +136,8 @@ const runGate = (tree) =>
   })
 
 const ZOD_IN_SCREEN = { [SCREEN]: "import { z } from 'zod'" }
+// The only manifest that declares react and zod, cut off mid-object.
+const BROKEN_MANIFEST = '{ "dependencies": { "react": "1", "zod": '
 
 export const CASES = [
   {
@@ -168,6 +170,21 @@ export const CASES = [
     }),
     expected: 2,
     name: 'a dependency in any dependency field of a package.json is judged'
+  },
+  {
+    context: walk({ files: { 'apps/web/package.json': BROKEN_MANIFEST } }),
+    expected: 1,
+    name: 'a package.json that cannot be parsed fails, naming it, and no entry is called stale'
+  },
+  {
+    context: walk({ files: { 'apps/web/package.json': 'null' } }),
+    expected: 1,
+    name: 'a package.json that is not a JSON object fails, naming it'
+  },
+  {
+    context: walk({ files: { [SCREEN]: 'export const = ;' } }),
+    expected: 1,
+    name: 'a source file that cannot be parsed fails, naming it'
   },
   {
     context: walk({
@@ -270,6 +287,37 @@ export const CASES = [
     name: 'an entry whose types are neither seam nor anywhere is malformed'
   },
   {
+    context: walk({
+      entries: [core('react'), { ...zod(), owner: 'web' }, vitest]
+    }),
+    expected: 1,
+    name: 'an entry with a key the registry does not define is malformed'
+  },
+  {
+    context: walk({
+      entries: [
+        ...BASE_ENTRIES,
+        { category: 'infra', name: 'zod/*', seam: [] }
+      ]
+    }),
+    expected: 1,
+    name: 'an entry whose name is a glob, not a package, is malformed'
+  },
+  {
+    context: walk({
+      entries: [core('react'), { ...zod(), note: 3 }, vitest]
+    }),
+    expected: 1,
+    name: 'an entry whose note is not text is malformed'
+  },
+  {
+    context: walk({
+      entries: [core('react'), zod(), { ...vitest, seam: 'apps/**' }]
+    }),
+    expected: 1,
+    name: 'an entry whose seam is not an array of globs is malformed'
+  },
+  {
     context: walk({ registry: '{ "packages": [' }),
     expected: 1,
     name: 'a registry that is not JSON is refused, and nothing else is judged'
@@ -319,6 +367,14 @@ export const CASES = [
     }),
     expected: 1,
     name: 'a file and package listed twice is a duplicate'
+  },
+  {
+    context: walk({
+      allowlist: [{ ...entry(), since: '2026-11-18' }],
+      files: ZOD_IN_SCREEN
+    }),
+    expected: 2,
+    name: 'an allowlist entry with a key the allowlist does not define is malformed'
   },
   {
     context: walk({ allowlist: '{ "path": "x" }' }),
@@ -374,6 +430,53 @@ const checks = [
       assert.match(
         finding.detail,
         /apps\/web\/package\.json declares left-pad/u
+      )
+    }
+  },
+  {
+    name: 'a package.json that cannot be read is named, and why its dependencies are not judged',
+    run: () => {
+      const findings = findingsOf({
+        files: { 'apps/web/package.json': BROKEN_MANIFEST }
+      })
+      assert.deepEqual(
+        findings.map(({ kind, path }) => ({ kind, path })),
+        [
+          {
+            kind: FINDING_KIND.unreadableManifest,
+            path: 'apps/web/package.json'
+          }
+        ]
+      )
+      assert.match(
+        findings[0].detail,
+        /^apps\/web\/package\.json cannot be parsed: .+: its dependencies are not judged, and no registry entry is called stale until it reads$/u
+      )
+    }
+  },
+  {
+    name: 'the gate counts no file-package pair against a registry it refuses',
+    run: () => {
+      const malformed = runGate({
+        entries: [
+          core('react'),
+          { category: 'infra', name: 'zod' },
+          vitest
+        ],
+        files: ZOD_IN_SCREEN
+      })
+      assert.equal(malformed.status, FAILED, malformed.stderr)
+      assert.match(
+        malformed.stderr,
+        /3 registry entries, .+, no file-package pair judged against a registry it refuses\./u
+      )
+      assert.match(malformed.stderr, /zod is infra and names no seam/u)
+      const unreadable = runGate({ registry: 'null' })
+      assert.equal(unreadable.status, FAILED, unreadable.stderr)
+      assert.doesNotMatch(unreadable.stderr, /TypeError/u)
+      assert.match(
+        unreadable.stderr,
+        /0 registry entries, .+, no file-package pair judged against a registry it refuses\.\n {2}\.agents\/contracts\/dependencies\.json: is not a JSON object/u
       )
     }
   },

@@ -36,13 +36,13 @@ import {
   STYLE_RULE,
   tokenValuesScope
 } from '../eslint-local-rules/style-positioning.detect.mjs'
+import { listApps } from './eslint-config.detect.mjs'
 import { defineGate, reportGate } from './gate/gate.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(HERE, '..')
 
-// The app sources both rules read: the TypeScript files of both apps.
-const SOURCE_ROOTS = ['apps/web/src', 'apps/mobile/src']
+const SOURCE_FOLDER = 'src'
 const SKIPPED_DIRS = new Set(['node_modules', '.expo', '.next'])
 
 export const RULES = Object.freeze({
@@ -63,27 +63,31 @@ export const FINDING_KIND = Object.freeze({
   unlisted: 'unlisted'
 })
 
+// The app sources both rules read: the TypeScript files under the src/ of
+// every app the ESLint config reads (scripts/eslint-config.detect.mjs).
 const listSources = ({ root }) =>
-  SOURCE_ROOTS.flatMap((sourceRoot) => {
-    const dir = join(root, sourceRoot)
-    try {
-      return readdirSync(dir, { recursive: true, withFileTypes: true })
-        .filter((entry) => entry.isFile())
-        .map((entry) =>
-          relative(root, join(entry.parentPath, entry.name)).replaceAll(
-            '\\',
-            '/'
+  listApps({ root })
+    .flatMap((app) => {
+      const dir = join(root, app, SOURCE_FOLDER)
+      try {
+        return readdirSync(dir, { recursive: true, withFileTypes: true })
+          .filter((entry) => entry.isFile())
+          .map((entry) =>
+            relative(root, join(entry.parentPath, entry.name)).replaceAll(
+              '\\',
+              '/'
+            )
           )
-        )
-        .filter(
-          (path) =>
-            /\.tsx?$/.test(path) &&
-            !path.split('/').some((part) => SKIPPED_DIRS.has(part))
-        )
-    } catch {
-      return []
-    }
-  }).sort()
+          .filter(
+            (path) =>
+              /\.tsx?$/.test(path) &&
+              !path.split('/').some((part) => SKIPPED_DIRS.has(part))
+          )
+      } catch {
+        return []
+      }
+    })
+    .sort()
 
 const parse = ({ path, root }) =>
   tseslint.parser.parseForESLint(readFileSync(join(root, path), 'utf8'), {

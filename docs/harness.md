@@ -68,9 +68,9 @@ The chain runs in cost order:
 | `pnpm verify:manifest:test`     | The pure engine behind both still behaves                 |
 | `pnpm verify:lint-rules:test`   | The local ESLint rules still report what they must        |
 | `pnpm verify:allowlist-freshness:test` | The styling allowlist gate fails a stale entry and an unlisted violation |
-| `pnpm verify:allowlist-freshness` | Every entry of `eslint-style-positioning-allowlist.json` still breaks its rule, and every violation is listed; prints the live count |
+| `pnpm verify:allowlist-freshness` | Every entry of `eslint-style-positioning-allowlist.json` still breaks its rule, and every violation in the `src/` of every app is listed; prints the live count |
 | `pnpm verify:dependency-seams:test` | The dependency-seam gate fails each drift it names, planted in a scratch tree, and asks ESLint which files it ignores |
-| `pnpm verify:dependency-seams` | Every `package.json` dependency is in `.agents/contracts/dependencies.json` and every entry is declared; every seam glob matches a file; the configs ESLint ignores import inside their seams; every entry of `eslint-dependency-seam-allowlist.json` is still a violation and every violation is listed; prints the live counts |
+| `pnpm verify:dependency-seams` | Every `package.json` dependency is in `.agents/contracts/dependencies.json` and every entry is declared; a `package.json` it cannot read fails, naming it; every seam glob matches a file; the configs ESLint ignores import inside their seams; every entry of `eslint-dependency-seam-allowlist.json` is still a violation and every violation is listed; prints the live counts, and none against a registry it refuses |
 
 Structural drift fails here, before anything expensive builds. See
 [manifest.md](manifest.md). The projection check is step 1 of the chain: an agent
@@ -87,8 +87,8 @@ the pre-commit hook on staged files.
 
 | Gate                  | Proves                                                                                    |
 | --------------------- | ----------------------------------------------------------------------------------------- |
-| `verify:tests`        | Every unit has a test, in the `__tests__/` of its own folder and named after it           |
-| `verify:maps`         | The global map resolves, and no stray magic literals                                      |
+| `verify:tests`        | Every unit has a test, in the `__tests__/` of its own folder and named after it; the components and hooks of an app that declares `expo` are exempt |
+| `verify:maps`         | The global map resolves and covers every domain and screen of every app, and no stray magic literals; `--root <dir>` runs it over another tree |
 | `verify:pairing`      | A service has its adapter and vice versa                                                  |
 | `verify:structure`    | Screen and component folders satisfy the block contract                                   |
 | `verify:security`     | The static security posture holds                                                         |
@@ -209,12 +209,17 @@ was being broken with nothing to notice.
 | `local/dependency-seam`              | `apps/*/**` and `packages/*/**`, by pattern | §23 — every package registered, imported only inside its seam |
 
 Every rule is wired by pattern, never per app (`docs/code-standards.md` § 24): a shared rule set
-reaches `apps/*/**` and `packages/*/**`, and a framework's block (React, Next.js, Expo) reaches
-every app whose `package.json` declares it, read by `scripts/eslint-config.detect.mjs` when the
-config loads. So an app added under `apps/` is judged with no config change. The fixture apps under
-`eslint-local-rules/__fixtures__/apps/` prove it: the lint-rule tests lint them through the config
-`eslint.config.mjs` builds for that folder (`createConfig`), as `apps/<fixture>/`, and a plain
-React app is refused for a violation of every shared rule family.
+reaches `apps/*/**` and `packages/*/**`, the React set reaches every app and every package whose
+`package.json` declares `react`, and the Next.js and Expo blocks every app that declares `next` or
+`expo`, read by `scripts/eslint-config.detect.mjs` when the config loads. A package that declares
+no `react`, `packages/tokens` among them, runs with the Node globals and no React rule. So an app
+added under `apps/`, or a package under `packages/`, is judged with no config change. The fixtures
+under `eslint-local-rules/__fixtures__/` prove it: the lint-rule tests lint them through the config
+`eslint.config.mjs` builds for that folder (`createConfig`), as `apps/<fixture>/` or
+`packages/<fixture>/`, and a plain React app is refused for a violation of every shared rule
+family. The gates that walk the apps read the same list: `verify:allowlist-freshness` and
+`verify:maps` walk every folder under `apps/` that holds a `package.json`, and `verify:tests`
+exempts the components and hooks of the apps that declare `expo`.
 
 ---
 
