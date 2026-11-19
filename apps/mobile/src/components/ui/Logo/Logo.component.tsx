@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 import Svg, {
   Defs,
   LinearGradient,
@@ -21,6 +21,7 @@ import { LOGO_GRADIENT_ID } from '@/components/ui/Logo/Logo.constant'
 import { LOGO_STYLES as styles } from '@/components/ui/Logo/Logo.style'
 import type { ILogoProps } from '@/components/ui/Logo/Logo.type'
 import { useLogo } from '@/components/ui/Logo/useLogo.hook'
+import { Text } from '@/components/ui/Text/Text.component'
 import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 
 /**

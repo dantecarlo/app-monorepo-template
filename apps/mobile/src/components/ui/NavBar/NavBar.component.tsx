@@ -1,6 +1,6 @@
 import { ThemeEnum } from '@app/tokens'
 import { BlurView } from 'expo-blur'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
 import { Icon } from '@/components/ui/Icon/Icon.component'
 import {
@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/NavBar/NavBar.constant'
 import { NAV_BAR_STYLES } from '@/components/ui/NavBar/NavBar.style'
 import type { INavBarProps } from '@/components/ui/NavBar/NavBar.type'
+import { Text } from '@/components/ui/Text/Text.component'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 import { useThemeTokens } from '@/lib/theme/useThemeTokens.hook'
 

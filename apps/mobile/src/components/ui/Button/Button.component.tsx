@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, Text } from 'react-native'
+import { ActivityIndicator, Pressable } from 'react-native'
 
 import { PRESS_OPACITY } from '@/components/ui/Button/Button.constant'
 import {
@@ -11,6 +11,7 @@ import {
   BUTTON_VARIANT_CLASS
 } from '@/components/ui/Button/Button.style'
 import type { IButtonProps } from '@/components/ui/Button/Button.type'
+import { Text } from '@/components/ui/Text/Text.component'
 import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 
 export const Button = ({

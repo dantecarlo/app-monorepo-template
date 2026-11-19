@@ -73,7 +73,7 @@ exist, naming and structure are mandatory.
 | --------------- | ----------------------------------------------------- | ------------------------------------------------- |
 | Domain / Core   | Ports (IAuthGateway, IBackendClientProvider), AppError, scrubPII | No framework or vendor imports. Lives in `@app/core`. |
 | Application     | Hooks that orchestrate ports, the `lib/query` hooks   | No UI framework imports in business logic         |
-| Infrastructure  | Service functions, adapters, store slices             | Reach TanStack Query through `lib/query`, zustand through `createAppStore`, Supabase through its port, and on web Next's router and cache through `lib/routing` and `lib/cache` |
+| Infrastructure  | Service functions, adapters, store slices             | Reach TanStack Query through `lib/query`, zustand through `createAppStore`, Supabase through its port, on web Next's router and cache through `lib/routing` and `lib/cache`, and on mobile the expo-router hooks through `lib/routing` |
 | Presentation    | Components, screens, pages                            | May import any, but no direct data fetching       |
 
 **Dependency direction**: inward only. Domain depends on nothing. Outer layers
@@ -261,7 +261,10 @@ kebab case (`spacing.pillX` is `px-pill-x`); see `packages/tokens/README.md`.
 Only `components/ui/**` imports a UI kit or its helpers (`tailwind-variants`, Radix,
 `class-variance-authority`, `expo-linear-gradient`, `react-native-svg`): `local/ui-kit-boundary`.
 The look and the kit are one replaceable layer. Text is `ui/Text`, a labelled rule `ui/Divider`, a
-screen surface `ui/Screen`. See `AGENTS.md` § Styling lives in the components and
+screen surface `ui/Screen`. A `react-native` primitive a `ui/` block is named after (`Text`,
+`Modal`, `Button`, `StatusBar`) is imported only under that block, so every other file, another
+block included, renders the block: `local/wrapped-import`, which reads the blocks from disk. See
+`AGENTS.md` § Styling lives in the components and
 `docs/code-standards.md` §22.
 
 ---
@@ -469,7 +472,7 @@ component), with full keys: `t('items.dashboard.title')`. It is the same
 | ------------- | ------------------------ | ---------------------------------- |
 | Routing       | `app/` directory         | `app/` directory                   |
 | Styling       | Tailwind + `*.style.ts`  | NativeWind or StyleSheet + `*.style.ts`  |
-| Nav hook      | `useAppRouter` of `lib/routing` (over next/navigation) | `useRouter` (expo-router; behind `lib/routing` in F.8 unit 8) |
+| Nav hook      | `useAppRouter` of `lib/routing` (over next/navigation) | the app's own hook of `lib/routing`, the one importer of the expo-router hooks and `router` (`local/wrapped-import`); none yet |
 | State/query   | `createAppStore` + `lib/query` (zustand + TanStack Query) | Same, persisting through `keyValueStorage` |
 | `'use client'`| Required for hooks/interactivity | Not applicable             |
 

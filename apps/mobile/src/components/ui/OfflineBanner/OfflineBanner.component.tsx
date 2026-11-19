@@ -1,8 +1,9 @@
 import React from 'react'
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 
 import { OFFLINE_BANNER_STYLES } from '@/components/ui/OfflineBanner/OfflineBanner.style'
 import type { IOfflineBannerProps } from '@/components/ui/OfflineBanner/OfflineBanner.type'
+import { Text } from '@/components/ui/Text/Text.component'
 import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 

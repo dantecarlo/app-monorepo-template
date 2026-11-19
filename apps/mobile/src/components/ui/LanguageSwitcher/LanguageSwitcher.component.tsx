@@ -1,8 +1,9 @@
-import { Pressable, Text } from 'react-native'
+import { Pressable } from 'react-native'
 
 import { LANGUAGE_SWITCHER_STYLES as styles } from '@/components/ui/LanguageSwitcher/LanguageSwitcher.style'
 import type { ILanguageSwitcherProps } from '@/components/ui/LanguageSwitcher/LanguageSwitcher.type'
 import { useLanguageSwitcher } from '@/components/ui/LanguageSwitcher/useLanguageSwitcher.hook'
+import { Text } from '@/components/ui/Text/Text.component'
 import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
 import { useThemeTokens } from '@/lib/theme/useThemeTokens.hook'
 

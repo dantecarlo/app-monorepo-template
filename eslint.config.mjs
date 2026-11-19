@@ -42,7 +42,8 @@ import {
   TOKENS_SOURCE_OVERRIDE,
   TW4_NAMED_WIDTH_OVERRIDE,
   UI_COMPONENT_OVERRIDE,
-  UI_FOLDER_CASING_RULES
+  UI_FOLDER_CASING_RULES,
+  wrappedImportOverride
 } from './eslint.rules.mjs'
 
 // ---------------------------------------------------------------------------
@@ -384,6 +385,9 @@ export const createConfig = ({
     TESTING_LIBRARY_ALLOWED_OVERRIDE,
     // Every package inside its seam, over apps/* and packages/* by pattern.
     DEPENDENCY_SEAM_OVERRIDE,
+    // Every name a wrapper owns inside that wrapper, judged by the ui blocks
+    // of the workspace this config is built for.
+    wrappedImportOverride({ workspaceRoot }),
     DTS_FILE_OVERRIDE,
 
     // Prettier must be last to disable conflicting rules.

@@ -172,8 +172,10 @@ export const gate = defineGate({
     'every such import listed.',
   id: 'verify-dependency-seams',
   notCovered:
-    'the names imported from a package (the react-native primitives, the ' +
-    'expo-router hooks); a specifier that is not a literal; triple-slash ' +
+    'a name imported from a package that local/wrapped-import does not ' +
+    'narrow (Pressable and TextInput, which no ui block is named after; a ' +
+    'block that stands in for a primitive under another name); a specifier ' +
+    'that is not a literal; triple-slash ' +
     'type references and declare module augmentations; imports in CSS and ' +
     'in JSON (an Expo plugin); a subpath entry no file imports any longer; ' +
     'a type a wrapper re-exports; whether a seam is the right one, and ' +

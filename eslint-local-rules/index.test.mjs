@@ -36,6 +36,7 @@ import {
   tokenValuesScope
 } from './style-positioning.detect.mjs'
 import { isOutsideUiKit } from './ui-kit.detect.mjs'
+import { registerWrappedImportCases } from './wrapped-import.cases.mjs'
 
 RuleTester.describe = describe
 RuleTester.it = test
@@ -989,6 +990,10 @@ viewTester.run('ui-kit-boundary', rules['ui-kit-boundary'], {
 // The dependency seam (code-standards §23): its rule cases, its detection
 // and the fixture app that proves a new app inherits it.
 registerDependencySeamCases()
+
+// The names a wrapper owns (code-standards §22 and §23): the react-native
+// primitives a ui block is named after, and the expo-router hooks.
+registerWrappedImportCases()
 
 // The ESLint config: which frameworks each app declares, and the fixture
 // apps that prove a new app inherits every rule.

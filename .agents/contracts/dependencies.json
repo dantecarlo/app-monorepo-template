@@ -1,5 +1,5 @@
 {
-  "$comment": "Every package, or package subpath, the workspace declares or imports, with its category and its seam: the repository globs of the files that may import it (decisions 51, 52 and 58). A core entry is imported anywhere; every other entry only inside its seam, type-only imports included unless \"types\" is \"anywhere\", and an empty seam means no file may import it yet. The most specific entry wins (next/navigation before next), and every Node builtin is the entry node:*. A test also imports what the seam of the unit it tests admits, and a testInfrastructure file any registered package. local/dependency-seam enforces it on apps/* and packages/*; pnpm verify:dependency-seams holds it to every package.json and file. See docs/code-standards.md section 23.",
+  "$comment": "Every package, or package subpath, the workspace declares or imports, with its category and its seam: the repository globs of the files that may import it (decisions 51, 52 and 58). A core entry is imported anywhere; every other entry only inside its seam, type-only imports included unless \"types\" is \"anywhere\", and an empty seam means no file may import it yet. The most specific entry wins (next/navigation before next), and every Node builtin is the entry node:*. A test also imports what the seam of the unit it tests admits, and a testInfrastructure file any registered package. local/dependency-seam enforces it on apps/* and packages/*, and local/wrapped-import the names a wrapper owns of two core packages (react-native, expo-router); pnpm verify:dependency-seams holds it to every package.json and file. See docs/code-standards.md section 23.",
   "testInfrastructure": ["{apps,packages}/*/src/test/**"],
   "packages": [
     {
@@ -21,7 +21,7 @@
     {
       "name": "expo-router",
       "category": "core",
-      "note": "Its hooks go through lib/routing (F.8 unit 6); the rule judges the package, not the names imported from it."
+      "note": "Its hooks (every use name) and its router object are imported only under an app's src/lib/routing/, which local/wrapped-import holds by the names imported; its layout components (Stack, Tabs, Slot, Redirect, Link) and its types stay direct. The mobile app calls no hook yet, so its lib/routing holds no module."
     },
     {
       "name": "next",
@@ -39,7 +39,7 @@
     {
       "name": "react-native",
       "category": "core",
-      "note": "The primitives that have a ui/ wrapper (Text, Pressable, TextInput) are F.8 unit 8; the rule judges the package, not the names imported from it."
+      "note": "A primitive a components/ui block is named after (on mobile Text, Modal, Button and StatusBar) is imported only under that block's folder, which local/wrapped-import holds by the names imported, reading the blocks from disk; every other file renders the block. View, ScrollView, Pressable, TextInput and every primitive no block is named after stay direct."
     },
     {
       "name": "typescript",

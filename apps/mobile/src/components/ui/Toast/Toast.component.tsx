@@ -1,5 +1,6 @@
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
+import { Text } from '@/components/ui/Text/Text.component'
 import { TOAST_DOT_COLOR } from '@/components/ui/Toast/Toast.constant'
 import { TOAST_STYLES } from '@/components/ui/Toast/Toast.style'
 import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'

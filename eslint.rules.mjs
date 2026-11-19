@@ -679,6 +679,24 @@ export const DEPENDENCY_SEAM_OVERRIDE = {
   rules: { 'local/dependency-seam': 'error' }
 }
 
+// ---------------------------------------------------------------------------
+// The names a wrapper owns (code-standards §22 and §23; decision 58). A
+// react-native primitive a components/ui block is named after passes only
+// under that block's folder, an expo-router hook or its router object only
+// under the app's src/lib/routing/. Wired by pattern over every app and
+// package, like the dependency seam; the rule reads each app's ui blocks
+// under `workspaceRoot`, the root the config is built for, so an app added
+// under apps/ (or a fixture app) is judged by its own blocks.
+// ---------------------------------------------------------------------------
+export const wrappedImportOverride = ({ workspaceRoot }) => ({
+  files: [
+    `apps/*/**/*.${SEAM_EXTENSIONS}`,
+    `packages/*/**/*.${SEAM_EXTENSIONS}`
+  ],
+  plugins: { local: localRules },
+  rules: { 'local/wrapped-import': ['error', { workspaceRoot }] }
+})
+
 export const STYLE_PILLAR_OVERRIDE = {
   files: ['apps/*/src/**/*.{ts,tsx}'],
   rules: {

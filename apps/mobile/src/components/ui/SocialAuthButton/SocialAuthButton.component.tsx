@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, Text } from 'react-native'
+import { ActivityIndicator, Pressable } from 'react-native'
 
 import { GoogleGlyph } from '@/components/ui/SocialAuthButton/GoogleGlyph.component'
 import {
@@ -6,6 +6,7 @@ import {
   SOCIAL_AUTH_STYLES
 } from '@/components/ui/SocialAuthButton/SocialAuthButton.style'
 import type { ISocialAuthButtonProps } from '@/components/ui/SocialAuthButton/SocialAuthButton.type'
+import { Text } from '@/components/ui/Text/Text.component'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 import { useThemeTokens } from '@/lib/theme/useThemeTokens.hook'
 

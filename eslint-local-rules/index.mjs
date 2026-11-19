@@ -42,6 +42,10 @@ import {
   readSeamInputs,
   toRepoPath
 } from './dependency-seam.detect.mjs'
+import {
+  collectWrappedViolations,
+  createUiBlockReader
+} from './wrapped-import.detect.mjs'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -957,6 +961,81 @@ const dependencySeam = {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Rule: wrapped-import (code-standards §22 and §23; decision 58)
+// A name a project wrapper owns is imported only by that wrapper
+// (./wrapped-import.detect.mjs): a react-native primitive a components/ui
+// block is named after, only under that block's folder; an expo-router hook
+// or its router object, only under the app's src/lib/routing/. The ui blocks
+// are read from the workspace root the config passes (the repository by
+// default), once per app per lint run; the file's path is taken relative to
+// this plugin's repository, as local/dependency-seam takes it.
+// ---------------------------------------------------------------------------
+
+const UI_BLOCK_READERS = new Map()
+
+const uiBlocksUnder = ({ root }) => {
+  if (!UI_BLOCK_READERS.has(root)) {
+    UI_BLOCK_READERS.set(root, createUiBlockReader({ root }))
+  }
+  return UI_BLOCK_READERS.get(root)
+}
+
+const wrappedImport = {
+  create(context) {
+    const path = toRepoPath({
+      filename: context.filename ?? context.getFilename(),
+      root: SEAM_ROOT
+    })
+    if (!path || !isInScope({ path })) return {}
+    const [{ workspaceRoot = SEAM_ROOT } = {}] = context.options
+    return {
+      Program(program) {
+        for (const {
+          kind,
+          name,
+          node,
+          owner,
+          source
+        } of collectWrappedViolations({
+          blocksOf: uiBlocksUnder({ root: workspaceRoot }),
+          path,
+          program,
+          testInfrastructure: SEAM_INDEX.testInfrastructure
+        })) {
+          context.report({
+            data: { name, owner, source },
+            messageId: kind,
+            node
+          })
+        }
+      }
+    }
+  },
+  meta: {
+    docs: {
+      description:
+        'A name a project wrapper owns is imported only by that wrapper: a react-native primitive a components/ui block is named after, an expo-router hook or its router object.'
+    },
+    messages: {
+      hookOutsideRouting:
+        "'{{name}}' of expo-router is navigation, and only {{owner}} may import it: call the app's own hook of @/lib/routing, and add it there under the app's own types when none fits (code-standards §23).",
+      primitiveOutsideBlock:
+        "'{{name}}' of react-native is wrapped by the {{owner}} block, and only that block's folder may import it: render @/components/ui/{{owner}} instead, and add a prop or a variant to it when this code needs one (code-standards §22).",
+      wholeModule:
+        "'{{source}}' is reached whole here, so the names a wrapper owns ({{owner}}) cannot be told apart from the rest: import the names this file uses by name (code-standards §23)."
+    },
+    schema: [
+      {
+        additionalProperties: false,
+        properties: { workspaceRoot: { type: 'string' } },
+        type: 'object'
+      }
+    ],
+    type: 'problem'
+  }
+}
+
 const plugin = {
   meta: { name: 'local', version: '1.0.0' },
   rules: {
@@ -973,7 +1052,8 @@ const plugin = {
     'style-positions-only': stylePositionsOnly,
     'style-token-values': styleTokenValues,
     'suffix-contract': suffixContract,
-    'ui-kit-boundary': uiKitBoundary
+    'ui-kit-boundary': uiKitBoundary,
+    'wrapped-import': wrappedImport
   }
 }
 

@@ -71,6 +71,11 @@ Rules:
 - Never a type of a UI kit or a primitive (`VariantProps`, `FallbackProps`, `StatusBarStyle`): a
   variant prop takes the block's own union (Type C), and a wrapped primitive's prop takes the
   wrapper's own type (`IAsyncBoundaryFallbackProps`, `StatusBarStyleType`)
+- A caller that needs what a wrapper does not pass yet gets it as a prop of the wrapper, never by
+  importing the primitive: a `react-native` primitive a `ui/` block is named after (`Text`,
+  `Modal`, `Button`, `StatusBar`) is imported only under that block's folder
+  (`local/wrapped-import`). `ui/Text` gained `className` and `accessibilityRole` this way, so
+  `Button` keeps its label classes and `ScreenHeader` its header role through it
 - If the prop changes rendering significantly → consider a variant (see Type E)
 
 ---

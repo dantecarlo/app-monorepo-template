@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AUTH_SHELL_LOGO_SIZE } from '@/components/ui/AuthShell/AuthShell.constant'
@@ -7,6 +7,7 @@ import type { IAuthShellProps } from '@/components/ui/AuthShell/AuthShell.type'
 import { GlassCard } from '@/components/ui/GlassCard/GlassCard.component'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher/LanguageSwitcher.component'
 import { Logo } from '@/components/ui/Logo/Logo.component'
+import { Text } from '@/components/ui/Text/Text.component'
 import { ThemeToggle } from '@/components/ui/ThemeToggle/ThemeToggle.component'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 

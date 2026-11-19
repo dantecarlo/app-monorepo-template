@@ -1,7 +1,8 @@
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 
 import { DIVIDER_STYLES } from '@/components/ui/Divider/Divider.style'
 import type { IDividerProps } from '@/components/ui/Divider/Divider.type'
+import { Text } from '@/components/ui/Text/Text.component'
 import { useThemedStyles } from '@/lib/theme/useThemedStyles.hook'
 
 export const Divider = ({ label, style }: IDividerProps) => {

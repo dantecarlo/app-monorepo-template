@@ -1,6 +1,5 @@
 import { DEFAULT_LANGUAGE, resources } from '@app/i18n'
 import type { ComponentType } from 'react'
-import { Text } from 'react-native'
 import { describe, expect, expectTypeOf, test, vi } from 'vitest'
 
 import { AsyncBoundary } from '@/components/ui/AsyncBoundary/AsyncBoundary.component'
@@ -9,6 +8,7 @@ import type {
   IAsyncBoundaryProps
 } from '@/components/ui/AsyncBoundary/AsyncBoundary.type'
 import { AsyncBoundaryDefaultError } from '@/components/ui/AsyncBoundary/AsyncBoundaryDefaultError.component'
+import { Text } from '@/components/ui/Text/Text.component'
 import { renderWithI18n } from '@/test/i18n.helper'
 import { fireEvent, screen, within } from '@/test/test.helper'
 
