@@ -63,6 +63,41 @@ test('the anchor reads every governed path and the verified commit', () => {
   })
 })
 
+// A capability's region of the header holds a Governs line of its own
+// (openspec/README.md § 2.2). The markers are built inside strings, never
+// written alone on a line of this file, where the coverage gate would read
+// them as a region of this file.
+const regionOf = ({ lines, owner = 'vendor' }) => [
+  `<!-- region ${owner} -->`,
+  ...lines,
+  `<!-- endregion ${owner} -->`
+]
+
+const twoGovernsSpec = ({ first, second, sha }) =>
+  [
+    '# unit — living spec',
+    '',
+    `> **Governs:** ${first}`,
+    ...regionOf({ lines: [`> **Governs:** ${second}`] }),
+    '> **ID prefix:** `UNIT`',
+    `> **Verified against the code:** 2026-11-19 at \`${sha}\``,
+    ''
+  ].join('\n')
+
+test('the anchor reads the governed paths of every Governs line, in order', () => {
+  const anchor = readSpecAnchor({
+    text: twoGovernsSpec({
+      first: '`src/a/`, `src/b.ts`',
+      second: '`src/vendor.ts`',
+      sha: 'abc1234'
+    })
+  })
+  assert.deepEqual(anchor, {
+    governed: ['src/a/', 'src/b.ts', 'src/vendor.ts'],
+    sha: 'abc1234'
+  })
+})
+
 test('a spec with no verified commit reads a null sha', () => {
   const anchor = readSpecAnchor({ text: '> **Governs:** `src/`\n' })
   assert.equal(anchor.sha, null)
@@ -196,4 +231,62 @@ test('the report lists each stale spec and still exits 0', () => {
     'the fresh spec is reported'
   )
   assert.match(result.stdout, /3 of 5 living spec\(s\) behind their code/u)
+})
+
+// A repository of its own: a spec whose first Governs line names `core/`
+// and whose region names `vendor/`, so a change under either path must make
+// it stale, and the report must say so.
+test('a spec is measured against the paths of every Governs line', () => {
+  const root = mkdtempSync(join(tmpdir(), 'report-spec-drift-governs-'))
+  try {
+    const run = (args) =>
+      execFileSync(
+        'git',
+        [
+          '-c',
+          'user.email=test@example.invalid',
+          '-c',
+          'user.name=test',
+          ...args
+        ],
+        { cwd: root, encoding: 'utf8', env: gitFreeEnv() }
+      ).trim()
+    run(['init', '-q'])
+    for (const name of ['core', 'vendor']) {
+      mkdirSync(join(root, name), { recursive: true })
+      writeFileSync(join(root, name, 'a.ts'), 'export const a = 1\n')
+    }
+    run(['add', '-A'])
+    run(['commit', '-q', '-m', 'base'])
+    const base = run(['rev-parse', 'HEAD'])
+    mkdirSync(join(root, 'openspec', 'specs', 'unit'), { recursive: true })
+    writeFileSync(
+      join(root, 'openspec', 'specs', 'unit', 'spec.md'),
+      twoGovernsSpec({ first: '`core/`', second: '`vendor/`', sha: base })
+    )
+    writeFileSync(join(root, 'core', 'a.ts'), 'export const a = 2\n')
+    writeFileSync(join(root, 'vendor', 'a.ts'), 'export const a = 3\n')
+
+    const [measured] = measureDrift({ root })
+    assert.deepEqual(measured.governed, ['core/', 'vendor/'])
+    assert.deepEqual(measured.changed, ['core/a.ts', 'vendor/a.ts'])
+    assert.deepEqual(measured.missing, [])
+
+    const result = spawnSync(process.execPath, [REPORT, '--root', root], {
+      encoding: 'utf8',
+      env: gitFreeEnv()
+    })
+    assert.equal(result.status, 0)
+    assert.equal(result.stderr, '')
+    assert.match(
+      result.stdout,
+      /WARN openspec\/specs\/unit\/spec\.md: 2 file\(s\) under its governed paths changed since [0-9a-f]+, e\.g\. core\/a\.ts, vendor\/a\.ts/u
+    )
+    assert.match(
+      result.stdout,
+      /1 of 1 living spec\(s\) behind their code/u
+    )
+  } finally {
+    rmSync(root, { force: true, recursive: true })
+  }
 })
