@@ -2,7 +2,15 @@ import {
   type IObservabilityPortHarness,
   runObservabilityPortContract
 } from '@app/tooling/observability-port-contract'
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi
+} from 'vitest'
 
 import { createSentryObservability } from '@/lib/observability/createSentryObservability.adapter'
 
@@ -22,11 +30,19 @@ const originalDsn = process.env.NEXT_PUBLIC_SENTRY_DSN
 
 beforeEach(() => {
   vi.clearAllMocks()
-  process.env.NEXT_PUBLIC_SENTRY_DSN = 'https://example@sentry.io/1'
+  vi.stubEnv('NEXT_PUBLIC_SENTRY_DSN', 'https://example@sentry.io/1')
 })
 
 afterEach(() => {
-  process.env.NEXT_PUBLIC_SENTRY_DSN = originalDsn
+  vi.unstubAllEnvs()
+})
+
+// The file leaves the DSN variable as the run found it, set or unset.
+afterAll(() => {
+  expect(process.env.NEXT_PUBLIC_SENTRY_DSN).toBe(originalDsn)
+  expect('NEXT_PUBLIC_SENTRY_DSN' in process.env).toBe(
+    originalDsn !== undefined
+  )
 })
 
 test('captureError forwards the exception to Sentry', () => {
@@ -69,7 +85,7 @@ test('addBreadcrumb scrubs PII from breadcrumb data', () => {
 })
 
 test('all methods no-op when the DSN is absent', () => {
-  delete process.env.NEXT_PUBLIC_SENTRY_DSN
+  vi.stubEnv('NEXT_PUBLIC_SENTRY_DSN', undefined)
   const adapter = createSentryObservability()
   adapter.captureError({ error: new Error('x') })
   adapter.captureMessage?.({ message: 'm' })
@@ -86,9 +102,9 @@ const sentryHarness: IObservabilityPortHarness = {
   create: ({ enabled }) => {
     vi.clearAllMocks()
     if (enabled) {
-      process.env.NEXT_PUBLIC_SENTRY_DSN = 'https://example@sentry.io/1'
+      vi.stubEnv('NEXT_PUBLIC_SENTRY_DSN', 'https://example@sentry.io/1')
     } else {
-      delete process.env.NEXT_PUBLIC_SENTRY_DSN
+      vi.stubEnv('NEXT_PUBLIC_SENTRY_DSN', undefined)
     }
     return createSentryObservability()
   },

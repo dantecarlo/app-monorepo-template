@@ -2,7 +2,15 @@ import {
   type IObservabilityPortHarness,
   runObservabilityPortContract
 } from '@app/tooling/observability-port-contract'
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi
+} from 'vitest'
 
 const captureException = vi.fn()
 const captureMessage = vi.fn()
@@ -18,6 +26,8 @@ vi.mock('@sentry/react-native', () => ({
   setUser: (...args: unknown[]) => setUser(...args)
 }))
 
+const originalDsn = process.env.EXPO_PUBLIC_SENTRY_DSN
+
 const loadAdapter = async () => {
   const module =
     await import('@/lib/observability/createSentryObservability.adapter')
@@ -27,11 +37,19 @@ const loadAdapter = async () => {
 beforeEach(() => {
   vi.clearAllMocks()
   vi.resetModules()
-  process.env.EXPO_PUBLIC_SENTRY_DSN = 'https://example@sentry.io/2'
+  vi.stubEnv('EXPO_PUBLIC_SENTRY_DSN', 'https://example@sentry.io/2')
 })
 
 afterEach(() => {
-  delete process.env.EXPO_PUBLIC_SENTRY_DSN
+  vi.unstubAllEnvs()
+})
+
+// The file leaves the DSN variable as the run found it, set or unset.
+afterAll(() => {
+  expect(process.env.EXPO_PUBLIC_SENTRY_DSN).toBe(originalDsn)
+  expect('EXPO_PUBLIC_SENTRY_DSN' in process.env).toBe(
+    originalDsn !== undefined
+  )
 })
 
 test('captureError scrubs PII from the context', async () => {
@@ -80,7 +98,7 @@ test('Sentry.init registers beforeBreadcrumb that scrubs auto-captured breadcrum
 
 test('methods no-op when the DSN is absent', async () => {
   vi.resetModules()
-  delete process.env.EXPO_PUBLIC_SENTRY_DSN
+  vi.stubEnv('EXPO_PUBLIC_SENTRY_DSN', undefined)
   const adapter = await loadAdapter()
   adapter.captureError({ error: new Error('x') })
   adapter.setUser?.({ user: { id: 'u1' } })
@@ -95,9 +113,9 @@ const sentryHarness: IObservabilityPortHarness = {
     vi.clearAllMocks()
     vi.resetModules()
     if (enabled) {
-      process.env.EXPO_PUBLIC_SENTRY_DSN = 'https://example@sentry.io/2'
+      vi.stubEnv('EXPO_PUBLIC_SENTRY_DSN', 'https://example@sentry.io/2')
     } else {
-      delete process.env.EXPO_PUBLIC_SENTRY_DSN
+      vi.stubEnv('EXPO_PUBLIC_SENTRY_DSN', undefined)
     }
     return loadAdapter()
   },
