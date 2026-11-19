@@ -55,6 +55,33 @@ export const spec = ({
     ...requirements
   ].join('\n')
 
+// The lines a capability owns in a spec, between its region markers
+// (docs/manifest.md § Regions). A marker is built inside a string, never
+// written alone on a line of this file, where the coverage gate would read
+// it as a region of this file.
+export const region = ({ lines, owner = 'vendor' }) =>
+  [
+    `<!-- region ${owner} -->`,
+    ...lines,
+    `<!-- endregion ${owner} -->`
+  ].join('\n')
+
+export const VENDOR_GOVERNS = '> **Governs:** `pkg/vendor.ts`'
+
+// A spec whose header holds a second Governs line, and whose requirements a
+// second requirement, inside a capability's region.
+export const regionedSpec = ({
+  governs = VENDOR_GOVERNS,
+  regionRequirement = requirement({ id: 'PKG-02' })
+} = {}) =>
+  spec({
+    governs: [
+      '> **Governs:** `pkg/src/`',
+      region({ lines: [governs] })
+    ].join('\n'),
+    requirements: [requirement(), region({ lines: [regionRequirement] })]
+  })
+
 export const PROPOSAL = [
   '# Proposal: a change',
   '',

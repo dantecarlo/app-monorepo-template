@@ -21,6 +21,7 @@ const TEST_LINE = /^- \*\*Test:\*\* (?<value>.*?)\s*$/u
 const TEST_REFERENCE = /^`(?<path>[^`]+)`(?: › "(?<title>.+)")?$/u
 const NOT_COVERED = /^Not covered — \S/u
 const GOVERNS = /^> \*\*Governs:\*\* (?<value>.+)$/u
+const GOVERNS_SEPARATOR = ', '
 const PREFIX_LINE = /^> \*\*ID prefix:\*\* `(?<prefix>[^`]+)`\s*$/u
 const PREFIX_SHAPE = /^[A-Z][A-Z0-9]*$/u
 const BACKTICKED = /`[^`]+`/u
@@ -48,11 +49,18 @@ const OPEN_STATUS = 'open'
 
 // Reads one spec or delta into its header, its sections and its
 // requirements, each requirement carrying the section it sits in.
+//
+// `governs` is the union of every Governs line, joined in the order they
+// appear, or null when there is none: the part of a unit an optional
+// capability adds holds a Governs line of its own inside the capability's
+// region (openspec/README.md § 2.2), which its prune drops whole. A region
+// marker matches no pattern here, so it reads as nothing between header
+// lines, and inside the scenario it follows between requirements.
 export const parseSpec = ({ text }) => {
   const lines = text.split(/\r?\n/u)
   const sections = []
   const requirements = []
-  let governs = null
+  const governed = []
   let prefix = null
   let section = null
   let requirement = null
@@ -61,7 +69,7 @@ export const parseSpec = ({ text }) => {
   lines.forEach((line, index) => {
     const lineNumber = index + 1
     const governsMatch = line.match(GOVERNS)
-    if (governsMatch) governs = governsMatch.groups.value
+    if (governsMatch) governed.push(governsMatch.groups.value)
     const prefixMatch = line.match(PREFIX_LINE)
     if (prefixMatch) prefix = prefixMatch.groups.prefix
 
@@ -118,6 +126,8 @@ export const parseSpec = ({ text }) => {
     }
   })
 
+  const governs =
+    governed.length === 0 ? null : governed.join(GOVERNS_SEPARATOR)
   return { governs, prefix, requirements, sections }
 }
 

@@ -5,7 +5,11 @@ import { join, resolve } from 'node:path'
 import { test } from 'node:test'
 
 import { gitFreeEnv } from '../../../../scripts/git-free-env.mjs'
-import { dropRegions, matchesAny } from '../../../../scripts/manifest.mjs'
+import {
+  analyzeCoverage,
+  dropRegions,
+  matchesAny
+} from '../../../../scripts/manifest.mjs'
 import { findPruneLeaks } from '../prune-boundary.mjs'
 
 const REPO_ROOT = resolve(import.meta.dirname, '../../../..')
@@ -490,12 +494,12 @@ const skipUnless = (capabilityId) =>
     ? false
     : `the manifest no longer declares ${capabilityId}`
 
-const pruneRepository = ({ capabilityId }) =>
+const pruneRepository = ({ capabilityId, regions = dropRegions }) =>
   findPruneLeaks({
     capabilityId,
     files: listRepositoryFiles(),
     manifest: REPOSITORY_MANIFEST,
-    dropRegions,
+    dropRegions: regions,
     matches: matchesAny,
     readText: ({ path }) => readFileSync(join(REPO_ROOT, path), 'utf8')
   })
@@ -526,26 +530,82 @@ test(
   }
 )
 
-// A project may keep Sentry and drop one app: the specs the sentry
-// capability claims must then lose the dropped app's part with it.
-const APP_PRUNES = ['mobile-expo', 'web-next']
+// The Sentry part of each app's spec, its Governs line and its
+// requirements, sits in a sentry region of that spec (openspec/README.md
+// § 2.2). The sentry prune must drop it with the region; read with the
+// region kept, the same specs must cite the Sentry files, or the region
+// would be holding nothing.
+const APP_SPECS = [
+  'openspec/specs/apps/mobile/spec.md',
+  'openspec/specs/apps/web/spec.md'
+]
+const keepRegions = ({ text }) => text
+const appSpecsCiting = ({ regions }) => [
+  ...new Set(
+    pruneRepository({ capabilityId: 'sentry', regions })
+      .filter(
+        ({ file, kind }) => kind === 'spec' && APP_SPECS.includes(file)
+      )
+      .map(({ file }) => file)
+  )
+]
 
 test(
-  'pruning mobile-expo or web-next of this repository leaves no Sentry spec citing a pruned file',
+  'pruning sentry of this repository drops the Sentry part of each app spec with its region',
   { skip: skipUnless('sentry') },
   () => {
-    const sentryClaims = REPOSITORY_MANIFEST.capabilities.find(
-      ({ id }) => id === 'sentry'
-    ).claims
-    const leaks = APP_PRUNES.filter(declares).flatMap((capabilityId) =>
-      pruneRepository({ capabilityId })
-        .filter(({ kind }) => kind === 'spec')
-        .filter(({ file }) =>
-          matchesAny({ path: file, patterns: sentryClaims })
-        )
-        .map((leak) => ({ capabilityId, ...leak }))
+    assert.deepEqual(appSpecsCiting({ regions: dropRegions }), [])
+    assert.deepEqual(
+      appSpecsCiting({ regions: keepRegions }),
+      APP_SPECS.filter((path) => existsSync(join(REPO_ROOT, path)))
+    )
+  }
+)
+
+// A project may keep Sentry and drop one app. The app's prune deletes the
+// files the app claims or removes, its spec among them, and the manifest
+// stops declaring it; a claim of the kept sentry capability on a spec must
+// not be left matching nothing.
+const APP_PRUNES = ['mobile-expo', 'web-next']
+const SPEC_ROOT = 'openspec/specs/'
+
+const prunedFiles = ({ capability }) => [
+  ...capability.claims,
+  ...(capability.onAbsent ?? [])
+    .filter(({ verb }) => verb === 'remove')
+    .flatMap(({ paths }) => paths)
+]
+
+const staleSentrySpecClaims = ({ capabilityId }) => {
+  const capability = REPOSITORY_MANIFEST.capabilities.find(
+    ({ id }) => id === capabilityId
+  )
+  const patterns = prunedFiles({ capability })
+  const kept = listRepositoryFiles().filter(
+    (path) => !matchesAny({ path, patterns })
+  )
+  const manifest = {
+    ...REPOSITORY_MANIFEST,
+    capabilities: REPOSITORY_MANIFEST.capabilities.filter(
+      ({ id }) => id !== capabilityId
+    )
+  }
+  return analyzeCoverage({ files: kept, manifest })
+    .staleClaims.filter(
+      ({ claim, owner }) =>
+        owner === 'sentry' && claim.startsWith(SPEC_ROOT)
+    )
+    .map((stale) => ({ capabilityId, ...stale }))
+}
+
+test(
+  'pruning mobile-expo or web-next of this repository leaves no sentry claim on a spec stale',
+  { skip: skipUnless('sentry') },
+  () => {
+    const stale = APP_PRUNES.filter(declares).flatMap((capabilityId) =>
+      staleSentrySpecClaims({ capabilityId })
     )
 
-    assert.deepEqual(leaks, [])
+    assert.deepEqual(stale, [])
   }
 )

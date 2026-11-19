@@ -1,22 +1,17 @@
-# apps/mobile/sentry — living spec
+# Delta: apps/mobile
 
-> **Governs:** `apps/mobile/src/lib/observability/createSentryObservability.adapter.ts`
-> **ID prefix:** `MOBILESENTRY`
-> **Derived from:** `docs/observability.md`, `docs/manifest.md`, `docs/decisions/0001-pluggable-providers.md`
-> **Verified against the code:** 2026-11-19 at `58af488`
+> **Change:** `2026-11-19-spec-capability-regions`
 
-## Purpose
+The requirements below are the Sentry part of the mobile app, MOBILESENTRY-01 to MOBILESENTRY-03
+of the removed apps/mobile/sentry spec under the next free IDs of this spec. They sit inside a
+`sentry` region, which the archive copies with them to the end of the requirements; the archive
+also adds the `sentry` region of the header that holds their `Governs` line and the one of the
+Purpose.
 
-The Sentry part of the mobile app, the optional error-monitoring provider of the `sentry`
-capability beside the PostHog default: the adapter of the observability port, which starts the
-Sentry SDK at module scope. The `sentry` capability claims this spec and the `mobile-expo`
-prune removes it, so either prune takes these requirements with the files they cite. It leaves
-the PostHog default to apps/mobile, the observability port and the scrubPII helper to
-packages/core, and the port contract to packages/tooling.
+## ADDED Requirements
 
-## Requirements
-
-### Requirement: MOBILESENTRY-01 — PII scrubbed before Sentry
+<!-- region sentry -->
+### Requirement: MOBILE-80 — PII scrubbed before Sentry
 
 The mobile app SHALL pass every error context, message context, breadcrumb, user and
 automatically captured event through the scrubPII helper of packages/core before the Sentry SDK
@@ -59,7 +54,7 @@ receives it.
 - **THEN** Sentry receives the scrubbed event
 - **Test:** Not covered — every test replaces the Sentry SDK with a mock, which proves the payload the adapter hands over, not what the native SDK sends; real capture needs a native dev build
 
-### Requirement: MOBILESENTRY-02 — Sentry off without a DSN
+### Requirement: MOBILE-81 — Sentry off without a DSN
 
 The mobile app SHALL initialise Sentry disabled and make every observability call a no-op when
 EXPO_PUBLIC_SENTRY_DSN is unset, tagging events with EXPO_PUBLIC_APP_ENV, else development.
@@ -80,7 +75,7 @@ EXPO_PUBLIC_SENTRY_DSN is unset, tagging events with EXPO_PUBLIC_APP_ENV, else d
 - **THEN** Sentry is initialised with the development environment
 - **Test:** Not covered — no test asserts the environment passed to the Sentry init
 
-### Requirement: MOBILESENTRY-03 — The Sentry adapter keeps the port contract
+### Requirement: MOBILE-82 — The Sentry adapter keeps the port contract
 
 The mobile app's Sentry adapter SHALL pass the observability port contract of packages/tooling
 with its SDK replaced at its module.
@@ -93,3 +88,4 @@ with its SDK replaced at its module.
 - **WHEN** the port contract runs against it
 - **THEN** every case passes
 - **Test:** `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "the observability port contract"
+<!-- endregion sentry -->

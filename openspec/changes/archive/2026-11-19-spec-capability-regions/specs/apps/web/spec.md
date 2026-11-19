@@ -1,23 +1,16 @@
-# apps/web/sentry — living spec
+# Delta: apps/web
 
-> **Governs:** `apps/web/src/lib/observability/createSentryObservability.adapter.ts`, `apps/web/next-sentry.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
-> **ID prefix:** `WEBSENTRY`
-> **Derived from:** `docs/observability.md`, `docs/manifest.md`, `docs/decisions/0001-pluggable-providers.md`
-> **Verified against the code:** 2026-11-19 at `58af488`
+> **Change:** `2026-11-19-spec-capability-regions`
 
-## Purpose
+The requirements below are the Sentry part of the web app, WEBSENTRY-01 to WEBSENTRY-04 of the
+removed apps/web/sentry spec under the next free IDs of this spec. They sit inside a `sentry`
+region, which the archive copies with them to the end of the requirements; the archive also adds
+the `sentry` region of the header that holds their `Governs` line and the one of the Purpose.
 
-The Sentry part of the web app, the optional error-monitoring provider of the `sentry`
-capability beside the PostHog default: the adapter of the observability port, the Sentry
-runtime configs, the instrumentation hook that loads two of them, and the file that wraps the
-Next config. The `sentry` capability claims this spec and the `web-next` prune removes it, so
-either prune takes these requirements with the files they cite. It leaves the Next config that
-applies each capability's file and the PostHog default to apps/web, the observability port and
-`scrubPII` to packages/core, and the port contract to packages/tooling.
+## ADDED Requirements
 
-## Requirements
-
-### Requirement: WEBSENTRY-01 — The Sentry adapter scrubs PII and stays silent without a DSN
+<!-- region sentry -->
+### Requirement: WEB-81 — The Sentry adapter scrubs PII and stays silent without a DSN
 
 The web app's Sentry adapter, the optional provider of the `sentry` capability, SHALL send
 errors, messages, breadcrumbs and the user to Sentry only when `NEXT_PUBLIC_SENTRY_DSN` is set,
@@ -48,7 +41,7 @@ passing every context, breadcrumb payload and user through `scrubPII` from packa
 - **THEN** Sentry receives nothing
 - **Test:** `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "all methods no-op when the DSN is absent"
 
-### Requirement: WEBSENTRY-02 — The Sentry SDK scrubs every event in every runtime
+### Requirement: WEB-82 — The Sentry SDK scrubs every event in every runtime
 
 The web app SHALL initialise Sentry in the browser, Node and edge runtimes, the last two loaded by
 the instrumentation hook, enabled only when `NEXT_PUBLIC_SENTRY_DSN` is set, with every event and
@@ -63,11 +56,11 @@ breadcrumb passed through `scrubPII` before sending.
 - **THEN** the personal data is redacted
 - **Test:** Not covered — no test loads the Sentry config files; `scripts/verify-security-static.mjs` only checks that the client and server configs name `scrubPII` at `beforeSend`.
 
-### Requirement: WEBSENTRY-03 — The Sentry capability's file wraps the Next config
+### Requirement: WEB-83 — The Sentry capability's file wraps the Next config
 
 The web app's `next-sentry.config.ts`, which `next.config.ts` applies as it applies every
-`next-<capability>.config.ts` beside it (apps/web, WEB-53), SHALL wrap the config with
-`withSentryConfig`, silent, uploading source maps only when `SENTRY_AUTH_TOKEN` is set.
+`next-<capability>.config.ts` beside it (WEB-53), SHALL wrap the config with `withSentryConfig`,
+silent, uploading source maps only when `SENTRY_AUTH_TOKEN` is set.
 
 **Evidence:** `apps/web/next-sentry.config.ts:12-18`
 
@@ -86,7 +79,7 @@ The web app's `next-sentry.config.ts`, which `next.config.ts` applies as it appl
   without the token
 - **Test:** `apps/web/__tests__/next-sentry.config.test.ts` › "wraps the config with Sentry, uploading source maps only with a token"
 
-### Requirement: WEBSENTRY-04 — The Sentry adapter keeps the port contract
+### Requirement: WEB-84 — The Sentry adapter keeps the port contract
 
 The web app's Sentry adapter SHALL pass the observability port contract of packages/tooling with
 its SDK replaced at its module.
@@ -99,3 +92,4 @@ its SDK replaced at its module.
 - **WHEN** the port contract runs against it
 - **THEN** every case passes
 - **Test:** `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "the observability port contract"
+<!-- endregion sentry -->

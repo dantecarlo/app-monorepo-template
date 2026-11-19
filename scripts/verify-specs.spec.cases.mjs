@@ -10,6 +10,7 @@ import {
   SPEC_PATH,
   scenario,
   requirement,
+  regionedSpec,
   spec,
   change,
   context
@@ -67,6 +68,68 @@ export const SPEC_CASES = [
       }),
     expected: 1,
     name: 'a spec with no Governs line fires'
+  },
+  {
+    // The governed paths are the union of every Governs line, so one that
+    // names no path does not hide the one that does.
+    context: () =>
+      context({
+        specs: [
+          {
+            path: SPEC_PATH,
+            text: spec({
+              governs: [
+                '> **Governs:** `pkg/src/`',
+                '> **Governs:** the vendor part'
+              ].join('\n')
+            })
+          }
+        ]
+      }),
+    expected: 0,
+    name: 'a Governs line naming no path beside one naming a path fires nothing'
+  },
+  {
+    context: () =>
+      context({
+        specs: [
+          {
+            path: SPEC_PATH,
+            text: spec({
+              governs: [
+                '> **Governs:** the source',
+                '> **Governs:** the vendor part'
+              ].join('\n')
+            })
+          }
+        ]
+      }),
+    expected: 1,
+    name: 'a spec whose every Governs line names no backticked path fires'
+  },
+  {
+    context: () =>
+      context({ specs: [{ path: SPEC_PATH, text: regionedSpec() }] }),
+    expected: 0,
+    name: 'region markers between the header lines and between the requirements fire nothing'
+  },
+  {
+    context: () =>
+      context({
+        specs: [
+          {
+            path: SPEC_PATH,
+            text: regionedSpec({
+              regionRequirement: requirement({
+                id: 'PKG-02',
+                statement: 'The unit does the vendor thing.'
+              })
+            })
+          }
+        ]
+      }),
+    expected: 1,
+    name: 'a requirement inside a region is checked like any other'
   },
   {
     context: () =>
