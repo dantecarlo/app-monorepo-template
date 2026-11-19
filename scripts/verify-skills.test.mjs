@@ -8,7 +8,9 @@
 // contracts the check exports, each case differing from the healthy set by
 // one thing. The checks then run the check as a process over a scratch tree
 // in the OS temp directory, which `withScratchTree` removes, and over the
-// repository itself.
+// repository itself. It also runs the checks of the general plan's
+// validator, which the PO's close step writes through, since no other script
+// runs a test under .claude/skills/.
 //
 // Usage:
 //   node --test scripts/verify-skills.test.mjs
@@ -19,6 +21,7 @@ import { spawnSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { GENERAL_PLAN_CHECKS } from '../.claude/skills/general-plan/validate-general-plan.test.mjs'
 import { registerCases, runCases } from './gate/cases.mjs'
 import { blindGate } from './gate/gate.mjs'
 import { withScratchTree } from './gate/scratch.mjs'
@@ -1097,4 +1100,9 @@ const checks = [
   }
 ]
 
-registerCases({ cases: CASES, checks, gate, meta: import.meta })
+registerCases({
+  cases: CASES,
+  checks: [...checks, ...GENERAL_PLAN_CHECKS],
+  gate,
+  meta: import.meta
+})

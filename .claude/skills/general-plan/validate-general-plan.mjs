@@ -29,9 +29,10 @@ if (!target) {
 
 const absPath = resolve(process.cwd(), target)
 
+// A Windows checkout ends each line in CRLF; every check below reads LF.
 let raw
 try {
-  raw = readFileSync(absPath, 'utf8')
+  raw = readFileSync(absPath, 'utf8').replace(/\r\n/gu, '\n')
 } catch {
   console.error(`validate-general-plan: FAIL — cannot read file: ${target}`)
   process.exit(1)
