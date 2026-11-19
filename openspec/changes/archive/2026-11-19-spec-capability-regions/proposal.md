@@ -1,6 +1,6 @@
 # Proposal: one spec per unit holds a capability's part, with no exception
 
-> **Status:** open
+> **Status:** archived — 2026-11-19
 
 ## Why
 

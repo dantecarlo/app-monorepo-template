@@ -52,9 +52,7 @@ requirements in several specs, each linking to its neighbour by ID.
 | [packages/tokens](specs/packages/tokens/spec.md) | `TOKENS` |
 | [packages/tooling](specs/packages/tooling/spec.md) | `TOOLING` |
 | [apps/web](specs/apps/web/spec.md) | `WEB` |
-| [apps/web/sentry](specs/apps/web/sentry/spec.md) | `WEBSENTRY` |
 | [apps/mobile](specs/apps/mobile/spec.md) | `MOBILE` |
-| [apps/mobile/sentry](specs/apps/mobile/sentry/spec.md) | `MOBILESENTRY` |
 | [harness/mcp](specs/harness/mcp/spec.md) | `MCP` |
 | [harness/dependency-seams](specs/harness/dependency-seams/spec.md) | `SEAM` |
 | [harness/ticket-flow](specs/harness/ticket-flow/spec.md) | `TICKET` |
@@ -62,10 +60,9 @@ requirements in several specs, each linking to its neighbour by ID.
 Each spec's header is the one place that states what it governs, in its `Governs` lines (§ 2.2);
 this table names the spec and its prefix only, so the two cannot drift apart.
 
-A new spec adds its row here when it is written. The part of a unit that an optional capability
-adds, such as the Sentry part of apps/web, may hold its requirements in a spec of its own in that
-unit's folder (apps/web/sentry), which the capability claims and the unit's capability removes,
-so the prune of either takes them with the files they cite (`docs/manifest.md`).
+A new spec adds its row here when it is written. A unit has one spec, with no exception: the
+part an optional capability adds to it, such as the Sentry part of apps/web, sits inside that
+spec, in a region the capability owns (§ 2.2).
 
 Not specified yet: the rest of the agent harness and the validation gates, whose rules
 [docs/code-standards.md](../docs/code-standards.md) § 21 maps one by one to the check that backs

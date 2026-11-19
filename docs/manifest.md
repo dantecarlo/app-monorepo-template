@@ -90,6 +90,12 @@ and the line. No verb is added: a region owns lines the way a claim owns a
 file. Documentation quotes a marker inside a sentence, as here, never alone on
 a line, where it would open a region of its own file.
 
+A living spec holds a capability's part the same way: the part's own
+`Governs` line in a region of the header, and its requirements in a region of
+the requirements (`openspec/README.md` § 2.2). The capability's prune drops
+them, and the prune of the unit's owner removes the whole spec, so a
+capability never needs a spec of its own.
+
 ### Maintainer material
 
 The `template-maintainer` capability (group `maintainer`) owns the template's
@@ -114,8 +120,9 @@ belong to `core`: other gates are built on them.
 
 Each living spec under `openspec/specs/` is claimed by the capability whose
 unit it governs (`design-tokens`, `i18n`, `web-next`, `mobile-expo`,
-`supabase`, `cloudflare`, `sentry`), or by `sdd`, whose `onAbsent` removes
-`openspec/specs/**`.
+`supabase`, `cloudflare`), or by `sdd`, whose `onAbsent` removes
+`openspec/specs/**`. An optional capability that adds a part to a unit owns a
+region of that unit's spec, never a spec of its own (§ Regions).
 
 ### The optional Sentry capability
 
@@ -129,12 +136,6 @@ prunes Sentry unless the project picks it (`docs/observability.md`).
   `web-next` therefore claims its own root files by name instead of
   `apps/web/**`, and its `onAbsent` removes `apps/web/**`, which keeps what an
   absent `web-next` deletes.
-- It **claims** the Sentry part of each app's spec,
-  `openspec/specs/apps/web/sentry/spec.md` and
-  `openspec/specs/apps/mobile/sentry/spec.md`, which hold every requirement whose
-  tests or files the prune deletes; `web-next` and `mobile-expo` each `remove`
-  their own, so a project that keeps Sentry and drops an app loses that part.
-  The web and mobile specs cite and govern no Sentry file.
 - It **removes** what sits inside the apps' `src/`, which `web-next` and
   `mobile-expo` own: both Sentry adapters, their tests and the SDK mock.
 - It **drops** `@sentry/nextjs` and `@sentry/react-native` with `remove-dep`,
@@ -145,6 +146,13 @@ prunes Sentry unless the project picks it (`docs/observability.md`).
   `.env.example`, the `@sentry/react-native` alias of
   `apps/mobile/vitest.config.ts`, the `@sentry/cli` entry of `allowBuilds` in
   `pnpm-workspace.yaml`, and its rows of `docs/maps/global-map.md`.
+- It **owns the Sentry part of each app's spec** as regions of
+  `openspec/specs/apps/web/spec.md` and `openspec/specs/apps/mobile/spec.md`:
+  the `Governs` line of the Sentry files in the header, the paragraph of the
+  Purpose, and every requirement whose tests or files the prune deletes (WEB-81
+  to WEB-84, MOBILE-80 to MOBILE-82). The `sentry` prune drops those regions;
+  an app's prune removes its whole spec, so a project that keeps Sentry and
+  drops an app loses that app's part and no claim is left behind.
 
 `packages/tooling/src/__tests__/prune-boundary.test.mjs` proves the prune
 leaves no dangling reference. With the capability's regions dropped, it fails
