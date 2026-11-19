@@ -797,6 +797,7 @@ This table exists so that difference is visible.
 | One instruction entry       | script        | `verify:instruction-entry` — `AGENTS.md` present, no `CLAUDE.md`    |
 | No invisible Unicode        | script        | `verify:unicode-safety` — no zero-width, direction, tag or filler character in a tracked text file; the emoji joiner only in the i18n catalogs |
 | CI actions pinned           | script        | `verify:workflow-pins` — every `uses:` a full commit SHA; local and `docker://` exempt; not whether the SHA is the tag its comment names |
+| Every skill findable        | script        | `verify:skill-frontmatter` — frontmatter parses, `name` is the folder, description within 1,024 characters with `USE WHEN:` and `DO NOT USE:` (vendored skills: parse, name and length only); not whether the triggers are the right ones |
 | `AGENTS.md` fits Codex      | test          | `codex-budget:test` — CRLF bytes within `project_doc_max_bytes`     |
 | Agent projections in sync   | script        | `agent-harness:projection-check` — each projection equals its source |
 | `AGENTS.md` LAWs and Router | review        | — no gate reads a LAW, or checks that a skill has a router row      |

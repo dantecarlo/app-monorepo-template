@@ -809,8 +809,8 @@ export const gate = defineGate({
     'whether a procedure says what an agent should do, which only the ' +
     'pull request review reads; a role skill that restates the contract ' +
     'in prose rather than by copying its tables; and the other skills of ' +
-    '.claude/skills/, which do not all carry a DO NOT USE, a CONTRACT and ' +
-    'an Output yet.',
+    '.claude/skills/, which do not all carry a CONTRACT and an Output yet ' +
+    '(their name and triggers are verify-skill-frontmatter\'s).',
   run: ({ skills }) =>
     SKILL_CONTRACTS.flatMap((contract) =>
       judgeSkill({
