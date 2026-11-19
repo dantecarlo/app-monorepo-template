@@ -3,7 +3,7 @@
 > **Governs:** `apps/mobile/src`, `apps/mobile/app.json`
 > **ID prefix:** `MOBILE`
 > **Derived from:** `docs/architecture/mobile.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/observability.md`, `docs/e2e.md`, `docs/responsive.md`, `AGENTS.md`
-> **Verified against the code:** 2026-11-18 at `3b2e6c5`
+> **Verified against the code:** 2026-11-19 at `bbe5851`
 
 ## Purpose
 
@@ -356,14 +356,21 @@ active language.
 The mobile app SHALL show on the stats card the number of loaded items and the number of them
 whose status is active, and a dash in place of each number while loading.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:62-68`, `apps/mobile/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.tsx:31-40`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:62-68`, `apps/mobile/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.tsx:34-43`
 
 #### Scenario: the sample list has loaded
 
-- **GIVEN** five items, three of them active
-- **WHEN** the dashboard renders
-- **THEN** the stats card shows 5 total items and 3 active
-- **Test:** Not covered — the StatsCard tests call it with react-native aliased to a pass-through mock and assert only a non-null return
+- **GIVEN** the stats card told ten items have loaded, three of them active
+- **WHEN** it renders
+- **THEN** it shows 10 above the total items label and 3 in the active count
+- **Test:** `apps/mobile/src/screens/ItemsDashboard/components/StatsCard/__tests__/StatsCard.component.test.tsx` › "shows the total and the active count once the items have loaded"
+
+#### Scenario: the items are loading
+
+- **GIVEN** the stats card told the items are loading
+- **WHEN** it renders
+- **THEN** it shows a dash in place of the total and of the active count
+- **Test:** `apps/mobile/src/screens/ItemsDashboard/components/StatsCard/__tests__/StatsCard.component.test.tsx` › "shows a dash in place of each count while loading"
 
 ### Requirement: MOBILE-16 — Loading state of the list
 
@@ -435,9 +442,10 @@ home tab selected on mount, and mark a pressed tab as selected without navigatin
 The mobile app SHALL add no toast when a query made through useAppQuery fails, however many
 components observe it; the dashboard SHALL show the error state with its generic copy in the
 items list, in place of the items and the empty state, with a retry control that runs the items
-query again, and no result count in the list caption.
+query again, no result count in the list caption, and no count on the stats card (no total, no
+active count, and neither of their labels).
 
-**Evidence:** `apps/mobile/src/lib/query/useAppQuery.hook.ts:34`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:49`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:77-79`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:32-40`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:56-57`
+**Evidence:** `apps/mobile/src/lib/query/useAppQuery.hook.ts:34`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:49`, `apps/mobile/src/screens/ItemsDashboard/hooks/useItems.hook.ts:77-79`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:32-40`, `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/ItemsListCard.component.tsx:56-57`, `apps/mobile/src/screens/ItemsDashboard/ItemsDashboard.screen.tsx:49-54`, `apps/mobile/src/screens/ItemsDashboard/components/StatsCard/StatsCard.component.tsx:32-51`
 
 #### Scenario: a failing query
 
@@ -466,6 +474,20 @@ query again, and no result count in the list caption.
 - **WHEN** it renders
 - **THEN** it shows the error state alert with its generic title, and no result count
 - **Test:** `apps/mobile/src/screens/ItemsDashboard/components/ItemsListCard/__tests__/ItemsListCard.component.test.tsx` › "shows the error state and no result count when the items failed to load"
+
+#### Scenario: the dashboard's stats card shows no total
+
+- **GIVEN** the dashboard hook reports that the items failed to load
+- **WHEN** the dashboard renders
+- **THEN** the stats card shows its overview label, and no total, no total items label and no active count
+- **Test:** `apps/mobile/src/screens/ItemsDashboard/__tests__/ItemsDashboard.screen.test.tsx` › "shows no total on the stats card when the items failed to load"
+
+#### Scenario: the stats card shows no count
+
+- **GIVEN** the stats card told the items failed to load
+- **WHEN** it renders
+- **THEN** it shows its overview label and live pill, and no total, no dash, no total items label, no active count and no updated label
+- **Test:** `apps/mobile/src/screens/ItemsDashboard/components/StatsCard/__tests__/StatsCard.component.test.tsx` › "shows no total and no active count when the items failed to load"
 
 ### Requirement: MOBILE-21 — Error message precedence
 
@@ -1106,7 +1128,7 @@ The mobile app SHALL show on the dashboard only controls with an action: no View
 the list and no settings button in the header, since the template has no screen for either; the
 search bar and the navigation tabs remain.
 
-**Evidence:** `apps/mobile/src/screens/ItemsDashboard/ItemsDashboard.screen.tsx:49-66`, `apps/mobile/src/screens/ItemsDashboard/components/DashboardHeader/DashboardHeader.component.tsx:16`
+**Evidence:** `apps/mobile/src/screens/ItemsDashboard/ItemsDashboard.screen.tsx:49-67`, `apps/mobile/src/screens/ItemsDashboard/components/DashboardHeader/DashboardHeader.component.tsx:16`
 
 #### Scenario: the dashboard renders
 
@@ -1187,9 +1209,11 @@ binds another adapter.
 The mobile app SHALL send an error as a PostHog exception, a message as a PostHog log record at
 the mapped level, a breadcrumb as an exception step and a user as an `identify` by id, passing
 every context, breadcrumb payload and person property through the scrubPII helper of
-packages/core, and SHALL reset the PostHog identity on `setUser(null)`.
+packages/core, and SHALL reset the PostHog identity on `setUser(null)`. It SHALL make no
+`identify` call and no reset for a user whose id is not a string holding a character other than
+whitespace, so the identity PostHog holds stays as it was.
 
-**Evidence:** `apps/mobile/src/lib/observability/createPostHogObservability.adapter.ts:23-71`, `apps/mobile/src/lib/observability/createPostHogObservability.constant.ts:10-19`
+**Evidence:** `apps/mobile/src/lib/observability/createPostHogObservability.adapter.ts:14-79`, `apps/mobile/src/lib/observability/createPostHogObservability.constant.ts:10-19`
 
 #### Scenario: an error
 
@@ -1220,6 +1244,13 @@ packages/core, and SHALL reset the PostHog identity on `setUser(null)`.
 - **THEN** PostHog identifies the id with the email redacted, then resets the identity
 - **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "setUser identifies the id with the scrubbed rest"
 - **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "setUser(null) resets the identity"
+
+#### Scenario: a blank id
+
+- **GIVEN** a PostHog key, and a user identified by an id
+- **WHEN** a user whose id is empty, only whitespace or not a string is set, with an email
+- **THEN** PostHog receives no further `identify` and no reset, and the method does not throw
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "setUser identifies nobody for a blank id"
 
 ### Requirement: MOBILE-49 — The PostHog client is constructed only when it may run
 
@@ -1294,7 +1325,7 @@ captured only on native, never in a web bundle.
 The mobile app SHALL ship a PostHog adapter and a Sentry adapter that both pass the observability
 port contract of packages/tooling with their SDK replaced at its module.
 
-**Evidence:** `apps/mobile/src/lib/observability/createPostHogObservability.adapter.ts:23-71`, `apps/mobile/src/lib/observability/createSentryObservability.adapter.ts:38-77`
+**Evidence:** `apps/mobile/src/lib/observability/createPostHogObservability.adapter.ts:30-79`, `apps/mobile/src/lib/observability/createSentryObservability.adapter.ts:38-77`
 
 #### Scenario: the PostHog adapter
 
@@ -1632,7 +1663,7 @@ The mobile app's PostHog observability adapter SHALL drop every call while the a
 PostHog client, without a key and in `opt-in` mode before a grant and after a revoke, and SHALL
 hold none of them for a later client.
 
-**Evidence:** `apps/mobile/src/lib/observability/createPostHogObservability.adapter.ts:23-71`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:59-60`
+**Evidence:** `apps/mobile/src/lib/observability/createPostHogObservability.adapter.ts:30-79`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:59-60`
 
 #### Scenario: before a grant
 

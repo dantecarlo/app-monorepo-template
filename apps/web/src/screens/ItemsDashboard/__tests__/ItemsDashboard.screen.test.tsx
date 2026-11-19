@@ -136,6 +136,17 @@ describe('ItemsDashboardScreen', () => {
     expect(useToastStore.getState().toasts).toEqual([])
   })
 
+  test('shows no total on the stats card when the items query fails', async () => {
+    mockGetItems.mockRejectedValue(new Error('items down'))
+    render(<ItemsDashboardScreen />, { wrapper: createWrapper() })
+
+    await screen.findByRole('alert')
+    expect(screen.getByText('Overview')).toBeInTheDocument()
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
+    expect(screen.queryByText('total items')).not.toBeInTheDocument()
+    expect(screen.queryByText(/active/)).not.toBeInTheDocument()
+  })
+
   test('loads the items again when Try again is pressed after a failure', async () => {
     mockGetItems.mockRejectedValueOnce(new Error('items down'))
     mockGetItems.mockResolvedValueOnce(MOCK_ITEM_DTOS)

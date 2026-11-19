@@ -23,11 +23,6 @@ vi.mock('@/lib/bootstrap/splashScreen.adapter', () => ({
 vi.mock('@/lib/bootstrap/useAppBootstrap.hook', () => ({
   useAppBootstrap: mockUseAppBootstrap
 }))
-// The root layout's observability binding starts PostHog, whose package
-// cannot load under the test environment.
-vi.mock('@/lib/observability/observability.adapter', () => ({
-  observability: { captureError: vi.fn() }
-}))
 vi.mock('@/lib/supabase/authGateway.adapter', () => ({
   authGateway: {
     getSession: mockGetSession,

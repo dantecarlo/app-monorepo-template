@@ -175,7 +175,7 @@ made while there is no client is dropped.
 | `captureError`   | `captureException(error, scrubbed context)`        | PostHog error tracking groups it as an issue                                |
 | `captureMessage` | `captureLog({ body, level, attributes })`          | a message at a severity is a log record; `warning` is PostHog's `warn`      |
 | `addBreadcrumb`  | `addExceptionStep(message, scrubbed data)`         | PostHog's breadcrumb: the steps ride with the next captured exception       |
-| `setUser`        | `identify(id, scrubbed rest)`; `reset()` on `null` | the id is the distinct id; `reset` clears the identity on sign-out          |
+| `setUser`        | `identify(id, scrubbed rest)`; `reset()` on `null` | the id is the distinct id, and a blank id identifies nobody; `reset` clears the identity on sign-out          |
 
 `captureMessage` sends a PostHog log record rather than an event, so a message
 does not mint an event definition per text; the project must have PostHog Logs
