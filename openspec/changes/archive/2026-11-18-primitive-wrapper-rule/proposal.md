@@ -1,6 +1,6 @@
 # Proposal: the names a wrapper owns, imported only by that wrapper
 
-> **Status:** open
+> **Status:** archived — 2026-11-18
 
 ## Why
 
