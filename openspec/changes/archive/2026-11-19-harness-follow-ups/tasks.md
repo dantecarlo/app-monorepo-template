@@ -5,7 +5,7 @@
 - [x] T3 — F55: `scripts/eslint-config.detect.mjs` reads every app and package; the React rule set reaches every workspace that declares `react`; `packages/tokens` loses its own block and runs with the Node globals; the fixture package `fixture-react`; the identical-findings proof against the base · Requirements: SEAM-10 · Commit: c110264
 - [x] T4 — F55: `verify:allowlist-freshness` and `verify:maps` walk the apps of the workspace list, `verify:maps` takes `--root`, and `verify:tests` exempts the components and hooks of every app that declares `expo`; their cases, and a case that no gate walking the apps names one · Requirements: none · Commit: 5a88207
 - [x] T5 — `docs/harness.md` and `docs/maps/global-map.md` where they name the config, the fixtures and the gates · Requirements: none · Commit: 9b1fef4
-- [ ] T6 — `verify-report.md`, then the archive: the deltas merged into `openspec/specs/harness/dependency-seams/spec.md` and the folder moved to `openspec/changes/archive/2026-11-19-harness-follow-ups/` · Requirements: none · Commit: —
+- [x] T6 — `verify-report.md`, then the archive: the deltas merged into `openspec/specs/harness/dependency-seams/spec.md` and the folder moved to `openspec/changes/archive/2026-11-19-harness-follow-ups/` · Requirements: none · Commit: fb1a60c, and the archive that moves this folder
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of

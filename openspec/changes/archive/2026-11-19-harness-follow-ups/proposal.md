@@ -1,6 +1,6 @@
 # Proposal: the dependency-seam gate fails closed, and every workspace reads the one workspace list
 
-> **Status:** open
+> **Status:** archived — 2026-11-19
 
 ## Why
 
