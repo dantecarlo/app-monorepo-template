@@ -43,7 +43,9 @@ README § 2.1) and the code behind them.
    `specs/<spec path>/spec.md` (the same path the living spec has under `openspec/specs/`). Write
    only the sections the change needs. An added ID takes the next free number of that spec; a
    modified requirement is written whole, under its existing ID. Every scenario names the test
-   that will prove it, by the path and title it will have.
+   that will prove it, by the path and title it will have. A requirement of the part an optional
+   capability adds sits inside that capability's region, in the delta as in the living spec
+   (`openspec/README.md` § 2.2).
 4. Only when the change makes an architecture decision, copy `openspec/templates/design.md`; a
    decision that outlives the change is an ADR in `docs/decisions/` instead.
 5. Copy `openspec/templates/tasks.md` to `tasks.md`: one line per task, each naming the
@@ -66,9 +68,11 @@ README § 2.1) and the code behind them.
    deltas, with its test and the result you observed. Run `pnpm validate`
    (`ATL_TEMPLATE_SELF=1 pnpm validate` in the template itself); record its exit code.
 4. **Archive**, as the last commit of the pull request: apply each delta to its living spec
-   (append ADDED, replace MODIFIED, delete REMOVED; never reuse a removed ID), fill the evidence
-   lines with the code's `path:line`, set the spec's `Verified against the code` line to today
-   and the sha, mark the proposal `> **Status:** archived — <date>`, and move the folder with
+   (append ADDED, with the region a delta holds it in and outside every other region; replace
+   MODIFIED in place, inside or outside its region; delete REMOVED; never reuse a removed ID),
+   fill the evidence lines with the code's `path:line`, set the spec's
+   `Verified against the code` line to today and the sha, mark the proposal
+   `> **Status:** archived — <date>`, and move the folder with
    `git mv openspec/changes/<date>-<name> openspec/changes/archive/<date>-<name>`, creating
    `openspec/changes/archive/` first when it is absent: `git mv` into a folder that does not
    exist renames the change folder to `archive` and loses its name. Confirm the moved folder
@@ -82,9 +86,10 @@ commit), on every listed spec before a release, and whenever asked (`openspec/RE
 
 1. Read `openspec/templates/spec.md`, and a living spec of the same layer when one exists. For a
    listed spec, start from the files the report names: they are what changed.
-2. Read the code the spec governs. Write each requirement from what the code does, citing the
+2. Read the code the spec governs: the paths of every `Governs` line of its header, a
+   capability's region included. Write each requirement from what the code does, citing the
    `path:line` that enforces it; a document that disagrees is an open question, never a
-   requirement.
+   requirement. A requirement inside a capability's region stays inside it.
 3. Every scenario names its test with the title copied byte for byte (`rg -F -- '<title>' <file>`
    finds it), or says `Not covered —` and why.
 4. Re-open the evidence of every requirement and confirm it; count what you checked and fix what

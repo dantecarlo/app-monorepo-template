@@ -10,7 +10,7 @@ requirements it adds, changes or removes, the tasks that built it and the checks
 The living specs document the system in parts a team can review one at a time.
 
 | Folder                            | Holds                                                                             |
-| --------------------------------- | --------------------------------------------------------------------------------- |
+| ---- | --------- |
 | `openspec/specs/`                 | The **living specs**: what the system does today, one file per architectural unit |
 | `openspec/changes/<date>-<name>/` | One **change** in flight: its proposal, spec deltas, tasks and verify report      |
 | `openspec/changes/archive/`       | Every change that finished or was discarded, with its reason                      |
@@ -43,21 +43,24 @@ requirement lives in the spec of the unit that enforces it. A change's spec delt
 where its diff lands. A flow that crosses units, such as sign-in to a guarded route, is several
 requirements in several specs, each linking to its neighbour by ID.
 
-| Spec | ID prefix | Governs |
-| ---- | --------- | ------- |
-| [packages/core](specs/packages/core/spec.md) | `CORE` | `packages/core/src` |
-| [packages/cloudflare](specs/packages/cloudflare/spec.md) | `CLOUDFLARE` | `packages/cloudflare/src` |
-| [packages/i18n](specs/packages/i18n/spec.md) | `I18N` | `packages/i18n/src` |
-| [packages/supabase](specs/packages/supabase/spec.md) | `SUPABASE` | `packages/supabase/src`, `packages/supabase/supabase/migrations`, `packages/supabase/supabase/config.toml` |
-| [packages/tokens](specs/packages/tokens/spec.md) | `TOKENS` | `packages/tokens/src`, `packages/tokens/scripts`, `packages/tokens/theme.css`, `packages/tokens/tailwind-preset.cjs` |
-| [packages/tooling](specs/packages/tooling/spec.md) | `TOOLING` | `packages/tooling/src` |
-| [apps/web](specs/apps/web/spec.md) | `WEB` | `apps/web/src`, `apps/web/next.config.ts` |
-| [apps/web/sentry](specs/apps/web/sentry/spec.md) | `WEBSENTRY` | `apps/web/src/lib/observability/createSentryObservability.adapter.ts`, `apps/web/next-sentry.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts` |
-| [apps/mobile](specs/apps/mobile/spec.md) | `MOBILE` | `apps/mobile/src`, `apps/mobile/app.json` |
-| [apps/mobile/sentry](specs/apps/mobile/sentry/spec.md) | `MOBILESENTRY` | `apps/mobile/src/lib/observability/createSentryObservability.adapter.ts` |
-| [harness/mcp](specs/harness/mcp/spec.md) | `MCP` | `.agents/contracts/mcp-servers.json`, `scripts/mcp-docs.detect.mjs`, `scripts/update-mcp-docs.mjs`, `scripts/verify-mcp-docs.mjs` |
-| [harness/dependency-seams](specs/harness/dependency-seams/spec.md) | `SEAM` | `.agents/contracts/dependencies.json`, `eslint-dependency-seam-allowlist.json`, `eslint-local-rules/dependency-seam.detect.mjs`, `eslint-local-rules/wrapped-import.detect.mjs`, `scripts/dependency-seams.detect.mjs`, `scripts/eslint-config.detect.mjs`, `scripts/verify-dependency-seams.mjs`, `eslint.config.mjs`, `eslint.rules.mjs` |
-| [harness/ticket-flow](specs/harness/ticket-flow/spec.md) | `TICKET` | `.claude/skills/ticket-flow`, `.claude/skills/po-ticket`, `.claude/skills/refine-ticket`, `.claude/skills/dev-ticket`, `.claude/skills/qa-ticket`, `.claude/skills/release-ticket`, `.claude/skills/process-intake`, `.claude/skills/general-plan`, `scripts/verify-skills.mjs`, `scripts/verify-ticket-branch.mjs` |
+| Spec | ID prefix |
+| ---- | --------- |
+| [packages/core](specs/packages/core/spec.md) | `CORE` |
+| [packages/cloudflare](specs/packages/cloudflare/spec.md) | `CLOUDFLARE` |
+| [packages/i18n](specs/packages/i18n/spec.md) | `I18N` |
+| [packages/supabase](specs/packages/supabase/spec.md) | `SUPABASE` |
+| [packages/tokens](specs/packages/tokens/spec.md) | `TOKENS` |
+| [packages/tooling](specs/packages/tooling/spec.md) | `TOOLING` |
+| [apps/web](specs/apps/web/spec.md) | `WEB` |
+| [apps/web/sentry](specs/apps/web/sentry/spec.md) | `WEBSENTRY` |
+| [apps/mobile](specs/apps/mobile/spec.md) | `MOBILE` |
+| [apps/mobile/sentry](specs/apps/mobile/sentry/spec.md) | `MOBILESENTRY` |
+| [harness/mcp](specs/harness/mcp/spec.md) | `MCP` |
+| [harness/dependency-seams](specs/harness/dependency-seams/spec.md) | `SEAM` |
+| [harness/ticket-flow](specs/harness/ticket-flow/spec.md) | `TICKET` |
+
+Each spec's header is the one place that states what it governs, in its `Governs` lines (§ 2.2);
+this table names the spec and its prefix only, so the two cannot drift apart.
 
 A new spec adds its row here when it is written. The part of a unit that an optional capability
 adds, such as the Sentry part of apps/web, may hold its requirements in a spec of its own in that
@@ -72,13 +75,25 @@ registry with its rule and gate (harness/dependency-seams) the third.
 
 ### 2.2 What a spec holds
 
-The template is [templates/spec.md](templates/spec.md). Each requirement:
+The template is [templates/spec.md](templates/spec.md). Its header names what the spec governs
+in one or more `> **Governs:**` lines, which every check reads as one list of the backticked
+paths they name; at least one line names a path. Each requirement:
 
 - has a stable ID with the spec's prefix (`CORE-03`), never reused once removed;
 - states one observable behaviour with **SHALL**;
 - cites its **evidence**: a backticked `path:line`, a migration, a policy or an ADR;
 - has one or more **scenarios** in GIVEN / WHEN / THEN, each naming the **test** that proves it,
   or saying `Not covered` and why. A scenario is the acceptance criterion; the test is its proof.
+
+**The part an optional capability adds to a unit**, such as the Sentry part of apps/web, stays
+in the unit's spec, inside a region the capability owns, written with the grammar of
+[docs/manifest.md](../docs/manifest.md) § Regions: the lines from a marker
+`<!-- region <capability> -->` to the matching `<!-- endregion <capability> -->`, each marker
+alone on its line. A region of the header holds the part's own `Governs` line, a region of the
+Purpose its paragraph, and a region of the requirements its requirements, which take the next
+free IDs of the unit's spec. The capability's prune drops those lines and the unit's prune
+removes the whole spec, so either takes the part with the files it cites, and no capability
+needs a spec of its own.
 
 A living spec is written from the code, never from intent. Behaviour the code shows and no
 document records is written as observed. A contradiction between a document and the code is an
@@ -128,7 +143,7 @@ ones are deleted and their ID is never reused.
 ## 4. Who keeps it current
 
 | Who                                    | Owns                                                                                                                                                    |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ---- | --------- |
 | **The owner**                          | Asks for the change, approves its proposal and deltas in the first commit, decides every open question, merges the pull request                         |
 | **The session that builds the change** | Sizes it, writes the change folder, builds it test first, verifies, archives; a small change that contradicts a spec stops and is resized               |
 | **The `sdd` skill's `sync` mode**      | On request: re-checks one living spec, every requirement against its evidence, and reports the drift. The nine `sdd` evals state what each mode must do |
