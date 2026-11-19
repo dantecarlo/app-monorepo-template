@@ -80,6 +80,12 @@ const SOURCE_NAMED = 'It names source of every open ticket.'
 const PO_CLOSE_STEP = '## Step 6 — Record the closed tickets'
 const CATALOG_NAMED = 'It names § Closed Ticket Catalog.'
 const ONE_PULL_REQUEST_NAMED = 'It names one pull request per close or release.'
+// The two lines that send the PO's closed ticket catalog pull request to the
+// architect's merge queue: the release form and the id form.
+const CATALOG_MESSAGES_NAMED = [
+  'It names `<release-id> catalog ready to merge, PR #<n>`.',
+  'It names `<id> catalog ready to merge, PR #<n>`.'
+]
 
 // The block a process template's Ticket identity section ships: the branch
 // check's defaults, as JSON.
@@ -216,6 +222,14 @@ const append =
   ({ lines }) =>
   ({ text }) =>
     [text, ...lines].join('\n')
+
+// Drops both catalog lines from a section, so each case proves the check
+// judges the release form and the id form apart: two findings, one per line.
+const withoutCatalogMessages = ({ text }) =>
+  CATALOG_MESSAGES_NAMED.reduce(
+    (result, line) => result.replace(line, NAMES_NOTHING),
+    text
+  )
 
 const SKILL = ({ folder }) => `${folder}/${SKILL_FILE}`
 
@@ -847,6 +861,27 @@ export const CASES = [
     }),
     expected: 1,
     name: 'a po-ticket whose close step does not open one pull request per close or release is refused'
+  },
+  {
+    context: skills({
+      edits: { [SKILL({ folder: CONTRACT })]: withoutCatalogMessages }
+    }),
+    expected: 2,
+    name: 'a ticket-flow whose messages name no catalog line is refused'
+  },
+  {
+    context: skills({
+      edits: { [SKILL({ folder: 'po-ticket' })]: withoutCatalogMessages }
+    }),
+    expected: 2,
+    name: 'a po-ticket whose close step sends no catalog message is refused'
+  },
+  {
+    context: skills({
+      edits: { [SKILL({ folder: 'refine-ticket' })]: withoutCatalogMessages }
+    }),
+    expected: 2,
+    name: 'a refine-ticket whose merge queue takes no catalog pull request is refused'
   }
 ]
 

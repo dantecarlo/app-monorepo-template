@@ -134,6 +134,7 @@ needs it, the branch. It carries no requirement, decision or file list: those li
 | `<id> bring current` | architect to the ticket's QA: a pull request of the merge queue that a merge left behind its base, or whose CI must run again |
 | `<id> merged` | architect to the ticket's QA and dev sessions; for a hotfix, CI/CD to architect, then architect to them |
 | `<id> closed` | architect to PO |
+| `<id> catalog ready to merge, PR #<n>` | PO to architect: the closed ticket catalog pull request of a single close outside a release, for the merge queue |
 | `<id> question` | any session to the owner of the answer: the PO for scope, the architect for the plan, the dev session for its build |
 | `<id> scope changed` | PO to architect |
 | `<id> version change` | architect to PO: a target version proposed on the ticket, a move or the first one of a ticket that has none |
@@ -143,6 +144,7 @@ needs it, the branch. It carries no requirement, decision or file list: those li
 | `<release-id> ready for prod` | architect to the CI/CD session |
 | `<release-id> <target> failed` | CI/CD to architect |
 | `<release-id> released` | CI/CD to architect, then architect to PO |
+| `<release-id> catalog ready to merge, PR #<n>` | PO to architect: the closed ticket catalog pull request of a release, for the merge queue |
 
 A question is asked on the ticket first (`comment`), then announced with its one line; the answer
 goes back into the ticket. A message reaches a session through whatever the runtime offers.
@@ -308,6 +310,10 @@ architect asks the owner, or merges under `low-risk`, only for the pull request 
 the queue, and only while all three conditions hold. After each merge it messages the QA of the
 next one `<id> bring current`: QA brings that branch current and re-checks it before the
 architect asks for it or merges it.
+
+The PO's closed ticket catalog pull request (`po-ticket` Step 6) joins the same queue, merged on
+the owner's word. It carries no ticket of its own, so it owes none of the three conditions and no
+QA brings it current (`refine-ticket` § Merge queue).
 
 A red CI or a conflict after Ready to merge sends the ticket back to Changes requested, with a
 comment: QA moves it, when it brings the branch current.

@@ -64,7 +64,8 @@ decision does not say; each is marked here for the owner to confirm or correct:
   merge conditions of a ticket (`ticket-flow` § Ready to merge) do not apply to it: no QA session
   holds it, none is told `<id> bring current` for it, and its merge moves no ticket to Done and
   sends no `<id> merged`. The project layer's merge gate, "the check the architect runs before
-  each merge", still runs before it.
+  each merge", still runs before it. An owner's no is commented on the ticket or release ticket
+  that links it, where the PO commented its link (added at apply, with the step that needed it).
 - **A3 — a merge that cannot run.** When the merge gate fails for it, or the host refuses its
   merge, the architect tells the owner in its own session, and the pull request waits in the
   queue. Who then brings it current is Q1.

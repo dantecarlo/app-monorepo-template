@@ -6,7 +6,8 @@ description: >
   creates it in Backlog, never without that version, and tells the architect; answers scope
   questions; confirms every move of a target version, and the first version of a technical
   ticket; and, when a ticket closes or a release ships, records each closed ticket in the
-  general plan's closed ticket catalog, the board staying the source of every open one.
+  general plan's closed ticket catalog, in a pull request it sends to the architect's merge
+  queue, the board staying the source of every open one.
   USE WHEN: "the client asked for", "new requirement", "create a ticket for", "<id> question"
   about scope, "<id> version change", "<id> closed", "<release-id> released", a PO session of the
   ticket flow starts work.
@@ -89,8 +90,15 @@ lists, and record each one as a row of docs/GENERAL_PLAN.md § Closed Ticket Cat
 `general-plan`, copied from the board: its id, title, type, target version, the day it closed and
 its pull request. Commit the rows on a branch of their own, in
 one pull request per close or release, and `comment` its link on the ticket, or on the release
-ticket. Copy no open ticket into the plan, and never refresh its pending work from the board: the
-plan points at the board.
+ticket. Once the pull request is open, message the architect its line of `ticket-flow`
+§ Messages:
+
+- for the close of a release, `<release-id> catalog ready to merge, PR #<n>`;
+- for a single close outside a release, `<id> catalog ready to merge, PR #<n>`.
+
+The pull request then joins the architect's merge queue like any other, merged on the owner's
+word (`refine-ticket` § Merge queue). Copy no open ticket into the plan, and never refresh its
+pending work from the board: the plan points at the board.
 
 ---
 
@@ -103,14 +111,15 @@ reads:
   - .claude/skills/ticket-flow/ticket.template.md
 board_operations: [create, read, comment, read version, set version]
 moves: [none → Backlog]
-messages: ['<id> new', '<id> scope changed', '<id> version set']
+messages: ['<id> new', '<id> scope changed', '<id> version set',
+  '<id> catalog ready to merge, PR #<n>', '<release-id> catalog ready to merge, PR #<n>']
 edits:
   - docs/GENERAL_PLAN.md # § Closed Ticket Catalog only, through general-plan, one pull request per close or release
 validated_by: review
 done_when: >-
   the ticket is in Backlog with the client's words verbatim and its target version set, and the
   architect was told; or, on a close or a release, each closed ticket is a row of the plan's
-  Closed Ticket Catalog in its one pull request
+  Closed Ticket Catalog in its one pull request, and the architect was told it is ready to merge
 ```
 
 ---
