@@ -1,6 +1,6 @@
 # Proposal: the architect checks the catalog pull request against the board before the owner merges it
 
-> **Status:** open
+> **Status:** archived — 2026-11-19
 
 ## Why
 
