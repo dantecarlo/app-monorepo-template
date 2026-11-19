@@ -59,6 +59,13 @@ The deliberate middle ground: a **shared base** + **everything UI-specific separ
   config applies every shared rule set to `apps/*` and `packages/*` by pattern, and each
   framework's rules to the apps that declare it, so a new app inherits them all
   ([code-standards.md §24](../code-standards.md#24-one-rule-set-for-every-app-and-package)).
+- **Every library behind an adapter** — a package outside the core stack is imported only
+  inside the seam `.agents/contracts/dependencies.json` names for it: a `ui/` block for a UI kit,
+  a `src/lib/<name>/` wrapper for an infrastructure library, a port and its `*.adapter.ts` for a
+  vendor SDK. `local/dependency-seam`, `local/wrapped-import` and `pnpm verify:dependency-seams`
+  hold it, a test mocks the project module, and the `lib` skill wraps a new library
+  ([ADR 0002](../decisions/0002-every-library-behind-an-adapter.md),
+  [code-standards.md §23](../code-standards.md#23-every-library-behind-its-seam)).
 - **Imports inside a package** — a package's sources reach each other through the `#src/` key
   of its `package.json` `"imports"`, never `@/` (it resolves in the consuming app) or a relative
   path ([code-standards.md §2](../code-standards.md#2-imports--alias-only-never-relative)).
