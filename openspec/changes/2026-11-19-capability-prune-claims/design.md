@@ -11,11 +11,18 @@ smaller than a file.
    `template.manifest.json`, or `core`. `verify:manifest:coverage` fails an entry with no owner or
    with an owner the manifest does not declare; an absent capability's prune removes every entry
    it owns, with its seam globs.
-2. **Which owner an entry names.** The capability whose prune removes the entry's package from
-   the workspace: the one that claims the only `package.json` declaring it, the one whose
-   `remove-dep` removes it from every `package.json` that declares it, or, for a workspace package
-   (`@app/*`), the one that claims its folder. A package that two capabilities' `package.json`
-   files declare, or that the root `package.json` keeps, is `core`, as is `node:*`.
+2. **Which owner an entry names, and what a `remove-dep` takes.** Ownership follows the claims,
+   as it does for files: an entry belongs to the capability that claims every `package.json`
+   declaring its package, or, for a workspace package (`@app/*`), its folder. When no capability's
+   claims alone remove the package, it belongs to the one whose claims and `remove-dep` actions
+   together remove it (`supabase` for `@supabase/supabase-js`, `e2e-playwright` for
+   `@playwright/test`). Otherwise it is `core`, as is `node:*`. The cross-cutting case is a verb,
+   as `remove` is for files: a `remove-dep` that takes a package from the last `package.json`
+   declaring it also takes the package's entries, unless their owner is `core`, which is never
+   pruned. So `@sentry/nextjs` belongs to `web-next`, whose `package.json` declares it, and the
+   `sentry` capability's `remove-dep` takes it; a web-only project that keeps Sentry loses the
+   `@sentry/react-native` entry with `mobile-expo`. Found at apply: with `sentry` as their owner,
+   the `mobile-expo` prune of this repository left the `@sentry/react-native` entry stale.
 3. **The Sentry requirements move into a spec the capability claims.** A new living spec,
    `openspec/specs/capabilities/sentry/spec.md` (prefix `SENTRY`), holds the requirements whose
    tests the `sentry` prune deletes and governs the Sentry files; the capability claims the
@@ -32,7 +39,7 @@ smaller than a file.
    inside another.
 5. **Supabase.** The `supabase` capability removes `@app/supabase` and `@supabase/supabase-js`
    from both apps' `package.json` and `@supabase/ssr` from the web app's, with `remove-dep`; it
-   owns the three registry entries.
+   owns the three registry entries, by decision 2.
 6. **`prune-boundary` judges what the prune leaves, regions dropped first.** Beside imports and
    Expo plugins it lists a kept spec that cites a file the prune deletes, a kept source file that
    names one by a relative path string, a key of a kept `.env.example` that only pruned files
@@ -44,6 +51,8 @@ smaller than a file.
 | Question              | Option                                                                  | For                                                                                                                                                                            | Against                                                                                                                                                                                            |
 | --------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Registry ownership    | **An `owner` field on each entry**                                      | One place to edit when a package is registered, so its owner is decided then; one field cannot hold two owners, so a conflict cannot be written; no second list to drift from | The registry learns the manifest's capability ids, which the coverage gate must cross-check                                                                                                        |
+| Registry owner rule   | **The claims decide; a `remove-dep` takes the entries of the package it removes last** | One owner per entry, as for files; the `sentry` entries go with either the Sentry prune or the app's prune | An entry owned by `web-next` goes with the `sentry` prune, which reads as indirect until `docs/manifest.md` says why |
+| Registry owner rule   | The capability that adds the package owns it (`sentry` owns `@sentry/*`) | Reads naturally in the registry                                                                                                                                                | A prune of the app alone (a web-only project with Sentry) leaves `@sentry/react-native` stale: two capabilities remove it, and one field holds one |
 | Registry ownership    | A manifest claim per entry (`"registry": ["@sentry/nextjs"]`)           | The manifest stays the only file that names an owner                                                                                                                           | Every package is named twice, in two files; the gate needs the unclaimed, conflict and stale-claim classes again for entries; a package registered without a claim drifts until the gate runs |
 | Spec claim            | **Move the requirements into a spec the capability claims**             | The existing file claim prunes them; the web spec's `Governs` line, one field that `scripts/specs.detect.mjs` reads whole, stops naming Sentry files; `verify:specs` unchanged | IDs WEB-29, WEB-30, MOBILE-26 and MOBILE-27 retire; the new spec's row in `openspec/README.md` § 2.1 stays after a prune, like every capability spec's row                                     |
 | Spec claim            | The capability claims the requirements' lines with regions              | The requirements stay in the spec of the unit that enforces them                                                                                                               | The `Governs` line names the five Sentry root files and cannot be split by a region, so `report:spec-drift` lists the web spec as governing missing files after every Sentry prune             |

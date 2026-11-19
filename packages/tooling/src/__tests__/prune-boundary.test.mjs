@@ -36,6 +36,28 @@ const check = ({ files, manifest }) =>
 
 const appJson = ({ plugins }) => JSON.stringify({ expo: { plugins } })
 
+const REGISTRY = '.agents/contracts/dependencies.json'
+const registryOf = (packages) =>
+  JSON.stringify({
+    packages,
+    testInfrastructure: ['{apps,packages}/*/src/test/**']
+  })
+const manifestFile = (dependencies) =>
+  JSON.stringify({ dependencies, name: 'workspace' })
+const registryLeaks = (leaks) =>
+  leaks.filter(({ kind }) => kind.startsWith('registry-'))
+
+// A kept web app and a vendor app the capability claims whole.
+const WORKSPACE_FILES = {
+  'apps/vendor/package.json': manifestFile({ 'vendor-sdk': '1' }),
+  'apps/vendor/src/client.adapter.ts': "import 'vendor-sdk'\n",
+  'apps/vendor/src/test/setup.ts': 'export {}\n',
+  'apps/web/package.json': manifestFile({ react: '1' }),
+  'apps/web/src/home.ts': "import 'react'\n",
+  'apps/web/src/test/setup.ts': 'export {}\n'
+}
+const VENDOR_APP = manifestWith({ claims: ['apps/vendor/**'] })
+const REACT = { category: 'core', name: 'react', owner: 'core' }
 test('a kept file that imports a pruned file is a leak', () => {
   const files = {
     'apps/web/next.config.ts': "import plugin from './vendor.config'\n",
@@ -173,6 +195,145 @@ test('a patched plugin list that drifts from app.json is a leak', () => {
   ])
 })
 
+test('an entry the pruned capability owns goes with its package', () => {
+  const files = {
+    ...WORKSPACE_FILES,
+    [REGISTRY]: registryOf([
+      REACT,
+      {
+        category: 'vendor',
+        name: 'vendor-sdk',
+        owner: CAPABILITY,
+        seam: ['apps/vendor/src/*.adapter.ts']
+      }
+    ])
+  }
+
+  assert.deepEqual(check({ files, manifest: VENDOR_APP }), [])
+})
+
+test('a kept entry whose package no kept package.json declares is a leak', () => {
+  const files = {
+    ...WORKSPACE_FILES,
+    'apps/web/package.json': manifestFile({
+      [REMOVED_DEPENDENCY]: '1',
+      react: '1'
+    }),
+    [REGISTRY]: registryOf([
+      REACT,
+      { category: 'core', name: 'vendor-sdk', owner: 'core' },
+      {
+        category: 'core',
+        name: `${REMOVED_DEPENDENCY}/server`,
+        owner: 'core'
+      }
+    ])
+  }
+  const manifest = manifestWith({
+    claims: ['apps/vendor/**'],
+    onAbsent: [REMOVE_DEPENDENCY]
+  })
+
+  assert.deepEqual(registryLeaks(check({ files, manifest })), [
+    {
+      file: REGISTRY,
+      kind: 'registry-stale',
+      specifier: '@vendor/sdk/server'
+    },
+    { file: REGISTRY, kind: 'registry-stale', specifier: 'vendor-sdk' }
+  ])
+})
+
+test('a remove-dep takes the entries of a package it removes from its last package.json', () => {
+  const VENDOR_ADAPTER = 'apps/web/src/vendor.adapter.ts'
+  const files = {
+    ...WORKSPACE_FILES,
+    'apps/other/package.json': manifestFile({ 'other-sdk': '1' }),
+    'apps/web/package.json': manifestFile({
+      [REMOVED_DEPENDENCY]: '1',
+      'other-sdk': '1',
+      react: '1'
+    }),
+    [VENDOR_ADAPTER]: `import '${REMOVED_DEPENDENCY}'\n`,
+    [REGISTRY]: registryOf([
+      REACT,
+      {
+        category: 'vendor',
+        name: REMOVED_DEPENDENCY,
+        owner: 'web-next',
+        seam: [VENDOR_ADAPTER]
+      },
+      {
+        category: 'vendor',
+        name: `${REMOVED_DEPENDENCY}/server`,
+        owner: 'web-next',
+        seam: [VENDOR_ADAPTER]
+      },
+      {
+        category: 'vendor',
+        name: 'other-sdk',
+        owner: 'web-next',
+        seam: []
+      }
+    ])
+  }
+  const manifest = manifestWith({
+    claims: ['apps/vendor/**', VENDOR_ADAPTER],
+    onAbsent: [
+      REMOVE_DEPENDENCY,
+      { ...REMOVE_DEPENDENCY, name: 'other-sdk' }
+    ]
+  })
+
+  assert.deepEqual(check({ files, manifest }), [])
+})
+
+test('a kept seam glob that matches no kept file is a leak', () => {
+  const files = {
+    ...WORKSPACE_FILES,
+    'apps/web/package.json': manifestFile({ react: '1', zod: '1' }),
+    [REGISTRY]: registryOf([
+      REACT,
+      {
+        category: 'infra',
+        name: 'zod',
+        owner: 'core',
+        seam: ['apps/web/src/*.ts', 'apps/vendor/src/*.adapter.ts']
+      }
+    ])
+  }
+
+  assert.deepEqual(registryLeaks(check({ files, manifest: VENDOR_APP })), [
+    {
+      file: REGISTRY,
+      kind: 'registry-seam',
+      specifier: 'zod apps/vendor/src/*.adapter.ts'
+    }
+  ])
+})
+
+test('a kept dependency whose entry the prune removes is a leak', () => {
+  const files = {
+    ...WORKSPACE_FILES,
+    'apps/web/package.json': manifestFile({
+      react: '1',
+      'vendor-sdk': '1'
+    }),
+    [REGISTRY]: registryOf([
+      REACT,
+      { category: 'core', name: 'vendor-sdk', owner: CAPABILITY }
+    ])
+  }
+
+  assert.deepEqual(registryLeaks(check({ files, manifest: VENDOR_APP })), [
+    {
+      file: 'apps/web/package.json',
+      kind: 'registry-unregistered',
+      specifier: 'vendor-sdk'
+    }
+  ])
+})
+
 // git lists the tracked files and the ones not yet added; a tracked file
 // deleted in the work tree is gone after the prune too.
 const listRepositoryFiles = () =>
@@ -184,19 +345,49 @@ const listRepositoryFiles = () =>
     .split('\0')
     .filter((path) => path !== '' && existsSync(join(REPO_ROOT, path)))
 
-test('pruning the sentry capability of this repository leaves no dangling reference', () => {
-  const manifest = JSON.parse(
-    readFileSync(join(REPO_ROOT, 'template.manifest.json'), 'utf8')
-  )
+const REPOSITORY_MANIFEST = JSON.parse(
+  readFileSync(join(REPO_ROOT, 'template.manifest.json'), 'utf8')
+)
+// A project /init pruned no longer declares the capability: nothing is
+// left to prune, so its check is skipped there, never failed.
+const declares = (capabilityId) =>
+  REPOSITORY_MANIFEST.capabilities.some(({ id }) => id === capabilityId)
+const skipUnless = (capabilityId) =>
+  declares(capabilityId)
+    ? false
+    : `the manifest no longer declares ${capabilityId}`
 
-  assert.deepEqual(
-    findPruneLeaks({
-      capabilityId: 'sentry',
-      files: listRepositoryFiles(),
-      manifest,
-      matches: matchesAny,
-      readText: ({ path }) => readFileSync(join(REPO_ROOT, path), 'utf8')
-    }),
-    []
-  )
-})
+const pruneRepository = ({ capabilityId }) =>
+  findPruneLeaks({
+    capabilityId,
+    files: listRepositoryFiles(),
+    manifest: REPOSITORY_MANIFEST,
+    matches: matchesAny,
+    readText: ({ path }) => readFileSync(join(REPO_ROOT, path), 'utf8')
+  })
+
+test(
+  'pruning the sentry capability of this repository leaves no dangling reference',
+  { skip: skipUnless('sentry') },
+  () => {
+    assert.deepEqual(pruneRepository({ capabilityId: 'sentry' }), [])
+  }
+)
+
+const REGISTRY_CHECKED = ['sentry', 'mobile-expo', 'supabase']
+
+test(
+  'pruning sentry, mobile-expo or supabase of this repository leaves the registry true',
+  { skip: !REGISTRY_CHECKED.some(declares) && 'none of them is declared' },
+  () => {
+    const leaks = REGISTRY_CHECKED.filter(declares).flatMap(
+      (capabilityId) =>
+        registryLeaks(pruneRepository({ capabilityId })).map((leak) => ({
+          capabilityId,
+          ...leak
+        }))
+    )
+
+    assert.deepEqual(leaks, [])
+  }
+)

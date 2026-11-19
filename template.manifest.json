@@ -253,6 +253,36 @@
             "apps/web/src/app/SupabaseProviders.tsx",
             "apps/web/src/lib/supabase/**"
           ]
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/web/package.json",
+          "name": "@app/supabase",
+          "scope": "dependencies"
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/web/package.json",
+          "name": "@supabase/ssr",
+          "scope": "dependencies"
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/web/package.json",
+          "name": "@supabase/supabase-js",
+          "scope": "dependencies"
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/mobile/package.json",
+          "name": "@app/supabase",
+          "scope": "dependencies"
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/mobile/package.json",
+          "name": "@supabase/supabase-js",
+          "scope": "dependencies"
         }
       ]
     },

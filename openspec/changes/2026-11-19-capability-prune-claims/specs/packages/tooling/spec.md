@@ -7,10 +7,12 @@
 ### Requirement: TOOLING-17 — The registry a prune leaves stays true
 
 The tooling package SHALL drop, for one capability of the manifest, every entry of
-`.agents/contracts/dependencies.json` whose `owner` is that capability, and list every kept entry
-whose package no kept `package.json` declares once its `remove-dep` actions apply, every seam
-glob of a kept entry that matches no kept file under `apps/` or `packages/`, and every dependency
-a kept `package.json` still declares that no kept entry names.
+`.agents/contracts/dependencies.json` whose `owner` is that capability, and every entry not owned
+by `core` whose package a `remove-dep` of the capability takes from the last kept `package.json`
+declaring it; and list every kept entry whose package no kept `package.json` declares once the
+`remove-dep` actions apply, every seam glob of a kept entry that matches no kept file under
+`apps/` or `packages/`, and every dependency a kept `package.json` still declares that no kept
+entry names.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -22,10 +24,19 @@ a kept `package.json` still declares that no kept entry names.
 - **THEN** nothing is listed for the entry
 - **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "an entry the pruned capability owns goes with its package"
 
+#### Scenario: a remove-dep takes the entry
+
+- **GIVEN** entries owned by another capability for a package and its subpath that a `remove-dep`
+  takes from the last `package.json` declaring it, and one for a package another kept
+  `package.json` still declares
+- **WHEN** the prune is checked
+- **THEN** nothing is listed: the first two go with the dependency and the third stays
+- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a remove-dep takes the entries of a package it removes from its last package.json"
+
 #### Scenario: a kept entry whose package goes
 
-- **GIVEN** a kept entry whose package only a pruned `package.json` declares, or a `remove-dep`
-  removes
+- **GIVEN** a `core` entry whose package only a pruned `package.json` declares, or a
+  `remove-dep` removes
 - **WHEN** the prune is checked
 - **THEN** the registry is listed with the entry
 - **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a kept entry whose package no kept package.json declares is a leak"

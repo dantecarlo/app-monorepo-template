@@ -258,7 +258,7 @@
     {
       "name": "@sentry/nextjs",
       "category": "vendor",
-      "owner": "sentry",
+      "owner": "web-next",
       "seam": [
         "apps/web/src/lib/observability/*.adapter.ts",
         "apps/web/instrumentation.ts",
@@ -270,7 +270,7 @@
     {
       "name": "@sentry/react-native",
       "category": "vendor",
-      "owner": "sentry",
+      "owner": "mobile-expo",
       "seam": ["apps/mobile/src/lib/observability/*.adapter.ts"],
       "note": "An optional capability (decision 53)."
     },
