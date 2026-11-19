@@ -1034,19 +1034,21 @@ should follow the same rules".
 **The rule sets live in `eslint.rules.mjs`; `eslint.config.mjs` only says where each applies.** A
 rule set more than one workspace shares applies by pattern, never by naming a workspace. What a
 framework forces applies to every app whose `package.json` declares that framework, in any
-dependency field; `scripts/eslint-config.detect.mjs` reads the `package.json` of every folder
-under `apps/` once, when the config loads, and a manifest it cannot parse fails the load, naming
-the file.
+dependency field, and the React set to every app and package that declares `react`;
+`scripts/eslint-config.detect.mjs` reads the `package.json` of every workspace under `apps/` and
+`packages/` once, when the config loads, and a manifest it cannot parse fails the load, naming
+the file. The gates that walk the apps (`verify:allowlist-freshness`, `verify:maps`,
+`verify:tests`) read the same workspace list.
 
 | Rule set                                                        | Applies to                                                      |
 | --------------------------------------------------------------- | --------------------------------------------------------------- |
 | `BASE_RULES`, `FILENAME_RULES`                                  | every TypeScript file of `apps/*/**` and `packages/*/**`        |
-| The Node globals of a package                                   | `packages/*/**`, `packages/tokens` excepted (below)             |
+| The Node globals of a package                                   | `packages/*/**`                                                 |
 | `UI_FOLDER_CASING_RULES` (§12)                                  | every app: the block folders of its `src/components/ui/`        |
 | The styling pillar (§22)                                        | every app: `apps/*/src/**`                                      |
 | Logic-in-hook, suffix contract, adapter purity, test overrides  | every file of their suffix or folder (`**/*.component.tsx`, …)  |
 | `local/dependency-seam` (§23)                                   | every JavaScript and TypeScript file of `apps/*/**` and `packages/*/**` |
-| `REACT_RULES`, the JSX parser, the browser globals              | every app that declares `react`                                 |
+| `REACT_RULES`, the JSX parser, the browser globals              | every app and package that declares `react`                     |
 | The Next.js block: `@next/next` rules, Node globals, the App Router and middleware file names, async server screens, `next-env.d.ts` ignored | every app that declares `next` |
 | The Expo block: `expo` rules, React Native globals, the jsx-a11y relaxations, the Expo Router file names | every app that declares `expo` |
 
@@ -1054,9 +1056,6 @@ the file.
 
 - `packages/core/src`: `local/core-import-boundary`, the domain layer importing nothing external.
 - `packages/tokens/src`: literal values are allowed, since the tokens are their source.
-- `packages/tokens`: the browser globals, the JSX parser and the React rule set, which the package
-  carries without declaring `react`. **Open question:** whether it should run with the Node globals
-  of every other package and drop the React set; no finding changes either way today.
 - `packages/supabase/src/types.ts`: ignored, since its generator owns its key order.
 - `packages/tooling`: the Node globals of its `.mjs` modules, shared with the root scripts.
 
@@ -1071,9 +1070,9 @@ under `eslint-local-rules/` names an app.
 > React, filename and folder, styling pillar, logic-in-hook, suffix contract, dependency seam),
 > and one app declaring `next` and one declaring `expo` get their framework's block
 > (`pnpm verify:lint-rules:test`). A case also fails when the config or a rule names a folder
-> under `apps/`. **Not covered:** a package that declares `react` gets the shared rules, not the
-> React set; and the gates that walk the two app folders by name
-> (`scripts/verify-allowlist-freshness.mjs`, `scripts/verify-maps.mjs`) are not ESLint blocks.
+> under `apps/`. **Not covered:** a package that declares `next` or `expo` gets no framework
+> block, by design; and a React Native package gets the React set without the Expo block's
+> jsx-a11y relaxations.
 
 ---
 
