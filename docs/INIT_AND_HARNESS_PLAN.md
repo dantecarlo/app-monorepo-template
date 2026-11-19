@@ -105,16 +105,18 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 - F.8 unit 6: `next/navigation` behind `useAppRouter` of `apps/web/src/lib/routing/` and `next/cache` behind `applyCachePolicy` of `apps/web/src/lib/cache/`, tests mocking `@/lib/routing` through one shared double (#49); and the mobile root layout booted through `useAppBootstrap` of `apps/mobile/src/lib/bootstrap/`, every theme through `applyTheme` (#50).
 - F.8 unit 7: `createSupabaseClient` and `createSupabaseServerClient` return the opaque `BackendClientType`, which only `packages/supabase/src/backendClient.adapter.ts` unwraps, and mobile gets its own `lib/supabase/authGateway.adapter.ts`; the allowlist is empty (#50).
 - The board is the source of every open ticket: the general plan keeps a closed ticket catalog the PO writes in one pull request per close or release, and names no open ticket (parity with Certifipago #879; this change).
+- F.8 unit 8: `local/wrapped-import`, the rule for the names a wrapper owns: a `react-native` primitive a `ui/` block is named after passes only under that block, the blocks read from disk, and an `expo-router` hook or its `router` only under `lib/routing`; every mobile text renders through `ui/Text`, with the rendered output recorded unchanged (#52).
+- F.8 unit 9: ADR 0002, every library behind an adapter; the `lib` skill as the one procedure for wrapping a library; the two `AGENTS.md` LAW sentences and the `docs/code-standards.md` §21 rows that name `local/dependency-seam`, `local/wrapped-import` and `verify:dependency-seams`; the parity row of F.8 for Certifipago (this change).
 - F.2, the Supabase hardening (#21; the native review did not fit its context budget, and the owner chose to merge on the independent verifier).
 - The ticket flow: seven skills (`ticket-flow`, `po-ticket`, `refine-ticket`, `dev-ticket`, `qa-ticket`, `release-ticket`, `process-intake`), the board and the deploy targets as adapters, the release stage and the target version, the pure `verify:ticket-branch` check, and the living spec harness/ticket-flow (this change; Certifipago adopts it with its own project layer).
 - The ticket flow's adoption fixes: the merge policy (#34), the project's ticket identity and neutral examples (#37), and the QA checkout detached at the remote branch, a branch brought current by merging its base, and a hotfix held at Ready to merge and shipped only as its release (this change).
 
 **In flight:** none.
 
-**Next:** F.8 units 8 (the primitive-wrapper rule and the `expo-router` hooks behind `lib/routing`) and 9 (the docs, the ADR, the `lib` skill and the parity hand-off) (decisions 51 and 52).
+**Next:** F.11 and the rest of Stage F.
 
 **Pending, in order:**
-- F.8 and F.11 of Stage F, and the small follow-ups F43, F44 and F48 to F50.
+- F.11 of Stage F, and the small follow-ups F43, F44, F49 and F50.
 - F33, when the owner decides it.
 - Step 3.2 part B: `gradedBy`, `sdd-steward` and `verify:router-coverage` (F27).
 - Step 3.3, then Stages 4 to 7.
@@ -273,13 +275,13 @@ F.8 work units, in order:
 1. the registry, the rule and the gate, with the frozen allowlist (done: 143 frozen imports, by unit: 2 → 82, 3 → 8, 4 → 11, 5 → 20, 6 → 20, 7 → 2);
 1b. every ESLint block applied to `apps/*` and `packages/*` by pattern, not per app (decision 52), so the fixture app inherits every rule, not only `local/dependency-seam` (done: framework blocks by what each app declares; identical findings before and after);
 2. the i18n seam in both apps (done: one `IAppTranslator` in `@app/i18n`, the 82 frozen imports migrated, the allowlist from 143 to 61);
-3. the query seam's own types and provider;
-4. `createAppStore` and the key-value storage port;
-5. the `ui/` leaks (AsyncBoundary, variant unions, Gradient, StatusBar, Image);
-6. `lib/bootstrap`, `lib/cache` and `lib/routing`;
-7. the opaque Supabase client;
-8. the primitive-wrapper rule;
-9. an empty allowlist and the docs, ADR and `lib` skill, then the parity hand-off to Certifipago.
+3. the query seam's own types and provider (done: project-owned option and result types, `AppQueryProvider`, `useInvalidateAppQuery` and `useIsAppMutating`, #48);
+4. `createAppStore` and the key-value storage port (done: #48; the allowlist from 61 to 42);
+5. the `ui/` leaks (AsyncBoundary, variant unions, Gradient, StatusBar, Image) (done: #47; with units 3 and 4, the allowlist at 22);
+6. `lib/bootstrap`, `lib/cache` and `lib/routing` (done: web #49, mobile #50; mobile calls no `expo-router` hook, so its `lib/routing` waits for the first one);
+7. the opaque Supabase client (done: `BackendClientType`, #50; the allowlist empty);
+8. the primitive-wrapper rule (done: `local/wrapped-import` holds the `react-native` primitives a `ui/` block is named after, read from disk, and the `expo-router` hooks; every mobile text through `ui/Text`; the allowlist stays empty);
+9. an empty allowlist and the docs, ADR and `lib` skill, then the parity hand-off to Certifipago (done: the allowlist empty since unit 7, `docs/decisions/0002-every-library-behind-an-adapter.md`, the `lib` skill as the one procedure, and the F.8 row of the Template → Certifipago parity ledger).
 
 ### Stage 3 — the harness core (T2: P1–P2)
 
@@ -459,6 +461,7 @@ master after these merges.
 | `init-project` renames under `scripts/`; the web smoke works on Windows | #9, this change | none: Certifipago has no `/init`, and its smoke scripts already use `process-tree` | not applicable | closed |
 | `scrubPII` walks each object once; `sanitizeQueryKey` keeps only the segments the caller registers (`2026-11-14-scrub-and-query-key`) | this change | Certifipago's `scrubValue` walks a shared object once per path, which ran a React DOM node in a console breadcrumb out of memory, and its `sanitizeQueryKey` keeps any letters-only segment | Arquitecto, K11 | open |
 | `verify:instruction-entry`, a gate of its own that refuses a `CLAUDE.md` and needs `AGENTS.md` and `README.md` (`2026-11-14-agents-router`) | this change | none needed: Certifipago's `verify:doc-links` refuses the same names; it may move the check into a gate of its own when it converges on the core (7.1) | not applicable | closed |
+| F.8, every library behind an adapter (decisions 51, 52 and 58): the registry `.agents/contracts/dependencies.json`, `local/dependency-seam`, `local/wrapped-import` and `pnpm verify:dependency-seams`, the dependency-seam allowlist that only shrinks and ships empty, every seam (`lib/i18n`, `lib/query`, `lib/store`, `lib/storage`, `lib/theme`, `lib/bootstrap`, `lib/routing`, `lib/cache`, `lib/supabase`, `lib/observability`, the `ui/` blocks, the opaque `BackendClientType`), ADR 0002 and the `lib` skill | #40, #43, #44, #47 to #50, #52 and this change | Certifipago's `local/view-import-boundary` covers views only, lets `next-intl`, `react-i18next`, `expo-*` and `react-native-*` pass as platform, exempts type-only imports, has no single registry and no `package.json` check, and its tests mock the vendors; it adopts the registry, the two rules, the gate and the seams | the Arquitecto's adoption program | open |
 
 ### Follow-ups the living specs found (2026-11-14)
 
@@ -525,6 +528,7 @@ defects behind them, for changes of their own.
 | F56 | both apps, privacy | the native review of the deferred PostHog client (F54), two advisory findings left open: on mobile, a revoke drops the client without shutting it down, so its flush timer lives on beside the client a later grant builds, while `reset` keeps the event queue, so a `shutdown` would send it after the revoke; on web, one held call that throws when the SDK loads loses the calls after it and rejects the start | small; decide what a revoke does with the queued events, then shut the dropped client down, and run each held call on its own |
 | F57 | packages/supabase | `test:db` (`supabase test db --linked`) runs pgTAP against the linked project's applied schema, so the tests of a branch's new migration fail until `db push`; Certifipago #878 applies the pending migrations inside the rolled-back transaction instead | a change of its own |
 | F58 | harness | no ticket-flow message tells the architect about the PO's closed ticket catalog pull request, so nothing routes it to the merge queue (found by `2026-11-18-board-is-the-source`, its Q1; Certifipago has the same gap) | small; the owner decides the message |
+| F59 | harness | with F.8 closed and the allowlist empty, `verify:dependency-seams` still accepts a new allowlist entry whose reason names an F.8 unit from 2 to 8 while its import breaks the rule, so only review keeps the allowlist empty (found by F.8 unit 9) | small; the owner decides whether the gate refuses every entry |
 
 ---
 

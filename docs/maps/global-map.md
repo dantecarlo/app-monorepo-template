@@ -101,6 +101,12 @@ origin-guard), and Supabase (backend) are the DEFAULT adapters, each behind a
 `@app/core` port and swappable via a one-line composition-root edit. See
 [../decisions/0001-pluggable-providers.md](../decisions/0001-pluggable-providers.md).
 
+**Every library behind an adapter.** Every other package outside the core stack is imported
+only inside the seam `.agents/contracts/dependencies.json` names for it (a `ui/` block, a
+`src/lib/<name>/` wrapper, or a port and its adapter), held by `local/dependency-seam`,
+`local/wrapped-import` and `pnpm verify:dependency-seams`, and wrapped through the `lib` skill.
+See [../decisions/0002-every-library-behind-an-adapter.md](../decisions/0002-every-library-behind-an-adapter.md).
+
 **Backend provider swap.** `@app/core` defines the ports; `@app/supabase` is the
 wired default adapter. To replace Supabase: (1) implement `IAuthGateway`,
 `IBackendClientProvider`, and `IServiceErrorMapper` in a new adapter package;
@@ -452,7 +458,7 @@ only — enforced by ESLint and by `node scripts/verify-maps.mjs`.
 | Image posture doc       | `docs/images.md`                                                                                                                                                                          | Image cost/hotlink/scrape protection — edge cache, signed URLs, WAF rules, bot mode           |
 | Code standards          | `docs/code-standards.md`                                                                                                                                                                  | Every binding coding rule and the §21 rule-to-validation ledger                               |
 | Architecture docs       | `docs/architecture/shared.md`, `docs/architecture/web.md`, `docs/architecture/mobile.md`                                                                                                  | The sharing model and the per-app fractal structure                                           |
-| Decision records        | `docs/decisions/`                                                                                                                                                                         | ADRs, starting with `0001-pluggable-providers.md`                                             |
+| Decision records        | `docs/decisions/`                                                                                                                                                                         | ADRs: `0001-pluggable-providers.md` and `0002-every-library-behind-an-adapter.md`             |
 | Screen map template     | `docs/maps/screen-map.template.md`                                                                                                                                                        | Starting point for a per-screen map                                                           |
 | E2E and responsive docs | `docs/e2e.md`, `docs/responsive.md`                                                                                                                                                       | The Playwright harness and the responsive viewport matrix                                     |
 | Infrastructure doc      | `docs/infrastructure.md`                                                                                                                                                                  | Hosting, edge security, origin lock, cache rules                                              |
