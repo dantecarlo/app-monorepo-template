@@ -71,6 +71,9 @@ const SCOPE_MARK = '@'
 const PATH_SEPARATOR = '/'
 const SCOPED_NAME_PARTS = 2
 const RELATIVE_PATH_LITERAL = /(['"`])(\.{1,2}\/[^'"`\n$]+)\1/gu
+const LIVING_SPEC = /^openspec\/specs\/.+\/spec\.md$/u
+const BACKTICKED = /`(?<path>[^`\n]+)`/gu
+const LINE_SUFFIX = /:\d+(?:-\d+)?$/u
 const ENV_EXAMPLE = '.env.example'
 const ENV_KEY_LINE = /^(?<key>[A-Z][A-Z0-9_]*)=/u
 const ENV_READ =
@@ -165,6 +168,19 @@ const envLeaksOf = ({ kept, pruned, readKept, readText }) => {
         .map((specifier) => ({ file, kind: 'env', specifier }))
     )
 }
+
+// Every file a kept living spec cites in backticks that the prune deletes:
+// a scenario's test, an evidence path:line, a governed path.
+const specLeaksOf = ({ file, pruned, text }) =>
+  [
+    ...new Set(
+      [...text.matchAll(BACKTICKED)].map(({ groups }) =>
+        groups.path.replace(LINE_SUFFIX, '')
+      )
+    )
+  ]
+    .filter((path) => pruned.has(path))
+    .map((specifier) => ({ file, kind: 'spec', specifier }))
 
 const pluginName = (entry) => (Array.isArray(entry) ? entry[0] : entry)
 
@@ -366,6 +382,9 @@ export const findPruneLeaks = ({
     .filter((file) => SOURCE_FILE.test(file))
     .flatMap((file) => pathLeaksOf({ file, pruned, text: readKept(file) }))
   const envLeaks = envLeaksOf({ kept, pruned, readKept, readText })
+  const specLeaks = kept
+    .filter((file) => LIVING_SPEC.test(file))
+    .flatMap((file) => specLeaksOf({ file, pruned, text: readKept(file) }))
   const registryLeaks = registryLeaksOf({ capability, kept, readKept })
 
   return [
@@ -373,6 +392,7 @@ export const findPruneLeaks = ({
     ...pathLeaks,
     ...pluginLeaks,
     ...envLeaks,
+    ...specLeaks,
     ...registryLeaks
   ].sort(byFileThenSpecifier)
 }

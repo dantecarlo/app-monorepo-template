@@ -386,6 +386,58 @@ test('a kept .env.example key that only pruned files read is a leak', () => {
   ])
 })
 
+const KEPT_SPEC = 'openspec/specs/apps/web/spec.md'
+const VENDOR_TEST = 'apps/web/__tests__/vendor.config.test.ts'
+const testLine = (path) => `- **Test:** \`${path}\` › "a title"`
+
+test('a kept spec that cites a pruned test is a leak', () => {
+  const files = {
+    'apps/web/__tests__/next.config.test.ts': 'export {}\n',
+    [KEPT_SPEC]: [
+      testLine(VENDOR_TEST),
+      testLine('apps/web/__tests__/next.config.test.ts'),
+      testLine(VENDOR_TEST)
+    ].join('\n'),
+    'openspec/specs/capabilities/vendor/spec.md': testLine(VENDOR_TEST),
+    [VENDOR_TEST]: 'export {}\n'
+  }
+  const manifest = manifestWith({
+    claims: [VENDOR_TEST, 'openspec/specs/capabilities/vendor/spec.md']
+  })
+
+  assert.deepEqual(check({ files, manifest }), [
+    { file: KEPT_SPEC, kind: 'spec', specifier: VENDOR_TEST }
+  ])
+})
+
+test('a kept spec that governs or cites a pruned file as evidence is a leak', () => {
+  const files = {
+    [KEPT_SPEC]: [
+      '> **Governs:** `apps/web/src`, `apps/web/vendor.config.ts`',
+      '**Evidence:** `apps/web/src/vendor.adapter.ts:3-9`, `apps/web/src/a.ts:2`'
+    ].join('\n'),
+    'apps/web/src/a.ts': 'export {}\n',
+    'apps/web/src/vendor.adapter.ts': 'export {}\n',
+    'apps/web/vendor.config.ts': 'export default 1\n'
+  }
+  const manifest = manifestWith({
+    claims: ['apps/web/vendor.config.ts', 'apps/web/src/vendor.adapter.ts']
+  })
+
+  assert.deepEqual(check({ files, manifest }), [
+    {
+      file: KEPT_SPEC,
+      kind: 'spec',
+      specifier: 'apps/web/src/vendor.adapter.ts'
+    },
+    {
+      file: KEPT_SPEC,
+      kind: 'spec',
+      specifier: 'apps/web/vendor.config.ts'
+    }
+  ])
+})
+
 // A marker is built with join: alone on a line of this file it would be a
 // region of this file.
 const regionOf = ({ lines, owner }) =>
