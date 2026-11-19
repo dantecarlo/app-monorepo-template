@@ -529,6 +529,8 @@ defects behind them, for changes of their own.
 | F57 | packages/supabase | `test:db` (`supabase test db --linked`) runs pgTAP against the linked project's applied schema, so the tests of a branch's new migration fail until `db push`; Certifipago #878 applies the pending migrations inside the rolled-back transaction instead | a change of its own |
 | F58 | harness | no ticket-flow message tells the architect about the PO's closed ticket catalog pull request, so nothing routes it to the merge queue (found by `2026-11-18-board-is-the-source`, its Q1; Certifipago has the same gap) | done: this change |
 | F59 | harness | with F.8 closed and the allowlist empty, `verify:dependency-seams` still accepts a new allowlist entry whose reason names an F.8 unit from 2 to 8 while its import breaks the rule, so only review keeps the allowlist empty (found by F.8 unit 9) | small; the owner decides whether the gate refuses every entry |
+| F60 | harness | the ticket flow has no outcome for a ticket dropped or superseded instead of delivered: the closed ticket catalog records every Closed ticket as delivered work (found by Certifipago, whose PO closed TASK-i18n-seam as superseded) | the owner decides: an outcome (delivered or dropped) in the catalog row, or a state of its own |
+| F61 | harness | nothing says who brings the PO's closed ticket catalog pull request current when it conflicts with its base (the open question of `2026-11-18-catalog-merge-message`) | small; the owner decides |
 
 ---
 
