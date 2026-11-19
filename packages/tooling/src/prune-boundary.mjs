@@ -70,6 +70,11 @@ const CORE_OWNER = 'core'
 const SCOPE_MARK = '@'
 const PATH_SEPARATOR = '/'
 const SCOPED_NAME_PARTS = 2
+const RELATIVE_PATH_LITERAL = /(['"`])(\.{1,2}\/[^'"`\n$]+)\1/gu
+const ENV_EXAMPLE = '.env.example'
+const ENV_KEY_LINE = /^(?<key>[A-Z][A-Z0-9_]*)=/u
+const ENV_READ =
+  /\bprocess\.env(?:\.(?<dotted>[A-Z][A-Z0-9_]*)\b|\[\s*['"](?<quoted>[A-Z][A-Z0-9_]*)['"]\s*\])/gu
 
 const asArray = (value) => (Array.isArray(value) ? value : [])
 
@@ -112,6 +117,54 @@ const importLeaksOf = ({ dependencies, file, pruned, text }) =>
       return candidatesOf({ base }).some((path) => pruned.has(path))
     })
     .map((specifier) => ({ file, kind: 'import', specifier }))
+
+// A quoted relative path outside an import still names a file: a Vitest
+// alias, a path.resolve, a config that reads a file by name.
+const pathLeaksOf = ({ file, pruned, text }) => {
+  const imports = new Set(specifiersOf({ text }))
+  const literals = [...text.matchAll(RELATIVE_PATH_LITERAL)].map(
+    (match) => match[2]
+  )
+  return [...new Set(literals)]
+    .filter((literal) => !imports.has(literal))
+    .filter((literal) =>
+      candidatesOf({ base: join(dirname(file), literal) }).some((path) =>
+        pruned.has(path)
+      )
+    )
+    .map((specifier) => ({ file, kind: 'path', specifier }))
+}
+
+const envReadsOf = ({ text }) =>
+  [...text.matchAll(ENV_READ)].map(
+    ({ groups }) => groups.dotted ?? groups.quoted
+  )
+
+const envKeysOf = ({ text }) =>
+  text
+    .split('\n')
+    .map((line) => ENV_KEY_LINE.exec(line.trim())?.groups?.key)
+    .filter(Boolean)
+
+// A key of a kept .env.example that a pruned file reads and no kept file
+// does: the setting of a provider the prune removed.
+const envLeaksOf = ({ kept, pruned, readKept, readText }) => {
+  const readsOf = (paths, read) =>
+    new Set(
+      paths
+        .filter((path) => SOURCE_FILE.test(path))
+        .flatMap((path) => envReadsOf({ text: read(path) }))
+    )
+  const prunedReads = readsOf([...pruned], (path) => readText({ path }))
+  const keptReads = readsOf(kept, readKept)
+  return kept
+    .filter((file) => posix.basename(file) === ENV_EXAMPLE)
+    .flatMap((file) =>
+      envKeysOf({ text: readKept(file) })
+        .filter((key) => prunedReads.has(key) && !keptReads.has(key))
+        .map((specifier) => ({ file, kind: 'env', specifier }))
+    )
+}
 
 const pluginName = (entry) => (Array.isArray(entry) ? entry[0] : entry)
 
@@ -309,9 +362,17 @@ export const findPruneLeaks = ({
       })
     )
 
+  const pathLeaks = kept
+    .filter((file) => SOURCE_FILE.test(file))
+    .flatMap((file) => pathLeaksOf({ file, pruned, text: readKept(file) }))
+  const envLeaks = envLeaksOf({ kept, pruned, readKept, readText })
   const registryLeaks = registryLeaksOf({ capability, kept, readKept })
 
-  return [...importLeaks, ...pluginLeaks, ...registryLeaks].sort(
-    byFileThenSpecifier
-  )
+  return [
+    ...importLeaks,
+    ...pathLeaks,
+    ...pluginLeaks,
+    ...envLeaks,
+    ...registryLeaks
+  ].sort(byFileThenSpecifier)
 }

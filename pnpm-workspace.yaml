@@ -17,7 +17,9 @@ shellEmulator: true
 # install on one it has not been told about. pnpm 9 ran all six.
 allowBuilds:
   '@parcel/watcher': true
+  # region sentry
   '@sentry/cli': true
+  # endregion sentry
   '@swc/core': true
   core-js: false
   msw: true

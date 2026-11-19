@@ -335,6 +335,57 @@ test('a kept dependency whose entry the prune removes is a leak', () => {
   ])
 })
 
+test('a kept file that names a pruned file by a relative path is a leak', () => {
+  const files = {
+    'apps/mobile/src/test/mocks/kept.ts': 'export {}\n',
+    'apps/mobile/src/test/mocks/vendor.ts': 'export {}\n',
+    'apps/mobile/vitest.config.ts': [
+      "import mock from './src/test/mocks/vendor'",
+      'const alias = {',
+      "  kept: path.resolve(__dirname, './src/test/mocks/kept.ts'),",
+      "  vendor: path.resolve(__dirname, './src/test/mocks/vendor.ts')",
+      '}'
+    ].join('\n')
+  }
+  const manifest = manifestWith({
+    claims: ['apps/mobile/src/test/mocks/vendor.ts']
+  })
+
+  assert.deepEqual(check({ files, manifest }), [
+    {
+      file: 'apps/mobile/vitest.config.ts',
+      kind: 'import',
+      specifier: './src/test/mocks/vendor'
+    },
+    {
+      file: 'apps/mobile/vitest.config.ts',
+      kind: 'path',
+      specifier: './src/test/mocks/vendor.ts'
+    }
+  ])
+})
+
+test('a kept .env.example key that only pruned files read is a leak', () => {
+  const files = {
+    'apps/web/.env.example': [
+      '# Vendor keys',
+      'VENDOR_DSN=',
+      'KEPT_KEY=1',
+      'UNREAD_KEY='
+    ].join('\n'),
+    'apps/web/src/kept.ts': 'export const k = process.env.KEPT_KEY\n',
+    'apps/web/vendor.config.ts': [
+      'export const dsn = process.env.VENDOR_DSN',
+      "export const kept = process.env['KEPT_KEY']"
+    ].join('\n')
+  }
+  const manifest = manifestWith({ claims: ['apps/web/vendor.config.ts'] })
+
+  assert.deepEqual(check({ files, manifest }), [
+    { file: 'apps/web/.env.example', kind: 'env', specifier: 'VENDOR_DSN' }
+  ])
+})
+
 // A marker is built with join: alone on a line of this file it would be a
 // region of this file.
 const regionOf = ({ lines, owner }) =>
