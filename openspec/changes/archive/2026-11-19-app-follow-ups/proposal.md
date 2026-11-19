@@ -1,6 +1,6 @@
 # Proposal: show no counts on the stats card beside a failed load, and identify no blank id
 
-> **Status:** open
+> **Status:** archived — 2026-11-19
 
 ## Why
 

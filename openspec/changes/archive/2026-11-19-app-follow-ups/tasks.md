@@ -4,7 +4,7 @@
 - [x] T2 — mobile: the same on the mobile dashboard and stats card, with the render tests of the loaded and loading counts (F43) · Requirements: MOBILE-15, MOBILE-20 · Commit: 50cfc23
 - [x] T3 — web: the PostHog adapter's `setUser` identifies nobody for a blank id (F50) · Requirements: WEB-49 · Commit: 2f4cce5
 - [x] T4 — mobile: the same in the mobile PostHog adapter (F50) · Requirements: MOBILE-48 · Commit: a152ec5
-- [ ] T5 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-19-app-follow-ups/` as the last commit · Requirements: none · Commit: —
+- [x] T5 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-19-app-follow-ups/` as the last commit · Requirements: none · Commit: bbe5851
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of
