@@ -55,7 +55,7 @@ requirements in several specs, each linking to its neighbour by ID.
 | [apps/mobile](specs/apps/mobile/spec.md) | `MOBILE` | `apps/mobile/src`, `apps/mobile/app.json` |
 | [harness/mcp](specs/harness/mcp/spec.md) | `MCP` | `.agents/contracts/mcp-servers.json`, `scripts/mcp-docs.detect.mjs`, `scripts/update-mcp-docs.mjs`, `scripts/verify-mcp-docs.mjs` |
 | [harness/dependency-seams](specs/harness/dependency-seams/spec.md) | `SEAM` | `.agents/contracts/dependencies.json`, `eslint-dependency-seam-allowlist.json`, `eslint-local-rules/dependency-seam.detect.mjs`, `scripts/dependency-seams.detect.mjs`, `scripts/eslint-config.detect.mjs`, `scripts/verify-dependency-seams.mjs`, `eslint.config.mjs`, `eslint.rules.mjs` |
-| [harness/ticket-flow](specs/harness/ticket-flow/spec.md) | `TICKET` | `.claude/skills/ticket-flow`, `.claude/skills/po-ticket`, `.claude/skills/refine-ticket`, `.claude/skills/dev-ticket`, `.claude/skills/qa-ticket`, `.claude/skills/release-ticket`, `.claude/skills/process-intake`, `scripts/verify-skills.mjs`, `scripts/verify-ticket-branch.mjs` |
+| [harness/ticket-flow](specs/harness/ticket-flow/spec.md) | `TICKET` | `.claude/skills/ticket-flow`, `.claude/skills/po-ticket`, `.claude/skills/refine-ticket`, `.claude/skills/dev-ticket`, `.claude/skills/qa-ticket`, `.claude/skills/release-ticket`, `.claude/skills/process-intake`, `.claude/skills/general-plan`, `scripts/verify-skills.mjs`, `scripts/verify-ticket-branch.mjs` |
 
 A new spec adds its row here when it is written.
 
