@@ -58,20 +58,32 @@ export const declaredPackages = ({ manifest }) =>
 const isPlainObject = (value) =>
   value !== null && typeof value === 'object' && !Array.isArray(value)
 
+// `{ manifest }` for a package.json that reads as a JSON object, else
+// `{ problem }`, why it does not: the config and the gates read a manifest
+// this one way.
+export const readManifestAt = ({ path, root }) => {
+  let text
+  try {
+    text = readFileSync(join(root, path), 'utf8')
+  } catch (error) {
+    return { problem: `cannot be read: ${error.message}` }
+  }
+  let manifest
+  try {
+    manifest = JSON.parse(text)
+  } catch (error) {
+    return { problem: `cannot be parsed: ${error.message}` }
+  }
+  return isPlainObject(manifest)
+    ? { manifest }
+    : { problem: 'is not a JSON object' }
+}
+
 // A manifest that cannot be read or parsed throws, naming the file: an app
 // whose frameworks are unknown would lose their rules without a word.
 const readManifest = ({ path, root }) => {
-  let manifest
-  try {
-    manifest = JSON.parse(readFileSync(join(root, path), 'utf8'))
-  } catch (error) {
-    throw new Error(`${path} cannot be parsed: ${error.message}`, {
-      cause: error
-    })
-  }
-  if (!isPlainObject(manifest)) {
-    throw new Error(`${path} is not a JSON object`)
-  }
+  const { manifest, problem } = readManifestAt({ path, root })
+  if (problem) throw new Error(`${path} ${problem}`)
   return manifest
 }
 

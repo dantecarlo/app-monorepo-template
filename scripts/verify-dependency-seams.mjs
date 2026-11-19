@@ -11,11 +11,13 @@
 //     entry with one, a name listed twice); reported alone, since every other
 //     check reads the registry;
 //   - a dependency of the root, an apps/* or a packages/* package.json that
-//     no entry names;
+//     no entry names, and such a package.json that cannot be read or is not
+//     a JSON object, which also stops the stale-entry check below;
 //   - a stale entry: its package is declared by no package.json (the node:*
 //     entry of the builtins excepted);
 //   - a seam or test-infrastructure glob that matches no file under apps/ or
 //     packages/;
+//   - a source file under apps/ or packages/ that cannot be parsed;
 //   - a file ESLint does not lint (the configs its ignore list skips) that
 //     imports a package outside its seam, or an unregistered one;
 //   - eslint-dependency-seam-allowlist.json: a stale entry (its file no
@@ -53,6 +55,7 @@ import {
   declaredPackages,
   isWorkspaceManifest,
   MANIFEST_FILE,
+  readManifestAt,
   WORKSPACE_GROUPS
 } from './eslint-config.detect.mjs'
 import { defineGate, reportGate } from './gate/gate.mjs'
@@ -111,11 +114,14 @@ const listFiles = ({ root }) =>
     }
   }).sort()
 
+// `{ names, path }` for every manifest, or `{ path, problem }` for one that
+// cannot be read: it is reported, never skipped.
 const readManifests = ({ files, root }) =>
-  [MANIFEST_FILE, ...files.filter(isWorkspaceManifest)].flatMap((path) => {
-    const manifest = readJson({ path: join(root, path) })
-    if (manifest.unreadable) return []
-    return [{ names: declaredPackages({ manifest }), path }]
+  [MANIFEST_FILE, ...files.filter(isWorkspaceManifest)].map((path) => {
+    const { manifest, problem } = readManifestAt({ path, root })
+    return problem
+      ? { path, problem }
+      : { names: declaredPackages({ manifest }), path }
   })
 
 const parse = ({ path, root }) =>
@@ -216,9 +222,10 @@ const main = async () => {
     isLinted: (path) => !unlinted.has(path),
     root
   })
-  const entries = Array.isArray(context.registry.packages)
+  const entries = Array.isArray(context.registry?.packages)
     ? context.registry.packages.length
     : 0
+  const outside = countViolations(context)
   const listed = Array.isArray(context.allowlist)
     ? context.allowlist.length
     : 0
@@ -231,7 +238,9 @@ const main = async () => {
       `${context.sources.length} source file(s) ` +
       `(${context.unlinted.length} that ESLint does not lint), ` +
       `${plural({ count: listed, many: 'allowlist entries', one: 'allowlist entry' })}, ` +
-      `${countViolations(context)} file-package pair(s) outside their seam`,
+      (outside === null
+        ? 'no file-package pair judged against a registry it refuses'
+        : `${outside} file-package pair(s) outside their seam`),
     gate
   })
 }
