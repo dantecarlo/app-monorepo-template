@@ -1,32 +1,40 @@
 import {
+  BACKSLASH,
+  BLOCK_COMMENT_CLOSE,
+  BLOCK_COMMENT_OPEN,
   CLOSING_STATEMENT,
   DOLLAR_QUOTE,
+  DOLLAR_QUOTE_TAG,
+  DOLLAR_SIGN,
+  ESCAPE_STRING_PREFIX,
+  IDENTIFIER_CHARACTER,
+  IDENTIFIER_QUOTE,
   KEEP_GROUP_ONE,
   LEADING_BEGIN_PATTERN,
   LINE_BREAK,
+  LINE_COMMENT,
+  LINE_COMMENT_END,
   MIGRATION_FILE_PATTERN,
   MIGRATION_LEDGER,
   MIGRATION_TAG_STEM,
   NOT_LINE_BREAK,
   OPENING_STATEMENT,
+  PARAMETER_DIGIT,
   PRELUDE_TAG_STEM,
   PSQL_META_COMMAND,
   SQL_LIST_SEPARATOR,
   STATEMENT_END,
   TAG_COUNTER_SEPARATOR,
   TRAILING_COMMIT_PATTERN,
-  TRANSACTION_CONTROL
+  TRANSACTION_CONTROL,
+  UNCLOSED
 } from '#src/pgTapBundle.constant'
 import type {
   IBranchMigration,
   IBranchMigrationsParams,
   IBundlePgTapFilesParams
 } from '#src/pgTapBundle.type'
-import {
-  SQL_BLANK,
-  SQL_NON_CODE_TOKEN_PATTERN,
-  SQL_QUOTE
-} from '#src/sqlCode.constant'
+import { SQL_BLANK, SQL_QUOTE } from '#src/sqlCode.constant'
 import type { ISqlFile } from '#src/sqlFile.type'
 
 const FILE_LIST_SEPARATOR = ' and '
@@ -205,12 +213,165 @@ end
 do ${preludeTag}${body}${preludeTag};`
 }
 
-// The file's top-level code: every dollar-quoted body, comment and string literal blanked
-// to spaces with its line breaks kept, so each offset still points at the same character.
-const toTopLevelCode = ({ sql }: { sql: string }): string =>
-  sql.replace(SQL_NON_CODE_TOKEN_PATTERN, (token: string) =>
-    token.replace(NOT_LINE_BREAK, SQL_BLANK)
+const isIdentifierCharacter = ({
+  character
+}: {
+  character: string | undefined
+}): boolean =>
+  character !== undefined && IDENTIFIER_CHARACTER.test(character)
+
+const lineCommentEnd = ({
+  sql,
+  start
+}: {
+  sql: string
+  start: number
+}): number => {
+  const length = sql.slice(start).search(LINE_COMMENT_END)
+  return length === -1 ? sql.length : start + length
+}
+
+const blockCommentEnd = ({
+  sql,
+  start
+}: {
+  sql: string
+  start: number
+}): number => {
+  let depth = 0
+  let index = start
+  while (index < sql.length) {
+    const pair = sql.slice(index, index + BLOCK_COMMENT_OPEN.length)
+    if (pair === BLOCK_COMMENT_OPEN) {
+      depth += 1
+      index += pair.length
+    } else if (pair === BLOCK_COMMENT_CLOSE) {
+      depth -= 1
+      index += pair.length
+      if (depth === 0) return index
+    } else {
+      index += 1
+    }
+  }
+  return UNCLOSED
+}
+
+const quotedEnd = ({
+  backslashEscapes,
+  quote,
+  sql,
+  start
+}: {
+  backslashEscapes: boolean
+  quote: string
+  sql: string
+  start: number
+}): number => {
+  let index = start + quote.length
+  while (index < sql.length) {
+    const character = sql[index]
+    if (backslashEscapes && character === BACKSLASH) {
+      index += 2
+    } else if (character !== quote) {
+      index += 1
+    } else if (sql[index + 1] === quote) {
+      index += 2
+    } else {
+      return index + quote.length
+    }
+  }
+  return UNCLOSED
+}
+
+const dollarQuoteEnd = ({
+  sql,
+  start
+}: {
+  sql: string
+  start: number
+}): number => {
+  const tag = DOLLAR_QUOTE_TAG.exec(sql.slice(start))?.[0]
+  if (tag === undefined) return start
+  const close = sql.indexOf(tag, start + tag.length)
+  return close === -1 ? UNCLOSED : close + tag.length
+}
+
+// The offset just past the token that is not code starting at `index`: `index` itself
+// when none starts there, and UNCLOSED when one starts and never ends.
+const nonCodeEnd = ({
+  index,
+  sql
+}: {
+  index: number
+  sql: string
+}): number => {
+  const character = sql[index]
+  const pair = sql.slice(index, index + LINE_COMMENT.length)
+  if (pair === LINE_COMMENT) return lineCommentEnd({ sql, start: index })
+  if (pair === BLOCK_COMMENT_OPEN)
+    return blockCommentEnd({ sql, start: index })
+  if (character === SQL_QUOTE) {
+    const prefix = sql[index - 1] ?? ''
+    return quotedEnd({
+      backslashEscapes:
+        ESCAPE_STRING_PREFIX.test(prefix) &&
+        !isIdentifierCharacter({ character: sql[index - 2] }),
+      quote: SQL_QUOTE,
+      sql,
+      start: index
+    })
+  }
+  if (character === IDENTIFIER_QUOTE) {
+    return quotedEnd({
+      backslashEscapes: false,
+      quote: IDENTIFIER_QUOTE,
+      sql,
+      start: index
+    })
+  }
+  if (
+    character === DOLLAR_QUOTE &&
+    !isIdentifierCharacter({ character: sql[index - 1] })
+  ) {
+    return dollarQuoteEnd({ sql, start: index })
+  }
+  return index
+}
+
+// A `$` left in the code that is neither inside an identifier nor a positional parameter.
+const hasStrayDollar = ({
+  code,
+  sql
+}: {
+  code: string
+  sql: string
+}): boolean =>
+  [...code.matchAll(DOLLAR_SIGN)].some(
+    ({ index = 0 }) =>
+      !isIdentifierCharacter({ character: sql[index - 1] }) &&
+      !PARAMETER_DIGIT.test(sql[index + 1] ?? '')
   )
+
+// The file's top-level code: every comment, string, quoted identifier and dollar-quoted
+// body blanked to spaces with its line breaks kept, so each offset still points at the
+// same character; null when a token never closes or a `$` pairs with nothing, since then
+// the statements cannot be told apart.
+const toTopLevelCode = ({ sql }: { sql: string }): string | null => {
+  let code = ''
+  let index = 0
+  while (index < sql.length) {
+    const end = nonCodeEnd({ index, sql })
+    if (end === UNCLOSED) return null
+    if (end === index) {
+      code += sql[index]
+      index += 1
+    } else {
+      code += sql.slice(index, end).replace(NOT_LINE_BREAK, SQL_BLANK)
+      index = end
+    }
+  }
+  return hasStrayDollar({ code, sql }) ? null : code
+}
 
 // The offset just past a pgTAP file's opening `begin;`. It throws, naming the file, when
 // the file holds a psql meta-command, does not open with a plain `begin;`, does not end
@@ -219,6 +380,12 @@ const toOpeningEnd = ({ name, sql }: ISqlFile): number => {
   const refuse = ({ reason }: { reason: string }): Error =>
     new Error(`test:db ran nothing: ${name} ${reason}`)
   const code = toTopLevelCode({ sql })
+  if (code === null) {
+    throw refuse({
+      reason:
+        'holds a quote, a dollar sign or a comment test:db cannot pair, so it cannot tell its statements apart'
+    })
+  }
   if (code.includes(PSQL_META_COMMAND)) {
     throw refuse({
       reason:

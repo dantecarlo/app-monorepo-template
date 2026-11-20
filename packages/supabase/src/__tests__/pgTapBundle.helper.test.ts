@@ -417,6 +417,64 @@ describe('bundlePgTapFiles', () => {
     }
   )
 
+  test.each([
+    "begin;\nselect E'it\\'s'; commit;\nselect ok(true, 'x');\nrollback;\n",
+    'begin;\nselect 1 as "a--b"; commit;\nselect 1;\nrollback;\n',
+    `begin;\nselect 1 as "it's"; commit;\nselect ok(true, 'x');\nrollback;\n`,
+    'begin;\nselect 1 as "a/*b"; commit;\nselect 1 as "c*/d";\nrollback;\n',
+    'begin;\nselect 1 as a$b$; commit;\nselect 1 as c$b$;\nrollback;\n',
+    'begin;\nselect 1; -- note\rcommit;\nrollback;\n',
+    "begin;\nselect $\u00e9$ ' $\u00e9$; commit;\nselect ok(true, 'x');\nrollback;\n"
+  ])(
+    'refuses a commit hidden from a masker that misreads Postgres, naming the file: %s',
+    (sql) => {
+      expect(() =>
+        bundlePgTapFiles({
+          migrations: [BASE],
+          tests: [{ name: 'hidden.test.sql', sql }]
+        })
+      ).toThrow(
+        'test:db ran nothing: hidden.test.sql runs commit inside its transaction, where only its first begin; and its last rollback; may control it'
+      )
+    }
+  )
+
+  test.each([
+    "begin;\nselect 'never closed;\nrollback;\n",
+    "begin;\nselect E'never closed\\';\nrollback;\n",
+    'begin;\nselect 1 as "never closed;\nrollback;\n',
+    'begin;\nselect $body$ never closed;\nrollback;\n',
+    'begin;\n/* outer /* inner */ still open;\nrollback;\n',
+    'begin;\nselect $ 1;\nrollback;\n'
+  ])(
+    'refuses a quote, a dollar sign or a comment it cannot pair, naming the file: %s',
+    (sql) => {
+      expect(() =>
+        bundlePgTapFiles({
+          migrations: [BASE],
+          tests: [{ name: 'unpaired.test.sql', sql }]
+        })
+      ).toThrow(
+        'test:db ran nothing: unpaired.test.sql holds a quote, a dollar sign or a comment test:db cannot pair, so it cannot tell its statements apart'
+      )
+    }
+  )
+
+  test.each([
+    'begin;\n/* outer /* inner */ commit; */\nselect 1;\nrollback;\n',
+    "begin;\nselect E'it\\'s', 'it''s', \"a--b\", \"x\"\"y\", a$b$, $1, $\u00e9$ ; $\u00e9$;\nselect 1; -- done\r\nrollback;\n"
+  ])(
+    'reads what Postgres reads as one token, nested comments included: %s',
+    (sql) => {
+      expect(
+        bundlePgTapFiles({
+          migrations: [BASE],
+          tests: [{ name: 'quoted.test.sql', sql }]
+        }).map(({ name }) => name)
+      ).toEqual(['quoted.test.sql'])
+    }
+  )
+
   test('bundles every pgTAP file of the package', () => {
     const bundle = bundlePgTapFiles({
       migrations: MIGRATION_FILES,

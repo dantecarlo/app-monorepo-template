@@ -436,9 +436,15 @@ ends as it was.
   ledger records one.
 
 Before anything reaches the database, `test:db` reads each pgTAP file with its
-comments, string literals and dollar-quoted bodies blanked (the masker of the
-order check, `SQL_NON_CODE_TOKEN_PATTERN` of `src/sqlCode.constant.ts`) and
-stops the run, naming the file, unless:
+comments, strings, quoted identifiers and dollar-quoted bodies blanked, by a
+reader of its own in `src/pgTapBundle.helper.ts` that splits them as the
+Postgres lexer does: a `--` comment ends at `\n` or `\r`; `/* */` comments nest;
+a double-quoted identifier doubles its `"`; a string doubles its `'`, and an
+escape string (`E'...'`) also escapes with a backslash; a dollar quote's tag
+takes letters, digits, `_` and non-ASCII characters, never a leading digit, and
+a `$` right after an identifier character belongs to the identifier (`a$b$`).
+The order check keeps its own reader (`src/sqlCode.helper.ts`). It stops the
+run, naming the file, unless:
 
 - its first statement is a plain `begin;` (`begin transaction;` and
   `begin work;` too). An opening with options, such as `begin isolation level
@@ -453,10 +459,15 @@ stops the run, naming the file, unless:
 - it holds no psql meta-command: psql reads a backslash outside quotes as one
   (`\i`, `\set`, `\gexec`), and `\i` could pull in a file that commits.
 
-Every file here keeps that shape (see Test file structure). What the masker does
-not read is not covered: an escape string with a quote inside it (`E'it\'s'`)
-and a double-quoted identifier that holds `--` are read as code, which can hide
-a statement on the same line from the check.
+A file the reader cannot split fails closed: a quote, a quoted identifier, a
+dollar-quoted body or a comment that never closes, or a `$` that starts none of
+them and is neither part of an identifier nor a parameter (`$1`), stops the run,
+naming the file. Every file here keeps that shape (see Test file structure).
+
+Not covered: the reader assumes `standard_conforming_strings` is on, the
+Postgres and Supabase default, where a backslash in a plain string is a plain
+character. A file or a database that turns it off makes `'it\'s'` one string to
+Postgres and two to the reader, which can hide a statement after it.
 
 ### The target
 
