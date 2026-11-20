@@ -9,6 +9,8 @@
 - [x] T7 — docs: `docs/observability.md` · Requirements: none · Commit: 51c0210
 - [x] T9 — apps/mobile: every `opt-in` launch removes what `granted` stored on the device, through `expo-file-system`, a direct dependency with one seam and a test stand-in (A8) · Requirements: MOBILE-53 · Commit: bdd39a8
 - [x] T10 — the shared stand-in of the SDK carries the calls a revoke makes, and the map's row of the URL scrub names the path segment · Requirements: MOBILE-55 · Commit: 9e84f2e
+- [x] T11 — the verifier's blockers and advisories, mobile: a grant reads nothing an earlier grant left under the prefix, a key a revoke could not remove keeps the next grant in memory (A9), and a revoke drops the client before it closes the storage · Requirements: MOBILE-54, MOBILE-55 · Commit: 6dbf86d
+- [x] T12 — the verifier's advisory, web: the URL scrub reads a segment decoded and keeps a slug of short parts (A4) · Requirements: WEB-52 · Commit: fe2986e
 - [x] T8 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-20-posthog-privacy-follow-ups/` as the last commit · Requirements: none · Commit: 3ef1c81
 
 <!--

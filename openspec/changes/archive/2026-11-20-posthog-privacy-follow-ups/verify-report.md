@@ -1,6 +1,6 @@
 # Verify report: 2026-11-20-posthog-privacy-follow-ups
 
-> **Verified:** 2026-11-20 at `fc3eae3`, amended at `bdd39a8`
+> **Verified:** 2026-11-20 at `fc3eae3`, amended at `bdd39a8`, corrected at `28941a7`
 
 ## Scenarios
 
@@ -9,6 +9,8 @@
 | WEB-52 | a page URL with a token | `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "drops the query and the fragment of a page URL" | green |
 | WEB-52 | a secret in a path segment | `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "replaces a path segment that reads as a secret" | red, then green |
 | WEB-52 | route names, slugs and short ids | `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "keeps route names, word slugs and short ids in the path" | green, a pin |
+| WEB-52 | an encoded segment | `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "reads a percent-encoded segment by its decoded text" | red, then green (the correction) |
+| WEB-52 | a slug of short parts | `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "keeps a slug of short parts that mix letters and digits" | red, then green (the correction) |
 | WEB-52 | an event and its person | `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "scrubs every URL property of an event and of its person" | green |
 | WEB-52 | heatmap data | `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "keys heatmap points by the scrubbed URL" | green |
 | WEB-52 | other properties | `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "leaves every other property untouched" | green |
@@ -57,14 +59,26 @@
 | MOBILE-54 | a write in flight at a revoke | `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "removes every key only after the writes it already issued land" | red, then green |
 | MOBILE-54 | a removal the device refuses | `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "goes on removing the other keys when the device refuses one" | red, then green |
 | MOBILE-54 | a grant after a revoke | `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "writes to the device again on a grant after a revoke" | red, then green |
+| MOBILE-54 | PostHog's files on a revoke | `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "removes the PostHog files under its prefix on a revoke, read or not" | red, then green (the correction) |
+| MOBILE-54 | a grant on a device with no marker | `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "clears the PostHog files under its prefix before a grant on a device with no marker" | red, then green (the correction) |
+| MOBILE-54 | a key a revoke could not remove | `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "keeps a grant in memory while a key a revoke could not remove stays on the device" | red, then green (the correction) |
+| MOBILE-54 | that key gone | `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "writes to the device again once the key a revoke could not remove goes" | red, then green (the correction) |
 | MOBILE-55 | before a choice | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "reads pending and constructs no client before a choice in opt-in mode" | green |
 | MOBILE-55 | a grant | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "grant constructs the client once, opens the consent storage, opts PostHog in and reads granted" | green |
 | MOBILE-55 | the client's first write | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "grant opens the consent storage before it constructs the client, so its first write reaches the device" | red, then green |
 | MOBILE-55 | a revoke | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "revoke closes the consent storage, drops the client, opts it out, empties its queues, shuts it down and reads denied" | red, then green |
 | MOBILE-55 | a revoke the device storage fails | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a revoke whose storage removals fail still stops the client and reads denied" | red (no shutdown), then green |
-| MOBILE-55 | a revoke while the launch restores an earlier grant | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a revoke while the launch restores an earlier grant leaves PostHog opted out" | green |
+| MOBILE-55 | a revoke while the launch restores an earlier grant | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a revoke while the launch restores an earlier grant keeps PostHog from starting" | red, then green (the correction) |
 | MOBILE-55 | a grant after a revoke | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a grant after a revoke constructs a new client and opts it in" | green |
 | MOBILE-55 | what the dropped client stored | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a grant after a revoke starts a client that reads nothing the dropped one stored" | green; red against the storage of `9df3979` |
+| MOBILE-55 | what the earlier launch stored, at a revoke during its restore | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a revoke during the launch restore removes what the earlier launch stored" | red, then green (P1) |
+| MOBILE-55 | a grant after that revoke | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a grant after a revoke during the launch restore reads nothing the earlier launch stored" | red, then green (P2) |
+| MOBILE-55 | what the earlier launch stored, at a revoke after its restore | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a revoke after the launch settled removes what the earlier launch stored" | green, a pin (P3) |
+| MOBILE-55 | a re-grant after a refused removal | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a re-grant in the same launch after a refused removal reads nothing from before the revoke" | red, then green (P4) |
+| MOBILE-55 | a call while the storage closes | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a call made while the revoke closes the storage never reaches PostHog" | red, then green (P5) |
+| MOBILE-55 | an opt-in launch after a grant | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "an opt-in launch after a grant keeps the consent storage values" | green, a pin (P6) |
+| MOBILE-55 | what a revoked earlier launch left | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a later launch that grants reads nothing a revoked earlier launch left on the device" | red, then green (P7) |
+| MOBILE-55 | one file a revoked earlier grant left | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a grant reads nothing a revoked earlier grant left under the consent prefix" | red, then green |
 | MOBILE-55 | a mode that asks no consent | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "changes nothing and reads not-required outside opt-in mode" | green |
 | MOBILE-55 | no key | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "changes nothing and reads not-required without a key" | green |
 | MOBILE-55 | the composition root | `apps/mobile/src/lib/observability/__tests__/consent.adapter.test.ts` › "binds the PostHog consent by default" | green |
@@ -86,6 +100,30 @@ rejecting, so the revoke went on to opt the client out; it failed on the missing
 T6. The scenario "what the dropped client stored" was green when written, after T5; with the
 consent storage of `9df3979` put back it fails, the new client reading the ids the dropped one
 wrote.
+
+## The correction
+
+An independent verifier reviewed the change and found two blockers, both on mobile, and two
+advisories; one correction batch fixed them, each against a test that ran red first. Its probes,
+P1 to P7, are ported into `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts`.
+
+- **B1, a regression of this change.** A grant opened the consent storage before it constructed
+  the client, which then read straight from the device, while a revoke removed only the keys the
+  launch had read: a revoke during the launch's restore left PostHog's two files, unsent queue
+  included, for the next grant to read. Red: P1, P2, P7 and the verifier's own probe read the old
+  blob, and two storage tests found the files still there. `6dbf86d`: a revoke removes the two
+  files under the prefix whether read or not, and a grant on a device with no marker removes them
+  first.
+- **B2.** After a refused removal, a re-grant in the same launch read the queue from before the
+  revoke. Red: P4 read the old blob. `6dbf86d`: the key is remembered, the next grant removes it
+  again, and while that fails the grant holds in memory (A9).
+- **Advisory, the revoke order.** The client stayed live while the storage closed. Red: P5's error
+  reached PostHog, and a revoke during the launch's restore let it construct and opt a client in.
+  `6dbf86d`: a revoke drops the client first, as web does, and a stop overtakes the restore. The
+  test that pinned the old order is renamed to the new one.
+- **Advisory, the URL scrub.** `/categorias/electrodom%C3%A9sticos` was redacted, as were slugs such
+  as `samsung-galaxy-s24-ultra-256gb`. Red: both new tests. `fe2986e`: a segment is judged by its
+  decoded text, and a slug of short parts is kept (A4).
 
 ## The amendment
 
@@ -109,9 +147,10 @@ On the owner's answer of 2026-11-20 (the proposal), after the archive and before
 
 ## Checks
 
-- `pnpm --filter @app/web test`: 134 files, 522 tests, green, 2026-11-20, after T4.
+- `pnpm --filter @app/web test`: 134 files, 522 tests, green, 2026-11-20, after T4; 134 files,
+  524 tests, green, after the correction.
 - `pnpm --filter @app/mobile test`: 91 files, 291 tests, green, 2026-11-20, after T6; 92 files,
-  299 tests, green, after the amendment.
+  299 tests, green, after the amendment; 92 files, 311 tests, green, after the correction.
 - `pnpm verify:dependency-seams`: PASS, 101 registry entries, 0 file-package pairs outside their
   seam, after the amendment.
 - `tsc --noEmit` in `apps/web` and in `apps/mobile`: exit 0.

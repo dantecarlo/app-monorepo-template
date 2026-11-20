@@ -112,13 +112,16 @@ keeps nothing on the device. Each mode adds nothing else to the `granted` option
 ### Requirement: MOBILE-54 — The consent storage writes to the device only after a grant
 
 The mobile app SHALL give PostHog, in `opt-in` mode, a storage that keeps nothing while consent is
-not granted, reading no value and dropping every value it is handed; on a grant writes a grant
-marker to the device's key-value storage, `keyValueStorage` of MOBILE-56, and once the device holds
-it writes every later value there under its own prefix; when the device refuses the marker, keeps
-the grant and every later value in memory for this launch only; reads the marker back at the next
-launch; and on a revoke stops writing to the device, forgets every value it holds, waits for every
-device write it already issued and then removes the marker and every key it wrote or read, going
-on past a removal the device refuses, and SHALL write to the device again on a later grant.
+not granted, reading no value and dropping every value it is handed; on a grant removes PostHog's
+two files under its prefix and every key a revoke could not remove, then writes a grant marker to
+the device's key-value storage, `keyValueStorage` of MOBILE-56, and once the device holds it writes
+every later value there under its own prefix; when the device refuses one of those removals or the
+marker, keeps the grant and every later value in memory for this launch only, reading nothing from
+the device; reads the marker back at the next launch; and on a revoke stops writing to the device,
+forgets every value it holds, waits for every device write it already issued and then removes the
+marker, PostHog's two files under its prefix whether or not this launch read them, and every key
+it wrote or read, going on past a removal the device refuses and keeping it for the next grant,
+and SHALL write to the device again on a later grant.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -181,17 +184,46 @@ on past a removal the device refuses, and SHALL write to the device again on a l
   second grant
 - **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "writes to the device again on a grant after a revoke"
 
+#### Scenario: PostHog's files on a revoke
+
+- **GIVEN** a device that holds a marker and both of PostHog's files under the prefix, from an earlier launch, and a consent storage that read neither
+- **WHEN** it is closed
+- **THEN** the device holds neither the marker nor the files
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "removes the PostHog files under its prefix on a revoke, read or not"
+
+#### Scenario: a grant on a device with no marker
+
+- **GIVEN** a device that holds one of PostHog's files under the prefix and no marker
+- **WHEN** the storage is opened
+- **THEN** the file reads nothing and is gone, and the device holds the marker
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "clears the PostHog files under its prefix before a grant on a device with no marker"
+
+#### Scenario: a key a revoke could not remove
+
+- **GIVEN** a revoke whose device refused the removal of one of PostHog's files, and still refuses it
+- **WHEN** the storage is opened, and PostHog writes another value
+- **THEN** it reads as granted, the refused file reads nothing, the new value reads back from memory, and the device holds neither the marker nor the new value
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "keeps a grant in memory while a key a revoke could not remove stays on the device"
+
+#### Scenario: that key gone
+
+- **GIVEN** a revoke whose device refused one removal once
+- **WHEN** the storage is opened
+- **THEN** the removal is made again, the file reads nothing, and the device holds the marker
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "writes to the device again once the key a revoke could not remove goes"
+
 ### Requirement: MOBILE-55 — The consent API grants, revokes and reads the status
 
 The mobile app SHALL export a consent API, the `IConsentPort` of packages/core, from its
 observability barrel, bound to PostHog in the composition root `consent.adapter.ts`. In `opt-in`
 mode with a key, `grant` SHALL open the consent storage, construct the client (MOBILE-49) and then
-opt PostHog in; `revoke` SHALL close the consent storage, drop the client so later calls are
-dropped (MOBILE-60), and opt it out, drop every event and log record it still queues and shut it
-down, so nothing captured before the revoke is sent after it and its flush timers stop, a client
-the launch built to restore a grant from an earlier launch included, a device storage that refuses
-a removal included; a later grant SHALL construct a new client, which reads nothing the dropped one
-stored; and `getStatus` SHALL read `granted` while the storage holds a grant, `denied` after a
+opt PostHog in; `revoke` SHALL drop the client at once, so later calls are dropped (MOBILE-60), a
+call made while the storage closes included, and a launch's restore of an earlier grant still
+reading it back constructs none; then opt it out, drop every event and log record it still queues
+and shut it down, so nothing captured before the revoke is sent after it and its flush timers
+stop, while it closes the consent storage, a device storage that refuses a removal included; a
+later grant SHALL construct a new client, which reads nothing the dropped one stored and nothing an
+earlier grant left under the consent prefix, a refused removal included; and `getStatus` SHALL read `granted` while the storage holds a grant, `denied` after a
 revoke in the same launch, and `pending` otherwise. In `granted` and `memory` mode and without a
 key, `getStatus` SHALL read `not-required`, and `grant` and `revoke` SHALL construct nothing and
 call nothing on PostHog.
@@ -241,12 +273,10 @@ call nothing on PostHog.
 
 #### Scenario: a revoke while the launch restores an earlier grant
 
-- **GIVEN** a key, the consent mode `opt-in` and a grant from an earlier launch, still being read
-  back
+- **GIVEN** a key, the consent mode `opt-in` and a grant from an earlier launch, still being read back
 - **WHEN** consent is revoked before that read ends
-- **THEN** the client the launch builds is opted in and then opted out, the device holds no grant
-  and the status reads `denied`
-- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a revoke while the launch restores an earlier grant leaves PostHog opted out"
+- **THEN** the launch constructs no client and opts nothing in, the device holds no grant and the status reads `denied`
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a revoke while the launch restores an earlier grant keeps PostHog from starting"
 
 #### Scenario: a grant after a revoke
 
@@ -262,6 +292,62 @@ call nothing on PostHog.
 - **WHEN** consent is revoked and granted again
 - **THEN** the new client reads nothing back from the consent storage
 - **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a grant after a revoke starts a client that reads nothing the dropped one stored"
+
+#### Scenario: what the earlier launch stored, at a revoke during its restore
+
+- **GIVEN** a key, the consent mode `opt-in` and a grant with both of PostHog's files from an earlier launch, still being read back
+- **WHEN** consent is revoked before that read ends
+- **THEN** the device holds neither the marker nor the files
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a revoke during the launch restore removes what the earlier launch stored"
+
+#### Scenario: a grant after that revoke
+
+- **GIVEN** the same launch, after that revoke
+- **WHEN** consent is granted
+- **THEN** the new client reads nothing back from either file
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a grant after a revoke during the launch restore reads nothing the earlier launch stored"
+
+#### Scenario: what the earlier launch stored, at a revoke after its restore
+
+- **GIVEN** a key, the consent mode `opt-in` and a grant with both of PostHog's files from an earlier launch, restored
+- **WHEN** consent is revoked
+- **THEN** the device holds neither file
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a revoke after the launch settled removes what the earlier launch stored"
+
+#### Scenario: a re-grant after a refused removal
+
+- **GIVEN** a launch that restored an earlier grant and a revoke whose device refuses the removal of PostHog's events file
+- **WHEN** consent is granted again
+- **THEN** the new client reads nothing back from either file and the status reads `granted`
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a re-grant in the same launch after a refused removal reads nothing from before the revoke"
+
+#### Scenario: a call while the storage closes
+
+- **GIVEN** a key, the consent mode `opt-in`, a grant and a device that holds every removal
+- **WHEN** consent is revoked, and an error is captured before the removals end
+- **THEN** the status reads `denied` and the error never reaches PostHog
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a call made while the revoke closes the storage never reaches PostHog"
+
+#### Scenario: an opt-in launch after a grant
+
+- **GIVEN** a key, the consent mode `opt-in` and a grant with both of PostHog's files from an earlier launch
+- **WHEN** the client module loads
+- **THEN** the client reads both files back, and the device keeps them and the marker
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "an opt-in launch after a grant keeps the consent storage values"
+
+#### Scenario: what a revoked earlier launch left
+
+- **GIVEN** a key, the consent mode `opt-in` and both of PostHog's files under the prefix with no marker
+- **WHEN** consent is granted
+- **THEN** the new client reads nothing back from either file
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a later launch that grants reads nothing a revoked earlier launch left on the device"
+
+#### Scenario: one file a revoked earlier grant left
+
+- **GIVEN** a key, the consent mode `opt-in` and PostHog's events file under the prefix with no marker
+- **WHEN** consent is granted
+- **THEN** the new client reads nothing back from it
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a grant reads nothing a revoked earlier grant left under the consent prefix"
 
 #### Scenario: a mode that asks no consent
 

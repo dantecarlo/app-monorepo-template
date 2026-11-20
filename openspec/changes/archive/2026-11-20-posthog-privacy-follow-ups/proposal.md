@@ -42,6 +42,13 @@ The owner's words, verbatim:
   direct dependency of `apps/mobile`, reachable only through its adapter, so the switch to
   `opt-in` clears what `granted` stored on mobile too: "Yes, add it"
 
+> **Corrected after the independent verifier, 2026-11-20, before the push:** a grant read what a
+> revoked earlier grant left under the consent prefix, and, after a refused removal, a re-grant in
+> the same launch read the queue from before the revoke; both are fixed (A9, MOBILE-54,
+> MOBILE-55), a revoke now drops the mobile client before it closes the storage, and the URL scrub
+> reads a segment decoded and keeps a slug of short parts (A4, WEB-52). See `verify-report.md`
+> § The correction.
+>
 > **Amended after the archive, 2026-11-20, before the push:** with the owner's answer above, the
 > switch to `opt-in` on mobile moved from out of scope into this change (A8, MOBILE-53), and the
 > shared stand-in of the SDK and the architecture map's row for the URL scrub were brought up to
@@ -65,12 +72,17 @@ stated and open to the owner's correction.
   then requests no flags; a grant after a revoke sets it back and reloads the flags once. The
   scratch run of the real `posthog-js` 1.450.0 counted one `/flags` request after a plain revoke,
   none after a paused one and one after the grant that follows it.
-- **A4 — The path-segment rule.** A segment that holds an `@` or `%40`, or that is 16 or more
-  characters long and holds a digit, reads as a secret and becomes `:redacted`, unless it is a word
-  slug: lowercase words and numbers of at most four digits joined by hyphens. Route names, word
-  slugs and ids under 16 characters keep their place, so a route keeps its shape. A token of
-  letters only, or shorter than 16 characters, is not caught; a long slug that mixes letters and
-  digits in one word is redacted.
+- **A4 — The path-segment rule.** A segment that holds an `@` or `%40` reads as a secret and
+  becomes `:redacted`, and so does one whose percent-decoded text is 16 or more characters long and
+  holds a digit, unless it is a slug: a word slug, lowercase words and numbers of at most four
+  digits joined by hyphens, or a slug of short parts, two or more parts of letters and digits
+  joined by hyphens or underscores, each of at most 11 characters and one at least holding a
+  letter. The decoded text decides, since every `%C3` of an accented word holds a digit, and the
+  URL keeps its encoded form. The bound is 11, not 12, so a UUID, whose last part has 12
+  characters, stays redacted; a card number's parts hold no letter. Route names, slugs and ids
+  under 16 characters keep their place, so a route keeps its shape. Not caught: a token of letters
+  only, one shorter than 16 characters, and one shaped as a slug (`abcd-1234-efgh-5678-ijkl`);
+  redacted although it is not a secret: a slug with a part of 12 characters or more and a digit.
 - **A5 — The switch to `opt-in` on web.** A start in `opt-in` mode with no recorded grant removes
   every value `posthog-js` keeps for the project key: the local and session storage keys that start
   with `ph_<key>_`, the consent key `__ph_opt_in_out_<key>`, and the cookies of those names on the
@@ -92,6 +104,12 @@ stated and open to the owner's correction.
   every `opt-in` launch removes them, granted or not, unlike web, where the SDK keeps the same
   names after a grant. `expo-file-system` becomes a direct dependency of `apps/mobile`, imported
   only by `apps/mobile/src/lib/posthog/sdkStorage.adapter.ts`, as the owner answered.
+- **A9 — A key a revoke could not remove keeps the next grant in memory.** After the verifier's
+  review: a revoke whose device refuses a removal remembers the key, and the next grant removes it
+  again, with PostHog's two files under the prefix, before it writes the marker; while one of those
+  removals still fails, the grant holds in memory for the launch, reading nothing from the device,
+  as a refused marker does (A7). It fails closed and returns to the device as soon as the removal
+  succeeds.
 
 ## What changes
 

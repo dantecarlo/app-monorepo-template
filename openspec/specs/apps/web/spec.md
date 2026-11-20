@@ -6,7 +6,7 @@
 <!-- endregion sentry -->
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`, `docs/observability.md`, `docs/manifest.md`, `docs/decisions/0001-pluggable-providers.md`
-> **Verified against the code:** 2026-11-20 at `79b55e8`
+> **Verified against the code:** 2026-11-20 at `28941a7`
 
 ## Purpose
 
@@ -1632,11 +1632,13 @@ The web app SHALL drop, before PostHog sends an event, the query string and the 
 URL, path and referrer property of the event and of the person, and of every page URL that keys
 heatmap data, merging the points of two URLs that scrub to the same key. It SHALL also replace with
 `:redacted` every segment of the path that reads as a secret: one that holds an `@` or `%40`, or
-one of 16 or more characters that holds a digit and is not a word slug, lowercase words and numbers
-of at most four digits joined by hyphens. It SHALL keep the scheme and the host of a URL, and every
-other segment, so a route keeps its shape.
+one whose percent-decoded text has 16 or more characters, holds a digit and is not a slug, either
+a word slug, lowercase words and numbers of at most four digits joined by hyphens, or a slug of
+short parts, two or more parts of letters and digits joined by hyphens or underscores, each of at
+most 11 characters and one at least holding a letter. It SHALL keep the scheme and the host of a
+URL, and every other segment in its encoded form, so a route keeps its shape.
 
-**Evidence:** `apps/web/src/lib/posthog/scrubCaptureUrls.helper.ts:23-112`, `apps/web/src/lib/posthog/scrubCaptureUrls.constant.ts:4-36`
+**Evidence:** `apps/web/src/lib/posthog/scrubCaptureUrls.helper.ts:24-130`, `apps/web/src/lib/posthog/scrubCaptureUrls.constant.ts:4-43`
 
 #### Scenario: a page URL with a token
 
@@ -1660,6 +1662,20 @@ other segment, so a route keeps its shape.
 - **WHEN** they are scrubbed
 - **THEN** they are kept as they are
 - **Test:** `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "keeps route names, word slugs and short ids in the path"
+
+#### Scenario: an encoded segment
+
+- **GIVEN** segments that hold accented or other non-ASCII words, percent-encoded, and an encoded token
+- **WHEN** they are scrubbed
+- **THEN** the words are kept in their encoded form, and the token reads `:redacted`
+- **Test:** `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "reads a percent-encoded segment by its decoded text"
+
+#### Scenario: a slug of short parts
+
+- **GIVEN** slugs whose short parts mix letters and digits, joined by hyphens or underscores, a UUID and a card number joined by hyphens
+- **WHEN** they are scrubbed
+- **THEN** the slugs are kept, and the UUID and the card number read `:redacted`
+- **Test:** `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "keeps a slug of short parts that mix letters and digits"
 
 #### Scenario: an event and its person
 
