@@ -89,9 +89,51 @@ ATL_TEMPLATE_SELF=1 pnpm validate
 **Nothing is done until this exits 0.** Check the exit code, not the tail of a
 pipe: `pnpm validate | tail` reports the exit status of `tail`, which is always 0. Use `pnpm validate > log 2>&1; echo $?`.
 
-The chain runs in cost order:
+### The gate registry
 
-### 3a. Instant gates — they run first
+`pnpm validate` runs `scripts/validate.mjs`, which runs the steps of the gate
+registry, `.agents/contracts/gates.json`, in order: `pnpm <id>` for each step,
+or the step's own `command`. The first step that fails stops the run, and the
+runner exits with that step's exit code, as the `&&` chain it replaced did. A
+registry the runner refuses, or a registry, root `package.json` or
+`template.manifest.json` it cannot read, runs no step and exits 1.
+
+```bash
+pnpm validate --list             # every step with its fields; runs none
+pnpm validate --profile strict   # also the strict-only steps (none today)
+```
+
+| Field        | Holds                                                                                          |
+| ------------ | ---------------------------------------------------------------------------------------------- |
+| `id`         | The root `package.json` script the step runs, unless it carries a `command`                    |
+| `capability` | The owner whose prune removes the step: `core`, never pruned, or a capability of the manifest  |
+| `stage`      | `preflight`, `workspace` or `repository` (3a, 3b, 3c); a stage never runs before the one above |
+| `profile`    | The lowest quality profile that runs it: `standard` (the default) or `strict`                  |
+| `cost`       | `instant`, `seconds` or `minutes`, declared; the run prints the measured time beside it        |
+| `blind`      | `exported-cases`, on the one step that blinds a `defineGate` gate                              |
+
+**A capability's prune removes its gates by data.** An absent capability takes
+every step it owns, as it takes the dependency-registry entries it owns
+([manifest.md](manifest.md) § Registry entries have owners too); nothing edits
+a command chain. The registry is a contract, so the write guard asks before
+anyone edits it (3f): removing a step removes a gate.
+
+`pnpm validate:test` (`scripts/validate.test.mjs`, a preflight step) proves the
+registry and its runner: the registry gate refuses each defect it names; the
+runner, run as a process over scratch trees with a fake `pnpm`, runs the steps
+in order, stops at the first failure with its exit code, and refuses what it
+cannot read; the `sdd` prune drops its four steps and keeps the rest in order;
+every capability's prune, with the scripts it unsets, leaves a registry the
+pruned `package.json` runs and no step running a file it removes; and every
+gate the run reaches is blinded by exactly one step, whose companion's exported
+`CASES` fail against `blindGate`, run as a git hook would run them.
+
+> **Pending merge.** The harness-config branch (unit 4.1b) adds
+> `verify:harness-config` to the old chain. It gets its registry entry when the
+> two branches meet; nothing here notices a gate script the registry does not
+> list, so the entry is added by hand at that merge.
+
+### 3a. Preflight — the instant gates run first
 
 | Gate                            | Proves                                                    |
 | ------------------------------- | --------------------------------------------------------- |
@@ -103,6 +145,7 @@ The chain runs in cost order:
 | `pnpm verify:manifest`          | `template.manifest.json` is well formed                   |
 | `pnpm verify:manifest:coverage` | Every tracked file has exactly one owner, no stale claims |
 | `pnpm verify:manifest:test`     | The pure engine behind both still behaves                 |
+| `pnpm validate:test`            | The gate registry and its runner hold, its prunes leave a runnable registry, and every gate it runs is blinded (above) |
 | `pnpm verify:lint-rules:test`   | The local ESLint rules still report what they must        |
 | `pnpm verify:allowlist-freshness:test` | The styling allowlist gate fails a stale entry and an unlisted violation |
 | `pnpm verify:allowlist-freshness` | Every entry of `eslint-style-positioning-allowlist.json` still breaks its rule, and every violation in the `src/` of every app is listed; prints the live count |
@@ -110,17 +153,17 @@ The chain runs in cost order:
 | `pnpm verify:dependency-seams` | Every `package.json` dependency is in `.agents/contracts/dependencies.json` and every entry is declared; a `package.json` it cannot read fails, naming it; every seam glob matches a file; the configs ESLint ignores import inside their seams; every entry of `eslint-dependency-seam-allowlist.json` is still a violation under a migration the registry declares open, every open migration is named by an entry, and every violation is listed; prints the live counts, and none against a registry it refuses |
 
 Structural drift fails here, before anything expensive builds. See
-[manifest.md](manifest.md). The projection check is step 1 of the chain: an agent
+[manifest.md](manifest.md). The projection check is step 1 of the registry: an agent
 file edited by hand fails before anything else runs.
 
-### 3b. Turbo — lint, typecheck, test, build
+### 3b. Workspace — turbo: lint, typecheck, test, build
 
 `turbo run lint typecheck test build format:check` across every workspace.
 `format:check` has no workspace task yet, so it runs nothing: formatting is
 enforced by the `prettier/prettier` ESLint rule on workspace TS/TSX, and by
 the pre-commit hook on staged files.
 
-### 3c. The verify scripts
+### 3c. Repository — the verify scripts
 
 | Gate                  | Proves                                                                                    |
 | --------------------- | ----------------------------------------------------------------------------------------- |
@@ -434,7 +477,12 @@ which is worse than not having it.
    wiring bug, not a finding. Prove the glob before trusting the count.
 6. **Prove it fires.** Plant a violation on purpose and watch it fail. A gate
    that is silently unwired reports zero exactly like a gate that passes.
-7. **Wire it into `pnpm validate`.**
+7. **Register it in `.agents/contracts/gates.json`**, never in a command
+   chain: a step at its place in its stage, with the capability whose prune
+   removes it, its profile and its cost, and `blind: "exported-cases"` on the
+   one step that runs a `defineGate` gate, whose companion exports `CASES`
+   and registers its tests only as the entry point (`registerCases`).
+   `pnpm validate --list` shows where it runs.
 8. **Document it** — this file, its §21 row in `docs/code-standards.md`, and
    `docs/maps/global-map.md`.
 

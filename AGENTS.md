@@ -74,6 +74,10 @@ only reports), `pnpm verify:english`, `pnpm verify:instruction-entry`,
 `pnpm verify:unicode-safety`, `pnpm verify:workflow-pins`,
 `pnpm verify:skill-frontmatter`, `pnpm verify:router-coverage`,
 `pnpm codex-budget:test` and `pnpm verify:maps`. All must pass.
+It runs the steps of the gate registry `.agents/contracts/gates.json` in order
+(`pnpm validate --list` prints them): a gate joins `validate` as a registry
+step, never as a command chain, and a capability's prune removes the steps it
+owns.
 
 The projection check and the manifest gates run first (they are instant, so
 structural drift fails before anything expensive). An agent is written once, in
