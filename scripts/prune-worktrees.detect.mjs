@@ -99,8 +99,9 @@ const REBUILT_AT_ROOTS = new Set([
 ])
 const WORKSPACE_GROUPS = new Set(['apps', 'packages'])
 const WORKSPACE_ROOT_DEPTH = 2
-// `.atl/` is not among them: it holds machine-local agent tooling, personal
-// skills included, that nothing writes again.
+// `.atl/` is not among them: besides the skill registry, which the
+// skill-registry skill writes again (SKILL_REGISTRY_FILES), it holds
+// machine-local agent tooling, personal skills included, that nothing does.
 const REBUILT_PREFIXES = ['.husky/_/']
 const REBUILT_FILE =
   /(?:^|\/)(?:next-env\.d\.ts|expo-env\.d\.ts|[^/]+\.tsbuildinfo)$/
@@ -266,6 +267,24 @@ export const statusOf = ({ porcelain }) => {
     unrebuilt: ignored.filter((entry) => !isRebuilt({ entry }))
   }
 }
+
+// The directory of machine-local agent tooling at a worktree's root, and the
+// two files of it the skill-registry skill writes again.
+export const AGENT_TOOLING_DIR = '.atl/'
+const SKILL_REGISTRY_FILES = new Set([
+  '.skill-registry.cache.json',
+  'skill-registry.md'
+])
+
+// Whether what an ignored entry under `.atl/` holds is the skill registry
+// and nothing else. `items` is what the caller found there on disk, by name
+// under `.atl/` and whether it is a regular file: the children of `.atl/`
+// when the entry is the directory itself, else the one path it names. A
+// name the registry does not hold, or one that is not a regular file, a link
+// or a directory included, is something else, and so is an empty list.
+export const isSkillRegistry = ({ items }) =>
+  items.length > 0 &&
+  items.every(({ file, name }) => file && SKILL_REGISTRY_FILES.has(name))
 
 // Every tracked file a `git ls-files -v -z` listing marks assume-unchanged
 // or skip-worktree: `git status` and `git worktree remove` skip both, so an

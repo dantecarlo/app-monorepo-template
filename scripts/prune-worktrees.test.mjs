@@ -101,6 +101,13 @@ const ENV_FILE = '.env'
 // Machine-local agent tooling the repository ignores: personal skills and
 // notes nothing writes again.
 const ATL_FILE = '.atl/my-notes.md'
+// The two files of `.atl/` the skill-registry skill writes again, and a
+// note beside them that nothing does.
+const SKILL_REGISTRY = {
+  '.atl/.skill-registry.cache.json': '{}\n',
+  '.atl/skill-registry.md': '# Skill registry\n'
+}
+const ATL_NOTES = '.atl/notes.md'
 const LATE_ENV = 'KEY=late\n'
 // What the fixture repository ignores through `.git/info/exclude`.
 const IGNORED_PATHS = [
@@ -1563,6 +1570,52 @@ test('a step that fails after the removals still reports what was removed, and e
     /^prune-worktrees: git rev-list .+ — 1 worktree was removed before it failed, listed above\.$/msu
   )
   assert.doesNotMatch(run.stderr, /nothing was removed/u)
+})
+
+// The worktree of `branch`, merged, with `.atl/` ignored as the template's
+// `.gitignore` ignores it, holding `files`.
+const atlWorktree = ({ branch, files }) => {
+  const { main, paths } = mergedWorktrees({
+    branches: [branch],
+    hook: false
+  })
+  appendFileSync(join(main, '.git', 'info', 'exclude'), '\n.atl/\n')
+  Object.entries(files).forEach(([file, text]) => {
+    mkdirSync(dirname(join(paths[branch], file)), { recursive: true })
+    writeFileSync(join(paths[branch], file), text)
+  })
+  return { main, path: paths[branch] }
+}
+
+test('an .atl/ that holds only the two skill-registry files does not keep the worktree', () => {
+  const branch = 'feat/atl-registry'
+  const { main, path } = atlWorktree({ branch, files: SKILL_REGISTRY })
+  const run = prune({ cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.ok(!existsSync(path), run.stdout)
+  assert.ok(
+    run.stdout.includes(`removed ${forward({ path })} (${branch})`),
+    run.stdout
+  )
+})
+
+// `notes.md` sits beside the registry and is a file of the same kind:
+// only the names tell it from the two the skill-registry skill writes.
+test('an .atl/ that holds anything besides the skill-registry files keeps the worktree, and it all stays', () => {
+  const branch = 'feat/atl-notes'
+  const files = { ...SKILL_REGISTRY, [ATL_NOTES]: 'notes\n' }
+  const { main, path } = atlWorktree({ branch, files })
+  const run = prune({ cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  Object.entries(files).forEach(([file, text]) =>
+    assert.equal(readFileSync(join(path, file), 'utf8'), text)
+  )
+  assert.ok(
+    run.stdout.includes(
+      keptLine({ branch, path, reason: `${REASON.IGNORED}: .atl/` })
+    ),
+    run.stdout
+  )
 })
 
 test('the root package runs this suite from validate', () => {

@@ -15,7 +15,8 @@
 // --untracked-files=all`, marks no tracked file skip-worktree or
 // assume-unchanged (whose edits `git status` and `git worktree remove`
 // cannot see), holds no ignored file outside what an install, a build or
-// the next session writes again, its HEAD is reachable from the default
+// the next session writes again (an `.atl/` that holds only the two files
+// of the skill registry included), its HEAD is reachable from the default
 // branch, those reads inside it still pass when they run again just before
 // its removal, and a plain `git worktree remove` accepts it. Its branch is
 // then deleted only while its tip is still the commit it was judged at.
@@ -61,18 +62,20 @@
 // ---------------------------------------------------------------------------
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, rmSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { existsSync, lstatSync, readdirSync, rmSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { gitFreeEnv } from './git-free-env.mjs'
 import {
+  AGENT_TOOLING_DIR,
   BRANCH_PREFIX,
   defaultBranchOf,
   DIVERGED,
   failureLine,
   fetchSecondsFrom,
   hiddenOf,
+  isSkillRegistry,
   listDetail,
   LOCAL_CHANGES,
   localChangesOf,
@@ -199,8 +202,27 @@ const readMerged = ({ defaultBranch, root }) =>
     })
   })
 
-const readStatus = ({ worktree }) =>
-  statusOf({
+// What an ignored entry under `.atl/` holds on disk, for isSkillRegistry:
+// the children of `.atl/` when the entry is the directory itself, else the
+// one path it names, each by name and whether it is a regular file, which a
+// link is not.
+const agentToolingItems = ({ entry, worktree }) => {
+  const name = entry.slice(AGENT_TOOLING_DIR.length)
+  const path = join(worktree.path, entry)
+  if (name === '') {
+    return readdirSync(path, { withFileTypes: true }).map((child) => ({
+      file: child.isFile(),
+      name: child.name
+    }))
+  }
+  return [{ file: lstatSync(path).isFile(), name }]
+}
+
+// The worktree's `git status`: whether anything is modified or untracked,
+// and each ignored path nothing writes again, an `.atl/` that holds only
+// the skill registry left out. A read that fails throws.
+const readStatus = ({ worktree }) => {
+  const { dirty, unrebuilt } = statusOf({
     porcelain: git({
       args: [
         '--no-optional-locks',
@@ -213,6 +235,15 @@ const readStatus = ({ worktree }) =>
       cwd: worktree.path
     })
   })
+  return {
+    dirty,
+    unrebuilt: unrebuilt.filter(
+      (entry) =>
+        !entry.startsWith(AGENT_TOOLING_DIR) ||
+        !isSkillRegistry({ items: agentToolingItems({ entry, worktree }) })
+    )
+  }
+}
 
 const readHidden = ({ worktree }) =>
   hiddenOf({
