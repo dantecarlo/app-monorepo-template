@@ -1,5 +1,5 @@
 {
-  "$comment": "The families of processes the reaper (scripts/agent-harness/reaper/) may end, each with an id, a pattern read case-insensitive against the command line (against the process name for a wrapper family), and what it is. The reaper ends an orphan, a process whose parent pid names no live process or one that started after it (on POSIX also one under pid 1 or the user's subreaper), only when it matches a family, and then with its whole descendant tree; it never touches its own ancestry, a tree that holds a process younger than graceSeconds, or anything outside these families, and it ends within boundSeconds. Each family is safe to end as an orphan because its only reader is gone: an MCP server talks over the stdio of the session that started it, so once that session is dead nothing reads it again, and its npx launcher only waits on it; vitest, tinypool and jest workers, tsc and esbuild serve the test run or the build that started them; turbo starts again on its next run, its daemon included; git-remote-https serves one fetch, pull or push, over once git is gone; and a cmd.exe or conhost.exe wrapper is ended only with the one reapable process it wraps. A family changes only when the owner asks: this is a rule file (the LAW 'A rule is not edited to fit the work', AGENTS.md). See docs/harness.md section 3g.",
+  "$comment": "The families of processes the reaper (scripts/agent-harness/reaper/) may end, each with an id, a pattern read case-insensitive against the command line (against the process name for a wrapper family), and what it is. The reaper ends an orphan, a process whose parent pid names no live process or one that started after it (on POSIX also one under pid 1 or the user's subreaper), only when it matches a family, and then with its whole descendant tree; it never touches its own ancestry, a tree that holds a process younger than graceSeconds, or anything outside these families, and it ends within boundSeconds. spare names, in the same shape, the processes it never ends, nor any tree that holds one: a daemon detached by design reads as an orphan while every session still uses it. Each family is safe to end as an orphan because its only reader is gone: an MCP server talks over the stdio of the session that started it, so once that session is dead nothing reads it again, and its npx launcher only waits on it; vitest, tinypool and jest workers, tsc and esbuild serve the test run or the build that started them; turbo starts again on its next run, its daemon included; git-remote-https serves one fetch, pull or push, over once git is gone; and a cmd.exe or conhost.exe wrapper is ended only with the one reapable process it wraps. A family changes only when the owner asks: this is a rule file (the LAW 'A rule is not edited to fit the work', AGENTS.md). See docs/harness.md section 3g.",
   "graceSeconds": 60,
   "boundSeconds": 8,
   "families": [
@@ -48,6 +48,13 @@
       "pattern": "^(?:cmd|conhost)\\.exe$",
       "what": "A cmd.exe or conhost.exe wrapper, matched by its name and ended only with the one reapable process it wraps",
       "wrapper": true
+    }
+  ],
+  "spare": [
+    {
+      "id": "mcp-proxy",
+      "pattern": "(?:^|[\\\\/\"])mcp-proxy(?:\\.exe)?\"?(?:\\s|$)",
+      "what": "A shared MCP proxy (mcp-proxy) that serves MCP servers to every session over HTTP: it runs detached by design, so it reads as an orphan while the sessions still use it"
     }
   ]
 }

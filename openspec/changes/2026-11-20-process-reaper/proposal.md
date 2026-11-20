@@ -28,13 +28,16 @@ The owner's words, verbatim:
   why each is safe to end: npx-launched MCP servers and their launchers, the known MCP server
   entrypoints, vitest and tinypool workers, turbo, esbuild, tsc, jest workers, `git-remote-https`,
   and the `cmd.exe` and `conhost.exe` wrappers whose only child is a reapable process. It also
-  holds the grace period (60 s) and the time bound (8 s). It is a rule file.
+  holds the grace period (60 s), the time bound (8 s) and a `spare` list of the processes it never
+  ends, nor any tree that holds one: a daemon detached by design reads as an orphan, and the
+  shared MCP proxy `mcp-proxy`, found by the first dry run on 2026-11-20, is its first entry. It
+  is a rule file.
 - **The reaper.** `scripts/agent-harness/reaper/`: a pure core that takes the process list as
   data, and a thin platform adapter. An orphan is a process whose parent pid names no live
   process, or names one that started after it (a reused pid); on POSIX also one whose parent is
   pid 1 or the user's subreaper. The reaper ends an orphan whose command line matches a family,
-  with its whole descendant tree, and never touches its own ancestry, a tree that holds a process
-  younger than the grace period, or anything outside the families. It lists processes with
+  with its whole descendant tree, and never touches its own ancestry, a tree that holds a spared
+  process or one younger than the grace period, or anything outside the families. It lists processes with
   `Get-CimInstance Win32_Process` on Windows and `ps` on POSIX, and ends a tree with
   `taskkill /PID <pid> /T /F` on Windows and SIGTERM then SIGKILL after 2 s on POSIX.
 - **The commands.** `pnpm reap` is a dry run that prints each candidate (pid, family, age, MB)

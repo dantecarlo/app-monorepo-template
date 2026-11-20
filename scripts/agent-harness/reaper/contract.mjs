@@ -4,7 +4,10 @@
 // name, a missing field, an id used twice or a pattern that does not compile
 // throws, naming the file and the entry, so the reaper ends nothing from a
 // contract it cannot read. Each pattern compiles case-insensitive; a wrapper
-// family's pattern is read against the process name (plan.mjs).
+// family's pattern is read against the process name (plan.mjs). The
+// optional `spare` list names, in the same shape without `wrapper`, the
+// processes the reaper never ends, nor any tree that holds one: a daemon
+// detached by design reads as an orphan.
 // ---------------------------------------------------------------------------
 
 import { readFileSync } from 'node:fs'
@@ -12,7 +15,7 @@ import { join } from 'node:path'
 
 export const CONTRACT = '.agents/contracts/process-reaper.json'
 
-const TOP_KEYS = ['$comment', 'boundSeconds', 'families', 'graceSeconds']
+const TOP_KEYS = ['$comment', 'boundSeconds', 'families', 'graceSeconds', 'spare']
 const FAMILY_KEYS = ['id', 'pattern', 'what', 'wrapper']
 const REQUIRED_FAMILY_KEYS = ['id', 'pattern', 'what']
 const SECONDS_KEYS = ['boundSeconds', 'graceSeconds']
@@ -39,10 +42,12 @@ const compile = ({ id, pattern }) => {
   }
 }
 
-const familyOf = ({ family, index }) => {
-  if (!isObject(family)) refuse({ problem: `families[${index}] is not an object` })
-  const label = typeof family.id === 'string' ? family.id : `families[${index}]`
-  const unknown = unknownKeys({ allowed: FAMILY_KEYS, value: family })
+const familyOf = ({ family, index, list = 'families' }) => {
+  if (!isObject(family)) refuse({ problem: `${list}[${index}] is not an object` })
+  const label = typeof family.id === 'string' ? family.id : `${list}[${index}]`
+  const allowed =
+    list === 'families' ? FAMILY_KEYS : FAMILY_KEYS.filter((key) => key !== 'wrapper')
+  const unknown = unknownKeys({ allowed, value: family })
   if (unknown.length > 0) {
     refuse({ problem: `family ${label}: unknown key ${unknown.join(', ')}` })
   }
@@ -89,15 +94,22 @@ export const parseContract = ({ text }) => {
   const families = parsed.families.map((family, index) =>
     familyOf({ family, index })
   )
+  if (parsed.spare !== undefined && !Array.isArray(parsed.spare)) {
+    refuse({ problem: 'spare must be a list' })
+  }
+  const spare = (parsed.spare ?? []).map((entry, index) =>
+    familyOf({ family: entry, index, list: 'spare' })
+  )
   const seen = new Set()
-  families.forEach(({ id }) => {
+  ;[...families, ...spare].forEach(({ id }) => {
     if (seen.has(id)) refuse({ problem: `family ${id} is listed twice` })
     seen.add(id)
   })
   return {
     boundSeconds: parsed.boundSeconds,
     families,
-    graceSeconds: parsed.graceSeconds
+    graceSeconds: parsed.graceSeconds,
+    spare
   }
 }
 

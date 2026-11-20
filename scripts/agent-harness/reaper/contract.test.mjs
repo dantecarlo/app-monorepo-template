@@ -50,6 +50,35 @@ test('the committed contract lists every family the reaper may end', () => {
   })
 })
 
+test('the committed contract spares the shared MCP proxy, detached by design', () => {
+  const { spare } = loadContract({ root: REPO_ROOT })
+  assert.deepEqual(
+    spare.map(({ id }) => id),
+    ['mcp-proxy']
+  )
+  const [proxy] = spare
+  assert.ok(
+    proxy.regex.test(
+      '"C:\\u\\.local\\bin\\mcp-proxy.exe" --port 3710 --named-server context7 "node C:/u/context7-mcp/dist/index.js"'
+    )
+  )
+  assert.ok(proxy.regex.test('/home/u/.local/bin/mcp-proxy --port 3710'))
+  assert.ok(!proxy.regex.test('node /u/_npx/1a2b/node_modules/.bin/metro-mcp'))
+})
+
+test('a spare entry that carries the wrapper flag is refused, naming it', () => {
+  assert.throws(
+    () =>
+      parseContract({
+        text: textOf({ spare: [{ ...FAMILY, id: 'proxy', wrapper: true }] })
+      }),
+    (error) =>
+      error.message.startsWith(`${CONTRACT}:`) &&
+      error.message.includes('proxy') &&
+      error.message.includes('wrapper')
+  )
+})
+
 // The shapes each family must recognise, as the listings print them; every
 // line is synthetic, its paths made up.
 const SHAPES = [

@@ -14,8 +14,9 @@
 // whole descendant tree. A wrapper family (cmd.exe, conhost.exe) is read by
 // the name alone and makes an orphan a candidate only when, its childless
 // wrappers aside, it has one child and that child is reapable. A candidate
-// tree that holds the reaper or one of its ancestors, or a process younger
-// than the grace period or of an unreadable age, is kept with its reason.
+// tree that holds the reaper or one of its ancestors, a process the
+// contract spares (a daemon detached by design), or a process younger than
+// the grace period or of an unreadable age, is kept with its reason.
 // ---------------------------------------------------------------------------
 
 const WINDOWS = 'win32'
@@ -29,6 +30,7 @@ const BYTES_PER_MB = 1_048_576
 export const KEPT = Object.freeze({
   AGELESS: 'a process in it has a start time the listing cannot read',
   ANCESTRY: 'it holds the reaper or one of its ancestors',
+  SPARED: 'it holds a process the contract spares',
   YOUNG: 'a process in it is younger than the grace period'
 })
 
@@ -122,8 +124,12 @@ const ancestryOf = ({ index, selfPid }) => {
   return pids
 }
 
-const keptReason = ({ ancestry, graceMs, now, tree }) => {
+const keptReason = ({ ancestry, graceMs, now, spare, tree }) => {
   if (tree.some(({ pid }) => ancestry.has(pid))) return KEPT.ANCESTRY
+  const spared = spare.find(({ regex }) =>
+    tree.some((process) => regex.test(textOf({ process })))
+  )
+  if (spared) return `${KEPT.SPARED} (${spared.id})`
   if (tree.some(({ startMs }) => startMs === null)) return KEPT.AGELESS
   return tree.some(({ startMs }) => now - startMs < graceMs)
     ? KEPT.YOUNG
@@ -140,7 +146,7 @@ const keptReason = ({ ancestry, graceMs, now, tree }) => {
  * largest first; `totalMb` is their sum.
  */
 export const planReap = ({ contract, now, platform, processes, selfPid }) => {
-  const { families, graceSeconds } = contract
+  const { families, graceSeconds, spare = [] } = contract
   const index = indexOf({ processes })
   const ancestry = ancestryOf({ index, selfPid })
   const candidates = []
@@ -154,6 +160,7 @@ export const planReap = ({ contract, now, platform, processes, selfPid }) => {
       ancestry,
       graceMs: graceSeconds * MS_PER_SECOND,
       now,
+      spare,
       tree
     })
     if (reason !== null) {

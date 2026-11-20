@@ -204,6 +204,28 @@ test("a tree that holds the reaper's own ancestry is kept", () => {
   ])
 })
 
+test('a tree that holds a process the contract spares is kept', () => {
+  // A shared MCP proxy runs detached by design, so it reads as an orphan,
+  // and its command line names an MCP server it hosts.
+  const PROXY =
+    '"C:\\u\\.local\\bin\\mcp-proxy.exe" --port 3710 --named-server context7 "node C:/u/context7-mcp/dist/index.js"'
+  const processes = [
+    ...SESSION,
+    proc({ command: PROXY, name: 'mcp-proxy.exe', pid: 90, ppid: 7 }),
+    proc({ command: `"C:\\uv\\python.exe" ${PROXY}`, name: 'python.exe', pid: 91, ppid: 90 }),
+    proc({ command: '"node" "C:/u/context7-mcp/dist/index.js"', pid: 92, ppid: 91 }),
+    // A family orphan whose tree holds the proxy is kept too.
+    proc({ command: LAUNCHER, pid: 95, ppid: 8 }),
+    proc({ command: PROXY, name: 'mcp-proxy.exe', pid: 96, ppid: 95 })
+  ]
+  const result = plan({ processes })
+  assert.deepEqual(result.candidates, [])
+  assert.deepEqual(result.kept, [
+    { family: 'mcp-server', pid: 90, reason: `${KEPT.SPARED} (mcp-proxy)` },
+    { family: 'npx-mcp', pid: 95, reason: `${KEPT.SPARED} (mcp-proxy)` }
+  ])
+})
+
 test('a tree with a process younger than the grace period is kept', () => {
   const processes = [
     ...SESSION,

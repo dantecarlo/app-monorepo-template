@@ -10,8 +10,9 @@
 The reaper contract `.agents/contracts/process-reaper.json` SHALL hold the grace period and the
 time bound in whole seconds and a non-empty list of families, each with a kebab-case `id` used
 once, a `pattern` that compiles as a regular expression and a non-empty `what`, a wrapper family
-also `wrapper: true`, and no other key; the reaper refuses a contract that breaks this shape,
-naming the file and the entry.
+also `wrapper: true`, and no other key, and an optional `spare` list of entries in the same shape
+without `wrapper`; the reaper refuses a contract that breaks this shape, naming the file and the
+entry.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -22,6 +23,13 @@ naming the file and the entry.
 - **THEN** it holds the npx-launched MCP servers, the MCP server entrypoints, vitest, turbo,
   esbuild, tsc, jest, `git-remote-https` and the console wrappers, a 60 s grace and an 8 s bound
 - **Test:** `scripts/agent-harness/reaper/contract.test.mjs` › "the committed contract lists every family the reaper may end"
+
+#### Scenario: the spare list
+
+- **GIVEN** the committed contract
+- **WHEN** the reaper loads it
+- **THEN** its spare list names the shared MCP proxy, `mcp-proxy`, and no MCP server it hosts
+- **Test:** `scripts/agent-harness/reaper/contract.test.mjs` › "the committed contract spares the shared MCP proxy, detached by design"
 
 #### Scenario: an unknown key
 
@@ -122,8 +130,9 @@ line alone never makes it one.
 ### Requirement: REAP-05 — The reaper's own ancestry and a young process are never touched
 
 The reaper SHALL keep, with its reason, a candidate tree that holds the reaper itself or any of
-its ancestors, and one that holds a process younger than the contract's grace period or of an
-unreadable age.
+its ancestors, one that holds a process an entry of the contract's spare list matches (a daemon
+detached by design, which reads as an orphan), naming that entry, and one that holds a process
+younger than the contract's grace period or of an unreadable age.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -133,6 +142,14 @@ unreadable age.
 - **WHEN** the reaper plans
 - **THEN** that tree is kept, with the reason that it holds the reaper's ancestry
 - **Test:** `scripts/agent-harness/reaper/plan.test.mjs` › "a tree that holds the reaper's own ancestry is kept"
+
+#### Scenario: a daemon detached by design
+
+- **GIVEN** an orphaned `mcp-proxy.exe` whose command line names `context7-mcp`, and an orphaned
+  npx launcher whose tree holds another
+- **WHEN** the reaper plans
+- **THEN** both trees are kept, each with the reason that it holds a process the contract spares
+- **Test:** `scripts/agent-harness/reaper/plan.test.mjs` › "a tree that holds a process the contract spares is kept"
 
 #### Scenario: the grace period
 
