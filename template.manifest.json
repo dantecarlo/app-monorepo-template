@@ -98,6 +98,8 @@
     "scripts/mcp-docs.detect.mjs",
     "scripts/move-tests-into-blocks.mjs",
     "scripts/move-tests-into-blocks.test.mjs",
+    "scripts/prune-worktrees.mjs",
+    "scripts/prune-worktrees.test.mjs",
     "scripts/update-mcp-docs.mjs",
     "scripts/update-mcp-docs.test.mjs",
     "scripts/verify-agent-context.mjs",
@@ -179,6 +181,7 @@
       "group": "web",
       "requires": ["design-tokens"],
       "claims": [
+        ".claude/launch.example.json",
         "apps/web/.env.example",
         "apps/web/__tests__/next.config.test.ts",
         "apps/web/next.config.ts",

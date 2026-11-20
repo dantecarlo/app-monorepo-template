@@ -18,7 +18,7 @@ after it, so the cheap ones run first.
 | Layer      | When it runs    | What it costs | What it catches                    |
 | ---------- | --------------- | ------------- | ---------------------------------- |
 | **Editor** | As you type     | free          | Types, lint rules, formatting      |
-| **Hooks**  | On commit       | seconds       | Staged-file lint, commit message   |
+| **Hooks**  | On commit, merge | seconds      | Staged-file lint, commit message; merged worktrees removed |
 | **Gate**   | `pnpm validate` | minutes       | Everything below                   |
 | **CI**     | On push and PR  | minutes       | The gate again, on a clean machine |
 
@@ -39,9 +39,30 @@ Managed by Husky, in `.husky/`.
 | ------------ | ----------------------- | --------------------------------- |
 | `pre-commit` | `pnpm exec lint-staged` | ESLint + Prettier on staged files |
 | `commit-msg` | `pnpm exec commitlint`  | Conventional commits              |
+| `post-merge` | `node scripts/prune-worktrees.mjs --quiet` | Removes merged worktrees, then fast-forwards the main checkout; never fails the merge |
 
-`git commit --no-verify` skips both hooks; CI's `commitlint` job lints the
+`git commit --no-verify` skips both commit hooks; CI's `commitlint` job lints the
 commit messages of a pull request again, its default ignores aside (Layer 4).
+
+`post-merge` runs after a local `git merge` or `git pull`, in whichever
+worktree ran it, and is the only hook that changes other checkouts.
+`pnpm worktrees:prune` runs the same pruner by hand, and `--dry-run` prints
+what it would remove and move, touching nothing. After `git fetch --prune
+origin` it removes a linked worktree only when its branch's upstream is
+gone, its HEAD is in the default branch (the one `origin/HEAD` names), and
+`git status` shows nothing modified or untracked and no ignored file outside
+what an install, a build or the next session writes again (`node_modules/`,
+the build outputs at a root, `.atl/`, `.husky/_/`); an env file keeps it.
+It never removes the main checkout, the worktree it runs in, a worktree
+under `.claude/worktrees/` or one holding another worktree. Last, it
+fast-forwards the main checkout with `git merge --ff-only` when that
+checkout is on the default branch; when git refuses, because of a local
+change, a line-ending-only change git counts as one, or a local commit, the
+checkout stays and a line says how far behind it is and what git said.
+`core.hooksPath` stays the relative `.husky/_` husky writes at repository
+level, so each worktree runs the hooks of its own checkout. Never set it per
+worktree or as an absolute path: git 2.55 copied an absolute per-worktree
+value into every new worktree, which then ran another checkout's hooks.
 
 Hooks are deliberately thin. Semantic checks belong in the gate, where they can
 see the whole repo — a hook that reads only staged files cannot tell you that a
@@ -110,6 +131,7 @@ the pre-commit hook on staged files.
 | `verify:workflow-pins` | Every `uses:` of every workflow under `.github/workflows/` (`.yml` or `.yaml`), a step and a reusable workflow alike, is pinned to a full 40-character commit SHA, the tag it was resolved from kept as a comment; a local action (`./`) and a Docker image (`docker://`) are exempt; a line inside any block scalar (`\|` or `>`, a `run:` script and a folded `name:` alike) is not judged, a comment never opens one, and a quoted `"uses":` key is judged. `verify:workflow-pins:test` plants a tag, a branch, a short SHA and a missing ref |
 | `verify:skill-frontmatter` | Every `.claude/skills/*/SKILL.md` has a frontmatter that parses, a `name` that is its folder, and a description of at most 1,024 characters once parsed (the line break a `>` block keeps counted) that holds `USE WHEN:` and `DO NOT USE:`; a skill `.claude/skills-lock.json` lists (archify) is vendored and gets the parse, name and length checks only. `verify:skill-frontmatter:test` plants each refusal, both quoting styles and both block styles |
 | `git-free-env:test`, `hook-git-dir:test` | `gitFreeEnv()` drops every `GIT_*` variable, in any case, from the environment a script hands to git or to a child; `withHookGitDir` runs a flow with `GIT_DIR` and `GIT_INDEX_FILE` naming a decoy repository, as a git hook exports them, reports whether anything under the decoy changed, and puts both variables back and removes the decoy however the flow ends. Every suite that spawns git runs one end-to-end case under it and asserts the decoy is left alone; `init-project:test` takes its whole copy under it |
+| `worktrees:prune:test` | `scripts/prune-worktrees.test.mjs` drives the pruner (Layer 2) over a scratch origin, its clone and one linked worktree per case, `--dry-run` first: the merged clean worktree goes and its branch with it; every reason to keep one is seen kept and printed, an ignored file nothing rebuilds and an env file among them, and a file that differs only in its line endings; a dry run removes and moves nothing; the main checkout is fast-forwarded to `origin/HEAD`'s branch, whatever its name, and is left, with git's reason, over a local change or a line-ending-only one; an unset `origin/HEAD` exits 1 naming `git remote set-head origin --auto`; and the real `.husky/post-merge`, run by `git hook run`, prunes and exits 0 even when the pruner fails |
 | `codex-budget:test`   | The generated `.codex/config.toml` sets `project_doc_max_bytes` above every table header, and `AGENTS.md`, counted with CRLF endings, fits it: Codex drops what is past the budget |
 | `check:identity`      | The template's default identity is gone (skipped on self)                                 |
 | `knip`                | No dead exports, no unlisted or unused dependencies                                       |
