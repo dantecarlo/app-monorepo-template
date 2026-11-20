@@ -90,10 +90,14 @@ Stop there: the session that built a ticket never moves it further.
 
 ## Changes requested
 
-On `<id> changes requested`: `read` QA's comment and `move` the ticket to In dev. Before any later
-change in this worktree, pull the branch (`git pull origin <branch>`): QA may have pushed to it
-when it brought the branch current (`qa-ticket` Step 5). Then fix it in the same worktree test
-first, run Step 5 again, push, then Step 7.
+On `<id> changes requested`, from QA or from the architect: `read` the comment and `move` the
+ticket to In dev. Before any later change in this worktree, pull the branch
+(`git pull origin <branch>`): QA or the architect may have pushed to it when they brought the
+branch current (`qa-ticket` Step 5, `refine-ticket` § Merge queue). A conflict with its base,
+which the architect met and left to this session → merge the base, the branch this one was cut
+from, into it here (`git fetch origin && git merge origin/<base>`, never a rebase, since others
+push to it unforced) and resolve it. Then fix it in the same worktree test first, run Step 5
+again, push, then Step 7.
 
 On `<id> merged`, which the architect sends once the ticket is Done: remove the worktree
 (`git worktree remove <path>`).
