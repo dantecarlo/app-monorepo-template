@@ -39,8 +39,7 @@ const isRunning = ({ pid }) => {
  * is not reached.
  * With `wait`, the call returns once Windows' taskkill has, and the tree has
  * ended; without it, taskkill runs in the background. Either way taskkill is
- * stopped after 5 s. An `exit` handler
- * completes only synchronous work.
+ * stopped after 5 s. An `exit` handler completes only synchronous work.
  *
  * Returns false only when the tree could not be signalled and the child is
  * still running; a child that never started, or already ended, returns true.
