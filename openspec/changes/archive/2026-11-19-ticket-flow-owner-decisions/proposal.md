@@ -126,7 +126,7 @@ for the owner to confirm or correct:
   merge queue, so no other session needs the event: a line from the architect to the PO would
   announce repository work the PO no longer does and nothing in its procedure acts on, and a
   line from the architect to itself is no message.
-- **A7 — the catalog pull request follows the merge policy.** The decision gives the architect
+- **A7 — the catalog pull request follows the merge policy.** Confirmed by the owner on 2026-11-19 (translated from Spanish): "Follow the policy". The decision gives the architect
   its closing, so the catalog pull request is merged like a ticket's: on the owner's word under
   `manual`, and without asking under `low-risk`, where it qualifies by changing only a passive
   file, docs/GENERAL_PLAN.md, once its board check passes. This replaces A1 of
