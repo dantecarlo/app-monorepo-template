@@ -440,7 +440,10 @@ comments, strings, quoted identifiers and dollar-quoted bodies blanked, by a
 reader of its own in `src/pgTapBundle.helper.ts` that splits them as the
 Postgres lexer does: a `--` comment ends at `\n` or `\r`; `/* */` comments nest;
 a double-quoted identifier doubles its `"`; a string doubles its `'`, and an
-escape string (`E'...'`) also escapes with a backslash; a dollar quote's tag
+escape string (`E'...'`) also escapes with a backslash; a string continues past
+whitespace that holds a newline, `--` comments included before and after it,
+into the next `'`, in the same mode, so a continued escape string keeps its
+backslash escapes, while whitespace with no newline ends it; a dollar quote's tag
 takes letters, digits, `_` and non-ASCII characters, never a leading digit, and
 a `$` right after an identifier character belongs to the identifier (`a$b$`).
 The order check keeps its own reader (`src/sqlCode.helper.ts`). It stops the

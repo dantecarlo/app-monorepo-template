@@ -7,6 +7,7 @@ import {
   DOLLAR_QUOTE_TAG,
   DOLLAR_SIGN,
   ESCAPE_STRING_PREFIX,
+  HORIZONTAL_SPACE,
   IDENTIFIER_CHARACTER,
   IDENTIFIER_QUOTE,
   KEEP_GROUP_ONE,
@@ -17,6 +18,7 @@ import {
   MIGRATION_FILE_PATTERN,
   MIGRATION_LEDGER,
   MIGRATION_TAG_STEM,
+  NEWLINE,
   NOT_LINE_BREAK,
   OPENING_STATEMENT,
   PARAMETER_DIGIT,
@@ -256,6 +258,35 @@ const blockCommentEnd = ({
   return UNCLOSED
 }
 
+// The offset of the `'` that continues a string closed just before `start`: past spaces,
+// tabs, form feeds, vertical tabs, newlines and `--` comments, with at least one newline,
+// as scan.l's `quotecontinue` reads it; -1 when the string ends there.
+const continuationQuote = ({
+  sql,
+  start
+}: {
+  sql: string
+  start: number
+}): number => {
+  let crossedNewline = false
+  let index = start
+  while (index < sql.length) {
+    const character = sql[index]
+    if (character === SQL_QUOTE) return crossedNewline ? index : -1
+    if (NEWLINE.test(character)) {
+      crossedNewline = true
+      index += 1
+    } else if (HORIZONTAL_SPACE.test(character)) {
+      index += 1
+    } else if (sql.startsWith(LINE_COMMENT, index)) {
+      index = lineCommentEnd({ sql, start: index })
+    } else {
+      return -1
+    }
+  }
+  return -1
+}
+
 const quotedEnd = ({
   backslashEscapes,
   quote,
@@ -277,7 +308,12 @@ const quotedEnd = ({
     } else if (sql[index + 1] === quote) {
       index += 2
     } else {
-      return index + quote.length
+      const continued =
+        quote === SQL_QUOTE
+          ? continuationQuote({ sql, start: index + quote.length })
+          : -1
+      if (continued === -1) return index + quote.length
+      index = continued + quote.length
     }
   }
   return UNCLOSED

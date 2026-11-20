@@ -440,6 +440,41 @@ describe('bundlePgTapFiles', () => {
   )
 
   test.each([
+    "begin;\nselect E'a'\n'\\' '; commit; -- '\nselect 1;\nrollback;\n",
+    "begin;\nselect plan(1);\nselect is(E'a'\n'\\' ', 'a'' ', 'desc'); commit; -- '\nselect * from finish();\nrollback;\n",
+    "begin;\nselect E'a'\n-- note\n'\\' '; commit; -- '\nselect 1;\nrollback;\n",
+    "begin;\nselect E'a' -- note\n'\\' '; commit; -- '\nselect 1;\nrollback;\n"
+  ])(
+    'refuses a commit after an escape string continued past a newline, naming the file: %s',
+    (sql) => {
+      expect(() =>
+        bundlePgTapFiles({
+          migrations: [BASE],
+          tests: [{ name: 'continued.test.sql', sql }]
+        })
+      ).toThrow(
+        'test:db ran nothing: continued.test.sql runs commit inside its transaction, where only its first begin; and its last rollback; may control it'
+      )
+    }
+  )
+
+  test.each([
+    "begin;\nselect E'a' '\\' '; commit; -- '\nselect 1;\nrollback;\n",
+    "begin;\nselect ok(true, 'a'\n'b');\nrollback;\n",
+    "begin;\nselect ok(true, 'a' -- note\r\n  'b');\nrollback;\n"
+  ])(
+    'continues a string only past whitespace that holds a newline, as Postgres does: %s',
+    (sql) => {
+      expect(
+        bundlePgTapFiles({
+          migrations: [BASE],
+          tests: [{ name: 'joined.test.sql', sql }]
+        }).map(({ name }) => name)
+      ).toEqual(['joined.test.sql'])
+    }
+  )
+
+  test.each([
     "begin;\nselect 'never closed;\nrollback;\n",
     "begin;\nselect E'never closed\\';\nrollback;\n",
     'begin;\nselect 1 as "never closed;\nrollback;\n',

@@ -33,6 +33,10 @@ export const NOT_LINE_BREAK = /[^\r\n]/g
 // digit, and a `$` right after an identifier character belongs to the identifier.
 export const LINE_COMMENT = '--'
 export const LINE_COMMENT_END = /[\r\n]/
+// A string continues past whitespace that holds a newline, `--` comments included before
+// and after it, into the next `'`, in the same mode (scan.l `quotecontinue`).
+export const NEWLINE = /^[\r\n]$/
+export const HORIZONTAL_SPACE = /^[ \t\f\v]$/
 export const BLOCK_COMMENT_OPEN = '/*'
 export const BLOCK_COMMENT_CLOSE = '*/'
 export const IDENTIFIER_QUOTE = '"'
