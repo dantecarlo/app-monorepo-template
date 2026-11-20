@@ -12,7 +12,13 @@ import assert from 'node:assert/strict'
 import { tmpdir } from 'node:os'
 import { test } from 'node:test'
 
-import { classify, liveHost, normalizePath } from './paths.mjs'
+import {
+  absolutePath,
+  classify,
+  isAbsolutePath,
+  liveHost,
+  normalizePath
+} from './paths.mjs'
 
 const REPO = 'C:\\work\\repo'
 const SCRATCH = 'C:\\Users\\me\\AppData\\Local\\Temp'
@@ -296,3 +302,36 @@ test('the live host lists the OS temp dir among its scratch roots', () => {
     null
   )
 })
+
+// -- the folder a shell command runs in ----------------------------------------
+for (const [text, path] of [
+  ['src', 'c:/work/repo/src'],
+  ['..\\other', 'c:/work/other'],
+  ['/c/work/x', 'c:/work/x'],
+  ['D:\\a\\', 'd:/a']
+]) {
+  test(`a cd target resolves against the folder it runs from: ${text}`, () => {
+    assert.equal(absolutePath({ cwd: REPO, host: HOST, text }), path)
+  })
+}
+
+test('a cd target the guard cannot read throws', () => {
+  assert.throws(
+    () => absolutePath({ cwd: REPO, host: HOST, text: 'notes::$DATA' }),
+    /stream/
+  )
+})
+
+for (const [text, absolute] of [
+  ['/tmp', true],
+  ['C:\\x', true],
+  ['c:', true],
+  ['\\\\server\\share', true],
+  ['src', false],
+  ['./a', false],
+  ['~/a', false]
+]) {
+  test(`isAbsolutePath reads ${text} as ${absolute ? 'absolute' : 'relative'}`, () => {
+    assert.equal(isAbsolutePath({ host: HOST, text }), absolute)
+  })
+}

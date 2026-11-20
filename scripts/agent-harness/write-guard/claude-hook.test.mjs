@@ -5,14 +5,14 @@
 // this checkout. The broken-guard cases run a copy of the hook from a
 // scratch tree in the OS temp directory, which `withScratchTree` removes;
 // the junction case builds its own scratch tree and removes it. No case
-// imports the hook: each spawns it, and each checks it never prints allow.
+// imports the hook: each spawns it, and each checks it never prints allow
+// (claude-hook.fixtures.mjs). The shell tools are claude-hook.shell.test.mjs's.
 //
 // Usage:
 //   node --test scripts/agent-harness/write-guard/claude-hook.test.mjs
 // ---------------------------------------------------------------------------
 
 import assert from 'node:assert/strict'
-import { spawnSync } from 'node:child_process'
 import {
   mkdirSync,
   mkdtempSync,
@@ -23,66 +23,20 @@ import {
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { join } from 'node:path'
 import { test } from 'node:test'
-import { fileURLToPath } from 'node:url'
 
 import { withScratchTree } from '../../gate/scratch.mjs'
+import {
+  GUARD_DIRECTORY,
+  HOOK,
+  LOADED_MODULES,
+  payloadFor,
+  rawHookOutput,
+  REPO_ROOT,
+  spawnHook
+} from './claude-hook.fixtures.mjs'
 import { AGENT_CONTEXT_FILE, POLICY_FILE, SWITCH_OFF } from './policy.mjs'
-
-const HERE = dirname(fileURLToPath(import.meta.url))
-const HOOK = join(HERE, 'claude-hook.mjs')
-const REPO_ROOT = resolve(HERE, '..', '..', '..')
-const GUARD_DIRECTORY = 'scripts/agent-harness/write-guard'
-// The modules outside the guard's folder that it loads: its glob reader.
-const LOADED_MODULES = [
-  'scripts/manifest.mjs',
-  'scripts/manifest-owners.mjs'
-]
-
-// The environment the hook starts in, without a switch-off a developer may
-// have exported.
-const CLEAN_ENV = Object.fromEntries(
-  Object.entries(process.env).filter(
-    ([key]) => key !== SWITCH_OFF.variable
-  )
-)
-
-// What the hook prints, after it exits 0 with nothing on stderr.
-const rawHookOutput = ({ env = {}, hook = HOOK, input }) => {
-  const result = spawnSync(process.execPath, [hook], {
-    encoding: 'utf8',
-    env: { ...CLEAN_ENV, ...env },
-    input
-  })
-  assert.equal(result.status, 0, result.stderr)
-  assert.equal(result.stderr, '')
-  return result.stdout
-}
-
-const spawnHook = (call) => {
-  const stdout = rawHookOutput(call)
-  assert.ok(!stdout.includes('"allow"'), stdout)
-  return stdout === '' ? null : JSON.parse(stdout).hookSpecificOutput
-}
-
-const payloadFor = ({
-  agent,
-  cwd = REPO_ROOT,
-  filePath,
-  tool = 'Write'
-}) =>
-  JSON.stringify({
-    ...(agent === undefined ? {} : { agent_type: agent }),
-    cwd,
-    hook_event_name: 'PreToolUse',
-    session_id: 'write-guard-test',
-    tool_input:
-      tool === 'NotebookEdit'
-        ? { new_source: 'x', notebook_path: filePath }
-        : { content: 'x', file_path: filePath },
-    tool_name: tool
-  })
 
 test('END TO END: the main session is asked before it writes AGENTS.md', () => {
   const output = spawnHook({
@@ -175,20 +129,6 @@ test('END TO END: ATL_WRITE_GUARD=off prints nothing', () => {
       input: payloadFor({
         agent: 'validator',
         filePath: join(REPO_ROOT, 'AGENTS.md')
-      })
-    }),
-    null
-  )
-})
-
-test('END TO END: a Bash command prints nothing in this slice', () => {
-  assert.equal(
-    spawnHook({
-      input: JSON.stringify({
-        agent_type: 'validator',
-        cwd: REPO_ROOT,
-        tool_input: { command: 'echo x > AGENTS.md' },
-        tool_name: 'Bash'
       })
     }),
     null

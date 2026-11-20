@@ -3,96 +3,51 @@
 // runtime. Each runtime's adapter (claude-hook.mjs for Claude Code) reads its
 // own payload, calls `decide`, and prints the verdict its runtime reads.
 //
-// It judges the file tools, Edit, Write and NotebookEdit:
+// It judges the file tools (Edit, Write, NotebookEdit), Bash and PowerShell:
 //
-//   | Actor                      | Scratch or sink | Rule file | Other path  |
-//   | read-only agent            | —               | deny      | deny        |
-//   | surface agent              | —               | ask       | deny unless |
-//   |                            |                 |           | in surface  |
-//   | writer, main, unlisted     | —               | ask       | —           |
+//   | Target or input             | Read-only | Surface agent | Writer, main, |
+//   |                             |           |               | unlisted      |
+//   | scratch or a sink           | —         | —             | —             |
+//   | rule file                   | deny      | ask           | ask           |
+//   | surface path, no rule       | n/a       | —             | —             |
+//   | other path                  | deny      | deny          | —             |
+//   | Bash it cannot read         | deny      | deny          | ask if it     |
+//   |                             |           |               | names a rule  |
+//   | PowerShell                  | deny      | deny          | ask on a      |
+//   |                             |           |               | write cmdlet  |
+//   |                             |           |               | naming a rule |
+//   | guard error                 | deny      | deny          | ask           |
 //
-//   | Agent context unreadable   | deny for every subagent, writers too;   |
-//   |                            | the main session is judged as above     |
+//   | Agent context unreadable    | deny for every subagent, writers too;   |
+//   |                             | the main session is judged as above     |
 //
 // "—" prints nothing. The guard never allows: it only asks or refuses, and
 // otherwise leaves the call to the runtime's own permissions. A deny wins
-// over an ask, and an ask over nothing. A rule file is read against every
-// checkout that holds the target and against the home folder. An error,
-// a path spelling paths.mjs cannot read among them, refuses a policed agent
-// (read-only, surface, or one whose entry cannot be read) and asks anyone
-// else. `ATL_WRITE_GUARD=off` (the policy's switchOff) silences it all.
-//
-// Bash and PowerShell are NOT judged here: they return nothing, and their
-// tokenizer comes in a later slice. So a shell command can still write a
-// rule file, for every actor.
+// over an ask, and an ask over nothing; the main session is never refused.
+// A path is read the same whichever tool writes it (target.mjs): against
+// every checkout that holds it and the home folder, with every Windows
+// spelling paths.mjs reads. A Bash command is read by shell.mjs, which finds
+// the paths it writes and the programs whose writes it cannot read; those
+// are refused to a read-only agent and, for anyone else, asked about only
+// when the command names a rule path (mentions.mjs). PowerShell is not
+// parsed (powershell.mjs). An error, a path spelling paths.mjs cannot read
+// among them, refuses a policed agent (read-only, surface, or one whose
+// entry cannot be read) and asks anyone else. `ATL_WRITE_GUARD=off` (the
+// policy's switchOff) silences it all.
 // ---------------------------------------------------------------------------
 
-import { classify, liveHost, TARGET_KIND } from './paths.mjs'
+import { namedRule } from './mentions.mjs'
+import { liveHost } from './paths.mjs'
 import {
   ACTOR_KIND,
   actorFor,
-  AGENT_CONTEXT_FILE,
   assertPolicy,
-  homeRuleFor,
-  isSwitchedOff,
-  POLICY_FILE,
-  ruleFor,
-  SWITCH_OFF
+  isSwitchedOff
 } from './policy.mjs'
-
-// -- the reasons: each names the rule that fired, the file, and how to
-// proceed; a rule file cites the LAW it protects. -----------------------------
-
-const LAW =
-  'The LAW "A rule is not edited to fit the work" (AGENTS.md) lets a rule ' +
-  'change only when the owner asks for that change, in words, as the request.'
-
-const SWITCH =
-  `${SWITCH_OFF.variable}=${SWITCH_OFF.value} set when launching the ` +
-  'session switches the guard off'
-
-const ADVICE_REPORT = 'Report the change for the caller to make.'
-
-const ADVICE_SCRATCH =
-  'Write probes and logs under the OS temp dir instead (a folder from ' +
-  'mktemp -d), or report the change for the caller to make.'
-
-const calls = ({ text, tool }) => `${tool} \`${text}\``
-
-const ruleClause = ({ rule }) =>
-  `edits a rule file: the path matches \`${rule.glob}\` (${rule.what}) ` +
-  `in ${POLICY_FILE}.`
-
-const byWhom = ({ actor }) =>
-  actor.name === null ? '' : ` by ${actor.name}`
-
-const askForRuleFile = ({ actor, rule, text, tool }) =>
-  `${calls({ text, tool })}${byWhom({ actor })} ${ruleClause({ rule })} ` +
-  `${LAW} Approve only if the owner asked for this edit; otherwise stop, ` +
-  'name the rule and what it costs the work, and ask the owner.'
-
-const denyRuleFile = ({ actor, rule, text, tool }) =>
-  `${actor.name} is read-only (writes: false in ${AGENT_CONTEXT_FILE}): ` +
-  `${calls({ text, tool })} ${ruleClause({ rule })} ${LAW} ${ADVICE_REPORT}`
-
-const denyReadOnly = ({ actor, kind, text, tool }) =>
-  `${actor.name} is read-only (writes: false in ${AGENT_CONTEXT_FILE}): ` +
-  `${calls({ text, tool })} writes ` +
-  `${kind === TARGET_KIND.repo ? 'inside the repository' : 'outside the repository and the OS temp dir'}. ` +
-  ADVICE_SCRATCH
-
-const denyOutsideSurface = ({ actor, text, tool }) =>
-  `${actor.name} writes only under ` +
-  `${actor.surface.map((folder) => `${folder}/`).join(', ')} or the OS ` +
-  `temp dir (surface in ${AGENT_CONTEXT_FILE}): ${calls({ text, tool })} ` +
-  `is outside them. ${ADVICE_REPORT}`
-
-const guardError = ({ actor, denied, problem, tool }) =>
-  `The write guard could not judge this ${tool} (${problem}), so it ` +
-  `${denied ? `refuses it for ${actor.name}, which it polices` : 'asks before letting it run'}. ` +
-  `Fix what it names, or, if the owner agrees, ${SWITCH}.`
-
-// -- the decision ------------------------------------------------------------
+import { judgePowerShell } from './powershell.mjs'
+import { askReason, denyReason, guardError } from './reasons.mjs'
+import { judgeBash } from './shell.mjs'
+import { judgeTarget, LEVEL } from './target.mjs'
 
 // The key each file tool names its target with. A key another tool uses is
 // never read: a stray `file_path` beside a NotebookEdit's `notebook_path`
@@ -105,8 +60,9 @@ const TARGET_KEY = Object.freeze({
 
 export const FILE_TOOLS = Object.freeze(Object.keys(TARGET_KEY).sort())
 
-// Left to the slice that ports the donor's shell tokenizer.
-export const UNJUDGED_TOOLS = Object.freeze(['Bash', 'PowerShell'])
+export const SHELL_TOOLS = Object.freeze(['Bash', 'PowerShell'])
+
+const BASH = 'Bash'
 
 export const VERDICT = Object.freeze({ ask: 'ask', deny: 'deny' })
 
@@ -127,6 +83,14 @@ const targetOf = ({ payload, tool }) => {
   return target
 }
 
+const commandOf = ({ payload }) => {
+  const command = payload.tool_input?.command
+  if (typeof command !== 'string') {
+    throw new Error('the call names no command')
+  }
+  return command
+}
+
 const cwdOf = ({ payload }) => {
   const { cwd } = payload
   if (cwd !== undefined && typeof cwd !== 'string') {
@@ -135,53 +99,68 @@ const cwdOf = ({ payload }) => {
   return cwd
 }
 
-const inSurface = ({ actor, relative }) => {
-  const path = relative.toLowerCase()
-  return actor.surface.some(
-    (folder) => path === folder || path.startsWith(`${folder}/`)
-  )
+// The finding for one call, and the text a reason quotes from it.
+const findingOf = ({ actor, cwd, host, payload, policy, tool }) => {
+  if (FILE_TOOLS.includes(tool)) {
+    const text = targetOf({ payload, tool })
+    const found = judgeTarget({
+      actor,
+      contained: true,
+      cwd,
+      host,
+      policy,
+      text
+    })
+    return { finding: found && { ...found, shape: text } }
+  }
+  const command = commandOf({ payload })
+  const judge = tool === BASH ? judgeBash : judgePowerShell
+  return {
+    command,
+    finding: judge({
+      actor,
+      command,
+      cwd: cwd ?? host.ownRoot,
+      host,
+      policy
+    })
+  }
 }
-
-// The rule the target falls under, read against every checkout that holds
-// it, so a `.git` planted inside one cannot hide a rule file below it, and
-// against the home folder for the user-level files.
-const ruleOf = ({ policy, where }) =>
-  (where.roots ?? []).reduce(
-    (found, { relative }) => found ?? ruleFor({ policy, relative }),
-    undefined
-  ) ??
-  (where.homeRelative === undefined
-    ? undefined
-    : homeRuleFor({ policy, relative: where.homeRelative }))
 
 const judge = ({ actor, host, payload, policy, tool }) => {
   if (actor.kind === ACTOR_KIND.unknown) throw new Error(actor.problem)
   assertPolicy({ policy })
-  const text = targetOf({ payload, tool })
-  const where = classify({ cwd: cwdOf({ payload }), host, text })
+  const cwd = cwdOf({ payload })
+  const { command, finding } = findingOf({
+    actor,
+    cwd,
+    host,
+    payload,
+    policy,
+    tool
+  })
+  if (finding === undefined) return undefined
+  // A read-only agent is refused whatever the guard cannot settle.
   if (
-    where.kind === TARGET_KIND.sink ||
-    where.kind === TARGET_KIND.scratch
+    finding.level === LEVEL.deny ||
+    (finding.level === LEVEL.opaque && actor.kind === ACTOR_KIND.readOnly)
   ) {
+    return deny({ reason: denyReason({ actor, finding, tool }) })
+  }
+  const named =
+    finding.level === LEVEL.ask
+      ? finding.named
+      : namedRule({
+          cwd: cwd ?? host.ownRoot,
+          host,
+          policy,
+          text: command
+        })
+  if (finding.level === LEVEL.opaque && named === undefined)
     return undefined
-  }
-  const inRepository = where.kind === TARGET_KIND.repo
-  const rule = ruleOf({ policy, where })
-  const call = { actor, rule, text, tool }
-
-  if (actor.kind === ACTOR_KIND.readOnly) {
-    return deny({
-      reason:
-        rule === undefined
-          ? denyReadOnly({ ...call, kind: where.kind })
-          : denyRuleFile(call)
-    })
-  }
-  if (rule !== undefined) return ask({ reason: askForRuleFile(call) })
-  if (actor.kind !== ACTOR_KIND.surface) return undefined
-  return inRepository && inSurface({ actor, relative: where.relative })
-    ? undefined
-    : deny({ reason: denyOutsideSurface(call) })
+  return ask({
+    reason: askReason({ actor, command, finding, named, tool })
+  })
 }
 
 /**
@@ -197,7 +176,9 @@ export const decide = ({
 }) => {
   if (isSwitchedOff({ env: host.env, policy })) return undefined
   const tool = payload?.tool_name
-  if (!FILE_TOOLS.includes(tool)) return undefined
+  if (!FILE_TOOLS.includes(tool) && !SHELL_TOOLS.includes(tool)) {
+    return undefined
+  }
   const actor = actorFor({ agentContext, payload })
   try {
     return judge({ actor, host, payload, policy, tool })

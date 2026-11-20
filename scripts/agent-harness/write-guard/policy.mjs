@@ -129,6 +129,57 @@ export const homeRuleFor = ({ policy, relative }) =>
     )
   })
 
+// The folder below which a glob matches: its segments before the first
+// one with a wildcard or, for a glob with none, the folder of the file it
+// names. Empty for a glob that matches at the root.
+const folderBelowOf = ({ glob }) => {
+  const segments = glob.toLowerCase().split('/')
+  const wild = segments.findIndex((segment) => segment.includes('*'))
+  return segments.slice(0, wild < 0 ? -1 : wild).join('/')
+}
+
+const heldBy = ({ globs, relative }) => {
+  const folder = relative.toLowerCase().replace(/\/+$/u, '')
+  if (folder === '') return undefined
+  const found = globs.find(
+    ({ below }) =>
+      below !== '' && (below === folder || below.startsWith(`${folder}/`))
+  )
+  return found === undefined
+    ? undefined
+    : { ...asRule({ rule: found.rule }), held: true }
+}
+
+/**
+ * The rule whose files a checkout-relative folder holds, marked `held`, or
+ * undefined: a shell command that deletes, moves or overwrites the folder
+ * rewrites them. The root holds every rule, so it is never read this way.
+ */
+export const heldRuleFor = ({ policy, relative }) =>
+  heldBy({
+    globs: policy.ruleFiles
+      .filter(({ glob }) => !glob.startsWith(HOME_PREFIX))
+      .map((rule) => ({
+        below: folderBelowOf({ glob: rule.glob }),
+        rule
+      })),
+    relative
+  })
+
+// The same for a folder of the home folder and the user-level rules.
+export const homeHeldRuleFor = ({ policy, relative }) =>
+  heldBy({
+    globs: policy.ruleFiles
+      .filter(({ glob }) => glob.startsWith(HOME_PREFIX))
+      .map((rule) => ({
+        below: folderBelowOf({
+          glob: rule.glob.slice(HOME_PREFIX.length)
+        }),
+        rule
+      })),
+    relative
+  })
+
 // Read without anything that can throw: an unreadable policy still leaves
 // the documented variable to switch the guard off.
 export const isSwitchedOff = ({ env, policy }) => {

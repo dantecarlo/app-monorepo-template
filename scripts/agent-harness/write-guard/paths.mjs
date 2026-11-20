@@ -302,6 +302,19 @@ const resolveTarget = ({ cwd, host, text }) => {
       }
 }
 
+/**
+ * The absolute path `text` names, resolved against `cwd` and spelled as
+ * `classify` reads it, without touching the disk: the folder a shell
+ * command moves to. A spelling the guard cannot read throws.
+ */
+export const absolutePath = ({ cwd, host, text }) =>
+  resolveTarget({ cwd, host, text }).path
+
+// Whether `text` names a path from a root, a drive or a share rather than
+// from the folder a command runs in. Nothing is read from the disk.
+export const isAbsolutePath = ({ host, text }) =>
+  ABSOLUTE.test(slashed({ text, windows: host.windows }))
+
 const canonicalRoots = ({ host, roots }) =>
   roots
     .filter((root) => typeof root === 'string' && root !== '')
