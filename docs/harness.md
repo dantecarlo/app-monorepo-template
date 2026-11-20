@@ -47,28 +47,56 @@ commit messages of a pull request again, its default ignores aside (Layer 4).
 `post-merge` runs after a local `git merge` or `git pull`, in whichever
 worktree ran it, and is the only hook that changes other checkouts.
 `pnpm worktrees:prune` runs the same pruner by hand, and `--dry-run` prints
-what it would remove and move, touching nothing. After `git fetch --prune
-origin` it removes a linked worktree only when its branch's upstream is
-gone, its HEAD is in the default branch (the one `origin/HEAD` names),
+what it would remove and move, touching nothing. It starts with `git fetch
+--prune origin`, stopped after 30 s or the seconds
+`PRUNE_WORKTREES_FETCH_SECONDS` names, rounded up to whole milliseconds
+(any value that is not a positive number fails the run before it touches
+anything); a fetch stopped there
+skips the prune and the fast-forward, prints one line that says so, under
+`--quiet` too, and exits 0, so a stalled remote holds a merge or a pull for
+that long at most. After the fetch it removes a linked worktree only when
+its branch's upstream is gone, its HEAD is in the default branch (the one
+`origin/HEAD` names),
 `git status` shows nothing modified or untracked and no ignored file outside
 what an install, a build or the next session writes again (`node_modules/`,
-the build outputs at a root, `.husky/_/`), and `git ls-files -v` marks no
-file skip-worktree or assume-unchanged, edits `git status` cannot see; an
-env file and anything under `.atl/` keep it. It never removes the main
-checkout, the worktree it runs in, a locked worktree, one under
+the build outputs at a root, `.husky/_/`, and an `.atl/` that holds only
+the two files the skill-registry skill writes again, `skill-registry.md`
+and `.skill-registry.cache.json`), and `git ls-files -v` marks no file
+skip-worktree or assume-unchanged, edits `git status` cannot see; an env
+file and anything else under `.atl/`, told apart by name, keep it. Those
+reads run again just before each removal, so a change made while it
+removes the others, an ignored file nothing rebuilds included, keeps that
+worktree. It never removes the main checkout, the worktree it runs in, a
+locked worktree, one under
 `.claude/worktrees/` or one holding another worktree, and it deletes the
 branch only while its tip is the commit it judged. Last, it fast-forwards
 the main checkout with `git merge --ff-only` when that checkout is on the
 default branch. Any tracked local change there, staged or not, a
 line-ending-only one included, blocks it, and so does whatever git refuses
 (a local commit, an untracked file the merge would overwrite); the checkout
-then stays and a line says how far behind it is and why. The fast-forward
-fires that checkout's own `post-merge`; the pruner runs it with
+then stays and a line says how far behind it is and why. A dry run predicts
+that refusal without moving anything: a HEAD that is not an ancestor of the
+default branch, and whatever a dry run of the checkout
+(`git read-tree -m -u --dry-run`) refuses, as an untracked file it would
+overwrite, make it say "would leave" where it would otherwise say "would
+fast-forward". That dry checkout runs against a copy of the index in a
+scratch directory, refreshed first as `git merge --ff-only` refreshes it,
+so a file whose timestamp alone changed is no refusal, and the main
+checkout's own index and its `index.lock` are left alone. A run that fails before it removes anything exits 1 and
+says nothing was removed; one that fails after a removal, at the
+fast-forward say, still prints its report, the removals and the summary,
+then git's message and how many worktrees it removed before it failed,
+and exits 1. The fast-forward fires that checkout's own `post-merge`;
+the pruner runs it with
 `PRUNE_WORKTREES_RUNNING` set, and a run that finds it set exits at once,
 so the rest of that hook still runs. A dry run ends with what the pruner
 does not cover: it still runs `git fetch --prune`, a worktree another
 process holds as its current directory on Windows is emptied and
-unregistered, and the merge waits for the prune.
+unregistered, the merge waits for the prune, on Windows a fetch stopped at
+its bound ends without git's own cleanup, so a remote helper it started
+(https) runs on until its connection ends, and an ignored file written in
+the moment between the last check and git's own removal goes with the
+worktree.
 `core.hooksPath` stays the relative `.husky/_` husky writes at repository
 level, so each worktree runs the hooks of its own checkout. Never set it per
 worktree or as an absolute path: git 2.55 copied an absolute per-worktree
@@ -195,7 +223,7 @@ the pre-commit hook on staged files.
 | `verify:skill-frontmatter` | Every `.claude/skills/*/SKILL.md` has a frontmatter that parses, a `name` that is its folder, and a description of at most 1,024 characters once parsed (the line break a `>` block keeps counted) that holds `USE WHEN:` and `DO NOT USE:`; a skill `.claude/skills-lock.json` lists (archify) is vendored and gets the parse, name and length checks only. `verify:skill-frontmatter:test` plants each refusal, both quoting styles and both block styles |
 | `verify:skill-neutrality` | No file under `.claude/skills/` (a `SKILL.md`, a template, a reference or a script, a vendored skill included) names a downstream project: a name `.agents/contracts/downstream-projects.json` declares for one, matched as a whole word in any letter case, so a product name also catches the package scope, slug and bundle id built from it, and a name inside a longer word does not. A downstream project's core-purity gate refuses a first-party skill that names a product, so a template skill that names one is refused on sync. The list names donor products, so it is `template-maintainer` material and never ships: a derived project finds it absent and the gate forbids nothing, saying so in its denominator, while the template, run with `ATL_TEMPLATE_SELF=1`, fails without it; a list that does not parse, declares no project, or gives a project no name fails too. A new downstream project is one entry of that list. `verify:skill-neutrality:test` plants each refusal with synthetic names and runs the gate over a scratch tree |
 | `git-free-env:test`, `hook-git-dir:test` | `gitFreeEnv()` drops every `GIT_*` variable, in any case, from the environment a script hands to git or to a child; `withHookGitDir` runs a flow with `GIT_DIR` and `GIT_INDEX_FILE` naming a decoy repository, as a git hook exports them, reports whether anything under the decoy changed, and puts both variables back and removes the decoy however the flow ends. Every suite that spawns git runs one end-to-end case under it and asserts the decoy is left alone; `init-project:test` takes its whole copy under it |
-| `worktrees:prune:test` | `scripts/prune-worktrees.test.mjs` drives the pruner (Layer 2) over a scratch origin, its clone and one linked worktree per case, `--dry-run` first: the merged clean worktree goes and its branch with it; every reason to keep one is seen kept and printed, an ignored file nothing rebuilds, an env file, a file under `.atl/`, a lock, an edit hidden by `--skip-worktree` or `--assume-unchanged` and a file that differs only in its line endings among them; a branch whose tip moved after it was judged stays; a dry run removes and moves nothing, states the real run's decisions and ends with what is not covered; the main checkout is fast-forwarded to `origin/HEAD`'s branch, whatever its name, and is left, with the reason, over any tracked local change, staged, line-ending-only or in a file the fast-forward does not touch, and over git's refusal, named by its first line that is not a hint and the files it lists; the worktree the command runs in survives the `post-merge` that fast-forward fires; an unset `origin/HEAD` exits 1 naming `git remote set-head origin --auto`; and the real `.husky/post-merge`, run by `git hook run`, prunes and exits 0 even when the pruner fails |
+| `worktrees:prune:test` | `scripts/prune-worktrees.test.mjs` drives the pruner (Layer 2) over a scratch origin, its clone and one linked worktree per case, `--dry-run` first: the merged clean worktree goes and its branch with it; every reason to keep one is seen kept and printed, an ignored file nothing rebuilds, an env file, a file under `.atl/`, a note beside the two skill-registry files in `.atl/`, a lock, an edit hidden by `--skip-worktree` or `--assume-unchanged` and a file that differs only in its line endings among them; a branch whose tip moved after it was judged stays; an `.atl/` that holds only those two files goes with its worktree; an ignored file nothing rebuilds, written after the decision, keeps the worktree at the check just before its removal, and a worktree still clean there goes with its branch; a dry run removes and moves nothing, states the real run's decisions and ends with what is not covered; the main checkout is fast-forwarded to `origin/HEAD`'s branch, whatever its name, and is left, with the reason, over any tracked local change, staged, line-ending-only or in a file the fast-forward does not touch, and over git's refusal, named by its first line that is not a hint and the files it lists; a dry run says it would leave a main checkout that diverged, and one with an untracked file the fast-forward would overwrite, with git's refusal, and touches neither, while a file whose timestamp alone changed and an `index.lock` already in the main checkout leave its "would fast-forward" as it was; the worktree the command runs in survives the `post-merge` that fast-forward fires; an unset `origin/HEAD` exits 1 naming `git remote set-head origin --auto`; a step that fails after a removal exits 1 and still reports the removal, never "nothing was removed"; a fetch from a remote that never answers is stopped at `PRUNE_WORKTREES_FETCH_SECONDS`, and the run says so, removes and moves nothing and exits 0, where the same repositories with a remote that answers are pruned and moved; the bound is 30 s, a value that is not a positive number throws, naming it, and one that is no whole number of milliseconds is rounded up; and the real `.husky/post-merge`, run by `git hook run`, prunes and exits 0 even when the pruner fails |
 | `verify:router-coverage` | Every "Load skill" cell of the Router tables of `AGENTS.md` (its `## Router` section) names, in backticks, a skill with a `.claude/skills/<name>/SKILL.md`, and every skill, read as `verify:skill-frontmatter` reads them, has a row; every "Validated by" cell is `review` or cites, in backticks, only scripts the root `package.json` defines, the text outside the backticks (`lint` (jsx-a11y)) explaining them; a Router table missing either column, a Router with no table and an `AGENTS.md` with no Router fail too. An `/init` prune that drops a skill leaves its row dead and fails this gate until Stage 6 removes the row. `verify:router-coverage:test` plants each refusal and runs the gate over a scratch tree |
 | `codex-budget:test`   | The generated `.codex/config.toml` sets `project_doc_max_bytes` above every table header, and `AGENTS.md`, counted with CRLF endings, fits it: Codex drops what is past the budget |
 | `check:identity`      | The template's default identity is gone (skipped on self)                                 |
