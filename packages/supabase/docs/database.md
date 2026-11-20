@@ -389,23 +389,95 @@ silently overwrite hand-tuned values in production.
 
 ## 9. pgTAP workflow
 
+Everything in this section belongs to the `supabase` capability. A project with
+its own backend, or none, has no `packages/supabase`, so it has none of it.
+
 ### Running the tests
 
 ```bash
 pnpm --filter @app/supabase test:db
-# expands to: supabase test db --linked
+# runs scripts/supabase-test-db.mjs: supabase test db --linked over a bundle of supabase/tests/
 ```
 
-This runs against the linked Supabase Cloud project, with `.env` loaded in
-the shell (see the README), and it needs Docker: Supabase CLI 2.109.1 first
-runs `create extension if not exists pgtap with schema extensions` on the
-target, then runs `pg_prove` in the `supabase/pg_prove:3.36` Docker container
-for every target, `--linked` included. There is still no local Supabase stack.
+`test:db` runs `scripts/supabase-test-db.mjs`, which wires Node into
+`runTestDb` (`src/testDbRun.helper.ts`). It copies every file of
+`supabase/tests/` into a fresh folder of the system's temporary directory, with
+a `do` block right after the file's opening `begin;` (`bundlePgTapFiles`,
+`src/pgTapBundle.helper.ts`), runs `supabase test db` over that folder from the
+package, removes the folder, and exits with the CLI's status.
+
+### The branch's own migrations
+
+The block lists every migration of `supabase/migrations/` in name order, with
+the version and the name the Supabase CLI records, each text dollar-quoted
+with a tag no migration can end. Inside the pgTAP file's own transaction, it
+reads the database's ledger, `supabase_migrations.schema_migrations`, and
+applies through a PL/pgSQL `execute` each migration whose version the ledger
+lacks. The file's `rollback;` takes them with it, so a branch's tests run over
+the branch's schema without anyone pushing its migrations, and the database
+ends as it was.
+
+- A `begin;` first and a `commit;` last that wrap a whole migration are
+  removed first. Postgres itself refuses a `commit`, `rollback` or `end` left
+  inside one, wherever it sits ("EXECUTE of transaction commands is not
+  implemented"). A statement Postgres refuses inside a transaction (`create
+  index concurrently`, `vacuum`) fails the same way, and so does using an enum
+  value that the same transaction added.
+- The first migration that fails stops the file, with an error that names it.
+- When the ledger holds a file's version under another name, as after a
+  renumbering, the file stops before any migration is applied, naming it.
+- The versions the ledger holds that the checkout has no file for are listed as
+  a notice.
+- With no ledger at all, on a project nothing was ever pushed to, every
+  migration is applied.
+- A file whose name is not `<version>_<name>.sql` is left out, as `db push`
+  leaves it out.
+- A pgTAP file that does not open with `begin;` and end with `rollback;` stops
+  the run before anything reaches the database: the migrations it applied would
+  outlive it. Every file here keeps that shape (see Test file structure).
+
+### The target
+
+`config.testDbTarget` of `packages/supabase/package.json` says where the
+suites run:
+
+| Value    | What `test:db` does                                                                                                                                       |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `linked` | The default, also when the key is unset: `supabase test db --linked`, on the linked Supabase Cloud project                                                |
+| `local`  | `supabase test db --local`, on a local Supabase stack, for a downstream project that chose Docker and the local stack; this template never runs it        |
+| `off`    | No database test: it says so and exits 0. For a project that keeps Supabase and runs no database tests                                                    |
+
+Any other value runs nothing and exits 1, naming the three. `/init` will ask
+for it (Stage 6, decision 54) and can set the key with the manifest's
+`patch-json` verb.
+
+### A live run
+
+Both targets need Docker: Supabase CLI 2.109.1 first runs `create extension if
+not exists pgtap with schema extensions` on the target, then runs `pg_prove` in
+the `supabase/pg_prove:3.36` Docker container for every target, `--linked`
+included. For `linked`, the owner, or a CI job with Docker, runs from a checkout
+whose `packages/supabase/.env` holds the project's credentials (the CLI does not
+read it on its own):
+
+```bash
+cd packages/supabase
+set -a; source .env; set +a
+supabase link --project-ref "$SUPABASE_PROJECT_REF"   # once per checkout
+pnpm test:db --dry-run   # writes the bundle and prints the command; runs nothing
+pnpm test:db
+```
+
+The dry run keeps its bundle in the temporary directory, to read the SQL that
+would run; a run removes it.
 
 **DB tests are intentionally NOT part of `pnpm validate`.** The validation
 gate (`ATL_TEMPLATE_SELF=1 pnpm validate`) is offline: it needs no database
 and no Docker. `AGENTS.md` forbids an agent to start Docker, so a person or a
-CI job with Docker runs `test:db`.
+CI job with Docker runs `test:db`. What `pnpm validate` checks offline is the
+bundle and the runner (`src/__tests__/pgTapBundle.helper.test.ts`,
+`src/__tests__/testDbRun.helper.test.ts`) against fakes; that the bundle's SQL
+runs on Postgres, and both targets' live runs, no gate covers.
 
 ### JWT impersonation pattern
 
@@ -439,6 +511,11 @@ Every test file:
 3. Calls `select plan(N)` with the exact assertion count
 4. Runs structural assertions, then behavioral assertions via impersonation
 5. Ends with `select * from finish(); rollback;`
+
+`test:db` refuses a file that does not open with `begin;` or end with
+`rollback;`, since the checkout's migrations run inside that transaction (see
+The branch's own migrations); `src/__tests__/pgTapBundle.helper.test.ts` bundles
+every file here offline, in every `pnpm validate`.
 
 To prove that a policy or a privilege blocks a write, write with no `WHERE`:
 an `UPDATE` whose `WHERE` names a column also applies the `SELECT` policy,

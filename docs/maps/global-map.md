@@ -92,6 +92,21 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | Port contract suite       | `packages/tooling/src/observability-port-contract.mjs`                           | `.mjs`         | `runObservabilityPortContract`: the cases every observability adapter passes, through the caller's `test` and a harness                    |
 | Prune boundary            | `packages/tooling/src/prune-boundary.mjs`                                        | `.mjs`         | `findPruneLeaks`: what a prune leaves dangling (imports, paths, plugins, env keys, spec citations, registry); its test checks `sentry`, and the registry for `mobile-expo` and `supabase` |
 
+<!-- region supabase -->
+
+The `supabase` capability's pgTAP runner, `pnpm --filter @app/supabase test:db`, runs the suites
+over the checkout's migrations on the target `config.testDbTarget` of
+`packages/supabase/package.json` names (`packages/supabase/docs/database.md` § 9):
+
+| Thing               | Path                                            | Suffix       | What it holds                                                                                       |
+| ------------------- | ----------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------- |
+| test:db runner      | `scripts/supabase-test-db.mjs`                  | `.mjs`       | Wires Node's files and processes into `runTestDb`; `--dry-run` writes the bundle and runs nothing    |
+| test:db run         | `packages/supabase/src/testDbRun.helper.ts`     | `.helper.ts` | `runTestDb`: the target (linked, local or off), the bundle, `supabase test db`, the exit status      |
+| test:db targets     | `packages/supabase/src/testDbRun.constant.ts`   | `.constant.ts` | `TEST_DB_TARGET`, the default and the CLI flag of each target                                     |
+| pgTAP bundle        | `packages/supabase/src/pgTapBundle.helper.ts`   | `.helper.ts` | Each pgTAP file with a `do` block after its `begin;` that applies the migrations the ledger lacks   |
+
+<!-- endregion supabase -->
+
 Each package exposes its public surface through a barrel: `packages/core/src/index.ts`,
 `packages/i18n/src/index.ts`, `packages/supabase/src/index.ts`, `packages/tokens/src/index.ts`,
 `packages/cloudflare/src/index.ts`.
