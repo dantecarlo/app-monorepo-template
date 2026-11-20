@@ -5,6 +5,7 @@
     ".agents/agents/**",
     ".agents/contracts/dependencies.json",
     ".agents/contracts/mcp-servers.json",
+    ".agents/contracts/process-reaper.json",
     ".agents/contracts/write-guard.json",
     ".agents/hooks.json",
     ".agents/projection-manifest.json",

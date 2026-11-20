@@ -1,0 +1,53 @@
+{
+  "$comment": "The families of processes the reaper (scripts/agent-harness/reaper/) may end, each with an id, a pattern read case-insensitive against the command line (against the process name for a wrapper family), and what it is. The reaper ends an orphan, a process whose parent pid names no live process or one that started after it (on POSIX also one under pid 1 or the user's subreaper), only when it matches a family, and then with its whole descendant tree; it never touches its own ancestry, a tree that holds a process younger than graceSeconds, or anything outside these families, and it ends within boundSeconds. Each family is safe to end as an orphan because its only reader is gone: an MCP server talks over the stdio of the session that started it, so once that session is dead nothing reads it again, and its npx launcher only waits on it; vitest, tinypool and jest workers, tsc and esbuild serve the test run or the build that started them; turbo starts again on its next run, its daemon included; git-remote-https serves one fetch, pull or push, over once git is gone; and a cmd.exe or conhost.exe wrapper is ended only with the one reapable process it wraps. A family changes only when the owner asks: this is a rule file (the LAW 'A rule is not edited to fit the work', AGENTS.md). See docs/harness.md section 3g.",
+  "graceSeconds": 60,
+  "boundSeconds": 8,
+  "families": [
+    {
+      "id": "npx-mcp",
+      "pattern": "(?:npx-cli\\.js|\\bnpm(?:\\.cmd)?\"?\\s+exec\\b|[\\\\/]_npx[\\\\/]).*[\\s\"'^@/\\\\-]mcp(?![\\w-])",
+      "what": "An MCP server npx started, and the npx launcher that waits on it: a launcher (npx-cli.js, or npm exec on POSIX) or an entrypoint under the npx cache (_npx), whose command line names an MCP package (a word that ends in -mcp, or the argument mcp)"
+    },
+    {
+      "id": "mcp-server",
+      "pattern": "context7-mcp|\\bcodegraph\\b.*\\bserve\\b.*--mcp\\b|\\bshadcn\\b.*[\\s\"'^]mcp\\b|next-devtools-mcp|metro-mcp|expo-mcp|react-native-docs-mcp|@lottiefiles[\\\\/][\\w-]*mcp|scrapling-mcp",
+      "what": "A known MCP server entrypoint, however it was launched: context7-mcp, codegraph serve --mcp, shadcn mcp, next-devtools-mcp, metro-mcp, expo-mcp, react-native-docs-mcp, a @lottiefiles MCP and scrapling-mcp"
+    },
+    {
+      "id": "vitest",
+      "pattern": "[\\\\/]vitest[\\\\/]|[\\\\/]tinypool[\\\\/]",
+      "what": "A vitest run and its tinypool or fork workers"
+    },
+    {
+      "id": "turbo",
+      "pattern": "[\\\\/]turbo(?:-(?:windows|linux|darwin)-[\\w-]+)?[\\\\/]bin[\\\\/]turbo(?:\\.exe)?\\b|(?:^|[\\\\/\"\\s])turbo(?:\\.exe)?\"?\\s+(?:run|daemon|--skip-infer)\\b",
+      "what": "turbo: its node shim, its native binary and its daemon"
+    },
+    {
+      "id": "esbuild",
+      "pattern": "(?:^|[\\\\/\"\\s])esbuild(?:\\.exe)?\"?\\s+--service\\b",
+      "what": "The esbuild service a build, a bundler or a test run started"
+    },
+    {
+      "id": "tsc",
+      "pattern": "[\\\\/]typescript[\\\\/](?:lib|bin)[\\\\/]tsc(?:\\.js)?\\b",
+      "what": "The TypeScript compiler, tsc"
+    },
+    {
+      "id": "jest",
+      "pattern": "[\\\\/]jest-worker[\\\\/]|[\\\\/]jest(?:-cli)?[\\\\/]bin[\\\\/]jest(?:\\.js)?\\b",
+      "what": "A jest run and its workers"
+    },
+    {
+      "id": "git-remote-https",
+      "pattern": "(?:^|[\\\\/\"\\s])git(?:\\.exe)?\"?\\s+remote-https?\\b|[\\\\/]git-remote-https?(?:\\.exe)?\"?(?:\\s|$)",
+      "what": "The http or https remote helper a git fetch, pull or push started"
+    },
+    {
+      "id": "console-wrapper",
+      "pattern": "^(?:cmd|conhost)\\.exe$",
+      "what": "A cmd.exe or conhost.exe wrapper, matched by its name and ended only with the one reapable process it wraps",
+      "wrapper": true
+    }
+  ]
+}
