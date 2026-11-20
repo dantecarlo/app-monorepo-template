@@ -33,7 +33,7 @@ import {
 } from 'node:fs'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { delimiter, dirname, join, resolve } from 'node:path'
 import { after, before, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
@@ -43,6 +43,8 @@ import {
   DIVERGED,
   FETCH_SECONDS_VARIABLE,
   fetchSecondsFrom,
+  INSTALL_SECONDS_VARIABLE,
+  installSecondsFrom,
   LOCAL_CHANGES,
   NESTED_RUN_VARIABLE,
   NOT_COVERED,
@@ -1769,6 +1771,205 @@ test('an .atl/ that holds anything besides the skill-registry files keeps the wo
       keptLine({ branch, path, reason: `${REASON.IGNORED}: .atl/` })
     ),
     run.stdout
+  )
+})
+
+// A `pnpm` first on the path that records each call, its arguments and the
+// directory it ran in, then exits with `exit` after `waitMs`: a `.cmd` on
+// Windows, which the pruner reaches through cmd.exe, a shell script
+// elsewhere. `env` is the pruner's environment with that path first.
+const LOCKFILE = 'pnpm-lock.yaml'
+const LOCK_TEXT = 'lockfileVersion: 9.0\n'
+const INSTALL_ARGS = ['install', '--frozen-lockfile', '--offline']
+const RETRY = 'run `pnpm install --frozen-lockfile`'
+const STALLED_INSTALL_MS = 60_000
+
+const fakePnpm = ({ exit = 0, waitMs = 0 } = {}) => {
+  const bin = scratchRoot({ prefix: 'prune-fake-pnpm-' })
+  const log = join(bin, 'calls.log')
+  const recorder = join(bin, 'record.mjs')
+  writeFileSync(
+    recorder,
+    [
+      "import { appendFileSync } from 'node:fs'",
+      `appendFileSync(${JSON.stringify(log)}, JSON.stringify({ args: process.argv.slice(2), cwd: process.cwd() }) + '\\n')`,
+      `setTimeout(() => process.exit(${exit}), ${waitMs})`
+    ].join('\n')
+  )
+  if (process.platform === 'win32') {
+    writeFileSync(
+      join(bin, 'pnpm.cmd'),
+      `@"${process.execPath}" "${recorder}" %*\r\n`
+    )
+  } else {
+    writeFileSync(
+      join(bin, 'pnpm'),
+      `#!/bin/sh\nexec "${process.execPath}" "${recorder}" "$@"\n`,
+      { mode: 0o755 }
+    )
+  }
+  const env = gitFreeEnv()
+  const pathKey =
+    Object.keys(env).find((key) => key.toUpperCase() === 'PATH') ?? 'PATH'
+  env[pathKey] = [bin, env[pathKey]].join(delimiter)
+  return {
+    calls: () =>
+      existsSync(log)
+        ? readFileSync(log, 'utf8')
+            .split(/\r?\n/u)
+            .filter((line) => line !== '')
+            .map((line) => JSON.parse(line))
+        : [],
+    env
+  }
+}
+
+const ranLine = ({ main }) =>
+  `prune-worktrees: ${LOCKFILE} changed, so it ran pnpm install ` +
+  `--frozen-lockfile --offline in ${forward({ path: main })}`
+
+const failedLine = ({ main, why }) =>
+  `prune-worktrees: ${LOCKFILE} changed and pnpm install ` +
+  `--frozen-lockfile --offline ${why}; ${RETRY} in ${forward({ path: main })}`
+
+const linesOf = ({ run }) => run.stdout.trim().split(/\r?\n/u)
+
+test('a fast-forward that changes pnpm-lock.yaml runs pnpm install --frozen-lockfile --offline', () => {
+  const pnpm = fakePnpm()
+  const { head, main, run, tip } = behindMain({
+    env: pnpm.env,
+    push: { [LOCKFILE]: LOCK_TEXT }
+  })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.equal(run.stderr, '')
+  assert.equal(head, tip)
+  const calls = pnpm.calls()
+  assert.deepEqual(
+    calls.map(({ args }) => args),
+    [INSTALL_ARGS]
+  )
+  assert.equal(resolve(calls[0].cwd), resolve(main))
+  const lines = linesOf({ run })
+  assert.ok(lines.includes(ranLine({ main })), run.stdout)
+  assert.match(lines.at(-1), /: removed 0, kept 1; by reason: /u)
+})
+
+test('an install that fails or outlasts PRUNE_WORKTREES_INSTALL_SECONDS names the command to run, and the run exits 0', () => {
+  const failing = fakePnpm({ exit: 1 })
+  const failed = behindMain({
+    args: ['--quiet'],
+    env: failing.env,
+    push: { [LOCKFILE]: LOCK_TEXT }
+  })
+  assert.equal(failed.run.status, EXIT_OK, failed.run.stderr)
+  assert.equal(failed.head, failed.tip)
+  assert.equal(failing.calls().length, 1)
+  assert.deepEqual(linesOf({ run: failed.run }), [
+    `prune-worktrees: fast-forwarded the main checkout ${forward({ path: failed.main })} ` +
+      `by 1 commit to origin/${MAIN}`,
+    failedLine({ main: failed.main, why: 'exited 1' }),
+    `prune-worktrees: removed 0, kept 1; by reason: ${REASON.MAIN} 1`
+  ])
+
+  const stalled = fakePnpm({ waitMs: STALLED_INSTALL_MS })
+  const started = Date.now()
+  const stopped = behindMain({
+    args: ['--quiet'],
+    env: { ...stalled.env, [INSTALL_SECONDS_VARIABLE]: '1' },
+    push: { [LOCKFILE]: LOCK_TEXT }
+  })
+  assert.ok(
+    Date.now() - started < STALLED_INSTALL_MS,
+    'the run waited for the stalled install'
+  )
+  assert.equal(stopped.run.status, EXIT_OK, stopped.run.stderr)
+  assert.equal(stopped.head, stopped.tip)
+  assert.ok(
+    linesOf({ run: stopped.run }).includes(
+      failedLine({ main: stopped.main, why: 'did not finish within 1 s' })
+    ),
+    stopped.run.stdout
+  )
+})
+
+test('a dry run says it would install after a fast-forward that changes pnpm-lock.yaml, and installs nothing', () => {
+  const pnpm = fakePnpm()
+  const { before, head, main, run } = behindMain({
+    args: ['--dry-run'],
+    env: pnpm.env,
+    push: { [LOCKFILE]: LOCK_TEXT }
+  })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.equal(head, before)
+  assert.deepEqual(pnpm.calls(), [])
+  assert.ok(
+    linesOf({ run }).includes(
+      `prune-worktrees: ${LOCKFILE} changes with the fast-forward, so it ` +
+        'would run pnpm install --frozen-lockfile --offline in ' +
+        forward({ path: main })
+    ),
+    run.stdout
+  )
+  assert.match(linesOf({ run }).at(-1), /^prune-worktrees: not covered: /u)
+})
+
+test('under --quiet an install that succeeds prints no line of its own', () => {
+  const pnpm = fakePnpm()
+  const { main, run } = behindMain({
+    args: ['--quiet'],
+    env: pnpm.env,
+    push: { [LOCKFILE]: LOCK_TEXT }
+  })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.equal(pnpm.calls().length, 1)
+  assert.deepEqual(linesOf({ run }), [
+    `prune-worktrees: fast-forwarded the main checkout ${forward({ path: main })} ` +
+      `by 1 commit to origin/${MAIN}`,
+    `prune-worktrees: removed 0, kept 1; by reason: ${REASON.MAIN} 1`
+  ])
+})
+
+// The base behaviour, pinned: a fast-forward that leaves the lockfile as it
+// was installs nothing, and the real run and the dry run print exactly the
+// lines they printed before the install existed.
+test('a fast-forward that leaves pnpm-lock.yaml as it was installs nothing and prints what it printed before', () => {
+  const pnpm = fakePnpm()
+  const real = behindMain({ env: pnpm.env })
+  assert.equal(real.run.status, EXIT_OK, real.run.stderr)
+  assert.equal(real.head, real.tip)
+  assert.deepEqual(linesOf({ run: real.run }), [
+    `prune-worktrees: ${keptLine({ branch: MAIN, path: real.main, reason: REASON.MAIN })}`,
+    `prune-worktrees: fast-forwarded the main checkout ${forward({ path: real.main })} ` +
+      `by 1 commit to origin/${MAIN}`,
+    `prune-worktrees: removed 0, kept 1; by reason: ${REASON.MAIN} 1`
+  ])
+  const dry = behindMain({ args: ['--dry-run'], env: pnpm.env })
+  assert.equal(dry.run.status, EXIT_OK, dry.run.stderr)
+  assert.deepEqual(linesOf({ run: dry.run }), [
+    `prune-worktrees: ${keptLine({ branch: MAIN, path: dry.main, reason: REASON.MAIN })}`,
+    `prune-worktrees: would fast-forward the main checkout ${forward({ path: dry.main })} ` +
+      `by 1 commit to origin/${MAIN}`,
+    `prune-worktrees: would remove 0, kept 1; by reason: ${REASON.MAIN} 1`,
+    `prune-worktrees: not covered: ${NOT_COVERED}`
+  ])
+  assert.deepEqual(pnpm.calls(), [])
+})
+
+test('the install is bound to 120 s unless PRUNE_WORKTREES_INSTALL_SECONDS names another positive number', () => {
+  assert.equal(installSecondsFrom({ env: {} }), 120)
+  assert.equal(
+    installSecondsFrom({ env: { [INSTALL_SECONDS_VARIABLE]: '2.5' } }),
+    2.5
+  )
+  ;['', '0', 'ten'].forEach((value) =>
+    assert.throws(
+      () =>
+        installSecondsFrom({ env: { [INSTALL_SECONDS_VARIABLE]: value } }),
+      (error) =>
+        error.message.includes(INSTALL_SECONDS_VARIABLE) &&
+        error.message.includes(`"${value}"`),
+      value
+    )
   )
 })
 

@@ -4,8 +4,9 @@
 // The caller runs git and hands over what it printed; these functions only
 // read it and decide: the options, the worktree list, the branches and their
 // upstreams, a worktree's status and hidden files, the main checkout's local
-// changes, why git refused a fast-forward, and every line the command prints.
-// No filesystem and no git here.
+// changes, why git refused a fast-forward, the install a fast-forward that
+// changed the lockfile runs, and every line the command prints. No
+// filesystem and no git here.
 // ---------------------------------------------------------------------------
 
 import { resolve } from 'node:path'
@@ -43,19 +44,72 @@ export const NESTED_RUN_VARIABLE = 'PRUNE_WORKTREES_RUNNING'
 export const FETCH_SECONDS_VARIABLE = 'PRUNE_WORKTREES_FETCH_SECONDS'
 const FETCH_SECONDS = 30
 
-// 30, or the positive number of seconds FETCH_SECONDS_VARIABLE names; any
-// other value, an empty one included, throws, naming the variable and it.
-export const fetchSecondsFrom = ({ env }) => {
-  const value = env[FETCH_SECONDS_VARIABLE]
-  if (value === undefined) return FETCH_SECONDS
+// The bound, in seconds, on the `pnpm install` a fast-forward that changed
+// the lockfile runs: an install that hangs would otherwise hold the merge.
+export const INSTALL_SECONDS_VARIABLE = 'PRUNE_WORKTREES_INSTALL_SECONDS'
+const INSTALL_SECONDS = 120
+
+// `fallback`, or the positive number of seconds `variable` names; any other
+// value, an empty one included, throws, naming the variable and it.
+const secondsFrom = ({ env, fallback, variable }) => {
+  const value = env[variable]
+  if (value === undefined) return fallback
   const seconds = Number(value)
   if (value.trim() === '' || !Number.isFinite(seconds) || seconds <= 0) {
     throw new Error(
-      `${FETCH_SECONDS_VARIABLE} must be a positive number of seconds, ` +
-        `not "${value}"`
+      `${variable} must be a positive number of seconds, not "${value}"`
     )
   }
   return seconds
+}
+
+// 30, or the positive number of seconds FETCH_SECONDS_VARIABLE names.
+export const fetchSecondsFrom = ({ env }) =>
+  secondsFrom({
+    env,
+    fallback: FETCH_SECONDS,
+    variable: FETCH_SECONDS_VARIABLE
+  })
+
+// 120, or the positive number of seconds INSTALL_SECONDS_VARIABLE names.
+export const installSecondsFrom = ({ env }) =>
+  secondsFrom({
+    env,
+    fallback: INSTALL_SECONDS,
+    variable: INSTALL_SECONDS_VARIABLE
+  })
+
+// The lockfile whose change, in a fast-forward, makes the run install; the
+// install it runs, offline since the fetch already ran and a hook must not
+// download; and the command a person runs when that install fails.
+export const LOCKFILE = 'pnpm-lock.yaml'
+const INSTALL_ARGS = ['install', '--frozen-lockfile', '--offline']
+const INSTALL_LINE = `pnpm ${INSTALL_ARGS.join(' ')}`
+const RETRY_COMMAND = 'pnpm install --frozen-lockfile'
+
+// The command and arguments that run the install: through cmd.exe on
+// Windows, where pnpm is a `.cmd` only a shell starts, and `pnpm` itself
+// elsewhere.
+export const installCommandOf = ({ comspec, platform }) =>
+  platform === 'win32'
+    ? {
+        args: ['/d', '/s', '/c', 'pnpm', ...INSTALL_ARGS],
+        command: comspec ?? 'cmd.exe'
+      }
+    : { args: [...INSTALL_ARGS], command: 'pnpm' }
+
+// What a finished install run says about itself: `installed`, or `failed`
+// with why, from what `runBounded` resolved.
+export const installOutcomeOf = ({ run, seconds }) => {
+  if (run.timedOut)
+    return { state: 'failed', why: `did not finish within ${seconds} s` }
+  if (run.error)
+    return {
+      state: 'failed',
+      why: `could not start: ${run.error.message}`
+    }
+  if (run.code !== 0) return { state: 'failed', why: `exited ${run.code}` }
+  return { state: 'installed' }
 }
 
 export const NOT_COVERED =
@@ -390,19 +444,53 @@ const summaryLine = ({ dryRun, results }) => {
   )
 }
 
-const notCovered = ({ dryRun }) =>
-  dryRun ? [`${LABEL}: not covered: ${NOT_COVERED}`] : []
+// What the install after a fast-forward leaves out, added to a dry run's
+// last line only when it would install, so every other run prints what it
+// printed before the install existed.
+export const INSTALL_NOT_COVERED =
+  `the install runs in the foreground too, up to ${INSTALL_SECONDS_VARIABLE} ` +
+  `(${INSTALL_SECONDS} s unless set), only after a fast-forward this run ` +
+  `made, never after a merge or a pull that changed ${LOCKFILE} itself, and ` +
+  'an install that fails or is stopped leaves node_modules as pnpm left it'
+
+const notCovered = ({ dryRun, install }) => {
+  if (!dryRun) return []
+  const more = install === undefined ? '' : `; ${INSTALL_NOT_COVERED}`
+  return [`${LABEL}: not covered: ${NOT_COVERED}${more}`]
+}
+
+// The install's line, or null: a dry run's and a finished install's are
+// left out under `--quiet`, a failed one never is.
+const installLine = ({ install, main, quiet }) => {
+  if (install === undefined) return null
+  const where = `in ${main.path}`
+  if (install.state === 'failed') {
+    return (
+      `${LABEL}: ${LOCKFILE} changed and ${INSTALL_LINE} ${install.why}; ` +
+      `run \`${RETRY_COMMAND}\` ${where}`
+    )
+  }
+  if (quiet) return null
+  return install.state === 'would'
+    ? `${LABEL}: ${LOCKFILE} changes with the fast-forward, so it would ` +
+        `run ${INSTALL_LINE} ${where}`
+    : `${LABEL}: ${LOCKFILE} changed, so it ran ${INSTALL_LINE} ${where}`
+}
 
 // One line per worktree, a kept one left out under `--quiet`, the main
-// checkout's line when it was behind or off the default branch, the summary
-// line, and for a dry run what it does not cover.
-export const reportLines = ({ dryRun, main, quiet, results }) => [
+// checkout's line when it was behind or off the default branch, the
+// install's line after a fast-forward that changed the lockfile, the
+// summary line, and for a dry run what it does not cover.
+export const reportLines = ({ dryRun, install, main, quiet, results }) => [
   ...results
     .filter((result) => !quiet || !result.kept)
     .map((result) => decisionLine({ dryRun, result })),
-  ...[mainLine({ dryRun, main })].filter((line) => line !== null),
+  ...[
+    mainLine({ dryRun, main }),
+    installLine({ install, main, quiet })
+  ].filter((line) => line !== null),
   summaryLine({ dryRun, results }),
-  ...notCovered({ dryRun })
+  ...notCovered({ dryRun, install })
 ]
 
 // The line a failed run ends with, on stderr: git's message, then what the
