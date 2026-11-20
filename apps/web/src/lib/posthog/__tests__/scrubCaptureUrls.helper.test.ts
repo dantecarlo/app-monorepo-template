@@ -64,6 +64,41 @@ test('keeps route names, word slugs and short ids in the path', () => {
   kept.forEach((value) => expect(scrubUrl({ value })).toBe(value))
 })
 
+// The digit-and-length rule reads the decoded text: every `%C3` of an
+// accented word holds a digit. The URL keeps its encoded form.
+test('reads a percent-encoded segment by its decoded text', () => {
+  const kept = [
+    '/categorias/electrodom%C3%A9sticos',
+    '/blog/ma%C3%B1ana',
+    '/blog/%E5%8C%97%E4%BA%AC%E7%83%A4%E9%B8%AD'
+  ]
+
+  kept.forEach((value) => expect(scrubUrl({ value })).toBe(value))
+  expect(scrubUrl({ value: '/reset/k3J9xQ2mZ8%70L4vN7' })).toBe(
+    '/reset/:redacted'
+  )
+})
+
+// A slug of short parts may mix letters and digits; a UUID's last part is
+// 12 characters long, and a card number's parts hold no letter.
+test('keeps a slug of short parts that mix letters and digits', () => {
+  const kept = [
+    '/products/samsung-galaxy-s24-ultra-256gb',
+    '/docs/getting_started_v2_guide',
+    '/blog/migrating-to-react18-today',
+    '/blog/top-10000-words-list',
+    '/blog/My-Post-About-2026'
+  ]
+
+  kept.forEach((value) => expect(scrubUrl({ value })).toBe(value))
+  expect(scrubUrl({ value: `/invite/${INVITE_ID}` })).toBe(
+    '/invite/:redacted'
+  )
+  expect(scrubUrl({ value: '/pay/4111-1111-1111-1111' })).toBe(
+    '/pay/:redacted'
+  )
+})
+
 test('scrubs every URL property of an event and of its person', () => {
   const scrubbed = scrubCaptureUrls(
     event({

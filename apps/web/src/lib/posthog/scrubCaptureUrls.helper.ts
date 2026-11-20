@@ -6,6 +6,7 @@ import {
   PATH_SEGMENT_SEPARATOR,
   REDACTED_SEGMENT,
   SECRET_SEGMENT_MIN_LENGTH,
+  SHORT_PART_SLUG_PATTERN,
   URL_ORIGIN_PATTERN,
   URL_SUFFIX_PATTERN,
   WORD_SLUG_PATTERN
@@ -20,12 +21,28 @@ import type {
   IScrubUrlParams
 } from '@/lib/posthog/scrubCaptureUrls.type'
 
-// An email, or a long segment that holds a digit and is not a word slug.
-const isSecretSegment = ({ segment }: IScrubSegmentParams): boolean =>
-  EMAIL_SEGMENT_PATTERN.test(segment) ||
-  (segment.length >= SECRET_SEGMENT_MIN_LENGTH &&
-    DIGIT_PATTERN.test(segment) &&
-    !WORD_SLUG_PATTERN.test(segment))
+// The text a segment spells: every `%C3` of an accented word holds a digit.
+// A segment that is not valid percent-encoding reads as it is.
+const decodeSegment = ({ segment }: IScrubSegmentParams): string => {
+  try {
+    return decodeURIComponent(segment)
+  } catch {
+    return segment
+  }
+}
+
+// An email, or a segment whose decoded text is long, holds a digit and is
+// not a slug.
+const isSecretSegment = ({ segment }: IScrubSegmentParams): boolean => {
+  if (EMAIL_SEGMENT_PATTERN.test(segment)) return true
+  const text = decodeSegment({ segment })
+  return (
+    text.length >= SECRET_SEGMENT_MIN_LENGTH &&
+    DIGIT_PATTERN.test(text) &&
+    !WORD_SLUG_PATTERN.test(text) &&
+    !SHORT_PART_SLUG_PATTERN.test(text)
+  )
+}
 
 const scrubPath = ({ value }: IScrubUrlParams): string =>
   value
@@ -37,8 +54,9 @@ const scrubPath = ({ value }: IScrubUrlParams): string =>
 
 /**
  * Drops the query string and the fragment of a URL or a path, and replaces
- * every path segment that reads as a secret with `:redacted`. The scheme and
- * the host of a URL are kept, and so is every other segment.
+ * every path segment that reads as a secret with `:redacted`, judged by its
+ * decoded text. The scheme and the host of a URL are kept, and so is every
+ * other segment, in its encoded form.
  */
 export const scrubUrl = ({ value }: IScrubUrlParams): string => {
   const url = value.replace(URL_SUFFIX_PATTERN, '')
