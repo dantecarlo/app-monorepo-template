@@ -27,9 +27,12 @@
 // the module argument of the `vi` module helpers (`vi.mock` and its family).
 //
 // The allowlist, `eslint-dependency-seam-allowlist.json`, freezes the
-// imports that broke the rule when it landed: an entry `{ path, package,
-// reason }` exempts that package in that file, and the gate fails an entry
-// whose file no longer breaks the rule with it, so the list only shrinks.
+// imports a migration in progress has yet to move: an entry `{ path,
+// package, migration, reason }` exempts that package in that file only while
+// its `migration` is one the registry declares open (`openMigrations`). The
+// gate fails an entry whose file no longer breaks the rule with it, an entry
+// whose migration is not open and an open migration no entry names, so the
+// list only shrinks, and empties when its migrations close.
 // ---------------------------------------------------------------------------
 
 import { readFileSync } from 'node:fs'
@@ -149,8 +152,22 @@ const asGlobs = (value) =>
     ? value.filter((glob) => typeof glob === 'string')
     : []
 
-// `{ entries, testInfrastructure }`: the entries by name. A registry that
-// cannot be read indexes nothing, so every package is unregistered.
+// The ids of the migrations the registry declares open. A registry without
+// `openMigrations`, or one that cannot be read, declares none.
+const openMigrationIdsOf = ({ registry }) => {
+  const declared = Array.isArray(registry?.openMigrations)
+    ? registry.openMigrations
+    : []
+  return new Set(
+    declared
+      .map((migration) => migration?.id)
+      .filter((id) => typeof id === 'string')
+  )
+}
+
+// `{ entries, openMigrations, testInfrastructure }`: the entries by name and
+// the ids of the open migrations. A registry that cannot be read indexes
+// nothing, so every package is unregistered and no migration is open.
 export const indexRegistry = ({ registry }) => {
   const entries = new Map()
   const packages = Array.isArray(registry?.packages)
@@ -163,6 +180,7 @@ export const indexRegistry = ({ registry }) => {
     })
   return {
     entries,
+    openMigrations: openMigrationIdsOf({ registry }),
     testInfrastructure: asGlobs(registry?.testInfrastructure)
   }
 }
@@ -204,10 +222,25 @@ export const judgeImport = ({ index, path, source, typeOnly }) => {
     : { entry, kind: SEAM_FINDING.OUTSIDE_SEAM, package: entry.name }
 }
 
-export const isSeamAllowlisted = ({ allowlist, package: name, path }) =>
+// Whether an allowlist entry names, as its `migration`, a migration the
+// registry declares open: the one test of whether an entry counts, which
+// this rule and scripts/verify-dependency-seams.mjs both run.
+export const namesOpenMigration = ({ entry, index }) =>
+  typeof entry?.migration === 'string' &&
+  index.openMigrations.has(entry.migration)
+
+export const isSeamAllowlisted = ({
+  allowlist,
+  index,
+  package: name,
+  path
+}) =>
   Array.isArray(allowlist) &&
   allowlist.some(
-    (entry) => entry?.path === path && entry?.package === name
+    (entry) =>
+      entry?.path === path &&
+      entry?.package === name &&
+      namesOpenMigration({ entry, index })
   )
 
 // ---------------------------------------------------------------------------
@@ -332,7 +365,12 @@ export const collectSeamViolations = ({
       const finding = judgeImport({ index, path, source, typeOnly })
       if (!finding) return []
       if (
-        isSeamAllowlisted({ allowlist, package: finding.package, path })
+        isSeamAllowlisted({
+          allowlist,
+          index,
+          package: finding.package,
+          path
+        })
       ) {
         return []
       }

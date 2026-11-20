@@ -175,8 +175,10 @@ Then `pnpm lint` reports any caller left behind: it is outside the seam Step 1 r
 
 `eslint-dependency-seam-allowlist.json` ships empty. It held the imports that broke the rule
 when it landed, and it only shrinks. An import that cannot move yet is a reason to stop and ask,
-never an entry: the gate accepts an entry whose reason names an F.8 unit, and only review would
-catch a new one, which is why this procedure never writes one.
+never an entry. An entry counts only while it names a migration the registry declares open, and
+the template declares none, so the gate refuses one here; in a project with a migration still
+open the gate would accept a new entry under it, and only review would catch it, which is why
+this procedure never writes one.
 
 ---
 

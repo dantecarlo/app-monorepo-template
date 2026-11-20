@@ -1,5 +1,5 @@
 {
-  "$comment": "Every package, or package subpath, the workspace declares or imports, with its category and its seam: the repository globs of the files that may import it (decisions 51, 52 and 58). A core entry is imported anywhere; every other entry only inside its seam, type-only imports included unless \"types\" is \"anywhere\", and an empty seam means no file may import it yet. The most specific entry wins (next/navigation before next), and every Node builtin is the entry node:*. A test also imports what the seam of the unit it tests admits, and a testInfrastructure file any registered package. local/dependency-seam enforces it on apps/* and packages/*, and local/wrapped-import the names a wrapper owns of two core packages (react-native, expo-router); pnpm verify:dependency-seams holds it to every package.json and file. Every entry names its owner: the capability of template.manifest.json whose prune removes its package, which takes the entry and its seam with it, or core; pnpm verify:manifest:coverage holds each owner to the manifest (docs/manifest.md). See docs/code-standards.md section 23.",
+  "$comment": "Every package, or package subpath, the workspace declares or imports, with its category and its seam: the repository globs of the files that may import it (decisions 51, 52 and 58). A core entry is imported anywhere; every other entry only inside its seam, type-only imports included unless \"types\" is \"anywhere\", and an empty seam means no file may import it yet. The most specific entry wins (next/navigation before next), and every Node builtin is the entry node:*. A test also imports what the seam of the unit it tests admits, and a testInfrastructure file any registered package. local/dependency-seam enforces it on apps/* and packages/*, and local/wrapped-import the names a wrapper owns of two core packages (react-native, expo-router); pnpm verify:dependency-seams holds it to every package.json and file. Every entry names its owner: the capability of template.manifest.json whose prune removes its package, which takes the entry and its seam with it, or core; pnpm verify:manifest:coverage holds each owner to the manifest (docs/manifest.md). openMigrations lists the migrations still in progress, each { id, note }: an entry of eslint-dependency-seam-allowlist.json counts only while its migration is the id of one, and an open migration no entry names is stale, closed by removing it. A registry without the field declares none, and this one declares none, so the allowlist stays empty. See docs/code-standards.md section 23.",
   "testInfrastructure": ["{apps,packages}/*/src/test/**"],
   "packages": [
     {
@@ -666,5 +666,6 @@
       "owner": "mobile-expo",
       "seam": []
     }
-  ]
+  ],
+  "openMigrations": []
 }

@@ -232,28 +232,65 @@ const findingsOf = ({ allowlist, code, registry }) =>
     program: parse({ code })
   }).map(({ kind, package: name }) => `${kind} ${name}`)
 
-const detect = ({ allowlist = [], code, entries }) =>
+// `open`, when given, is the registry's openMigrations; a registry without
+// the field declares none.
+const detect = ({ allowlist = [], code, entries, open }) =>
   findingsOf({
     allowlist,
     code,
-    registry: { packages: entries, testInfrastructure: [] }
+    registry: {
+      packages: entries,
+      testInfrastructure: [],
+      ...(open === undefined ? {} : { openMigrations: open })
+    }
   })
 
 const VALIDATION_SEAM = ['apps/*/src/validation/**']
+
+// A screen that imports zod and zustand, both outside their seams, and an
+// allowlist entry for its zod import that names `migration`.
+const LISTED_ZOD = {
+  code: "import { z } from 'zod'\nimport { create } from 'zustand'",
+  entries: [
+    { category: 'infra', name: 'zod', seam: VALIDATION_SEAM },
+    { category: 'infra', name: 'zustand', seam: [] }
+  ]
+}
+const zodEntry = ({ migration } = {}) => ({
+  ...(migration === undefined ? {} : { migration }),
+  package: 'zod',
+  path: SCREEN,
+  reason: 'r'
+})
+const OPEN_MIGRATION = { id: 'm', note: 'n' }
 
 const registerDetectionCases = () =>
   describe('dependency seam detection', () => {
     test('an allowlisted file and package pair is not reported', () => {
       assert.deepEqual(
         detect({
-          allowlist: [{ package: 'zod', path: SCREEN, reason: 'r' }],
-          code: "import { z } from 'zod'\nimport { create } from 'zustand'",
-          entries: [
-            { category: 'infra', name: 'zod', seam: VALIDATION_SEAM },
-            { category: 'infra', name: 'zustand', seam: [] }
-          ]
+          ...LISTED_ZOD,
+          allowlist: [zodEntry({ migration: 'm' })],
+          open: [OPEN_MIGRATION]
         }),
         [`${OUTSIDE_SEAM} zustand`]
+      )
+    })
+
+    test('an allowlist entry whose migration is not open exempts nothing', () => {
+      const listings = [
+        { allowlist: [zodEntry()], open: [OPEN_MIGRATION] },
+        {
+          allowlist: [zodEntry({ migration: 'closed' })],
+          open: [OPEN_MIGRATION]
+        },
+        { allowlist: [zodEntry({ migration: 'm' })], open: undefined }
+      ]
+      listings.forEach((listing) =>
+        assert.deepEqual(detect({ ...LISTED_ZOD, ...listing }), [
+          `${OUTSIDE_SEAM} zod`,
+          `${OUTSIDE_SEAM} zustand`
+        ])
       )
     })
 

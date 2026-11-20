@@ -3,7 +3,7 @@
 > **Governs:** `.agents/contracts/dependencies.json`, `eslint-dependency-seam-allowlist.json`, `eslint-local-rules/dependency-seam.detect.mjs`, `eslint-local-rules/wrapped-import.detect.mjs`, `scripts/dependency-seams.detect.mjs`, `scripts/eslint-config.detect.mjs`, `scripts/verify-dependency-seams.mjs`, `eslint.config.mjs`, `eslint.rules.mjs`
 > **ID prefix:** `SEAM`
 > **Derived from:** `docs/code-standards.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-19 at `58af488`
+> **Verified against the code:** 2026-11-19 at `b3e7919`
 
 ## Purpose
 
@@ -13,7 +13,8 @@ imported package with its category and seam, the detection `local/dependency-sea
 every app and package by pattern, the frozen allowlist of the imports that broke the rule when it
 landed, and the gate that holds the registry to the `package.json` files, the seams to the files,
 the configs ESLint ignores to their seams and the allowlist to the source. Moving an import into
-its seam belongs to the later F.8 units. Since F.8 unit 8 it also judges the names imported from
+its seam belongs to the later F.8 units. Since F59 an allowlist entry counts only while it names a
+migration the registry declares open, and the template declares none (SEAM-07, SEAM-16). Since F.8 unit 8 it also judges the names imported from
 two core packages, which `local/wrapped-import` keeps inside the wrapper that owns them
 (SEAM-11 to SEAM-15). Since F.8 unit 1b it also owns how the ESLint config reaches a new app or package:
 every shared rule set by pattern, and each framework's block by what a workspace's `package.json`
@@ -285,30 +286,42 @@ admits, the unit being the file named by the test's stem in the folder that hold
 - **THEN** it is reported as unregistered
 - **Test:** `eslint-local-rules/dependency-seam.cases.mjs` › "an unregistered package is refused in test infrastructure too"
 
-### Requirement: SEAM-07 — The frozen allowlist only shrinks
+### Requirement: SEAM-07 — The frozen allowlist only shrinks, and counts only under an open migration
 
 `local/dependency-seam` SHALL skip the imports of a package in a file that
-`eslint-dependency-seam-allowlist.json` lists as that pair, and `pnpm verify:dependency-seams`
+`eslint-dependency-seam-allowlist.json` lists as that pair only when the entry's `migration` is
+the id of a migration the registry declares open (SEAM-16), and `pnpm verify:dependency-seams`
 SHALL fail an entry whose file no longer breaks the rule with that package, a violation the list
-does not carry, a pair listed twice, and an entry without a path, a package, or a reason that
-starts with the F.8 unit, 2 to 8, that removes it.
+does not carry, a pair listed twice, and an entry without a path, a package, a reason, or a
+`migration` the registry declares open; the rule and the gate SHALL decide whether an entry names
+an open migration with the one predicate of `eslint-local-rules/dependency-seam.detect.mjs`.
 
-**Evidence:** `eslint-local-rules/dependency-seam.detect.mjs:207-211`,
-`eslint-local-rules/dependency-seam.detect.mjs:323-341`, `scripts/dependency-seams.detect.mjs:57`,
-`scripts/dependency-seams.detect.mjs:275-287`, `scripts/dependency-seams.detect.mjs:294-350`,
-`eslint-dependency-seam-allowlist.json:1`
+**Evidence:** `eslint-local-rules/dependency-seam.detect.mjs:225-244`,
+`eslint-local-rules/dependency-seam.detect.mjs:356-380`, `scripts/dependency-seams.detect.mjs:64`,
+`scripts/dependency-seams.detect.mjs:327-345`, `scripts/dependency-seams.detect.mjs:352-409`,
+`scripts/dependency-seams.detect.mjs:471`, `eslint-dependency-seam-allowlist.json:1`
 
 #### Scenario: a listed pair
 
-- **GIVEN** an allowlist entry for a screen and `zod`, and that screen importing `zod` and
-  `zustand`
+- **GIVEN** a registry that declares the migration `m` open, an allowlist entry for a screen and
+  `zod` that names `m`, and that screen importing `zod` and `zustand`
 - **WHEN** the rule's detection reads the file
 - **THEN** only the `zustand` import is reported
 - **Test:** `eslint-local-rules/dependency-seam.cases.mjs` › "an allowlisted file and package pair is not reported"
 
+#### Scenario: a pair whose migration is not open
+
+- **GIVEN** an allowlist entry for a screen and `zod` that names no migration, then one that names
+  `closed` while the registry declares only `m`, then one that names `m` in a registry with no
+  `openMigrations`; and that screen importing `zod` and `zustand`
+- **WHEN** the rule's detection reads the file under each
+- **THEN** both imports are reported every time
+- **Test:** `eslint-local-rules/dependency-seam.cases.mjs` › "an allowlist entry whose migration is not open exempts nothing"
+
 #### Scenario: an entry whose file was fixed
 
-- **GIVEN** an allowlist entry for a screen and `zod`, and that screen no longer importing `zod`
+- **GIVEN** an allowlist entry for a screen and `zod` under an open migration, and that screen no
+  longer importing `zod`
 - **WHEN** `pnpm verify:dependency-seams` runs
 - **THEN** it fails, naming the file and the package, and asks for the entry to be removed
 - **Test:** `scripts/verify-dependency-seams.test.mjs` › "an allowlist entry whose file no longer breaks the rule is stale"
@@ -320,12 +333,41 @@ starts with the F.8 unit, 2 to 8, that removes it.
 - **THEN** it fails, naming the file, the package and the count
 - **Test:** `scripts/verify-dependency-seams.test.mjs` › "a violation the allowlist does not carry is named"
 
-#### Scenario: an entry that names no unit
+#### Scenario: an entry that names no migration
 
-- **GIVEN** an allowlist entry whose reason does not start with `F.8 unit 2` to `F.8 unit 8`
+- **GIVEN** an allowlist entry, with a reason that starts with `F.8 unit 2`, that has no
+  `migration`, for a screen that imports `zod`
 - **WHEN** `pnpm verify:dependency-seams` runs
-- **THEN** it fails, naming the entry
-- **Test:** `scripts/verify-dependency-seams.test.mjs` › "an allowlist entry that names no F.8 unit is malformed"
+- **THEN** it fails, naming the entry as malformed and the import as not listed
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "an allowlist entry that names no migration is malformed"
+
+#### Scenario: an entry whose migration is not open
+
+- **GIVEN** an allowlist entry that names `f8-unit-9` in a registry that declares no open
+  migration, and then the same entry in a registry with no `openMigrations`
+- **WHEN** `pnpm verify:dependency-seams` runs over each
+- **THEN** it fails, naming the entry, its migration and that the registry does not declare it open,
+  and the import as not listed
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "an allowlist entry whose migration the registry does not declare open is malformed"
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "an entry whose migration is not open is named, and a registry with no openMigrations declares none"
+
+#### Scenario: an entry under an open migration
+
+- **GIVEN** a registry that declares `f8-unit-2` open, and an allowlist entry that names it for a
+  screen that imports `zod`
+- **WHEN** `pnpm verify:dependency-seams` runs
+- **THEN** it passes
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "an allowlist entry whose file still breaks the rule passes"
+
+#### Scenario: a reason that names no F.8 unit, and no reason
+
+- **GIVEN** an allowlist entry under an open migration whose reason does not start with an F.8
+  unit, and then one with no reason, each for a screen that imports `zod`
+- **WHEN** `pnpm verify:dependency-seams` runs over each
+- **THEN** the first passes, and the second fails, naming the entry as malformed and the import as
+  not listed
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "an allowlist entry under an open migration needs no F.8 unit in its reason"
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "an allowlist entry with no reason is malformed"
 
 #### Scenario: the gate as a process
 
@@ -802,3 +844,52 @@ with no change to the config; a file outside `apps/*` and `packages/*` SHALL NOT
 - **WHEN** ESLint lints it with the rule
 - **THEN** nothing is reported
 - **Test:** `eslint-local-rules/wrapped-import.cases.mjs` › "a file outside apps and packages is not judged"
+
+
+### Requirement: SEAM-16 — The registry declares the migrations that are open
+
+The dependency registry `.agents/contracts/dependencies.json` SHALL declare, in an optional
+`openMigrations`, the migrations still open, each an object with a text `id` no other declaration
+repeats, a text `note` and no other key; a registry without the field SHALL declare none, and the
+template's declares none. `pnpm verify:dependency-seams` SHALL refuse a declaration that breaks
+this shape as a malformed registry, judging nothing else against it, and SHALL fail a declared
+migration that no entry of `eslint-dependency-seam-allowlist.json` names, as stale, to be closed by
+removing it; while the allowlist cannot be read, it SHALL call no migration stale.
+
+**Evidence:** `.agents/contracts/dependencies.json:670`,
+`eslint-local-rules/dependency-seam.detect.mjs:155-166`,
+`eslint-local-rules/dependency-seam.detect.mjs:183`, `scripts/dependency-seams.detect.mjs:49-55`,
+`scripts/dependency-seams.detect.mjs:146-181`, `scripts/dependency-seams.detect.mjs:195`,
+`scripts/dependency-seams.detect.mjs:411-426`, `scripts/dependency-seams.detect.mjs:452-453`,
+`scripts/dependency-seams.detect.mjs:472`
+
+#### Scenario: no migration is open
+
+- **GIVEN** a tree whose registry declares `openMigrations: []` and whose allowlist is empty
+- **WHEN** `pnpm verify:dependency-seams` runs
+- **THEN** it passes
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "a registry that declares no open migration passes"
+
+#### Scenario: a malformed declaration
+
+- **GIVEN** a registry whose `openMigrations` is not an array, then one with a migration that has
+  no note, one with a key the declaration does not define, and one that declares an id twice
+- **WHEN** `pnpm verify:dependency-seams` runs over each
+- **THEN** each fails once, as a malformed registry, naming what is wrong
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "a malformed open-migration declaration is refused, naming it"
+
+#### Scenario: a stale migration
+
+- **GIVEN** a registry that declares the migration `f8-unit-2` and an empty allowlist
+- **WHEN** `pnpm verify:dependency-seams` runs
+- **THEN** it fails once, naming `f8-unit-2` as stale and asking for its removal
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "a declared migration no allowlist entry names is stale"
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "a stale migration names its id and the remedy"
+
+#### Scenario: an allowlist the gate cannot read
+
+- **GIVEN** a registry that declares the migration `f8-unit-2` and an allowlist that is not a JSON
+  array
+- **WHEN** `pnpm verify:dependency-seams` runs
+- **THEN** it fails once, naming the allowlist, and calls no migration stale
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "no migration is called stale while the allowlist cannot be read"

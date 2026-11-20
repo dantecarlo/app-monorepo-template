@@ -79,12 +79,17 @@ They are held by:
 4. **`pnpm verify:dependency-seams` holds the registry to the workspace**, inside `validate`:
    every dependency of every `package.json` registered, no stale entry, every seam glob matching
    a file, the configs ESLint ignores importing inside their seams, and the allowlist holding
-   exactly the imports that still break the rule.
+   exactly the imports that still break the rule, each under a migration the registry declares
+   open.
 5. **The allowlist only shrinks, and ships empty.** `eslint-dependency-seam-allowlist.json` froze
    the 143 imports that broke the rule when it landed, each naming the F.8 unit that removed it.
-   Units 2 to 7 moved every one, and it has held 0 entries since unit 7. The gate fails an entry
-   whose import is gone and one whose reason names no F.8 unit from 2 to 8; only review refuses a
-   new entry for a new import, so a new library is wrapped (the `lib` skill), never listed.
+   Units 2 to 7 moved every one, and it has held 0 entries since unit 7. Since F59 an entry counts
+   only while its `migration` is the id of a migration the registry declares open
+   (`openMigrations`, each `{ id, note }`), for the rule and the gate alike. The template declares
+   none, so the gate refuses every entry; it also fails an entry whose import is gone and an open
+   migration no entry names. A derived project with imports still to move declares its
+   migrations and lists the imports under them; only review refuses a new entry for a new import
+   under a migration still open, so a new library is wrapped (the `lib` skill), never listed.
 6. **A test mocks the project module, never the vendor.** Only the wrapper's own test, which
    inherits its seam, reaches the vendor. Every other test mocks `@/lib/*` or
    `@/components/ui/*`, or renders through the app's test helpers: `createRoutingDouble` of
