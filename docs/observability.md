@@ -204,12 +204,20 @@ email. A secret can sit in the path too (`/reset/<token>`), so the scrub also
 replaces with `:redacted` every path segment that reads as one, and keeps the
 scheme, the host and every other segment, so a route keeps its shape:
 
-| A path segment                                                                              | Example                                     | Becomes     |
-| ------------------------------------------------------------------------------------------- | ------------------------------------------- | ----------- |
-| holds `@` or `%40`                                                                          | `/users/jane@example.com`                   | `:redacted` |
-| is 16 or more characters long, holds a digit, and is not a word slug                        | a JWT, a UUID, a hex token, a card number   | `:redacted` |
-| is a word slug: lowercase words and numbers of at most four digits joined by hyphens        | `/blog/what-changed-in-the-2026-release`    | kept        |
-| is shorter than 16 characters, or holds no digit                                            | `/items/42`, `/settings/notifications`      | kept        | On mobile, PostHog's uncaught-exception handler defers the rethrow an
+| A path segment, read decoded                                                                                                   | Example                                                                  | Becomes     |
+| ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ | ----------- |
+| holds `@` or `%40`                                                                                                             | `/users/jane@example.com`                                                | `:redacted` |
+| is 16 or more characters long, holds a digit, and is not a slug                                                                | a JWT, a UUID, a hex token, a card number                                | `:redacted` |
+| is a word slug: lowercase words and numbers of at most four digits joined by hyphens                                           | `/blog/what-changed-in-the-2026-release`                                 | kept        |
+| is a slug of short parts: two or more parts of letters and digits, each of at most 11 characters, one with a letter, joined by `-` or `_` | `/products/samsung-galaxy-s24-ultra-256gb`, `/docs/getting_started_v2_guide` | kept |
+| is shorter than 16 characters, or holds no digit                                                                               | `/items/42`, `/categorias/electrodom%C3%A9sticos`                        | kept        |
+
+The digit-and-length rule reads the decoded text, since every `%C3` of an
+accented word holds a digit, and a segment keeps its encoded form; one that is
+not valid percent-encoding reads as it is. A UUID stays redacted: its last
+part has 12 characters.
+
+On mobile, PostHog's uncaught-exception handler defers the rethrow an
 Expo web bundle's chunk loader needs, so a web bundle leaves uncaught errors to
 the browser.
 
@@ -253,8 +261,14 @@ launch reads, and once the device holds it every later value, under the
 for this launch in memory: PostHog is opted in, nothing reaches the device, and
 the next launch reads `pending`, as a browser that blocks the web grant record
 does. A revoke stops the writes, forgets every value, waits for the device
-writes already issued and then removes the marker and every key, going on past
-a removal the device refuses, so the revoke itself never fails on the device. That storage is `apps/mobile/src/lib/storage/keyValueStorage.adapter.ts`,
+writes already issued and then removes the marker, PostHog's two files under
+the prefix whether this launch read them or not, and every key PostHog wrote
+or read, going on past a removal the device refuses, so the revoke itself
+never fails on the device. A grant on a device with no marker first removes
+those two files, and every key a revoke could not remove: what is left under
+the prefix is an earlier grant's, unsent queue included, and no new client
+reads it. While one of those removals still fails, the grant holds in memory
+for the launch, as a refused marker does. That storage is `apps/mobile/src/lib/storage/keyValueStorage.adapter.ts`,
 AsyncStorage behind the `IKeyValueStoragePort` of packages/core, and the only
 file of the app that imports AsyncStorage apart from the theme and language
 configs, which F.8 unit 4 moves onto it.
@@ -311,7 +325,7 @@ composition root, and its observability barrel exports it as `consent`. Only
 | Call          | `opt-in`, web                                                                                                                                        | `opt-in`, mobile                                                                                                  | `granted`, `memory`, no key, the web server |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | `grant()`     | loads the SDK once, `opt_in_capturing({ captureEventName: false })`: no `$opt_in` event, and after a revoke `set_config({ advanced_disable_flags: false })` and `reloadFeatureFlags()`; then writes the grant record | opens the consent storage, constructs the client once, then `optIn()` | nothing |
-| `revoke()`    | removes the record and stops the client at once, then `opt_out_capturing()`, `set_config({ advanced_disable_flags: true })` and `reset({ resetDeviceID: true })` on the SDK, loaded or still loading | closes the consent storage, drops the client, then `optOut()`, empties its event and log queues and `shutdown()`; a later grant constructs a new one | nothing |
+| `revoke()`    | removes the record and stops the client at once, then `opt_out_capturing()`, `set_config({ advanced_disable_flags: true })` and `reset({ resetDeviceID: true })` on the SDK, loaded or still loading | drops the client at once, and a launch's restore of an earlier grant still reading it back, then `optOut()`, empties its event and log queues and `shutdown()`, while it closes the consent storage; a later grant constructs a new one | nothing |
 | `getStatus()` | `denied` after a revoke, `granted` while the record holds a grant or after a grant on the page, else `pending`                                       | `granted` while the storage holds a grant, `denied` after a revoke, else `pending`                                | `not-required`                              |
 
 A revoke also drops the identity, so a later grant starts a new person with a
@@ -319,10 +333,11 @@ new device id, and every observability call after it is dropped. On web it
 resets the one SDK the page keeps, with its flags paused first: the reset
 reloads the flags for the new anonymous id, one `/flags` request after the
 refusal otherwise, and a grant that follows resumes and reloads them once. On
-mobile it shuts the client down instead, its event and log queues emptied
-first, since the SDK's reset keeps them and its flush sends them whatever the
-opt-out says; nothing captured before the revoke is sent after it, and the new
-client a later grant constructs reads nothing back. When a revoke and a grant
+mobile it drops the client before it closes the storage, so a call made while
+the storage closes is dropped too, and shuts the client down, its event and log
+queues emptied first, since the SDK's reset keeps them and its flush sends them
+whatever the opt-out says; nothing captured before the revoke is sent after
+it, and the new client a later grant constructs reads nothing back. When a revoke and a grant
 overlap a web load, the later one decides.
 
 **Where a banner plugs in.** No banner ships: it is product work. One is a
@@ -367,9 +382,11 @@ from (`https://us-assets.i.posthog.com` for the US cloud) in `script-src`.
 - **The files on a real device.** The mobile clear is tested against a
   stand-in of `expo-file-system`; that a device deletes the files is the
   package's documented behaviour, which no test runs.
-- **A secret the path rule misses.** A token of letters only, or one shorter
-  than 16 characters, such as a six-digit code, keeps its place; a long word
-  of letters and digits in a slug is redacted.
+- **A secret the path rule misses.** A token of letters only, one shorter
+  than 16 characters, such as a six-digit code, and one shaped as a slug, such
+  as `abcd-1234-efgh-5678-ijkl`, keep their place; a slug with a part of 12
+  characters or more and a digit, such as `internationalization-2026`, is
+  redacted.
 - **Errors thrown before the web SDK loads.** The SDK's own capture of
   unhandled errors and rejections starts when its chunk has loaded; errors the
   app reports through the port before then wait in the queue.
