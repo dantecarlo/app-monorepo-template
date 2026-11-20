@@ -512,21 +512,46 @@ test(
   }
 )
 
-const REGISTRY_CHECKED = ['sentry', 'mobile-expo', 'supabase']
+const REGISTRY_CHECKED = [
+  'sentry',
+  'mobile-expo',
+  'supabase',
+  'web-next',
+  'cloudflare'
+]
+
+const registryLeaksOf = ({ capabilities }) =>
+  capabilities.filter(declares).flatMap((capabilityId) =>
+    registryLeaks(pruneRepository({ capabilityId })).map((leak) => ({
+      capabilityId,
+      ...leak
+    }))
+  )
 
 test(
-  'pruning sentry, mobile-expo or supabase of this repository leaves the registry true',
+  'pruning sentry, mobile-expo, supabase, web-next or cloudflare of this repository leaves the registry true',
   { skip: !REGISTRY_CHECKED.some(declares) && 'none of them is declared' },
   () => {
-    const leaks = REGISTRY_CHECKED.filter(declares).flatMap(
-      (capabilityId) =>
-        registryLeaks(pruneRepository({ capabilityId })).map((leak) => ({
-          capabilityId,
-          ...leak
-        }))
-    )
+    assert.deepEqual(registryLeaksOf({ capabilities: REGISTRY_CHECKED }), [])
+  }
+)
 
-    assert.deepEqual(leaks, [])
+// The i18n and design-tokens prunes still leave imports of their packages
+// in the apps (blocker B4), so only the package.json side is held here: no
+// kept package.json declares the package whose entry the prune takes.
+const PACKAGE_TAKERS = ['i18n', 'design-tokens']
+const UNREGISTERED = 'registry-unregistered'
+
+test(
+  'pruning i18n or design-tokens of this repository keeps no package whose entry it takes',
+  { skip: !PACKAGE_TAKERS.some(declares) && 'none of them is declared' },
+  () => {
+    assert.deepEqual(
+      registryLeaksOf({ capabilities: PACKAGE_TAKERS }).filter(
+        ({ kind }) => kind === UNREGISTERED
+      ),
+      []
+    )
   }
 )
 
