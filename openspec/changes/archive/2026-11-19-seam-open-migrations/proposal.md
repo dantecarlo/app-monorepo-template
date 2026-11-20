@@ -1,6 +1,6 @@
 # Proposal: an allowlist entry of the dependency seam counts only under an open migration
 
-> **Status:** open
+> **Status:** archived — 2026-11-19
 
 ## Why
 
