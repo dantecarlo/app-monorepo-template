@@ -39,6 +39,7 @@ import { fileURLToPath } from 'node:url'
 import { gitFreeEnv } from './git-free-env.mjs'
 import { withHookGitDir } from './hook-git-dir.mjs'
 import {
+  DIVERGED,
   FETCH_SECONDS_VARIABLE,
   fetchSecondsFrom,
   LOCAL_CHANGES,
@@ -1483,6 +1484,58 @@ test('a worktree still clean just before its removal goes, and its branch with i
   assert.equal(result.kept, null)
   assert.ok(!existsSync(path), `${path} still exists`)
   assert.equal(git({ args: ['branch', '--list', branch], cwd: main }), '')
+})
+
+test('a dry run over a main checkout that diverged says git would not fast-forward it', () => {
+  const local = {}
+  const { head, main, run } = behindMain({
+    args: ['--dry-run'],
+    prepare: ({ main: checkout }) => {
+      git({
+        args: ['commit', '-q', '--allow-empty', '-m', 'local'],
+        cwd: checkout
+      })
+      local.sha = git({ args: ['rev-parse', 'HEAD'], cwd: checkout })
+    }
+  })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.equal(head, local.sha)
+  assert.ok(
+    run.stdout.includes(
+      leftLine({ main, reason: DIVERGED }).replace(
+        'left the',
+        'would leave the'
+      )
+    ),
+    run.stdout
+  )
+  assert.doesNotMatch(run.stdout, /would fast-forward/u)
+})
+
+test("a dry run over an untracked file the fast-forward would overwrite names git's refusal and touches nothing", () => {
+  const { before, head, main, run } = behindMain({
+    args: ['--dry-run'],
+    prepare: ({ main: checkout }) =>
+      writeFileSync(join(checkout, PUSHED_FILE), 'local\n'),
+    push: { [PUSHED_FILE]: 'upstream\n' }
+  })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.equal(head, before)
+  assert.equal(readFileSync(join(main, PUSHED_FILE), 'utf8'), 'local\n')
+  assert.ok(!existsSync(join(main, '.git', 'index.lock')))
+  const line = run.stdout
+    .split(/\r?\n/u)
+    .find((one) =>
+      one.includes(`the main checkout ${forward({ path: main })}`)
+    )
+  assert.ok(
+    line?.startsWith(
+      `prune-worktrees: would leave the main checkout ${forward({ path: main })} ` +
+        `1 commit behind origin/${MAIN}: error: `
+    ),
+    run.stdout
+  )
+  assert.match(line, /new\.txt.*would be overwritten/u)
 })
 
 test('the root package runs this suite from validate', () => {

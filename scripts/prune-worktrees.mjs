@@ -33,7 +33,10 @@
 // far behind it is and why. The fast-forward fires the main checkout's own
 // post-merge, so it runs with NESTED_RUN_VARIABLE set, and a run that finds
 // it set exits at once. `--dry-run` prints the same decisions and removes
-// or moves nothing, then what it does not cover; `--quiet` prints the
+// or moves nothing, then what it does not cover; it predicts git's refusal
+// to fast-forward from an ancestry check and a dry run of the checkout
+// (`git read-tree -m -u --dry-run`), so it names a local commit or an
+// untracked file the fast-forward would overwrite. `--quiet` prints the
 // removals, the main checkout's line and the summary line only.
 //
 // `.husky/post-merge` runs it with `--quiet` after a local merge or pull.
@@ -66,6 +69,7 @@ import { gitFreeEnv } from './git-free-env.mjs'
 import {
   BRANCH_PREFIX,
   defaultBranchOf,
+  DIVERGED,
   fetchSecondsFrom,
   hiddenOf,
   LABEL,
@@ -96,6 +100,9 @@ const GIT_OUTPUT_BYTES = 67_108_864
 const MS_PER_SECOND = 1000
 // The code Node gives a child it stopped at its timeout.
 const TIMED_OUT = 'ETIMEDOUT'
+// `git merge-base --is-ancestor` exits 1 when the first commit is not an
+// ancestor of the second; any other failure is an error.
+const NOT_ANCESTOR = 1
 
 // One git command run in `cwd` without the GIT_* variables a hook exports,
 // which would otherwise point it at the hook's repository, and with
@@ -103,7 +110,8 @@ const TIMED_OUT = 'ETIMEDOUT'
 // failure throws git's own message, its stderr kept on the error.
 // `trim: false` keeps the output whole, the leading space of a porcelain
 // status line included. A git still running after `timeout` milliseconds is
-// stopped, and its error reads `timedOut`.
+// stopped, and its error reads `timedOut`; a git that exits non-zero leaves
+// its exit code on the error as `status`.
 const git = ({ args, cwd, timeout, trim = true }) => {
   try {
     const output = execFileSync('git', args, {
@@ -119,7 +127,7 @@ const git = ({ args, cwd, timeout, trim = true }) => {
     const stderr = String(error.stderr || error.message).trim()
     throw Object.assign(
       new Error(`git ${args.join(' ')} failed in ${cwd}: ${stderr}`),
-      { stderr, timedOut: error.code === TIMED_OUT }
+      { status: error.status, stderr, timedOut: error.code === TIMED_OUT }
     )
   }
 }
@@ -370,12 +378,43 @@ const readLocalChanges = ({ root }) =>
     })
   })
 
+// Whether HEAD in `root` is an ancestor of `ref`, the one shape git can
+// fast-forward. A failure other than "not an ancestor" throws.
+const isAncestor = ({ ref, root }) => {
+  try {
+    git({ args: ['merge-base', '--is-ancestor', 'HEAD', ref], cwd: root })
+    return true
+  } catch (error) {
+    if (error.status === NOT_ANCESTOR) return false
+    throw error
+  }
+}
+
+// Why git would refuse to fast-forward the main checkout to `ref`, read
+// without moving it, or undefined when it would go ahead: DIVERGED when
+// HEAD is not an ancestor of `ref`, else the refusal of a dry run of the
+// two-tree checkout the fast-forward makes (`git read-tree -m -u
+// --dry-run`), which checks the untracked files it would overwrite or lose
+// and writes neither the index nor a file.
+const predictedRefusal = ({ ref, root }) => {
+  if (!isAncestor({ ref, root })) return DIVERGED
+  try {
+    git({
+      args: ['read-tree', '-m', '-u', '--dry-run', 'HEAD', ref],
+      cwd: root
+    })
+    return undefined
+  } catch (error) {
+    return refusalOf({ error })
+  }
+}
+
 // The main checkout brought to the default branch when it sits on it, by a
 // fast-forward. Any tracked local change blocks it before git is asked, a
 // dry run included, and git refuses whatever else would be lost, a local
-// commit or an untracked file it would overwrite. A main checkout on
-// another branch is not moved, and one already at the default branch reads
-// `behind: 0`.
+// commit or an untracked file it would overwrite; a dry run predicts that
+// refusal without moving anything. A main checkout on another branch is not
+// moved, and one already at the default branch reads `behind: 0`.
 const forwardMain = ({ defaultBranch, dryRun, root, worktree }) => {
   const at = { path: worktree.path, ref: defaultBranch.ref }
   if (worktree.branch !== defaultBranch.branch) {
@@ -402,7 +441,12 @@ const forwardMain = ({ defaultBranch, dryRun, root, worktree }) => {
       moved: false
     }
   }
-  if (dryRun) return { ...at, behind, moved: false }
+  if (dryRun) {
+    const refusal = predictedRefusal({ ref: defaultBranch.ref, root })
+    return refusal === undefined
+      ? { ...at, behind, moved: false }
+      : { ...at, behind, detail: refusal, moved: false }
+  }
   try {
     git({
       args: ['merge', '--ff-only', '--quiet', defaultBranch.ref],

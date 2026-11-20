@@ -71,6 +71,11 @@ export const NOT_COVERED =
   "git's own removal goes with the worktree"
 
 export const LOCAL_CHANGES = 'it holds local changes'
+// Why a dry run predicts that git would not fast-forward the main checkout:
+// its HEAD is not an ancestor of the default branch.
+export const DIVERGED =
+  'it holds commits the default branch does not, so git would not ' +
+  'fast-forward it'
 
 // Ignored paths that an install, a build, a typecheck, a test run or the
 // next session writes again: a directory of the first names at any depth;
