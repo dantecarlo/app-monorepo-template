@@ -3,7 +3,7 @@
 > **Governs:** `packages/tooling/src`
 > **ID prefix:** `TOOLING`
 > **Derived from:** `docs/code-standards.md`, `docs/architecture/shared.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-19 at `dd38b99`
+> **Verified against the code:** 2026-11-20 at `c324145`
 
 ## Purpose
 
@@ -41,7 +41,7 @@ each pairing its plain ESM module with its type declarations.
   devDependency
 - **WHEN** an observability adapter test imports `@app/tooling/observability-port-contract`
 - **THEN** the import resolves at run time and its declarations type the harness
-- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "the observability port contract"
+- **Test:** `packages/core/src/ports/observability/__tests__/createNoopObservability.helper.test.ts` › "the observability port contract"
 
 ### Requirement: TOOLING-02 — The seed comes from the commit
 
@@ -433,7 +433,7 @@ entry the prune leaves that names a removed dependency.
 - **GIVEN** the repository's tracked files and its `template.manifest.json`
 - **WHEN** the prune of `sentry` is checked
 - **THEN** nothing is listed
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning the sentry capability of this repository leaves no dangling reference"
+- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, supabase, mobile-expo or web-next of this repository leaves no dangling reference"
 
 ### Requirement: TOOLING-17 — The registry a prune leaves stays true
 
@@ -487,12 +487,19 @@ entry names.
 - **THEN** that `package.json` is listed with the package
 - **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a kept dependency whose entry the prune removes is a leak"
 
-#### Scenario: the three prunes of this repository
+#### Scenario: the prunes of this repository
 
 - **GIVEN** the repository's tracked files, its manifest and its registry
-- **WHEN** the prune of `sentry`, of `mobile-expo` and of `supabase` is checked
+- **WHEN** the prune of `sentry`, `mobile-expo`, `supabase`, `web-next` and `cloudflare` is checked
 - **THEN** no registry finding is listed for any of them
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, mobile-expo or supabase of this repository leaves the registry true"
+- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, mobile-expo, supabase, web-next or cloudflare of this repository leaves the registry true"
+
+#### Scenario: the packages of this repository a prune takes
+
+- **GIVEN** the repository's tracked files, its manifest and its registry
+- **WHEN** the prune of `i18n` and of `design-tokens` is checked
+- **THEN** no kept `package.json` declares a package whose entry the prune takes
+- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning i18n or design-tokens of this repository keeps no package whose entry it takes"
 
 ### Requirement: TOOLING-18 — A kept spec cites no pruned file
 
@@ -574,9 +581,10 @@ capability.
 - **THEN** only the second file is listed
 - **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a leak inside a region of the pruned capability is no leak"
 
-#### Scenario: the sentry capability of this repository
+#### Scenario: four capabilities of this repository
 
 - **GIVEN** the repository's tracked files, its manifest, its registry and its regions
-- **WHEN** the prune of `sentry` is checked with every check
-- **THEN** nothing is listed
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning the sentry capability of this repository leaves no dangling reference"
+- **WHEN** the prune of `sentry`, of `supabase`, of `mobile-expo` and of `web-next` is checked with
+  every check
+- **THEN** nothing is listed for any of them
+- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, supabase, mobile-expo or web-next of this repository leaves no dangling reference"

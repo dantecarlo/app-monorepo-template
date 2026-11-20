@@ -111,10 +111,17 @@ splash screen with `holdSplashScreen` as it loads, renders nothing until `useApp
 loaded the faces `APP_FONTS` names (or one failed to load) and hidden the splash, and wraps its tree
 in `AppSafeAreaProvider`. Only those files import `expo-splash-screen`, the font packages and, with
 `ui/AuthShell`, `react-native-safe-area-context`, so the route's test mocks `@/lib/bootstrap/*`,
-never a vendor. The auth provider receives `authGateway` of
-`src/lib/supabase/authGateway.adapter.ts`, a Supabase auth gateway over the app's one client, which
-is the opaque `BackendClientType` of `@app/supabase`; only `src/lib/supabase/*.adapter.ts` imports
-that package, and the route's test mocks the gateway's module. The root `_layout.tsx` exports `RootErrorBoundary` as its `ErrorBoundary` (Expo
+never a vendor. The auth provider receives `authGateway` of `src/lib/auth/authGateway.adapter.ts`:
+the gateway of the backend capability the project keeps, which that capability lists there in its
+region, or a no-op gateway with no session; the route's test mocks that module.
+
+<!-- region supabase -->
+The `supabase` capability's gateway is `src/lib/supabase/authGateway.adapter.ts`, a Supabase auth
+gateway over the app's one client, which is the opaque `BackendClientType` of `@app/supabase`;
+only `src/lib/supabase/*.adapter.ts` imports that package.
+<!-- endregion supabase -->
+
+The root `_layout.tsx` exports `RootErrorBoundary` as its `ErrorBoundary` (Expo
 Router convention), so a
 render crash in any route shows the `ErrorState` with a retry and is reported to observability
 once, through `useReportBoundaryError` and `reportBoundaryError` in `src/lib/observability/`; a
@@ -133,7 +140,7 @@ one file that imports zustand, and a persisted store keeps its fields on the dev
 imports AsyncStorage. The observability port is bound to PostHog in
 `src/lib/observability/observability.adapter.ts`; its one client, `src/lib/posthog/posthogClient.adapter.ts`, is the only file that imports
 `posthog-react-native` and constructs the client only when PostHog may run (in `opt-in` mode,
-after a grant), and Sentry is an optional capability `/init` can prune. The consent API a
+after a grant). The consent API a
 banner calls is bound in `src/lib/observability/consent.adapter.ts`, and
 `EXPO_PUBLIC_POSTHOG_CONSENT` picks PostHog's consent mode
 ([../observability.md](../observability.md#consent)).
@@ -202,3 +209,25 @@ There is no `src/features/` folder; the sample code already follows the layout a
 | Login form                                                                        | `screens/Login/`                                           |
 | Items data access                                                                 | `src/services/Items/` (transversal)                        |
 | Session state                                                                     | `src/hooks/useSession.hook.ts`, `src/stores/auth.store.ts` |
+
+## What an optional capability adds
+
+Each capability below adds files to the app; its region here goes with its prune, and this
+doc with the `mobile-expo` prune.
+
+<!-- region supabase -->
+The `supabase` capability adds the app's wiring of `@app/supabase`:
+
+| Thing                         | Path                                                                            | Suffix           | What it holds                                                                                                                                                                                                                                                                                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Supabase client wiring        | `apps/mobile/src/lib/supabase/client.adapter.ts`                                | `.adapter.ts`    | App-local client adapter over `@app/supabase`; the client is the opaque `BackendClientType`                                                                                                                                                                                                                                                       |
+| Auth gateway wiring (mobile)  | `apps/mobile/src/lib/supabase/authGateway.adapter.ts`                           | `.adapter.ts`    | The Supabase auth gateway over the app's client, which lib/auth lists |
+<!-- endregion supabase -->
+
+<!-- region sentry -->
+The optional `sentry` capability adds its adapter beside the observability root:
+
+| Thing                   | Path                                                                     | Suffix        | What it holds                                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Sentry adapter (mobile) | `apps/mobile/src/lib/observability/createSentryObservability.adapter.ts` | `.adapter.ts` | `IObservabilityPort` over `@sentry/react-native`; module-scope init; scrubPII; no-ops without EXPO_PUBLIC_SENTRY_DSN |
+<!-- endregion sentry -->

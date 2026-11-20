@@ -7,7 +7,9 @@ const sdk = vi.hoisted(() => ({
   init: vi.fn(),
   opt_in_capturing: vi.fn(),
   opt_out_capturing: vi.fn(),
-  reset: vi.fn()
+  reloadFeatureFlags: vi.fn(),
+  reset: vi.fn(),
+  set_config: vi.fn()
 }))
 
 const { loadSdk } = vi.hoisted(() => ({ loadSdk: vi.fn() }))
@@ -18,8 +20,16 @@ const GRANT_RECORD_KEY = 'posthog-consent:granted'
 const CONSENT_CALLS = [
   sdk.opt_in_capturing,
   sdk.opt_out_capturing,
-  sdk.reset
+  sdk.reloadFeatureFlags,
+  sdk.reset,
+  sdk.set_config
 ]
+
+const FLAGS_PAUSED = { advanced_disable_flags: true }
+const FLAGS_RESUMED = { advanced_disable_flags: false }
+
+const orderOf = (mock: { mock: { invocationCallOrder: number[] } }) =>
+  mock.mock.invocationCallOrder
 
 // The client reads the environment when its module loads, so each adapter
 // comes from a fresh module registry under its own environment, with the
@@ -91,6 +101,9 @@ test('grant loads PostHog once, opts it in without an opt-in event and reads gra
   expect(sdk.opt_in_capturing).toHaveBeenCalledWith({
     captureEventName: false
   })
+  // The flags stay as the SDK loads them.
+  expect(sdk.set_config).not.toHaveBeenCalled()
+  expect(sdk.reloadFeatureFlags).not.toHaveBeenCalled()
   expect(localStorage.getItem(GRANT_RECORD_KEY)).toBe('true')
   expect(await adapter.getStatus()).toBe('granted')
 })
@@ -122,6 +135,21 @@ test('revoke opts PostHog out, resets it with a new device id, stops it and read
   expect(localStorage.getItem(GRANT_RECORD_KEY)).toBeNull()
   expect(sdk.captureException).not.toHaveBeenCalled()
   expect(await adapter.getStatus()).toBe('denied')
+})
+
+// The reset of posthog-js reloads the flags for the new anonymous id, one
+// /flags request after the refusal, unless they are paused first.
+test('a revoke pauses the flags before the reset, so it requests none', async () => {
+  const { adapter } = await loadConsent({ consent: 'opt-in', key: KEY })
+  await adapter.grant()
+
+  await adapter.revoke()
+
+  expect(sdk.set_config).toHaveBeenCalledExactlyOnceWith(FLAGS_PAUSED)
+  expect(orderOf(sdk.set_config)[0]).toBeLessThan(
+    orderOf(sdk.reset)[0] ?? 0
+  )
+  expect(sdk.reloadFeatureFlags).not.toHaveBeenCalled()
 })
 
 test('drops every call made after a revoke while the SDK loads', async () => {
@@ -178,6 +206,24 @@ test('grants again after a revoke with the SDK it already loaded', async () => {
   expect(sdk.init).toHaveBeenCalledOnce()
   expect(sdk.captureException).toHaveBeenCalledOnce()
   expect(await adapter.getStatus()).toBe('granted')
+})
+
+test('a grant after a revoke resumes the flags and reloads them once', async () => {
+  const { adapter } = await loadConsent({ consent: 'opt-in', key: KEY })
+  await adapter.grant()
+  await adapter.revoke()
+
+  await adapter.grant()
+
+  expect(sdk.set_config).toHaveBeenLastCalledWith(FLAGS_RESUMED)
+  expect(sdk.set_config).toHaveBeenCalledTimes(2)
+  expect(sdk.reloadFeatureFlags).toHaveBeenCalledOnce()
+  expect(orderOf(sdk.opt_in_capturing)[1]).toBeLessThan(
+    orderOf(sdk.set_config)[1] ?? 0
+  )
+  expect(orderOf(sdk.set_config)[1]).toBeLessThan(
+    orderOf(sdk.reloadFeatureFlags)[0] ?? 0
+  )
 })
 
 test('keeps a grant made while a revoke waits for the load', async () => {

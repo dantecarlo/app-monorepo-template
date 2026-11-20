@@ -55,13 +55,17 @@ per entry on 2026-11-19.
   workspace package (`@app/*`), its folder. When no capability's claims alone
   remove the package, the one whose claims and `remove-dep` actions together
   remove it (`supabase` for `@supabase/supabase-js`, `e2e-playwright` for
-  `@playwright/test`). Otherwise `core`, as is `node:*`.
+  `@playwright/test`). Otherwise `core`, as is `node:*`. So `@app/cloudflare`
+  belongs to `web-next`, which claims the only `package.json` declaring it,
+  and the `cloudflare` prune takes it with its `remove-dep`.
 - **The cross-cutting case is a verb.** A `remove-dep` that takes a package
   from the last `package.json` declaring it also takes the package's entries,
   unless their owner is `core`. So `@sentry/nextjs` belongs to `web-next`,
   whose `package.json` declares it, and the `sentry` prune's `remove-dep`
   takes it; a web-only project that keeps Sentry loses the
-  `@sentry/react-native` entry with `mobile-expo`.
+  `@sentry/react-native` entry with `mobile-expo`. The `i18n`, `cloudflare`
+  and `design-tokens` capabilities take their `@app/*` package from the apps
+  the same way.
 - **The gate.** `verify:manifest:coverage` fails an entry with no owner and an
   owner the manifest does not declare; `verify:dependency-seams` refuses an
   owner that is not text.
@@ -89,6 +93,13 @@ between; the regions of other capabilities stay.
 and the line. No verb is added: a region owns lines the way a claim owns a
 file. Documentation quotes a marker inside a sentence, as here, never alone on
 a line, where it would open a region of its own file.
+
+Code holds a region where a capability adds to a list another owner keeps:
+each app's `src/lib/auth/authGateway.adapter.ts` lists the gateway of every
+backend capability in that capability's region, and serves a no-op gateway
+when none is left; `scripts/verify-tests.mjs` keeps a capability's frozen
+exception in its region. A comment line outside every region keeps the list
+printed as it stands once its last entry goes.
 
 A living spec holds a capability's part the same way: the part's own
 `Governs` line in a region of the header, and its requirements in a region of
@@ -147,7 +158,8 @@ prunes Sentry unless the project picks it (`docs/observability.md`).
 - It **owns regions** of files other owners keep: its keys in both
   `.env.example`, the `@sentry/react-native` alias of
   `apps/mobile/vitest.config.ts`, the `@sentry/cli` entry of `allowBuilds` in
-  `pnpm-workspace.yaml`, and its rows of `docs/maps/global-map.md`.
+  `pnpm-workspace.yaml`, its rows of `docs/maps/global-map.md`, and its parts of
+  `docs/observability.md`, both architecture docs and the core spec.
 - It **owns the Sentry part of each app's spec** as regions of
   `openspec/specs/apps/web/spec.md` and `openspec/specs/apps/mobile/spec.md`:
   the `Governs` line of the Sentry files in the header, the paragraph of the
@@ -164,7 +176,9 @@ removes, names a pruned file by a quoted relative path, keeps an
 pruned file; when a kept `app.json` would list a plugin of a removed
 dependency, or the patched plugin list drifts from `app.json`; and when the
 registry the prune leaves would fail `verify:dependency-seams`. The same test
-holds the registry true for the `mobile-expo` and `supabase` prunes. A Next.js config cannot be pruned by deleting a file
+holds the registry true after the `sentry`, `mobile-expo`, `supabase`,
+`web-next` and `cloudflare` prunes, the `mobile-expo` and `web-next` prunes to
+every check, and the `supabase` prune to every check but the gaps below. A Next.js config cannot be pruned by deleting a file
 it imports, so `apps/web/next.config.ts` applies every
 `next-<capability>.config.ts` beside it and names none.
 
@@ -262,15 +276,15 @@ injected adapter (blocker B4); a delete-only executor cannot close it.
 
 | Absent capability     | What breaks                                                                                                                                         |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `supabase`            | `apps/web/src/app/layout.tsx` (via `SupabaseProviders`) and `apps/mobile/src/app/_layout.tsx` keep their Supabase imports                           |
-| `i18n`                | `apps/web/src/app/layout.tsx` and the `LanguageSwitcher` blocks keep their `@app/i18n` imports                                                      |
+| `supabase`            | `eslint-local-rules/index.test.mjs` spells `@supabase/supabase-js` in two rule cases and reads `packages/supabase/package.json`; the web `useSignIn` hook test mocks `@/lib/supabase/client.adapter`; `AGENTS.md` keeps its Supabase workflow |
+| `i18n`                | the apps import `@app/i18n` throughout, `apps/web/next.config.ts` names its request config, and the apps keep the vendor i18n packages whose entries' seams it removes |
+| `cloudflare`          | `apps/web/next.config.ts`, the middleware and the Turnstile route import its adapters; its keys in `apps/web/.env.example` and the web spec's citations of its adapters stay |
+| `design-tokens`       | every app requires it; `scripts/verify-theme-sync.mjs` imports its generator, and the seam of the core `node:*` entry names `packages/tokens/scripts/**` |
 | `e2e-playwright`      | `scripts.smoke:mobile-web` and the CI `mobile-web` job still call Playwright                                                                        |
-| `web-next`            | `verify-security-static`, `verify-maps` and the knip workspaces still read `apps/web`                                          |
-| `mobile-expo`         | `verify-maps` and the knip workspaces still name `apps/mobile`                                                                                      |
+| `web-next`            | `verify-security-static` still reads `apps/web`, and the global map's web rows go stale |
 | `diagrams`            | `pnpm validate` still calls `docs:diagrams:check` (B2); the global map rows for `docs/diagrams/` and `build-diagrams` fail `verify:maps`            |
 | `sdd`                 | `pnpm validate` still calls `verify:specs`, `report:spec-drift` and their tests (B2); the global map rows for them and the skill fail `verify:maps` |
 | `english-artifacts`   | `pnpm validate` still calls `verify:english` and its test (B2); the global map rows for the gate fail `verify:maps`                                 |
-| `sentry`              | `docs/observability.md`, `docs/architecture/web.md`, `docs/architecture/mobile.md` and the env table of `AGENTS.md` still describe the Sentry files and keys; the `pnpm-workspace.yaml` comment on the isolated linker names `@sentry/core` as its evidence |
 | any with a spec       | its spec under `openspec/specs/` goes, and its row in the `openspec/README.md` § 2.1 table stays                                                    |
 | `template-maintainer` | Never selected, so always absent: the global map rows for the plans, `docs/audits/` and the downstream-projects list, and the plan citations in code-standards, go stale; `verify:skill-neutrality` then forbids nothing and says so |
 

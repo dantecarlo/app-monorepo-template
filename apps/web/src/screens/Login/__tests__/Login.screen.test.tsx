@@ -18,7 +18,7 @@ vi.mock('@/lib/routing', async () =>
   })
 )
 
-vi.mock('@/lib/supabase/authGateway.adapter', () => ({
+vi.mock('@/lib/auth/authGateway.adapter', () => ({
   getAuthGateway: () => ({ signIn: mockSignIn })
 }))
 
@@ -35,7 +35,7 @@ vi.mock('@/components/ui/Image/Image.component', () => ({
 import {
   SIGN_IN_FAILURE_MESSAGE_KEY,
   SignInFailureEnum
-} from '@/lib/supabase/authGateway.constant'
+} from '@/lib/auth/authGateway.constant'
 import { LoginScreen } from '@/screens/Login/Login.screen'
 import { useToastStore } from '@/stores/toast.store'
 import { fireEvent, render, screen, waitFor } from '@/test/test.helper'
