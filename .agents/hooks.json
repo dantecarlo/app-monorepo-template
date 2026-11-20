@@ -4,7 +4,7 @@
     {
       "name": "write-guard",
       "event": "PreToolUse",
-      "matcher": "Edit|Write|NotebookEdit",
+      "matcher": "Bash|PowerShell|Edit|Write|NotebookEdit",
       "script": "scripts/agent-harness/write-guard/claude-hook.mjs",
       "timeout": 10
     }

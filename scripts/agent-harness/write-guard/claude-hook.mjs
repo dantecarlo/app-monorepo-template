@@ -2,7 +2,8 @@
 // ---------------------------------------------------------------------------
 // claude-hook — the Claude Code adapter of the write guard: a PreToolUse
 // hook, wired by `.claude/settings.json`, which `pnpm agent-harness:generate`
-// renders from `.agents/hooks.json` (matcher `Edit|Write|NotebookEdit`).
+// renders from `.agents/hooks.json` (matcher
+// `Bash|PowerShell|Edit|Write|NotebookEdit`).
 //
 // It reads the PreToolUse payload on stdin ({ agent_type, cwd, tool_name,
 // tool_input }), the policy and the agent context of the checkout it runs
