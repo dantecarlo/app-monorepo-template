@@ -43,6 +43,10 @@ export const PostHogConsentModeEnum = {
 export type PostHogConsentModeType =
   (typeof PostHogConsentModeEnum)[keyof typeof PostHogConsentModeEnum]
 
+// How long a revoke waits for the client it stops to shut down. With its
+// queues emptied it sends nothing; the wait covers a request still in flight.
+export const POSTHOG_STOP_TIMEOUT_MS = 3000
+
 // What each consent mode adds to the granted options. Opt-in also hands
 // PostHog the consent storage, which writes nothing to the device before a
 // grant; memory persistence keeps nothing there.
