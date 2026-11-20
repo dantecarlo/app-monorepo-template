@@ -81,6 +81,8 @@ The description of `refine-ticket` is 1,020 characters (1,005 before) and that o
 - `ATL_TEMPLATE_SELF=1 pnpm validate`: not run by this change's writer, which ran on a shared
   machine under a brief that leaves the full gate to the parent session; the parent runs it over
   the archive's tree.
+- After the archive: `pnpm verify:specs` exits 0 with no open change, and
+  `pnpm report:spec-drift` lists harness/ticket-flow no longer, its spec verified at `36b003b`.
 - Run at `2bf8a03`, each exit 0: `pnpm verify:skills:test` (100 of 100),
   `pnpm verify:skill-frontmatter`, `pnpm verify:specs`, `pnpm verify:english`,
   `pnpm verify:unicode-safety`, `pnpm verify:router-coverage`, `pnpm verify:maps`, and

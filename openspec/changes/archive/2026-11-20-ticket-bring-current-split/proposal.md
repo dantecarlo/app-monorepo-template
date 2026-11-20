@@ -1,6 +1,6 @@
 # Proposal: QA brings a pull request current once, and the architect every later time
 
-> **Status:** open
+> **Status:** archived — 2026-11-20
 
 ## Why
 
