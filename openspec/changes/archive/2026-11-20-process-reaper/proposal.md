@@ -1,6 +1,6 @@
 # Proposal: a reaper for the processes a dead session leaves behind
 
-> **Status:** open
+> **Status:** archived — 2026-11-20
 
 ## Why
 
