@@ -33,6 +33,8 @@ const HEADER = [
   'Server',
   'Capability',
   'Package',
+  'devDependency',
+  'Command',
   'Latest',
   'Published',
   'Checked'
@@ -50,12 +52,23 @@ const CATALOG_FIELDS = [
 ]
 
 const NPX = /^npx(?:\.cmd|\.exe)?$/iu
+const NODE_COMMAND = /^node(?:\.exe)?$/iu
+const LAUNCHED = /^node_modules\/(?<name>@[^/]+\/[^/]+|[^/]+)\/./u
 const NPM_NAME =
   /^(?:@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/u
 // One release: never a range, `latest` or another tag.
 const EXACT_VERSION = /^\d+\.\d+\.\d+(?:-[0-9a-z.-]+)?$/iu
 const VERSIONED = /^(?<name>@[^/@]+\/[^@]+|[^@]+)@.*$/u
+const DEPENDENCY = /^"[^"]+": "(?<version>[^"]+)"$/u
 const LINE_END = /\r?\n/u
+const ROW_FIELDS = [
+  'capability',
+  'command',
+  'latest',
+  'packageName',
+  'published',
+  'version'
+]
 
 const isText = (value) => typeof value === 'string' && value.trim() !== ''
 
@@ -69,17 +82,29 @@ const readJson = ({ path, text }) => {
   }
 }
 
-// The npm package an `npx` command runs, without its version, or null when
-// the command is not `npx` or its first argument is not an npm package.
-export const npmPackageOf = ({ args, command }) => {
-  if (typeof command !== 'string') return null
-  if (!NPX.test(baseOf(command)) || !Array.isArray(args)) return null
+const npxPackageOf = ({ args }) => {
   const spec = args.find(
     (arg) => typeof arg === 'string' && !arg.startsWith('-')
   )
   if (spec === undefined) return null
-  const name = spec.match(VERSIONED)?.groups.name ?? spec
-  return NPM_NAME.test(name) ? name : null
+  return spec.match(VERSIONED)?.groups.name ?? spec
+}
+
+const launchedPackageOf = ({ args }) =>
+  typeof args[0] === 'string'
+    ? (args[0].match(LAUNCHED)?.groups.name ?? null)
+    : null
+
+// The npm package a command runs: the first package argument of `npx`,
+// without its version, or the package of a `node node_modules/<package>/…`
+// launcher. Null for any other command, or for a name npm would refuse.
+export const npmPackageOf = ({ args, command }) => {
+  if (typeof command !== 'string' || !Array.isArray(args)) return null
+  const base = baseOf(command)
+  let name = null
+  if (NPX.test(base)) name = npxPackageOf({ args })
+  else if (NODE_COMMAND.test(base)) name = launchedPackageOf({ args })
+  return name !== null && NPM_NAME.test(name) ? name : null
 }
 
 // The file `node` runs for a catalog server: the package's own bin file,
@@ -203,7 +228,8 @@ export const parseCatalog = ({ text }) => {
 }
 
 // A project's .mcp.json, or none: `{ problems, servers }`, each server with
-// the npm package its command runs, or null.
+// the npm package its command runs, or null, and its command line, or null
+// for a server with no command (a remote URL).
 export const parseMcpConfig = ({ text }) => {
   if (text === null) return { problems: [], servers: [] }
   const { problem, value } = readJson({ path: MCP_CONFIG_PATH, text })
@@ -222,6 +248,10 @@ export const parseMcpConfig = ({ text }) => {
   return {
     problems: [],
     servers: Object.entries(entries).map(([name, definition]) => ({
+      commandLine:
+        typeof definition?.command === 'string'
+          ? commandLineOf(definition)
+          : null,
       name,
       packageName: npmPackageOf({
         args: definition?.args,
@@ -234,28 +264,44 @@ export const parseMcpConfig = ({ text }) => {
 const byName = (left, right) =>
   left.name < right.name ? -1 : Number(left.name > right.name)
 
+// A catalog server as .mcp.json runs it: the project decides its package
+// and its command, and the catalog's pin holds only while both name the
+// same package.
+const asRun = ({ ran, server }) => {
+  const samePackage = ran.packageName === server.packageName
+  return {
+    ...server,
+    commandLine: ran.commandLine,
+    entry: samePackage ? server.entry : null,
+    packageName: ran.packageName,
+    version: samePackage ? server.version : null
+  }
+}
+
 // Every server of the catalog and of .mcp.json, by name, each saying which
-// of the two lists it. A catalog server keeps its capability and docs;
-// .mcp.json, which is what the project runs, decides its package. A server
-// only in .mcp.json has no docs.
+// of the two lists it. A catalog server keeps its capability, docs and pin;
+// .mcp.json, which is what the project runs, decides its package and its
+// command. A server only in .mcp.json has no docs and no pin.
 export const listServers = ({ catalog, config }) => {
   const configured = new Map(config.map((server) => [server.name, server]))
   const listed = catalog.map((server) => ({
-    ...server,
-    inCatalog: true,
-    packageName: configured.has(server.name)
-      ? configured.get(server.name).packageName
-      : server.packageName
+    ...(configured.has(server.name)
+      ? asRun({ ran: configured.get(server.name), server })
+      : server),
+    inCatalog: true
   }))
   const known = new Set(catalog.map(({ name }) => name))
   const extra = config
     .filter(({ name }) => !known.has(name))
-    .map(({ name, packageName }) => ({
+    .map(({ commandLine, name, packageName }) => ({
       capability: PROJECT_CAPABILITY,
+      commandLine,
       docs: [],
+      entry: null,
       inCatalog: false,
       name,
-      packageName
+      packageName,
+      version: null
     }))
   return [...listed, ...extra].sort(byName)
 }
@@ -266,11 +312,19 @@ export const digestOf = ({ lines }) =>
     .digest('hex')
     .slice(0, DIGEST_LENGTH)
 
+const code = (text) => (text === null ? NO_VALUE : `\`${text}\``)
+
+// A row's cells: the devDependency line a project adds for a pinned server,
+// the command a client runs, and the registry's latest release.
 const cellsOf = (row) => [
   row.name,
   row.capability,
-  row.packageName === null ? NO_VALUE : `\`${row.packageName}\``,
-  row.version ?? NOT_ON_NPM,
+  code(row.packageName),
+  code(
+    row.version === null ? null : `"${row.packageName}": "${row.version}"`
+  ),
+  code(row.command),
+  row.latest ?? NOT_ON_NPM,
   row.published ?? NO_VALUE,
   row.checked ?? NO_VALUE
 ]
@@ -305,6 +359,18 @@ export const renderBlock = ({ rows }) => {
 
 const valueOf = (cell) => (cell === NO_VALUE ? null : cell)
 
+const unquoted = (cell) =>
+  valueOf(cell)?.replace(/^`(.*)`$/u, '$1') ?? null
+
+// The version of a devDependency cell, or the cell itself when it is not
+// one, so a comparison with the catalog names what the block holds.
+const pinOf = (cell) => {
+  const text = unquoted(cell)
+  return text === null
+    ? null
+    : (text.match(DEPENDENCY)?.groups.version ?? text)
+}
+
 const rowOf = (line) => {
   const cells = line
     .replace(/^\|/u, '')
@@ -312,15 +378,25 @@ const rowOf = (line) => {
     .split('|')
     .map((cell) => cell.trim())
   if (cells.length !== HEADER.length) return null
-  const [name, capability, packageCell, version, published, checked] =
-    cells
+  const [
+    name,
+    capability,
+    packageCell,
+    dependency,
+    command,
+    latest,
+    published,
+    checked
+  ] = cells
   return {
     capability,
     checked: valueOf(checked),
+    command: unquoted(command),
+    latest: latest === NOT_ON_NPM ? null : latest,
     name,
     packageName: valueOf(packageCell)?.replaceAll('`', '') ?? null,
     published: valueOf(published),
-    version: version === NOT_ON_NPM ? null : version
+    version: pinOf(dependency)
   }
 }
 
@@ -372,38 +448,42 @@ export const dateOf = ({ time }) => time.slice(0, DATE_LENGTH)
 
 const sameRow = ({ next, previous }) =>
   previous !== undefined &&
-  ['capability', 'packageName', 'published', 'version'].every(
-    (field) => previous[field] === next[field]
-  )
+  ROW_FIELDS.every((field) => previous[field] === next[field])
 
-// The rows a run writes, and the servers whose version changed. `latest`
-// maps a server's name to `{ published, version }`; a server with no npm
-// package has none. A row that did not change keeps its checked date, so a
-// run that finds nothing new renders the block it read.
+// The rows a run writes; the servers whose latest release changed; and the
+// servers whose pin changed or that are new in the block, whose docs a
+// person re-reads. `latest` maps a server's name to `{ published, version }`;
+// a server with no npm package has none. A row that did not change keeps
+// its checked date, so a run that finds nothing new renders the block it
+// read.
 export const planRows = ({ latest, previous, servers, today }) => {
   const before = new Map(previous.map((row) => [row.name, row]))
   const released = []
+  const repinned = []
   const rows = servers.map((server) => {
     const found = latest.get(server.name)
     const next = {
       capability: server.capability,
       checked: null,
+      command: server.commandLine,
+      latest: found?.version ?? null,
       name: server.name,
       packageName: server.packageName,
       published: found ? dateOf({ time: found.published }) : null,
-      version: found?.version ?? null
+      version: server.version
     }
     const old = before.get(server.name)
-    if (found && old?.version !== next.version) {
+    if (found && old?.latest !== next.latest) {
       released.push({
-        docs: server.docs,
-        from: old?.version ?? null,
+        from: old?.latest ?? null,
         name: server.name,
-        to: next.version
+        to: next.latest
       })
     }
+    if (old === undefined || old.version !== next.version)
+      repinned.push({ docs: server.docs, name: server.name })
     if (sameRow({ next, previous: old })) return old
     return { ...next, checked: found ? today : null }
   })
-  return { released, rows }
+  return { released, repinned, rows }
 }

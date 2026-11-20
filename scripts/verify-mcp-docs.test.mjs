@@ -103,13 +103,20 @@ const entryOf = ({
   version
 })
 
-const rowOf = ({ capability, name, packageName }) => ({
-  capability,
-  checked: packageName === null ? null : OLD_DATE,
-  name,
-  packageName,
-  published: packageName === null ? null : OLD_DATE,
-  version: packageName === null ? null : OLD_VERSION
+const commandOf = ({ entry, packageName, serverArgs = [] }) =>
+  ['node', launcherOf({ entry, packageName }), ...serverArgs].join(' ')
+
+// The row the updater writes for a server: a catalog server's pin and
+// command, or the `command` a .mcp.json server runs, with an old latest.
+const rowOf = (server) => ({
+  capability: server.capability,
+  checked: server.packageName === null ? null : OLD_DATE,
+  command: server.command ?? commandOf(server),
+  latest: server.packageName === null ? null : OLD_VERSION,
+  name: server.name,
+  packageName: server.packageName,
+  published: server.packageName === null ? null : OLD_DATE,
+  version: server.version ?? null
 })
 
 const docOf = ({ eol = '\n', rows }) =>
@@ -193,12 +200,14 @@ const CASES = [
         rows: [
           {
             capability: PROJECT_CAPABILITY,
+            command: 'npx -y acme-mcp@latest',
             name: 'acme',
             packageName: 'acme-mcp'
           },
           EXPO,
           {
             capability: PROJECT_CAPABILITY,
+            command: 'node tools/server.js',
             name: 'local',
             packageName: null
           },
@@ -235,10 +244,27 @@ const CASES = [
     context: walk({
       catalog: [{ ...EXPO, packageName: '@expo/mcp' }, NEXT]
     }),
-    expected: 1,
+    expected: 2,
     name: 'a package that differs from the catalog fails',
     patterns: [
-      /expo: the block names the package expo-mcp, the catalog and \.mcp\.json name @expo\/mcp/u
+      /expo: the block names the package expo-mcp, the catalog and \.mcp\.json name @expo\/mcp/u,
+      /expo: the block names the command node node_modules\/expo-mcp\/bin\/expo-mcp\.mjs, the catalog and \.mcp\.json name node node_modules\/@expo\/mcp\/bin\/expo-mcp\.mjs/u
+    ]
+  },
+  {
+    context: walk({ catalog: [{ ...EXPO, version: '0.2.5' }, NEXT] }),
+    expected: 1,
+    name: 'a block whose pinned version differs from the catalog fails',
+    patterns: [
+      /expo: the block names the pinned version 0\.2\.4, the catalog and \.mcp\.json name 0\.2\.5 — run `pnpm mcp:docs`/u
+    ]
+  },
+  {
+    context: walk({ catalog: [{ ...EXPO, entry: 'dist/cli.js' }, NEXT] }),
+    expected: 1,
+    name: 'a block whose command differs from the catalog fails',
+    patterns: [
+      /expo: the block names the command node node_modules\/expo-mcp\/bin\/expo-mcp\.mjs, the catalog and \.mcp\.json name node node_modules\/expo-mcp\/dist\/cli\.js — run `pnpm mcp:docs`/u
     ]
   },
   {
