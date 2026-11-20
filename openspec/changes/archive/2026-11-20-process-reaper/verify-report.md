@@ -41,7 +41,7 @@
 
 - `pnpm validate`: not run by the session that built the change, on the owner's instruction
   that the machine is short of memory; the parent session runs it. The focused suites and single
-  gates ran instead, each exit 0 on 2026-11-20: `pnpm reap:test` (68 tests),
+  gates ran instead, each exit 0 on 2026-11-20: `pnpm reap:test` (71 tests),
   `pnpm agent-harness:test` (86), `pnpm agent-harness:projection-check`,
   `pnpm write-guard:test`, `node --test scripts/prune-worktrees.test.mjs` (80),
   `pnpm verify:manifest`, `pnpm verify:manifest:coverage`, `pnpm verify:manifest:test`,
