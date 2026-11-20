@@ -3,7 +3,7 @@
 > **Governs:** `.agents/contracts/dependencies.json`, `eslint-dependency-seam-allowlist.json`, `eslint-local-rules/dependency-seam.detect.mjs`, `eslint-local-rules/wrapped-import.detect.mjs`, `scripts/dependency-seams.detect.mjs`, `scripts/eslint-config.detect.mjs`, `scripts/verify-dependency-seams.mjs`, `eslint.config.mjs`, `eslint.rules.mjs`
 > **ID prefix:** `SEAM`
 > **Derived from:** `docs/code-standards.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-19 at `b3e7919`
+> **Verified against the code:** 2026-11-20 at `bdd39a8`
 
 ## Purpose
 
@@ -856,7 +856,7 @@ this shape as a malformed registry, judging nothing else against it, and SHALL f
 migration that no entry of `eslint-dependency-seam-allowlist.json` names, as stale, to be closed by
 removing it; while the allowlist cannot be read, it SHALL call no migration stale.
 
-**Evidence:** `.agents/contracts/dependencies.json:670`,
+**Evidence:** `.agents/contracts/dependencies.json:677`,
 `eslint-local-rules/dependency-seam.detect.mjs:155-166`,
 `eslint-local-rules/dependency-seam.detect.mjs:183`, `scripts/dependency-seams.detect.mjs:49-55`,
 `scripts/dependency-seams.detect.mjs:146-181`, `scripts/dependency-seams.detect.mjs:195`,

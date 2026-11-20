@@ -38,6 +38,14 @@ The owner's words, verbatim:
 
 - 2026-11-14 (translated from Spanish): "move everything to ui, that rule is a pillar. The screen or section files must contain only positioning, and the components are what must hold the other styles, but everything centralized in styles and the tokens. Fix everything you mention applying what is recommended, and once everything is fixed tell the Arquitecto to integrate it and fix everything"
 - 2026-11-20 (translated from Spanish): "Finish making all the changes … Finish what's missing"
+- 2026-11-20 (translated from Spanish), answering whether `expo-file-system` should become a
+  direct dependency of `apps/mobile`, reachable only through its adapter, so the switch to
+  `opt-in` clears what `granted` stored on mobile too: "Yes, add it"
+
+> **Amended after the archive, 2026-11-20, before the push:** with the owner's answer above, the
+> switch to `opt-in` on mobile moved from out of scope into this change (A8, MOBILE-53), and the
+> shared stand-in of the SDK and the architecture map's row for the URL scrub were brought up to
+> date. See `verify-report.md` § The amendment.
 
 ## Assumptions
 
@@ -76,6 +84,14 @@ stated and open to the owner's correction.
   marker, the grant holds for this launch in memory: PostHog is opted in, nothing reaches the
   device, the status reads `granted`, and the next launch reads `pending`. It is what web does
   when the browser blocks the grant record.
+- **A8 — The switch to `opt-in` on mobile clears at every `opt-in` launch.** Under `granted`
+  posthog-react-native persists on its own, in the files `.posthog-rn.json` and
+  `.posthog-rn-logs.json` of the document directory on a native platform and under the same keys
+  of the key-value storage in a web bundle; under `opt-in` it writes only through the consent
+  storage, under other keys. So those files and keys only ever hold what another mode left, and
+  every `opt-in` launch removes them, granted or not, unlike web, where the SDK keeps the same
+  names after a grant. `expo-file-system` becomes a direct dependency of `apps/mobile`, imported
+  only by `apps/mobile/src/lib/posthog/sdkStorage.adapter.ts`, as the owner answered.
 
 ## What changes
 
@@ -87,23 +103,16 @@ stated and open to the owner's correction.
   grant marker before any value and keeps a refused grant in memory, and its revoke waits for the
   writes it issued and goes on past a refused removal; the consent API opens the storage before it
   constructs the client, and its revoke opts the client out, drops its queues and shuts it down;
-  the launch restore catches its failure.
-- **Docs:** `docs/observability.md`.
+  the launch restore catches its failure; every `opt-in` launch removes what `granted` stored on
+  the device, through `expo-file-system`, now a direct dependency registered with one seam.
+- **Docs:** `docs/observability.md`, and the row of the URL scrub in `docs/maps/global-map.md`.
 
 ## Out of scope
 
-- **The switch to `opt-in` on mobile.** On native, `posthog-react-native` keeps what `granted`
-  stored in files of the document directory, through `expo-file-system`
-  (posthog-react-native 4.87.0, dist/native-deps.js, `buildOptimisticAsyncStorage`). Removing them needs `expo-file-system`
-  as a dependency of `apps/mobile` and a seam for it in `.agents/contracts/dependencies.json`,
-  both outside this change's edit surfaces: an owner decision.
 - **The events a web revoke finds in the request queue.** `posthog-js` batches its requests and
   sends them on a timer; `opt_out_capturing` does not empty that queue
   (posthog-js, lib/src/posthog-core.js lines 4460-4470 and 4322-4338), and no public call does, so a capture made
   in the seconds before a revoke can still leave after it. Recorded in `docs/observability.md`.
-- **The architecture map's row for the URL scrub** (`docs/maps/global-map.md`), outside this
-  change's edit surfaces: it still says the scrub drops the query and the fragment, which stays
-  true but no longer whole.
 
 ## Affected specs
 

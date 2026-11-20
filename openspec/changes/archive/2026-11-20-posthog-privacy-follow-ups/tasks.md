@@ -7,6 +7,8 @@
 - [x] T5 — apps/mobile: the consent storage keeps nothing while not granted, writes the marker first, keeps a refused grant in memory, and its close waits for issued writes and goes on past a refused removal (A6, A7) · Requirements: MOBILE-54 · Commit: 119f728
 - [x] T6 — apps/mobile: the consent API opens the storage before it constructs the client, and its revoke opts the client out, empties its queues and shuts it down, without a reset (A1, A2); the launch restore catches its failure; a comment moved in fc3eae3 · Requirements: MOBILE-53, MOBILE-55 · Commit: bb3a0b2
 - [x] T7 — docs: `docs/observability.md` · Requirements: none · Commit: 51c0210
+- [x] T9 — apps/mobile: every `opt-in` launch removes what `granted` stored on the device, through `expo-file-system`, a direct dependency with one seam and a test stand-in (A8) · Requirements: MOBILE-53 · Commit: bdd39a8
+- [x] T10 — the shared stand-in of the SDK carries the calls a revoke makes, and the map's row of the URL scrub names the path segment · Requirements: MOBILE-55 · Commit: 9e84f2e
 - [x] T8 — `verify-report.md`, then the archive to `openspec/changes/archive/2026-11-20-posthog-privacy-follow-ups/` as the last commit · Requirements: none · Commit: 3ef1c81
 
 <!--

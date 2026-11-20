@@ -1,6 +1,6 @@
 # Verify report: 2026-11-20-posthog-privacy-follow-ups
 
-> **Verified:** 2026-11-20 at `fc3eae3`
+> **Verified:** 2026-11-20 at `fc3eae3`, amended at `bdd39a8`
 
 ## Scenarios
 
@@ -41,6 +41,13 @@
 | MOBILE-53 | `opt-in` | `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "starts opt-in mode opted out, writing through the consent storage" | green |
 | MOBILE-53 | a grant from an earlier launch | `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "opts in at launch after a grant from an earlier launch" | green |
 | MOBILE-53 | a launch whose opt-in fails | `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "rejects nothing when the launch fails to opt in again" | red, then green |
+| MOBILE-53 | a switch from `granted` | `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "removes what PostHog stored on its own at an opt-in launch" | red, then green |
+| MOBILE-53 | an `opt-in` launch after a grant | `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "removes what PostHog stored on its own at an opt-in launch after a grant" | red, then green |
+| MOBILE-53 | a mode that removes nothing | `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "keeps what PostHog stored outside opt-in mode and without a key" | green, a pin |
+| MOBILE-53 | the files on a native platform | `apps/mobile/src/lib/posthog/__tests__/sdkStorage.adapter.test.ts` › "removes the files PostHog kept in the document directory on a native platform" | red (no unit), then green |
+| MOBILE-53 | no file to delete | `apps/mobile/src/lib/posthog/__tests__/sdkStorage.adapter.test.ts` › "deletes no file the document directory does not hold" | red (no unit), then green |
+| MOBILE-53 | a web bundle | `apps/mobile/src/lib/posthog/__tests__/sdkStorage.adapter.test.ts` › "removes only the key-value storage in a web bundle" | red (no unit), then green |
+| MOBILE-53 | a removal the device refuses | `apps/mobile/src/lib/posthog/__tests__/sdkStorage.adapter.test.ts` › "rejects nothing when the device refuses a removal" | red (no unit), then green |
 | MOBILE-53 | `memory` | `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "starts memory mode with memory persistence" | green |
 | MOBILE-54 | before a grant | `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "keeps every value off the device before a grant" | red, then green |
 | MOBILE-54 | a grant | `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "writes the grant marker and every later value to the device after a grant" | red, then green |
@@ -61,6 +68,7 @@
 | MOBILE-55 | a mode that asks no consent | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "changes nothing and reads not-required outside opt-in mode" | green |
 | MOBILE-55 | no key | `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "changes nothing and reads not-required without a key" | green |
 | MOBILE-55 | the composition root | `apps/mobile/src/lib/observability/__tests__/consent.adapter.test.ts` › "binds the PostHog consent by default" | green |
+| MOBILE-55 | a revoke through the composition root | `apps/mobile/src/lib/observability/__tests__/consent.adapter.test.ts` › "revokes through the barrel and shuts the client down on the shared stand-in" | red on the old stand-in, then green |
 
 Each red was seen for its stated reason before its fix: the held call's error rejected the
 start; the reset token stayed in the path; `set_config` was never called; the `posthog-js` values
@@ -79,10 +87,33 @@ T6. The scenario "what the dropped client stored" was green when written, after 
 consent storage of `9df3979` put back it fails, the new client reading the ids the dropped one
 wrote.
 
+## The amendment
+
+On the owner's answer of 2026-11-20 (the proposal), after the archive and before the push:
+
+- `9e84f2e`: the shared stand-in of `posthog-react-native` in `apps/mobile/src/test/mocks/` gained
+  `setPersistedProperty`, `shutdown` and the queue names of `PostHogPersistedProperty`. The new
+  composition-root test failed on the old stand-in ("The property "shutdown" is not defined on the
+  object") and passes on the new one. The map's row of the URL scrub names the path segment.
+- `bdd39a8`: `expo-file-system` `~58.0.14` is a direct dependency of `apps/mobile`. One
+  `pnpm install --offline` changed `pnpm-lock.yaml` by the three lines of the new importer entry,
+  the version the lockfile already resolved through `posthog-react-native`. The registry gives it
+  one seam, `apps/mobile/src/lib/posthog/sdkStorage.adapter.ts`, and `apps/mobile/vitest.config.ts`
+  aliases it to a stand-in: the real package throws `__DEV__ is not defined` under vitest, which
+  failed 29 tests of `lib/posthog` and `lib/observability` until the alias was in. The tests of
+  the new adapter failed on the missing unit first; the two `opt-in` launch tests saw nothing
+  removed until the wiring.
+- The registry entry moved the line of `openMigrations`, so the evidence of SEAM-16 in the living
+  spec of harness/dependency-seams now cites `.agents/contracts/dependencies.json:677`, and that
+  spec is verified at `bdd39a8`; no requirement of it changed.
+
 ## Checks
 
 - `pnpm --filter @app/web test`: 134 files, 522 tests, green, 2026-11-20, after T4.
-- `pnpm --filter @app/mobile test`: 91 files, 291 tests, green, 2026-11-20, after T6.
+- `pnpm --filter @app/mobile test`: 91 files, 291 tests, green, 2026-11-20, after T6; 92 files,
+  299 tests, green, after the amendment.
+- `pnpm verify:dependency-seams`: PASS, 101 registry entries, 0 file-package pairs outside their
+  seam, after the amendment.
 - `tsc --noEmit` in `apps/web` and in `apps/mobile`: exit 0.
 - `eslint` over `src/lib/posthog` and `src/lib/observability` of both apps: exit 0, no new
   warning.
@@ -104,5 +135,8 @@ wrote.
 - **What the SDKs send.** Every test replaces the SDK at its module; the shutdown of the dropped
   mobile client and its emptied queues are proven as the calls the adapter makes, and the SDK's
   behaviour behind them is read from the source of `@posthog/core` 1.68.0, which no test runs.
-- **The switch to `opt-in` on mobile**, out of scope: see the proposal.
+- **The files on a real device.** The mobile clear runs against the stand-in of
+  `expo-file-system`; that a device deletes the files, and that posthog-react-native 4.87.0 keeps
+  them there under those names (its dist/native-deps.js and dist/storage.js), is read from the
+  packages, which no test runs.
 - **The web request queue at a revoke**, out of scope: see the proposal.

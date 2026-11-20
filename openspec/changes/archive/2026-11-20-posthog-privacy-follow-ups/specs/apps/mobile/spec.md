@@ -11,7 +11,12 @@ through the consent API (MOBILE-55) or by a grant from an earlier launch held in
 storage of MOBILE-54, which constructs it at launch and opts it in, a failure of that opt-in
 rejecting nothing and leaving it opted out; it SHALL construct it with `defaultOptIn: false` and
 that consent storage as its `customStorage`, so it captures and stores nothing until it is opted
-in. In `memory` mode it SHALL construct PostHog with `persistence: 'memory'`, so it captures but
+in. Every `opt-in` launch SHALL remove what posthog-react-native kept on the device when it
+persisted on its own, as under `granted`: the files `.posthog-rn.json` and
+`.posthog-rn-logs.json` of the document directory on a native platform, through
+`expo-file-system`, which only `sdkStorage.adapter.ts` imports, and the keys of those names in the
+device's key-value storage, keeping every other value and rejecting nothing; no other mode, and no
+launch without a key, removes them. In `memory` mode it SHALL construct PostHog with `persistence: 'memory'`, so it captures but
 keeps nothing on the device. Each mode adds nothing else to the `granted` options.
 
 **Evidence:** written at apply time, when the code exists.
@@ -45,6 +50,57 @@ keeps nothing on the device. Each mode adds nothing else to the `granted` option
 - **WHEN** the client module loads
 - **THEN** no rejection is left unhandled
 - **Test:** `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "rejects nothing when the launch fails to opt in again"
+
+#### Scenario: a switch from `granted`
+
+- **GIVEN** a key, the consent mode `opt-in` and no grant from an earlier launch
+- **WHEN** the client module loads
+- **THEN** what PostHog stored on its own is removed, and no client is constructed
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "removes what PostHog stored on its own at an opt-in launch"
+
+#### Scenario: an `opt-in` launch after a grant
+
+- **GIVEN** a key, the consent mode `opt-in` and a grant stored by an earlier launch
+- **WHEN** the client module loads
+- **THEN** the client is opted in again, and what PostHog stored on its own is removed
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "removes what PostHog stored on its own at an opt-in launch after a grant"
+
+#### Scenario: a mode that removes nothing
+
+- **GIVEN** a key and the consent mode `granted`, then `memory`, then `opt-in` and no key
+- **WHEN** the client module loads
+- **THEN** nothing is removed
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "keeps what PostHog stored outside opt-in mode and without a key"
+
+#### Scenario: the files on a native platform
+
+- **GIVEN** a native platform whose document directory holds both files, and a device storage that
+  holds their keys, a consent storage value and an app value
+- **WHEN** what PostHog stored on its own is removed
+- **THEN** both files of the document directory are deleted, both keys are gone, and the other
+  values stay
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/sdkStorage.adapter.test.ts` › "removes the files PostHog kept in the document directory on a native platform"
+
+#### Scenario: no file to delete
+
+- **GIVEN** a native platform whose document directory holds neither file
+- **WHEN** what PostHog stored on its own is removed
+- **THEN** no file is deleted and nothing rejects
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/sdkStorage.adapter.test.ts` › "deletes no file the document directory does not hold"
+
+#### Scenario: a web bundle
+
+- **GIVEN** a web bundle and a device storage that holds the keys of both files and an app value
+- **WHEN** what PostHog stored on its own is removed
+- **THEN** no file is read, both keys are gone and the app value stays
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/sdkStorage.adapter.test.ts` › "removes only the key-value storage in a web bundle"
+
+#### Scenario: a removal the device refuses
+
+- **GIVEN** a native platform whose file deletes and key removals all fail
+- **WHEN** what PostHog stored on its own is removed
+- **THEN** nothing rejects
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/sdkStorage.adapter.test.ts` › "rejects nothing when the device refuses a removal"
 
 #### Scenario: `memory`
 
@@ -227,3 +283,10 @@ call nothing on PostHog.
 - **WHEN** consent is granted through the barrel's `consent`
 - **THEN** PostHog is opted in
 - **Test:** `apps/mobile/src/lib/observability/__tests__/consent.adapter.test.ts` › "binds the PostHog consent by default"
+
+#### Scenario: a revoke through the composition root
+
+- **GIVEN** a key, the consent mode `opt-in`, the shared stand-in of the SDK and a grant
+- **WHEN** consent is revoked through the barrel's `consent`
+- **THEN** the client is shut down and the status reads `denied`
+- **Test:** `apps/mobile/src/lib/observability/__tests__/consent.adapter.test.ts` › "revokes through the barrel and shuts the client down on the shared stand-in"
