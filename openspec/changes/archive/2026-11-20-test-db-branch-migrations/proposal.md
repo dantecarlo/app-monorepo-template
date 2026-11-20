@@ -1,6 +1,6 @@
 # Proposal: test:db runs the pgTAP suites over the branch's own migrations, on a target the project sets
 
-> **Status:** open
+> **Status:** archived — 2026-11-20
 
 ## Why
 

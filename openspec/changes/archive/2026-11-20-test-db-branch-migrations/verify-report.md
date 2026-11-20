@@ -43,8 +43,8 @@ spawnSync supabase ENOENT" and removed its bundle; an unknown flag exited 1.
 
 ## Gate
 
-- `pnpm validate`: not run by this change's writer, on the owner's word that the shared machine
-  runs only single test files and the package's suite; the session that integrates it runs it.
+- `pnpm validate`: not run by this change's writer: its brief keeps the shared machine to single test files
+  and the package's suite, and the session that integrates it runs it.
 - `pnpm --filter @app/supabase test`: exit 0, 2026-11-20, 11 files and 61 tests.
 - `eslint` on every changed source and `tsc --noEmit` of `@app/supabase`: exit 0, 2026-11-20.
 - `verify:specs`, `verify:english`, `verify:tests`, `verify:manifest`, `verify:manifest:coverage`,
