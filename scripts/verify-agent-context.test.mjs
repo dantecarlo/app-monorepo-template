@@ -77,7 +77,9 @@ export const CASES = [
     name: 'an entry with no gradedBy fires'
   },
   {
-    context: context({ declared: scoutWith({ fields: { gradedBy: [] } }) }),
+    context: context({
+      declared: scoutWith({ fields: { gradedBy: [] } })
+    }),
     expected: 1,
     name: 'an empty gradedBy fires'
   },
@@ -122,7 +124,9 @@ export const CASES = [
     name: 'an entry with no writes fires'
   },
   {
-    context: context({ declared: scoutWith({ fields: { writes: 'no' } }) }),
+    context: context({
+      declared: scoutWith({ fields: { writes: 'no' } })
+    }),
     expected: 1,
     name: 'a writes that is neither true nor false fires'
   },
@@ -136,7 +140,9 @@ export const CASES = [
     name: 'a writer held to a surface of repository folders passes'
   },
   {
-    context: context({ declared: scribeWith({ fields: { surface: [] } }) }),
+    context: context({
+      declared: scribeWith({ fields: { surface: [] } })
+    }),
     expected: 1,
     name: 'an empty surface fires'
   },
@@ -245,7 +251,9 @@ const checks = [
         kindsOf({
           findings: gate.run(
             context({
-              declared: scoutWith({ fields: { gradedBy: [MISSING_SKILL] } })
+              declared: scoutWith({
+                fields: { gradedBy: [MISSING_SKILL] }
+              })
             })()
           )
         }),
@@ -273,7 +281,9 @@ const checks = [
       assert.deepEqual(
         kindsOf({
           findings: gate.run(
-            context({ declared: withScout({ entry: { writes: false } }) })()
+            context({
+              declared: withScout({ entry: { writes: false } })
+            })()
           )
         }),
         [FINDING_KIND.ungraded]
@@ -281,7 +291,9 @@ const checks = [
       assert.deepEqual(
         kindsOf({
           findings: gate.run(
-            context({ declared: scoutWith({ fields: { gradedBy: [] } }) })()
+            context({
+              declared: scoutWith({ fields: { gradedBy: [] } })
+            })()
           )
         }),
         [FINDING_KIND.shape]
