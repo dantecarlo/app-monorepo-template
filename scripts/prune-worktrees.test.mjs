@@ -51,6 +51,7 @@ import {
   reportLines
 } from './prune-worktrees.detect.mjs'
 import {
+  fetchFailureOf,
   removeIfStillClean,
   removeLeftover,
   removeWorktree
@@ -1501,6 +1502,26 @@ test(
     }
   }
 )
+
+test('a fetch that fails with nothing on stderr names its error or its exit code, never undefined', () => {
+  const args = ['fetch', '--quiet', '--prune', 'origin']
+  const silent = fetchFailureOf({ args, cwd: '/r', run: { code: 128, stderr: '' } })
+  assert.equal(silent.message, 'git fetch --quiet --prune origin failed in /r: exited 128')
+  assert.equal(silent.status, 128)
+  const unstarted = fetchFailureOf({
+    args,
+    cwd: '/r',
+    run: { code: null, error: new Error('spawn git ENOENT'), stderr: '' }
+  })
+  assert.equal(unstarted.message, 'git fetch --quiet --prune origin failed in /r: spawn git ENOENT')
+  // git's own words win, as before.
+  const loud = fetchFailureOf({
+    args,
+    cwd: '/r',
+    run: { code: 1, stderr: 'fatal: no remote\n' }
+  })
+  assert.equal(loud.message, 'git fetch --quiet --prune origin failed in /r: fatal: no remote')
+})
 
 test('the fetch is bound to 30 s unless PRUNE_WORKTREES_FETCH_SECONDS names another positive number', () => {
   assert.equal(fetchSecondsFrom({ env: {} }), 30)

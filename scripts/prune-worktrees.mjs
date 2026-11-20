@@ -175,16 +175,19 @@ const fetchOrigin = async ({ root, seconds }) => {
     timeoutMs: Math.ceil(seconds * MS_PER_SECOND)
   })
   if (run.timedOut) return false
-  if (run.error || run.code !== 0) {
-    throw gitFailure({
-      args,
-      cwd: root,
-      status: run.code,
-      stderr: (run.stderr || String(run.error?.message)).trim()
-    })
-  }
+  if (run.error || run.code !== 0) throw fetchFailureOf({ args, cwd: root, run })
   return true
 }
+
+// The error of a fetch that `runBounded` saw fail: git's stderr, else the
+// spawn's own error, else the exit code.
+export const fetchFailureOf = ({ args, cwd, run }) =>
+  gitFailure({
+    args,
+    cwd,
+    status: run.code,
+    stderr: run.stderr.trim() || run.error?.message || `exited ${run.code}`
+  })
 
 // Every worktree of the repository `root` belongs to, the main checkout
 // first.
