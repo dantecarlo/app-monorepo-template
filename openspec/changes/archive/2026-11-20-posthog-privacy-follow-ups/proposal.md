@@ -75,14 +75,20 @@ stated and open to the owner's correction.
 - **A4 — The path-segment rule.** A segment that holds an `@` or `%40` reads as a secret and
   becomes `:redacted`, and so does one whose percent-decoded text is 16 or more characters long and
   holds a digit, unless it is a slug: a word slug, lowercase words and numbers of at most four
-  digits joined by hyphens, or a slug of short parts, two or more parts of letters and digits
-  joined by hyphens or underscores, each of at most 11 characters and one at least holding a
-  letter. The decoded text decides, since every `%C3` of an accented word holds a digit, and the
-  URL keeps its encoded form. The bound is 11, not 12, so a UUID, whose last part has 12
-  characters, stays redacted; a card number's parts hold no letter. Route names, slugs and ids
-  under 16 characters keep their place, so a route keeps its shape. Not caught: a token of letters
-  only, one shorter than 16 characters, and one shaped as a slug (`abcd-1234-efgh-5678-ijkl`);
-  redacted although it is not a secret: a slug with a part of 12 characters or more and a digit.
+  digits joined by hyphens, or a slug of short word parts, two or more parts joined by hyphens or
+  underscores, each of at most 11 characters and each lowercase letters, digits, or one run of
+  letters and one of digits (`s24`, `256gb`), with one part at least a word of three or more
+  letters. Random secrets share the separators: a base64url or nanoid token uses `-` and `_` as
+  alphabet characters, and license, reset and invite keys are grouped with hyphens, so any
+  uppercase letter, the strongest token signal, and any part with letters and digits interleaved
+  (`3f9a`, `a1b2`) refuse the slug, as the native review of `fe2986e` asked. The decoded text
+  decides, since every `%C3` of an accented word holds a digit, and the URL keeps its encoded
+  form. The bound is 11, not 12, so a UUID, whose last part has 12 characters, stays redacted.
+  Route names, slugs and ids under 16 characters keep their place, so a route keeps its shape.
+  Not caught: a token of letters only, one shorter than 16 characters, and a lowercase token
+  shaped as a word slug (`abcd-1234-efgh-5678-ijkl`). Redacted although it is not a secret: a slug
+  with an uppercase letter (`My-Post-About-2026`), and one with a part of 12 characters or more
+  and a digit.
 - **A5 — The switch to `opt-in` on web.** A start in `opt-in` mode with no recorded grant removes
   every value `posthog-js` keeps for the project key: the local and session storage keys that start
   with `ph_<key>_`, the consent key `__ph_opt_in_out_<key>`, and the cookies of those names on the

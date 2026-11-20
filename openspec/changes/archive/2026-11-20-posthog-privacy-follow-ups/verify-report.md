@@ -1,6 +1,6 @@
 # Verify report: 2026-11-20-posthog-privacy-follow-ups
 
-> **Verified:** 2026-11-20 at `fc3eae3`, amended at `bdd39a8`, corrected at `28941a7`
+> **Verified:** 2026-11-20 at `fc3eae3`, amended at `bdd39a8`, corrected at `28941a7` and after the native review
 
 ## Scenarios
 
@@ -11,6 +11,7 @@
 | WEB-52 | route names, slugs and short ids | `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "keeps route names, word slugs and short ids in the path" | green, a pin |
 | WEB-52 | an encoded segment | `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "reads a percent-encoded segment by its decoded text" | red, then green (the correction) |
 | WEB-52 | a slug of short parts | `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "keeps a slug of short parts that mix letters and digits" | red, then green (the correction) |
+| WEB-52 | a token shaped as a slug | `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "redacts a token shaped as a slug of short parts" | red, then green (the native review) |
 | WEB-52 | an event and its person | `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "scrubs every URL property of an event and of its person" | green |
 | WEB-52 | heatmap data | `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "keys heatmap points by the scrubbed URL" | green |
 | WEB-52 | other properties | `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "leaves every other property untouched" | green |
@@ -100,6 +101,18 @@ rejecting, so the revoke went on to opt the client out; it failed on the missing
 T6. The scenario "what the dropped client stored" was green when written, after T5; with the
 consent storage of `9df3979` put back it fails, the new client reading the ids the dropped one
 wrote.
+
+## After the native review of `fe2986e`, fixed in `4789221`
+
+The review found the slug of short parts a critical regression: it exempted any segment of
+letter-or-digit runs of up to 11 characters joined by `-` or `_` with one letter, the shape of a
+base64url or nanoid token and of a key grouped with hyphens, which the base redacted. The new
+test "redacts a token shaped as a slug of short parts" ran red first, with every one of its six
+segments kept: `V1StGXR8_Z5jdHi6B-myT`, `AbC123-dEf456-GhI789`, `3f9a-c2e1-77b0-aa12`,
+`a1b2-c3d4-e5f6-g7h8`, `K7QX-9MPL-2RTA-8WNZ` and `My-Post-About-2026`. The fix keeps only a slug
+of short word parts: lowercase, each part letters, digits or one run of each, and one word of
+three letters or more (A4). The kept slugs, `electrodom%C3%A9sticos` among them, stay green.
+`pnpm --filter @app/web test`: 134 files, 525 tests, green.
 
 ## The correction
 

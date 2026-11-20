@@ -6,7 +6,7 @@
 <!-- endregion sentry -->
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`, `docs/observability.md`, `docs/manifest.md`, `docs/decisions/0001-pluggable-providers.md`
-> **Verified against the code:** 2026-11-20 at `28941a7`
+> **Verified against the code:** 2026-11-20 at `4789221`
 
 ## Purpose
 
@@ -1634,11 +1634,13 @@ heatmap data, merging the points of two URLs that scrub to the same key. It SHAL
 `:redacted` every segment of the path that reads as a secret: one that holds an `@` or `%40`, or
 one whose percent-decoded text has 16 or more characters, holds a digit and is not a slug, either
 a word slug, lowercase words and numbers of at most four digits joined by hyphens, or a slug of
-short parts, two or more parts of letters and digits joined by hyphens or underscores, each of at
-most 11 characters and one at least holding a letter. It SHALL keep the scheme and the host of a
-URL, and every other segment in its encoded form, so a route keeps its shape.
+short word parts, two or more parts joined by hyphens or underscores, each of at most 11
+characters and each lowercase letters, digits, or one run of letters and one of digits, with one
+part at least a word of three or more letters; a part with an uppercase letter, or with letters and
+digits interleaved, refuses that slug. It SHALL keep the scheme and the host of a URL, and every
+other segment in its encoded form, so a route keeps its shape.
 
-**Evidence:** `apps/web/src/lib/posthog/scrubCaptureUrls.helper.ts:24-130`, `apps/web/src/lib/posthog/scrubCaptureUrls.constant.ts:4-43`
+**Evidence:** `apps/web/src/lib/posthog/scrubCaptureUrls.helper.ts:27-147`, `apps/web/src/lib/posthog/scrubCaptureUrls.constant.ts:4-51`
 
 #### Scenario: a page URL with a token
 
@@ -1672,10 +1674,18 @@ URL, and every other segment in its encoded form, so a route keeps its shape.
 
 #### Scenario: a slug of short parts
 
-- **GIVEN** slugs whose short parts mix letters and digits, joined by hyphens or underscores, a UUID and a card number joined by hyphens
+- **GIVEN** lowercase slugs whose short parts are words, numbers or a run of each, joined by hyphens or underscores, an encoded accented word, a UUID and a card number joined by hyphens
 - **WHEN** they are scrubbed
 - **THEN** the slugs are kept, and the UUID and the card number read `:redacted`
 - **Test:** `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "keeps a slug of short parts that mix letters and digits"
+
+#### Scenario: a token shaped as a slug
+
+- **GIVEN** a nanoid, keys grouped with hyphens in mixed case or in upper case, lowercase hex groups,
+  groups of interleaved letters and digits, and a slug in mixed case
+- **WHEN** they are scrubbed
+- **THEN** each reads `:redacted`
+- **Test:** `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "redacts a token shaped as a slug of short parts"
 
 #### Scenario: an event and its person
 
