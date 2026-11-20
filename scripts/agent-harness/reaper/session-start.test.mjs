@@ -179,6 +179,60 @@ test("the session hook's default loader reads this checkout's contract and the r
   assert.equal(loaded.contract.boundSeconds, CONTRACT.boundSeconds)
 })
 
+test("the session hook prints the MCP check's line first, and a check that throws costs one stderr line", async () => {
+  const quietReaper = async () => ({
+    contract: CONTRACT,
+    runReaper: async ({ stdout }) => {
+      stdout('reap: ended 0 trees')
+      return EXIT_OK
+    }
+  })
+  const MCP_LINE = 'mcp-check: 1 MCP server(s) cannot start'
+
+  const missing = lines()
+  assert.equal(
+    await sessionStart({
+      checkMcp: async () => MCP_LINE,
+      load: quietReaper,
+      stderr: missing.stderr,
+      stdout: missing.stdout
+    }),
+    EXIT_OK
+  )
+  assert.deepEqual(missing.out, [MCP_LINE, 'reap: ended 0 trees'])
+  assert.deepEqual(missing.err, [])
+
+  const nothing = lines()
+  assert.equal(
+    await sessionStart({
+      checkMcp: async () => null,
+      load: quietReaper,
+      stderr: nothing.stderr,
+      stdout: nothing.stdout
+    }),
+    EXIT_OK
+  )
+  assert.deepEqual(nothing.out, ['reap: ended 0 trees'])
+  assert.deepEqual(nothing.err, [])
+
+  const throws = lines()
+  assert.equal(
+    await sessionStart({
+      checkMcp: async () => {
+        throw new Error('catalog exploded')
+      },
+      load: quietReaper,
+      stderr: throws.stderr,
+      stdout: throws.stdout
+    }),
+    EXIT_OK
+  )
+  assert.deepEqual(throws.out, ['reap: ended 0 trees'])
+  assert.deepEqual(throws.err, [
+    'mcp-check: the session-start MCP check failed (catalog exploded); the session goes on'
+  ])
+})
+
 test('a hung reaper still lets the hook process exit 0 with its one line', () => {
   const source = [
     `import { sessionStart } from ${JSON.stringify(pathToFileURL(join(HERE, 'session-start.mjs')).href)}`,
