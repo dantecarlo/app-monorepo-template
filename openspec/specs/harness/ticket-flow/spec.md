@@ -3,7 +3,7 @@
 > **Governs:** `.claude/skills/ticket-flow`, `.claude/skills/po-ticket`, `.claude/skills/refine-ticket`, `.claude/skills/dev-ticket`, `.claude/skills/qa-ticket`, `.claude/skills/release-ticket`, `.claude/skills/process-intake`, `.claude/skills/general-plan`, `scripts/verify-skills.mjs`, `scripts/verify-ticket-branch.mjs`, `.agents/contracts/harness-config.schema.json`
 > **ID prefix:** `TICKET`
 > **Derived from:** `openspec/changes/archive/2026-11-16-ticket-flow/source-spec.md`, `docs/harness.md`
-> **Verified against the code:** 2026-11-20 at `796ae01`
+> **Verified against the code:** 2026-11-20 at `b4b51e0`
 
 ## Purpose
 
@@ -37,10 +37,10 @@ folder: `ticket.template.md`, the body a ticket is written from, with its target
 
 **Evidence:** `.claude/skills/ticket-flow/SKILL.md:28`, `.claude/skills/ticket-flow/SKILL.md:42`,
 `.claude/skills/ticket-flow/SKILL.md:84`, `.claude/skills/ticket-flow/SKILL.md:110`,
-`.claude/skills/ticket-flow/SKILL.md:191`, `.claude/skills/ticket-flow/SKILL.md:368`,
+`.claude/skills/ticket-flow/SKILL.md:191`, `.claude/skills/ticket-flow/SKILL.md:369`,
 `.claude/skills/ticket-flow/ticket.template.md:21`,
-`.claude/skills/ticket-flow/release.template.md:11`, `scripts/verify-skills.mjs:112`,
-`scripts/verify-skills.mjs:123`, `scripts/verify-skills.mjs:312`
+`.claude/skills/ticket-flow/release.template.md:11`, `scripts/verify-skills.mjs:119`,
+`scripts/verify-skills.mjs:130`, `scripts/verify-skills.mjs:332`
 
 #### Scenario: the contract of the repository
 
@@ -113,7 +113,7 @@ neither the contract's states table nor its board operations table.
 
 **Evidence:** `.claude/skills/po-ticket/SKILL.md:21`, `.claude/skills/refine-ticket/SKILL.md:21`,
 `.claude/skills/dev-ticket/SKILL.md:18`, `.claude/skills/qa-ticket/SKILL.md:20`,
-`.claude/skills/release-ticket/SKILL.md:19`, `scripts/verify-skills.mjs:787`
+`.claude/skills/release-ticket/SKILL.md:19`, `scripts/verify-skills.mjs:807`
 
 #### Scenario: a role skill that does not open with the contract
 
@@ -142,8 +142,8 @@ Each of the seven ticket skills SHALL have a `SKILL.md` whose frontmatter `name`
 whose description holds `USE WHEN:` and `DO NOT USE:`, and which has a `## CONTRACT` and an
 `## Output` section.
 
-**Evidence:** `scripts/verify-skills.mjs:733`, `scripts/verify-skills.mjs:821`,
-`scripts/verify-skills.mjs:919`
+**Evidence:** `scripts/verify-skills.mjs:753`, `scripts/verify-skills.mjs:841`,
+`scripts/verify-skills.mjs:941`
 
 #### Scenario: healthy skills
 
@@ -213,7 +213,7 @@ branching model.
 
 **Evidence:** `.claude/skills/process-intake/ticket-flow.template.md:7`,
 `.claude/skills/process-intake/ticket-flow.template.md:112`,
-`.claude/skills/process-intake/ticket-flow.template.md:121`, `scripts/verify-skills.mjs:312`
+`.claude/skills/process-intake/ticket-flow.template.md:121`, `scripts/verify-skills.mjs:332`
 
 #### Scenario: no board adapter section
 
@@ -488,7 +488,7 @@ each flag that replaced a field) and what it does not cover.
 The template's `pnpm validate` SHALL run `pnpm verify:ticket-branch:test` and never
 `pnpm verify:ticket-branch`, as the template's own branches carry no ticket id.
 
-**Evidence:** `package.json:42`, `package.json:66`
+**Evidence:** `package.json:44`, `package.json:74`
 
 #### Scenario: the validate script
 
@@ -529,9 +529,9 @@ to name `ready to merge, PR #`, and `qa-ticket` to hold no `Ready to merge → D
 **Evidence:** `.claude/skills/qa-ticket/SKILL.md:66`, `.claude/skills/qa-ticket/SKILL.md:85`,
 `.claude/skills/qa-ticket/SKILL.md:89`, `.claude/skills/qa-ticket/SKILL.md:96`,
 `.claude/skills/qa-ticket/SKILL.md:134`, `.claude/skills/ticket-flow/SKILL.md:97`,
-`.claude/skills/ticket-flow/SKILL.md:341`, `scripts/verify-skills.mjs:210`,
-`scripts/verify-skills.mjs:211`, `scripts/verify-skills.mjs:261`, `scripts/verify-skills.mjs:434`,
-`scripts/verify-skills.mjs:629`
+`.claude/skills/ticket-flow/SKILL.md:342`, `scripts/verify-skills.mjs:218`,
+`scripts/verify-skills.mjs:219`, `scripts/verify-skills.mjs:269`, `scripts/verify-skills.mjs:454`,
+`scripts/verify-skills.mjs:649`
 
 #### Scenario: the skills of the repository
 
@@ -654,8 +654,8 @@ the release ticket. `ticket-flow`'s Ready for prod row and § Release stage, `re
 Step 1 and `release.template.md` SHALL state the same rule and the same exception.
 
 **Evidence:** `.claude/skills/refine-ticket/SKILL.md:309`,
-`.claude/skills/ticket-flow/SKILL.md:101`, `.claude/skills/ticket-flow/SKILL.md:375`,
-`.claude/skills/ticket-flow/SKILL.md:376`, `.claude/skills/release-ticket/SKILL.md:35`,
+`.claude/skills/ticket-flow/SKILL.md:101`, `.claude/skills/ticket-flow/SKILL.md:376`,
+`.claude/skills/ticket-flow/SKILL.md:377`, `.claude/skills/release-ticket/SKILL.md:35`,
 `.claude/skills/release-ticket/SKILL.md:39`, `.claude/skills/ticket-flow/release.template.md:14`
 
 #### Scenario: an area not checked on staging
@@ -737,7 +737,7 @@ general plan names no open ticket (TICKET-29), so neither `po-ticket` § Step 5 
 
 **Evidence:** `.claude/skills/po-ticket/SKILL.md:65`, `.claude/skills/po-ticket/SKILL.md:82`,
 `.claude/skills/po-ticket/SKILL.md:88`, `.claude/skills/refine-ticket/SKILL.md:32`,
-`.claude/skills/ticket-flow/SKILL.md:293`, `.claude/skills/ticket-flow/SKILL.md:309`
+`.claude/skills/ticket-flow/SKILL.md:294`, `.claude/skills/ticket-flow/SKILL.md:310`
 
 #### Scenario: the plan cannot meet the version
 
@@ -790,16 +790,16 @@ submission and every other irreversible step SHALL stay the owner's word under e
 `ticket-flow` rule 4 and `release-ticket` say; and under neither policy SHALL the architect or QA
 merge a pull request into the production branch (TICKET-24).
 
-**Evidence:** `.claude/skills/ticket-flow/SKILL.md:217`,
-`.claude/skills/ticket-flow/SKILL.md:218`, `.claude/skills/refine-ticket/SKILL.md:115`,
-`.claude/skills/refine-ticket/SKILL.md:147`, `.claude/skills/refine-ticket/SKILL.md:177`,
-`.claude/skills/process-intake/SKILL.md:70`, `.claude/skills/process-intake/SKILL.md:117`,
+**Evidence:** `.claude/skills/ticket-flow/SKILL.md:219`,
+`.claude/skills/ticket-flow/SKILL.md:220`, `.claude/skills/refine-ticket/SKILL.md:117`,
+`.claude/skills/refine-ticket/SKILL.md:150`, `.claude/skills/refine-ticket/SKILL.md:180`,
+`.claude/skills/process-intake/SKILL.md:70`, `.claude/skills/process-intake/SKILL.md:118`,
 `.claude/skills/process-intake/ticket-flow.template.md:68`,
 `.claude/skills/process-intake/ticket-flow.template.md:70`,
 `.claude/skills/release-ticket/SKILL.md:24`, `.agents/contracts/harness-config.schema.json:47`,
-`.agents/contracts/harness-config.schema.json:48`, `scripts/verify-skills.mjs:153`,
-`scripts/verify-skills.mjs:281`, `scripts/verify-skills.mjs:291`, `scripts/verify-skills.mjs:402`,
-`scripts/verify-skills.mjs:623`, `scripts/verify-harness-config.mjs:269`
+`.agents/contracts/harness-config.schema.json:48`, `scripts/verify-skills.mjs:160`,
+`scripts/verify-skills.mjs:307`, `scripts/verify-skills.mjs:317`, `scripts/verify-skills.mjs:430`,
+`scripts/verify-skills.mjs:663`, `scripts/verify-harness-config.mjs:269`
 
 #### Scenario: the skills of the repository
 
@@ -1062,10 +1062,10 @@ block, and the Ticket identity section of `.claude/skills/process-intake/ticket-
 to hold one `json ticket-identity` block that the branch check reads with no finding and whose
 fields are the branch check's defaults.
 
-**Evidence:** `scripts/verify-skills.mjs:303`, `scripts/verify-skills.mjs:371`,
-`scripts/verify-skills.mjs:506`, `scripts/verify-skills.mjs:535`, `scripts/verify-skills.mjs:676`,
-`.claude/skills/ticket-flow/SKILL.md:249`, `.claude/skills/ticket-flow/SKILL.md:255`,
-`.claude/skills/process-intake/SKILL.md:86`,
+**Evidence:** `scripts/verify-skills.mjs:323`, `scripts/verify-skills.mjs:391`,
+`scripts/verify-skills.mjs:526`, `scripts/verify-skills.mjs:555`, `scripts/verify-skills.mjs:696`,
+`.claude/skills/ticket-flow/SKILL.md:250`, `.claude/skills/ticket-flow/SKILL.md:256`,
+`.claude/skills/process-intake/SKILL.md:88`,
 `.claude/skills/process-intake/ticket-flow.template.md:96`
 
 #### Scenario: the skills of the repository
@@ -1141,8 +1141,8 @@ hold `qa-ticket` § Step 2 to name `--detach` and § Step 5 to name `git push or
 
 **Evidence:** `.claude/skills/qa-ticket/SKILL.md:39`, `.claude/skills/qa-ticket/SKILL.md:79`,
 `.claude/skills/qa-ticket/SKILL.md:96`, `.claude/skills/qa-ticket/SKILL.md:110`,
-`.claude/skills/dev-ticket/SKILL.md:95`, `scripts/verify-skills.mjs:204`,
-`scripts/verify-skills.mjs:205`, `scripts/verify-skills.mjs:455`, `scripts/verify-skills.mjs:456`
+`.claude/skills/dev-ticket/SKILL.md:95`, `scripts/verify-skills.mjs:212`,
+`scripts/verify-skills.mjs:213`, `scripts/verify-skills.mjs:475`, `scripts/verify-skills.mjs:476`
 
 #### Scenario: the skills of the repository
 
@@ -1233,7 +1233,7 @@ merge.
 **Evidence:** `.claude/skills/qa-ticket/SKILL.md:100`, `.claude/skills/refine-ticket/SKILL.md:98`,
 `.claude/skills/refine-ticket/SKILL.md:295`, `.claude/skills/release-ticket/SKILL.md:158`,
 `.claude/skills/ticket-flow/SKILL.md:98`, `.claude/skills/ticket-flow/SKILL.md:172`,
-`scripts/verify-skills.mjs:217`, `scripts/verify-skills.mjs:458`
+`scripts/verify-skills.mjs:225`, `scripts/verify-skills.mjs:478`
 
 #### Scenario: the skills of the repository
 
@@ -1327,9 +1327,9 @@ bring a branch current. The structural check SHALL hold `refine-ticket` to have 
 `.claude/skills/refine-ticket/SKILL.md:200`, `.claude/skills/refine-ticket/SKILL.md:208`,
 `.claude/skills/refine-ticket/SKILL.md:212`, `.claude/skills/refine-ticket/SKILL.md:213`,
 `.claude/skills/ticket-flow/SKILL.md:98`, `.claude/skills/ticket-flow/SKILL.md:142`,
-`.claude/skills/ticket-flow/SKILL.md:171`, `.claude/skills/ticket-flow/SKILL.md:347`,
-`.claude/skills/ticket-flow/SKILL.md:350`, `.claude/skills/ticket-flow/SKILL.md:356`,
-`scripts/verify-skills.mjs:189`, `scripts/verify-skills.mjs:400`, `scripts/verify-skills.mjs:403`
+`.claude/skills/ticket-flow/SKILL.md:171`, `.claude/skills/ticket-flow/SKILL.md:348`,
+`.claude/skills/ticket-flow/SKILL.md:351`, `.claude/skills/ticket-flow/SKILL.md:357`,
+`scripts/verify-skills.mjs:197`, `scripts/verify-skills.mjs:420`, `scripts/verify-skills.mjs:423`
 
 #### Scenario: the skills of the repository
 
@@ -1393,14 +1393,14 @@ where the rule is checked, since no gate reads the board. `ticket.template.md` S
 version required, and the structural check SHALL hold its Target version section to name
 `**Version (required):**`.
 
-**Evidence:** `.claude/skills/ticket-flow/SKILL.md:92`, `.claude/skills/ticket-flow/SKILL.md:293`,
-`.claude/skills/ticket-flow/SKILL.md:295`, `.claude/skills/ticket-flow/SKILL.md:297`,
+**Evidence:** `.claude/skills/ticket-flow/SKILL.md:92`, `.claude/skills/ticket-flow/SKILL.md:294`,
+`.claude/skills/ticket-flow/SKILL.md:296`, `.claude/skills/ticket-flow/SKILL.md:298`,
 `.claude/skills/po-ticket/SKILL.md:57`, `.claude/skills/po-ticket/SKILL.md:67`,
 `.claude/skills/refine-ticket/SKILL.md:32`, `.claude/skills/refine-ticket/SKILL.md:34`,
 `.claude/skills/refine-ticket/SKILL.md:65`, `.claude/skills/refine-ticket/SKILL.md:108`,
 `.claude/skills/ticket-flow/ticket.template.md:23`,
-`.claude/skills/ticket-flow/ticket.template.md:28`, `scripts/verify-skills.mjs:289`,
-`scripts/verify-skills.mjs:328`
+`.claude/skills/ticket-flow/ticket.template.md:28`, `scripts/verify-skills.mjs:297`,
+`scripts/verify-skills.mjs:348`
 
 #### Scenario: the skills of the repository
 
@@ -1462,11 +1462,11 @@ serves as staging. The structural check SHALL hold the template's Branching mode
 
 **Evidence:** `.claude/skills/process-intake/ticket-flow.template.md:121`,
 `.claude/skills/process-intake/ticket-flow.template.md:125`,
-`.claude/skills/process-intake/SKILL.md:106`, `.claude/skills/ticket-flow/SKILL.md:388`,
+`.claude/skills/process-intake/SKILL.md:108`, `.claude/skills/ticket-flow/SKILL.md:389`,
 `.claude/skills/release-ticket/SKILL.md:108`, `.claude/skills/release-ticket/SKILL.md:123`,
 `.claude/skills/dev-ticket/SKILL.md:50`, `.claude/skills/qa-ticket/SKILL.md:85`,
-`.claude/skills/ticket-flow/release.template.md:15`, `scripts/verify-skills.mjs:198`,
-`scripts/verify-skills.mjs:489`
+`.claude/skills/ticket-flow/release.template.md:15`, `scripts/verify-skills.mjs:206`,
+`scripts/verify-skills.mjs:509`
 
 #### Scenario: the skills of the repository
 
@@ -1510,7 +1510,7 @@ hold both sections to name `source of every open ticket`.
 **Evidence:** `.claude/skills/ticket-flow/SKILL.md:47`, `.claude/skills/ticket-flow/SKILL.md:50`,
 `.claude/skills/process-intake/ticket-flow.template.md:11`,
 `.claude/skills/process-intake/SKILL.md:58`, `.claude/skills/process-intake/SKILL.md:60`,
-`scripts/verify-skills.mjs:227`, `scripts/verify-skills.mjs:366`, `scripts/verify-skills.mjs:508`
+`scripts/verify-skills.mjs:235`, `scripts/verify-skills.mjs:386`, `scripts/verify-skills.mjs:528`
 
 #### Scenario: the skills of the repository
 
@@ -1571,9 +1571,9 @@ naming `§ Closed Ticket Catalog`, `one pull request per close or release` and
 `.claude/skills/po-ticket/SKILL.md:130`, `.claude/skills/ticket-flow/SKILL.md:50`,
 `.claude/skills/ticket-flow/SKILL.md:99`, `.claude/skills/ticket-flow/SKILL.md:103`,
 `.claude/skills/ticket-flow/SKILL.md:198`, `.claude/skills/ticket-flow/SKILL.md:199`,
-`.claude/skills/process-intake/ticket-flow.template.md:11`, `scripts/verify-skills.mjs:235`,
-`scripts/verify-skills.mjs:238`, `scripts/verify-skills.mjs:388`, `scripts/verify-skills.mjs:391`,
-`scripts/verify-skills.mjs:419`, `scripts/verify-skills.mjs:420`, `scripts/verify-skills.mjs:421`
+`.claude/skills/process-intake/ticket-flow.template.md:11`, `scripts/verify-skills.mjs:243`,
+`scripts/verify-skills.mjs:246`, `scripts/verify-skills.mjs:408`, `scripts/verify-skills.mjs:411`,
+`scripts/verify-skills.mjs:439`, `scripts/verify-skills.mjs:440`, `scripts/verify-skills.mjs:441`
 
 #### Scenario: the skills of the repository
 
@@ -1773,9 +1773,9 @@ target version and closing pull request.
 `.claude/skills/refine-ticket/SKILL.md:176`, `.claude/skills/refine-ticket/SKILL.md:193`,
 `.claude/skills/refine-ticket/SKILL.md:200`, `.claude/skills/refine-ticket/SKILL.md:212`,
 `.claude/skills/refine-ticket/SKILL.md:214`, `.claude/skills/refine-ticket/SKILL.md:288`,
-`.claude/skills/ticket-flow/SKILL.md:160`, `.claude/skills/ticket-flow/SKILL.md:356`,
-`scripts/verify-skills.mjs:246`, `scripts/verify-skills.mjs:247`, `scripts/verify-skills.mjs:411`,
-`scripts/verify-skills.mjs:412`
+`.claude/skills/ticket-flow/SKILL.md:160`, `.claude/skills/ticket-flow/SKILL.md:357`,
+`scripts/verify-skills.mjs:254`, `scripts/verify-skills.mjs:255`, `scripts/verify-skills.mjs:431`,
+`scripts/verify-skills.mjs:432`
 
 #### Scenario: the skills of the repository
 
@@ -1868,21 +1868,21 @@ SHALL have a Dropped row. The structural check SHALL hold both states tables to 
 `.claude/skills/ticket-flow/SKILL.md:127`, `.claude/skills/ticket-flow/SKILL.md:128`,
 `.claude/skills/ticket-flow/SKILL.md:131`, `.claude/skills/ticket-flow/SKILL.md:135`,
 `.claude/skills/ticket-flow/SKILL.md:136`, `.claude/skills/ticket-flow/SKILL.md:175`,
-`.claude/skills/ticket-flow/SKILL.md:198`, `.claude/skills/ticket-flow/SKILL.md:312`,
-`.claude/skills/ticket-flow/SKILL.md:330`, `.claude/skills/ticket-flow/SKILL.md:375`,
+`.claude/skills/ticket-flow/SKILL.md:198`, `.claude/skills/ticket-flow/SKILL.md:313`,
+`.claude/skills/ticket-flow/SKILL.md:331`, `.claude/skills/ticket-flow/SKILL.md:376`,
 `.claude/skills/po-ticket/SKILL.md:35`, `.claude/skills/po-ticket/SKILL.md:93`,
 `.claude/skills/po-ticket/SKILL.md:105`, `.claude/skills/refine-ticket/SKILL.md:100`,
 `.claude/skills/refine-ticket/SKILL.md:245`, `.claude/skills/refine-ticket/SKILL.md:254`,
 `.claude/skills/refine-ticket/SKILL.md:255`, `.claude/skills/refine-ticket/SKILL.md:257`,
 `.claude/skills/refine-ticket/SKILL.md:259`, `.claude/skills/refine-ticket/SKILL.md:261`,
-`.claude/skills/refine-ticket/SKILL.md:262`, `.claude/skills/refine-ticket/SKILL.md:346`,
+`.claude/skills/refine-ticket/SKILL.md:262`, `.claude/skills/refine-ticket/SKILL.md:347`,
 `.claude/skills/dev-ticket/SKILL.md:105`, `.claude/skills/qa-ticket/SKILL.md:111`,
 `.claude/skills/process-intake/ticket-flow.template.md:40`,
 `.claude/skills/release-ticket/SKILL.md:39`, `.claude/skills/ticket-flow/release.template.md:14`,
-`scripts/verify-skills.mjs:123`, `scripts/verify-skills.mjs:275`, `scripts/verify-skills.mjs:276`,
-`scripts/verify-skills.mjs:277`, `scripts/verify-skills.mjs:279`, `scripts/verify-skills.mjs:280`,
-`scripts/verify-skills.mjs:367`, `scripts/verify-skills.mjs:369`, `scripts/verify-skills.mjs:396`,
-`scripts/verify-skills.mjs:418`, `scripts/verify-skills.mjs:429`, `scripts/verify-skills.mjs:459`
+`scripts/verify-skills.mjs:130`, `scripts/verify-skills.mjs:283`, `scripts/verify-skills.mjs:284`,
+`scripts/verify-skills.mjs:285`, `scripts/verify-skills.mjs:287`, `scripts/verify-skills.mjs:288`,
+`scripts/verify-skills.mjs:387`, `scripts/verify-skills.mjs:389`, `scripts/verify-skills.mjs:416`,
+`scripts/verify-skills.mjs:438`, `scripts/verify-skills.mjs:449`, `scripts/verify-skills.mjs:479`
 
 #### Scenario: the skills of the repository
 
@@ -2036,15 +2036,15 @@ conflict by merging the base into the branch, never by a rebase. The structural 
 `.claude/skills/refine-ticket/SKILL.md:229`, `.claude/skills/refine-ticket/SKILL.md:230`,
 `.claude/skills/refine-ticket/SKILL.md:233`, `.claude/skills/refine-ticket/SKILL.md:235`,
 `.claude/skills/refine-ticket/SKILL.md:237`, `.claude/skills/refine-ticket/SKILL.md:240`,
-`.claude/skills/refine-ticket/SKILL.md:315`, `.claude/skills/refine-ticket/SKILL.md:342`,
+`.claude/skills/refine-ticket/SKILL.md:315`, `.claude/skills/refine-ticket/SKILL.md:343`,
 `.claude/skills/ticket-flow/SKILL.md:96`, `.claude/skills/ticket-flow/SKILL.md:148`,
-`.claude/skills/ticket-flow/SKILL.md:170`, `.claude/skills/ticket-flow/SKILL.md:350`,
-`.claude/skills/ticket-flow/SKILL.md:363`, `.claude/skills/qa-ticket/SKILL.md:96`,
+`.claude/skills/ticket-flow/SKILL.md:170`, `.claude/skills/ticket-flow/SKILL.md:351`,
+`.claude/skills/ticket-flow/SKILL.md:364`, `.claude/skills/qa-ticket/SKILL.md:96`,
 `.claude/skills/dev-ticket/SKILL.md:93`, `.claude/skills/dev-ticket/SKILL.md:96`,
-`scripts/verify-skills.mjs:257`, `scripts/verify-skills.mjs:258`, `scripts/verify-skills.mjs:259`,
-`scripts/verify-skills.mjs:260`, `scripts/verify-skills.mjs:261`, `scripts/verify-skills.mjs:262`,
-`scripts/verify-skills.mjs:347`, `scripts/verify-skills.mjs:401`, `scripts/verify-skills.mjs:413`,
-`scripts/verify-skills.mjs:417`, `scripts/verify-skills.mjs:445`
+`scripts/verify-skills.mjs:265`, `scripts/verify-skills.mjs:266`, `scripts/verify-skills.mjs:267`,
+`scripts/verify-skills.mjs:268`, `scripts/verify-skills.mjs:269`, `scripts/verify-skills.mjs:270`,
+`scripts/verify-skills.mjs:367`, `scripts/verify-skills.mjs:421`, `scripts/verify-skills.mjs:433`,
+`scripts/verify-skills.mjs:437`, `scripts/verify-skills.mjs:465`
 
 #### Scenario: the skills of the repository
 
