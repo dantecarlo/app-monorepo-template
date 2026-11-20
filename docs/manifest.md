@@ -100,9 +100,11 @@ capability never needs a spec of its own.
 
 The `template-maintainer` capability (group `maintainer`) owns the template's
 own plans and audits: `docs/GENERALIZATION_PLAN.md`,
-`docs/INIT_AND_HARNESS_PLAN.md`, `docs/audits/**`, and the template's own
-OpenSpec changes, `openspec/changes/**`. They name donor products and record
-how this template was built, so they must never ship.
+`docs/INIT_AND_HARNESS_PLAN.md`, `docs/audits/**`, the template's own
+OpenSpec changes, `openspec/changes/**`, and the list of downstream projects
+`verify:skill-neutrality` reads, `.agents/contracts/downstream-projects.json`.
+They name donor products and record how this template was built, so they must
+never ship.
 
 - **No preset selects it**, so init always removes it from a derived project.
 - **The brand gate exempts it.** The planned `verify:generic` gate (blocker B3)
@@ -270,7 +272,7 @@ injected adapter (blocker B4); a delete-only executor cannot close it.
 | `english-artifacts`   | `pnpm validate` still calls `verify:english` and its test (B2); the global map rows for the gate fail `verify:maps`                                 |
 | `sentry`              | `docs/observability.md`, `docs/architecture/web.md`, `docs/architecture/mobile.md` and the env table of `AGENTS.md` still describe the Sentry files and keys; the `pnpm-workspace.yaml` comment on the isolated linker names `@sentry/core` as its evidence |
 | any with a spec       | its spec under `openspec/specs/` goes, and its row in the `openspec/README.md` § 2.1 table stays                                                    |
-| `template-maintainer` | Never selected, so always absent: the global map rows for the plans and `docs/audits/`, and the plan citations in code-standards, go stale          |
+| `template-maintainer` | Never selected, so always absent: the global map rows for the plans, `docs/audits/` and the downstream-projects list, and the plan citations in code-standards, go stale; `verify:skill-neutrality` then forbids nothing and says so |
 
 `copy` and `render` read from `templates/`, which does not exist yet; no
 capability declares either verb today.
