@@ -52,7 +52,9 @@ const bundleOrNull = ({ io }: { io: ITestDbIo }): ISqlFile[] | null => {
  * returns 1. A dry run writes the bundle, names it and the command, and runs nothing.
  */
 export const runTestDb = ({ dryRun, io }: IRunTestDbParams): number => {
-  const target = io.readTarget() ?? DEFAULT_TEST_DB_TARGET
+  const configured = io.readTarget()
+  const target =
+    configured === undefined ? DEFAULT_TEST_DB_TARGET : configured
   if (!isTestDbTarget(target)) {
     io.logError({
       line: `test:db ran nothing: ${TEST_DB_TARGET_SETTING} is ${JSON.stringify(target)}; it takes ${listTargets()}`

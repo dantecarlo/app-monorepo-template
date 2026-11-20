@@ -16,12 +16,35 @@ export const TRAILING_COMMIT_PATTERN = new RegExp(
   String.raw`\b(?:commit|end)(?:\s+(?:transaction|work))?\s*;(${COMMENTS_ONLY})$`,
   'i'
 )
-// A `rollback` after every other statement, before comments only.
-export const TRAILING_ROLLBACK_PATTERN = new RegExp(
-  String.raw`\brollback(?:\s+(?:transaction|work))?\s*;${COMMENTS_ONLY}$`,
-  'i'
-)
 export const KEEP_GROUP_ONE = '$1'
+
+// A pgTAP file's first and last statements, read from its top-level code.
+export const OPENING_STATEMENT = /^begin(?:\s+(?:transaction|work))?$/i
+export const CLOSING_STATEMENT = /^rollback(?:\s+(?:transaction|work))?$/i
+export const STATEMENT_END = ';'
+// Every character of a token but its line breaks, which the top-level code keeps.
+export const NOT_LINE_BREAK = /[^\r\n]/g
+// psql reads a backslash outside quotes as a meta-command (`\i`, `\set`, `\gexec`).
+export const PSQL_META_COMMAND = '\\'
+
+// The statements that would end, split or reshape the transaction that holds the
+// migrations, most specific first. A savepoint, its release and `rollback to` a savepoint
+// keep that transaction, so they stay allowed.
+export const TRANSACTION_CONTROL = [
+  { name: 'commit prepared', pattern: /^commit\s+prepared\b/i },
+  { name: 'rollback prepared', pattern: /^rollback\s+prepared\b/i },
+  { name: 'prepare transaction', pattern: /^prepare\s+transaction\b/i },
+  { name: 'start transaction', pattern: /^start\s+transaction\b/i },
+  { name: 'set transaction', pattern: /^set\s+transaction\b/i },
+  { name: 'commit', pattern: /^commit\b/i },
+  { name: 'end', pattern: /^end\b/i },
+  { name: 'abort', pattern: /^abort\b/i },
+  { name: 'begin', pattern: /^begin\b/i },
+  {
+    name: 'rollback',
+    pattern: /^rollback\b(?!(?:\s+(?:transaction|work))?\s+to\b)/i
+  }
+]
 
 // The stems of the dollar-quote tags of the `do` block that applies the branch's
 // migrations and of the migration texts inside it. A tag is `$<stem>$`, or

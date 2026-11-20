@@ -1,4 +1,5 @@
 import {
+  CLOSING_STATEMENT,
   DOLLAR_QUOTE,
   KEEP_GROUP_ONE,
   LEADING_BEGIN_PATTERN,
@@ -6,19 +7,29 @@ import {
   MIGRATION_FILE_PATTERN,
   MIGRATION_LEDGER,
   MIGRATION_TAG_STEM,
+  NOT_LINE_BREAK,
+  OPENING_STATEMENT,
   PRELUDE_TAG_STEM,
+  PSQL_META_COMMAND,
   SQL_LIST_SEPARATOR,
+  STATEMENT_END,
   TAG_COUNTER_SEPARATOR,
   TRAILING_COMMIT_PATTERN,
-  TRAILING_ROLLBACK_PATTERN
+  TRANSACTION_CONTROL
 } from '#src/pgTapBundle.constant'
 import type {
   IBranchMigration,
   IBranchMigrationsParams,
   IBundlePgTapFilesParams
 } from '#src/pgTapBundle.type'
-import { SQL_QUOTE } from '#src/sqlCode.constant'
+import {
+  SQL_BLANK,
+  SQL_NON_CODE_TOKEN_PATTERN,
+  SQL_QUOTE
+} from '#src/sqlCode.constant'
 import type { ISqlFile } from '#src/sqlFile.type'
+
+const FILE_LIST_SEPARATOR = ' and '
 
 const withoutWrapper = ({ sql }: { sql: string }): string =>
   LEADING_BEGIN_PATTERN.test(sql) && TRAILING_COMMIT_PATTERN.test(sql)
@@ -60,16 +71,35 @@ const toSqlLiteral = ({ text }: { text: string }): string =>
 const toSqlTextArray = ({ items }: { items: string[] }): string =>
   `array[${items.join(SQL_LIST_SEPARATOR)}]::text[]`
 
+// Throws, naming the files, when two migrations share a version: the ledger records one.
+const assertUniqueVersions = ({
+  branch
+}: {
+  branch: IBranchMigration[]
+}): void => {
+  for (const { version } of branch) {
+    const sharing = branch.filter(
+      (migration) => migration.version === version
+    )
+    if (sharing.length > 1) {
+      throw new Error(
+        `test:db ran nothing: ${sharing.map(({ file }) => file).join(FILE_LIST_SEPARATOR)} share version ${version}`
+      )
+    }
+  }
+}
+
 /**
  * The checkout's migrations as the Supabase CLI applies them: in name order, the files
  * named `<version>_<name>.sql` only, each with the version and the name the ledger
  * records, and each without the `begin` and `commit` that wrap a whole file. A `commit`
- * left inside one stays, for Postgres to refuse.
+ * left inside one stays, for Postgres to refuse. It throws, naming them, when two files
+ * share a version.
  */
 export const toBranchMigrations = ({
   migrations
-}: IBranchMigrationsParams): IBranchMigration[] =>
-  [...migrations]
+}: IBranchMigrationsParams): IBranchMigration[] => {
+  const branch = [...migrations]
     .sort((left, right) =>
       left.name < right.name ? -1 : Number(left.name > right.name)
     )
@@ -86,13 +116,16 @@ export const toBranchMigrations = ({
           ]
         : []
     })
+  assertUniqueVersions({ branch })
+  return branch
+}
 
 /**
  * The `do` block that applies, inside the transaction it runs in, every migration of the
  * checkout whose version the database's ledger lacks, in name order, each through a
  * PL/pgSQL `execute`, where Postgres refuses a statement that would end the transaction.
  * It raises before applying any when the ledger holds a file's version under another
- * name, raises naming the first migration that fails, notes the versions the ledger holds
+ * name or under none, raises naming the first migration that fails, notes the versions the ledger holds
  * that the checkout has no file for, and applies every migration when there is no ledger.
  * Each text is dollar-quoted with a tag no migration holds, so none can end its quote or
  * the block.
@@ -131,11 +164,11 @@ declare
   database_only text;
 begin
   if has_ledger then
-    select string_agg(format('%s: the database holds version %s as %s', checkout.file_name, checkout.migration_version, ledger.name), '; ' order by checkout.file_name)
+    select string_agg(format('%s: the database holds version %s as %L', checkout.file_name, checkout.migration_version, ledger.name), '; ' order by checkout.file_name)
       into conflicts
       from unnest(migration_files, migration_versions, migration_names) as checkout(file_name, migration_version, migration_name)
       join ${MIGRATION_LEDGER} as ledger on ledger.version = checkout.migration_version
-      where ledger.name <> checkout.migration_name;
+      where ledger.name is distinct from checkout.migration_name;
     if conflicts is not null then
       raise exception 'test:db applied no migration: %', conflicts;
     end if;
@@ -172,10 +205,65 @@ end
 do ${preludeTag}${body}${preludeTag};`
 }
 
+// The file's top-level code: every dollar-quoted body, comment and string literal blanked
+// to spaces with its line breaks kept, so each offset still points at the same character.
+const toTopLevelCode = ({ sql }: { sql: string }): string =>
+  sql.replace(SQL_NON_CODE_TOKEN_PATTERN, (token: string) =>
+    token.replace(NOT_LINE_BREAK, SQL_BLANK)
+  )
+
+// The offset just past a pgTAP file's opening `begin;`. It throws, naming the file, when
+// the file holds a psql meta-command, does not open with a plain `begin;`, does not end
+// with `rollback;`, or controls its transaction anywhere in between.
+const toOpeningEnd = ({ name, sql }: ISqlFile): number => {
+  const refuse = ({ reason }: { reason: string }): Error =>
+    new Error(`test:db ran nothing: ${name} ${reason}`)
+  const code = toTopLevelCode({ sql })
+  if (code.includes(PSQL_META_COMMAND)) {
+    throw refuse({
+      reason:
+        'holds a psql meta-command, which can run SQL test:db cannot check'
+    })
+  }
+
+  const statements = code
+    .split(STATEMENT_END)
+    .map((statement) => statement.trim())
+  // The text after the last `;`, which a file that ends with `rollback;` leaves blank.
+  const trailing = statements.pop()
+  const [opening = '', ...rest] = statements
+  if (!OPENING_STATEMENT.test(opening)) {
+    throw refuse({
+      reason:
+        'does not open with begin;, so the migrations would run outside its transaction'
+    })
+  }
+  const closing = rest.pop() ?? ''
+  if (trailing !== '' || !CLOSING_STATEMENT.test(closing)) {
+    throw refuse({
+      reason:
+        'does not end with rollback;, so the migrations it applies would persist'
+    })
+  }
+  for (const statement of rest) {
+    const control = TRANSACTION_CONTROL.find(({ pattern }) =>
+      pattern.test(statement)
+    )
+    if (control) {
+      throw refuse({
+        reason: `runs ${control.name} inside its transaction, where only its first begin; and its last rollback; may control it`
+      })
+    }
+  }
+  return code.indexOf(STATEMENT_END) + 1
+}
+
 /**
  * Every pgTAP file with the block of `buildBranchMigrationsPrelude` right after its
- * opening `begin;`, so the file's `rollback;` takes the migrations with it. It throws,
- * naming the file, when one does not open with `begin;` or does not end with `rollback;`.
+ * opening `begin;`, so the file's `rollback;` takes the migrations with it. Read with its
+ * comments, strings and dollar-quoted bodies blanked, a file must open with a plain
+ * `begin;`, end with `rollback;`, hold no other statement that controls the transaction
+ * (a savepoint excepted) and no psql meta-command; it throws, naming the file, otherwise.
  */
 export const bundlePgTapFiles = ({
   migrations,
@@ -184,22 +272,10 @@ export const bundlePgTapFiles = ({
   const prelude = buildBranchMigrationsPrelude({ migrations })
 
   return tests.map(({ name, sql }) => {
-    if (!LEADING_BEGIN_PATTERN.test(sql)) {
-      throw new Error(
-        `test:db ran nothing: ${name} does not open with begin;, so the migrations would run outside its transaction`
-      )
-    }
-    if (!TRAILING_ROLLBACK_PATTERN.test(sql)) {
-      throw new Error(
-        `test:db ran nothing: ${name} does not end with rollback;, so the migrations it applies would persist`
-      )
-    }
+    const openingEnd = toOpeningEnd({ name, sql })
     return {
       name,
-      sql: sql.replace(
-        LEADING_BEGIN_PATTERN,
-        (opening) => `${opening}${LINE_BREAK}${LINE_BREAK}${prelude}`
-      )
+      sql: `${sql.slice(0, openingEnd)}${LINE_BREAK}${LINE_BREAK}${prelude}${sql.slice(openingEnd)}`
     }
   })
 }

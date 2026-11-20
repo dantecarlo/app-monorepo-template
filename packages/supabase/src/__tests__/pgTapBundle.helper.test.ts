@@ -117,6 +117,16 @@ describe('toBranchMigrations', () => {
     ).toEqual(['begin;\nselect 1;', 'select 1;\ncommit;'])
   })
 
+  test('refuses two migrations with the same version, naming both', () => {
+    const twin = { name: '0001_twin.sql', sql: 'select 1;' }
+
+    expect(() =>
+      toBranchMigrations({ migrations: [SECOND, twin, BASE] })
+    ).toThrow(
+      'test:db ran nothing: 0001_base.sql and 0001_twin.sql share version 0001'
+    )
+  })
+
   test('leaves out a file the Supabase CLI does not read as a migration', () => {
     const notMigrations = [
       { name: 'seed.sql', sql: 'select 1;' },
@@ -165,10 +175,7 @@ describe('buildBranchMigrationsPrelude', () => {
       text: prelude
     })
     expect(prelude).toContain(
-      'where ledger.name <> checkout.migration_name;'
-    )
-    expect(prelude).toContain(
-      "format('%s: the database holds version %s as %s', checkout.file_name, checkout.migration_version, ledger.name)"
+      "format('%s: the database holds version %s as %L', checkout.file_name, checkout.migration_version, ledger.name)"
     )
     const raise = indexOf({
       fragment:
@@ -178,6 +185,15 @@ describe('buildBranchMigrationsPrelude', () => {
     const firstExecute = indexOf({ fragment: 'execute ', text: prelude })
     expect(conflictCheck).toBeLessThan(raise)
     expect(raise).toBeLessThan(firstExecute)
+  })
+
+  test('treats a ledger row with no name as a conflict', () => {
+    const prelude = buildBranchMigrationsPrelude({ migrations: [BASE] })
+
+    expect(prelude).toContain(
+      'where ledger.name is distinct from checkout.migration_name;'
+    )
+    expect(prelude).not.toContain('ledger.name <> ')
   })
 
   test("applies a migration only when the database's ledger lacks its version", () => {
@@ -274,6 +290,132 @@ describe('bundlePgTapFiles', () => {
       'test:db ran nothing: committed.test.sql does not end with rollback;, so the migrations it applies would persist'
     )
   })
+
+  test('refuses a pgTAP file whose rollback is only in a trailing comment, naming it', () => {
+    const commented = {
+      name: 'commented.test.sql',
+      sql: 'begin;\nselect plan(1);\ncommit; -- rollback;\n'
+    }
+    expect(() =>
+      bundlePgTapFiles({ migrations: [BASE], tests: [commented] })
+    ).toThrow('commented.test.sql')
+    expect(() =>
+      bundlePgTapFiles({
+        migrations: [BASE],
+        tests: [
+          { ...commented, sql: commented.sql.replaceAll('\n', '\r\n') }
+        ]
+      })
+    ).toThrow(
+      'test:db ran nothing: commented.test.sql does not end with rollback;, so the migrations it applies would persist'
+    )
+  })
+
+  test.each([
+    'begin;\nselect 1;\ncommit;\nbegin;\nselect 2;\nrollback;\n',
+    'begin;\nselect 1;\nend;\nbegin;\nrollback;\n'
+  ])(
+    'refuses a pgTAP file that ends its transaction before its last rollback, naming it: %s',
+    (sql) => {
+      expect(() =>
+        bundlePgTapFiles({
+          migrations: [BASE],
+          tests: [{ name: 'split.test.sql', sql }]
+        })
+      ).toThrow('split.test.sql')
+    }
+  )
+
+  test.each([
+    {
+      sql: 'begin;\nselect 1;\nCOMMIT;\nrollback;\n',
+      statement: 'commit'
+    },
+    { sql: 'begin;\nend transaction;\nrollback;\n', statement: 'end' },
+    { sql: 'begin;\nabort;\nrollback;\n', statement: 'abort' },
+    {
+      sql: 'begin;\nrollback;\nselect 1;\nrollback;\n',
+      statement: 'rollback'
+    },
+    { sql: 'begin;\nbegin;\nrollback;\n', statement: 'begin' },
+    {
+      sql: 'begin;\nstart transaction;\nrollback;\n',
+      statement: 'start transaction'
+    },
+    {
+      sql: "begin;\nprepare transaction 'x';\nrollback;\n",
+      statement: 'prepare transaction'
+    },
+    {
+      sql: "begin;\ncommit prepared 'x';\nrollback;\n",
+      statement: 'commit prepared'
+    },
+    {
+      sql: 'begin;\nset transaction read write;\nrollback;\n',
+      statement: 'set transaction'
+    }
+  ])(
+    'refuses $statement between the first begin and the last rollback, naming the file',
+    ({ sql, statement }) => {
+      expect(() =>
+        bundlePgTapFiles({
+          migrations: [BASE],
+          tests: [{ name: 'control.test.sql', sql }]
+        })
+      ).toThrow(
+        `test:db ran nothing: control.test.sql runs ${statement} inside its transaction, where only its first begin; and its last rollback; may control it`
+      )
+    }
+  )
+
+  test('keeps savepoints, and transaction words inside comments, strings and bodies', () => {
+    const quiet = {
+      name: 'quiet.test.sql',
+      sql: "-- begin; commit;\nbegin;\nsavepoint before_write;\nselect 'commit;';\ndo $$ begin perform 1; end $$;\n/* end; */\nrollback to savepoint before_write;\nrelease savepoint before_write;\nrollback;\n-- commit;\n"
+    }
+
+    expect(
+      bundlePgTapFiles({ migrations: [BASE], tests: [quiet] }).map(
+        ({ name }) => name
+      )
+    ).toEqual(['quiet.test.sql'])
+  })
+
+  test.each(['\\i other.sql', '\\set answer 42', 'select 1 \\gexec'])(
+    'refuses a pgTAP file with a psql meta-command, naming it: %s',
+    (command) => {
+      expect(() =>
+        bundlePgTapFiles({
+          migrations: [BASE],
+          tests: [
+            {
+              name: 'meta.test.sql',
+              sql: `begin;\n${command}\nrollback;\n`
+            }
+          ]
+        })
+      ).toThrow(
+        'test:db ran nothing: meta.test.sql holds a psql meta-command, which can run SQL test:db cannot check'
+      )
+    }
+  )
+
+  test.each([
+    'begin isolation level serializable;\nselect 1;\nrollback;\n',
+    'start transaction;\nselect 1;\nrollback;\n'
+  ])(
+    'refuses any opening other than a plain begin, naming the file: %s',
+    (sql) => {
+      expect(() =>
+        bundlePgTapFiles({
+          migrations: [BASE],
+          tests: [{ name: 'opening.test.sql', sql }]
+        })
+      ).toThrow(
+        'test:db ran nothing: opening.test.sql does not open with begin;, so the migrations would run outside its transaction'
+      )
+    }
+  )
 
   test('bundles every pgTAP file of the package', () => {
     const bundle = bundlePgTapFiles({

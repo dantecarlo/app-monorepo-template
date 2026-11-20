@@ -131,6 +131,18 @@ describe('runTestDb', () => {
     ])
   })
 
+  test('refuses a null target, naming the setting', () => {
+    const { calls, io } = fakeIo({ target: null })
+
+    expect(runTestDb({ dryRun: false, io })).toBe(1)
+    expect(calls.read).toEqual([])
+    expect(calls.written).toEqual([])
+    expect(calls.runs).toEqual([])
+    expect(calls.errors).toEqual([
+      'test:db ran nothing: config.testDbTarget of packages/supabase/package.json is null; it takes linked, local or off'
+    ])
+  })
+
   test('writes the bundle and names the command without running it on a dry run', () => {
     const { calls, io } = fakeIo({ target: 'linked' })
 

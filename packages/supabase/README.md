@@ -132,7 +132,10 @@ pnpm test:db
 temporary bundle, with a `do` block right after its `begin;` that applies every
 migration of the checkout the database's ledger lacks, inside the file's own
 transaction: its `rollback;` takes them with it, so a branch tests its own
-migrations and the project keeps only what was pushed to it. It then runs
+migrations and the project keeps only what was pushed to it. It refuses, before
+anything reaches the database, a pgTAP file that does not open with a plain
+`begin;` and end with `rollback;`, that controls its transaction in between, or
+that holds a psql meta-command. It then runs
 `supabase test db` over the bundle, which first runs `create extension if not
 exists pgtap with schema extensions` on the target, then runs `pg_prove` in the
 `supabase/pg_prove:3.36` Docker container against it (CLI 2.109.1 does so for
@@ -145,7 +148,7 @@ Docker, a person or a CI job with Docker runs it.
 `linked` (the default, also when unset), `local` (`supabase test db --local`,
 for a downstream project that chose Docker and a local stack; this template
 never runs it) or `off` (a project that keeps Supabase and runs no database
-tests). Any other value exits 1. `docs/database.md` § 9 has the rules. A project
+tests). Any other value, `null` included, exits 1. `docs/database.md` § 9 has the rules. A project
 with its own backend has no `packages/supabase`, and none of this.
 
 There is no reset script: `supabase db reset --linked` rebuilds the linked

@@ -425,16 +425,38 @@ ends as it was.
   value that the same transaction added.
 - The first migration that fails stops the file, with an error that names it.
 - When the ledger holds a file's version under another name, as after a
-  renumbering, the file stops before any migration is applied, naming it.
+  renumbering, or under no name at all, the file stops before any migration is
+  applied, naming it.
 - The versions the ledger holds that the checkout has no file for are listed as
   a notice.
 - With no ledger at all, on a project nothing was ever pushed to, every
   migration is applied.
 - A file whose name is not `<version>_<name>.sql` is left out, as `db push`
-  leaves it out.
-- A pgTAP file that does not open with `begin;` and end with `rollback;` stops
-  the run before anything reaches the database: the migrations it applied would
-  outlive it. Every file here keeps that shape (see Test file structure).
+  leaves it out. Two files that share a version stop the run, both named: the
+  ledger records one.
+
+Before anything reaches the database, `test:db` reads each pgTAP file with its
+comments, string literals and dollar-quoted bodies blanked (the masker of the
+order check, `SQL_NON_CODE_TOKEN_PATTERN` of `src/sqlCode.constant.ts`) and
+stops the run, naming the file, unless:
+
+- its first statement is a plain `begin;` (`begin transaction;` and
+  `begin work;` too). An opening with options, such as `begin isolation level
+  serializable;`, or `start transaction;`, is refused as well: conservative,
+  since the block runs before any of the file's own statements;
+- its last statement is `rollback;`, with nothing but comments after it;
+- no statement in between controls the transaction: `commit`, `end`, `abort`,
+  `rollback`, `begin`, `start transaction`, `prepare transaction`,
+  `commit prepared`, `rollback prepared` or `set transaction`. A `savepoint`,
+  its `release` and `rollback to` a savepoint keep the transaction, and stay
+  allowed;
+- it holds no psql meta-command: psql reads a backslash outside quotes as one
+  (`\i`, `\set`, `\gexec`), and `\i` could pull in a file that commits.
+
+Every file here keeps that shape (see Test file structure). What the masker does
+not read is not covered: an escape string with a quote inside it (`E'it\'s'`)
+and a double-quoted identifier that holds `--` are read as code, which can hide
+a statement on the same line from the check.
 
 ### The target
 
@@ -447,7 +469,8 @@ suites run:
 | `local`  | `supabase test db --local`, on a local Supabase stack, for a downstream project that chose Docker and the local stack; this template never runs it        |
 | `off`    | No database test: it says so and exits 0. For a project that keeps Supabase and runs no database tests                                                    |
 
-Any other value runs nothing and exits 1, naming the three. `/init` will ask
+Any other value, `null` included, runs nothing and exits 1, naming the key and
+the three. `/init` will ask
 for it (Stage 6, decision 54) and can set the key with the manifest's
 `patch-json` verb.
 
@@ -469,7 +492,11 @@ pnpm test:db
 ```
 
 The dry run keeps its bundle in the temporary directory, to read the SQL that
-would run; a run removes it.
+would run; a run removes it. The bundle sits outside `supabase/tests/` and the
+CLI still reaches it: its own code (`legacy.test.db` of CLI 2.109.1, read
+offline) bind-mounts every path argument read-only into the `pg_prove`
+container, at the same path without its drive letter, and runs `pg_prove -r`
+over it. No live run has confirmed it yet.
 
 **DB tests are intentionally NOT part of `pnpm validate`.** The validation
 gate (`ATL_TEMPLATE_SELF=1 pnpm validate`) is offline: it needs no database
@@ -512,8 +539,9 @@ Every test file:
 4. Runs structural assertions, then behavioral assertions via impersonation
 5. Ends with `select * from finish(); rollback;`
 
-`test:db` refuses a file that does not open with `begin;` or end with
-`rollback;`, since the checkout's migrations run inside that transaction (see
+`test:db` refuses a file that does not open with a plain `begin;`, does not end
+with `rollback;`, controls its transaction in between or holds a psql
+meta-command, since the checkout's migrations run inside that transaction (see
 The branch's own migrations); `src/__tests__/pgTapBundle.helper.test.ts` bundles
 every file here offline, in every `pnpm validate`.
 

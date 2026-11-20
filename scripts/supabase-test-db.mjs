@@ -8,7 +8,9 @@
 // off), bundles every pgTAP file with the checkout's migrations that the
 // database's ledger lacks, and runs `supabase test db --linked|--local` over
 // the bundle from the package's folder. The bundle is a fresh folder of the
-// system's temporary directory, removed after the run.
+// system's temporary directory, removed after the run; CLI 2.109.1 bind-mounts
+// every path argument into its pg_prove container, so it needs no copy under
+// supabase/tests (packages/supabase/docs/database.md § 9, A live run).
 //
 // It reads no .env: the Supabase CLI takes its credentials from the shell,
 // where packages/supabase/docs/database.md § 9 says to load them.
@@ -59,9 +61,11 @@ process.exitCode = runTestDb({
     logError: ({ line }) => console.error(line),
     readMigrations: () => readSqlFiles({ dir: MIGRATIONS_DIR }),
     readTarget: () =>
-      JSON.parse(readFileSync(PACKAGE_MANIFEST, 'utf8')).config?.testDbTarget,
+      JSON.parse(readFileSync(PACKAGE_MANIFEST, 'utf8')).config
+        ?.testDbTarget,
     readTests: () => readSqlFiles({ dir: TESTS_DIR }),
-    removeBundle: ({ dir }) => rmSync(dir, { force: true, recursive: true }),
+    removeBundle: ({ dir }) =>
+      rmSync(dir, { force: true, recursive: true }),
     runSupabase: ({ args }) => {
       const { error, status } = spawnSync('supabase', args, {
         cwd: PACKAGE_DIR,
@@ -71,7 +75,8 @@ process.exitCode = runTestDb({
     },
     writeBundle: ({ files }) => {
       const dir = mkdtempSync(join(tmpdir(), BUNDLE_PREFIX))
-      for (const { name, sql } of files) writeFileSync(join(dir, name), sql)
+      for (const { name, sql } of files)
+        writeFileSync(join(dir, name), sql)
       return dir
     }
   }
