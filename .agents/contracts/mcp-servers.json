@@ -1,44 +1,54 @@
 {
-  "$comment": "The MCP servers the template can configure. /init writes .mcp.json from the entries whose capability the project selects; pnpm mcp:docs reads this file to refresh the generated block of docs/mcp.md, and verify:mcp-docs holds the block to it. Commands stay unpinned (decision 55): npx -y <package>, then the server's own arguments.",
+  "$comment": "The MCP servers the template can configure. /init writes .mcp.json from the entries whose capability the project selects, and adds each one's <package>@<version> to the project's root devDependencies as an exact version; pnpm mcp:docs reads this file to refresh the generated block of docs/mcp.md and to report pin bumps, and verify:mcp-docs holds the entries and the block to it. Each command is pinned and direct (decision 61): node runs the package's bin file, node_modules/<package>/<entry>, then the server's own arguments. That is one process per server instead of four (cmd.exe, conhost, the npx launcher and the server), no network fetch when a client starts it, and every version old enough for pnpm's minimumReleaseAge (1,440 minutes), which an unpinned npx -y bypasses.",
   "servers": [
     {
       "name": "next-devtools",
       "capability": "web-next",
       "package": "next-devtools-mcp",
-      "command": "npx",
-      "args": ["-y", "next-devtools-mcp"],
+      "version": "0.4.0",
+      "entry": "dist/index.js",
+      "command": "node",
+      "args": ["node_modules/next-devtools-mcp/dist/index.js"],
       "docs": ["docs/mcp.md"]
     },
     {
       "name": "shadcn",
       "capability": "ui-kit-shadcn",
       "package": "shadcn",
-      "command": "npx",
-      "args": ["-y", "shadcn", "mcp"],
+      "version": "4.23.0",
+      "entry": "dist/index.js",
+      "command": "node",
+      "args": ["node_modules/shadcn/dist/index.js", "mcp"],
       "docs": ["docs/mcp.md"]
     },
     {
       "name": "expo",
       "capability": "mobile-expo",
       "package": "expo-mcp",
-      "command": "npx",
-      "args": ["-y", "expo-mcp"],
+      "version": "0.2.4",
+      "entry": "bin/expo-mcp.mjs",
+      "command": "node",
+      "args": ["node_modules/expo-mcp/bin/expo-mcp.mjs"],
       "docs": ["docs/mcp.md"]
     },
     {
       "name": "metro",
       "capability": "mobile-expo",
       "package": "metro-mcp",
-      "command": "npx",
-      "args": ["-y", "metro-mcp"],
+      "version": "0.15.0",
+      "entry": "dist/bin/metro-mcp.js",
+      "command": "node",
+      "args": ["node_modules/metro-mcp/dist/bin/metro-mcp.js"],
       "docs": ["docs/mcp.md"]
     },
     {
       "name": "react-native-docs",
       "capability": "mobile-expo",
       "package": "react-native-docs-mcp",
-      "command": "npx",
-      "args": ["-y", "react-native-docs-mcp"],
+      "version": "0.2.1",
+      "entry": "dist/index.js",
+      "command": "node",
+      "args": ["node_modules/react-native-docs-mcp/dist/index.js"],
       "docs": ["docs/mcp.md"]
     }
   ]
