@@ -36,8 +36,10 @@
 // it set exits at once. `--dry-run` prints the same decisions and removes
 // or moves nothing, then what it does not cover; it predicts git's refusal
 // to fast-forward from an ancestry check and a dry run of the checkout
-// (`git read-tree -m -u --dry-run`), so it names a local commit or an
-// untracked file the fast-forward would overwrite. `--quiet` prints the
+// (`git read-tree -m -u --dry-run`) against a refreshed copy of the index,
+// so it names a local commit or an untracked file the fast-forward would
+// overwrite, never a file whose timestamp alone changed, and takes no lock
+// in the main checkout. `--quiet` prints the
 // removals, the main checkout's line and the summary line only.
 //
 // `.husky/post-merge` runs it with `--quiet` after a local merge or pull.
@@ -62,7 +64,15 @@
 // ---------------------------------------------------------------------------
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, lstatSync, readdirSync, rmSync } from 'node:fs'
+import {
+  copyFileSync,
+  existsSync,
+  lstatSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync
+} from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -106,6 +116,9 @@ const TIMED_OUT = 'ETIMEDOUT'
 // `git merge-base --is-ancestor` exits 1 when the first commit is not an
 // ancestor of the second; any other failure is an error.
 const NOT_ANCESTOR = 1
+// The index a dry run copies, and the scratch directory that holds the copy.
+const INDEX_FILE = 'index'
+const INDEX_COPY_PREFIX = 'prune-worktrees-index-'
 
 // One git command run in `cwd` without the GIT_* variables a hook exports,
 // which would otherwise point it at the hook's repository, and with
@@ -114,13 +127,14 @@ const NOT_ANCESTOR = 1
 // `trim: false` keeps the output whole, the leading space of a porcelain
 // status line included. A git still running after `timeout` milliseconds is
 // stopped, and its error reads `timedOut`; a git that exits non-zero leaves
-// its exit code on the error as `status`.
-const git = ({ args, cwd, timeout, trim = true }) => {
+// its exit code on the error as `status`. `env` adds variables after the
+// GIT_* ones are dropped, as GIT_INDEX_FILE for a copy of the index.
+const git = ({ args, cwd, env = {}, timeout, trim = true }) => {
   try {
     const output = execFileSync('git', args, {
       cwd,
       encoding: 'utf8',
-      env: { ...gitFreeEnv(), [NESTED_RUN_VARIABLE]: '1' },
+      env: { ...gitFreeEnv(), ...env, [NESTED_RUN_VARIABLE]: '1' },
       maxBuffer: GIT_OUTPUT_BYTES,
       stdio: ['ignore', 'pipe', 'pipe'],
       timeout
@@ -135,14 +149,15 @@ const git = ({ args, cwd, timeout, trim = true }) => {
   }
 }
 
-// `git fetch --prune origin`, stopped after `seconds`: true when it
-// finished, false when it was stopped. A fetch git fails throws.
+// `git fetch --prune origin`, stopped after `seconds`, rounded up to the
+// whole milliseconds Node takes: true when it finished, false when it was
+// stopped. A fetch git fails throws.
 const fetchOrigin = ({ root, seconds }) => {
   try {
     git({
       args: ['fetch', '--quiet', '--prune', REMOTE],
       cwd: root,
-      timeout: seconds * MS_PER_SECOND
+      timeout: Math.ceil(seconds * MS_PER_SECOND)
     })
     return true
   } catch (error) {
@@ -421,19 +436,51 @@ const isAncestor = ({ ref, root }) => {
   }
 }
 
+// A dry run of the two-tree checkout a fast-forward to `ref` makes (`git
+// read-tree -m -u --dry-run`), which checks the untracked files it would
+// overwrite or lose and writes no file, run against a copy of the main
+// checkout's index in a scratch directory. `git merge --ff-only` refreshes
+// the index's stat data before that check, so the copy is refreshed first
+// (`git update-index -q --refresh`), and a file whose timestamp alone
+// changed is not a refusal; neither the checkout's index nor its
+// `index.lock` is touched. The scratch directory goes whatever happens; a
+// refusal or a failure throws.
+const dryCheckout = ({ ref, root }) => {
+  const scratch = mkdtempSync(join(tmpdir(), INDEX_COPY_PREFIX))
+  try {
+    const copy = join(scratch, INDEX_FILE)
+    copyFileSync(
+      git({
+        args: [
+          'rev-parse',
+          '--path-format=absolute',
+          '--git-path',
+          INDEX_FILE
+        ],
+        cwd: root
+      }),
+      copy
+    )
+    const env = { GIT_INDEX_FILE: copy }
+    git({ args: ['update-index', '-q', '--refresh'], cwd: root, env })
+    git({
+      args: ['read-tree', '-m', '-u', '--dry-run', 'HEAD', ref],
+      cwd: root,
+      env
+    })
+  } finally {
+    rmSync(scratch, { force: true, recursive: true })
+  }
+}
+
 // Why git would refuse to fast-forward the main checkout to `ref`, read
 // without moving it, or undefined when it would go ahead: DIVERGED when
-// HEAD is not an ancestor of `ref`, else the refusal of a dry run of the
-// two-tree checkout the fast-forward makes (`git read-tree -m -u
-// --dry-run`), which checks the untracked files it would overwrite or lose
-// and writes neither the index nor a file.
+// HEAD is not an ancestor of `ref`, else what the dry checkout refuses, in
+// git's words.
 const predictedRefusal = ({ ref, root }) => {
   if (!isAncestor({ ref, root })) return DIVERGED
   try {
-    git({
-      args: ['read-tree', '-m', '-u', '--dry-run', 'HEAD', ref],
-      cwd: root
-    })
+    dryCheckout({ ref, root })
     return undefined
   } catch (error) {
     return refusalOf({ error })

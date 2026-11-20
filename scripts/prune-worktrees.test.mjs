@@ -28,6 +28,7 @@ import {
   readFileSync,
   rmSync,
   symlinkSync,
+  utimesSync,
   writeFileSync
 } from 'node:fs'
 import { createServer } from 'node:net'
@@ -1446,6 +1447,21 @@ for (const value of ['', '0', '-1', 'soon', 'Infinity']) {
   })
 }
 
+// Node takes a timeout in whole milliseconds only; a bound that is not one
+// is rounded up, so the run either fetches or skips, and git never reads
+// as failed.
+for (const value of ['0.0001', '1.0005']) {
+  test(`PRUNE_WORKTREES_FETCH_SECONDS="${value}" bounds the fetch in whole milliseconds, rounded up`, () => {
+    const { run } = behindMain({
+      args: ['--dry-run'],
+      env: { ...gitFreeEnv(), [FETCH_SECONDS_VARIABLE]: value }
+    })
+    assert.equal(run.status, EXIT_OK, run.stderr)
+    assert.equal(run.stderr, '')
+    assert.doesNotMatch(run.stdout, /out of range/u)
+  })
+}
+
 // A worktree judged clean that is given an ignored file nothing rebuilds
 // before its turn comes, as one written while the pruner removes the
 // others: the check just before the removal reads the worktree again.
@@ -1543,6 +1559,49 @@ test("a dry run over an untracked file the fast-forward would overwrite names gi
     run.stdout
   )
   assert.match(line, /new\.txt.*would be overwritten/u)
+})
+
+// `git merge --ff-only` refreshes the index's stat data before it checks
+// the files it updates; the fixture's upstream commit changes README.md.
+test('a dry run over a tracked file whose timestamp alone changed says it would fast-forward', () => {
+  const { before, head, main, run } = behindMain({
+    args: ['--dry-run'],
+    prepare: ({ main: checkout }) => {
+      const later = new Date(Date.now() + 60_000)
+      utimesSync(join(checkout, README), later, later)
+    }
+  })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.equal(head, before)
+  assert.ok(
+    run.stdout.includes(
+      `would fast-forward the main checkout ${forward({ path: main })} by 1 commit to origin/${MAIN}`
+    ),
+    run.stdout
+  )
+  assert.doesNotMatch(run.stdout, /not uptodate/u)
+})
+
+// A git working in the main checkout holds its `index.lock`: the dry run
+// reads a copy of the index and takes no lock there.
+test("an index.lock in the main checkout leaves the dry run's prediction as it was, and stays", () => {
+  const lock = {}
+  const { before, head, main, run } = behindMain({
+    args: ['--dry-run'],
+    prepare: ({ main: checkout }) => {
+      lock.path = join(checkout, '.git', 'index.lock')
+      writeFileSync(lock.path, '')
+    }
+  })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.equal(head, before)
+  assert.ok(
+    run.stdout.includes(
+      `would fast-forward the main checkout ${forward({ path: main })} by 1 commit to origin/${MAIN}`
+    ),
+    run.stdout
+  )
+  assert.ok(existsSync(lock.path), `${lock.path} was removed`)
 })
 
 // A main checkout whose branch has no commit: git cannot count how far
