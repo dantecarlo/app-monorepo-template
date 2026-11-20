@@ -14,6 +14,7 @@ import {
 } from '@/lib/posthog/posthogClient.constant'
 import type { IPostHogClient } from '@/lib/posthog/posthogClient.type'
 import { resolveConsentMode } from '@/lib/posthog/resolveConsentMode.helper'
+import { removeSdkStorage } from '@/lib/posthog/sdkStorage.adapter'
 
 const createPostHogClient = ({
   consentMode,
@@ -123,6 +124,13 @@ const startAfterEarlierGrant = async ({
 
 if (POSTHOG_KEY && posthogConsentMode !== PostHogConsentModeEnum.OPT_IN) {
   startPostHogClient()
+}
+
+// A project that switched to `opt-in` leaves what `granted` stored on the
+// device, which the SDK, persisting through the consent storage from then
+// on, never reads or removes: every `opt-in` launch removes it.
+if (POSTHOG_KEY && posthogConsentMode === PostHogConsentModeEnum.OPT_IN) {
+  void removeSdkStorage().catch(ignore)
 }
 
 // A launch that fails to opt the client in again leaves it opted out, as

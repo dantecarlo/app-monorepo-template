@@ -284,6 +284,16 @@ storage keys, its stored consent `__ph_opt_in_out_<key>`, and its cookies on
 the host and on every parent domain of it. A start with a recorded grant keeps
 them, and so does every other mode.
 
+**A switch to `opt-in` on mobile.** Under `granted` `posthog-react-native`
+persists on its own: on a native platform in the files `.posthog-rn.json` and
+`.posthog-rn-logs.json` of the document directory, through `expo-file-system`,
+and in a web bundle under the same keys of the device's key-value storage.
+Under `opt-in` it persists through the consent storage, under other keys, so
+those only ever hold what another mode left: every `opt-in` launch removes them
+(`apps/mobile/src/lib/posthog/sdkStorage.adapter.ts`, the one file that may
+import `expo-file-system`), and a file or key the device refuses to remove
+stays without failing the launch.
+
 **A refusal is not stored.** Nothing is stored until a grant, so a revoke clears
 the stored choice with the rest: the status reads `denied` for the rest of the
 page load or launch, then `pending`, and a banner asks again. A project that
@@ -352,11 +362,11 @@ from (`https://us-assets.i.posthog.com` for the US cloud) in `script-src`.
   then stores nothing is its documented behaviour, which no test runs. The
   mobile consent storage is the exception: its test reads the device storage
   it writes to, replaced by the in-memory storage of packages/core.
-- **Switching a mobile app to `opt-in`.** On native, `posthog-react-native`
-  keeps what `granted` stored in files of the document directory, through
-  `expo-file-system`, which the app does not depend on and the dependency
-  registry gives no seam; those files stay until the app is removed. The web
-  start clears its own (above).
+- **A switch to `memory`.** What `granted` stored stays where the SDK put it,
+  on both apps: `memory` persistence neither reads nor removes it.
+- **The files on a real device.** The mobile clear is tested against a
+  stand-in of `expo-file-system`; that a device deletes the files is the
+  package's documented behaviour, which no test runs.
 - **A secret the path rule misses.** A token of letters only, or one shorter
   than 16 characters, such as a six-digit code, keeps its place; a long word
   of letters and digits in a slug is redacted.

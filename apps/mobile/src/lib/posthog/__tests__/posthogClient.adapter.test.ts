@@ -3,9 +3,10 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import { POSTHOG_INGESTION_HOST_FALLBACK } from '@/lib/posthog/posthogClient.constant'
 
-const { construct, optIn } = vi.hoisted(() => ({
+const { construct, optIn, removeSdkStorage } = vi.hoisted(() => ({
   construct: vi.fn(),
-  optIn: vi.fn()
+  optIn: vi.fn(),
+  removeSdkStorage: vi.fn(async (): Promise<void> => undefined)
 }))
 
 // The client is built from this stand-in, in place of the shared one of
@@ -46,6 +47,11 @@ const loadClient = async ({
   // replaced by the in-memory storage of @app/core.
   const device = createMemoryKeyValueStorage()
   vi.doMock('@/lib/storage', () => ({ keyValueStorage: device }))
+  // What posthog-react-native stored on its own is removed through the
+  // project's adapter, which this test replaces.
+  vi.doMock('@/lib/posthog/sdkStorage.adapter', () => ({
+    removeSdkStorage
+  }))
   if (grantedEarlier) {
     await device.setItem({
       key: 'posthog-consent:granted',
@@ -76,6 +82,7 @@ const CONSENT_MODES = ['granted', 'opt-in', 'memory']
 beforeEach(() => {
   construct.mockClear()
   optIn.mockClear()
+  removeSdkStorage.mockClear()
 })
 
 afterEach(() => {
@@ -225,6 +232,31 @@ test('rejects nothing when the launch fails to opt in again', async () => {
   } finally {
     process.off('unhandledRejection', unhandled)
   }
+})
+
+// A project that switched to `opt-in` leaves what `granted` stored, which
+// the SDK, persisting through the consent storage from then on, never reads.
+test('removes what PostHog stored on its own at an opt-in launch', async () => {
+  await loadClient({ consent: 'opt-in', key: KEY })
+
+  expect(removeSdkStorage).toHaveBeenCalledOnce()
+  expect(construct).not.toHaveBeenCalled()
+})
+
+test('removes what PostHog stored on its own at an opt-in launch after a grant', async () => {
+  await loadClient({ consent: 'opt-in', grantedEarlier: true, key: KEY })
+
+  await vi.waitFor(() => expect(optIn).toHaveBeenCalledOnce())
+  expect(removeSdkStorage).toHaveBeenCalledOnce()
+})
+
+test('keeps what PostHog stored outside opt-in mode and without a key', async () => {
+  for (const consent of ['granted', 'memory']) {
+    await loadClient({ consent, key: KEY })
+  }
+  await loadClient({ consent: 'opt-in' })
+
+  expect(removeSdkStorage).not.toHaveBeenCalled()
 })
 
 test('starts memory mode with memory persistence', async () => {
