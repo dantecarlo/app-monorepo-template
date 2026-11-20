@@ -3,7 +3,7 @@
 > **Governs:** `packages/tooling/src`
 > **ID prefix:** `TOOLING`
 > **Derived from:** `docs/code-standards.md`, `docs/architecture/shared.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-19 at `dd38b99`
+> **Verified against the code:** 2026-11-20 at `c324145`
 
 ## Purpose
 
@@ -480,12 +480,19 @@ entry names.
 - **THEN** that `package.json` is listed with the package
 - **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a kept dependency whose entry the prune removes is a leak"
 
-#### Scenario: the three prunes of this repository
+#### Scenario: the prunes of this repository
 
 - **GIVEN** the repository's tracked files, its manifest and its registry
-- **WHEN** the prune of `sentry`, of `mobile-expo` and of `supabase` is checked
+- **WHEN** the prune of `sentry`, `mobile-expo`, `supabase`, `web-next` and `cloudflare` is checked
 - **THEN** no registry finding is listed for any of them
 - **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, mobile-expo, supabase, web-next or cloudflare of this repository leaves the registry true"
+
+#### Scenario: the packages of this repository a prune takes
+
+- **GIVEN** the repository's tracked files, its manifest and its registry
+- **WHEN** the prune of `i18n` and of `design-tokens` is checked
+- **THEN** no kept `package.json` declares a package whose entry the prune takes
+- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning i18n or design-tokens of this repository keeps no package whose entry it takes"
 
 ### Requirement: TOOLING-18 — A kept spec cites no pruned file
 
@@ -567,9 +574,17 @@ capability.
 - **THEN** only the second file is listed
 - **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a leak inside a region of the pruned capability is no leak"
 
-#### Scenario: the sentry capability of this repository
+#### Scenario: three capabilities of this repository
 
 - **GIVEN** the repository's tracked files, its manifest, its registry and its regions
-- **WHEN** the prune of `sentry` is checked with every check
-- **THEN** nothing is listed
+- **WHEN** the prune of `sentry`, of `mobile-expo` and of `web-next` is checked with every check
+- **THEN** nothing is listed for any of them
 - **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, mobile-expo or web-next of this repository leaves no dangling reference"
+
+#### Scenario: the supabase capability of this repository
+
+- **GIVEN** the repository's tracked files, its manifest, its registry and its regions
+- **WHEN** the prune of `supabase` is checked
+- **THEN** no file under `apps/` imports a pruned file, no `.env.example` keeps a key only pruned
+  files read, and no kept spec cites a pruned file
+- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning supabase of this repository leaves no app import, env key or spec citation dangling"

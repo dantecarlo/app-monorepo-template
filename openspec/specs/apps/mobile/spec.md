@@ -9,7 +9,7 @@
 <!-- endregion supabase -->
 > **ID prefix:** `MOBILE`
 > **Derived from:** `docs/architecture/mobile.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/observability.md`, `docs/e2e.md`, `docs/responsive.md`, `AGENTS.md`, `docs/manifest.md`, `docs/decisions/0001-pluggable-providers.md`
-> **Verified against the code:** 2026-11-19 at `dd38b99`
+> **Verified against the code:** 2026-11-20 at `c324145`
 
 ## Purpose
 
@@ -688,9 +688,10 @@ either is unset.
 
 ### Requirement: MOBILE-29 — Session bootstrap from the auth gateway
 
-The mobile app SHALL set the auth status to loading on mount, then store the session the
-Supabase auth gateway returns with the status authenticated or unauthenticated, and keep both in
-step with every later auth state change until unmount.
+The mobile app SHALL set the auth status to loading on mount, then store the session the auth
+gateway of its root layout returns (MOBILE-83) with the status authenticated or unauthenticated,
+and keep both in step with every later auth state change until unmount.
+
 
 **Evidence:** `apps/mobile/src/components/AuthProvider/useAuthBootstrap.hook.ts:12-30`, `apps/mobile/src/lib/auth/authGateway.adapter.ts:22-23`, `apps/mobile/src/app/_layout.tsx:41`
 
@@ -2040,12 +2041,12 @@ root layout imports project modules only and its test mocks project modules, nev
 <!-- region supabase -->
 ### Requirement: MOBILE-75 — The auth gateway is built in lib/supabase
 
-The mobile app SHALL build its one auth gateway in `src/lib/supabase/authGateway.adapter.ts`, a
-Supabase auth gateway over the very client `src/lib/supabase/client.adapter.ts` creates, and the
-root layout SHALL hand that gateway to the auth provider; only the `*.adapter.ts` files of
+The mobile app SHALL build the Supabase auth gateway in `src/lib/supabase/authGateway.adapter.ts`,
+over the very client `src/lib/supabase/client.adapter.ts` creates, and list it in the `supabase`
+region of `src/lib/auth/authGateway.adapter.ts` (MOBILE-83); only the `*.adapter.ts` files of
 `src/lib/supabase/` SHALL import `@app/supabase`, tests included.
 
-**Evidence:** `apps/mobile/src/lib/supabase/authGateway.adapter.ts:11-13`, `apps/mobile/src/app/_layout.tsx:18`, `apps/mobile/src/app/_layout.tsx:41`, `.agents/contracts/dependencies.json:264-267`
+**Evidence:** `apps/mobile/src/lib/supabase/authGateway.adapter.ts:11-13`, `apps/mobile/src/lib/auth/authGateway.adapter.ts:4-15`, `.agents/contracts/dependencies.json:305-310`
 
 #### Scenario: the gateway over the app's client
 
@@ -2054,13 +2055,6 @@ root layout SHALL hand that gateway to the auth provider; only the `*.adapter.ts
 - **THEN** one Supabase auth gateway is created over that same client, and it is the gateway the
   module exports
 - **Test:** `apps/mobile/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "builds the auth gateway over the client the client adapter creates"
-
-#### Scenario: the root layout renders
-
-- **GIVEN** the gateway of `lib/supabase`
-- **WHEN** the root layout renders
-- **THEN** the auth provider bootstraps the session from that gateway
-- **Test:** `apps/mobile/src/app/__tests__/layout.route.test.tsx` › "hands the auth provider the gateway lib/auth serves"
 
 #### Scenario: a file outside lib/supabase imports the package
 
@@ -2272,6 +2266,45 @@ with its SDK replaced at its module.
 - **THEN** every case passes
 - **Test:** `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "the observability port contract"
 <!-- endregion sentry -->
+
+### Requirement: MOBILE-83 — The auth gateway comes from the backend the project keeps
+
+The mobile app SHALL hand the auth provider, from its root layout, the gateway
+`src/lib/auth/authGateway.adapter.ts` serves: the gateway of the first backend capability it
+lists, each listed inside that capability's region, or, when the project keeps none, a no-op
+gateway whose session is none and whose sign-in rejects.
+
+**Evidence:** `apps/mobile/src/lib/auth/authGateway.adapter.ts:11-23`, `apps/mobile/src/lib/auth/noopAuthGateway.helper.ts:11-16`, `apps/mobile/src/app/_layout.tsx:11`, `apps/mobile/src/app/_layout.tsx:41`
+
+#### Scenario: no backend is kept
+
+- **GIVEN** the no-op gateway
+- **WHEN** its session is read and a sign-in is attempted through it
+- **THEN** the session is none and the sign-in rejects
+- **Test:** `apps/mobile/src/lib/auth/__tests__/noopAuthGateway.helper.test.ts` › "has no session and rejects a sign-in"
+
+#### Scenario: the served gateway keeps the port
+
+- **GIVEN** the auth gateway adapter, whatever backend the project keeps
+- **WHEN** it loads
+- **THEN** its gateway has every method of the `IAuthGateway` port
+- **Test:** `apps/mobile/src/lib/auth/__tests__/authGateway.adapter.test.ts` › "serves a gateway with every method of the auth gateway port"
+
+<!-- region supabase -->
+#### Scenario: the Supabase gateway is listed
+
+- **GIVEN** the `supabase` capability, whose region lists the Supabase part's gateway
+- **WHEN** the adapter loads
+- **THEN** its gateway is the one `src/lib/supabase/authGateway.adapter.ts` builds
+- **Test:** `apps/mobile/src/lib/auth/__tests__/authGateway.adapter.test.ts` › "serves the gateway the supabase capability builds"
+<!-- endregion supabase -->
+
+#### Scenario: the root layout renders
+
+- **GIVEN** the gateway of `lib/auth`
+- **WHEN** the root layout renders
+- **THEN** the auth provider bootstraps the session from that gateway
+- **Test:** `apps/mobile/src/app/__tests__/layout.route.test.tsx` › "hands the auth provider the gateway lib/auth serves"
 
 ## Open questions
 

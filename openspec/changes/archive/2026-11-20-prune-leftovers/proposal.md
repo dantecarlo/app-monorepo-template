@@ -1,6 +1,6 @@
 # Proposal: what the capability prunes leave behind
 
-> **Status:** open
+> **Status:** archived — 2026-11-20
 
 ## Why
 

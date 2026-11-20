@@ -3,7 +3,7 @@
 > **Governs:** `packages/i18n/src`
 > **ID prefix:** `I18N`
 > **Derived from:** `docs/code-standards.md`, `docs/architecture/shared.md`
-> **Verified against the code:** 2026-11-18 at `7bb32cc`
+> **Verified against the code:** 2026-11-20 at `c324145`
 
 ## Purpose
 
@@ -163,14 +163,14 @@ TranslationValuesType.
 ### Requirement: I18N-11 — The catalogs carry a message per sign-in failure
 
 The i18n package SHALL define, in every catalog, one message for each sign-in failure the web
-auth gateway names: auth.error.emailNotConfirmed, auth.error.invalidCredentials,
+app names: auth.error.emailNotConfirmed, auth.error.invalidCredentials,
 auth.error.notConfigured and auth.error.rateLimited.
 
 **Evidence:** `packages/i18n/src/locales/en.json:6-11`, `packages/i18n/src/locales/es.json:6-11`, `apps/web/src/lib/auth/authGateway.constant.ts:14-22`
 
 #### Scenario: a rejected sign-in reaches the user
 
-- **GIVEN** the message key of each sign-in failure the web auth gateway names
+- **GIVEN** the message key of each sign-in failure the web app names
 - **WHEN** every catalog is searched for it
 - **THEN** each catalog holds a value for every key
 - **Test:** `apps/web/src/lib/auth/__tests__/authGateway.constant.test.ts` › "names a message every catalog holds for each sign-in failure"

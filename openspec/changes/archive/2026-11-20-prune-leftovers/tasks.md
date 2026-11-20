@@ -7,7 +7,7 @@
 - [x] T5 — the `mobile-expo` prune: the `local/wrapped-import` rule cases judged by ui blocks of their own, the mobile rows of the global map in `mobile-expo` regions, the knip workspace dropped, no spec citing a mobile config file · Requirements: TOOLING-20 · Commit: d1ecf7e
 - [x] T6 — the `web-next` prune: the package and harness specs hold their web evidence in `web-next` regions or cite a package test; a repository test holds the `sentry`, `mobile-expo` and `web-next` prunes · Requirements: TOOLING-01, TOOLING-20, TOKENS-12, TOKENS-13, I18N-11 · Commit: d1ecf7e
 - [x] T7 — the docs a Sentry prune keeps stop naming it, and `docs/manifest.md` documents the regions and the gaps as they now stand, and the map names no mobile file outside a mobile-expo region (d10a9dc) · Requirements: none · Commit: facfde2
-- [ ] T8 — `verify-report.md`, then the archive · Requirements: every requirement above · Commit: —
+- [x] T8 — `verify-report.md`, then the archive · Requirements: every requirement above · Commit: c324145, and the archive that moves this folder
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of

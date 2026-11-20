@@ -9,7 +9,7 @@
 <!-- endregion supabase -->
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`, `docs/observability.md`, `docs/manifest.md`, `docs/decisions/0001-pluggable-providers.md`
-> **Verified against the code:** 2026-11-19 at `dd38b99`
+> **Verified against the code:** 2026-11-20 at `c324145`
 
 ## Purpose
 
@@ -664,13 +664,14 @@ unsubscribe from those changes on unmount.
 <!-- region supabase -->
 ### Requirement: WEB-20 — The auth gateway is a no-op without Supabase settings
 
-The web app SHALL give the auth provider and the auth service one gateway: a no-op gateway during
-server rendering and in a browser where `NEXT_PUBLIC_SUPABASE_URL` or
+The web app SHALL serve, from the Supabase part of its auth gateway (WEB-85), the no-op gateway
+during server rendering and in a browser where `NEXT_PUBLIC_SUPABASE_URL` or
 `NEXT_PUBLIC_SUPABASE_ANON_KEY` is unset, so the session resolves to none and a sign-in rejects
 with the not-configured failure (WEB-46); otherwise one Supabase auth gateway per browser, whose
 sign-in names its failures (WEB-46).
 
-**Evidence:** `apps/web/src/lib/supabase/authGateway.adapter.ts:88-99`, `apps/web/src/lib/supabase/authGateway.adapter.ts:110-118`, `apps/web/src/app/AuthProviders.tsx:22`
+
+**Evidence:** `apps/web/src/lib/supabase/authGateway.adapter.ts:78-99`, `apps/web/src/lib/auth/authGateway.adapter.ts:11-23`, `apps/web/src/app/AuthProviders.tsx:22`
 
 #### Scenario: the Supabase settings are missing
 
@@ -1426,7 +1427,7 @@ its `auth.error` message key; and `NETWORK_ERROR` with `helper.error.network` wh
 be reached. Any other rejection SHALL pass through unchanged, and the auth service makes it the
 generic error (WEB-13).
 
-**Evidence:** `apps/web/src/lib/supabase/authGateway.adapter.ts:27-38`, `apps/web/src/lib/supabase/authGateway.adapter.ts:42-50`, `apps/web/src/lib/supabase/authGateway.adapter.ts:55-71`, `apps/web/src/lib/supabase/authGateway.adapter.ts:73-86`, `apps/web/src/lib/supabase/authGateway.adapter.ts:88-99`, `apps/web/src/lib/supabase/authGateway.constant.ts:6-11`, `apps/web/src/lib/supabase/authGateway.constant.ts:14-22`, `apps/web/src/lib/supabase/authGateway.constant.ts:28`, `apps/web/src/lib/supabase/authGateway.constant.ts:34-40`, `apps/web/src/services/Auth/auth.service.ts:21`
+**Evidence:** `apps/web/src/lib/supabase/authGateway.adapter.ts:32-76`, `apps/web/src/lib/supabase/authGateway.adapter.ts:78`, `apps/web/src/lib/auth/noopAuthGateway.helper.ts:10-39`, `apps/web/src/lib/auth/authGateway.constant.ts:6-22`, `apps/web/src/lib/supabase/authGateway.constant.ts:7-19`, `apps/web/src/services/Auth/auth.service.ts:19`
 
 #### Scenario: the Supabase settings are missing
 
@@ -1455,13 +1456,6 @@ generic error (WEB-13).
 - **WHEN** a sign-in is attempted through the gateway
 - **THEN** it rejects with that same error
 - **Test:** `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "passes any other sign-in rejection through"
-
-#### Scenario: every failure has its message
-
-- **GIVEN** the message key of every failure the gateway names
-- **WHEN** every catalog is searched for it
-- **THEN** each catalog holds a value for every key
-- **Test:** `apps/web/src/lib/auth/__tests__/authGateway.constant.test.ts` › "names a message every catalog holds for each sign-in failure"
 <!-- endregion supabase -->
 
 ### Requirement: WEB-47 — The busy labels come from the catalogs
@@ -2613,6 +2607,48 @@ its SDK replaced at its module.
 - **THEN** every case passes
 - **Test:** `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "the observability port contract"
 <!-- endregion sentry -->
+
+### Requirement: WEB-85 — The auth gateway comes from the backend the project keeps
+
+The web app SHALL hand the auth provider and the auth service the gateway
+`src/lib/auth/authGateway.adapter.ts` serves: the gateway of the first backend capability it
+lists, each listed inside that capability's region, or, when the project keeps none, a no-op
+gateway whose session is none and whose sign-in rejects with the `NOT_CONFIGURED` failure and the
+`auth.error.notConfigured` key. Every sign-in failure the app names SHALL have its `auth.error`
+message key in every catalog.
+
+**Evidence:** `apps/web/src/lib/auth/authGateway.adapter.ts:11-23`, `apps/web/src/lib/auth/noopAuthGateway.helper.ts:10-39`, `apps/web/src/lib/auth/authGateway.constant.ts:2-22`, `apps/web/src/services/Auth/auth.service.ts:7`, `apps/web/src/app/AuthProviders.tsx:22`
+
+#### Scenario: no backend is kept
+
+- **GIVEN** the no-op gateway
+- **WHEN** its session is read and a sign-in is attempted through it
+- **THEN** the session is none, and the sign-in rejects with the `NOT_CONFIGURED` failure and the
+  `auth.error.notConfigured` key
+- **Test:** `apps/web/src/lib/auth/__tests__/noopAuthGateway.helper.test.ts` › "has no session and rejects a sign-in with the not-configured failure"
+
+#### Scenario: the served gateway keeps the port
+
+- **GIVEN** the auth gateway adapter, whatever backend the project keeps
+- **WHEN** the gateway is requested
+- **THEN** it has every method of the `IAuthGateway` port
+- **Test:** `apps/web/src/lib/auth/__tests__/authGateway.adapter.test.ts` › "serves a gateway with every method of the auth gateway port"
+
+<!-- region supabase -->
+#### Scenario: the Supabase gateway is listed
+
+- **GIVEN** the `supabase` capability, whose region lists the Supabase part's gateway
+- **WHEN** the gateway is requested
+- **THEN** it is the gateway `src/lib/supabase/authGateway.adapter.ts` serves
+- **Test:** `apps/web/src/lib/auth/__tests__/authGateway.adapter.test.ts` › "serves the gateway the supabase capability builds"
+<!-- endregion supabase -->
+
+#### Scenario: every failure has its message
+
+- **GIVEN** the message key of every sign-in failure the app names
+- **WHEN** every catalog is searched for it
+- **THEN** each catalog holds a value for every key
+- **Test:** `apps/web/src/lib/auth/__tests__/authGateway.constant.test.ts` › "names a message every catalog holds for each sign-in failure"
 
 ## Open questions
 

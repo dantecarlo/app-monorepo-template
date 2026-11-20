@@ -3,7 +3,7 @@
 > **Governs:** `packages/tokens/src`, `packages/tokens/scripts`, `packages/tokens/theme.css`, `packages/tokens/tailwind-preset.cjs`
 > **ID prefix:** `TOKENS`
 > **Derived from:** `docs/architecture/shared.md`
-> **Verified against the code:** 2026-11-16 at `eeeaac7`
+> **Verified against the code:** 2026-11-20 at `c324145`
 
 ## Purpose
 
@@ -175,8 +175,11 @@ The tokens package SHALL expose every token group as a named export from its ent
 The tokens package SHALL ship the generated Tailwind preset, exported as tailwind-preset.cjs,
 whose theme.extend.colors hold, in the dark theme's shape, each themed colour as a read of its
 `--c-*` variable, under the name `themeVars` and the web theme declare it, and each colour the
-themes share as its literal value, and which the mobile Tailwind config loads; the web app SHALL
-load no Tailwind JavaScript config.
+themes share as its literal value, for an app's Tailwind config to load.
+
+<!-- region web-next -->
+The web app SHALL load no Tailwind JavaScript config: its CSS entry imports the generated theme.
+<!-- endregion web-next -->
 
 **Evidence:** `packages/tokens/scripts/generate.mjs:331-344`, `packages/tokens/scripts/generate.mjs:351`, `packages/tokens/tailwind-preset.cjs:22`, `packages/tokens/package.json:9`
 
