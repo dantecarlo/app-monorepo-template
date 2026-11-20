@@ -113,10 +113,10 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 
 **In flight:** none.
 
-**Next:** `verify:router-coverage` (F27), the rest of Step 3.2 part B, then Step 3.3.
+**Next:** Step 3.3.
 
 **Pending, in order:**
-- Step 3.2 part B: `verify:router-coverage` (F27). `gradedBy` and `sdd-steward` are done: every agent names its grading skill in `.agents/agent-context.json`, which `verify:agent-context` holds, and `sdd-steward` runs one SDD change in one context.
+- Step 3.2 part B is done: `verify:router-coverage` (F27) holds every Router row to a shipped skill, every skill to a row and every "Validated by" script to `package.json`; and every agent names its grading skill in `.agents/agent-context.json`, which `verify:agent-context` holds, and `sdd-steward` runs one SDD change in one context.
 - Step 3.3: the hook-safe test helper `withHookGitDir`, with a hook case in every suite that spawns git, and the worktree pruner behind `.husky/post-merge` are built. Still to come: the agent write guard, designed together with F66's rule-file guard, and the pruner's Claude Code hook, which needs the merge-command recognizer of step 4.1.
 - Stages 4 to 7; F.11 lands with Stage 6, whose executor its questions need.
 - F33, when the owner decides it.
@@ -502,7 +502,7 @@ defects behind them, for changes of their own.
 | F24 | conventions | enum member casing has no rule: the template's code uses PascalCase (`ErrorStateCodeEnum.Forbidden`), `docs/code-standards.md` shows `QueryLimitsEnum.DEFAULT_PAGE_SIZE`, and Certifipago uses upper snake case | owner decides; then a `naming-convention` `enumMember` selector in both |
 | F25 | apps/web, apps/mobile | left open by the error-surfacing change: whether a failed query shows the screen's `ErrorState` instead of a toast (web Q3, mobile Q1), whether a crash a boundary catches is reported to observability, and that every component watching one failing query queues its own toast | owner decides |
 | F26 | apps/web, apps/mobile | Certifipago's styling LAW (only `ui/` blocks own their look; everything else only positions) is false here: screen-local `*.style.ts` files hold colour and type classes, and both apps hold arbitrary values and raw hex in style files | owner decides: move the look into `ui/` and add the rule, or keep the template's convention |
-| F27 | harness | no gate checks that every Router row of `AGENTS.md` names a shipped skill and every skill has a row, so a project that drops `sdd` or `archify` at `/init` keeps their rows | step 3.2 (`verify:router-coverage`) |
+| F27 | harness | no gate checks that every Router row of `AGENTS.md` names a shipped skill and every skill has a row, so a project that drops `sdd` or `archify` at `/init` keeps their rows | done: `verify:router-coverage` (34 skills, 34 rows, every cited script defined; a prune that drops a skill fails it until Stage 6 removes its row) |
 | F28 | packages/supabase | Supabase's default privileges give `anon` and `authenticated` TRIGGER, REFERENCES and MAINTAIN on every table; with TRIGGER, a signed-in user attaches `auth_helpers.tg_audit_immutable()` to a table and blocks its writes | in F.2 |
 | F29 | packages/supabase | the verifier of the signed image URL signs the path and query only, so one secret serving several hosts accepts a URL on any of them | design, recorded |
 | F30 | apps/web | `tailwind-merge`, which `tailwind-variants` runs by default, takes the token font sizes (`text-button`, `text-title`) for colours and drops them next to a text colour, so the web `Button` renders without `text-button`; `ui/Text`, `ui/Divider` and `ui/Avatar` already set `twMerge: false` | done: this change |

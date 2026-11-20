@@ -156,8 +156,9 @@ All code snippets must follow template conventions:
 
 1. Create the directory: `.claude/skills/{skill-name}/`
 2. Write `SKILL.md` with correct frontmatter and content
-3. Run `registry` to regenerate `.claude/skill-registry.md`
-4. Commit both files with a `feat(skills):` conventional commit
+3. Add the skill's row to the phase table of the `AGENTS.md` Router it belongs to: what the task means, the skill, and the `pnpm` script that validates it (or `review`); `pnpm verify:router-coverage` fails a skill with no row
+4. Run `registry` to regenerate `.claude/skill-registry.md`
+5. Commit the skill, its Router row and the registry with a `feat(skills):` conventional commit
 
 ---
 
@@ -170,4 +171,5 @@ All code snippets must follow template conventions:
 - [ ] DO/DON'T table covers 3–5 most common mistakes
 - [ ] Post-checklist items include runnable commands (`pnpm typecheck`, etc.)
 - [ ] No vague prose — every instruction is executable by the LLM
+- [ ] A Router row in `AGENTS.md` names the skill (`pnpm verify:router-coverage`)
 - [ ] `registry` updated and committed alongside the new skill
