@@ -38,8 +38,8 @@ const WRITING = 'writing'
 const MISSING_SKILL = 'unknown-skill'
 
 const DECLARED = {
-  [SCOUT]: { gradedBy: [SCOUTING] },
-  [SCRIBE]: { gradedBy: [WRITING] }
+  [SCOUT]: { gradedBy: [SCOUTING], writes: false },
+  [SCRIBE]: { gradedBy: [WRITING], writes: true }
 }
 
 const context =
@@ -52,6 +52,11 @@ const context =
   () => ({ agents, declared, problems, skills })
 
 const withScout = ({ entry }) => ({ ...DECLARED, [SCOUT]: entry })
+const withScribe = ({ entry }) => ({ ...DECLARED, [SCRIBE]: entry })
+const scoutWith = ({ fields }) =>
+  withScout({ entry: { ...DECLARED[SCOUT], ...fields } })
+const scribeWith = ({ fields }) =>
+  withScribe({ entry: { ...DECLARED[SCRIBE], ...fields } })
 
 export const CASES = [
   {
@@ -65,33 +70,35 @@ export const CASES = [
     name: 'an agent with no entry in the agent context fires'
   },
   {
-    context: context({ declared: withScout({ entry: {} }) }),
+    context: context({
+      declared: withScout({ entry: { writes: false } })
+    }),
     expected: 1,
     name: 'an entry with no gradedBy fires'
   },
   {
-    context: context({ declared: withScout({ entry: { gradedBy: [] } }) }),
+    context: context({ declared: scoutWith({ fields: { gradedBy: [] } }) }),
     expected: 1,
     name: 'an empty gradedBy fires'
   },
   {
     context: context({
-      declared: withScout({ entry: { gradedBy: SCOUTING } })
+      declared: scoutWith({ fields: { gradedBy: SCOUTING } })
     }),
     expected: 1,
     name: 'a gradedBy that is a string, not a list, fires'
   },
   {
     context: context({
-      declared: withScout({ entry: { gradedBy: [SCOUTING, ' '] } })
+      declared: scoutWith({ fields: { gradedBy: [SCOUTING, ' '] } })
     }),
     expected: 1,
     name: 'a gradedBy holding a blank name fires'
   },
   {
     context: context({
-      declared: withScout({
-        entry: { gradedBy: [SCOUTING, MISSING_SKILL] }
+      declared: scoutWith({
+        fields: { gradedBy: [SCOUTING, MISSING_SKILL] }
       })
     }),
     expected: 1,
@@ -106,6 +113,62 @@ export const CASES = [
     context: context({ agents: [SCRIBE] }),
     expected: 1,
     name: 'an entry for an agent that does not exist fires'
+  },
+  {
+    context: context({
+      declared: withScout({ entry: { gradedBy: [SCOUTING] } })
+    }),
+    expected: 1,
+    name: 'an entry with no writes fires'
+  },
+  {
+    context: context({ declared: scoutWith({ fields: { writes: 'no' } }) }),
+    expected: 1,
+    name: 'a writes that is neither true nor false fires'
+  },
+  {
+    context: context({
+      declared: scribeWith({
+        fields: { surface: ['docs/qa/', 'apps/mobile/.maestro'] }
+      })
+    }),
+    expected: 0,
+    name: 'a writer held to a surface of repository folders passes'
+  },
+  {
+    context: context({ declared: scribeWith({ fields: { surface: [] } }) }),
+    expected: 1,
+    name: 'an empty surface fires'
+  },
+  {
+    context: context({
+      declared: scribeWith({ fields: { surface: 'docs/qa/' } })
+    }),
+    expected: 1,
+    name: 'a surface that is a string, not a list, fires'
+  },
+  {
+    context: context({
+      declared: scribeWith({
+        fields: { surface: ['docs/qa/', '../out', '/etc', 'C:\\x', ' '] }
+      })
+    }),
+    expected: 4,
+    name: 'a surface folder that is blank or leaves the repository fires once per folder'
+  },
+  {
+    context: context({
+      declared: scoutWith({ fields: { surface: ['docs/qa/'] } })
+    }),
+    expected: 1,
+    name: 'a surface beside writes: false fires'
+  },
+  {
+    context: context({
+      declared: scribeWith({ fields: { surfaces: ['docs/qa/'] } })
+    }),
+    expected: 1,
+    name: 'an entry key the agent context does not define fires'
   },
   {
     context: context({
@@ -182,7 +245,7 @@ const checks = [
         kindsOf({
           findings: gate.run(
             context({
-              declared: withScout({ entry: { gradedBy: [MISSING_SKILL] } })
+              declared: scoutWith({ fields: { gradedBy: [MISSING_SKILL] } })
             })()
           )
         }),
@@ -210,7 +273,7 @@ const checks = [
       assert.deepEqual(
         kindsOf({
           findings: gate.run(
-            context({ declared: withScout({ entry: {} }) })()
+            context({ declared: withScout({ entry: { writes: false } }) })()
           )
         }),
         [FINDING_KIND.ungraded]
@@ -218,10 +281,94 @@ const checks = [
       assert.deepEqual(
         kindsOf({
           findings: gate.run(
-            context({ declared: withScout({ entry: { gradedBy: [] } }) })()
+            context({ declared: scoutWith({ fields: { gradedBy: [] } }) })()
           )
         }),
         [FINDING_KIND.shape]
+      )
+      assert.deepEqual(
+        kindsOf({
+          findings: gate.run(
+            context({
+              declared: withScout({ entry: { gradedBy: [SCOUTING] } })
+            })()
+          )
+        }),
+        [FINDING_KIND.undeclaredWrites]
+      )
+      assert.deepEqual(
+        kindsOf({
+          findings: gate.run(
+            context({
+              declared: scribeWith({ fields: { surfaces: ['docs/'] } })
+            })()
+          )
+        }),
+        [FINDING_KIND.unknownKey]
+      )
+      assert.deepEqual(
+        kindsOf({
+          findings: gate.run(
+            context({
+              declared: scoutWith({ fields: { surface: ['docs/qa/'] } })
+            })()
+          )
+        }),
+        [FINDING_KIND.shape]
+      )
+    }
+  },
+  {
+    name: 'a finding names the agent and what its writes or surface lacks',
+    run: () => {
+      const detailsOf = ({ declared }) =>
+        gate.run(context({ declared })()).map(({ detail }) => detail)
+      assert.deepEqual(
+        detailsOf({
+          declared: withScout({ entry: { gradedBy: [SCOUTING] } })
+        }),
+        [
+          'scout: says nothing of what it may write; add writes: true ' +
+            'or writes: false'
+        ]
+      )
+      assert.deepEqual(
+        detailsOf({ declared: scoutWith({ fields: { writes: 'no' } }) }),
+        ['scout: writes must be true or false']
+      )
+      assert.deepEqual(
+        detailsOf({
+          declared: scoutWith({ fields: { surface: ['docs/qa/'] } })
+        }),
+        [
+          'scout: a surface holds a writer to folders, and writes: false ' +
+            'writes nowhere; drop surface or set writes: true'
+        ]
+      )
+      assert.deepEqual(
+        detailsOf({ declared: scribeWith({ fields: { surface: [] } }) }),
+        [
+          'scribe: surface must be a non-empty list of repository-relative ' +
+            'folders'
+        ]
+      )
+      assert.deepEqual(
+        detailsOf({
+          declared: scribeWith({ fields: { surface: ['../out'] } })
+        }),
+        [
+          'scribe: surface folder "../out" must be relative to the ' +
+            'repository root, with no ".." and no drive'
+        ]
+      )
+      assert.deepEqual(
+        detailsOf({
+          declared: scribeWith({ fields: { surfaces: ['docs/'] } })
+        }),
+        [
+          'scribe: surfaces is no key of an agent-context entry; the keys ' +
+            'are gradedBy, surface and writes'
+        ]
       )
     }
   },
@@ -230,7 +377,7 @@ const checks = [
     run: () => {
       const [finding] = gate.run(
         context({
-          declared: withScout({ entry: { gradedBy: [MISSING_SKILL] } })
+          declared: scoutWith({ fields: { gradedBy: [MISSING_SKILL] } })
         })()
       )
       assert.match(
@@ -266,7 +413,9 @@ const checks = [
     run: () => {
       const result = runGate({
         files: tree({
-          declared: { [SCOUT]: { gradedBy: [MISSING_SKILL] } }
+          declared: {
+            [SCOUT]: { gradedBy: [MISSING_SKILL], writes: false }
+          }
         })
       })
       assert.equal(result.status, FAILED, result.stdout)
@@ -318,7 +467,9 @@ const checks = [
     run: () => {
       const result = runGate({
         files: {
-          ...tree({ declared: { [SCOUT]: { gradedBy: [SCOUTING] } } }),
+          ...tree({
+            declared: { [SCOUT]: { gradedBy: [SCOUTING], writes: false } }
+          }),
           [`.agents/agents/${SCOUT}.agent.md`]: '# no frontmatter\n'
         }
       })
@@ -334,7 +485,9 @@ const checks = [
     name: 'the gate run over a healthy tree exits 0 and states what it judged',
     run: () => {
       const result = runGate({
-        files: tree({ declared: { [SCOUT]: { gradedBy: [SCOUTING] } } })
+        files: tree({
+          declared: { [SCOUT]: { gradedBy: [SCOUTING], writes: false } }
+        })
       })
       assert.equal(result.status, PASSED, result.stderr)
       assert.match(
