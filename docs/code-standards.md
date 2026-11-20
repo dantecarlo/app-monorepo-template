@@ -757,7 +757,8 @@ is not a rule — it is a wish.**
 
 Methods: **lint** (ESLint, fails the gate) · **tsc** (a compiler flag) ·
 **script** (a `verify:*` node script in `pnpm validate`) · **test** (a unit
-test) · **hook** (a git hook) · **CI** (a workflow job) · **review** (a human or
+test) · **hook** (a git hook) · **agent hook** (a runtime hook every tool call
+of an agent passes through) · **CI** (a workflow job) · **review** (a human or
 routed skill — it runs when someone routes to it, and not otherwise).
 
 An instruction is not a gate. Two rules written in the same voice, in the same
@@ -803,8 +804,9 @@ This table exists so that difference is visible.
 | Every skill findable        | script        | `verify:skill-frontmatter` — frontmatter parses, `name` is the folder, description within 1,024 characters with `USE WHEN:` and `DO NOT USE:` (vendored skills: parse, name and length only); not whether the triggers are the right ones |
 | `AGENTS.md` fits Codex      | test          | `codex-budget:test` — CRLF bytes within `project_doc_max_bytes`     |
 | Agent projections in sync   | script        | `agent-harness:projection-check` — each projection equals its source |
-| Every agent names its grader | script       | `verify:agent-context` (and `:test`) — every agent has a `gradedBy` in `.agents/agent-context.json` naming skills that exist, and no entry outlives its agent; not whether the skill is the right grader, or that its evals ever ran |
-| `AGENTS.md` LAWs            | review        | — no gate reads a LAW                                               |
+| Every agent names its grader | script       | `verify:agent-context` (and `:test`) — every agent has a `gradedBy` in `.agents/agent-context.json` naming skills that exist, a `writes` that is true or false, a well-formed `surface` if any, and no other key, and no entry outlives its agent; not whether the skill is the right grader, whether `writes` is the right one, or that its evals ever ran |
+| `AGENTS.md` LAWs            | review        | — no gate reads a LAW; the one below has an agent hook too          |
+| LAW: a rule is not edited to fit the work | agent hook + review | the write guard (`write-guard:test`, `docs/harness.md` §3f): in Claude Code, an Edit, Write or NotebookEdit of a rule file of `.agents/contracts/write-guard.json` asks the human, the main session included, and a read-only agent is refused; not Bash or PowerShell, not Codex, OpenCode or Copilot, which run no adapter yet, and not why a rule changed, which review reads |
 | `AGENTS.md` Router          | script        | `verify:router-coverage` — every "Load skill" cell a shipped skill, every skill a row, every "Validated by" script one `package.json` defines; not whether a row routes the right requests, which review reads |
 | §22 Screens only position   | lint+script   | `local/style-positions-only` + `verify:allowlist-freshness`         |
 | §22 Values are tokens       | lint+script   | `local/style-token-values` + `verify:allowlist-freshness`           |

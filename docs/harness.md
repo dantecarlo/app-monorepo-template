@@ -65,9 +65,10 @@ The chain runs in cost order:
 | Gate                            | Proves                                                    |
 | ------------------------------- | --------------------------------------------------------- |
 | `pnpm agent-harness:projection-check` | Every projected agent file equals what its neutral source renders, and is committed (see 3e) |
-| `pnpm agent-harness:test`       | The projector's reader, adapters, writer, checker and sync still behave |
+| `pnpm agent-harness:test`       | The projector's reader, adapters, hook projection, writer, checker and sync still behave |
+| `pnpm write-guard:test`         | The write guard decides every cell of its table, its errors and its switch-off, every rule glob matches a file and every module the hook loads is a rule file, and the real hook answers a payload on stdin end to end (see 3f) |
 | `pnpm verify:agent-context:test` | The agent-context gate fails each defect it names, on synthetic entries and over a scratch tree |
-| `pnpm verify:agent-context`     | Every agent of `.agents/agents/` has an entry in `.agents/agent-context.json` whose `gradedBy` names the skills that grade it, each a folder of `.claude/skills/` holding a `SKILL.md`, and no entry names an agent that is gone (see 3e) |
+| `pnpm verify:agent-context`     | Every agent of `.agents/agents/` has an entry in `.agents/agent-context.json` whose `gradedBy` names the skills that grade it, each a folder of `.claude/skills/` holding a `SKILL.md`, whose `writes` is true or false, whose `surface`, if any, lists repository-relative folders beside `writes: true`, and which holds no other key; no entry names an agent that is gone (see 3e) |
 | `pnpm verify:manifest`          | `template.manifest.json` is well formed                   |
 | `pnpm verify:manifest:coverage` | Every tracked file has exactly one owner, no stale claims |
 | `pnpm verify:manifest:test`     | The pure engine behind both still behaves                 |
@@ -175,6 +176,7 @@ runtime reads, and `scripts/agent-harness/` holds the projector:
 | `.codex/agents/<name>.toml`, `.codex/config.toml` | Codex; the config also holds the `AGENTS.md` budget |
 | `.opencode/agents/<name>.md`, `opencode.json` | OpenCode |
 | `.github/agents/<name>.agent.md`    | Copilot     |
+| `.claude/settings.json`             | Claude Code: the hooks of `.agents/hooks.json` (3f) |
 | `.agents/projection-manifest.json`  | none: the sha256 of every output |
 
 To change an agent, edit its source, run `pnpm agent-harness:generate` (or
@@ -192,12 +194,90 @@ Every agent also names the skill that grades it, in `.agents/agent-context.json`
 the skill it runs (`sdd-steward` runs `sdd`) or, when it runs no single one,
 the skill that defines and judges what it returns (`validator` answers to
 `validate-all`, which sets its groups and its report and rolls their verdicts
-into one). An agent added
-without its entry fails `pnpm verify:agent-context`, as does an entry with no
-`gradedBy`, a `gradedBy` naming a folder of `.claude/skills/` that holds no
-`SKILL.md`, and an entry whose agent is gone. Whether the named skill is the
-right grader is review's to judge, and no runner yet runs a skill's evals with
-the agent as the executor.
+into one). The entry also says what the agent may write, which the write
+guard (3f) reads: `writes: false` makes it read-only (`validator`),
+`writes: true` makes it a writer (`sdd-steward`), and an optional `surface`
+beside `writes: true` holds a writer to those repository-relative folders. An
+agent added without its entry fails `pnpm verify:agent-context`, as does an
+entry with no `gradedBy` or no `writes`, a `gradedBy` naming a folder of
+`.claude/skills/` that holds no `SKILL.md`, a `surface` that is empty, leaves
+the repository or sits beside `writes: false`, any other key (a misspelled
+`surface` would leave an agent unguarded), and an entry whose agent is gone.
+Whether the named skill is the right grader, and whether `writes` and
+`surface` are the right ones, is review's to judge, and no runner yet runs a
+skill's evals with the agent as the executor.
+
+### 3f. The agent write guard
+
+A Claude Code hook that asks the human before anyone, the main session
+included, edits a rule file, and refuses a read-only agent's writes. It backs
+the LAW "A rule is not edited to fit the work" (`AGENTS.md`), which review alone
+held before (F66). It is written once, for every runtime, and wired per
+runtime:
+
+| Piece                                  | What it is                                                                   |
+| -------------------------------------- | ---------------------------------------------------------------------------- |
+| `.agents/contracts/write-guard.json`   | The policy: the rule-file globs, each with what it guards, and the switch-off variable |
+| `.agents/agent-context.json`           | `writes` and `surface` of each agent (3e)                                    |
+| `scripts/agent-harness/write-guard/`   | The engine, `paths.mjs`, `policy.mjs` and `decide.mjs`, and the Claude Code adapter, `claude-hook.mjs`, each with its test |
+| `.agents/hooks.json`                   | The neutral hook source: name, event, matcher, script, timeout               |
+| `.claude/settings.json`                | Generated from it by `pnpm agent-harness:generate` (3e); never edited by hand |
+
+The rule files are the lint configs and local rules, `commitlint.config.js`,
+`.prettierrc*`, `.prettierignore`, `knip.json`, every `*allowlist*.json`,
+`scripts/verify-*`, `.agents/contracts/**`, `.claude/skills/**`, `AGENTS.md` and
+`template.manifest.json`, plus every file that could switch the guard off
+quietly: `.claude/settings*.json`, `.agents/agent-context.json`,
+`.agents/hooks.json`, the guard's code and the modules it loads
+(`scripts/manifest.mjs`, whose glob reader it uses, and
+`scripts/manifest-owners.mjs`), `.husky/**` and `.github/workflows/**`.
+`package.json` is not one. A glob reads as the manifest's do, with letter case
+ignored, against the path relative to the checkout the file sits in, so a rule
+file of a sibling worktree, or of a clone under the temp dir, is one too.
+
+For Edit, Write and NotebookEdit it decides as follows. "—" prints nothing,
+which leaves the call to the session's own permissions; the guard never
+allows. A deny wins over an ask.
+
+| Target                                        | Read-only agent | Surface agent | Writer, main session or unlisted agent |
+| --------------------------------------------- | --------------- | ------------- | -------------------------------------- |
+| Scratch (the OS temp dir, `$TEMP`, `$TMP`, `$TMPDIR`, `/tmp`) or a sink (`/dev/null`) | — | — | — |
+| Rule file                                     | deny            | ask           | ask                                    |
+| Surface path that is not a rule file          | n/a             | —             | —                                      |
+| Other repository path                         | deny            | deny          | —                                      |
+| Outside the repository, not scratch           | deny            | deny          | —                                      |
+| Guard error                                   | deny            | deny          | ask                                    |
+| `ATL_WRITE_GUARD=off`                         | —               | —             | —                                      |
+
+Claude Code sets `agent_type` inside a subagent, and the main session carries
+none. A read-only agent is `writes: false`, a surface agent has a `surface`,
+and an agent the context does not list is a writer. A subagent whose entry
+cannot be read is refused. A path is read in every spelling: a drive letter,
+Git Bash's `/d/…`, backslashes, mixed case and `..`. Every reason names the rule,
+the file and how to proceed; a rule file cites the LAW. Stdin that is not a JSON
+payload prints nothing, and a hook that crashes, or whose engine fails to load,
+still refuses a subagent and asks the main session.
+
+To switch it off, launch the session with `ATL_WRITE_GUARD=off`, or put
+`"disableAllHooks": true` in `.claude/settings.local.json`. That file is
+git-ignored, and it is where a project's own permissions go: `.claude/settings.json`
+is generated.
+
+- **It runs from the main checkout.** Claude Code runs the hook from
+  `${CLAUDE_PROJECT_DIR}`, so a fix to the guard takes effect only once the main
+  checkout moves to it.
+- **A headless session cannot answer an ask.** Under `claude -p` a rule-file edit
+  is refused, `--dangerously-skip-permissions` included (F66).
+- **A read-only agent writes under the OS temp dir.** Its logs and probes go in a
+  folder from `mktemp -d`.
+- **Live check** (decision 34), 2026-11-20, in a clone under the temp dir with the
+  generated settings: `claude -p` asked to Write `AGENTS.md` was refused with the
+  guard's reason, and asked to Write `docs/write-guard-probe.md` it succeeded.
+
+**Not covered:** Bash and PowerShell, for every actor: a shell command can still
+write a rule file, and the donor's tokenizer comes in a later slice. Codex,
+OpenCode and Copilot run no adapter yet; each gets one after a live test. Nor
+why a rule changed, which review reads.
 
 ---
 
