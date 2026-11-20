@@ -119,6 +119,16 @@ an open migration with the one predicate of `eslint-local-rules/dependency-seam.
 - **THEN** it passes
 - **Test:** `scripts/verify-dependency-seams.test.mjs` › "an allowlist entry whose file still breaks the rule passes"
 
+#### Scenario: a reason that names no F.8 unit, and no reason
+
+- **GIVEN** an allowlist entry under an open migration whose reason does not start with an F.8
+  unit, and then one with no reason, each for a screen that imports `zod`
+- **WHEN** `pnpm verify:dependency-seams` runs over each
+- **THEN** the first passes, and the second fails, naming the entry as malformed and the import as
+  not listed
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "an allowlist entry under an open migration needs no F.8 unit in its reason"
+- **Test:** `scripts/verify-dependency-seams.test.mjs` › "an allowlist entry with no reason is malformed"
+
 #### Scenario: the gate as a process
 
 - **GIVEN** a stale allowlist entry in a scratch tree
