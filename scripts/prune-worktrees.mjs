@@ -3,20 +3,25 @@
 // worktrees:prune — removes the linked worktree of every branch a pull
 // request merged, and that branch, then fast-forwards the main checkout.
 //
-// After `git fetch --prune origin`, the default branch is the one
-// `origin/HEAD` names. A linked worktree is removed only when it is not the
-// main checkout, not the worktree this runs in, not under
-// `.claude/worktrees/` (the Claude app manages those), is not locked, holds
-// no other registered worktree inside it, is on a branch whose upstream
-// reads `[gone]` (the forge deletes a pull request's head branch on merge),
-// has an empty `git status --porcelain --untracked-files=all`, marks no
-// tracked file skip-worktree or assume-unchanged (whose edits `git status`
-// and `git worktree remove` cannot see), holds no ignored file outside what
-// an install, a build or the next session writes again, its HEAD is
-// reachable from the default branch, and a plain `git worktree remove`
-// accepts it. Its branch is then deleted only while its tip is still the
-// commit it was judged at. Every other worktree is kept and printed with the
-// reason. `git status` compares bytes as git does, so a file that differs
+// It starts with `git fetch --prune origin`, stopped after 30 s or the
+// seconds PRUNE_WORKTREES_FETCH_SECONDS names; a fetch stopped there skips
+// the prune and the fast-forward, says so in one line and exits 0. After
+// it, the default branch is the one `origin/HEAD` names. A linked worktree
+// is removed only when it is not the main checkout, not the worktree this
+// runs in, not under `.claude/worktrees/` (the Claude app manages those),
+// is not locked, holds no other registered worktree inside it, is on a
+// branch whose upstream reads `[gone]` (the forge deletes a pull request's
+// head branch on merge), has an empty `git status --porcelain
+// --untracked-files=all`, marks no tracked file skip-worktree or
+// assume-unchanged (whose edits `git status` and `git worktree remove`
+// cannot see), holds no ignored file outside what an install, a build or
+// the next session writes again (an `.atl/` that holds only the two files
+// of the skill registry included), its HEAD is reachable from the default
+// branch, those reads inside it still pass when they run again just before
+// its removal, and a plain `git worktree remove` accepts it. Its branch is
+// then deleted only while its tip is still the commit it was judged at.
+// Every other worktree is kept and printed with the reason. `git status`
+// compares bytes as git does, so a file that differs
 // only in its line endings, where git counts that as a change, is a local
 // change and keeps its worktree.
 //
@@ -29,7 +34,12 @@
 // far behind it is and why. The fast-forward fires the main checkout's own
 // post-merge, so it runs with NESTED_RUN_VARIABLE set, and a run that finds
 // it set exits at once. `--dry-run` prints the same decisions and removes
-// or moves nothing, then what it does not cover; `--quiet` prints the
+// or moves nothing, then what it does not cover; it predicts git's refusal
+// to fast-forward from an ancestry check and a dry run of the checkout
+// (`git read-tree -m -u --dry-run`) against a refreshed copy of the index,
+// so it names a local commit or an untracked file the fast-forward would
+// overwrite, never a file whose timestamp alone changed, and takes no lock
+// in the main checkout. `--quiet` prints the
 // removals, the main checkout's line and the summary line only.
 //
 // `.husky/post-merge` runs it with `--quiet` after a local merge or pull.
@@ -39,8 +49,13 @@
 // Not covered (NOT_COVERED, the last line of a dry run): a dry run still
 // runs `git fetch --prune origin`, which it needs to read a `[gone]`
 // upstream; on Windows, a worktree another process holds as its current
-// directory is emptied and unregistered while its directory stays; and the
-// prune runs in the foreground, so the merge that started it waits for it.
+// directory is emptied and unregistered while its directory stays; the
+// prune runs in the foreground, so the merge that started it waits for it,
+// for its fetch up to the bound; on Windows a fetch stopped at the bound
+// ends without git's own cleanup, so a remote helper it started, as for
+// https, runs on until its connection ends; and an ignored file written in
+// the moment between the check just before a removal and git's own removal
+// goes with the worktree.
 //
 // Usage:
 //   node scripts/prune-worktrees.mjs
@@ -49,16 +64,28 @@
 // ---------------------------------------------------------------------------
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, rmSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import {
+  copyFileSync,
+  existsSync,
+  lstatSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { gitFreeEnv } from './git-free-env.mjs'
 import {
+  AGENT_TOOLING_DIR,
   BRANCH_PREFIX,
   defaultBranchOf,
+  DIVERGED,
+  failureLine,
+  fetchSecondsFrom,
   hiddenOf,
-  LABEL,
+  isSkillRegistry,
   listDetail,
   LOCAL_CHANGES,
   localChangesOf,
@@ -72,6 +99,7 @@ import {
   REMOTE,
   reportLines,
   samePath,
+  skippedLines,
   statusOf,
   structuralReason,
   UPSTREAM_FORMAT
@@ -82,29 +110,59 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const REMOTE_HEAD = `refs/remotes/${REMOTE}/HEAD`
 // 64 MiB of git output.
 const GIT_OUTPUT_BYTES = 67_108_864
+const MS_PER_SECOND = 1000
+// The code Node gives a child it stopped at its timeout.
+const TIMED_OUT = 'ETIMEDOUT'
+// `git merge-base --is-ancestor` exits 1 when the first commit is not an
+// ancestor of the second; any other failure is an error.
+const NOT_ANCESTOR = 1
+// The index a dry run copies, and the scratch directory that holds the copy.
+const INDEX_FILE = 'index'
+const INDEX_COPY_PREFIX = 'prune-worktrees-index-'
 
 // One git command run in `cwd` without the GIT_* variables a hook exports,
 // which would otherwise point it at the hook's repository, and with
 // NESTED_RUN_VARIABLE set for any hook it fires. Its output, trimmed; a
 // failure throws git's own message, its stderr kept on the error.
 // `trim: false` keeps the output whole, the leading space of a porcelain
-// status line included.
-const git = ({ args, cwd, trim = true }) => {
+// status line included. A git still running after `timeout` milliseconds is
+// stopped, and its error reads `timedOut`; a git that exits non-zero leaves
+// its exit code on the error as `status`. `env` adds variables after the
+// GIT_* ones are dropped, as GIT_INDEX_FILE for a copy of the index.
+const git = ({ args, cwd, env = {}, timeout, trim = true }) => {
   try {
     const output = execFileSync('git', args, {
       cwd,
       encoding: 'utf8',
-      env: { ...gitFreeEnv(), [NESTED_RUN_VARIABLE]: '1' },
+      env: { ...gitFreeEnv(), ...env, [NESTED_RUN_VARIABLE]: '1' },
       maxBuffer: GIT_OUTPUT_BYTES,
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout
     })
     return trim ? output.trim() : output
   } catch (error) {
     const stderr = String(error.stderr || error.message).trim()
     throw Object.assign(
       new Error(`git ${args.join(' ')} failed in ${cwd}: ${stderr}`),
-      { stderr }
+      { status: error.status, stderr, timedOut: error.code === TIMED_OUT }
     )
+  }
+}
+
+// `git fetch --prune origin`, stopped after `seconds`, rounded up to the
+// whole milliseconds Node takes: true when it finished, false when it was
+// stopped. A fetch git fails throws.
+const fetchOrigin = ({ root, seconds }) => {
+  try {
+    git({
+      args: ['fetch', '--quiet', '--prune', REMOTE],
+      cwd: root,
+      timeout: Math.ceil(seconds * MS_PER_SECOND)
+    })
+    return true
+  } catch (error) {
+    if (error.timedOut) return false
+    throw error
   }
 }
 
@@ -159,8 +217,27 @@ const readMerged = ({ defaultBranch, root }) =>
     })
   })
 
-const readStatus = ({ worktree }) =>
-  statusOf({
+// What an ignored entry under `.atl/` holds on disk, for isSkillRegistry:
+// the children of `.atl/` when the entry is the directory itself, else the
+// one path it names, each by name and whether it is a regular file, which a
+// link is not.
+const agentToolingItems = ({ entry, worktree }) => {
+  const name = entry.slice(AGENT_TOOLING_DIR.length)
+  const path = join(worktree.path, entry)
+  if (name === '') {
+    return readdirSync(path, { withFileTypes: true }).map((child) => ({
+      file: child.isFile(),
+      name: child.name
+    }))
+  }
+  return [{ file: lstatSync(path).isFile(), name }]
+}
+
+// The worktree's `git status`: whether anything is modified or untracked,
+// and each ignored path nothing writes again, an `.atl/` that holds only
+// the skill registry left out. A read that fails throws.
+const readStatus = ({ worktree }) => {
+  const { dirty, unrebuilt } = statusOf({
     porcelain: git({
       args: [
         '--no-optional-locks',
@@ -173,6 +250,15 @@ const readStatus = ({ worktree }) =>
       cwd: worktree.path
     })
   })
+  return {
+    dirty,
+    unrebuilt: unrebuilt.filter(
+      (entry) =>
+        !entry.startsWith(AGENT_TOOLING_DIR) ||
+        !isSkillRegistry({ items: agentToolingItems({ entry, worktree }) })
+    )
+  }
+}
 
 const readHidden = ({ worktree }) =>
   hiddenOf({
@@ -212,27 +298,36 @@ const decide = ({
   if (!merged.has(worktree.branch)) {
     return { ...judged, kept: REASON.NOT_IN_DEFAULT }
   }
+  return contentReason({ worktree: judged })
+}
+
+// What `git status` and `git ls-files` read inside a worktree: the reason
+// it is kept, a modified or untracked file, a tracked file `git status`
+// cannot see or an ignored file nothing writes again, or `kept: null`. A
+// read git fails keeps it. Both the decision and the check just before the
+// removal run it.
+const contentReason = ({ worktree }) => {
   try {
     const { dirty, unrebuilt } = readStatus({ worktree })
-    if (dirty) return { ...judged, kept: REASON.DIRTY }
+    if (dirty) return { ...worktree, kept: REASON.DIRTY }
     const hidden = readHidden({ worktree })
     if (hidden.length > 0) {
       return {
-        ...judged,
+        ...worktree,
         detail: listDetail({ entries: hidden }),
         kept: REASON.HIDDEN
       }
     }
     if (unrebuilt.length > 0) {
       return {
-        ...judged,
+        ...worktree,
         detail: listDetail({ entries: unrebuilt }),
         kept: REASON.IGNORED
       }
     }
-    return { ...judged, kept: null }
+    return { ...worktree, kept: null }
   } catch (error) {
-    return { ...judged, detail: error.message, kept: REASON.UNREADABLE }
+    return { ...worktree, detail: error.message, kept: REASON.UNREADABLE }
   }
 }
 
@@ -302,6 +397,16 @@ export const removeWorktree = ({ root, worktree }) => {
   return { ...worktree, kept: null, leftover }
 }
 
+// A worktree judged removable, read again just before it goes, since the
+// pruner works through the others between its decision and this removal:
+// one that gained a change in the meantime, an ignored file nothing writes
+// again included, is kept with that reason, and the rest is removed as
+// `removeWorktree` removes it.
+export const removeIfStillClean = ({ root, worktree }) => {
+  const again = contentReason({ worktree })
+  return again.kept ? again : removeWorktree({ root, worktree })
+}
+
 // Every tracked path with a local change in `root`, staged or not, a
 // line-ending-only one included; untracked files are left to git.
 const readLocalChanges = ({ root }) =>
@@ -319,12 +424,75 @@ const readLocalChanges = ({ root }) =>
     })
   })
 
+// Whether HEAD in `root` is an ancestor of `ref`, the one shape git can
+// fast-forward. A failure other than "not an ancestor" throws.
+const isAncestor = ({ ref, root }) => {
+  try {
+    git({ args: ['merge-base', '--is-ancestor', 'HEAD', ref], cwd: root })
+    return true
+  } catch (error) {
+    if (error.status === NOT_ANCESTOR) return false
+    throw error
+  }
+}
+
+// A dry run of the two-tree checkout a fast-forward to `ref` makes (`git
+// read-tree -m -u --dry-run`), which checks the untracked files it would
+// overwrite or lose and writes no file, run against a copy of the main
+// checkout's index in a scratch directory. `git merge --ff-only` refreshes
+// the index's stat data before that check, so the copy is refreshed first
+// (`git update-index -q --refresh`), and a file whose timestamp alone
+// changed is not a refusal; neither the checkout's index nor its
+// `index.lock` is touched. The scratch directory goes whatever happens; a
+// refusal or a failure throws.
+const dryCheckout = ({ ref, root }) => {
+  const scratch = mkdtempSync(join(tmpdir(), INDEX_COPY_PREFIX))
+  try {
+    const copy = join(scratch, INDEX_FILE)
+    copyFileSync(
+      git({
+        args: [
+          'rev-parse',
+          '--path-format=absolute',
+          '--git-path',
+          INDEX_FILE
+        ],
+        cwd: root
+      }),
+      copy
+    )
+    const env = { GIT_INDEX_FILE: copy }
+    git({ args: ['update-index', '-q', '--refresh'], cwd: root, env })
+    git({
+      args: ['read-tree', '-m', '-u', '--dry-run', 'HEAD', ref],
+      cwd: root,
+      env
+    })
+  } finally {
+    rmSync(scratch, { force: true, recursive: true })
+  }
+}
+
+// Why git would refuse to fast-forward the main checkout to `ref`, read
+// without moving it, or undefined when it would go ahead: DIVERGED when
+// HEAD is not an ancestor of `ref`, else what the dry checkout refuses, in
+// git's words.
+const predictedRefusal = ({ ref, root }) => {
+  if (!isAncestor({ ref, root })) return DIVERGED
+  try {
+    dryCheckout({ ref, root })
+    return undefined
+  } catch (error) {
+    return refusalOf({ error })
+  }
+}
+
 // The main checkout brought to the default branch when it sits on it, by a
 // fast-forward. Any tracked local change blocks it before git is asked, a
 // dry run included, and git refuses whatever else would be lost, a local
-// commit or an untracked file it would overwrite. A main checkout on
-// another branch is not moved, and one already at the default branch reads
-// `behind: 0`.
+// commit or an untracked file it would overwrite; a dry run predicts that
+// refusal without moving anything. A main checkout on another branch is not
+// moved, and one already at the default branch reads `behind: 0`.
 const forwardMain = ({ defaultBranch, dryRun, root, worktree }) => {
   const at = { path: worktree.path, ref: defaultBranch.ref }
   if (worktree.branch !== defaultBranch.branch) {
@@ -351,7 +519,12 @@ const forwardMain = ({ defaultBranch, dryRun, root, worktree }) => {
       moved: false
     }
   }
-  if (dryRun) return { ...at, behind, moved: false }
+  if (dryRun) {
+    const refusal = predictedRefusal({ ref: defaultBranch.ref, root })
+    return refusal === undefined
+      ? { ...at, behind, moved: false }
+      : { ...at, behind, detail: refusal, moved: false }
+  }
   try {
     git({
       args: ['merge', '--ff-only', '--quiet', defaultBranch.ref],
@@ -365,15 +538,19 @@ const forwardMain = ({ defaultBranch, dryRun, root, worktree }) => {
 
 // Every worktree of the repository `cwd` belongs to, each with the reason it
 // is kept (`kept: null` for one removed), and what became of the main
-// checkout, which is moved last, after every removal. A fetch, a default
-// branch or a list git cannot read throws before anything is removed.
-const pruneWorktrees = ({ cwd, dryRun }) => {
+// checkout, which is moved last, after every removal; or `timedOut` when the
+// fetch outlasted `fetchSeconds`, before anything was judged. A fetch, a
+// default branch or a list git cannot read throws before anything is
+// removed; a step that fails after the decisions returns its `error` with
+// the results gathered before it, every removal made included.
+const pruneWorktrees = ({ cwd, dryRun, fetchSeconds }) => {
   const current = samePath({
     path: git({ args: ['rev-parse', '--show-toplevel'], cwd })
   })
   const worktrees = listWorktrees({ root: current })
   const root = worktrees[0].path
-  git({ args: ['fetch', '--quiet', '--prune', REMOTE], cwd: root })
+  if (!fetchOrigin({ root, seconds: fetchSeconds }))
+    return { timedOut: true }
   const defaultBranch = readDefaultBranch({ root })
   const upstreams = readUpstreams({ root })
   const merged = readMerged({ defaultBranch, root })
@@ -391,39 +568,69 @@ const pruneWorktrees = ({ cwd, dryRun }) => {
       worktree
     })
   )
-  const results = dryRun
-    ? decided
-    : decided.map((one) =>
-        one.kept ? one : removeWorktree({ root, worktree: one })
+  // Each result is kept as it comes, so a step that fails after a removal,
+  // the main checkout's included, returns with what was removed before it.
+  const results = []
+  try {
+    decided.forEach((one) =>
+      results.push(
+        dryRun || one.kept
+          ? one
+          : removeIfStillClean({ root, worktree: one })
       )
-  if (!dryRun) git({ args: ['worktree', 'prune'], cwd: root })
-  return {
-    main: forwardMain({
-      defaultBranch,
-      dryRun,
-      root,
-      worktree: worktrees[0]
-    }),
-    results
+    )
+    if (!dryRun) git({ args: ['worktree', 'prune'], cwd: root })
+    return {
+      main: forwardMain({
+        defaultBranch,
+        dryRun,
+        root,
+        worktree: worktrees[0]
+      }),
+      results
+    }
+  } catch (error) {
+    return { error, results }
   }
 }
 
-// A read that fails prints the reason and exits 1, having removed nothing.
-// A run a prune started, through the post-merge its fast-forward fires,
-// does nothing and prints nothing.
+// A read that fails before anything is removed prints the reason and exits
+// 1, saying nothing was removed; a step that fails after a removal prints
+// the report of what was done, then the reason and how many worktrees were
+// removed before it, and exits 1. A fetch that outlasts its bound prints why
+// it skipped and exits 0. A run a prune started, through the post-merge its
+// fast-forward fires, does nothing and prints nothing.
 const main = () => {
   if (process.env[NESTED_RUN_VARIABLE]) return
   try {
     const { dryRun, quiet } = optionsFrom({ argv: process.argv })
-    const { main: mainCheckout, results } = pruneWorktrees({
+    const fetchSeconds = fetchSecondsFrom({ env: process.env })
+    const outcome = pruneWorktrees({
       cwd: process.cwd(),
-      dryRun
+      dryRun,
+      fetchSeconds
     })
-    reportLines({ dryRun, main: mainCheckout, quiet, results }).forEach(
-      (line) => console.log(line)
-    )
+    const lines = outcome.timedOut
+      ? skippedLines({ dryRun, seconds: fetchSeconds })
+      : reportLines({
+          dryRun,
+          main: outcome.main,
+          quiet,
+          results: outcome.results
+        })
+    lines.forEach((line) => console.log(line))
+    if (outcome.error) {
+      console.error(
+        failureLine({
+          dryRun,
+          message: outcome.error.message,
+          results: outcome.results
+        })
+      )
+      process.exitCode = 1
+    }
   } catch (error) {
-    console.error(`${LABEL}: ${error.message} — nothing was removed.`)
+    console.error(failureLine({ message: error.message }))
     process.exitCode = 1
   }
 }
