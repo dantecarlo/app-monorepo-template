@@ -185,6 +185,42 @@ for (const [name, hooks] of [
   })
 }
 
+test('a PreToolUse hook with no matcher is refused as missing it, in the words it always used', () => {
+  for (const [hook, message] of [
+    [{ ...HOOK, matcher: undefined }, `${HOOKS_SOURCE} hooks[0]: missing matcher`],
+    [
+      { ...HOOK, matcher: undefined, name: undefined },
+      `${HOOKS_SOURCE} hooks[0]: missing matcher, name`
+    ]
+  ]) {
+    inScratch({
+      files: { [HOOKS_SOURCE]: sourceText({ hooks: [hook] }) },
+      use: ({ root }) => {
+        assert.throws(() => readHookSource({ root }), { message })
+      }
+    })
+  }
+})
+
+test('a SessionStart hook may leave its matcher out, and nothing else', () => {
+  inScratch({
+    files: { [HOOKS_SOURCE]: sourceText({ hooks: [REAPER] }) },
+    use: ({ root }) => {
+      assert.deepEqual(readHookSource({ root }), [REAPER])
+    }
+  })
+  inScratch({
+    files: {
+      [HOOKS_SOURCE]: sourceText({ hooks: [{ ...REAPER, name: undefined }] })
+    },
+    use: ({ root }) => {
+      assert.throws(() => readHookSource({ root }), {
+        message: `${HOOKS_SOURCE} hooks[0]: missing name`
+      })
+    }
+  })
+})
+
 test('a hook source that does not parse is refused, naming the file', () => {
   inScratch({
     files: { [HOOKS_SOURCE]: '{ "hooks": ' },

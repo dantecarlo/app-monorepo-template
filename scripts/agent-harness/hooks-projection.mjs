@@ -26,12 +26,11 @@ const SETTINGS_SCHEMA =
   'https://json.schemastore.org/claude-code-settings.json'
 const JSON_INDENT = 2
 
-// The schema is CLOSED, as the agent sources' is: these keys and no other,
-// each required but the matcher, which only the events of MATCHED need.
+// The schema is CLOSED, as the agent sources' is: exactly these keys, each
+// required, but the events of MATCHER_OPTIONAL may leave the matcher out.
 const HOOK_KEYS = ['event', 'matcher', 'name', 'script', 'timeout']
-const REQUIRED_KEYS = ['event', 'name', 'script', 'timeout']
 const EVENTS = ['PreToolUse', 'SessionStart']
-const MATCHED = ['PreToolUse']
+const MATCHER_OPTIONAL = ['SessionStart']
 const NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u
 // A repository-relative script under scripts/, with nothing a quoted shell
 // argument would end on and no `..` segment.
@@ -45,20 +44,23 @@ const problemOf = ({ hook }) => {
   const keys = Object.keys(hook).sort()
   const unknown = keys.filter((key) => !HOOK_KEYS.includes(key))
   if (unknown.length > 0) return `unknown key ${unknown.join(', ')}`
-  const missing = REQUIRED_KEYS.filter((key) => hook[key] === undefined)
+  const matcherOptional = MATCHER_OPTIONAL.includes(hook.event)
+  const missing = HOOK_KEYS.filter(
+    (key) =>
+      hook[key] === undefined && !(key === 'matcher' && matcherOptional)
+  )
   if (missing.length > 0) return `missing ${missing.join(', ')}`
   if (!NAME.test(hook.name)) return `name ${hook.name} is not kebab-case`
   if (!EVENTS.includes(hook.event)) {
     return `event ${hook.event} is not one of ${EVENTS.join(', ')}`
   }
-  const needsMatcher = MATCHED.includes(hook.event)
   if (
-    (needsMatcher || hook.matcher !== undefined) &&
+    hook.matcher !== undefined &&
     (typeof hook.matcher !== 'string' || hook.matcher.trim() === '')
   ) {
-    return needsMatcher
-      ? 'matcher must name the tools it runs on'
-      : 'a matcher, when given, must not be blank'
+    return matcherOptional
+      ? 'a matcher, when given, must not be blank'
+      : 'matcher must name the tools it runs on'
   }
   if (
     typeof hook.script !== 'string' ||
