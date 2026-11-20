@@ -449,7 +449,10 @@ test('END TO END: the hook never prints allow', () => {
       filePath: join(tmpdir(), 'write-guard-probe.log')
     })
   ].map((input) => rawHookOutput({ input }))
-  assert.ok(printed.some((output) => output !== ''), 'no verdict printed')
+  assert.ok(
+    printed.some((output) => output !== ''),
+    'no verdict printed'
+  )
   assert.deepEqual(
     printed.filter((output) => output.includes('"allow"')),
     []
