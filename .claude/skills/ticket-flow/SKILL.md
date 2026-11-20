@@ -93,7 +93,7 @@ The project layer maps its own state names onto these.
 | In dev | Dev picks it up, or picks it up again after Changes requested | none | `ticket:in-dev` |
 | Ready for QA | Dev: build and tests done | Architect, then the architect tells the area's QA: `<id> ready for QA, branch <b>` | `ticket:ready-for-qa` |
 | In QA | QA picks it up | none | `ticket:in-qa` |
-| Changes requested | QA, with a comment: from In QA, or from Ready to merge on a red CI or a conflict when it brings the branch current | Architect, then the architect tells the dev session: `<id> changes requested` | `ticket:changes-requested` |
+| Changes requested | QA, with a comment, from In QA; or the architect, with a comment, from Ready to merge on a red CI or a conflict when it brings the branch current | Architect, then the architect tells the dev session: `<id> changes requested`; after its own move, the architect tells the dev session directly | `ticket:changes-requested` |
 | Ready to merge | QA: checks passed and § Ready to merge met; QA asks no one and merges nothing | Architect: `<id> ready to merge, PR #<n>`, and the architect queues it; for a hotfix into the production branch, `<id> ready to merge, hotfix` | `ticket:ready-to-merge` |
 | Done | Architect: merges it from its merge queue, on the owner's word or under the `low-risk` policy (rule 4); for a hotfix, CI/CD merges it into the production branch as its release's deploy step | QA and the dev session: `<id> merged`, sent by the architect; for a hotfix, CI/CD tells the architect, and the architect tells them | `ticket:done` |
 | Closed | Architect: after Done when the project declares no deploy target, or once the release that lists the ticket is Released | PO: `<id> closed`; the architect records it in the general plan's closed ticket catalog | `ticket:closed` |
@@ -145,7 +145,10 @@ Every "ready" state reaches the next session through the architect: dev tells th
 architect tells QA; QA tells the architect, the architect tells dev or the CI/CD session. The
 architect also sets the merge order and keeps the merge queue: it asks the owner for each merge,
 in its own session (rule 6), or merges without asking under the `low-risk` policy (rule 4), one
-pull request at a time (`refine-ticket` § Merge queue). It groups Done tickets into releases,
+pull request at a time (`refine-ticket` § Merge queue). QA brings a pull request current once,
+before Ready to merge; the architect brings it current every later time, from a spare worktree of
+its own, so QA and the dev session stay free, and a code conflict goes back to the dev session.
+It groups Done tickets into releases,
 closes and drops tickets, and records each closed or dropped ticket in the general plan's closed
 ticket catalog, in a pull request of its own that it queues, keeps current and merges like the
 others. QA asks the owner nothing and merges nothing. The one merge that is not the
@@ -164,10 +167,9 @@ needs it, the branch. It carries no requirement, decision or file list: those li
 | `<id> new` | PO to architect |
 | `<id> ready for dev` | architect to the dev session |
 | `<id> ready for QA, branch <b>` | dev to architect, then architect to the area's QA |
-| `<id> changes requested` | QA to architect, then architect to the dev session |
+| `<id> changes requested` | QA to architect, then architect to the dev session; or architect to the dev session, on a conflict or a red CI met while bringing the branch current |
 | `<id> ready to merge, PR #<n>` | QA to architect: Ready to merge into the default branch, for the merge queue |
 | `<id> ready to merge, hotfix` | QA to architect: a hotfix at Ready to merge into the production branch, left there for its release |
-| `<id> bring current` | architect to the ticket's QA: a pull request of the merge queue that a merge left behind its base, or whose CI must run again |
 | `<id> merged` | architect to the ticket's QA and dev sessions; for a hotfix, CI/CD to architect, then architect to them |
 | `<id> closed` | architect to PO |
 | `<id> dropped` | PO to architect, the drop record on the ticket (§ Dropped); then architect to the ticket's dev and QA sessions, once it is in Dropped |
@@ -194,9 +196,9 @@ session may fill a dev role; exactly one QA session fills each dev area's QA rol
 | Role | Responsibility | Skill |
 | --- | --- | --- |
 | PO | Turns a client requirement into a ticket, quoting the client verbatim; owns scope, and every change of scope goes through it, a drop included; keeps the scope and the board, and does no repository work | `po-ticket` |
-| Architect | Refines a ticket into specs and a technical plan (areas, subtasks, reserved files, dependencies); dispatches every transition; sets the merge order, keeps the merge queue and merges one pull request at a time, on the owner's word or under the `low-risk` policy; groups releases; closes and drops tickets, and records each in the general plan's closed ticket catalog, never an open one; creates technical tickets | `refine-ticket` |
+| Architect | Refines a ticket into specs and a technical plan (areas, subtasks, reserved files, dependencies); dispatches every transition; sets the merge order, keeps the merge queue, brings its pull requests current after QA, and merges one pull request at a time, on the owner's word or under the `low-risk` policy; groups releases; closes and drops tickets, and records each in the general plan's closed ticket catalog, never an open one; creates technical tickets | `refine-ticket` |
 | Dev | One or more sessions per area (App, Web, Backend): builds a ticket in its own worktree and branch, test first | `dev-ticket` |
-| QA | One per area, Backend included: checks out the branch, runs the area's end-to-end checks with evidence, returns the ticket or brings it to Ready to merge and hands it to the architect, brings it current again when the architect asks; merges nothing; checks a release on staging | `qa-ticket` |
+| QA | One per area, Backend included: checks out the branch, runs the area's end-to-end checks with evidence, returns the ticket or brings it current once, to Ready to merge, and hands it to the architect, which brings it current from then on; merges nothing; checks a release on staging | `qa-ticket` |
 | CI/CD | One session runs every deploy target, a hotfix's merge into the production branch included, and never decides whether to release: the owner's word does, per release and per irreversible step | `release-ticket` |
 | Independent area | Such as Marketing: works its own tickets without a PO unless the client asks, reviews its own work, gets the owner's sign-off, and joins the full flow only when it touches the product | none |
 
@@ -336,18 +338,20 @@ QA moves a ticket to Ready to merge only when all three hold:
 1. the pull request's CI is green;
 2. it has no conflict with its base branch: the default branch, or the production branch the
    layer names for a hotfix;
-3. its branch contains the base branch's current tip. QA brings it current by merging the base
-   into it (never a rebase, which could not be pushed unforced), pushes, re-runs the checks, and
-   only then messages the architect `<id> ready to merge, PR #<n>`; a hotfix it leaves there for
-   its release, with `<id> ready to merge, hotfix`. A pull request that was conflict-free and
+3. its branch contains the base branch's current tip. QA brings it current once, by merging the
+   base into it (never a rebase, which could not be pushed unforced), pushes, re-runs the checks,
+   and only then messages the architect `<id> ready to merge, PR #<n>`; a hotfix it leaves there
+   for its release, with `<id> ready to merge, hotfix`. A pull request that was conflict-free and
    green but behind its base has turned a downstream project's default branch red.
 
 **Merges are serialized**, one at a time, in the architect's merge queue (`refine-ticket`
 § Merge queue), in the order the architect records on the tickets, under every merge policy. The
 architect asks the owner, or merges under `low-risk`, only for the pull request at the head of
-the queue, and only while all three conditions hold. After each merge it messages the QA of the
-next one `<id> bring current`: QA brings that branch current and re-checks it before the
-architect asks for it or merges it.
+the queue, and only while all three conditions hold. After each merge it brings the next one
+current itself, from a spare worktree of its own, detached, never QA's or the dev's: it merges
+the base into the branch, pushes it unforced in the background, and asks for it or merges it
+only once its gate passes (`refine-ticket` § Merge queue). QA's one bring-current is the one
+before Ready to merge; QA and the dev session are asked for no later one.
 
 The architect's closed ticket catalog pull request (`refine-ticket` § Record the closed tickets)
 joins the same queue, under the same merge policy. It carries no ticket of its own and no QA holds
@@ -356,7 +360,8 @@ before it asks the owner for it or merges it, it checks each row it adds against
 (`refine-ticket` § Merge queue).
 
 A red CI or a conflict after Ready to merge sends the ticket back to Changes requested, with a
-comment: QA moves it, when it brings the branch current.
+comment: the architect moves it, when it brings the branch current, and messages the dev session
+`<id> changes requested`, since a code conflict goes back to the dev session.
 
 ---
 
