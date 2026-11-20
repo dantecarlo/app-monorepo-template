@@ -86,19 +86,29 @@ and keep both in step with every later auth state change until unmount.
 ### Requirement: MOBILE-75 — The auth gateway is built in lib/supabase
 
 The mobile app SHALL build the Supabase auth gateway in `src/lib/supabase/authGateway.adapter.ts`,
-over the very client `src/lib/supabase/client.adapter.ts` creates, and list it in the `supabase`
-region of `src/lib/auth/authGateway.adapter.ts` (MOBILE-83); only the `*.adapter.ts` files of
+over the very client `src/lib/supabase/client.adapter.ts` creates, or, without
+`EXPO_PUBLIC_SUPABASE_URL` or `EXPO_PUBLIC_SUPABASE_ANON_KEY`, the no-op gateway of `src/lib/auth/`,
+whose sign-in rejects naming both settings; it SHALL list that gateway in the `supabase` region of
+`src/lib/auth/authGateway.adapter.ts` (MOBILE-83); only the `*.adapter.ts` files of
 `src/lib/supabase/` SHALL import `@app/supabase`, tests included.
 
 **Evidence:** written at archive, from the code.
 
 #### Scenario: the gateway over the app's client
 
-- **GIVEN** the app's Supabase client
+- **GIVEN** the app's Supabase client, with both public Supabase settings
 - **WHEN** the auth gateway module loads
 - **THEN** one Supabase auth gateway is created over that same client, and it is the gateway the
   module exports
 - **Test:** `apps/mobile/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "builds the auth gateway over the client the client adapter creates"
+
+#### Scenario: the Supabase settings are missing
+
+- **GIVEN** no `EXPO_PUBLIC_SUPABASE_URL` and no `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- **WHEN** the auth gateway module loads and a sign-in is attempted through it
+- **THEN** no Supabase gateway is created, and the sign-in rejects with an error naming both
+  settings
+- **Test:** `apps/mobile/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "names the Supabase settings in the rejection of a sign-in without them"
 
 #### Scenario: a file outside lib/supabase imports the package
 

@@ -19,6 +19,7 @@ Each test below ran green at `facfde2` or `d10a9dc`, which changes only the glob
 | WEB-85 | the Supabase gateway is listed | `apps/web/src/lib/auth/__tests__/authGateway.adapter.test.ts` › "serves the gateway the supabase capability builds" | green |
 | WEB-85 | every failure has its message | `apps/web/src/lib/auth/__tests__/authGateway.constant.test.ts` › "names a message every catalog holds for each sign-in failure" | green |
 | WEB-20 | the Supabase settings are missing | `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "returns a no-op gateway without the Supabase settings" | green |
+| WEB-20 | the rejection names the missing settings | `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "names the Supabase settings in the cause of a sign-in without them" | green |
 | WEB-20 | the Supabase settings are present | `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "creates one Supabase auth gateway per browser with the settings" | green |
 | WEB-46 | the Supabase settings are missing | `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "rejects a sign-in with the not-configured failure without the Supabase settings" | green |
 | WEB-46 | Supabase names the failure | `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "names the failure of each Supabase Auth code a sign-in rejects with" | green |
@@ -30,6 +31,7 @@ Each test below ran green at `facfde2` or `d10a9dc`, which changes only the glob
 | MOBILE-83 | the root layout renders | `apps/mobile/src/app/__tests__/layout.route.test.tsx` › "hands the auth provider the gateway lib/auth serves" | green |
 | MOBILE-29 | before the gateway answers | `apps/mobile/src/stores/__tests__/auth.store.test.ts` › "starts in loading status with no session" | green |
 | MOBILE-29 | the provider starts the bootstrap | `apps/mobile/src/components/AuthProvider/__tests__/AuthProvider.component.test.tsx` › "calls getSession on mount via bootstrap" | green |
+| MOBILE-75 | the Supabase settings are missing | `apps/mobile/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "names the Supabase settings in the rejection of a sign-in without them" | green |
 | MOBILE-75 | the gateway over the app's client | `apps/mobile/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "builds the auth gateway over the client the client adapter creates" | green |
 | I18N-11 | a rejected sign-in reaches the user | `apps/web/src/lib/auth/__tests__/authGateway.constant.test.ts` › "names a message every catalog holds for each sign-in failure" | green |
 | TOKENS-12 | a themed colour is resolved | `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset reads every themed colour from its --c- variable, declared in both themes" | green |

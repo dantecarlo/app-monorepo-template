@@ -667,8 +667,8 @@ unsubscribe from those changes on unmount.
 The web app SHALL serve, from the Supabase part of its auth gateway (WEB-85), the no-op gateway
 during server rendering and in a browser where `NEXT_PUBLIC_SUPABASE_URL` or
 `NEXT_PUBLIC_SUPABASE_ANON_KEY` is unset, so the session resolves to none and a sign-in rejects
-with the not-configured failure (WEB-46); otherwise one Supabase auth gateway per browser, whose
-sign-in names its failures (WEB-46).
+with the not-configured failure (WEB-46), whose cause names both settings; otherwise one Supabase
+auth gateway per browser, whose sign-in names its failures (WEB-46).
 
 
 **Evidence:** `apps/web/src/lib/supabase/authGateway.adapter.ts:78-99`, `apps/web/src/lib/auth/authGateway.adapter.ts:11-23`, `apps/web/src/app/AuthProviders.tsx:22`
@@ -679,6 +679,14 @@ sign-in names its failures (WEB-46).
 - **WHEN** the gateway is requested
 - **THEN** its session resolves to none, its sign-in rejects, and no Supabase gateway is created
 - **Test:** `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "returns a no-op gateway without the Supabase settings"
+
+#### Scenario: the rejection names the missing settings
+
+- **GIVEN** a browser with no Supabase URL or anon key
+- **WHEN** a sign-in is attempted through the gateway
+- **THEN** the cause of its rejection names `NEXT_PUBLIC_SUPABASE_URL` and
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- **Test:** `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "names the Supabase settings in the cause of a sign-in without them"
 
 #### Scenario: the Supabase settings are present
 

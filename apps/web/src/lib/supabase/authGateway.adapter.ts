@@ -13,20 +13,11 @@ import {
 } from '@/lib/auth/noopAuthGateway.helper'
 import {
   SIGN_IN_FAILURE_BY_SUPABASE_CODE,
+  SUPABASE_NOT_CONFIGURED_MESSAGE,
   SUPABASE_UNREACHABLE_ERROR_NAME
 } from '@/lib/supabase/authGateway.constant'
 import { getSupabaseClient } from '@/lib/supabase/client.adapter'
 
-/**
- * The Supabase part of the browser's auth gateway, which the gateway of
- * src/lib/auth/ lists in its supabase region, so the auth provider and the
- * auth service see one session.
- *
- * During server rendering, or without NEXT_PUBLIC_SUPABASE_URL and
- * NEXT_PUBLIC_SUPABASE_ANON_KEY, it is a no-op gateway: no session, and a
- * sign-in rejects with the not-configured failure. Otherwise one Supabase
- * auth gateway per browser, whose sign-in names the failures it knows.
- */
 // The Supabase Auth error code of a rejection, which supabase-js puts on the
 // error's `code`; an empty string when it has none.
 const readSupabaseCode = ({ error }: { error: unknown }): string =>
@@ -75,7 +66,9 @@ const withNamedSignInFailures = ({
   }
 })
 
-const NOOP_GATEWAY: IAuthGateway = createNoopAuthGateway()
+const NOOP_GATEWAY: IAuthGateway = createNoopAuthGateway({
+  message: SUPABASE_NOT_CONFIGURED_MESSAGE
+})
 
 let browserGateway: IAuthGateway | undefined
 
@@ -86,6 +79,16 @@ const hasSupabaseSettings = (): boolean =>
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   )
 
+/**
+ * The Supabase part of the browser's auth gateway, which the gateway of
+ * src/lib/auth/ lists in its supabase region, so the auth provider and the
+ * auth service see one session.
+ *
+ * During server rendering, or without NEXT_PUBLIC_SUPABASE_URL and
+ * NEXT_PUBLIC_SUPABASE_ANON_KEY, it is a no-op gateway: no session, and a
+ * sign-in rejects with the not-configured failure. Otherwise one Supabase
+ * auth gateway per browser, whose sign-in names the failures it knows.
+ */
 export const getAuthGateway = (): IAuthGateway => {
   if (typeof window === 'undefined' || !hasSupabaseSettings()) {
     return NOOP_GATEWAY

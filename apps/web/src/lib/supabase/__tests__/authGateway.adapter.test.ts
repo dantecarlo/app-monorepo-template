@@ -123,6 +123,14 @@ describe('auth gateway adapter', () => {
     })
   })
 
+  test('names the Supabase settings in the cause of a sign-in without them', async () => {
+    const rejection = await signInRejection()
+
+    const { message } = (rejection as { cause: Error }).cause
+    expect(message).toContain('NEXT_PUBLIC_SUPABASE_URL')
+    expect(message).toContain('NEXT_PUBLIC_SUPABASE_ANON_KEY')
+  })
+
   test('creates one Supabase auth gateway per browser with the settings', async () => {
     withSupabaseSettings()
     mockGetSession.mockResolvedValue(null)

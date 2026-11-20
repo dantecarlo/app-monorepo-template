@@ -23,15 +23,20 @@ export const toSignInFailure = ({
 /**
  * The gateway of a project that keeps no backend, or whose backend has no
  * settings: no session, no listener, and a sign-in that rejects with the
- * not-configured failure.
+ * not-configured failure, whose cause carries `message`: a backend names
+ * the settings it lacks.
  */
-export const createNoopAuthGateway = (): IAuthGateway => ({
+export const createNoopAuthGateway = ({
+  message = AUTH_NOT_CONFIGURED_MESSAGE
+}: {
+  message?: string
+} = {}): IAuthGateway => ({
   getSession: () => Promise.resolve(null),
   onAuthStateChange: () => ({ unsubscribe: () => undefined }),
   signIn: () =>
     Promise.reject(
       toSignInFailure({
-        cause: new Error(AUTH_NOT_CONFIGURED_MESSAGE),
+        cause: new Error(message),
         failure: SignInFailureEnum.NOT_CONFIGURED
       })
     ),

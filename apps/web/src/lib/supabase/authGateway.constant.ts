@@ -1,5 +1,9 @@
 import { SignInFailureEnum } from '@/lib/auth/authGateway.constant'
 
+/** Why the gateway rejects a sign-in without the Supabase settings: the cause a report carries. */
+export const SUPABASE_NOT_CONFIGURED_MESSAGE =
+  'Auth is not configured: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY'
+
 /**
  * The `name` of the error a Supabase sign-in rejects with when the auth
  * server cannot be reached (supabase-js `AuthRetryableFetchError`).
