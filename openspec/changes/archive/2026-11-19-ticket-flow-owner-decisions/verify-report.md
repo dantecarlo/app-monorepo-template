@@ -138,6 +138,9 @@ differs.
   `mcp:docs:test`, `verify:mcp-docs:test`, `verify:mcp-docs`, `verify:ticket-branch:test`,
   `verify:skills:test`, `docs:diagrams:check`, `pnpm --filter @app/i18n test` and `knip`.
 - `ATL_TEMPLATE_SELF=1 pnpm validate` runs again after the archive; its result is the line below.
+- `ATL_TEMPLATE_SELF=1 pnpm validate`: exit 0, 2026-11-19, over the archive's tree: the deltas
+  merged into `openspec/specs/harness/ticket-flow/spec.md`, `verify-specs` passing with no open
+  change, and `report-spec-drift` listing 0 of 11 living specs behind their code.
 
 ## Not verified
 

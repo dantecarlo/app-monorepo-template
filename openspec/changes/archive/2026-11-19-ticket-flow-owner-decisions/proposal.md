@@ -1,6 +1,6 @@
 # Proposal: a Dropped state, and the architect records the closed ticket catalog
 
-> **Status:** open
+> **Status:** archived — 2026-11-19
 
 ## Why
 
