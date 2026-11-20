@@ -110,17 +110,10 @@ capability.
 - **THEN** only the second file is listed
 - **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a leak inside a region of the pruned capability is no leak"
 
-#### Scenario: three capabilities of this repository
+#### Scenario: four capabilities of this repository
 
 - **GIVEN** the repository's tracked files, its manifest, its registry and its regions
-- **WHEN** the prune of `sentry`, of `mobile-expo` and of `web-next` is checked with every check
+- **WHEN** the prune of `sentry`, of `supabase`, of `mobile-expo` and of `web-next` is checked with
+  every check
 - **THEN** nothing is listed for any of them
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, mobile-expo or web-next of this repository leaves no dangling reference"
-
-#### Scenario: the supabase capability of this repository
-
-- **GIVEN** the repository's tracked files, its manifest, its registry and its regions
-- **WHEN** the prune of `supabase` is checked
-- **THEN** no file under `apps/` imports a pruned file, no `.env.example` keeps a key only pruned
-  files read, and no kept spec cites a pruned file
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning supabase of this repository leaves no app import, env key or spec citation dangling"
+- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, supabase, mobile-expo or web-next of this repository leaves no dangling reference"

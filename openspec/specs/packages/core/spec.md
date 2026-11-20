@@ -748,7 +748,7 @@ package, no `@/` alias, no `#` key but `#src/`, and no `node:` builtin.
 - **GIVEN** a production file of packages/core that imports `createClient` from the Supabase SDK
 - **WHEN** it is linted
 - **THEN** lint reports `vendorInCore` for it
-- **Test:** `eslint-local-rules/index.test.mjs` › "import { createClient } from '@supabase/supabase-js'"
+- **Test:** `eslint-local-rules/index.test.mjs` › "a vendor SDK import is refused in core"
 
 #### Scenario: a Node builtin
 

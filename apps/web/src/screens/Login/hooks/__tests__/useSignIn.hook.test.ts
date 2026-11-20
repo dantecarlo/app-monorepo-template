@@ -1,7 +1,7 @@
-import { AppError } from '@app/core'
+import { AppError, type IAuthSession } from '@app/core'
 import { DEFAULT_LANGUAGE, resources } from '@app/i18n'
 import React from 'react'
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { AppI18nProvider } from '@/lib/i18n/AppI18nProvider.component'
 import { createQueryClient } from '@/lib/query/createQueryClient.helper'
@@ -9,9 +9,9 @@ import { useToastStore } from '@/stores/toast.store'
 import { createQueryWrapper } from '@/test/query.helper'
 import { act, renderHook, waitFor } from '@/test/test.helper'
 
-// Only the browser Supabase client is replaced: the auth gateway, the auth
-// service, the adapter, the mutation, the toast store and the query client
-// are the real ones.
+// Only the auth gateway of lib/auth is replaced, whatever backend serves
+// it: the auth service, the adapter, the mutation, the toast store and the
+// query client are the real ones.
 const { mockReplace, mockSignInWithPassword } = vi.hoisted(() => ({
   mockReplace: vi.fn(),
   mockSignInWithPassword: vi.fn()
@@ -23,9 +23,12 @@ vi.mock('@/lib/routing', async () =>
   })
 )
 
-vi.mock('@/lib/supabase/client.adapter', () => ({
-  getSupabaseClient: () => ({
-    auth: { signInWithPassword: mockSignInWithPassword }
+vi.mock('@/lib/auth/authGateway.adapter', () => ({
+  getAuthGateway: () => ({
+    getSession: vi.fn(),
+    onAuthStateChange: vi.fn(),
+    signIn: mockSignInWithPassword,
+    signOut: vi.fn()
   })
 }))
 
@@ -36,10 +39,10 @@ const CREDENTIALS = { email: 'user@example.com', password: 'secret-pass' }
 const messages = resources[DEFAULT_LANGUAGE].translation
 const GENERIC_MESSAGE = messages.helper.error.generic
 
-const SUPABASE_SESSION = {
-  access_token: 'access-token',
-  expires_at: 1_900_000_000,
-  user: { id: 'usr_1' }
+const SESSION: IAuthSession = {
+  accessToken: 'access-token',
+  expiresAt: 1_900_000_000,
+  userId: 'usr_1'
 }
 
 const renderSignIn = () => {
@@ -69,20 +72,11 @@ const signInAndSettle = async ({
 describe('useSignIn', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://demo.supabase.co')
-    vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'anon-key')
     useToastStore.getState().clear()
   })
 
-  afterEach(() => {
-    vi.unstubAllEnvs()
-  })
-
   test('replaces the route with the home page and keeps no token', async () => {
-    mockSignInWithPassword.mockResolvedValue({
-      data: { session: SUPABASE_SESSION },
-      error: null
-    })
+    mockSignInWithPassword.mockResolvedValue(SESSION)
     const { result } = renderSignIn()
 
     act(() => result.current.mutate(CREDENTIALS))
@@ -143,11 +137,14 @@ describe('useSignIn', () => {
     )
   })
 
-  test('queues the generic toast and stays on the route when the gateway returns no session', async () => {
-    mockSignInWithPassword.mockResolvedValue({
-      data: { session: null },
-      error: null
-    })
+  // A gateway that gets no session from its backend fails reading it, as the
+  // Supabase one does: the toast shows the generic message, not that error.
+  test('queues the generic toast and stays on the route when the gateway fails on a missing session', async () => {
+    mockSignInWithPassword.mockRejectedValue(
+      new TypeError(
+        "Cannot read properties of null (reading 'access_token')"
+      )
+    )
     const { result } = renderSignIn()
 
     await signInAndSettle({ result })

@@ -504,10 +504,10 @@ const pruneRepository = ({ capabilityId, regions = dropRegions }) =>
     readText: ({ path }) => readFileSync(join(REPO_ROOT, path), 'utf8')
   })
 
-const CLEAN_PRUNES = ['sentry', 'mobile-expo', 'web-next']
+const CLEAN_PRUNES = ['sentry', 'supabase', 'mobile-expo', 'web-next']
 
 test(
-  'pruning sentry, mobile-expo or web-next of this repository leaves no dangling reference',
+  'pruning sentry, supabase, mobile-expo or web-next of this repository leaves no dangling reference',
   { skip: !CLEAN_PRUNES.some(declares) && 'none of them is declared' },
   () => {
     assert.deepEqual(
@@ -559,29 +559,6 @@ test(
     assert.deepEqual(
       registryLeaksOf({ capabilities: PACKAGE_TAKERS }).filter(
         ({ kind }) => kind === UNREGISTERED
-      ),
-      []
-    )
-  }
-)
-
-// The supabase prune of this repository, held to every check but the
-// import strings of the lint-rule cases under eslint-local-rules/, which
-// spell the SDK in fixture code: no file of the apps imports what the
-// prune deletes, no .env.example keeps a Supabase key, and no kept spec
-// cites a Supabase file.
-const APPS_FOLDER = 'apps/'
-const SUPABASE_KINDS = new Set(['env', 'import', 'spec'])
-
-test(
-  'pruning supabase of this repository leaves no app import, env key or spec citation dangling',
-  { skip: skipUnless('supabase') },
-  () => {
-    assert.deepEqual(
-      pruneRepository({ capabilityId: 'supabase' }).filter(
-        ({ file, kind }) =>
-          SUPABASE_KINDS.has(kind) &&
-          (kind !== 'import' || file.startsWith(APPS_FOLDER))
       ),
       []
     )

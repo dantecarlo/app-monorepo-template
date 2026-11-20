@@ -12,8 +12,7 @@ Each test below ran green at `facfde2` or `d10a9dc`, which changes only the glob
 | TOOLING-01 | an adapter test imports the port contract by name | `packages/core/src/ports/observability/__tests__/createNoopObservability.helper.test.ts` › "the observability port contract" | green |
 | TOOLING-17 | the prunes of this repository | `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, mobile-expo, supabase, web-next or cloudflare of this repository leaves the registry true" | green |
 | TOOLING-17 | the packages of this repository a prune takes | `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning i18n or design-tokens of this repository keeps no package whose entry it takes" | green |
-| TOOLING-20 | three capabilities of this repository | `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, mobile-expo or web-next of this repository leaves no dangling reference" | green |
-| TOOLING-20 | the supabase capability of this repository | `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning supabase of this repository leaves no app import, env key or spec citation dangling" | green |
+| TOOLING-20 | four capabilities of this repository | `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, supabase, mobile-expo or web-next of this repository leaves no dangling reference" | green |
 | WEB-85 | no backend is kept | `apps/web/src/lib/auth/__tests__/noopAuthGateway.helper.test.ts` › "has no session and rejects a sign-in with the not-configured failure" | green |
 | WEB-85 | the served gateway keeps the port | `apps/web/src/lib/auth/__tests__/authGateway.adapter.test.ts` › "serves a gateway with every method of the auth gateway port" | green |
 | WEB-85 | the Supabase gateway is listed | `apps/web/src/lib/auth/__tests__/authGateway.adapter.test.ts` › "serves the gateway the supabase capability builds" | green |
