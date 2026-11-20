@@ -106,6 +106,8 @@
     "scripts/prune-worktrees.test.mjs",
     "scripts/update-mcp-docs.mjs",
     "scripts/update-mcp-docs.test.mjs",
+    "scripts/validate.mjs",
+    "scripts/validate.test.mjs",
     "scripts/verify-agent-context.mjs",
     "scripts/verify-agent-context.test.mjs",
     "scripts/verify-allowlist-freshness.mjs",
