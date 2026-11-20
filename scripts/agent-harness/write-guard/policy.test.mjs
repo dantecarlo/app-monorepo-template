@@ -156,6 +156,7 @@ for (const relative of [
   '.claude/settings.local.json',
   '.agents/agent-context.json',
   '.agents/hooks.json',
+  '.agents/harness.config.json',
   'scripts/agent-harness/write-guard/decide.mjs',
   'scripts/manifest.mjs',
   'scripts/manifest-owners.mjs',

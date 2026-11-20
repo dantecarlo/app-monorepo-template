@@ -270,7 +270,9 @@ guard's code and the modules it loads (`scripts/manifest.mjs`, whose glob
 reader it uses, and `scripts/manifest-owners.mjs`), `.husky/**`,
 `.github/workflows/**`, and the user-level `~/.claude/settings.json` and
 `~/.claude/settings.local.json`, where `disableAllHooks` switches every hook
-off. `package.json` is not one. A glob reads as the manifest's do, with letter
+off; and `.agents/harness.config.json`, whose `delivery.mergePolicy: low-risk` lets
+an agent merge without asking (3g). `package.json` is not one. A glob reads as
+the manifest's do, with letter
 case ignored, against the path relative to EVERY checkout that holds the file,
 so a rule file of a sibling worktree, or of a clone under the temp dir, is one
 too, and a `.git` planted inside a checkout cannot hide one. A glob that starts
@@ -358,6 +360,8 @@ changed, which review reads.
 `.agents/harness.config.json` holds the project's harness settings, one file,
 and `.agents/contracts/harness-config.schema.json` is their contract: every
 section, setting, allowed value and default. The template ships the defaults.
+Both are rule files of the write guard (3f): `delivery.mergePolicy: low-risk`
+lets an agent merge without asking, so only the owner changes it.
 
 | Setting                  | Values                                | Read by |
 | ------------------------ | ------------------------------------- | ------- |
