@@ -161,9 +161,10 @@ prerendered page loads at start went from 1,414,313 bytes (426,674 gzipped) to
 1,043,683 (305,434). `src/lib/posthog/deferredClient.helper.ts` holds the
 client: a call made while the SDK loads waits in a queue of
 `POSTHOG_PENDING_CALLS_LIMIT` calls (50), which drops its oldest call when
-full and hands the rest to the SDK in order once it loads; a call made while
-nothing loads is dropped, and so are the held calls when the SDK fails to
-load. Every payload is scrubbed when the call is made, before it waits.
+full and hands the rest to the SDK in order once it loads, each on its own,
+so a held call that throws drops only itself; a call made while nothing loads
+is dropped, and so are the held calls when the SDK fails to load. Every
+payload is scrubbed when the call is made, before it waits.
 
 On mobile the client is constructed synchronously, so nothing waits: a call
 made while there is no client is dropped.
@@ -192,14 +193,23 @@ They hold under every consent mode (below).
 | App lifecycle events                     | —                                                   | off (`captureAppLifecycleEvents: false`)              |
 | Console errors as exceptions             | off                                                 | off                                                   |
 | Unhandled errors and rejections          | captured                                            | rejections captured; uncaught exceptions on native only |
-| URLs                                     | `before_send` drops the query and the fragment      | the SDK attaches screen names, not URLs               |
+| URLs                                     | `before_send` drops the query and the fragment, and redacts a secret path segment | the SDK attaches screen names, not URLs |
 
 The web `before_send` is `scrubCaptureUrls`
 (`apps/web/src/lib/posthog/scrubCaptureUrls.helper.ts`): every `$…url`,
 `$…referrer` and `$…pathname` property of an event, of its person (`$set`,
 `$set_once`) and every page URL that keys heatmap data leaves without its query
 string and its fragment, which can carry an invite token, a reset token or an
-email. On mobile, PostHog's uncaught-exception handler defers the rethrow an
+email. A secret can sit in the path too (`/reset/<token>`), so the scrub also
+replaces with `:redacted` every path segment that reads as one, and keeps the
+scheme, the host and every other segment, so a route keeps its shape:
+
+| A path segment                                                                              | Example                                     | Becomes     |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------- | ----------- |
+| holds `@` or `%40`                                                                          | `/users/jane@example.com`                   | `:redacted` |
+| is 16 or more characters long, holds a digit, and is not a word slug                        | a JWT, a UUID, a hex token, a card number   | `:redacted` |
+| is a word slug: lowercase words and numbers of at most four digits joined by hyphens        | `/blog/what-changed-in-the-2026-release`    | kept        |
+| is shorter than 16 characters, or holds no digit                                            | `/items/42`, `/settings/notifications`      | kept        | On mobile, PostHog's uncaught-exception handler defers the rethrow an
 Expo web bundle's chunk loader needs, so a web bundle leaves uncaught errors to
 the browser.
 
@@ -235,11 +245,16 @@ is not read.
 **The mobile consent storage.** `posthog-react-native` writes its ids to the
 device when it is built, even with `defaultOptIn: false`, and picks its storage
 once. In `opt-in` mode it therefore persists through
-`apps/mobile/src/lib/posthog/consentStorage.adapter.ts`, which holds every value
-in memory until a grant, then writes them to the device's key-value storage
-under the `posthog-consent:` prefix with the marker `posthog-consent:granted`,
-the key the next launch reads. A revoke stops those writes and removes every
-key. That storage is `apps/mobile/src/lib/storage/keyValueStorage.adapter.ts`,
+`apps/mobile/src/lib/posthog/consentStorage.adapter.ts`, which keeps nothing
+while consent is not granted: it reads no value and drops every value it is
+handed. A grant writes the marker `posthog-consent:granted`, the key the next
+launch reads, and once the device holds it every later value, under the
+`posthog-consent:` prefix. When the device refuses the marker, the grant holds
+for this launch in memory: PostHog is opted in, nothing reaches the device, and
+the next launch reads `pending`, as a browser that blocks the web grant record
+does. A revoke stops the writes, forgets every value, waits for the device
+writes already issued and then removes the marker and every key, going on past
+a removal the device refuses, so the revoke itself never fails on the device. That storage is `apps/mobile/src/lib/storage/keyValueStorage.adapter.ts`,
 AsyncStorage behind the `IKeyValueStoragePort` of packages/core, and the only
 file of the app that imports AsyncStorage apart from the theme and language
 configs, which F.8 unit 4 moves onto it.
@@ -259,6 +274,16 @@ next visit reads it, loads the SDK at start and the SDK's stored opt-in resumes
 capture. A revoke removes it. A browser that blocks site data reads as no
 grant.
 
+**A switch to `opt-in` on web.** A project that ran under `granted` left the
+SDK's ids in the browser: the `ph_<key>_posthog` cookie and local storage, and
+`ph_<key>_…` session storage. Under `opt-in` no SDK loads before a grant to read
+or clear them, so a start in `opt-in` mode with no recorded grant removes every
+value `posthog-js` keeps for the key
+(`apps/web/src/lib/posthog/sdkStorage.adapter.ts`): those local and session
+storage keys, its stored consent `__ph_opt_in_out_<key>`, and its cookies on
+the host and on every parent domain of it. A start with a recorded grant keeps
+them, and so does every other mode.
+
 **A refusal is not stored.** Nothing is stored until a grant, so a revoke clears
 the stored choice with the rest: the status reads `denied` for the rest of the
 page load or launch, then `pending`, and a banner asks again. A project that
@@ -275,13 +300,20 @@ composition root, and its observability barrel exports it as `consent`. Only
 
 | Call          | `opt-in`, web                                                                                                                                        | `opt-in`, mobile                                                                                                  | `granted`, `memory`, no key, the web server |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| `grant()`     | loads the SDK once, `opt_in_capturing({ captureEventName: false })`: no `$opt_in` event, then writes the grant record                                | constructs the client once, opens the consent storage, then `optIn()`                                             | nothing                                     |
-| `revoke()`    | removes the record and stops the client at once, then `opt_out_capturing()` and `reset({ resetDeviceID: true })` on the SDK, loaded or still loading | closes the consent storage, drops the client, then `optOut()` and `reset([])`; a later grant constructs a new one | nothing                                     |
+| `grant()`     | loads the SDK once, `opt_in_capturing({ captureEventName: false })`: no `$opt_in` event, and after a revoke `set_config({ advanced_disable_flags: false })` and `reloadFeatureFlags()`; then writes the grant record | opens the consent storage, constructs the client once, then `optIn()` | nothing |
+| `revoke()`    | removes the record and stops the client at once, then `opt_out_capturing()`, `set_config({ advanced_disable_flags: true })` and `reset({ resetDeviceID: true })` on the SDK, loaded or still loading | closes the consent storage, drops the client, then `optOut()`, empties its event and log queues and `shutdown()`; a later grant constructs a new one | nothing |
 | `getStatus()` | `denied` after a revoke, `granted` while the record holds a grant or after a grant on the page, else `pending`                                       | `granted` while the storage holds a grant, `denied` after a revoke, else `pending`                                | `not-required`                              |
 
-A revoke also resets the identity, with a new device id, so a later grant
-starts a new person, and every observability call after it is dropped. When a
-revoke and a grant overlap a web load, the later one decides.
+A revoke also drops the identity, so a later grant starts a new person with a
+new device id, and every observability call after it is dropped. On web it
+resets the one SDK the page keeps, with its flags paused first: the reset
+reloads the flags for the new anonymous id, one `/flags` request after the
+refusal otherwise, and a grant that follows resumes and reloads them once. On
+mobile it shuts the client down instead, its event and log queues emptied
+first, since the SDK's reset keeps them and its flush sends them whatever the
+opt-out says; nothing captured before the revoke is sent after it, and the new
+client a later grant constructs reads nothing back. When a revoke and a grant
+overlap a web load, the later one decides.
 
 **Where a banner plugs in.** No banner ships: it is product work. One is a
 `ui/` block for the look and a container that owns the calls (`AGENTS.md`, the
@@ -320,17 +352,27 @@ from (`https://us-assets.i.posthog.com` for the US cloud) in `script-src`.
   then stores nothing is its documented behaviour, which no test runs. The
   mobile consent storage is the exception: its test reads the device storage
   it writes to, replaced by the in-memory storage of packages/core.
-- **Switching a running app to `opt-in`.** What `granted` stored before the
-  switch stays where the SDK keeps it until the SDK clears it.
+- **Switching a mobile app to `opt-in`.** On native, `posthog-react-native`
+  keeps what `granted` stored in files of the document directory, through
+  `expo-file-system`, which the app does not depend on and the dependency
+  registry gives no seam; those files stay until the app is removed. The web
+  start clears its own (above).
+- **A secret the path rule misses.** A token of letters only, or one shorter
+  than 16 characters, such as a six-digit code, keeps its place; a long word
+  of letters and digits in a slug is redacted.
 - **Errors thrown before the web SDK loads.** The SDK's own capture of
   unhandled errors and rejections starts when its chunk has loaded; errors the
   app reports through the port before then wait in the queue.
-- **The request a web revoke makes.** The reset of a revoke reloads the SDK's
-  flags once with the new anonymous id, one `/flags` request after the refusal
-  (seen in a scratch run of the real `posthog-js` 1.450.0). Before a grant
-  nothing is requested.
-- **The mobile client a revoke drops.** It is opted out and reset, not shut
-  down: the listeners the SDK registered stay until the app quits.
+- **The requests a web revoke finds queued.** `posthog-js` batches its
+  requests and sends them on a timer, and neither `opt_out_capturing` nor any
+  other public call empties that queue, so a capture made in the seconds
+  before a revoke can still leave after it. The pause of the flags was counted
+  in a scratch run of the real `posthog-js` 1.450.0: one `/flags` request after
+  a plain revoke, none after a paused one.
+- **The mobile client a revoke drops.** It is shut down with nothing queued,
+  but the app-state listener the SDK registered stays until the app quits; it
+  flushes an empty queue. A revoke waits up to `POSTHOG_STOP_TIMEOUT_MS` (3 s)
+  for a request the client still had in flight.
 
 ### Env keys
 
