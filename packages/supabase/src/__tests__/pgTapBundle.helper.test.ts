@@ -260,10 +260,75 @@ describe('bundlePgTapFiles', () => {
     ).toEqual([
       {
         name: 'rls.test.sql',
-        sql: `-- rls.test.sql\n-- Concern: a suite.\n\nbegin;\n\n${prelude}\n\nselect plan(1);\nselect ok(true, 'holds');\nselect * from finish();\n\nrollback;\n`
+        sql: `-- rls.test.sql\n-- Concern: a suite.\n\nbegin;\n\nset local standard_conforming_strings = on;\n\n${prelude}\n\nselect plan(1);\nselect ok(true, 'holds');\nselect * from finish();\n\nrollback;\n`
       }
     ])
   })
+
+  test('forces standard_conforming_strings on right after the begin, before the migrations', () => {
+    const [bundled] = bundlePgTapFiles({
+      migrations: [BASE],
+      tests: [PGTAP]
+    })
+    const sql = bundled?.sql ?? ''
+    const forced = 'set local standard_conforming_strings = on;'
+
+    expect(sql.split(forced)).toHaveLength(2)
+    expect(sql.indexOf('begin;')).toBeLessThan(sql.indexOf(forced))
+    expect(sql.indexOf(forced)).toBeLessThan(
+      sql.indexOf('do $test_db_branch_migrations$')
+    )
+    expect(sql.indexOf(forced)).toBeLessThan(
+      sql.indexOf('select plan(1);')
+    )
+  })
+
+  test.each([
+    'set standard_conforming_strings = off;',
+    'SET Standard_Conforming_Strings TO off;',
+    "select set_config('standard_conforming_strings', 'off', true);",
+    "select pg_catalog.\"set_config\"('a', 'b', true);",
+    "do $$ begin perform set_config('a', 'b', true); end $$;",
+    'reset all;'
+  ])(
+    'refuses a pgTAP file that could turn standard_conforming_strings off, naming it: %s',
+    (statement) => {
+      expect(() =>
+        bundlePgTapFiles({
+          migrations: [BASE],
+          tests: [
+            {
+              name: 'strings.test.sql',
+              sql: `begin;\n${statement}\nrollback;\n`
+            }
+          ]
+        })
+      ).toThrow(
+        'test:db ran nothing: strings.test.sql names standard_conforming_strings, calls set_config or runs reset all, which could undo the standard_conforming_strings = on that test:db sets to read it'
+      )
+    }
+  )
+
+  test.each([
+    '-- standard_conforming_strings stays on; set_config is not called\n',
+    "select ok(true, 'standard_conforming_strings and set_config');\n",
+    "/* reset all */ select E'set_config';\n"
+  ])(
+    'keeps a pgTAP file that mentions the setting only in a comment or a string: %s',
+    (statement) => {
+      expect(
+        bundlePgTapFiles({
+          migrations: [BASE],
+          tests: [
+            {
+              name: 'mention.test.sql',
+              sql: `begin;\n${statement}rollback;\n`
+            }
+          ]
+        }).map(({ name }) => name)
+      ).toEqual(['mention.test.sql'])
+    }
+  )
 
   test('refuses a pgTAP file that does not open with begin, naming it', () => {
     const outside = {
@@ -414,99 +479,6 @@ describe('bundlePgTapFiles', () => {
       ).toThrow(
         'test:db ran nothing: opening.test.sql does not open with begin;, so the migrations would run outside its transaction'
       )
-    }
-  )
-
-  test.each([
-    "begin;\nselect E'it\\'s'; commit;\nselect ok(true, 'x');\nrollback;\n",
-    'begin;\nselect 1 as "a--b"; commit;\nselect 1;\nrollback;\n',
-    `begin;\nselect 1 as "it's"; commit;\nselect ok(true, 'x');\nrollback;\n`,
-    'begin;\nselect 1 as "a/*b"; commit;\nselect 1 as "c*/d";\nrollback;\n',
-    'begin;\nselect 1 as a$b$; commit;\nselect 1 as c$b$;\nrollback;\n',
-    'begin;\nselect 1; -- note\rcommit;\nrollback;\n',
-    "begin;\nselect $\u00e9$ ' $\u00e9$; commit;\nselect ok(true, 'x');\nrollback;\n"
-  ])(
-    'refuses a commit hidden from a masker that misreads Postgres, naming the file: %s',
-    (sql) => {
-      expect(() =>
-        bundlePgTapFiles({
-          migrations: [BASE],
-          tests: [{ name: 'hidden.test.sql', sql }]
-        })
-      ).toThrow(
-        'test:db ran nothing: hidden.test.sql runs commit inside its transaction, where only its first begin; and its last rollback; may control it'
-      )
-    }
-  )
-
-  test.each([
-    "begin;\nselect E'a'\n'\\' '; commit; -- '\nselect 1;\nrollback;\n",
-    "begin;\nselect plan(1);\nselect is(E'a'\n'\\' ', 'a'' ', 'desc'); commit; -- '\nselect * from finish();\nrollback;\n",
-    "begin;\nselect E'a'\n-- note\n'\\' '; commit; -- '\nselect 1;\nrollback;\n",
-    "begin;\nselect E'a' -- note\n'\\' '; commit; -- '\nselect 1;\nrollback;\n"
-  ])(
-    'refuses a commit after an escape string continued past a newline, naming the file: %s',
-    (sql) => {
-      expect(() =>
-        bundlePgTapFiles({
-          migrations: [BASE],
-          tests: [{ name: 'continued.test.sql', sql }]
-        })
-      ).toThrow(
-        'test:db ran nothing: continued.test.sql runs commit inside its transaction, where only its first begin; and its last rollback; may control it'
-      )
-    }
-  )
-
-  test.each([
-    "begin;\nselect E'a' '\\' '; commit; -- '\nselect 1;\nrollback;\n",
-    "begin;\nselect ok(true, 'a'\n'b');\nrollback;\n",
-    "begin;\nselect ok(true, 'a' -- note\r\n  'b');\nrollback;\n"
-  ])(
-    'continues a string only past whitespace that holds a newline, as Postgres does: %s',
-    (sql) => {
-      expect(
-        bundlePgTapFiles({
-          migrations: [BASE],
-          tests: [{ name: 'joined.test.sql', sql }]
-        }).map(({ name }) => name)
-      ).toEqual(['joined.test.sql'])
-    }
-  )
-
-  test.each([
-    "begin;\nselect 'never closed;\nrollback;\n",
-    "begin;\nselect E'never closed\\';\nrollback;\n",
-    'begin;\nselect 1 as "never closed;\nrollback;\n',
-    'begin;\nselect $body$ never closed;\nrollback;\n',
-    'begin;\n/* outer /* inner */ still open;\nrollback;\n',
-    'begin;\nselect $ 1;\nrollback;\n'
-  ])(
-    'refuses a quote, a dollar sign or a comment it cannot pair, naming the file: %s',
-    (sql) => {
-      expect(() =>
-        bundlePgTapFiles({
-          migrations: [BASE],
-          tests: [{ name: 'unpaired.test.sql', sql }]
-        })
-      ).toThrow(
-        'test:db ran nothing: unpaired.test.sql holds a quote, a dollar sign or a comment test:db cannot pair, so it cannot tell its statements apart'
-      )
-    }
-  )
-
-  test.each([
-    'begin;\n/* outer /* inner */ commit; */\nselect 1;\nrollback;\n',
-    "begin;\nselect E'it\\'s', 'it''s', \"a--b\", \"x\"\"y\", a$b$, $1, $\u00e9$ ; $\u00e9$;\nselect 1; -- done\r\nrollback;\n"
-  ])(
-    'reads what Postgres reads as one token, nested comments included: %s',
-    (sql) => {
-      expect(
-        bundlePgTapFiles({
-          migrations: [BASE],
-          tests: [{ name: 'quoted.test.sql', sql }]
-        }).map(({ name }) => name)
-      ).toEqual(['quoted.test.sql'])
     }
   )
 

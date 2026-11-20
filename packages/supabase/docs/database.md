@@ -437,7 +437,7 @@ ends as it was.
 
 Before anything reaches the database, `test:db` reads each pgTAP file with its
 comments, strings, quoted identifiers and dollar-quoted bodies blanked, by a
-reader of its own in `src/pgTapBundle.helper.ts` that splits them as the
+reader of its own in `src/pgTapCode.helper.ts` that splits them as the
 Postgres lexer does: a `--` comment ends at `\n` or `\r`; `/* */` comments nest;
 a double-quoted identifier doubles its `"`; a string doubles its `'`, and an
 escape string (`E'...'`) also escapes with a backslash; a string continues past
@@ -460,17 +460,29 @@ run, naming the file, unless:
   its `release` and `rollback to` a savepoint keep the transaction, and stay
   allowed;
 - it holds no psql meta-command: psql reads a backslash outside quotes as one
-  (`\i`, `\set`, `\gexec`), and `\i` could pull in a file that commits.
+  (`\i`, `\set`, `\gexec`), and `\i` could pull in a file that commits;
+- nothing in its code, quoted identifiers and dollar-quoted bodies included,
+  names `standard_conforming_strings` (in any case) or calls `set_config`, and
+  no statement is `reset all`. A mention inside a comment or a string stays
+  allowed.
+
+The reader reads a plain string as Postgres does with
+`standard_conforming_strings` on, where a backslash is a plain character. With
+it off, `'it\'s'` is one string to Postgres and two to the reader, which could
+hide a statement after it. So the bundle sets it right after the file's first
+`begin;`, before the migrations block, whatever the database's or the role's
+default: `set local standard_conforming_strings = on;`. The last check above
+keeps the file from turning it off again.
 
 A file the reader cannot split fails closed: a quote, a quoted identifier, a
 dollar-quoted body or a comment that never closes, or a `$` that starts none of
 them and is neither part of an identifier nor a parameter (`$1`), stops the run,
 naming the file. Every file here keeps that shape (see Test file structure).
 
-Not covered: the reader assumes `standard_conforming_strings` is on, the
-Postgres and Supabase default, where a backslash in a plain string is a plain
-character. A file or a database that turns it off makes `'it\'s'` one string to
-Postgres and two to the reader, which can hide a statement after it.
+Not covered, the one remaining gap: a change of `standard_conforming_strings` the
+file does not name, as a statement built at run time (`'standard_' ||
+'conforming_strings'` run through `execute` in a `do` block) or a function the
+migrations or the database already hold that sets it.
 
 ### The target
 

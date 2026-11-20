@@ -103,7 +103,8 @@ over the checkout's migrations on the target `config.testDbTarget` of
 | test:db runner      | `scripts/supabase-test-db.mjs`                  | `.mjs`       | Wires Node's files and processes into `runTestDb`; `--dry-run` writes the bundle and runs nothing    |
 | test:db run         | `packages/supabase/src/testDbRun.helper.ts`     | `.helper.ts` | `runTestDb`: the target (linked, local or off), the bundle, `supabase test db`, the exit status      |
 | test:db targets     | `packages/supabase/src/testDbRun.constant.ts`   | `.constant.ts` | `TEST_DB_TARGET`, the default and the CLI flag of each target                                     |
-| pgTAP bundle        | `packages/supabase/src/pgTapBundle.helper.ts`   | `.helper.ts` | Each pgTAP file with a `do` block after its `begin;` that applies the migrations the ledger lacks   |
+| pgTAP bundle        | `packages/supabase/src/pgTapBundle.helper.ts`   | `.helper.ts` | Each pgTAP file with `standard_conforming_strings` forced on and a `do` block after its `begin;` that applies the migrations the ledger lacks |
+| pgTAP reader        | `packages/supabase/src/pgTapCode.helper.ts`     | `.helper.ts` | `toPgTapCode`: a pgTAP file split as the Postgres lexer splits it, for the bundle's checks          |
 
 <!-- endregion supabase -->
 
