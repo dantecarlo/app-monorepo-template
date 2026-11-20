@@ -757,7 +757,8 @@ is not a rule — it is a wish.**
 
 Methods: **lint** (ESLint, fails the gate) · **tsc** (a compiler flag) ·
 **script** (a `verify:*` node script in `pnpm validate`) · **test** (a unit
-test) · **hook** (a git hook) · **CI** (a workflow job) · **review** (a human or
+test) · **hook** (a git hook) · **agent hook** (a runtime hook every tool call
+of an agent passes through) · **CI** (a workflow job) · **review** (a human or
 routed skill — it runs when someone routes to it, and not otherwise).
 
 An instruction is not a gate. Two rules written in the same voice, in the same
@@ -805,8 +806,9 @@ This table exists so that difference is visible.
 | Merged worktrees removed    | hook + test   | `.husky/post-merge` runs `worktrees:prune`, held by `worktrees:prune:test`: a merged worktree goes only when nothing in it would be lost, hidden edits and a moved branch included, and the main checkout fast-forwards only when it holds no tracked local change and git allows it; not a pull request merged on the forge with no local merge or pull after it, a merge run with `HUSKY=0`, which skips every hook, or what the pruner's `NOT_COVERED` names |
 | Suites safe in a git hook   | test          | `hook-git-dir:test` + `git-free-env:test`; each suite that spawns git runs one end-to-end case under `withHookGitDir` and asserts the decoy `GIT_DIR` is left alone; not a suite that never adds the case, or a git a child starts with the hook's variables a suite passed it, which review reads |
 | Agent projections in sync   | script        | `agent-harness:projection-check` — each projection equals its source |
-| Every agent names its grader | script       | `verify:agent-context` (and `:test`) — every agent has a `gradedBy` in `.agents/agent-context.json` naming skills that exist, and no entry outlives its agent; not whether the skill is the right grader, or that its evals ever ran |
-| `AGENTS.md` LAWs            | review        | — no gate reads a LAW                                               |
+| Every agent names its grader | script       | `verify:agent-context` (and `:test`) — every agent has a `gradedBy` in `.agents/agent-context.json` naming skills that exist, a `writes` that is true or false, a well-formed `surface` if any, and no other key, and no entry outlives its agent; not whether the skill is the right grader, whether `writes` is the right one, or that its evals ever ran |
+| `AGENTS.md` LAWs            | review        | — no gate reads a LAW; the one below has an agent hook too          |
+| LAW: a rule is not edited to fit the work | agent hook + review | the write guard (`write-guard:test`, `docs/harness.md` §3f): in Claude Code, an Edit, Write or NotebookEdit of a rule file of `.agents/contracts/write-guard.json` asks the human, the main session included, and a read-only agent is refused; not Bash or PowerShell, not Codex, OpenCode or Copilot, which run no adapter yet, and not why a rule changed, which review reads |
 | `AGENTS.md` Router          | script        | `verify:router-coverage` — every "Load skill" cell a shipped skill, every skill a row, every "Validated by" script one `package.json` defines; not whether a row routes the right requests, which review reads |
 | §22 Screens only position   | lint+script   | `local/style-positions-only` + `verify:allowlist-freshness`         |
 | §22 Values are tokens       | lint+script   | `local/style-token-values` + `verify:allowlist-freshness`           |

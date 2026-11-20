@@ -66,7 +66,8 @@ ATL_TEMPLATE_SELF=1 pnpm validate
 ```
 
 `pnpm validate` starts with `pnpm agent-harness:projection-check`,
-`pnpm agent-harness:test` and `pnpm verify:agent-context`, runs
+`pnpm agent-harness:test`, `pnpm write-guard:test` and
+`pnpm verify:agent-context`, runs
 `turbo run lint typecheck test build format:check`, then
 `pnpm verify:tests`, the spec gates (`verify:specs`, and `report:spec-drift`, which
 only reports), `pnpm verify:english`, `pnpm verify:instruction-entry`,
@@ -78,11 +79,13 @@ The projection check and the manifest gates run first (they are instant, so
 structural drift fails before anything expensive). An agent is written once, in
 `.agents/agents/<name>.agent.md`; `pnpm agent-harness:generate` writes what each
 runtime reads (`.claude/agents/`, `.codex/`, `.opencode/agents/`, `opencode.json`,
-`.github/agents/`), and `pnpm agent-harness:projection-check` fails when one of
+`.github/agents/`, and `.claude/settings.json` from the hook source
+`.agents/hooks.json`), and `pnpm agent-harness:projection-check` fails when one of
 those files is missing, extra, edited by hand or not committed. Never edit them:
 edit the source and regenerate. Every agent names the skill that grades it, as
-`gradedBy` in `.agents/agent-context.json`, and `pnpm verify:agent-context` fails
-an agent that names none, or names a skill `.claude/skills/` does not hold.
+`gradedBy` in `.agents/agent-context.json`, and what it may write, as `writes`,
+and `pnpm verify:agent-context` fails an agent that names none, or names a skill
+`.claude/skills/` does not hold.
 `pnpm verify:tests` checks that every unit has a
 test, in the `__tests__/` of its own folder and named after it, and
 `pnpm verify:maps` checks architecture-map integrity and the magic-literal
@@ -250,7 +253,11 @@ justified inline disable, or a `verify:english` allowlist entry, each with its
 written reason, records a false positive. Reaching for one to silence a finding
 that is true is what this LAW forbids.
 
-**Enforced by review**: no gate can tell why a rule changed.
+**Enforced by** the write guard (`docs/harness.md` §3f, `pnpm write-guard:test`):
+in Claude Code, an Edit, Write or NotebookEdit of a rule file asks the human
+first, the main session included, and a read-only agent is refused. It does not
+read Bash or PowerShell, nor run in Codex, OpenCode or Copilot. Beyond that,
+review: no gate can tell why a rule changed.
 
 ### Every change is architectural — LAW
 

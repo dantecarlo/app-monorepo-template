@@ -1,0 +1,12 @@
+{
+  "$comment": "The neutral source of the runtime hooks: each names its event, the tools it runs on (matcher), the script it runs, relative to the repository root, and its timeout in seconds. pnpm agent-harness:generate renders it for Claude Code into .claude/settings.json, and pnpm agent-harness:projection-check fails a hand edit of that file. Codex and OpenCode are not wired yet: each gets its adapter after a live test. See docs/harness.md section 3f.",
+  "hooks": [
+    {
+      "name": "write-guard",
+      "event": "PreToolUse",
+      "matcher": "Edit|Write|NotebookEdit",
+      "script": "scripts/agent-harness/write-guard/claude-hook.mjs",
+      "timeout": 10
+    }
+  ]
+}

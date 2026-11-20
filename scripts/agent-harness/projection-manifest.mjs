@@ -16,6 +16,10 @@ import {
   CLAUDE_AGENTS_DIRECTORY,
   renderClaudeProjection
 } from './claude-projection.mjs'
+import {
+  CLAUDE_SETTINGS,
+  renderHooksProjection
+} from './hooks-projection.mjs'
 
 // Directories a generator OWNS. Everything inside is compared as a complete
 // tree, so a stray file nobody renders is drift the same way a missing one is.
@@ -27,7 +31,11 @@ const OWNED_DIRECTORIES = [
   { directory: '.codex/agents', extension: '.toml' },
   { directory: '.github/agents', extension: '.md' }
 ]
-const SINGLE_FILE_OUTPUTS = ['opencode.json', '.codex/config.toml']
+const SINGLE_FILE_OUTPUTS = [
+  'opencode.json',
+  '.codex/config.toml',
+  CLAUDE_SETTINGS
+]
 
 export const MANIFEST_PATH = '.agents/projection-manifest.json'
 
@@ -50,7 +58,8 @@ export const readProjectedFile = ({ path, root }) =>
 const renderProjection = ({ root }) =>
   new Map([
     ...renderClaudeProjection({ root }),
-    ...renderAdapterProjection({ root })
+    ...renderAdapterProjection({ root }),
+    ...renderHooksProjection({ root })
   ])
 
 /**

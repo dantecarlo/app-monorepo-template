@@ -52,5 +52,9 @@ Thumbs.db
 # Machine-local agent tooling (absolute paths, personal skills)
 .atl/
 
+# Machine-local Claude Code settings: a project's own permissions, and
+# "disableAllHooks": true, the documented way to switch the hooks off.
+.claude/settings.local.json
+
 # The local launch configuration copied from .claude/launch.example.json
 .claude/launch.json
