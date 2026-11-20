@@ -51,3 +51,6 @@ Thumbs.db
 
 # Machine-local agent tooling (absolute paths, personal skills)
 .atl/
+
+# The local launch configuration copied from .claude/launch.example.json
+.claude/launch.json

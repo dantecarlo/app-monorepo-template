@@ -117,7 +117,8 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 
 **Pending, in order:**
 - Step 3.2 part B: `verify:router-coverage` (F27). `gradedBy` and `sdd-steward` are done: every agent names its grading skill in `.agents/agent-context.json`, which `verify:agent-context` holds, and `sdd-steward` runs one SDD change in one context.
-- Step 3.3, then Stages 4 to 7; F.11 lands with Stage 6, whose executor its questions need.
+- Step 3.3: the hook-safe test helper `withHookGitDir`, with a hook case in every suite that spawns git, and the worktree pruner behind `.husky/post-merge` are built. Still to come: the agent write guard, designed together with F66's rule-file guard, and the pruner's Claude Code hook, which needs the merge-command recognizer of step 4.1.
+- Stages 4 to 7; F.11 lands with Stage 6, whose executor its questions need.
 - F33, when the owner decides it.
 
 **Waiting on Certifipago (F.10):**
