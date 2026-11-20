@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url'
 
 import { withScratchTree } from '../gate/scratch.mjs'
 import { gitFreeEnv } from '../git-free-env.mjs'
+import { withHookGitDir } from '../hook-git-dir.mjs'
 import { checkProjection } from './check.mjs'
 import { renderClaudeProjection } from './claude-projection.mjs'
 import { generateProjection } from './generate.mjs'
@@ -361,6 +362,24 @@ test('projection-check run over a repository with every output added exits 0', (
       )
     }
   })
+})
+
+test("END TO END: under a hook's GIT_DIR, projection-check lists the scratch repository and the hook's repository is left alone", () => {
+  const { decoyWritten, result } = withHookGitDir({
+    use: () =>
+      inScratch({
+        use: ({ root }) => {
+          generateProjection({ root })
+          git({ args: ['init', '-q'], root })
+          git({ args: ['add', '--all'], root })
+          return runCheck({ root })
+        }
+      })
+  })
+
+  assert.equal(decoyWritten, false)
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stdout, /output\(s\) match their neutral sources/)
 })
 
 test('projection-check run over a hand-edited output exits 1 and says how to fix it', () => {

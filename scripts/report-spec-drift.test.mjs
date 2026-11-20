@@ -20,6 +20,7 @@ import { after, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import { gitFreeEnv } from './git-free-env.mjs'
+import { withHookGitDir } from './hook-git-dir.mjs'
 import { measureDrift } from './report-spec-drift.mjs'
 import {
   collectDrift,
@@ -235,8 +236,9 @@ test('the report lists each stale spec and still exits 0', () => {
 
 // A repository of its own: a spec whose first Governs line names `core/`
 // and whose region names `vendor/`, so a change under either path must make
-// it stale, and the report must say so.
-test('a spec is measured against the paths of every Governs line', () => {
+// it stale, and the report must say so. Returns what measureDrift read and
+// what the report printed.
+const measureTwoGoverns = () => {
   const root = mkdtempSync(join(tmpdir(), 'report-spec-drift-governs-'))
   try {
     const run = (args) =>
@@ -268,25 +270,38 @@ test('a spec is measured against the paths of every Governs line', () => {
     writeFileSync(join(root, 'vendor', 'a.ts'), 'export const a = 3\n')
 
     const [measured] = measureDrift({ root })
-    assert.deepEqual(measured.governed, ['core/', 'vendor/'])
-    assert.deepEqual(measured.changed, ['core/a.ts', 'vendor/a.ts'])
-    assert.deepEqual(measured.missing, [])
-
     const result = spawnSync(process.execPath, [REPORT, '--root', root], {
       encoding: 'utf8',
       env: gitFreeEnv()
     })
-    assert.equal(result.status, 0)
-    assert.equal(result.stderr, '')
-    assert.match(
-      result.stdout,
-      /WARN openspec\/specs\/unit\/spec\.md: 2 file\(s\) under its governed paths changed since [0-9a-f]+, e\.g\. core\/a\.ts, vendor\/a\.ts/u
-    )
-    assert.match(
-      result.stdout,
-      /1 of 1 living spec\(s\) behind their code/u
-    )
+    return { measured, result }
   } finally {
     rmSync(root, { force: true, recursive: true })
   }
+}
+
+const assertTwoGovernsDrift = ({ measured, result }) => {
+  assert.deepEqual(measured.governed, ['core/', 'vendor/'])
+  assert.deepEqual(measured.changed, ['core/a.ts', 'vendor/a.ts'])
+  assert.deepEqual(measured.missing, [])
+  assert.equal(result.status, 0)
+  assert.equal(result.stderr, '')
+  assert.match(
+    result.stdout,
+    /WARN openspec\/specs\/unit\/spec\.md: 2 file\(s\) under its governed paths changed since [0-9a-f]+, e\.g\. core\/a\.ts, vendor\/a\.ts/u
+  )
+  assert.match(result.stdout, /1 of 1 living spec\(s\) behind their code/u)
+}
+
+test('a spec is measured against the paths of every Governs line', () => {
+  assertTwoGovernsDrift(measureTwoGoverns())
+})
+
+test("END TO END: under a hook's GIT_DIR, the drift is measured in the scratch repository and the hook's repository is left alone", () => {
+  const { decoyWritten, result } = withHookGitDir({
+    use: measureTwoGoverns
+  })
+
+  assert.equal(decoyWritten, false)
+  assertTwoGovernsDrift(result)
 })

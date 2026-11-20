@@ -55,3 +55,6 @@ Thumbs.db
 # Machine-local Claude Code settings: a project's own permissions, and
 # "disableAllHooks": true, the documented way to switch the hooks off.
 .claude/settings.local.json
+
+# The local launch configuration copied from .claude/launch.example.json
+.claude/launch.json
