@@ -8,7 +8,8 @@ import { gitFreeEnv } from '../../../../scripts/git-free-env.mjs'
 import {
   analyzeCoverage,
   dropRegions,
-  matchesAny
+  matchesAny,
+  parseRegions
 } from '../../../../scripts/manifest.mjs'
 import { findPruneLeaks } from '../prune-boundary.mjs'
 
@@ -542,7 +543,10 @@ test(
   'pruning sentry, mobile-expo, supabase, web-next or cloudflare of this repository leaves the registry true',
   { skip: !REGISTRY_CHECKED.some(declares) && 'none of them is declared' },
   () => {
-    assert.deepEqual(registryLeaksOf({ capabilities: REGISTRY_CHECKED }), [])
+    assert.deepEqual(
+      registryLeaksOf({ capabilities: REGISTRY_CHECKED }),
+      []
+    )
   }
 )
 
@@ -564,6 +568,37 @@ test(
     )
   }
 )
+
+// Each app's auth gateway adapter imports a backend's gateway inside that
+// backend's region and lists it inside a region of the same owner, so the
+// backend's prune drops the import and the entry together.
+const AUTH_APPS = ['web', 'mobile']
+const ALIASED_IMPORT = /import \{ \w+ as (\w+) \}/u
+const LINE_BREAK = /\r?\n/u
+const NEWLINE = '\n'
+
+test('each app lists its backend gateway in the region of its import', () => {
+  for (const app of AUTH_APPS) {
+    const path = `apps/${app}/src/lib/auth/authGateway.adapter.ts`
+    const text = readFileSync(join(REPO_ROOT, path), 'utf8')
+    const lines = text.split(LINE_BREAK)
+    const { regions } = parseRegions({ text })
+    const body = ({ end, start }) =>
+      lines.slice(start - 1, end).join(NEWLINE)
+    for (const region of regions) {
+      const imported = ALIASED_IMPORT.exec(body(region))?.[1]
+      if (!imported) continue
+      const owners = regions
+        .filter(
+          (other) =>
+            other !== region &&
+            new RegExp(`\\b${imported}\\b`, 'u').test(body(other))
+        )
+        .map(({ owner }) => owner)
+      assert.deepEqual(owners, [region.owner], path)
+    }
+  }
+})
 
 // The Sentry part of each app's spec, its Governs line and its
 // requirements, sits in a sentry region of that spec (openspec/README.md
