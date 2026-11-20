@@ -260,7 +260,8 @@
       "group": "backend",
       "claims": [
         "openspec/specs/packages/supabase/spec.md",
-        "packages/supabase/**"
+        "packages/supabase/**",
+        "scripts/supabase-test-db.mjs"
       ],
       "onAbsent": [
         {
