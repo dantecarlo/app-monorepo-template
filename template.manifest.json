@@ -4,6 +4,7 @@
     ".agents/agent-context.json",
     ".agents/agents/**",
     ".agents/contracts/dependencies.json",
+    ".agents/contracts/gates.json",
     ".agents/contracts/mcp-servers.json",
     ".agents/contracts/process-reaper.json",
     ".agents/contracts/write-guard.json",
@@ -107,6 +108,8 @@
     "scripts/prune-worktrees.test.mjs",
     "scripts/update-mcp-docs.mjs",
     "scripts/update-mcp-docs.test.mjs",
+    "scripts/validate.mjs",
+    "scripts/validate.test.mjs",
     "scripts/verify-agent-context.mjs",
     "scripts/verify-agent-context.test.mjs",
     "scripts/verify-allowlist-freshness.mjs",
@@ -158,6 +161,18 @@
         {
           "verb": "remove-workspace",
           "entry": "packages/tokens"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.verify:theme-sync"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.verify:theme-sync:test"
         },
         {
           "verb": "remove-dep",

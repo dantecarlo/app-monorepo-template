@@ -793,7 +793,7 @@ This table exists so that difference is visible.
 | §15.1 i18n catalogs         | test + types  | `resources.constant.test.ts` + typed `resources` — casing not yet   |
 | §16 Conventional commits    | hook + CI     | `commitlint` on `commit-msg`, and the CI job `commitlint` over the commits of a pull request; not a message its default ignores pass (`Merge`, `Revert`, `fixup!` and the like) |
 | §17 Per-feature DoD         | review        | —                                                                   |
-| §18 Validation gate         | script        | the `pnpm validate` chain                                           |
+| §18 Validation gate         | script        | the gate registry `.agents/contracts/gates.json`, run in order by `pnpm validate` (`scripts/validate.mjs`), and `pnpm validate:test` |
 | §19 Error surfacing         | **none yet**  | needs an `error-contract` verify script                             |
 | §20 Severity ratchet        | **none yet**  | needs `--max-warnings 0` + `reportUnusedDisableDirectives`          |
 | §21 This table              | review        | —                                                                   |
