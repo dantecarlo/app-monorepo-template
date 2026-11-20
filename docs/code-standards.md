@@ -804,7 +804,8 @@ This table exists so that difference is visible.
 | `AGENTS.md` fits Codex      | test          | `codex-budget:test` — CRLF bytes within `project_doc_max_bytes`     |
 | Agent projections in sync   | script        | `agent-harness:projection-check` — each projection equals its source |
 | Every agent names its grader | script       | `verify:agent-context` (and `:test`) — every agent has a `gradedBy` in `.agents/agent-context.json` naming skills that exist, and no entry outlives its agent; not whether the skill is the right grader, or that its evals ever ran |
-| `AGENTS.md` LAWs and Router | review        | — no gate reads a LAW, or checks that a skill has a router row      |
+| `AGENTS.md` LAWs            | review        | — no gate reads a LAW                                               |
+| `AGENTS.md` Router          | script        | `verify:router-coverage` — every "Load skill" cell a shipped skill, every skill a row, every "Validated by" script one `package.json` defines; not whether a row routes the right requests, which review reads |
 | §22 Screens only position   | lint+script   | `local/style-positions-only` + `verify:allowlist-freshness`         |
 | §22 Values are tokens       | lint+script   | `local/style-token-values` + `verify:allowlist-freshness`           |
 | §22 The kit behind `ui/`    | lint          | `local/ui-kit-boundary` on every app                                |
