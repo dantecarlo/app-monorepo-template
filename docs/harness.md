@@ -66,6 +66,8 @@ The chain runs in cost order:
 | ------------------------------- | --------------------------------------------------------- |
 | `pnpm agent-harness:projection-check` | Every projected agent file equals what its neutral source renders, and is committed (see 3e) |
 | `pnpm agent-harness:test`       | The projector's reader, adapters, writer, checker and sync still behave |
+| `pnpm verify:agent-context:test` | The agent-context gate fails each defect it names, on synthetic entries and over a scratch tree |
+| `pnpm verify:agent-context`     | Every agent of `.agents/agents/` has an entry in `.agents/agent-context.json` whose `gradedBy` names the skills that grade it, each a folder of `.claude/skills/` holding a `SKILL.md`, and no entry names an agent that is gone (see 3e) |
 | `pnpm verify:manifest`          | `template.manifest.json` is well formed                   |
 | `pnpm verify:manifest:coverage` | Every tracked file has exactly one owner, no stale claims |
 | `pnpm verify:manifest:test`     | The pure engine behind both still behaves                 |
@@ -183,6 +185,18 @@ declared in `EXPRESSIVENESS` with its reason (Codex cannot restrict tools), and
 the model reaches a runtime other than Claude Code only through `MODEL_MAP`,
 which is empty, so those agents run on the model of the session that starts
 them.
+
+Every agent also names the skill that grades it, in `.agents/agent-context.json`:
+`gradedBy` lists the skills whose procedure and report its output is held to,
+the skill it runs (`sdd-steward` runs `sdd`) or, when it runs no single one,
+the skill that defines and judges what it returns (`validator` answers to
+`validate-all`, which sets its groups and its report and rolls their verdicts
+into one). An agent added
+without its entry fails `pnpm verify:agent-context`, as does an entry with no
+`gradedBy`, a `gradedBy` naming a folder of `.claude/skills/` that holds no
+`SKILL.md`, and an entry whose agent is gone. Whether the named skill is the
+right grader is review's to judge, and no runner yet runs a skill's evals with
+the agent as the executor.
 
 ---
 
