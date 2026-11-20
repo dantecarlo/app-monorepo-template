@@ -9,9 +9,9 @@
 - **Kind:** <`gh`, GitHub Issues | `mcp`, the connector | `scripts`, the project's own>
 - **Board:** <the repository, database or project, with its link>
 - **Source:** the board is the source of every open ticket, its content included; nothing in the
-  repository writes or mirrors one. On a close or a release the architect records each closed
-  ticket in docs/GENERAL_PLAN.md § Closed Ticket Catalog, in one pull request per close or
-  release; the PO does no repository work.
+  repository writes or mirrors one. On a close, a drop or a release the architect records each
+  closed or dropped ticket in docs/GENERAL_PLAN.md § Closed Ticket Catalog, in one pull request
+  per close or release; the PO does no repository work.
 
 | Operation | Command or tool call |
 | --- | --- |
@@ -37,6 +37,7 @@
 | Ready to merge | Ready to merge |
 | Done | Done |
 | Closed | Closed |
+| Dropped | Dropped |
 | Ready for prod | Ready for prod |
 | In release | In release |
 | Released | Released |

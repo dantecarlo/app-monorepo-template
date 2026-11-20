@@ -86,6 +86,16 @@ const ONE_PULL_REQUEST_NAMED = 'It names one pull request per close or release.'
 const CATALOG_CURRENT_NAMED = 'It names the architect brings it current itself.'
 // The PO does no repository work, so its CONTRACT lists no file it edits.
 const EDITS = 'edits:'
+// A ticket closed without delivery ends in Dropped, apart from Closed: the
+// PO decides it and records why, the architect moves it and records it in
+// the catalog's own table, and the dev and QA sessions stop on its line.
+const DROPPED_ROW = '| Dropped |'
+const DROPPED_HEADING = '## Dropped'
+const SUPERSEDED_NAMED = 'It names Superseded by:.'
+const DROPPED_NAMED = 'It names `<id> dropped`.'
+const DROPPED_TABLE_NAMED = 'It names `### Dropped tickets`.'
+const PO_DROP_STEP = '## Step 6 — Drop a ticket'
+const DROP_STEP = '## Drop a ticket'
 // Before the architect asks the owner for that pull request, it checks each
 // row the pull request adds against the ticket's board page.
 const CATALOG_BOARD_CHECK =
@@ -870,6 +880,141 @@ export const CASES = [
     }),
     expected: 1,
     name: 'a refine-ticket whose merge queue does not bring the catalog pull request current is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'refine-ticket' })]: replace({
+          from: DROPPED_TABLE_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a refine-ticket whose close step does not record a dropped ticket apart is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: CONTRACT })]: without({ line: DROPPED_ROW })
+      }
+    }),
+    expected: 1,
+    name: 'a ticket-flow whose states table has no Dropped row is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [`${INTAKE}/${PROCESS_TEMPLATE}`]: without({ line: DROPPED_ROW })
+      }
+    }),
+    expected: 1,
+    name: 'a process template whose states table has no Dropped row is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: CONTRACT })]: withoutSection({
+          heading: DROPPED_HEADING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a ticket-flow without its Dropped section is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: CONTRACT })]: replace({
+          from: SUPERSEDED_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a ticket-flow whose Dropped section names no superseding ticket is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: CONTRACT })]: replace({
+          from: DROPPED_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a ticket-flow whose messages name no dropped line is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'po-ticket' })]: withoutSection({
+          heading: PO_DROP_STEP
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a po-ticket without its drop step is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'po-ticket' })]: replace({
+          from: DROPPED_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a po-ticket whose drop step sends no dropped message is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'refine-ticket' })]: withoutSection({
+          heading: DROP_STEP
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a refine-ticket without its drop step is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'refine-ticket' })]: replace({
+          from: DROPPED_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a refine-ticket whose drop step tells no session the ticket was dropped is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'dev-ticket' })]: replace({
+          from: DROPPED_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a dev-ticket that does not stop on a dropped ticket is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'qa-ticket' })]: replace({
+          from: DROPPED_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a qa-ticket that does not stop on a dropped ticket is refused'
   }
 ]
 

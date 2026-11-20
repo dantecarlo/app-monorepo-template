@@ -13,24 +13,31 @@
 //
 //   - every skill: a frontmatter `name` that is its folder, a description
 //     with USE WHEN and DO NOT USE, a CONTRACT and an Output section;
-//   - `ticket-flow`: its sections, a row for every state, role and board
-//     operation, board operations that name the board the source of every
-//     open ticket, a pre-flight that names `process-intake`, messages that
-//     name the hotfix's line `<id> ready to merge, hotfix`, rules that name
+//   - `ticket-flow`: its sections, a row for every state (Dropped among
+//     them), role and board operation, board operations that name the board
+//     the source of every open ticket, a pre-flight that names
+//     `process-intake`, a Dropped section whose drop record names
+//     `Superseded by:`, messages that name the hotfix's line
+//     `<id> ready to merge, hotfix` and the drop's line `<id> dropped`, rules
+//     that name
 //     both merge policies, a ticket identity that names `branchTypes` and
 //     the `json ticket-identity` block, and its ticket and release
 //     templates, the ticket's target version marked required;
 //   - a role skill: a first paragraph that names ticket-flow's SKILL.md, and
-//     neither of the contract's two tables; `po-ticket` no `edits:`, since
-//     the PO does no repository work; `refine-ticket` a close step that
-//     records the closed tickets in the plan's closed ticket catalog, one
-//     pull request per close or release, a merge queue that names both merge
+//     neither of the contract's two tables; `po-ticket` a drop step that
+//     sends `<id> dropped`, and no `edits:`, since the PO does no repository
+//     work; `refine-ticket` a drop step that names `<id> dropped`, a close
+//     step that records the closed tickets in the plan's closed ticket
+//     catalog, one pull request per close or release, and a dropped one in
+//     its `### Dropped tickets` table, a merge queue that names both merge
 //     policies, brings the catalog pull request current itself and checks
 //     its rows against the board, and a release step that names the
-//     hotfix's line; `qa-ticket` a checkout step that adds a `--detach`
+//     hotfix's line; `dev-ticket` a changes requested section that stops on
+//     `<id> dropped`; `qa-ticket` a checkout step that adds a `--detach`
 //     worktree, a decide step that pushes `HEAD:<branch>`, a hand-off step
 //     that names its `<id> ready to merge, PR #<n>` line and the hotfix's
-//     line, and no move of a ticket to Done, which is the architect's; and
+//     line, a step that stops on `<id> dropped` when the architect writes
+//     back, and no move of a ticket to Done, which is the architect's; and
 //     `release-ticket` its deploy targets, branching, migrations and a hotfix
 //     section in which QA leaves the hotfix at Ready to merge;
 //   - `process-intake`: a mapping step that names both merge policies and
@@ -106,6 +113,7 @@ export const STATES = [
   'Ready to merge',
   'Done',
   'Closed',
+  'Dropped',
   'Ready for prod',
   'In release',
   'Released'
@@ -169,6 +177,8 @@ const RULES_HEADING = '## Rules every role follows'
 const QA_CHECKOUT_STEP = '## Step 2 — Check out the branch'
 const QA_DECIDE_STEP = '## Step 5 — Decide'
 const QA_HANDOFF_STEP = '## Step 6 — Hand it to the architect'
+const QA_WRITES_BACK_STEP = '## Step 7 — When the architect writes back'
+const DEV_WRITES_BACK_STEP = '## Changes requested'
 const MERGE_QUEUE = '## Merge queue'
 const INTAKE_MAPPING_STEP = '## Step 3 — Map it onto the core'
 const IDENTITY_HEADING = '## Ticket identity'
@@ -230,8 +240,25 @@ const CATALOG_CURRENT = 'the architect brings it current itself'
 const CATALOG_BOARD_CHECK =
   'matches its board page in id, title, target version and closing pull request'
 
-// Every ticket carries a target version, so every ticket closes through a
-// release: the ticket template marks the field required.
+// A ticket closed without delivery, superseded or withdrawn, ends in
+// Dropped, apart from Closed. The contract says so in a section of its own,
+// whose drop record names the ticket that superseded it; the PO decides the
+// drop and sends this line, the architect moves the ticket and tells its dev
+// and QA sessions, which stop on it, and the catalog records it in a table
+// of its own, never among the delivered tickets.
+const DROPPED_HEADING = '## Dropped'
+const SUPERSEDED_BY = 'Superseded by:'
+const DROPPED_MESSAGE = '<id> dropped'
+const DROPPED_TABLE = '### Dropped tickets'
+const PO_DROP_STEP = '## Step 6 — Drop a ticket'
+const DROP_STEP = '## Drop a ticket'
+const droppedMention = ({ heading }) => ({
+  heading,
+  text: codeOf({ text: DROPPED_MESSAGE })
+})
+
+// Every ticket carries a target version, so every ticket the flow delivers
+// closes through a release: the ticket template marks the field required.
 const TARGET_VERSION_HEADING = '## Target version'
 const VERSION_REQUIRED = '**Version (required):**'
 const hotfixMention = ({ heading }) => ({
@@ -295,6 +322,7 @@ export const SKILL_CONTRACTS = [
       '## Pre-flight',
       BOARD_OPERATIONS_HEADING,
       '## States and transitions',
+      DROPPED_HEADING,
       '## The architect dispatches',
       MESSAGES_HEADING,
       '## Roles',
@@ -309,7 +337,9 @@ export const SKILL_CONTRACTS = [
       { heading: '## Pre-flight', text: 'docs/process/ticket-flow.md' },
       { heading: '## Pre-flight', text: 'process-intake' },
       { heading: BOARD_OPERATIONS_HEADING, text: BOARD_SOURCE },
+      { heading: DROPPED_HEADING, text: SUPERSEDED_BY },
       hotfixMention({ heading: MESSAGES_HEADING }),
+      droppedMention({ heading: MESSAGES_HEADING }),
       ...policyMentions({ heading: RULES_HEADING }),
       ...identityMentions({ heading: IDENTITY_HEADING })
     ],
@@ -335,23 +365,37 @@ export const SKILL_CONTRACTS = [
         why: 'the PO does no repository work: the architect records the closed ticket catalog'
       }
     ],
-    headings: SHAPE_HEADINGS,
+    headings: [PO_DROP_STEP, ...SHAPE_HEADINGS],
+    mentions: [droppedMention({ heading: PO_DROP_STEP })],
     role: true
   },
   {
     folder: 'refine-ticket',
-    headings: [MERGE_QUEUE, RECORD_STEP, RELEASE_STEP, ...SHAPE_HEADINGS],
+    headings: [
+      MERGE_QUEUE,
+      DROP_STEP,
+      RECORD_STEP,
+      RELEASE_STEP,
+      ...SHAPE_HEADINGS
+    ],
     mentions: [
       ...policyMentions({ heading: MERGE_QUEUE }),
       { heading: MERGE_QUEUE, text: CATALOG_CURRENT },
       { heading: MERGE_QUEUE, text: CATALOG_BOARD_CHECK },
+      droppedMention({ heading: DROP_STEP }),
       { heading: RECORD_STEP, text: CLOSED_CATALOG },
       { heading: RECORD_STEP, text: ONE_PULL_REQUEST },
+      { heading: RECORD_STEP, text: codeOf({ text: DROPPED_TABLE }) },
       hotfixMention({ heading: RELEASE_STEP })
     ],
     role: true
   },
-  { folder: 'dev-ticket', headings: SHAPE_HEADINGS, role: true },
+  {
+    folder: 'dev-ticket',
+    headings: [DEV_WRITES_BACK_STEP, ...SHAPE_HEADINGS],
+    mentions: [droppedMention({ heading: DEV_WRITES_BACK_STEP })],
+    role: true
+  },
   {
     folder: 'qa-ticket',
     forbids: [
@@ -364,13 +408,15 @@ export const SKILL_CONTRACTS = [
       QA_CHECKOUT_STEP,
       QA_DECIDE_STEP,
       QA_HANDOFF_STEP,
+      QA_WRITES_BACK_STEP,
       ...SHAPE_HEADINGS
     ],
     mentions: [
       { heading: QA_CHECKOUT_STEP, text: DETACHED_CHECKOUT },
       { heading: QA_DECIDE_STEP, text: HEAD_PUSH },
       { heading: QA_HANDOFF_STEP, text: READY_TO_MERGE_MESSAGE },
-      hotfixMention({ heading: QA_HANDOFF_STEP })
+      hotfixMention({ heading: QA_HANDOFF_STEP }),
+      droppedMention({ heading: QA_WRITES_BACK_STEP })
     ],
     role: true
   },
@@ -764,31 +810,37 @@ export const gate = defineGate({
     `each of the ${SKILL_CONTRACTS.length} ticket skills has a SKILL.md ` +
     'whose frontmatter name is its folder, whose description holds USE ' +
     'WHEN and DO NOT USE, and which has a CONTRACT and an Output section; ' +
-    'ticket-flow has its sections, a row for every state, role and board ' +
-    'operation, board operations that name the board the ' +
-    `${BOARD_SOURCE}, a pre-flight that names process-intake, messages that name ` +
-    `${HOTFIX_MESSAGE}, rules that name ` +
+    'ticket-flow has its sections, a row for every state (Dropped among ' +
+    'them), role and board operation, board operations that name the board the ' +
+    `${BOARD_SOURCE}, a pre-flight that names process-intake, a Dropped ` +
+    `section that names ${SUPERSEDED_BY}, messages that name ` +
+    `${HOTFIX_MESSAGE} and ${DROPPED_MESSAGE}, rules that name ` +
     'both merge policies (manual and low-risk), a ticket identity that ' +
     `names branchTypes and the ${IDENTITY_INFO} block, and its ticket and ` +
     'release templates, the ticket template naming its target version ' +
     `${VERSION_REQUIRED}; each role skill opens by sending the reader to ` +
     'ticket-flow ' +
-    "and copies neither of the contract's tables, po-ticket names no " +
-    `${EDITS}, refine-ticket has a close step that names ` +
-    `${CLOSED_CATALOG} and ${ONE_PULL_REQUEST}, a ` +
+    "and copies neither of the contract's tables, po-ticket has a drop " +
+    `step that names ${DROPPED_MESSAGE} and names no ${EDITS}, ` +
+    `refine-ticket has a drop step that names ${DROPPED_MESSAGE}, a close ` +
+    `step that names ${CLOSED_CATALOG}, ${ONE_PULL_REQUEST} and ` +
+    `${DROPPED_TABLE}, a ` +
     'merge queue that names both merge policies, says that ' +
     `${CATALOG_CURRENT} and that each row the catalog pull request ` +
     `adds ${CATALOG_BOARD_CHECK}, and a release step that ` +
-    `names ${HOTFIX_MESSAGE}, qa-ticket a checkout step that names ` +
+    `names ${HOTFIX_MESSAGE}, dev-ticket a changes requested section that ` +
+    `names ${DROPPED_MESSAGE}, qa-ticket a checkout step that names ` +
     `${DETACHED_CHECKOUT}, a decide step that names ${HEAD_PUSH}, a ` +
     `hand-off step that names ${READY_TO_MERGE_MESSAGE} and ` +
-    `${HOTFIX_MESSAGE}, and no ${DONE_MOVE}, and release-ticket its ` +
+    `${HOTFIX_MESSAGE}, a step for when the architect writes back that ` +
+    `names ${DROPPED_MESSAGE}, and no ${DONE_MOVE}, and release-ticket its ` +
     'deploy targets, its ' +
     'branching with the tags-only alternative, its migrations and a ' +
     `hotfix section that says ${HOTFIX_LEFT}; and ` +
     'process-intake has a mapping step that names both merge policies and ' +
     `the ${IDENTITY_INFO} block, and holds the template of the project ` +
-    'layer, with a row for every board operation and every state, a board ' +
+    'layer, with a row for every board operation and every state, Dropped ' +
+    'among them, a board ' +
     `adapter that names the board the ${BOARD_SOURCE}, a deploy ` +
     'targets table, a merge policy section that names both policies and ' +
     'whose Policy line gives manual, the default, a branching model whose ' +

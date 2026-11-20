@@ -9,7 +9,8 @@ description: >
   merge and never merges, a hotfix included, which waits at Ready to merge for its release;
   checks a release batch on staging.
   USE WHEN: "<id> ready for QA, branch <b>", "check ticket <id>", "<id> bring current",
-  "<id> merged", "<release-id> check on staging", a QA session of the ticket flow starts work.
+  "<id> merged", "<id> dropped", "<release-id> check on staging", a QA session of the ticket flow
+  starts work.
   DO NOT USE: a ticket this session built (rule 5 of `ticket-flow`), merging a pull request (the
   architect's `refine-ticket` § Merge queue), building a fix (use `dev-ticket`), or a deploy to
   production (use `release-ticket`).
@@ -113,6 +114,9 @@ merges under `low-risk`, and moves the ticket to Done (`refine-ticket` § Merge 
     and message the architect `<id> changes requested`.
 - **`<id> merged`** — the architect merged it and moved it to Done, or the CI/CD session did
   for a hotfix. Remove the QA worktree; QA never moves a ticket to Done.
+- **`<id> dropped`** — the architect moved it to Dropped and closed its pull request unmerged
+  (`ticket-flow` § Dropped). Stop any check of it, post no evidence, and remove the QA worktree;
+  QA never moves a ticket to Dropped.
 
 ---
 

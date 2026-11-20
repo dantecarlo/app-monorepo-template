@@ -76,8 +76,9 @@ single-feature spec, or pure refactor/code tasks.
   the Path to Launch names target versions, and § Closed Ticket Catalog
   records each ticket once it closes, one row per ticket, which the architect
   adds in one pull request per close or release (`refine-ticket` § Record the
-  closed tickets). Without a ticket flow, PENDING keeps its backlog rows and the
-  catalog is left out.
+  closed tickets). A ticket dropped without delivery is a row of its
+  `### Dropped tickets` table, never of the delivered ones. Without a ticket
+  flow, PENDING keeps its backlog rows and the catalog is left out.
 
 ## Required vs Optional Sections
 
@@ -134,6 +135,10 @@ Use these `##` headings, in this order (mirrors the template file):
 8. **Closed Ticket Catalog** *(with a ticket flow only)* — the table
    `Ticket | Title | Type | Version | Closed | Pull request`, one row per
    closed ticket, copied from the board when it closes; never an open ticket.
+   Under `### Dropped tickets`, the table
+   `Ticket | Title | Type | Version | Dropped | Reason | Superseded by`, one
+   row per ticket closed without delivery, from its drop record. The validator
+   requires the first table only.
 9. **Agent Build Plan (ordered)** *(optional)* — numbered table
    `# | Task | Layer | Depends on`.
 10. **NEEDS FROM OWNER (blockers the agent cannot resolve)** — four subsections:
@@ -218,7 +223,7 @@ Run in order. Reading code is the point — do not write the doc from memory.
 | Add a `Source` column to the versions table | List versions with no provenance |
 | Keep secrets out of `NEXT_PUBLIC_`/`EXPO_PUBLIC_` | Suggest admin keys in public env namespaces |
 | Run the validator and leave it green | Call it done with the validator red |
-| With a ticket flow, point PENDING at the board and record closed tickets in § Closed Ticket Catalog | Copy an open ticket, its state or its version into the plan |
+| With a ticket flow, point PENDING at the board and record closed tickets in § Closed Ticket Catalog, a dropped one in its Dropped tickets table | Copy an open ticket, its state or its version into the plan, or list a dropped ticket as delivered |
 
 ## References
 

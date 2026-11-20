@@ -2,15 +2,14 @@
 name: ticket-flow
 description: >
   The contract of the ticket flow, read first by every role: the board operations and the
-  adapter that performs them, the thirteen states and who moves each one, the architect as
+  adapter that performs them, the fourteen states and who moves each one, the architect as
   dispatcher, the one-line messages between sessions, the roles, the rules every role follows,
   a ticket's identity, target version and contents, the Ready to merge conditions and the
   release stage. The ticket is the only carrier of context between sessions.
   USE WHEN: a session plays a role of the ticket flow (PO, architect, dev, QA, CI/CD); "a ticket
   moved", "<id> new", "<id> ready for dev", "<id> ready for QA", "<id> changes requested",
-  "<id> merged", "<release-id> ready for prod"; "which state does this ticket go to", "how do the
-  sessions hand work over"; and before loading `po-ticket`, `refine-ticket`, `dev-ticket`,
-  `qa-ticket` or `release-ticket`.
+  "<id> merged", "<id> dropped", "<release-id> ready for prod"; "which state does this ticket go
+  to", "how do the sessions hand work over"; and before loading any role's skill.
   DO NOT USE: a change one session makes with no ticket behind it (use `sdd` or the scaffolding
   skills of the router), or setting up a project's process (use `process-intake`).
 ---
@@ -48,8 +47,8 @@ performs them: its kind, and for each operation the command or tool call.
 **The board is the source of every open ticket**, its content included: the requirement, the
 acceptance criteria, the state, the target version, the plan and every comment. Nothing in the
 repository writes or mirrors an open ticket. The general plan records a ticket only once it is
-closed, in its § Closed Ticket Catalog, which the architect writes (`refine-ticket` § Record the
-closed tickets); read an open ticket on the board.
+closed or dropped, in its § Closed Ticket Catalog, which the architect writes (`refine-ticket`
+§ Record the closed tickets); read an open ticket on the board.
 
 | Operation | What it does | GitHub Issues, through `gh` |
 | --- | --- | --- |
@@ -69,7 +68,8 @@ The three kinds of adapter:
   version is a milestone, and its release ticket lists the milestone's issues. An issue with no
   milestone has no target version, and that stops it in Refinement (§ Target version). The pull request
   links the issue with `Refs #<id>`, never `Closes`, so the merge does not close it: the
-  architect does, at Closed, with `gh issue close <id>`.
+  architect does, at Closed, with `gh issue close <id>`, and at Dropped with
+  `gh issue close <id> --reason "not planned"`.
 - **(b) an MCP connector** — Notion, Jira or Linear. The project layer names the tool call each
   operation maps to.
 - **(c) the project's own scripts** — the project layer names the command each operation runs.
@@ -97,12 +97,45 @@ The project layer maps its own state names onto these.
 | Ready to merge | QA: checks passed and § Ready to merge met; QA asks no one and merges nothing | Architect: `<id> ready to merge, PR #<n>`, and the architect queues it; for a hotfix into the production branch, `<id> ready to merge, hotfix` | `ticket:ready-to-merge` |
 | Done | Architect: merges it from its merge queue, on the owner's word or under the `low-risk` policy (rule 4); for a hotfix, CI/CD merges it into the production branch as its release's deploy step | QA and the dev session: `<id> merged`, sent by the architect; for a hotfix, CI/CD tells the architect, and the architect tells them | `ticket:done` |
 | Closed | Architect: after Done when the project declares no deploy target, or once the release that lists the ticket is Released | PO: `<id> closed`; the architect records it in the general plan's closed ticket catalog | `ticket:closed` |
+| Dropped | Architect, on the PO's `<id> dropped`: a ticket closed without delivery, from any state from Backlog to Ready to merge while its pull request is unmerged (§ Dropped) | the ticket's dev and QA sessions, when it reached them: `<id> dropped`, sent by the architect; the architect records it in the catalog's dropped tickets | `ticket:dropped` |
 | Ready for prod | Architect: a release ticket whose tickets are Done, or a hotfix at Ready to merge, § Release stage met | the CI/CD session: `<release-id> ready for prod` | `ticket:ready-for-prod` |
 | In release | CI/CD, on the owner's word | none (it runs each deploy target the release touches, in order) | `ticket:in-release` |
 | Released | CI/CD, after checking production | Architect: `<release-id> released`; the architect closes the tickets it lists, records them in the general plan's closed ticket catalog, and tells the PO `<release-id> released` | `ticket:released` |
 
 A failed deploy target sends the release ticket back to Refinement, with a comment. No other
 transition exists.
+
+---
+
+## Dropped
+
+A ticket that closes without being delivered, such as one another ticket superseded or one the
+client withdrew, ends in Dropped, never in Closed: Closed means delivered.
+
+- **Who decides, who moves it.** Scope is the PO's (rule 1), so the PO decides every drop: a
+  client's withdrawal reaches the flow through it, and a session that finds a ticket superseded,
+  a duplicate or one another ticket's plan covers, proposes the drop on the ticket and asks the PO
+  `<id> question`. The PO comments the drop record and messages the architect `<id> dropped`; the
+  architect makes the move (`refine-ticket` § Drop a ticket).
+- **From which states.** Any state from Backlog to Ready to merge, while its pull request is
+  unmerged; a hotfix only before Ready to merge, since from there a release ticket of its own
+  lists it. Never from Done or later, since a merged ticket is delivered and undoing it is a new
+  ticket, and never a release ticket.
+- **The drop record**, a comment on the ticket the PO writes before its message:
+
+  ```text
+  Dropped: <the reason, in one line; the client's words verbatim and dated when the client withdrew it>
+  Superseded by: <the id of the ticket that replaces it> | none
+  ```
+
+- **What the move does.** The architect closes the ticket's open pull request unmerged and takes
+  it out of the merge queue, re-plans every ticket that depends on it, and messages its dev and QA
+  sessions `<id> dropped`; each removes its worktree, and the branch stays as a record. Dropped is
+  not in flight, so the files it reserved are free again.
+- **Its target version stays**, as a record, and no release lists it (§ Release stage).
+- **The catalog records it apart**: a row of the dropped tickets in the general plan's § Closed
+  Ticket Catalog, with its reason and the ticket that superseded it, never among the delivered
+  ones (`refine-ticket` § Record the closed tickets).
 
 ---
 
@@ -113,8 +146,9 @@ architect tells QA; QA tells the architect, the architect tells dev or the CI/CD
 architect also sets the merge order and keeps the merge queue: it asks the owner for each merge,
 in its own session (rule 6), or merges without asking under the `low-risk` policy (rule 4), one
 pull request at a time (`refine-ticket` § Merge queue). It groups Done tickets into releases,
-closes tickets, and records each closed ticket in the general plan's closed ticket catalog, in a
-pull request of its own that it queues, keeps current and merges like the others. QA asks the owner nothing and merges nothing. The one merge that is not the
+closes and drops tickets, and records each closed or dropped ticket in the general plan's closed
+ticket catalog, in a pull request of its own that it queues, keeps current and merges like the
+others. QA asks the owner nothing and merges nothing. The one merge that is not the
 architect's is a hotfix's into the production branch: the CI/CD session runs it as the deploy
 step of the hotfix's release.
 
@@ -136,6 +170,7 @@ needs it, the branch. It carries no requirement, decision or file list: those li
 | `<id> bring current` | architect to the ticket's QA: a pull request of the merge queue that a merge left behind its base, or whose CI must run again |
 | `<id> merged` | architect to the ticket's QA and dev sessions; for a hotfix, CI/CD to architect, then architect to them |
 | `<id> closed` | architect to PO |
+| `<id> dropped` | PO to architect, the drop record on the ticket (§ Dropped); then architect to the ticket's dev and QA sessions, once it is in Dropped |
 | `<id> question` | any session to the owner of the answer: the PO for scope, the architect for the plan, the dev session for its build |
 | `<id> scope changed` | PO to architect |
 | `<id> version change` | architect to PO: a target version proposed on the ticket, a move or the first one of a ticket that has none |
@@ -158,8 +193,8 @@ session may fill a dev role; exactly one QA session fills each dev area's QA rol
 
 | Role | Responsibility | Skill |
 | --- | --- | --- |
-| PO | Turns a client requirement into a ticket, quoting the client verbatim; owns scope, and every change of scope goes through it; keeps the scope and the board, and does no repository work | `po-ticket` |
-| Architect | Refines a ticket into specs and a technical plan (areas, subtasks, reserved files, dependencies); dispatches every transition; sets the merge order, keeps the merge queue and merges one pull request at a time, on the owner's word or under the `low-risk` policy; groups releases; closes tickets and records each in the general plan's closed ticket catalog, never an open one; creates technical tickets | `refine-ticket` |
+| PO | Turns a client requirement into a ticket, quoting the client verbatim; owns scope, and every change of scope goes through it, a drop included; keeps the scope and the board, and does no repository work | `po-ticket` |
+| Architect | Refines a ticket into specs and a technical plan (areas, subtasks, reserved files, dependencies); dispatches every transition; sets the merge order, keeps the merge queue and merges one pull request at a time, on the owner's word or under the `low-risk` policy; groups releases; closes and drops tickets, and records each in the general plan's closed ticket catalog, never an open one; creates technical tickets | `refine-ticket` |
 | Dev | One or more sessions per area (App, Web, Backend): builds a ticket in its own worktree and branch, test first | `dev-ticket` |
 | QA | One per area, Backend included: checks out the branch, runs the area's end-to-end checks with evidence, returns the ticket or brings it to Ready to merge and hands it to the architect, brings it current again when the architect asks; merges nothing; checks a release on staging | `qa-ticket` |
 | CI/CD | One session runs every deploy target, a hotfix's merge into the production branch included, and never decides whether to release: the owner's word does, per release and per irreversible step | `release-ticket` |
@@ -256,12 +291,14 @@ their dependencies, so each ticket has one dev session, one branch and one QA se
 ## Target version
 
 - **Every ticket carries one**, whatever its type (`feature`, `fix`, `tech` or `chore`; a test
-  or docs ticket is a `tech` one), so every ticket closes through a release and the CI/CD session
-  knows which tickets a release ships. The PO creates no ticket without one (`po-ticket` Steps 2
-  and 3). The architect moves none past Refinement without one (`refine-ticket` Steps 1 and 4):
-  a ticket with none stops there, and under the GitHub Issues adapter an issue with no milestone
-  has none. No gate reads the board, and `scripts/verify-ticket-branch.mjs` judges a branch and
-  a pull request body only, so those steps are where the rule is checked.
+  or docs ticket is a `tech` one), so every ticket the flow delivers closes through a release and
+  the CI/CD session knows which tickets a release ships. A dropped ticket keeps its target
+  version as a record, and no release lists it (§ Dropped). The PO creates no ticket without one
+  (`po-ticket` Steps 2 and 3). The architect moves none past Refinement without one
+  (`refine-ticket` Steps 1 and 4): a ticket with none stops there, and under the GitHub Issues
+  adapter an issue with no milestone has none. No gate reads the board, and
+  `scripts/verify-ticket-branch.mjs` judges a branch and a pull request body only, so those steps
+  are where the rule is checked.
 - The PO sets it when it creates the ticket (`set version`); the architect confirms it during
   refinement, or proposes a correction. Only the PO runs `set version`: the first version of a
   technical ticket the architect files goes through it like a move.
@@ -270,7 +307,7 @@ their dependencies, so each ticket has one dev session, one branch and one QA se
   it, sets it (`set version`) and messages the architect `<id> version set`. The board carries
   the move; the general plan names no open ticket, so it does not change.
 - A release is one version: its release ticket lists every ticket whose target version is that
-  version (`read version`).
+  version (`read version`), a dropped one aside.
 
 ---
 
@@ -287,7 +324,8 @@ Written from `ticket.template.md`, in this folder; a release ticket from `releas
 - the branch and the pull request;
 - the QA evidence: a link to the pull request comment that holds it;
 - the risk line;
-- every question and answer, as comments.
+- every question and answer, as comments;
+- once it is dropped, its drop record (§ Dropped), as a comment.
 
 ---
 
@@ -329,7 +367,7 @@ releases. The architect groups them (`refine-ticket` § Group a release) and the
 deploys them (`release-ticket`). A project with no deploy target closes a ticket after Done.
 
 - A **release ticket** has the type `release`, ships one version V, is created in Refinement,
-  and lists every ticket whose target version is V.
+  and lists every ticket whose target version is V, a dropped one aside.
 - It enters **Ready for prod** only when every ticket it lists is Done, except a hotfix, which is
   at Ready to merge into the production branch the layer names with every § Ready to merge
   condition met against that branch's current tip; the default branch's CI is green; and the QA

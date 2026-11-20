@@ -36,8 +36,8 @@ evidence of every touched area, for one version V. Every ticket it lists is Done
 hotfix, which is at Ready to merge into the production branch the layer names with every Ready
 to merge condition met against that branch's current tip (`ticket-flow` § Ready to merge;
 § Hotfix below). Something
-missing, a ticket whose target version is V not listed or not in that state (`read version`),
-or the default branch's CI red → `comment` it, message the architect `<release-id> question`,
+missing, a ticket whose target version is V, a dropped one aside, not listed or not in that
+state (`read version`), or the default branch's CI red → `comment` it, message the architect `<release-id> question`,
 and stop.
 
 **Merged for a later version.** A release ships everything merged since the last one, under the

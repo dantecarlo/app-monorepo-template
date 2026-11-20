@@ -16,7 +16,8 @@
 // outside HTML comments:
 //
 //   - a "## Closed Ticket Catalog" section, where the architect records each
-//     ticket once it closes
+//     ticket once it closes or is dropped; its "### Dropped tickets" table is
+//     not required
 //   - that section holds the catalog table, CATALOG_HEADER below
 //   - the PENDING section names process/ticket-flow.md, its pointer to the
 //     board

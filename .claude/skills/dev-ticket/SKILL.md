@@ -5,10 +5,10 @@ description: >
   its own on the ticket's branch (`<type>/<id>-<slug>` unless the project layer's ticket identity
   says otherwise), test first under the project's workflow (SDD when a living spec changes), runs
   the validation gate, opens the pull request that links the ticket
-  and moves it to Ready for QA; on Changes requested, fixes it in the same worktree. Never moves a
-  ticket past Ready for QA.
-  USE WHEN: "<id> ready for dev", "<id> changes requested", "<id> merged", "pick up ticket <id>",
-  "build the hotfix <id>", a dev session of the ticket flow starts work.
+  and moves it to Ready for QA; on Changes requested, fixes it in the same worktree; on a drop,
+  stops and removes the worktree. Never moves a ticket past Ready for QA.
+  USE WHEN: "<id> ready for dev", "<id> changes requested", "<id> merged", "<id> dropped",
+  "pick up ticket <id>", "build the hotfix <id>", a dev session of the ticket flow starts work.
   DO NOT USE: a change with no ticket (the scope guard of `ticket-flow` files one first),
   checking a build (use `qa-ticket`), or a deploy (use `release-ticket`).
 ---
@@ -97,6 +97,10 @@ first, run Step 5 again, push, then Step 7.
 
 On `<id> merged`, which the architect sends once the ticket is Done: remove the worktree
 (`git worktree remove <path>`).
+
+On `<id> dropped`, which the architect sends once the ticket is in Dropped (`ticket-flow`
+§ Dropped) and its pull request is closed unmerged: stop the build, push nothing more, and
+remove the worktree (`git worktree remove <path>`); the pushed branch stays as a record.
 
 ---
 

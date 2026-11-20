@@ -23,8 +23,9 @@ faithfully and marked with the language it came from:
 - **Version (required):** <V>, set by the PO and confirmed by the architect; it moves only
   through the PO (`ticket-flow` § Target version)
 
-Every ticket carries one, whatever its type, so every ticket closes through a release: the PO
-creates no ticket without it, and the architect moves none past Refinement without it.
+Every ticket carries one, whatever its type, so every ticket the flow delivers closes through a
+release: the PO creates no ticket without it, and the architect moves none past Refinement
+without it. A dropped ticket keeps it as a record (`ticket-flow` § Dropped).
 
 ## Spec
 

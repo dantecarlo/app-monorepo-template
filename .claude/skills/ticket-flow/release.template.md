@@ -11,10 +11,10 @@ reads.
 ## Version
 
 This release ships <V>. It lists every ticket whose target version is <V>, read from the board
-(`read version`), and each one is Done before it reaches Ready for prod, except a hotfix, which is
-at Ready to merge into the production branch the layer names, with every Ready to merge
-condition met against that branch's current tip: the CI/CD session merges it as this release's
-deploy step.
+(`read version`), a dropped one aside, and each one is Done before it reaches Ready for prod,
+except a hotfix, which is at Ready to merge into the production branch the layer names, with
+every Ready to merge condition met against that branch's current tip: the CI/CD session merges
+it as this release's deploy step.
 
 ## Tickets
 

@@ -3,14 +3,15 @@ name: refine-ticket
 description: >
   The architect role of the ticket flow: refines a ticket into specs and a plan, dispatches it
   to dev once it has a target version and nothing blocks it, dispatches each later state, keeps
-  the merge queue, closes and files tickets, records each closed ticket in the plan's catalog
-  through a pull request of its own, and groups Done tickets or a hotfix into a release.
+  the merge queue, closes, drops and files tickets, records each closed or dropped ticket in the
+  plan's catalog through a pull request of its own, and groups Done tickets or a hotfix into a
+  release.
   USE WHEN: "<id> new", "<id> ready for QA, branch <b>", "<id> changes requested",
   "<id> ready to merge, PR #<n>", "<id> ready to merge, hotfix", "<id> merged",
-  "<id> question" about the plan, "<id> version set", "merge <id>", "what waits to merge",
-  "<release-id> staging checked", "<release-id> released", "<release-id> <target> failed",
-  "group a release", "record the closed tickets", "file a technical ticket", an architect
-  session of the ticket flow starts work.
+  "<id> dropped", "<id> question" about the plan, "<id> version set", "merge <id>", "what waits
+  to merge", "<release-id> staging checked", "<release-id> released",
+  "<release-id> <target> failed", "group a release", "record the closed tickets", "file a
+  technical ticket", an architect session of the ticket flow starts work.
   DO NOT USE: writing a ticket from a client's request (use `po-ticket`), building it (use
   `dev-ticket`), or a deploy (use `release-ticket`).
 ---
@@ -68,7 +69,8 @@ Does it carry a target version (`read version`)?
     ├── YES → this ticket depends on that one, or re-plan one of them; comment it on both
     └── NO  → is every ticket this one depends on Done?
         ├── YES → Step 5
-        └── NO  → it stays in Refinement; comment the dependency, and recheck on `<dep> merged`
+        └── NO  → it stays in Refinement; comment the dependency, and recheck on `<dep> merged`,
+                  or once `<dep>` is dropped (§ Drop a ticket)
 ```
 
 ---
@@ -93,6 +95,7 @@ Does it carry a target version (`read version`)?
   tickets); otherwise it waits for its release (§ Group a release).
 - `<id> ready to merge, hotfix` from QA → the hotfix stays out of the merge queue and waits,
   unmerged, for a release ticket of its own (§ Group a release).
+- `<id> dropped` from the PO → § Drop a ticket.
 
 ---
 
@@ -150,13 +153,16 @@ it (§ Group a release); the architect's own closed ticket catalog pull request 
      request's branch adds a row of § Closed Ticket Catalog for.
    - **Check each row.** A row the pull request adds passes only when it
      matches its board page in id, title, target version and closing pull request, the
-     closing pull request being the one the ticket links.
+     closing pull request being the one the ticket links. A row of the dropped tickets passes
+     only when it matches its board page in id, title and target version, and its drop record
+     in reason and superseding ticket.
    - **Comment the result** on the pull request, one line per row:
 
      ```text
      Board check of PR #<n>
      - <id> — <title> — <target version> — PR #<m> — match
      - <id> — <title> — <target version> — PR #<m> — mismatch: <field>, the board says <value>
+     - <id> — <title> — <target version> — dropped, superseded by <id> | none — match
      ```
 
    - **Every row matches** → go on below, naming that comment when you ask the owner. **A
@@ -207,23 +213,49 @@ it (§ Group a release); the architect's own closed ticket catalog pull request 
 
 ---
 
+## Drop a ticket
+
+A ticket closed without delivery ends in Dropped, on the PO's word (`ticket-flow` § Dropped). A
+ticket this session finds superseded, a duplicate or one another ticket's plan covers, is
+proposed for a drop on the ticket (`comment`) with `<id> question` to the PO; nothing moves
+before the PO's line.
+
+On `<id> dropped` from the PO:
+
+1. `read` the ticket and its drop record, the comment that gives `Dropped:` and `Superseded by:`.
+   No record, a ticket at Done or later, a hotfix at Ready to merge or a release ticket →
+   `comment` why, message the PO `<id> question`, and move nothing.
+2. Its pull request, when one is open → close it unmerged through the host (under GitHub,
+   `gh pr close <n>`), leave its branch, and take it out of the merge queue (§ Merge queue).
+3. `move` the ticket to Dropped; under the GitHub Issues adapter, also close the issue with
+   `gh issue close <id> --reason "not planned"`.
+4. Message the ticket's dev and QA sessions `<id> dropped`, when it reached them.
+5. Re-plan every ticket that depends on it: `comment` on each that the dependency moves to the
+   ticket that superseded it, or is gone, and take it again from Step 4.
+6. Record it (§ Record the closed tickets).
+
+---
+
 ## Record the closed tickets
 
 The board is the source of every open ticket (`ticket-flow` § Board operations): the general plan
-records a ticket only once it is closed, and the architect writes that record, so the PO does no
-repository work.
+records a ticket only once it is closed or dropped, and the architect writes that record, so the
+PO does no repository work.
 
-On a close outside a release (Step 6, with no deploy target) or on `<release-id> released`
-(§ Group a release):
+On a close outside a release (Step 6, with no deploy target), on `<release-id> released`
+(§ Group a release) or on a drop (§ Drop a ticket):
 
 1. `read` and `read version`, on the board, the ticket, or every ticket the release lists.
 2. On a branch of its own, cut from the default branch, add one row per ticket to
    docs/GENERAL_PLAN.md § Closed Ticket Catalog, through `general-plan`, each copied from the
    ticket's board page: its id, title, type, target version, the day it closed and its pull
-   request. Copy no open ticket into the plan, and never refresh its pending work from the
-   board: the plan points at the board.
-3. Commit the rows and open one pull request per close or release, its body naming each ticket
-   it records; `comment` its link on the ticket, or on the release ticket.
+   request. A dropped ticket goes in the catalog's `### Dropped tickets` table instead, never
+   among the delivered ones: its id, title, type and target version, the day it was dropped, and
+   the reason and the ticket that superseded it, from its drop record. Copy no open ticket into
+   the plan, and never refresh its pending work from the board: the plan points at the board.
+3. Commit the rows and open one pull request per close or release, a drop counting as a close,
+   its body naming each ticket it records; `comment` its link on the ticket, or on the release
+   ticket.
 4. Queue it in the merge queue at once (§ Merge queue): this session keeps it current, checks it
    against the board and merges it there.
 
@@ -239,17 +271,18 @@ merges it into the production branch the layer names as that release's deploy st
 
 1. `create` a release ticket from `.claude/skills/ticket-flow/release.template.md`, type
    `release`, in Refinement, for one version V: `read version` lists every ticket whose target
-   version is V, and the release ticket lists them all, with the version per target, the
-   migrations, each backward compatible (`release-ticket` § Migrations), the changelog and the
-   rollback per target.
+   version is V, and the release ticket lists them all, a dropped one aside, with the version per
+   target, the migrations, each backward compatible (`release-ticket` § Migrations), the
+   changelog and the rollback per target.
 2. Message the QA session of each area the batch touches `<release-id> check on staging`, and
    wait for every `<release-id> staging checked` and its evidence on the release ticket. A failed
    check becomes a fix ticket the release then lists, or its feature is switched off by its flag.
-3. Move it to Ready for prod only when every ticket whose target version is V is Done, except a
-   hotfix, which is at Ready to merge into the production branch the layer names with every
-   Ready to merge condition met against that branch's current tip (`ticket-flow` § Ready to
-   merge); the default branch's CI is green; and every touched area's staging evidence is on the release ticket: `move`, then
-   message the CI/CD session `<release-id> ready for prod`. A hotfix behind that tip, because
+3. Move it to Ready for prod only when every ticket whose target version is V, a dropped one
+   aside, is Done, except a hotfix, which is at Ready to merge into the production branch the
+   layer names with every Ready to merge condition met against that branch's current tip
+   (`ticket-flow` § Ready to merge); the default branch's CI is green; and every touched area's
+   staging evidence is on the release ticket: `move`, then message the CI/CD session
+   `<release-id> ready for prod`. A hotfix behind that tip, because
    another release merged since → message its QA `<id> bring current`, and wait for
    `<id> ready to merge, hotfix` again.
 4. When the CI/CD session flags a merged ticket aimed at a later version: name, on the release
@@ -279,9 +312,11 @@ moves:
   - Done → Closed
   - Refinement → Ready for prod # a release ticket
   - Released → Closed
+  - Backlog to Ready to merge → Dropped # on the PO's word, its pull request unmerged
 messages: ['<id> ready for dev', '<id> ready for QA, branch <b>', '<id> changes requested',
-  '<id> bring current', '<id> merged', '<id> closed', '<id> question', '<id> version change',
-  '<release-id> check on staging', '<release-id> ready for prod', '<release-id> released']
+  '<id> bring current', '<id> merged', '<id> closed', '<id> dropped', '<id> question',
+  '<id> version change', '<release-id> check on staging', '<release-id> ready for prod',
+  '<release-id> released']
 emits:
   - openspec/changes/{date}-{name}/ # through sdd, when the ticket changes a living spec
   - a ticket comment for each low-risk merge, with the Risk line it relied on
