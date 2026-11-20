@@ -52,6 +52,22 @@ test('holds the calls made during the load and hands them over in order', async 
   expect(client.receive).toHaveBeenLastCalledWith(3)
 })
 
+test('runs each held call on its own when one throws', async () => {
+  const { client, deferred, finish, load } = probe()
+
+  const started = deferred.start({ load })
+  deferred.run(send(1))
+  deferred.run(() => {
+    throw new Error('the SDK refused the call')
+  })
+  deferred.run(send(3))
+  finish()
+
+  expect(await started).toBe(client)
+  expect(vi.mocked(client.receive).mock.calls).toEqual([[1], [3]])
+  expect(await deferred.settled()).toBe(client)
+})
+
 test('drops the oldest held call when the queue is full', async () => {
   const { client, deferred, finish, load } = probe()
 

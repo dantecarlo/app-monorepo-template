@@ -37,14 +37,45 @@ const OPTION = { DRY_RUN: '--dry-run', QUIET: '--quiet' }
 // its own.
 export const NESTED_RUN_VARIABLE = 'PRUNE_WORKTREES_RUNNING'
 
+// The bound, in seconds, on the `git fetch --prune origin` a run starts
+// with: a stalled remote would otherwise hold the merge or the pull whose
+// post-merge started it.
+export const FETCH_SECONDS_VARIABLE = 'PRUNE_WORKTREES_FETCH_SECONDS'
+const FETCH_SECONDS = 30
+
+// 30, or the positive number of seconds FETCH_SECONDS_VARIABLE names; any
+// other value, an empty one included, throws, naming the variable and it.
+export const fetchSecondsFrom = ({ env }) => {
+  const value = env[FETCH_SECONDS_VARIABLE]
+  if (value === undefined) return FETCH_SECONDS
+  const seconds = Number(value)
+  if (value.trim() === '' || !Number.isFinite(seconds) || seconds <= 0) {
+    throw new Error(
+      `${FETCH_SECONDS_VARIABLE} must be a positive number of seconds, ` +
+        `not "${value}"`
+    )
+  }
+  return seconds
+}
+
 export const NOT_COVERED =
   'a dry run still runs git fetch --prune origin, which it needs to read ' +
   'a [gone] upstream; on Windows, a worktree another process holds as its ' +
   'current directory is emptied and unregistered while its directory ' +
-  'stays; and the prune runs in the foreground, so the merge that started ' +
-  'it waits for it'
+  'stays; the prune runs in the foreground, so the merge that started it ' +
+  `waits for it, for its fetch up to ${FETCH_SECONDS_VARIABLE} ` +
+  `(${FETCH_SECONDS} s unless set); on Windows a fetch stopped at that ` +
+  "bound ends without git's own cleanup, so a remote helper it started, " +
+  'as for https, runs on until its connection ends; and an ignored file ' +
+  'written in the moment between the check just before a removal and ' +
+  "git's own removal goes with the worktree"
 
 export const LOCAL_CHANGES = 'it holds local changes'
+// Why a dry run predicts that git would not fast-forward the main checkout:
+// its HEAD is not an ancestor of the default branch.
+export const DIVERGED =
+  'it holds commits the default branch does not, so git would not ' +
+  'fast-forward it'
 
 // Ignored paths that an install, a build, a typecheck, a test run or the
 // next session writes again: a directory of the first names at any depth;
@@ -68,8 +99,9 @@ const REBUILT_AT_ROOTS = new Set([
 ])
 const WORKSPACE_GROUPS = new Set(['apps', 'packages'])
 const WORKSPACE_ROOT_DEPTH = 2
-// `.atl/` is not among them: it holds machine-local agent tooling, personal
-// skills included, that nothing writes again.
+// `.atl/` is not among them: besides the skill registry, which the
+// skill-registry skill writes again (SKILL_REGISTRY_FILES), it holds
+// machine-local agent tooling, personal skills included, that nothing does.
 const REBUILT_PREFIXES = ['.husky/_/']
 const REBUILT_FILE =
   /(?:^|\/)(?:next-env\.d\.ts|expo-env\.d\.ts|[^/]+\.tsbuildinfo)$/
@@ -236,6 +268,24 @@ export const statusOf = ({ porcelain }) => {
   }
 }
 
+// The directory of machine-local agent tooling at a worktree's root, and the
+// two files of it the skill-registry skill writes again.
+export const AGENT_TOOLING_DIR = '.atl/'
+const SKILL_REGISTRY_FILES = new Set([
+  '.skill-registry.cache.json',
+  'skill-registry.md'
+])
+
+// Whether what an ignored entry under `.atl/` holds is the skill registry
+// and nothing else. `items` is what the caller found there on disk, by name
+// under `.atl/` and whether it is a regular file: the children of `.atl/`
+// when the entry is the directory itself, else the one path it names. A
+// name the registry does not hold, or one that is not a regular file, a link
+// or a directory included, is something else, and so is an empty list.
+export const isSkillRegistry = ({ items }) =>
+  items.length > 0 &&
+  items.every(({ file, name }) => file && SKILL_REGISTRY_FILES.has(name))
+
 // Every tracked file a `git ls-files -v -z` listing marks assume-unchanged
 // or skip-worktree: `git status` and `git worktree remove` skip both, so an
 // edit to one is invisible to them and lost with the worktree.
@@ -340,6 +390,9 @@ const summaryLine = ({ dryRun, results }) => {
   )
 }
 
+const notCovered = ({ dryRun }) =>
+  dryRun ? [`${LABEL}: not covered: ${NOT_COVERED}`] : []
+
 // One line per worktree, a kept one left out under `--quiet`, the main
 // checkout's line when it was behind or off the default branch, the summary
 // line, and for a dry run what it does not cover.
@@ -349,5 +402,28 @@ export const reportLines = ({ dryRun, main, quiet, results }) => [
     .map((result) => decisionLine({ dryRun, result })),
   ...[mainLine({ dryRun, main })].filter((line) => line !== null),
   summaryLine({ dryRun, results }),
-  ...(dryRun ? [`${LABEL}: not covered: ${NOT_COVERED}`] : [])
+  ...notCovered({ dryRun })
+]
+
+// The line a failed run ends with, on stderr: git's message, then what the
+// run had removed before it failed, the worktrees its report listed above,
+// or that nothing was removed. A dry run removes nothing.
+export const failureLine = ({ dryRun = false, message, results = [] }) => {
+  const removed = dryRun ? 0 : results.filter(({ kept }) => !kept).length
+  if (removed === 0) return `${LABEL}: ${message} — nothing was removed.`
+  const worktrees =
+    removed === 1 ? '1 worktree was' : `${removed} worktrees were`
+  return (
+    `${LABEL}: ${message} — ${worktrees} removed before it failed, ` +
+    'listed above.'
+  )
+}
+
+// What a run whose fetch outlasted its bound of `seconds` prints, `--quiet`
+// or not: it judged nothing, so it removed and moved nothing.
+export const skippedLines = ({ dryRun, seconds }) => [
+  `${LABEL}: skipped: git fetch --prune ${REMOTE} did not finish within ` +
+    `${seconds} s, so no worktree was removed and the main checkout was ` +
+    'not moved',
+  ...notCovered({ dryRun })
 ]

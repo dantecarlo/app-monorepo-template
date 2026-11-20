@@ -13,10 +13,10 @@ Each test below ran green at `facfde2` or `d10a9dc`, which changes only the glob
 | TOOLING-17 | the prunes of this repository | `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, mobile-expo, supabase, web-next or cloudflare of this repository leaves the registry true" | green |
 | TOOLING-17 | the packages of this repository a prune takes | `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning i18n or design-tokens of this repository keeps no package whose entry it takes" | green |
 | TOOLING-20 | four capabilities of this repository | `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, supabase, mobile-expo or web-next of this repository leaves no dangling reference" | green |
-| WEB-85 | no backend is kept | `apps/web/src/lib/auth/__tests__/noopAuthGateway.helper.test.ts` › "has no session and rejects a sign-in with the not-configured failure" | green |
-| WEB-85 | the served gateway keeps the port | `apps/web/src/lib/auth/__tests__/authGateway.adapter.test.ts` › "serves a gateway with every method of the auth gateway port" | green |
-| WEB-85 | the Supabase gateway is listed | `apps/web/src/lib/auth/__tests__/authGateway.adapter.test.ts` › "serves the gateway the supabase capability builds" | green |
-| WEB-85 | every failure has its message | `apps/web/src/lib/auth/__tests__/authGateway.constant.test.ts` › "names a message every catalog holds for each sign-in failure" | green |
+| WEB-86 | no backend is kept | `apps/web/src/lib/auth/__tests__/noopAuthGateway.helper.test.ts` › "has no session and rejects a sign-in with the not-configured failure" | green |
+| WEB-86 | the served gateway keeps the port | `apps/web/src/lib/auth/__tests__/authGateway.adapter.test.ts` › "serves a gateway with every method of the auth gateway port" | green |
+| WEB-86 | the Supabase gateway is listed | `apps/web/src/lib/auth/__tests__/authGateway.adapter.test.ts` › "serves the gateway the supabase capability builds" | green |
+| WEB-86 | every failure has its message | `apps/web/src/lib/auth/__tests__/authGateway.constant.test.ts` › "names a message every catalog holds for each sign-in failure" | green |
 | WEB-20 | the Supabase settings are missing | `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "returns a no-op gateway without the Supabase settings" | green |
 | WEB-20 | the rejection names the missing settings | `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "names the Supabase settings in the cause of a sign-in without them" | green |
 | WEB-20 | the Supabase settings are present | `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "creates one Supabase auth gateway per browser with the settings" | green |

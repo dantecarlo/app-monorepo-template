@@ -4,13 +4,12 @@ description: >
   The QA role of the ticket flow, one session per area: checks out a ticket's branch in a
   detached worktree, runs the area's end-to-end checks with the project's own harness, posts the
   evidence as a pull request comment, then returns the ticket as Changes requested or brings the
-  branch current, makes it Ready to merge and hands it to the architect, who keeps the merge
-  queue and merges; brings it current again when the architect asks; never asks the owner to
-  merge and never merges, a hotfix included, which waits at Ready to merge for its release;
-  checks a release batch on staging.
-  USE WHEN: "<id> ready for QA, branch <b>", "check ticket <id>", "<id> bring current",
-  "<id> merged", "<id> dropped", "<release-id> check on staging", a QA session of the ticket flow
-  starts work.
+  branch current once, makes it Ready to merge and hands it to the architect, who keeps the merge
+  queue, brings it current from then on and merges; never asks the owner to merge and never
+  merges, a hotfix included, which waits at Ready to merge for its release; checks a release
+  batch on staging.
+  USE WHEN: "<id> ready for QA, branch <b>", "check ticket <id>", "<id> merged", "<id> dropped",
+  "<release-id> check on staging", a QA session of the ticket flow starts work.
   DO NOT USE: a ticket this session built (rule 5 of `ticket-flow`), merging a pull request (the
   architect's `refine-ticket` § Merge queue), building a fix (use `dev-ticket`), or a deploy to
   production (use `release-ticket`).
@@ -94,8 +93,10 @@ policy. The architect keeps the merge queue, asks the owner for each merge in it
 merges under `low-risk`, and moves the ticket to Done (`refine-ticket` § Merge queue).
 
 - **Into the default branch** → message the architect `<id> ready to merge, PR #<n>`; the ticket
-  already carries the link to the evidence (Step 4). Keep the QA worktree: the architect asks
-  for the branch to be brought current again after each merge ahead of it (Step 7).
+  already carries the link to the evidence (Step 4). Remove the QA worktree and stop: Step 5 was
+  QA's one bring-current of the pull request, every later one is the architect's, from a
+  worktree of its own, and a conflict it meets goes to the dev session
+  (`refine-ticket` § Merge queue).
 - **A hotfix**, a pull request into the production branch the layer names → it waits at Ready to
   merge for its release under every policy, `manual` included: merging it deploys, so the CI/CD
   session merges it as that release's deploy step (`release-ticket` § Hotfix). Message the
@@ -105,15 +106,8 @@ merges under `low-risk`, and moves the ticket to Done (`refine-ticket` § Merge 
 
 ## Step 7 — When the architect writes back
 
-- **`<id> bring current`** — a merge ahead of it moved its base, or its CI must run again. In
-  the QA worktree (Step 2 adds it again when it was removed), repeat Step 5 from its point 2:
-  merge the ticket branch and the base, push unforced, and re-run the checks.
-  - No conflict and every check green → it stays at Ready to merge: message the architect
-    `<id> ready to merge, PR #<n>` again, or `<id> ready to merge, hotfix` for a hotfix.
-  - A conflict or a red check → `comment` it with the evidence, `move` it to Changes requested,
-    and message the architect `<id> changes requested`.
 - **`<id> merged`** — the architect merged it and moved it to Done, or the CI/CD session did
-  for a hotfix. Remove the QA worktree; QA never moves a ticket to Done.
+  for a hotfix. Remove the QA worktree if it is still there; QA never moves a ticket to Done.
 - **`<id> dropped`** — the architect moved it to Dropped and closed its pull request unmerged
   (`ticket-flow` § Dropped). Stop any check of it, post no evidence, and remove the QA worktree;
   QA never moves a ticket to Dropped.
@@ -141,7 +135,6 @@ moves:
   - Ready for QA → In QA
   - In QA → Changes requested
   - In QA → Ready to merge
-  - Ready to merge → Changes requested # a conflict or a red check, when it brings it current
 messages: ['<id> changes requested', '<id> ready to merge, PR #<n>',
   '<id> ready to merge, hotfix', '<release-id> staging checked']
 emits:

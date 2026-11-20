@@ -4,7 +4,7 @@
 
 ## ADDED Requirements
 
-### Requirement: WEB-85 — The auth gateway comes from the backend the project keeps
+### Requirement: WEB-86 — The auth gateway comes from the backend the project keeps
 
 The web app SHALL hand the auth provider and the auth service the gateway
 `src/lib/auth/authGateway.adapter.ts` serves: the gateway of the first backend capability it
@@ -51,7 +51,7 @@ message key in every catalog.
 <!-- region supabase -->
 ### Requirement: WEB-20 — The auth gateway is a no-op without Supabase settings
 
-The web app SHALL serve, from the Supabase part of its auth gateway (WEB-85), the no-op gateway
+The web app SHALL serve, from the Supabase part of its auth gateway (WEB-86), the no-op gateway
 during server rendering and in a browser where `NEXT_PUBLIC_SUPABASE_URL` or
 `NEXT_PUBLIC_SUPABASE_ANON_KEY` is unset, so the session resolves to none and a sign-in rejects
 with the not-configured failure (WEB-46), whose cause names both settings; otherwise one Supabase

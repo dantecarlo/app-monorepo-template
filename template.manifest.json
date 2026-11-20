@@ -125,6 +125,8 @@
     "scripts/verify-security-static.mjs",
     "scripts/verify-skill-frontmatter.mjs",
     "scripts/verify-skill-frontmatter.test.mjs",
+    "scripts/verify-skill-neutrality.mjs",
+    "scripts/verify-skill-neutrality.test.mjs",
     "scripts/verify-skills.mjs",
     "scripts/verify-skills.test.mjs",
     "scripts/verify-structure.mjs",
@@ -601,9 +603,10 @@
     },
     {
       "id": "template-maintainer",
-      "title": "Template maintainer material — plans and audits, never selected by a preset",
+      "title": "Template maintainer material — plans, audits and the list of downstream projects, never selected by a preset",
       "group": "maintainer",
       "claims": [
+        ".agents/contracts/downstream-projects.json",
         "docs/GENERALIZATION_PLAN.md",
         "docs/INIT_AND_HARNESS_PLAN.md",
         "docs/audits/**",

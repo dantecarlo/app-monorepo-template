@@ -72,8 +72,9 @@ ATL_TEMPLATE_SELF=1 pnpm validate
 `pnpm verify:tests`, the spec gates (`verify:specs`, and `report:spec-drift`, which
 only reports), `pnpm verify:english`, `pnpm verify:instruction-entry`,
 `pnpm verify:unicode-safety`, `pnpm verify:workflow-pins`,
-`pnpm verify:skill-frontmatter`, `pnpm verify:router-coverage`,
-`pnpm codex-budget:test` and `pnpm verify:maps`. All must pass.
+`pnpm verify:skill-frontmatter`, `pnpm verify:skill-neutrality`,
+`pnpm verify:router-coverage`, `pnpm codex-budget:test` and `pnpm verify:maps`.
+All must pass.
 
 The projection check and the manifest gates run first (they are instant, so
 structural drift fails before anything expensive). An agent is written once, in

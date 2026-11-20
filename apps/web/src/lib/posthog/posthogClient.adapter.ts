@@ -14,6 +14,7 @@ import {
 import type { IPostHogClient } from '@/lib/posthog/posthogClient.type'
 import { resolveConsentMode } from '@/lib/posthog/resolveConsentMode.helper'
 import { scrubCaptureUrls } from '@/lib/posthog/scrubCaptureUrls.helper'
+import { removeSdkStorage } from '@/lib/posthog/sdkStorage.adapter'
 
 // posthog-js runs in the browser only. On the server, and in every run with
 // no key, the SDK is never loaded and no request leaves the app.
@@ -86,10 +87,16 @@ export const startPostHogClient = (): Promise<
   })
 }
 
-if (
-  isPostHogAvailable &&
-  (posthogConsentMode !== PostHogConsentModeEnum.OPT_IN ||
-    hasGrantRecord())
-) {
-  void startPostHogClient()
+// A project that switched from `granted` to `opt-in` leaves what `granted`
+// stored in this browser, which no SDK is loaded to read: an `opt-in` start
+// with no recorded grant removes it instead of starting the client.
+if (isPostHogAvailable && POSTHOG_KEY) {
+  if (
+    posthogConsentMode === PostHogConsentModeEnum.OPT_IN &&
+    !hasGrantRecord()
+  ) {
+    removeSdkStorage({ key: POSTHOG_KEY })
+  } else {
+    void startPostHogClient()
+  }
 }

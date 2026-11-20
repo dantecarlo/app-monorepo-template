@@ -76,7 +76,7 @@
   pull request waits for the owner, as under `manual`.
 - **What no policy covers:** a merge into the production branch, a deploy, a production
   migration, a store submission and every other irreversible step stay the owner's word.
-- **Bringing a branch current:** merge (always: QA merges the base and pushes unforced)
+- **Bringing a branch current:** merge (always: QA once, before Ready to merge; the architect every later time, from a spare worktree of its own; each pushes unforced)
 - **Merge method:** <merge commit | squash | rebase>
 - **Merge gate:** <the check the architect runs before each merge | none beyond `ticket-flow`
   § Ready to merge>
