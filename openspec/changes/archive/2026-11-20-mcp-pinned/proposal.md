@@ -1,6 +1,6 @@
 # Proposal: pin the MCP servers and launch each one with `node`
 
-> **Status:** open
+> **Status:** archived — 2026-11-20
 
 ## Why
 
