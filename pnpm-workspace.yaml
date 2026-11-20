@@ -2,8 +2,8 @@ packages:
   - 'apps/*'
   - 'packages/*'
 # pnpm's default isolated linker stays: the hoisted one nests a copy of a
-# package under every parent whose version differs from the root's, and it
-# put six copies of @sentry/core in the mobile bundle. pnpm 11 reads no
+# package under every parent whose version differs from the root's, which
+# put several copies of one package in the mobile bundle. pnpm 11 reads no
 # public-hoist-pattern from .npmrc, so the four patterns live here.
 publicHoistPattern:
   - '*eslint*'
@@ -14,7 +14,7 @@ publicHoistPattern:
 # Windows, so `VAR=value command` in a script sets the variable on every OS.
 shellEmulator: true
 # pnpm 11 runs only the dependency build scripts listed here, and fails the
-# install on one it has not been told about. pnpm 9 ran all six.
+# install on one it has not been told about. pnpm 9 ran every one.
 allowBuilds:
   '@parcel/watcher': true
   # region sentry

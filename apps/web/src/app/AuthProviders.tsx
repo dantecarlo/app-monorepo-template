@@ -5,20 +5,20 @@ import type { ComponentProps } from 'react'
 import { useState } from 'react'
 
 import { Providers } from '@/app/providers'
-import { getAuthGateway } from '@/lib/supabase/authGateway.adapter'
+import { getAuthGateway } from '@/lib/auth/authGateway.adapter'
 
-type ISupabaseProvidersPropsType = Omit<
+type IAuthProvidersPropsType = Omit<
   ComponentProps<typeof Providers>,
   'gateway'
 >
 
-// The browser's auth gateway, the one the auth service signs in through: a
-// no-op during server rendering and without the Supabase settings.
-export const SupabaseProviders = ({
+// The browser's auth gateway, the one the auth service signs in through:
+// the backend's (src/lib/auth/), a no-op during server rendering.
+export const AuthProviders = ({
   children,
   locale,
   messages
-}: ISupabaseProvidersPropsType): React.JSX.Element => {
+}: IAuthProvidersPropsType): React.JSX.Element => {
   const [gateway] = useState<IAuthGateway>(getAuthGateway)
 
   return (

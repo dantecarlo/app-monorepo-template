@@ -5,7 +5,8 @@
 // POSIX, and a negative pid signals the whole group. Windows has no groups
 // and delivers no TERM to a native process: `taskkill /T /F` ends the tree at
 // once. A plain `child.kill()` reaches the child alone on Windows: a
-// grandchild keeps running and keeps the child's pipes open.
+// grandchild keeps running and keeps the child's pipes open. taskkill
+// itself is stopped after 5 s, so ending a tree never hangs its caller.
 // ---------------------------------------------------------------------------
 
 import { execFile, execFileSync } from 'node:child_process'
@@ -15,6 +16,7 @@ const IS_WINDOWS = process.platform === WINDOWS_PLATFORM
 const PROCESS_TREE_KILLER = 'taskkill'
 const NO_SIGNAL = 0
 const PERMISSION_DENIED = 'EPERM'
+const KILLER_TIMEOUT_MS = 5000
 
 /** Spread into `spawn` options for a child whose tree may need ending. */
 export const TREE_SPAWN_OPTIONS = Object.freeze({ detached: !IS_WINDOWS })
@@ -36,8 +38,8 @@ const isRunning = ({ pid }) => {
  * without them receives `signal` alone, and a descendant that left the group
  * is not reached.
  * With `wait`, the call returns once Windows' taskkill has, and the tree has
- * ended; without it, taskkill runs in the background. An `exit` handler
- * completes only synchronous work.
+ * ended; without it, taskkill runs in the background. Either way taskkill is
+ * stopped after 5 s. An `exit` handler completes only synchronous work.
  *
  * Returns false only when the tree could not be signalled and the child is
  * still running; a child that never started, or already ended, returns true.
@@ -47,12 +49,18 @@ export const signalProcessTree = ({ child, signal, wait = false }) => {
   if (IS_WINDOWS) {
     const args = ['/pid', String(child.pid), '/T', '/F']
     if (!wait) {
-      execFile(PROCESS_TREE_KILLER, args, { windowsHide: true }, () => {})
+      execFile(
+        PROCESS_TREE_KILLER,
+        args,
+        { timeout: KILLER_TIMEOUT_MS, windowsHide: true },
+        () => {}
+      )
       return true
     }
     try {
       execFileSync(PROCESS_TREE_KILLER, args, {
         stdio: 'ignore',
+        timeout: KILLER_TIMEOUT_MS,
         windowsHide: true
       })
       return true

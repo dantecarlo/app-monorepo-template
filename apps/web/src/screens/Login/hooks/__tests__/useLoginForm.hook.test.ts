@@ -15,7 +15,7 @@ vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
   })
 }))
 
-vi.mock('@/lib/supabase/authGateway.adapter', () => ({
+vi.mock('@/lib/auth/authGateway.adapter', () => ({
   getAuthGateway: () => ({ signIn: mockSignIn })
 }))
 

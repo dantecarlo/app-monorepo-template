@@ -23,6 +23,13 @@
       "cost": "seconds"
     },
     {
+      "id": "reap:test",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
       "id": "verify:agent-context:test",
       "capability": "core",
       "stage": "preflight",

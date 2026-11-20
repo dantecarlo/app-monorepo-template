@@ -8,7 +8,8 @@ import { gitFreeEnv } from '../../../../scripts/git-free-env.mjs'
 import {
   analyzeCoverage,
   dropRegions,
-  matchesAny
+  matchesAny,
+  parseRegions
 } from '../../../../scripts/manifest.mjs'
 import { findPruneLeaks } from '../prune-boundary.mjs'
 
@@ -504,31 +505,100 @@ const pruneRepository = ({ capabilityId, regions = dropRegions }) =>
     readText: ({ path }) => readFileSync(join(REPO_ROOT, path), 'utf8')
   })
 
-test(
-  'pruning the sentry capability of this repository leaves no dangling reference',
-  { skip: skipUnless('sentry') },
-  () => {
-    assert.deepEqual(pruneRepository({ capabilityId: 'sentry' }), [])
-  }
-)
-
-const REGISTRY_CHECKED = ['sentry', 'mobile-expo', 'supabase']
+const CLEAN_PRUNES = ['sentry', 'supabase', 'mobile-expo', 'web-next']
 
 test(
-  'pruning sentry, mobile-expo or supabase of this repository leaves the registry true',
-  { skip: !REGISTRY_CHECKED.some(declares) && 'none of them is declared' },
+  'pruning sentry, supabase, mobile-expo or web-next of this repository leaves no dangling reference',
+  { skip: !CLEAN_PRUNES.some(declares) && 'none of them is declared' },
   () => {
-    const leaks = REGISTRY_CHECKED.filter(declares).flatMap(
-      (capabilityId) =>
-        registryLeaks(pruneRepository({ capabilityId })).map((leak) => ({
+    assert.deepEqual(
+      CLEAN_PRUNES.filter(declares).flatMap((capabilityId) =>
+        pruneRepository({ capabilityId }).map((leak) => ({
           capabilityId,
           ...leak
         }))
+      ),
+      []
     )
-
-    assert.deepEqual(leaks, [])
   }
 )
+
+const REGISTRY_CHECKED = [
+  'sentry',
+  'mobile-expo',
+  'supabase',
+  'web-next',
+  'cloudflare'
+]
+
+const registryLeaksOf = ({ capabilities }) =>
+  capabilities.filter(declares).flatMap((capabilityId) =>
+    registryLeaks(pruneRepository({ capabilityId })).map((leak) => ({
+      capabilityId,
+      ...leak
+    }))
+  )
+
+test(
+  'pruning sentry, mobile-expo, supabase, web-next or cloudflare of this repository leaves the registry true',
+  { skip: !REGISTRY_CHECKED.some(declares) && 'none of them is declared' },
+  () => {
+    assert.deepEqual(
+      registryLeaksOf({ capabilities: REGISTRY_CHECKED }),
+      []
+    )
+  }
+)
+
+// The i18n and design-tokens prunes still leave imports of their packages
+// in the apps (blocker B4), so only the package.json side is held here: no
+// kept package.json declares the package whose entry the prune takes.
+const PACKAGE_TAKERS = ['i18n', 'design-tokens']
+const UNREGISTERED = 'registry-unregistered'
+
+test(
+  'pruning i18n or design-tokens of this repository keeps no package whose entry it takes',
+  { skip: !PACKAGE_TAKERS.some(declares) && 'none of them is declared' },
+  () => {
+    assert.deepEqual(
+      registryLeaksOf({ capabilities: PACKAGE_TAKERS }).filter(
+        ({ kind }) => kind === UNREGISTERED
+      ),
+      []
+    )
+  }
+)
+
+// Each app's auth gateway adapter imports a backend's gateway inside that
+// backend's region and lists it inside a region of the same owner, so the
+// backend's prune drops the import and the entry together.
+const AUTH_APPS = ['web', 'mobile']
+const ALIASED_IMPORT = /import \{ \w+ as (\w+) \}/u
+const LINE_BREAK = /\r?\n/u
+const NEWLINE = '\n'
+
+test('each app lists its backend gateway in the region of its import', () => {
+  for (const app of AUTH_APPS) {
+    const path = `apps/${app}/src/lib/auth/authGateway.adapter.ts`
+    const text = readFileSync(join(REPO_ROOT, path), 'utf8')
+    const lines = text.split(LINE_BREAK)
+    const { regions } = parseRegions({ text })
+    const body = ({ end, start }) =>
+      lines.slice(start - 1, end).join(NEWLINE)
+    for (const region of regions) {
+      const imported = ALIASED_IMPORT.exec(body(region))?.[1]
+      if (!imported) continue
+      const owners = regions
+        .filter(
+          (other) =>
+            other !== region &&
+            new RegExp(`\\b${imported}\\b`, 'u').test(body(other))
+        )
+        .map(({ owner }) => owner)
+      assert.deepEqual(owners, [region.owner], path)
+    }
+  }
+})
 
 // The Sentry part of each app's spec, its Governs line and its
 // requirements, sits in a sentry region of that spec (openspec/README.md

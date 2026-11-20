@@ -6,6 +6,7 @@
     ".agents/contracts/dependencies.json",
     ".agents/contracts/gates.json",
     ".agents/contracts/mcp-servers.json",
+    ".agents/contracts/process-reaper.json",
     ".agents/contracts/write-guard.json",
     ".agents/hooks.json",
     ".agents/projection-manifest.json",
@@ -172,6 +173,18 @@
           "file": "package.json",
           "op": "unset",
           "path": "scripts.verify:theme-sync:test"
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/web/package.json",
+          "name": "@app/tokens",
+          "scope": "dependencies"
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/mobile/package.json",
+          "name": "@app/tokens",
+          "scope": "dependencies"
         }
       ]
     },
@@ -195,6 +208,18 @@
             "apps/web/src/i18n/**",
             "apps/web/src/lib/i18n/**"
           ]
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/web/package.json",
+          "name": "@app/i18n",
+          "scope": "dependencies"
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/mobile/package.json",
+          "name": "@app/i18n",
+          "scope": "dependencies"
         }
       ]
     },
@@ -228,6 +253,12 @@
           "file": "package.json",
           "op": "unset",
           "path": "scripts.smoke:web"
+        },
+        {
+          "verb": "patch-json",
+          "file": "knip.json",
+          "op": "unset",
+          "path": "workspaces.apps/web"
         },
         {
           "verb": "remove",
@@ -268,6 +299,12 @@
           "file": "package.json",
           "op": "unset",
           "path": "scripts.verify:expo"
+        },
+        {
+          "verb": "patch-json",
+          "file": "knip.json",
+          "op": "unset",
+          "path": "workspaces.apps/mobile"
         }
       ]
     },
@@ -288,7 +325,6 @@
           "verb": "remove",
           "paths": [
             "apps/mobile/src/lib/supabase/**",
-            "apps/web/src/app/SupabaseProviders.tsx",
             "apps/web/src/lib/supabase/**"
           ]
         },
@@ -347,6 +383,12 @@
             "apps/web/src/lib/image-delivery/**",
             "apps/web/src/lib/origin-guard/**"
           ]
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/web/package.json",
+          "name": "@app/cloudflare",
+          "scope": "dependencies"
         }
       ]
     },
@@ -503,6 +545,7 @@
         "openspec/config.yaml",
         "openspec/specs/harness/dependency-seams/spec.md",
         "openspec/specs/harness/mcp/spec.md",
+        "openspec/specs/harness/process-reaper/spec.md",
         "openspec/specs/harness/ticket-flow/spec.md",
         "openspec/specs/packages/core/spec.md",
         "openspec/specs/packages/tooling/spec.md",
