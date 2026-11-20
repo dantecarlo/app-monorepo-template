@@ -1,6 +1,7 @@
 {
   "version": 1,
   "core": [
+    ".agents/agent-context.json",
     ".agents/agents/**",
     ".agents/contracts/dependencies.json",
     ".agents/contracts/mcp-servers.json",
@@ -97,6 +98,8 @@
     "scripts/move-tests-into-blocks.test.mjs",
     "scripts/update-mcp-docs.mjs",
     "scripts/update-mcp-docs.test.mjs",
+    "scripts/verify-agent-context.mjs",
+    "scripts/verify-agent-context.test.mjs",
     "scripts/verify-allowlist-freshness.mjs",
     "scripts/verify-allowlist-freshness.test.mjs",
     "scripts/verify-dependency-seams.mjs",
