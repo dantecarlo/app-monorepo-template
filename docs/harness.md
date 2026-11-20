@@ -109,6 +109,7 @@ the pre-commit hook on staged files.
 | `verify:unicode-safety` | No tracked text file holds a zero-width character (U+200B to U+200D, U+2060, U+FEFF), a direction embedding, override or isolate (U+202A to U+202E, U+2066 to U+2069), a tag character (U+E0000 to U+E007F) or an invisible filler (U+115F, U+1160, U+3164, U+FFA0); the emoji joiner U+200D is allowed under `packages/i18n/src/locales/`, a file holding a NUL byte is skipped as binary, and a finding names the file, the line, the column and the code point. `verify:unicode-safety:test` plants each code point and runs the gate over a scratch repository |
 | `verify:workflow-pins` | Every `uses:` of every workflow under `.github/workflows/` (`.yml` or `.yaml`), a step and a reusable workflow alike, is pinned to a full 40-character commit SHA, the tag it was resolved from kept as a comment; a local action (`./`) and a Docker image (`docker://`) are exempt; a line inside any block scalar (`\|` or `>`, a `run:` script and a folded `name:` alike) is not judged, a comment never opens one, and a quoted `"uses":` key is judged. `verify:workflow-pins:test` plants a tag, a branch, a short SHA and a missing ref |
 | `verify:skill-frontmatter` | Every `.claude/skills/*/SKILL.md` has a frontmatter that parses, a `name` that is its folder, and a description of at most 1,024 characters once parsed (the line break a `>` block keeps counted) that holds `USE WHEN:` and `DO NOT USE:`; a skill `.claude/skills-lock.json` lists (archify) is vendored and gets the parse, name and length checks only. `verify:skill-frontmatter:test` plants each refusal, both quoting styles and both block styles |
+| `git-free-env:test`, `hook-git-dir:test` | `gitFreeEnv()` drops every `GIT_*` variable, in any case, from the environment a script hands to git or to a child; `withHookGitDir` runs a flow with `GIT_DIR` and `GIT_INDEX_FILE` naming a decoy repository, as a git hook exports them, reports whether anything under the decoy changed, and puts both variables back and removes the decoy however the flow ends. Every suite that spawns git runs one end-to-end case under it and asserts the decoy is left alone; `init-project:test` takes its whole copy under it |
 | `codex-budget:test`   | The generated `.codex/config.toml` sets `project_doc_max_bytes` above every table header, and `AGENTS.md`, counted with CRLF endings, fits it: Codex drops what is past the budget |
 | `check:identity`      | The template's default identity is gone (skipped on self)                                 |
 | `knip`                | No dead exports, no unlisted or unused dependencies                                       |
@@ -272,7 +273,12 @@ which is worse than not having it.
    `scripts/<name>.mjs` for a verify script. Pure means no filesystem and no
    git inside it, so its tests drive it with fixtures.
 4. **Write its test.** Synthetic fixtures, one case per rule, including the
-   cases that must NOT fire.
+   cases that must NOT fire. A test that spawns git, or a child that runs
+   git, starts it in `gitFreeEnv()` (`scripts/git-free-env.mjs`), and the
+   suite runs one end-to-end case inside `withHookGitDir`
+   (`scripts/hook-git-dir.mjs`) asserting `decoyWritten` is false: a hook
+   runs the suite with `GIT_DIR` set, and a git that inherits it writes to
+   the hook's repository whatever its `cwd`.
 5. **Scope it.** A rule that fires on files it was never meant to judge is a
    wiring bug, not a finding. Prove the glob before trusting the count.
 6. **Prove it fires.** Plant a violation on purpose and watch it fail. A gate

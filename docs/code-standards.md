@@ -802,6 +802,7 @@ This table exists so that difference is visible.
 | CI actions pinned           | script        | `verify:workflow-pins` — every `uses:` a full commit SHA; local and `docker://` exempt; not whether the SHA is the tag its comment names |
 | Every skill findable        | script        | `verify:skill-frontmatter` — frontmatter parses, `name` is the folder, description within 1,024 characters with `USE WHEN:` and `DO NOT USE:` (vendored skills: parse, name and length only); not whether the triggers are the right ones |
 | `AGENTS.md` fits Codex      | test          | `codex-budget:test` — CRLF bytes within `project_doc_max_bytes`     |
+| Suites safe in a git hook   | test          | `hook-git-dir:test` + `git-free-env:test`; each suite that spawns git runs one end-to-end case under `withHookGitDir` and asserts the decoy `GIT_DIR` is left alone; not a suite that never adds the case, or a git a child starts with the hook's variables a suite passed it, which review reads |
 | Agent projections in sync   | script        | `agent-harness:projection-check` — each projection equals its source |
 | Every agent names its grader | script       | `verify:agent-context` (and `:test`) — every agent has a `gradedBy` in `.agents/agent-context.json` naming skills that exist, and no entry outlives its agent; not whether the skill is the right grader, or that its evals ever ran |
 | `AGENTS.md` LAWs and Router | review        | — no gate reads a LAW, or checks that a skill has a router row      |

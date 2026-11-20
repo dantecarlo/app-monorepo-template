@@ -15,6 +15,7 @@ import { test } from 'node:test'
 
 import { withScratchTree } from './gate/scratch.mjs'
 import { gitFreeEnv } from './git-free-env.mjs'
+import { withHookGitDir } from './hook-git-dir.mjs'
 import {
   analyzeCoverage,
   analyzeRegions,
@@ -506,6 +507,25 @@ test('the coverage gate passes a tree whose files and registry entries each have
   assert.match(
     result.stdout,
     /all 3 tracked file\(s\) owned exactly once, no stale claims, 2 registry entries each owned once/u
+  )
+})
+
+test("END TO END: under a hook's GIT_DIR, the coverage gate reads the scratch repository and the hook's repository is left alone", () => {
+  const { decoyWritten, result } = withHookGitDir({
+    use: () =>
+      runCoverageGate({
+        files: {
+          [REGISTRY]: OWNED_REGISTRY,
+          'apps/web/a.ts': 'export {}\n'
+        }
+      })
+  })
+
+  assert.equal(decoyWritten, false)
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(
+    result.stdout,
+    /all 3 tracked file\(s\) owned exactly once, no stale claims/u
   )
 })
 

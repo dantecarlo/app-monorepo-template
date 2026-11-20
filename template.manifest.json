@@ -88,6 +88,8 @@
     "scripts/gate/**",
     "scripts/git-free-env.mjs",
     "scripts/git-free-env.test.mjs",
+    "scripts/hook-git-dir.mjs",
+    "scripts/hook-git-dir.test.mjs",
     "scripts/init-project.mjs",
     "scripts/init-project.test.mjs",
     "scripts/manifest-owners.mjs",

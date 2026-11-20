@@ -27,6 +27,7 @@ import { registerCases, runCases } from './gate/cases.mjs'
 import { blindGate } from './gate/gate.mjs'
 import { withScratchTree } from './gate/scratch.mjs'
 import { gitFreeEnv } from './git-free-env.mjs'
+import { withHookGitDir } from './hook-git-dir.mjs'
 import { gate } from './verify-unicode-safety.mjs'
 
 const GATE = join(
@@ -235,6 +236,23 @@ const checks = [
       })
       assert.equal(result.status, FAILED, result.stdout)
       assert.match(result.stderr, /verify-unicode-safety: 1 problem/u)
+      assert.match(result.stderr, /docs\/notes\.md:1:14: U\+202E\b/u)
+    }
+  },
+  {
+    name: "END TO END: under a hook's GIT_DIR, the gate lists the scratch repository and the hook's repository is left alone",
+    run: () => {
+      const { decoyWritten, result } = withHookGitDir({
+        use: () =>
+          runGate({
+            files: {
+              'README.md': '# Readme\n',
+              [DOC]: lineWith({ codePoint: RIGHT_TO_LEFT_OVERRIDE })
+            }
+          })
+      })
+      assert.equal(decoyWritten, false)
+      assert.equal(result.status, FAILED, result.stdout)
       assert.match(result.stderr, /docs\/notes\.md:1:14: U\+202E\b/u)
     }
   },
