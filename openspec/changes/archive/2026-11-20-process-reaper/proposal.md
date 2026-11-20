@@ -59,6 +59,15 @@ The owner's words, verbatim:
   § 21 and `docs/maps/global-map.md`, the new living spec and its row in `openspec/README.md`
   § 2.1, and the manifest claims.
 
+- **The verifier's correction (2026-11-20).** An independent verifier found that a family matched
+  text anywhere in a command line, so a live Git for Windows shell whose text named turbo was a
+  candidate, and that a PreToolUse hook with no matcher lost its error text. A family now matches
+  a process's own executable and script; consoles, POSIX shells and the npx launcher are wrappers
+  read by what they wrap; Git for Windows processes, tmux and screen are spared; persistent and
+  watch work matches no family; a killing run takes a lock and reads each candidate again right
+  before its kill; `signalProcessTree` stops taskkill after 5 s; the session hook's timer holds
+  the process; and a silent fetch failure names its error or exit code.
+
 ## Out of scope
 
 - **An orphan whose parent pid was reused by a process that does not read as newer than it**,
@@ -74,7 +83,8 @@ The owner's words, verbatim:
 
 ## Affected specs
 
-- `openspec/specs/harness/process-reaper/spec.md` (new): added REAP-01 to REAP-10.
+- `openspec/specs/harness/process-reaper/spec.md` (new): added REAP-01 to REAP-12.
+- `openspec/specs/packages/tooling/spec.md`: modified TOOLING-12 (taskkill stopped after 5 s).
 
 <!--
 Status is one of: open; archived — <date>; discarded — <date>, <reason>.

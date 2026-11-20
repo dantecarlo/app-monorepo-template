@@ -220,7 +220,7 @@ template runs Vitest 4.
 The tooling package SHALL export `TREE_SPAWN_OPTIONS` frozen, with `detached` true on POSIX and
 false on Windows, so a child spawned with it leads its own process group on POSIX.
 
-**Evidence:** `packages/tooling/src/process-tree.mjs:20`
+**Evidence:** `packages/tooling/src/process-tree.mjs:22`
 
 #### Scenario: the options on the running platform
 
@@ -234,12 +234,12 @@ false on Windows, so a child spawned with it leads its own process group on POSI
 The tooling package SHALL end a child and its descendants from `signalProcessTree` (on POSIX by
 sending the signal to the child's process group, which holds its descendants only when the child
 was spawned with `TREE_SPAWN_OPTIONS`, so a child spawned without them receives the signal alone;
-on Windows by `taskkill /pid <pid> /T /F` whatever the signal), and say in its declaration and
-its JSDoc that on POSIX the descendants are reached only for a child spawned with
-`TREE_SPAWN_OPTIONS`.
+on Windows by `taskkill /pid <pid> /T /F` whatever the signal, stopped after 5 s whether or not
+the call waits for it), and say in its declaration and its JSDoc that on POSIX the descendants
+are reached only for a child spawned with `TREE_SPAWN_OPTIONS`.
 
-**Evidence:** `packages/tooling/src/process-tree.mjs:47-65`,
-`packages/tooling/src/process-tree.d.mts:6-9`, `packages/tooling/src/process-tree.mjs:34-37`
+**Evidence:** `packages/tooling/src/process-tree.mjs:47-78`, `packages/tooling/src/process-tree.mjs:19`,
+`packages/tooling/src/process-tree.d.mts:6-9`, `packages/tooling/src/process-tree.mjs:36-39`
 
 #### Scenario: a child that started a process
 
@@ -247,6 +247,13 @@ its JSDoc that on POSIX the descendants are reached only for a child spawned wit
 - **WHEN** `signalProcessTree` signals it with `SIGTERM` and `wait`
 - **THEN** it returns true, and both the child and the process it started end within ten seconds
 - **Test:** `packages/tooling/src/__tests__/process-tree.test.mjs` › "signalProcessTree ends a child and the process it started"
+
+#### Scenario: taskkill is bounded
+
+- **GIVEN** `signalProcessTree` on Windows, with `wait` and without it
+- **WHEN** it runs taskkill
+- **THEN** each call gives taskkill a 5 s timeout, so a taskkill that hangs never holds its caller
+- **Test:** `packages/tooling/src/__tests__/process-tree.test.mjs` › "on Windows taskkill is bounded at 5 s, waited for or not"
 
 #### Scenario: a POSIX child that leads no group
 
@@ -270,7 +277,7 @@ The tooling package SHALL, on Windows, run taskkill to completion before `signal
 returns when `wait` is set, and start it in the background and return true at once when it is
 not.
 
-**Evidence:** `packages/tooling/src/process-tree.mjs:48-62`
+**Evidence:** `packages/tooling/src/process-tree.mjs:49-66`
 
 #### Scenario: with wait
 
@@ -293,8 +300,8 @@ The tooling package SHALL return false from `signalProcessTree` only when the tr
 signalled and the child is still running, and true for a child that never started or has already
 ended.
 
-**Evidence:** `packages/tooling/src/process-tree.mjs:46`,
-`packages/tooling/src/process-tree.mjs:59-61`, `packages/tooling/src/process-tree.mjs:66-68`
+**Evidence:** `packages/tooling/src/process-tree.mjs:48`,
+`packages/tooling/src/process-tree.mjs:67-70`, `packages/tooling/src/process-tree.mjs:72-77`
 
 #### Scenario: a tree that already ended
 

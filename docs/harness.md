@@ -127,7 +127,7 @@ The chain runs in cost order:
 | `pnpm agent-harness:projection-check` | Every projected agent file equals what its neutral source renders, and is committed (see 3e) |
 | `pnpm agent-harness:test`       | The projector's reader, adapters, hook projection, writer, checker and sync still behave |
 | `pnpm write-guard:test`         | The write guard decides every cell of its table, its errors and its switch-off, reads every Windows spelling of a path (or refuses what it cannot read) and every checkout that holds it, judges a 10,000-folder path in under a second, every checkout rule glob matches a file and every module the hook loads is a rule file, and the real hook answers a payload on stdin end to end, through a junction too (see 3f) |
-| `pnpm reap:test`               | The process reaper's core decides each rule over synthetic process tables (an orphan, a live parent, a reused pid, POSIX reparenting, unknown names, the console wrappers, its own ancestry, a spared daemon, the grace period); the adapter lists and ends on each platform through an injected spawn; the command's modes, bound and exit codes; the session hook's kill mode and its exit 0 on any failure; and `runBounded` ends a real child's tree on Windows (see 3g) |
+| `pnpm reap:test`               | The process reaper's core decides each rule over synthetic process tables (an orphan, a live parent, a reused pid, POSIX reparenting, unknown names, a family matched by executable and script and never by text in the arguments, persistent and watch work, the wrappers, live Git for Windows shells and tmux, its own ancestry, the spared processes, the grace period); the adapter lists and ends on each platform through an injected spawn; the command's modes, lock, second listing, bound and exit codes; the session hook's kill mode and its exit 0 on any failure; and `runBounded` ends a real child's tree on Windows (see 3g) |
 | `pnpm verify:agent-context:test` | The agent-context gate fails each defect it names, on synthetic entries and over a scratch tree |
 | `pnpm verify:agent-context`     | Every agent of `.agents/agents/` has an entry in `.agents/agent-context.json` whose `gradedBy` names the skills that grade it, each a folder of `.claude/skills/` holding a `SKILL.md`, whose `writes` is true or false, whose `surface`, if any, lists repository-relative folders beside `writes: true`, and which holds no other key; no entry names an agent that is gone (see 3e) |
 | `pnpm verify:manifest`          | `template.manifest.json` is well formed                   |
@@ -393,61 +393,79 @@ priority 1 on 2026-11-20.
 | Piece                                            | What it is |
 | ------------------------------------------------ | ---------- |
 | `.agents/contracts/process-reaper.json`          | The families it may end, the processes it spares, the 60 s grace and the 8 s bound; a rule file |
-| `scripts/agent-harness/reaper/plan.mjs`          | The pure core: from the process list, as data, the trees to end and the trees kept, each with its reason |
+| `scripts/agent-harness/reaper/plan.mjs`          | The pure core: from the process list, as data, each process's entry and the trees to end and keep, each with its reason |
 | `scripts/agent-harness/reaper/platform.mjs`      | The adapter: it lists with `Get-CimInstance Win32_Process` on Windows and `ps` on POSIX, and ends a tree with `taskkill /PID <pid> /T /F`, or SIGTERM then SIGKILL after 2 s |
 | `scripts/agent-harness/reaper/bounded-child.mjs` | `runBounded`: a child with a time bound, ended with its whole tree at the bound; the worktree pruner's fetch runs through it |
+| `scripts/agent-harness/reaper/lock.mjs`          | The lock that keeps one killing reaper at a time |
 | `scripts/agent-harness/reaper/reap.mjs`          | The command, `pnpm reap` and `pnpm reap:kill` |
 | `scripts/agent-harness/reaper/session-start.mjs` | The Claude Code `SessionStart` hook |
 
 **What it ends.** An orphan: a process whose parent pid names no live process,
 or names one that started after it (the pid was reused); on POSIX also one
-under pid 1 or the user's subreaper (`systemd --user`, a WSL `/init`). It ends
-an orphan only when its command line matches a family of the contract, and then
-with its whole descendant tree: an MCP server npx started and its npx launcher,
-the known MCP server entrypoints (context7, codegraph, shadcn, next-devtools,
-metro, expo-mcp, react-native-docs, lottiefiles, scrapling), vitest and its
-tinypool workers, turbo, esbuild, tsc, jest workers and `git-remote-https`. A
-`cmd.exe` or `conhost.exe` is read by its name alone and goes only with the one
-reapable process it wraps, its childless consoles aside. Each `npx -y <pkg>`
-server is four processes, `cmd.exe`, `conhost.exe`, the npx launcher and the
-server, and the launcher holds about as much memory as the server.
+under pid 1 or the user's subreaper (`systemd --user`, a WSL `/init`). A family
+matches a process's entry alone, never text anywhere in its command line: its
+own executable and, for node or python, the script it runs, its first argument
+that is not a flag, with the arguments after it. It ends an orphan only when
+that entry matches a family, and then with its whole descendant tree: an MCP
+server npx started from its cache, the known MCP server entrypoints (context7,
+codegraph serve --mcp, shadcn mcp, next-devtools, metro, expo-mcp,
+react-native-docs, lottiefiles, scrapling), a one-shot vitest run and its
+workers, a one-shot turbo run, the esbuild service, a one-shot tsc, jest workers
+and `git-remote-https`. A wrapper, a console (`cmd.exe`, `conhost.exe`,
+powershell, pwsh), a POSIX shell (`sh`, `bash`, `env`, `timeout`) or the npx
+launcher, is read only by what it wraps and goes only with the one reapable
+process it wraps, its childless consoles aside. Each `npx -y <pkg>` server is
+four processes, `cmd.exe`, `conhost.exe`, the npx launcher and the server, and
+the launcher holds about as much memory as the server.
 
-**What it never ends.** Its own ancestry; a tree that holds a process the
-contract spares, today the shared MCP proxy `mcp-proxy`, which runs detached by
-design and so reads as an orphan while every session still uses it; a tree that
-holds a process younger than 60 s, or one whose start time the listing cannot
-read; and anything outside the families. Every tree it keeps is printed with
-its reason.
+**What it never ends.** Persistent and watch work, without the owner's word: the
+families are one-shot runs, so `turbo run dev` or `start`, the turbo daemon,
+`vitest` without `run`, `tsc --watch`, tsserver and the dev servers (`next dev`,
+`expo start`, metro) match none. Its own ancestry. A tree that holds a process
+the contract spares: the shared MCP proxy, however it is launched (the
+`mcp-proxy` executable, `python -m mcp_proxy`, a node `mcp-proxy` script), which
+runs detached by design; every Git for Windows (MSYS) process, whose runtime
+reports a parent already gone while it still works, so a live `sh.exe` or
+`bash.exe` would read as an orphan; and tmux or screen, servers detached by
+design. A tree that holds a process younger than 60 s, or one whose start time
+the listing cannot read. And anything outside the families. Every tree it keeps
+is printed with its reason.
 
 **The commands.** `pnpm reap` is a dry run: one line per tree it would end (its
-root pid, family, age, process count and MB), one per tree it keeps and why,
-then the total MB. `pnpm reap:kill` ends them; `--json` prints the plan as one
-JSON line and `--quiet` only the total line. It exits 0 when it finished, with
-or without ends, and 1 on a failure: a listing that fails, a tree it could not
-end, an unknown option. It ends within 8 s: a run that reaches the bound ends
-no tree it had not already decided on, says so and exits 1.
+root pid, family, the wrapper it came through, age, process count and MB), one
+`kept` line per tree it keeps and why, then the total MB. `pnpm reap:kill` ends
+them; `--json` prints the plan as one JSON line and `--quiet` only the total
+line. A killing run first creates `atl-process-reaper.lock` in the OS temp
+directory, exclusively; another reaper that finds it held prints so and exits 0
+at once, and a lock older than 30 s, left by a reaper that died, is taken over.
+Right before its kills it lists the processes again and leaves every tree whose
+root pid is gone or now names a process that started at another time, since a
+tree kill follows a reused pid. It exits 0 when it finished, with or without
+ends, and 1 on a failure: a listing that fails, a tree it could not end, an
+unknown option. It ends within 8 s: a run that reaches the bound ends no tree it
+had not already decided on, says so and exits 1. `signalProcessTree` stops a
+taskkill after 5 s (TOOLING-12).
 
 **The hook.** `.agents/hooks.json` runs `session-start.mjs` at every
 `SessionStart`, with no matcher (start, resume, clear and compaction) and a
 15 s hook timeout: the reaper with `--kill --quiet`, whose total line Claude
 Code adds to the session's context. It never blocks or fails the session: the
-reaper is imported inside a `try`, and whatever goes wrong prints one line to
-stderr and exits 0. Like the write guard it runs from the main checkout
-(`${CLAUDE_PROJECT_DIR}`). To switch it off, put `"disableAllHooks": true` in
-`.claude/settings.local.json`.
+reaper is imported inside a `try`, and whatever goes wrong, a reaper that hangs
+included, prints one line to stderr and exits 0. Like the write guard it runs
+from the main checkout (`${CLAUDE_PROJECT_DIR}`). To switch it off, put
+`"disableAllHooks": true` in `.claude/settings.local.json`.
 
 **Not covered:** an orphan whose parent pid was reused by a process that does
 not read as newer than it, such as one whose start time the listing cannot
 read, stays; a runaway that still has its parent is out of scope, however much
-memory it holds; and so is an orphan outside the families: on Windows a Git for
-Windows shell breaks the parent chain by design, so an `sh.exe` that runs a git
-hook reads as an orphan while it works, and no shell is a family, and an
-orphaned `pnpm` keeps the turbo or vitest below it, whose parent is still alive.
-A tool's own daemon that matches a family is ended (turbo's starts again on its
-next run); one that must survive is added to the spare list, on the owner's
-word. On POSIX a process forked between the SIGTERM and the SIGKILL is not
-reached, and the pruner's stopped fetch still signals git alone, as before.
-Codex, OpenCode and Copilot run no adapter, as for the write guard.
+memory it holds; and so is an orphan outside the families: an orphaned `pnpm`
+keeps the turbo or vitest below it, whose parent is still alive, and a Git for
+Windows shell is spared, so a tree a dead Git Bash leaves behind stays, except
+for a family process that becomes an orphan itself. A one-shot run that matches
+a family but should survive is added to the spare list, on the owner's word. On
+POSIX a process forked between the SIGTERM and the SIGKILL is not reached, and
+the pruner's stopped fetch still signals git alone, as before. Codex, OpenCode
+and Copilot run no adapter, as for the write guard.
 
 ---
 

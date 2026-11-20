@@ -36,6 +36,52 @@
 | REAP-10 | the bound | `scripts/agent-harness/reaper/bounded-child.test.mjs` › "a child that outlasts its bound has its tree ended and reads as timed out" | green |
 | REAP-10 | a real tree on Windows | `scripts/agent-harness/reaper/bounded-child.test.mjs` › "on Windows a child stopped at its bound takes the process it started with it" | green, on Windows |
 | REAP-10 | the pruner's fetch on Windows | `scripts/prune-worktrees.test.mjs` › "on Windows a fetch stopped at its bound ends the processes git started" | green, on Windows |
+| REAP-03 | text in the arguments | `scripts/agent-harness/reaper/plan.test.mjs` › "a family is matched by the executable and its script, never by text in the arguments" | green |
+| REAP-03 | persistent and watch work | `scripts/agent-harness/reaper/plan.test.mjs` › "persistent and watch work is never a candidate, one-shot runs are" | green |
+| REAP-03 | the entry of a process | `scripts/agent-harness/reaper/contract.test.mjs` › "the entry of a process is its executable and its script, the flags before it skipped" | green |
+| REAP-04 | a reparented POSIX shell | `scripts/agent-harness/reaper/plan.test.mjs` › "on POSIX a reparented shell that wraps one reapable run goes with it" | green |
+| REAP-04 | the wrapper family | `scripts/agent-harness/reaper/contract.test.mjs` › "the wrapper family matches the consoles, the POSIX shells and the npx launcher" | green |
+| REAP-05 | a live Git for Windows shell | `scripts/agent-harness/reaper/plan.test.mjs` › "a live MSYS shell that runs pnpm turbo run dev is never a candidate, whatever its text" | green |
+| REAP-05 | Git for Windows and the multiplexers | `scripts/agent-harness/reaper/contract.test.mjs` › "the committed contract spares Git for Windows processes and terminal multiplexers" | green |
+| REAP-09 | a PreToolUse hook with no matcher | `scripts/agent-harness/hooks-projection.test.mjs` › "a PreToolUse hook with no matcher is refused as missing it, in the words it always used" | green |
+| REAP-09 | a hung reaper in a process of its own | `scripts/agent-harness/reaper/session-start.test.mjs` › "a hung reaper still lets the hook process exit 0 with its one line" | green |
+| REAP-10 | a silent fetch failure | `scripts/prune-worktrees.test.mjs` › "a fetch that fails with nothing on stderr names its error or its exit code, never undefined" | green |
+| REAP-11 | the lock is held | `scripts/agent-harness/reaper/reap.test.mjs` › "a second reaper finds the lock and exits 0 at once, ending nothing" | green |
+| REAP-11 | a stale lock | `scripts/agent-harness/reaper/reap.test.mjs` › "a lock older than 30 s is a reaper that died, and is taken over" | green |
+| REAP-11 | a dry run | `scripts/agent-harness/reaper/reap.test.mjs` › "a dry run takes no lock" | green |
+| REAP-12 | a reused pid by the kill | `scripts/agent-harness/reaper/reap.test.mjs` › "a candidate whose pid names another process by its kill is left, and the rest are ended" | green |
+| TOOLING-12 | taskkill is bounded | `packages/tooling/src/__tests__/process-tree.test.mjs` › "on Windows taskkill is bounded at 5 s, waited for or not" | green, on Windows |
+
+## The verifier's correction
+
+An independent verifier read the branch at `d217c8f` and found two blockers and eight
+advisories; one correction batch fixed all of them, each test seen red for its stated reason
+first.
+
+- **B1, a live shell ended.** A family matched text anywhere in a command line, and a Git for
+  Windows shell reports a parent already gone while it works, so the dry run on the building
+  machine listed `sh -c 'sleep 200; : turbo run dev marker'` as "would end pid 59832, turbo".
+  Red: the verifier's table (an `sh.exe` running `pnpm turbo run dev` above a `next dev`) gave
+  that shell as a turbo candidate. Fixed: a family matches the executable and the script alone
+  (REAP-03); consoles, POSIX shells and the npx launcher are wrappers (REAP-04); Git for Windows
+  processes, tmux and screen are spared (REAP-05). Live check after the fix: an orphaned
+  `sh.exe` naming `turbo run dev marker`, 66 s old, was no candidate.
+- **B2, an error text changed.** A PreToolUse hook with no matcher read "matcher must name the
+  tools it runs on". Red with that text; fixed back to `missing matcher` and
+  `missing matcher, name` (REAP-09). A differential run of the base and the fix over thirteen hook
+  sources differs only in the list of events, which now names SessionStart.
+- **Advisories.** A lock, stale after 30 s, and a second listing right before the kills
+  (REAP-11, REAP-12; red: the module and the kill had neither). The spare matches `mcp-proxy`
+  however it is launched (REAP-05). Persistent and watch work matches no family (REAP-03).
+  `signalProcessTree` stops taskkill after 5 s (TOOLING-12; red: `timeout: undefined`); a POSIX
+  kill is one `process.kill` system call and needs no bound. The session hook's race timer holds
+  the process (REAP-09; red: exit 13, an unsettled top-level await). A silent fetch failure names
+  its error or exit code (REAP-10; red: `failed in /r: undefined`). Q1 is closed: the parent
+  corrected the pruner's not-covered text in `d217c8f`. REAP-06 states the `kept` lines.
+- **Checks after the batch:** `pnpm reap:test` 96 pass, `pnpm agent-harness:test` 88, the
+  projection check, `pnpm write-guard:test`, the pruner suite 81, the tooling process-tree suite 5,
+  `pnpm verify:specs`, `pnpm verify:english`, `pnpm knip` and ESLint, each exit 0; `pnpm reap` on
+  the building machine: no tree to end, 0 MB.
 
 ## Gate
 
@@ -57,8 +103,9 @@
 
 ## Not verified
 
-- The two Windows-only tests are skipped on POSIX, where a stopped child keeps receiving its
-  signal alone, as before; no POSIX machine ran the suite.
+- The three Windows-only tests (the bounded child's real tree, the pruner's stopped fetch and the
+  taskkill bound) are skipped on POSIX, where a stopped child keeps receiving its signal alone, as
+  before; no POSIX machine ran the suites, and the POSIX tables of the core are synthetic.
 - `pnpm reap:kill` and the session hook's kill mode never ran against this machine's processes:
   every kill in the suite goes to an injected spawn, by the owner's instruction that the parent
   reviews the dry-run list before any real kill.
