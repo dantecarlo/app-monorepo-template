@@ -208,6 +208,25 @@ test('opts in at launch after a grant from an earlier launch', async () => {
   expect(getPostHogClient()).toBeDefined()
 })
 
+// The launch restores the grant on its own, with no caller to hear of a
+// failure: one left unhandled would reach PostHog's own capture of
+// unhandled rejections.
+test('rejects nothing when the launch fails to opt in again', async () => {
+  const unhandled = vi.fn()
+  process.on('unhandledRejection', unhandled)
+  optIn.mockRejectedValueOnce(new Error('the SDK refused the opt-in'))
+
+  try {
+    await loadClient({ consent: 'opt-in', grantedEarlier: true, key: KEY })
+    await vi.waitFor(() => expect(optIn).toHaveBeenCalledOnce())
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(unhandled).not.toHaveBeenCalled()
+  } finally {
+    process.off('unhandledRejection', unhandled)
+  }
+})
+
 test('starts memory mode with memory persistence', async () => {
   const { posthogConsentStorage } = await loadClient({
     consent: 'memory',

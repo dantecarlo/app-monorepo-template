@@ -1,4 +1,4 @@
-import { PostHog } from 'posthog-react-native'
+import { PostHog, PostHogPersistedProperty } from 'posthog-react-native'
 
 import { createConsentStorage } from '@/lib/posthog/consentStorage.adapter'
 import type { IPostHogConsentStorage } from '@/lib/posthog/consentStorage.type'
@@ -8,6 +8,7 @@ import {
   POSTHOG_ERROR_TRACKING,
   POSTHOG_HOST,
   POSTHOG_KEY,
+  POSTHOG_STOP_TIMEOUT_MS,
   PostHogConsentModeEnum,
   type PostHogConsentModeType
 } from '@/lib/posthog/posthogClient.constant'
@@ -22,7 +23,7 @@ const createPostHogClient = ({
   consentMode: PostHogConsentModeType
   consentStorage: IPostHogConsentStorage | undefined
   key: string
-}): IPostHogClient =>
+}): PostHog =>
   new PostHog(key, {
     // App lifecycle events are product analytics, not observability.
     captureAppLifecycleEvents: false,
@@ -53,7 +54,19 @@ export const posthogConsentStorage: IPostHogConsentStorage | undefined =
     : undefined
 
 // The ONE PostHog client of this app, while one exists.
-const current: { client?: IPostHogClient } = {}
+const current: { client?: PostHog } = {}
+
+const ignore = (): void => undefined
+
+// The persisted properties that hold what a client has not sent yet: its
+// events, its AI events and its log records. The SDK's reset keeps them, and
+// its flush sends them whatever its opt-out says.
+const queuedProperties = (): PostHogPersistedProperty[] => [
+  PostHogPersistedProperty.Queue,
+  PostHogPersistedProperty.AiQueue,
+  PostHogPersistedProperty.AiCaptureQueue,
+  PostHogPersistedProperty.LogsQueue
+]
 
 /** The client, or undefined while none exists: a caller guards every call. */
 export const getPostHogClient = (): IPostHogClient | undefined =>
@@ -76,9 +89,25 @@ export const startPostHogClient = (): IPostHogClient | undefined => {
   return current.client
 }
 
-/** Drops the client; a later start constructs a new one. */
-export const stopPostHogClient = (): void => {
+/**
+ * Drops the client at once, so every later call is dropped and a later
+ * start constructs a new one. Then opts it out, empties its queues, so
+ * nothing it captured before the stop is sent after it, and shuts it down,
+ * which stops its flush timers with nothing left to send. Resolves once it
+ * is shut down, in `POSTHOG_STOP_TIMEOUT_MS` at most.
+ */
+export const stopPostHogClient = async (): Promise<void> => {
+  const { client } = current
   current.client = undefined
+  if (!client) return
+  try {
+    await client.optOut()
+  } finally {
+    queuedProperties().forEach((key) =>
+      client.setPersistedProperty(key, null)
+    )
+    await client.shutdown(POSTHOG_STOP_TIMEOUT_MS)
+  }
 }
 
 // A grant from an earlier launch starts the client and opts it in again, so
@@ -96,6 +125,10 @@ if (POSTHOG_KEY && posthogConsentMode !== PostHogConsentModeEnum.OPT_IN) {
   startPostHogClient()
 }
 
+// A launch that fails to opt the client in again leaves it opted out, as
+// `defaultOptIn: false` built it, and rejects nothing.
 if (posthogConsentStorage) {
-  void startAfterEarlierGrant({ consentStorage: posthogConsentStorage })
+  void startAfterEarlierGrant({
+    consentStorage: posthogConsentStorage
+  }).catch(ignore)
 }

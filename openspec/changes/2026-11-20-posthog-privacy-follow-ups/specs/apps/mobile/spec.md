@@ -157,6 +157,14 @@ call nothing on PostHog.
   the status reads `granted`
 - **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "grant constructs the client once, opens the consent storage, opts PostHog in and reads granted"
 
+#### Scenario: the client's first write
+
+- **GIVEN** a key, the consent mode `opt-in` and a client that writes to its storage as it is
+  constructed
+- **WHEN** consent is granted
+- **THEN** the device holds that write under the consent storage's prefix
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "grant opens the consent storage before it constructs the client, so its first write reaches the device"
+
 #### Scenario: a revoke
 
 - **GIVEN** a key, the consent mode `opt-in` and a grant
