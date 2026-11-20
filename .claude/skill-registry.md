@@ -11,6 +11,7 @@ Last updated: 2026-11-19
 
 - **Description**: WCAG 2.1 AA accessibility audit for a component, screen, or scope.
 - **Triggers**: "a11y audit", "accessibility review", "check accessibility for [X]", "WCAG compliance", "screen reader support", "is [component] accessible?"
+- **DO NOT USE**: applying the fixes it reports (use `modify`), a performance or security review (use `perf` or `security`), or a done verdict over a whole change (use `validate-all`)
 - **Path**: `.claude/skills/a11y/SKILL.md`
 
 ---
@@ -19,6 +20,7 @@ Last updated: 2026-11-19
 
 - **Description**: Foundational architecture reference and navigational map for the template monorepo.
 - **Triggers**: "what's the architecture?", "what are the conventions?", "how should I name this?", "what layer does X belong to?", any coding task, "show me the folder structure", "what are the rules?"
+- **DO NOT USE**: auditing the structure of one built block (use `fractal-verify`), or drawing the architecture as a diagram (use `archify`)
 - **Path**: `.claude/skills/arch/SKILL.md`
 
 ---
@@ -35,7 +37,7 @@ Last updated: 2026-11-19
 
 - **Description**: Generate a presentational React component block.
 - **Triggers**: "create component", "new component [name]", "generate component", "add a [name] component", "build the [name] UI block"
-- **DO NOT USE**: for screens or data-fetching containers — use `screen` instead
+- **DO NOT USE**: screens or data-fetching containers (use `screen`), or changing a component that already exists (use `modify`)
 - **Path**: `.claude/skills/component/SKILL.md`
 
 ---
@@ -53,6 +55,7 @@ Last updated: 2026-11-19
 
 - **Description**: Scaffold a complete coordinated slice across the template's real layers in dependency order: domain types/ports in @app/core (when cross-app) → service folder src/services/<Domain>/ (service+adapter+barrel) → query hook (useAppQuery) → component block(s) → screen block → route registration → QueryKeys.
 - **Triggers**: "scaffold feature", "create feature", "new feature [name]", "build the [name] feature end to end", "implement [name] from scratch"
+- **DO NOT USE**: shaping a raw product idea before any code (use `product-discovery`), or one layer alone: a component (use `component`), a screen (use `screen`) or a service (use `service`)
 - **Path**: `.claude/skills/feature/SKILL.md`
 
 ---
@@ -61,6 +64,7 @@ Last updated: 2026-11-19
 
 - **Description**: Migrate or repair an existing test file to current template conventions: mock-audit flow (vi.mock vs MSW), fix wrong import source (@testing-library/react → project test helper at @/test/test.helper), remove data-testid, migrate inline constants, fix describe-level destructuring, remove redundant clearAllMocks, add missing axe, merge multi-file-per-domain, migrate it() to test().
 - **Triggers**: "fix test", "migrate test", "update test to current patterns", "test uses wrong pattern", "repair test file", "test is broken after refactor"
+- **DO NOT USE**: writing tests for a unit that has none yet (use `test`)
 - **Path**: `.claude/skills/fix-test/SKILL.md`
 
 ---
@@ -69,6 +73,7 @@ Last updated: 2026-11-19
 
 - **Description**: Audit a single built block (screen or component) against the fractal / clean architecture contract: folder structure, constants-not-inline, logic-in-hook, service+adapter pairing, no fetch in components, tests-per-unit, naming + suffix conventions, and alias imports.
 - **Triggers**: "verify this screen", "check the component architecture", "is this block fractal-compliant", "audit the fractal structure of [X]", validating a freshly scaffolded screen/component before commit, or as the G-fractal group inside the validate-all harness
+- **DO NOT USE**: a rule-by-rule quality audit of a scope (use `quality`), a staged diff before a commit (use `pre-commit`), or a done verdict over a whole change (use `validate-all`)
 - **Path**: `.claude/skills/fractal-verify/SKILL.md`
 
 ---
@@ -86,6 +91,7 @@ Last updated: 2026-11-19
 
 - **Description**: 8-dimension skill audit and tracked-change proposal, confirm before overwrite.
 - **Triggers**: "improve skill", "upgrade skill", "audit skill quality", "skill is not working well", "update [skill] instructions", "fix [skill]"
+- **DO NOT USE**: creating a new skill (use `new-skill`), or rebuilding the skill index (use `registry`)
 - **Path**: `.claude/skills/improve-skill/SKILL.md`
 
 ---
@@ -94,6 +100,7 @@ Last updated: 2026-11-19
 
 - **Description**: Wrap a third-party library behind a project-internal API: register the package and its seam in .agents/contracts/dependencies.json, write the src/lib/{name}/ wrapper, the vendor adapter behind a port, or the components/ui block that owns it, under the project's own types, move every caller onto it, and mock the project module in tests, never the vendor.
 - **Triggers**: "wrap library", "create lib for [vendor]", "abstract [library]", "add [name] lib", "create a wrapper for [package]", "hide [vendor] behind a port"
+- **DO NOT USE**: the service and adapter pair of a data domain (use `service`), or the MSW mock of an endpoint (use `mock`)
 - **Path**: `.claude/skills/lib/SKILL.md`
 
 ---
@@ -102,6 +109,7 @@ Last updated: 2026-11-19
 
 - **Description**: Create an MSW v2 handler and corresponding mock data file for an HTTP endpoint.
 - **Triggers**: "create MSW handler", "mock API endpoint", "add mock for [endpoint]", "MSW handler for [domain]", "new mock data for [resource]", "add test fixture for [name]"
+- **DO NOT USE**: writing the tests that use the mock (use `test`), or the real service and adapter of the endpoint (use `service`)
 - **Path**: `.claude/skills/mock/SKILL.md`
 
 ---
@@ -110,6 +118,7 @@ Last updated: 2026-11-19
 
 - **Description**: Safe edit flow for an existing component or screen: pre-flight read sequence (component, hook, type, test, styles), wrapper-detection flow, modification types (add prop to I{Name}, add logic to hook not view, add Tailwind variant in styles, forwardRef, variant refactor at 4th boolean), post checklist runs pnpm typecheck/ lint:fix/test.
 - **Triggers**: "modify component", "update component", "add prop to [name]", "refactor [component]", "change [component] behavior", "edit existing [name]"
+- **DO NOT USE**: creating a new component or screen (use `component` or `screen`), or repairing a test file (use `fix-test`)
 - **Path**: `.claude/skills/modify/SKILL.md`
 
 ---
@@ -118,6 +127,7 @@ Last updated: 2026-11-19
 
 - **Description**: Authoring guide for new template skills: valid frontmatter with bare name (no plugin prefix — template uses bare names like "arch", "component", not "plugin:arch"), specific USE WHEN triggers, LLM-first step-by-step instructions, code snippets in template conventions (arrow-only, no-semi, alias imports), DO/DON'T table.
 - **Triggers**: "create skill", "new skill [name]", "author skill for [task]", "write a skill that does [X]", "add a skill for [domain]"
+- **DO NOT USE**: auditing or improving a skill that exists (use `improve-skill`), or rebuilding the skill index (use `registry`)
 - **Path**: `.claude/skills/new-skill/SKILL.md`
 
 ---
@@ -126,6 +136,7 @@ Last updated: 2026-11-19
 
 - **Description**: React performance review for a component or hook: unnecessary re-renders, missing or misused memoization, unstable references, async anti-patterns (prefer useAppQuery over useEffect-fetch), bundle cost, list keys, lazy initialization.
 - **Triggers**: "perf review", "performance review", "check re-renders", "optimize component", "component renders too often", "why is [X] slow", "audit performance of [name]"
+- **DO NOT USE**: an accessibility or security audit (use `a11y` or `security`), or applying the fixes it reports (use `modify`)
 - **Path**: `.claude/skills/perf/SKILL.md`
 
 ---
@@ -143,7 +154,7 @@ Last updated: 2026-11-19
 
 - **Description**: Semantic staged-diff audit beyond lint/tsc: BLOCKER/WARNING/INFO verdict over service+adapter pairing, sync-prop-to-state useEffect, inline components, naming (I-prefix, arrow-only, suffixes), magic values, aria-label, && with numbers in JSX, test conventions, silent prop drop, JSX prop spreading.
 - **Triggers**: "pre-commit review", "audit staged changes", "check my diff before commit", "validate changes", "review before commit", "check staged files"
-- **DO NOT USE**: for post-generation full harness — use `validate-all` for that. `pre-commit` is the lighter pre-commit-time gate; `validate-all` is the comprehensive post-generation harness. For single-block structural audits use `fractal-verify`
+- **DO NOT USE**: the post-generation full harness (use `validate-all`), or a single-block structural audit (use `fractal-verify`)
 - **Path**: `.claude/skills/pre-commit/SKILL.md`
 
 ---
@@ -170,6 +181,7 @@ Last updated: 2026-11-19
 
 - **Description**: Selective diff-based sync of improvements from app-monorepo-template into a downstream project.
 - **Triggers**: user says "sync from template", "pull template changes", "propagate template updates", or "update from upstream template"
+- **DO NOT USE**: in app-monorepo-template itself, which is the upstream, or to rename a project freshly made from it (run `pnpm run init <slug>`)
 - **Path**: `.claude/skills/propagate-from-template/SKILL.md`
 
 ---
@@ -187,16 +199,16 @@ Last updated: 2026-11-19
 
 - **Description**: Code-quality audit (report-only) mapped to docs/code-standards.md rule numbers.
 - **Triggers**: "audit code", "check quality", "validate patterns", "check conventions", "code review for [file/dir]", "quality check [scope]"
-- **DO NOT USE**: for single-block structural audits — use `fractal-verify` for that. For post-generation harness use `validate-all` (this skill feeds its G-standards group)
+- **DO NOT USE**: a single-block structural audit (use `fractal-verify`), or the post-generation harness (use `validate-all`, whose G-standards group this skill feeds)
 - **Path**: `.claude/skills/quality/SKILL.md`
 
 ---
 
 ### refine-ticket
 
-- **Description**: The architect role of the ticket flow: refines a ticket into its specs and a technical plan (areas, subtasks, reserved files, dependencies), sequences tickets that reserve the same file, moves a ticket to Ready for dev only when it carries a target version and every dependency is Done, confirms its target version or proposes one through the PO, dispatches every ready state to the next session, sets the merge order, keeps the merge queue and merges one pull request at a time, on the owner's word or under the `low-risk` merge policy, checks the PO's closed ticket catalog pull request against the board before the owner's word, closes tickets, files technical tickets, and groups the Done tickets of one version into a release ticket for the CI/CD session, or a hotfix at Ready to merge into the production branch the layer names into a release ticket of its own.
+- **Description**: The architect role of the ticket flow: refines a ticket into specs and a plan, sequences tickets that reserve one file, moves a ticket to Ready for dev once it has a target version and its dependencies are Done, dispatches each ready state, keeps the merge queue, closes and files tickets, and groups Done tickets or a hotfix into a release.
 - **Triggers**: "<id> new", "<id> ready for QA, branch <b>", "<id> changes requested", "<id> ready to merge, PR #<n>", "<id> merged", "<id> ready to merge, hotfix", "<id> question" about the plan, "<id> version set", "<id> catalog ready to merge, PR #<n>", "<release-id> catalog ready to merge, PR #<n>", "merge <id>", "what waits to merge", "<release-id> staging checked", "<release-id> released", "<release-id> <target> failed", "group a release", "file a technical ticket", an architect session of the ticket flow starts work
-- **DO NOT USE**: writing a ticket from a client's request (use `po-ticket`), building it (use `dev-ticket`), or running a deploy (use `release-ticket`)
+- **DO NOT USE**: writing a ticket from a client's request (use `po-ticket`), building it (use `dev-ticket`), or a deploy (use `release-ticket`)
 - **Path**: `.claude/skills/refine-ticket/SKILL.md`
 
 ---
@@ -205,6 +217,7 @@ Last updated: 2026-11-19
 
 - **Description**: Skill-index generator scanning .claude/skills/ for SKILL.md files.
 - **Triggers**: "build skill registry", "index skills", "list all skills", "what skills are available", "update skill registry", "regenerate registry"
+- **DO NOT USE**: creating a skill (use `new-skill`), or auditing or improving one (use `improve-skill`)
 - **Path**: `.claude/skills/registry/SKILL.md`
 
 ---
@@ -231,7 +244,7 @@ Last updated: 2026-11-19
 
 - **Description**: Generate a screen (container) block that owns data fetching, loading/error/empty states, and layout composition.
 - **Triggers**: "create screen", "new screen [name]", "build the [name] page/screen", "scaffold the [name] route", "generate container for [name]"
-- **DO NOT USE**: for presentational components — use `component` instead
+- **DO NOT USE**: presentational components (use `component`), or changing a screen that already exists (use `modify`)
 - **Path**: `.claude/skills/screen/SKILL.md`
 
 ---
@@ -249,6 +262,7 @@ Last updated: 2026-11-19
 
 - **Description**: Security audit repositioned to the template posture: provider-behind-ports + RLS-in-adapter + scrubPII/PII_KEYS.
 - **Triggers**: "audit security", "check edge security", "security review", "check origin lock", "security headers", "rate limiting", "cache safety", "check CSP", "PII exposure"
+- **DO NOT USE**: an accessibility or performance review (use `a11y` or `perf`), or a done verdict over a whole change (use `validate-all`)
 - **Path**: `.claude/skills/security/SKILL.md`
 
 ---
@@ -257,6 +271,7 @@ Last updated: 2026-11-19
 
 - **Description**: Generate the full data layer for a domain: per-domain PascalCase service folder under src/services/<Domain>/, paired service + adapter files, index.ts barrel (service + adapter only, never constants/tests), optional domain constants, and useAppQuery / useAppMutation hook wrappers.
 - **Triggers**: "create service", "new service [name]", "add data fetching for [name]", "hook for [name] API", "add [name] mutation", "scaffold the data layer for [name]"
+- **DO NOT USE**: wrapping a third-party library behind a project API (use `lib`), the MSW mock of an endpoint (use `mock`), or a whole slice from domain types to route (use `feature`)
 - **Path**: `.claude/skills/service/SKILL.md`
 
 ---
@@ -265,6 +280,7 @@ Last updated: 2026-11-19
 
 - **Description**: Generate a typed store slice in src/stores/{name}.store.ts through createAppStore of src/lib/store, with state interface I{Name}State, named selector functions select{Name}{Field}, actions, and an optional persist.
 - **Triggers**: "create store", "new Zustand store", "add global state for [name]", "replace context with store", "add [name] slice", "cross-feature state for [name]"
+- **DO NOT USE**: server or async data, which belongs in the query cache through `useAppQuery` (use `service`)
 - **Path**: `.claude/skills/store/SKILL.md`
 
 ---
@@ -273,7 +289,7 @@ Last updated: 2026-11-19
 
 - **Description**: Write Vitest test files for React components, hooks, helpers, and stores.
 - **Triggers**: "write tests", "add tests", "create test file", "test this component/hook", "improve coverage", "test [name]"
-- **DO NOT USE**: for auditing existing tests — use `fix-test` for that. For block-structure audits use `fractal-verify`. For post-generation harness use `validate-all`
+- **DO NOT USE**: auditing or migrating existing tests (use `fix-test`), a block-structure audit (use `fractal-verify`), or the post-generation harness (use `validate-all`)
 - **Path**: `.claude/skills/test/SKILL.md`
 
 ---

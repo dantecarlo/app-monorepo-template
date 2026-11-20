@@ -5,11 +5,12 @@ description: >
   service+adapter pairing, sync-prop-to-state useEffect, inline components, naming
   (I-prefix, arrow-only, suffixes), magic values, aria-label, && with numbers in JSX,
   test conventions, silent prop drop, JSX prop spreading. Uses bat/rg for diff collection.
-  DO NOT USE for post-generation full harness — use `validate-all` for that. `pre-commit`
-  is the lighter pre-commit-time gate; `validate-all` is the comprehensive post-generation
-  harness. For single-block structural audits use `fractal-verify`.
+  `pre-commit` is the lighter pre-commit-time gate; `validate-all` is the comprehensive
+  post-generation harness.
   USE WHEN: "pre-commit review", "audit staged changes", "check my diff before commit",
   "validate changes", "review before commit", "check staged files".
+  DO NOT USE: the post-generation full harness (use `validate-all`), or a single-block
+  structural audit (use `fractal-verify`).
 ---
 
 # Pre-Commit Review

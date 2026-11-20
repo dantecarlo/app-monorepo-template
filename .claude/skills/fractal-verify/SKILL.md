@@ -11,6 +11,9 @@ description: >
   "is this block fractal-compliant", "audit the fractal structure of [X]",
   validating a freshly scaffolded screen/component before commit, or as the
   G-fractal group inside the validate-all harness.
+  DO NOT USE: a rule-by-rule quality audit of a scope (use `quality`), a staged diff
+  before a commit (use `pre-commit`), or a done verdict over a whole change (use
+  `validate-all`).
 license: Apache-2.0
 metadata:
   author: gentleman-programming

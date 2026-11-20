@@ -7,6 +7,8 @@ description: >
   snippets. Report-only with severity ratings.
   USE WHEN: "perf review", "performance review", "check re-renders", "optimize component",
   "component renders too often", "why is [X] slow", "audit performance of [name]".
+  DO NOT USE: an accessibility or security audit (use `a11y` or `security`), or applying
+  the fixes it reports (use `modify`).
 ---
 
 # React Performance Review

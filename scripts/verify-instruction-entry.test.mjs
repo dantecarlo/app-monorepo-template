@@ -94,6 +94,31 @@ const walkGit = ({ overrides, staged = [] }) =>
     }
   })
 
+// The environment with its search path, in any case, replaced by `path`, so
+// that no git on the machine can start.
+const PATH_KEY = /^path$/iu
+const envWithPath = ({ path }) => ({
+  ...Object.fromEntries(
+    Object.entries(gitFreeEnv()).filter(([key]) => !PATH_KEY.test(key))
+  ),
+  PATH: path
+})
+
+// The gate over a scratch repository it cannot list, because no git is on
+// its search path.
+const runGateWithoutGit = () =>
+  withScratchTree({
+    files: treeOf({ overrides: {} }),
+    prefix: 'instruction-entry-nogit-',
+    use: ({ root }) => {
+      git({ args: ['init', '-q'], root })
+      return spawnSync(process.execPath, [GATE, '--root', root], {
+        encoding: 'utf8',
+        env: envWithPath({ path: root })
+      })
+    }
+  })
+
 // The gate as `pnpm verify:instruction-entry` runs it, over a scratch
 // repository.
 const runGate = ({ overrides }) =>
@@ -268,6 +293,19 @@ const checks = [
       const result = runGate({ overrides: {} })
       assert.equal(result.status, PASSED, result.stderr)
       assert.match(result.stdout, /verify-instruction-entry: PASS/u)
+    }
+  },
+  {
+    name: 'the gate with no git on its path names the cause',
+    run: () => {
+      const result = runGateWithoutGit()
+      assert.notEqual(result.status, PASSED, result.stdout)
+      assert.match(
+        result.stderr,
+        /verify-instruction-entry cannot run git/u
+      )
+      assert.match(result.stderr, /ENOENT/u)
+      assert.doesNotMatch(result.stderr, /undefined/u)
     }
   }
 ]

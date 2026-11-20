@@ -40,6 +40,9 @@ Managed by Husky, in `.husky/`.
 | `pre-commit` | `pnpm exec lint-staged` | ESLint + Prettier on staged files |
 | `commit-msg` | `pnpm exec commitlint`  | Conventional commits              |
 
+`git commit --no-verify` skips both hooks; CI's `commitlint` job lints the
+commit messages of a pull request again, its default ignores aside (Layer 4).
+
 Hooks are deliberately thin. Semantic checks belong in the gate, where they can
 see the whole repo — a hook that reads only staged files cannot tell you that a
 file you did not touch now has no owner.
@@ -101,6 +104,9 @@ the pre-commit hook on staged files.
 | `report:spec-drift`   | Lists the living specs whose governed code moved past their verified commit; never blocks |
 | `verify:english`      | No tracked text outside the i18n catalogs holds a Spanish line, unless allowlisted        |
 | `verify:instruction-entry` | `AGENTS.md` and `README.md` exist, and no `CLAUDE.md` or `CLAUDE.local.md` in any folder makes Claude Code read it instead of `AGENTS.md` |
+| `verify:unicode-safety` | No tracked text file holds a zero-width character (U+200B to U+200D, U+2060, U+FEFF), a direction embedding, override or isolate (U+202A to U+202E, U+2066 to U+2069), a tag character (U+E0000 to U+E007F) or an invisible filler (U+115F, U+1160, U+3164, U+FFA0); the emoji joiner U+200D is allowed under `packages/i18n/src/locales/`, a file holding a NUL byte is skipped as binary, and a finding names the file, the line, the column and the code point. `verify:unicode-safety:test` plants each code point and runs the gate over a scratch repository |
+| `verify:workflow-pins` | Every `uses:` of every workflow under `.github/workflows/` (`.yml` or `.yaml`), a step and a reusable workflow alike, is pinned to a full 40-character commit SHA, the tag it was resolved from kept as a comment; a local action (`./`) and a Docker image (`docker://`) are exempt; a line inside any block scalar (`\|` or `>`, a `run:` script and a folded `name:` alike) is not judged, a comment never opens one, and a quoted `"uses":` key is judged. `verify:workflow-pins:test` plants a tag, a branch, a short SHA and a missing ref |
+| `verify:skill-frontmatter` | Every `.claude/skills/*/SKILL.md` has a frontmatter that parses, a `name` that is its folder, and a description of at most 1,024 characters once parsed (the line break a `>` block keeps counted) that holds `USE WHEN:` and `DO NOT USE:`; a skill `.claude/skills-lock.json` lists (archify) is vendored and gets the parse, name and length checks only. `verify:skill-frontmatter:test` plants each refusal, both quoting styles and both block styles |
 | `codex-budget:test`   | The generated `.codex/config.toml` sets `project_doc_max_bytes` above every table header, and `AGENTS.md`, counted with CRLF endings, fits it: Codex drops what is past the budget |
 | `check:identity`      | The template's default identity is gone (skipped on self)                                 |
 | `knip`                | No dead exports, no unlisted or unused dependencies                                       |
@@ -184,6 +190,21 @@ them.
 
 `.github/workflows/ci.yml` runs `pnpm install` then the same gate, with
 `ATL_TEMPLATE_SELF=1`. CI runs no check that a developer cannot run locally.
+
+On a pull request, the `commitlint` job lints the commits of the pull request,
+from its base SHA to its head SHA, with `commitlint.config.js`, on a checkout
+of the whole history. A commit made with `git commit --no-verify` skips the
+`commit-msg` hook, so this is where it is caught, with one gap: commitlint's
+default ignores pass, unlinted, a message with any line that starts
+`Merge pull request`, `Merge branch …`, `Merge … into …` or `Merge tag …` (so a
+body line can excuse a bad subject), one whose first line starts with `Merged`,
+`Automatic merge`, `Auto-merged`, `Revert`, `Reapply`, `fixup!`, `squash!` or
+`amend!`, or one that is only a version number, in the hook and in CI alike. The same check runs locally as
+`pnpm exec commitlint --from origin/main --to HEAD`.
+
+Every action a workflow runs is pinned to a full commit SHA, the tag it was
+resolved from kept as a comment, and `verify:workflow-pins` fails one that is
+not.
 
 ---
 

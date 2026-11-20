@@ -8,6 +8,8 @@ description: >
   via `registry` skill after creation.
   USE WHEN: "create skill", "new skill [name]", "author skill for [task]",
   "write a skill that does [X]", "add a skill for [domain]".
+  DO NOT USE: auditing or improving a skill that exists (use `improve-skill`), or
+  rebuilding the skill index (use `registry`).
 ---
 
 # New Skill
@@ -41,7 +43,7 @@ name: {skill-name}          # bare kebab-case — NO plugin: prefix
 description: >
   One-paragraph description of what it does.
   USE WHEN: explicit trigger phrases — "create component", "new component [name]".
-  DO NOT USE: cases where a different skill applies (optional, for disambiguation).
+  DO NOT USE: cases where a different skill applies, naming that skill.
 ---
 
 # {Skill Title}
@@ -118,13 +120,15 @@ name: {skill-name}         # bare kebab-case — no plugin: prefix
 description: >             # block scalar, multi-line
   Full description.
   USE WHEN: trigger phrases, comma-separated.
-  DO NOT USE: anti-trigger cases (optional).
+  DO NOT USE: anti-trigger cases, each naming the skill to use instead.
 ---
 ```
 
 - `name`: bare kebab-case — `arch`, `component`, `fix-test`
 - `description`: first sentence = what it does; `USE WHEN:` = trigger phrases;
-  `DO NOT USE:` = cases where another skill applies
+  `DO NOT USE:` = cases where another skill applies. Both are required, and the
+  parsed description holds at most 1,024 characters: `pnpm verify:skill-frontmatter`
+  fails a skill that misses either or runs past the limit
 - Template convention: no `plugin:` or namespace prefix in `name:`
 
 ---

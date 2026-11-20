@@ -9,6 +9,8 @@ description: >
   USE WHEN: "what's the architecture?", "what are the conventions?",
   "how should I name this?", "what layer does X belong to?", any coding task,
   "show me the folder structure", "what are the rules?".
+  DO NOT USE: auditing the structure of one built block (use `fractal-verify`), or
+  drawing the architecture as a diagram (use `archify`).
 ---
 
 # Architecture Reference

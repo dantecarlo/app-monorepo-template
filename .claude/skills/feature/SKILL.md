@@ -10,6 +10,9 @@ description: >
   implementation scaffold.
   USE WHEN: "scaffold feature", "create feature", "new feature [name]",
   "build the [name] feature end to end", "implement [name] from scratch".
+  DO NOT USE: shaping a raw product idea before any code (use `product-discovery`), or
+  one layer alone: a component (use `component`), a screen (use `screen`) or a service
+  (use `service`).
 ---
 
 # Feature Scaffold

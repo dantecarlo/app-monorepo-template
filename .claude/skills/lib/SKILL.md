@@ -8,6 +8,8 @@ description: >
   procedure of ADR 0002; never adds an allowlist entry. Arrow-only, alias imports.
   USE WHEN: "wrap library", "create lib for [vendor]", "abstract [library]",
   "add [name] lib", "create a wrapper for [package]", "hide [vendor] behind a port".
+  DO NOT USE: the service and adapter pair of a data domain (use `service`), or the MSW
+  mock of an endpoint (use `mock`).
 ---
 
 # Lib — wrap a library behind its seam

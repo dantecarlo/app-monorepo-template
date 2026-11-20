@@ -6,9 +6,11 @@ description: >
   index.ts (mandatory); optional components/, hooks/, models/, services/ subfolders.
   Uses useAppQuery/useAppMutation from @/lib/query and the QueryKeys constant.
   Arrow-only, alias imports, named export. Handles Next.js app/ and Expo Router
-  registration. DO NOT USE for presentational components — use `component` instead.
+  registration.
   USE WHEN: "create screen", "new screen [name]", "build the [name] page/screen",
   "scaffold the [name] route", "generate container for [name]".
+  DO NOT USE: presentational components (use `component`), or changing a screen that
+  already exists (use `modify`).
 ---
 
 # Create Screen

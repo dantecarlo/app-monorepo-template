@@ -601,7 +601,7 @@ lacks a key of the English one fails typecheck.
 
 ## 16. Conventional Commits
 
-Enforced by commitlint on the `commit-msg` hook.
+Enforced by commitlint on the `commit-msg` hook, and on the commits of a pull request by CI's `commitlint` job, which also catches a `--no-verify` commit; in both, commitlint's default ignores pass, unlinted, a message with any line that starts `Merge pull request`, `Merge branch …`, `Merge … into …` or `Merge tag …`, one whose first line starts with `Merged`, `Merge remote-tracking branch`, `Automatic merge`, `Auto-merged`, `Revert`, `Reapply`, `fixup!`, `squash!` or `amend!`, or one that is only a version number.
 
 ```
 feat(items): add search filter
@@ -787,7 +787,7 @@ This table exists so that difference is visible.
 | §15 English everywhere      | script        | `verify:english` (allowlist: §20 exception); identifier lint `warn` |
 | §15 Copy via the translator | lint + types  | `local/dependency-seam` keeps the runtimes in `src/lib/i18n/`; `TranslationKeyType` refuses a key the catalog lacks |
 | §15.1 i18n catalogs         | test + types  | `resources.constant.test.ts` + typed `resources` — casing not yet   |
-| §16 Conventional commits    | hook          | `commitlint` on `commit-msg`                                        |
+| §16 Conventional commits    | hook + CI     | `commitlint` on `commit-msg`, and the CI job `commitlint` over the commits of a pull request; not a message its default ignores pass (`Merge`, `Revert`, `fixup!` and the like) |
 | §17 Per-feature DoD         | review        | —                                                                   |
 | §18 Validation gate         | script        | the `pnpm validate` chain                                           |
 | §19 Error surfacing         | **none yet**  | needs an `error-contract` verify script                             |
@@ -795,6 +795,9 @@ This table exists so that difference is visible.
 | §21 This table              | review        | —                                                                   |
 | File ownership / init prune | script        | `verify:manifest` + `verify:manifest:coverage`                      |
 | One instruction entry       | script        | `verify:instruction-entry` — `AGENTS.md` present, no `CLAUDE.md`    |
+| No invisible Unicode        | script        | `verify:unicode-safety` — no zero-width, direction, tag or filler character in a tracked text file; the emoji joiner only in the i18n catalogs |
+| CI actions pinned           | script        | `verify:workflow-pins` — every `uses:` a full commit SHA; local and `docker://` exempt; not whether the SHA is the tag its comment names |
+| Every skill findable        | script        | `verify:skill-frontmatter` — frontmatter parses, `name` is the folder, description within 1,024 characters with `USE WHEN:` and `DO NOT USE:` (vendored skills: parse, name and length only); not whether the triggers are the right ones |
 | `AGENTS.md` fits Codex      | test          | `codex-budget:test` — CRLF bytes within `project_doc_max_bytes`     |
 | Agent projections in sync   | script        | `agent-harness:projection-check` — each projection equals its source |
 | `AGENTS.md` LAWs and Router | review        | — no gate reads a LAW, or checks that a skill has a router row      |

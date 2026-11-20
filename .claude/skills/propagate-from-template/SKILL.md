@@ -7,6 +7,8 @@ description: >
   commits with a traceable conventional commit.
   USE WHEN: user says "sync from template", "pull template changes",
   "propagate template updates", or "update from upstream template".
+  DO NOT USE: in app-monorepo-template itself, which is the upstream, or to rename a
+  project freshly made from it (run `pnpm run init <slug>`).
 ---
 
 # propagate-from-template

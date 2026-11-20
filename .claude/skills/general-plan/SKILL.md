@@ -4,18 +4,18 @@ description: >
   Produce or refresh a project's single source-of-truth planning document at
   docs/GENERAL_PLAN.md — a handoff-grade snapshot that lets any owner or fresh
   agent grok the product, trust the baseline, and pick up mid-stream. Captures
-  product vision/scope, exact stack & architecture, what is DONE (with technical
-  evidence and a REAL-vs-MOCK service distinction), the prioritized PENDING
-  backlog (effort sizing + BLOCKING markers), what is NEEDED FROM THE OWNER
-  (credentials/env/product/legal), a gated path to launch, conventions & gotchas,
-  and risks. Fills DONE/PENDING from the project's REAL current state (code,
-  migrations, commits) — never from feel.
+  vision and scope, stack and architecture, what is DONE (with evidence, and
+  REAL vs MOCK services), the prioritized PENDING backlog (effort, BLOCKING
+  markers), what is NEEDED FROM THE OWNER, a gated path to launch, conventions
+  and risks, all from the project's REAL current state (code, migrations,
+  commits), never from feel.
   USE WHEN: "general plan", "GENERAL_PLAN.md", "project plan doc", "status of the
   project", "what's done / what's pending", "where does the project stand",
   "refresh the plan", "handoff doc", "what do we need from the owner", "path to
   launch", "build plan".
-  DO NOT USE: structuring a brand-new idea with no code yet (use product-discovery),
-  a single feature spec, or pure architecture/code tasks.
+  DO NOT USE: structuring a brand-new idea with no code yet (use
+  product-discovery), a single feature spec, or pure architecture/code
+  tasks.
 license: Apache-2.0
 metadata:
   author: gentleman-programming

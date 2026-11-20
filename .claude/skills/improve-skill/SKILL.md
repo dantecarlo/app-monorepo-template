@@ -8,6 +8,8 @@ description: >
   `registry` after edits.
   USE WHEN: "improve skill", "upgrade skill", "audit skill quality",
   "skill is not working well", "update [skill] instructions", "fix [skill]".
+  DO NOT USE: creating a new skill (use `new-skill`), or rebuilding the skill index (use
+  `registry`).
 ---
 
 # Improve Skill
@@ -43,7 +45,8 @@ Issues to flag:
 - Missing `name` or `description`
 - `name` is plugin-namespaced (e.g. `plugin:skill`) → flag as drift; bare name is correct
 - `USE WHEN:` missing or vague (`"any coding task"` is too broad)
-- `DO NOT USE:` missing when the skill might be confused with a sibling skill
+- `DO NOT USE:` missing, or naming no sibling skill to use instead (a skill without
+  it, or with a description past 1,024 characters, fails `pnpm verify:skill-frontmatter`)
 
 ---
 
