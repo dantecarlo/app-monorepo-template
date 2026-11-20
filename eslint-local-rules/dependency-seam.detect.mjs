@@ -27,9 +27,12 @@
 // the module argument of the `vi` module helpers (`vi.mock` and its family).
 //
 // The allowlist, `eslint-dependency-seam-allowlist.json`, freezes the
-// imports that broke the rule when it landed: an entry `{ path, package,
-// reason }` exempts that package in that file, and the gate fails an entry
-// whose file no longer breaks the rule with it, so the list only shrinks.
+// imports a migration in progress has yet to move: an entry `{ path,
+// package, migration, reason }` exempts that package in that file only while
+// its `migration` is one the registry declares open (`openMigrations`). The
+// gate fails an entry whose file no longer breaks the rule with it, an entry
+// whose migration is not open and an open migration no entry names, so the
+// list only shrinks, and empties when its migrations close.
 // ---------------------------------------------------------------------------
 
 import { readFileSync } from 'node:fs'
@@ -219,10 +222,25 @@ export const judgeImport = ({ index, path, source, typeOnly }) => {
     : { entry, kind: SEAM_FINDING.OUTSIDE_SEAM, package: entry.name }
 }
 
-export const isSeamAllowlisted = ({ allowlist, package: name, path }) =>
+// Whether an allowlist entry names, as its `migration`, a migration the
+// registry declares open: the one test of whether an entry counts, which
+// this rule and scripts/verify-dependency-seams.mjs both run.
+export const namesOpenMigration = ({ entry, index }) =>
+  typeof entry?.migration === 'string' &&
+  index.openMigrations.has(entry.migration)
+
+export const isSeamAllowlisted = ({
+  allowlist,
+  index,
+  package: name,
+  path
+}) =>
   Array.isArray(allowlist) &&
   allowlist.some(
-    (entry) => entry?.path === path && entry?.package === name
+    (entry) =>
+      entry?.path === path &&
+      entry?.package === name &&
+      namesOpenMigration({ entry, index })
   )
 
 // ---------------------------------------------------------------------------
@@ -347,7 +365,12 @@ export const collectSeamViolations = ({
       const finding = judgeImport({ index, path, source, typeOnly })
       if (!finding) return []
       if (
-        isSeamAllowlisted({ allowlist, package: finding.package, path })
+        isSeamAllowlisted({
+          allowlist,
+          index,
+          package: finding.package,
+          path
+        })
       ) {
         return []
       }

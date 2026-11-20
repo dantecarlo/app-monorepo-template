@@ -90,11 +90,26 @@ const MOBILE_FILES = {
   [METRO]: "const { withNativeWind } = require('nativewind/metro')"
 }
 
-const entry = ({ path = SCREEN, reason = UNIT, name = 'zod' } = {}) => ({
+const entry = ({
+  migration: id = MIGRATION,
+  name = 'zod',
+  path = SCREEN,
+  reason = UNIT
+} = {}) => ({
+  migration: id,
   package: name,
   path,
   reason
 })
+
+// The entry() with one of its keys left out.
+const entryWithout = ({ key }) =>
+  Object.fromEntries(
+    Object.entries(entry()).filter(([name]) => name !== key)
+  )
+
+// The registry declares the migration an entry() names.
+const OPEN = [migration()]
 
 const text = (value) =>
   typeof value === 'string' ? value : JSON.stringify(value)
@@ -343,12 +358,16 @@ export const CASES = [
     name: 'a registry that is not JSON is refused, and nothing else is judged'
   },
   {
-    context: walk({ allowlist: [entry()] }),
+    context: walk({ allowlist: [entry()], open: OPEN }),
     expected: 1,
     name: 'an allowlist entry whose file no longer breaks the rule is stale'
   },
   {
-    context: walk({ allowlist: [entry()], files: ZOD_IN_SCREEN }),
+    context: walk({
+      allowlist: [entry()],
+      files: ZOD_IN_SCREEN,
+      open: OPEN
+    }),
     expected: 0,
     name: 'an allowlist entry whose file still breaks the rule passes'
   },
@@ -366,24 +385,45 @@ export const CASES = [
   },
   {
     context: walk({
-      allowlist: [entry({ reason: 'cannot move yet' })],
-      files: ZOD_IN_SCREEN
+      allowlist: [entryWithout({ key: 'migration' })],
+      files: ZOD_IN_SCREEN,
+      open: []
     }),
     expected: 2,
-    name: 'an allowlist entry that names no F.8 unit is malformed'
+    name: 'an allowlist entry that names no migration is malformed'
   },
   {
     context: walk({
-      allowlist: [entry({ reason: 'F.8 unit 9: the docs.' })],
-      files: ZOD_IN_SCREEN
+      allowlist: [entry({ migration: 'f8-unit-9' })],
+      files: ZOD_IN_SCREEN,
+      open: []
     }),
     expected: 2,
-    name: 'an allowlist entry for unit 9 is malformed: units 2 to 8 move imports'
+    name: 'an allowlist entry whose migration the registry does not declare open is malformed'
+  },
+  {
+    context: walk({
+      allowlist: [entry({ reason: 'lib/i18n takes this import.' })],
+      files: ZOD_IN_SCREEN,
+      open: OPEN
+    }),
+    expected: 0,
+    name: 'an allowlist entry under an open migration needs no F.8 unit in its reason'
+  },
+  {
+    context: walk({
+      allowlist: [entryWithout({ key: 'reason' })],
+      files: ZOD_IN_SCREEN,
+      open: OPEN
+    }),
+    expected: 2,
+    name: 'an allowlist entry with no reason is malformed'
   },
   {
     context: walk({
       allowlist: [entry(), entry()],
-      files: ZOD_IN_SCREEN
+      files: ZOD_IN_SCREEN,
+      open: OPEN
     }),
     expected: 1,
     name: 'a file and package listed twice is a duplicate'
@@ -391,7 +431,8 @@ export const CASES = [
   {
     context: walk({
       allowlist: [{ ...entry(), since: '2026-11-18' }],
-      files: ZOD_IN_SCREEN
+      files: ZOD_IN_SCREEN,
+      open: OPEN
     }),
     expected: 2,
     name: 'an allowlist entry with a key the allowlist does not define is malformed'
@@ -431,6 +472,21 @@ const MALFORMED_DECLARATIONS = [
   {
     open: [migration(), migration()],
     said: /open migration f8-unit-2 is declared twice/u
+  }
+]
+
+// An entry whose migration is not open: one the registry does not declare,
+// and one a registry with no openMigrations cannot declare.
+const NOT_OPEN = [
+  {
+    id: 'f8-unit-9',
+    open: [],
+    said: /entry 0 names the migration f8-unit-9, which \.agents\/contracts\/dependencies\.json does not declare open/u
+  },
+  {
+    id: MIGRATION,
+    open: undefined,
+    said: /entry 0 names the migration f8-unit-2, which \.agents\/contracts\/dependencies\.json does not declare open/u
   }
 ]
 
@@ -490,9 +546,26 @@ const checks = [
     }
   },
   {
+    name: 'an entry whose migration is not open is named, and a registry with no openMigrations declares none',
+    run: () => {
+      NOT_OPEN.forEach(({ id, open, said }) => {
+        const findings = findingsOf({
+          allowlist: [entry({ migration: id })],
+          files: ZOD_IN_SCREEN,
+          open
+        })
+        assert.deepEqual(
+          findings.map(({ kind }) => kind),
+          [FINDING_KIND.allowlistMalformed, FINDING_KIND.allowlistUnlisted]
+        )
+        assert.match(findings[0].detail, said)
+      })
+    }
+  },
+  {
     name: 'a stale finding names the file, the package and the remedy',
     run: () => {
-      const [finding] = findingsOf({ allowlist: [entry()] })
+      const [finding] = findingsOf({ allowlist: [entry()], open: OPEN })
       assert.equal(finding.kind, FINDING_KIND.allowlistStale)
       assert.equal(finding.path, SCREEN)
       assert.match(
@@ -586,7 +659,7 @@ const checks = [
   {
     name: 'the gate exits 1 and prints the stale entry',
     run: () => {
-      const result = runGate({ allowlist: [entry()] })
+      const result = runGate({ allowlist: [entry()], open: OPEN })
       assert.equal(result.status, FAILED, result.stderr)
       assert.match(result.stderr, /verify-dependency-seams: 1 problem/u)
       assert.match(

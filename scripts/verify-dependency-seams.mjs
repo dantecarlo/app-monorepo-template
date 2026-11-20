@@ -23,8 +23,11 @@
 //     imports a package outside its seam, or an unregistered one;
 //   - eslint-dependency-seam-allowlist.json: a stale entry (its file no
 //     longer imports that package outside the seam), a violation it does not
-//     list, a pair listed twice, an entry without a path, a package or a
-//     reason starting with the F.8 unit that removes it.
+//     list, a pair listed twice, an entry without a path, a package, a reason
+//     or a migration the registry declares open (its openMigrations, which
+//     the rule reads the same way);
+//   - an open migration of the registry that no allowlist entry names: it is
+//     done, and is closed by removing it.
 //
 // Every violation is re-derived from the source with the detection the rule
 // runs (eslint-local-rules/dependency-seam.detect.mjs), uncached, so a lint
@@ -175,8 +178,9 @@ export const gate = defineGate({
     'formed, every seam glob matches a file, every file ESLint does not lint ' +
     'imports inside its seams, and every entry of ' +
     'eslint-dependency-seam-allowlist.json names an import that still ' +
-    'breaks local/dependency-seam and the F.8 unit that removes it, with ' +
-    'every such import listed.',
+    'breaks local/dependency-seam and an open migration of the registry ' +
+    'that removes it, with every such import listed and every open ' +
+    'migration named by an entry.',
   id: 'verify-dependency-seams',
   notCovered:
     'a name imported from a package that local/wrapped-import does not ' +
@@ -185,8 +189,9 @@ export const gate = defineGate({
     'that is not a literal; triple-slash ' +
     'type references and declare module augmentations; imports in CSS and ' +
     'in JSON (an Expo plugin); a subpath entry no file imports any longer; ' +
-    'a type a wrapper re-exports; whether a seam is the right one, and ' +
-    'whether a frozen import should be frozen at all, which review reads.',
+    'a type a wrapper re-exports; whether a seam is the right one, ' +
+    'whether a frozen import should be frozen at all, and whether the work ' +
+    'of a migration declared open goes on, which review reads.',
   run: (context) => judgeSeams(context)
 })
 
