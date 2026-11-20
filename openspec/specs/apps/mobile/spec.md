@@ -4,9 +4,12 @@
 <!-- region sentry -->
 > **Governs:** `apps/mobile/src/lib/observability/createSentryObservability.adapter.ts`
 <!-- endregion sentry -->
+<!-- region supabase -->
+> **Governs:** `apps/mobile/src/lib/supabase`
+<!-- endregion supabase -->
 > **ID prefix:** `MOBILE`
 > **Derived from:** `docs/architecture/mobile.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/observability.md`, `docs/e2e.md`, `docs/responsive.md`, `AGENTS.md`, `docs/manifest.md`, `docs/decisions/0001-pluggable-providers.md`
-> **Verified against the code:** 2026-11-20 at `28941a7`
+> **Verified against the code:** 2026-11-20 at `0eee3fe`
 
 ## Purpose
 
@@ -659,13 +662,14 @@ with the cache it came from.
 - **THEN** the port's captureError receives both, once
 - **Test:** `apps/mobile/src/lib/observability/__tests__/toCaptureError.helper.test.ts` › "forwards error and context to captureError"
 
+<!-- region supabase -->
 ### Requirement: MOBILE-28 — Supabase client from the environment
 
 The mobile app SHALL build its Supabase client from EXPO_PUBLIC_SUPABASE_URL and
 EXPO_PUBLIC_SUPABASE_ANON_KEY, and fall back to placeholder values with one console warning when
 either is unset.
 
-**Evidence:** `apps/mobile/src/lib/supabase/client.adapter.ts:8-20`, `apps/mobile/src/lib/supabase/client.adapter.ts:31-34`
+**Evidence:** `apps/mobile/src/lib/supabase/client.adapter.ts:8-24`, `apps/mobile/src/lib/supabase/client.adapter.ts:35-38`
 
 #### Scenario: both values set
 
@@ -680,14 +684,16 @@ either is unset.
 - **WHEN** the client module loads
 - **THEN** the client is created with the placeholder URL and key, and one warning is logged
 - **Test:** `apps/mobile/src/lib/supabase/__tests__/client.adapter.test.ts` › "falls back to placeholders and warns when env is absent"
+<!-- endregion supabase -->
 
 ### Requirement: MOBILE-29 — Session bootstrap from the auth gateway
 
-The mobile app SHALL set the auth status to loading on mount, then store the session the
-Supabase auth gateway returns with the status authenticated or unauthenticated, and keep both in
-step with every later auth state change until unmount.
+The mobile app SHALL set the auth status to loading on mount, then store the session the auth
+gateway of its root layout returns (MOBILE-83) with the status authenticated or unauthenticated,
+and keep both in step with every later auth state change until unmount.
 
-**Evidence:** `apps/mobile/src/components/AuthProvider/useAuthBootstrap.hook.ts:12-30`, `apps/mobile/src/lib/supabase/authGateway.adapter.ts:11-13`, `apps/mobile/src/app/_layout.tsx:41`
+
+**Evidence:** `apps/mobile/src/components/AuthProvider/useAuthBootstrap.hook.ts:12-30`, `apps/mobile/src/lib/auth/authGateway.adapter.ts:22-23`, `apps/mobile/src/app/_layout.tsx:41`
 
 #### Scenario: before the gateway answers
 
@@ -981,11 +987,11 @@ The mobile app SHALL paint every themed colour of its blocks, the text, surfaces
 and indicators of `src/components/ui/` and of a screen's own `components/`, from the active
 theme: a StyleSheet through `createThemedStyles` and `useThemedStyles`, a view through
 `useThemeTokens`, and a NativeWind colour class through the preset's `var(--c-*)` read of the
-variable the root frame declares (MOBILE-05, TOKENS-12), so switching to the light theme repaints
-the whole app; a colour the tokens share between the themes MAY still be read from the static
-palette.
+variable the root frame declares (MOBILE-05, TOKENS-12), the preset of packages/tokens its Tailwind
+config SHALL load, so switching to the light theme repaints the whole app; a colour the tokens
+share between the themes MAY still be read from the static palette.
 
-**Evidence:** `apps/mobile/src/lib/theme/createThemedStyles.helper.ts:16`, `apps/mobile/src/lib/theme/createThemedStyles.helper.ts:24`, `apps/mobile/src/lib/theme/useThemedStyles.hook.ts:7`, `apps/mobile/src/components/ui/Text/Text.component.tsx:13`, `apps/mobile/src/components/ui/Icon/Icon.component.tsx:21`, `packages/tokens/tailwind-preset.cjs:22`, `apps/mobile/src/lib/theme/useRootTheme.hook.ts:24`
+**Evidence:** `apps/mobile/src/lib/theme/createThemedStyles.helper.ts:16`, `apps/mobile/src/lib/theme/createThemedStyles.helper.ts:24`, `apps/mobile/src/lib/theme/useThemedStyles.hook.ts:7`, `apps/mobile/src/components/ui/Text/Text.component.tsx:13`, `apps/mobile/src/components/ui/Icon/Icon.component.tsx:21`, `packages/tokens/tailwind-preset.cjs:22`, `apps/mobile/src/lib/theme/useRootTheme.hook.ts:24`, `apps/mobile/tailwind.config.js:5-8`
 
 #### Scenario: a text variant under the light theme
 
@@ -2251,29 +2257,33 @@ root layout imports project modules only and its test mocks project modules, nev
   such an import (harness/dependency-seams SEAM-03) and `pnpm verify:dependency-seams` fails an
   allowlist entry or a violation for it (SEAM-07), both inside `pnpm validate`
 
+<!-- region supabase -->
 ### Requirement: MOBILE-75 — The auth gateway is built in lib/supabase
 
-The mobile app SHALL build its one auth gateway in `src/lib/supabase/authGateway.adapter.ts`, a
-Supabase auth gateway over the very client `src/lib/supabase/client.adapter.ts` creates, and the
-root layout SHALL hand that gateway to the auth provider; only the `*.adapter.ts` files of
+The mobile app SHALL build the Supabase auth gateway in `src/lib/supabase/authGateway.adapter.ts`,
+over the very client `src/lib/supabase/client.adapter.ts` creates, or, without
+`EXPO_PUBLIC_SUPABASE_URL` or `EXPO_PUBLIC_SUPABASE_ANON_KEY`, the no-op gateway of `src/lib/auth/`,
+whose sign-in rejects naming both settings; it SHALL list that gateway in the `supabase` region of
+`src/lib/auth/authGateway.adapter.ts` (MOBILE-83); only the `*.adapter.ts` files of
 `src/lib/supabase/` SHALL import `@app/supabase`, tests included.
 
-**Evidence:** `apps/mobile/src/lib/supabase/authGateway.adapter.ts:11-13`, `apps/mobile/src/app/_layout.tsx:18`, `apps/mobile/src/app/_layout.tsx:41`, `.agents/contracts/dependencies.json:264-267`
+**Evidence:** `apps/mobile/src/lib/supabase/authGateway.adapter.ts:11-12`, `apps/mobile/src/lib/supabase/authGateway.adapter.ts:20-22`, `apps/mobile/src/lib/auth/authGateway.adapter.ts:4-15`, `.agents/contracts/dependencies.json:305-310`
 
 #### Scenario: the gateway over the app's client
 
-- **GIVEN** the app's Supabase client
+- **GIVEN** the app's Supabase client, with both public Supabase settings
 - **WHEN** the auth gateway module loads
 - **THEN** one Supabase auth gateway is created over that same client, and it is the gateway the
   module exports
 - **Test:** `apps/mobile/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "builds the auth gateway over the client the client adapter creates"
 
-#### Scenario: the root layout renders
+#### Scenario: the Supabase settings are missing
 
-- **GIVEN** the gateway of `lib/supabase`
-- **WHEN** the root layout renders
-- **THEN** the auth provider bootstraps the session from that gateway
-- **Test:** `apps/mobile/src/app/__tests__/layout.route.test.tsx` › "hands the auth provider the gateway lib/supabase builds"
+- **GIVEN** no `EXPO_PUBLIC_SUPABASE_URL` and no `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- **WHEN** the auth gateway module loads and a sign-in is attempted through it
+- **THEN** no Supabase gateway is created, and the sign-in rejects with an error naming both
+  settings
+- **Test:** `apps/mobile/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "names the Supabase settings in the rejection of a sign-in without them"
 
 #### Scenario: a file outside lib/supabase imports the package
 
@@ -2290,7 +2300,7 @@ The mobile app SHALL type its Supabase client, `supabase` of `src/lib/supabase/c
 as the opaque `BackendClientType` of packages/supabase (SUPABASE-30), so no type of the app names
 the Supabase client or a Supabase generic.
 
-**Evidence:** `apps/mobile/src/lib/supabase/client.adapter.ts:31-34`, `packages/supabase/src/backendClient.type.ts:9-11`
+**Evidence:** `apps/mobile/src/lib/supabase/client.adapter.ts:35-38`, `packages/supabase/src/backendClient.type.ts:9-11`
 
 #### Scenario: the client's type
 
@@ -2298,6 +2308,7 @@ the Supabase client or a Supabase generic.
 - **WHEN** the type of the client it exports is read
 - **THEN** it is `BackendClientType`
 - **Test:** `apps/mobile/src/lib/supabase/__tests__/client.adapter.test.ts` › "types the client as the opaque backend client"
+<!-- endregion supabase -->
 
 ### Requirement: MOBILE-77 — The Text block takes the classes and the role a block sets
 
@@ -2484,6 +2495,45 @@ with its SDK replaced at its module.
 - **THEN** every case passes
 - **Test:** `apps/mobile/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "the observability port contract"
 <!-- endregion sentry -->
+
+### Requirement: MOBILE-83 — The auth gateway comes from the backend the project keeps
+
+The mobile app SHALL hand the auth provider, from its root layout, the gateway
+`src/lib/auth/authGateway.adapter.ts` serves: the gateway of the first backend capability it
+lists, each listed inside that capability's region, or, when the project keeps none, a no-op
+gateway whose session is none and whose sign-in rejects.
+
+**Evidence:** `apps/mobile/src/lib/auth/authGateway.adapter.ts:11-23`, `apps/mobile/src/lib/auth/noopAuthGateway.helper.ts:12-21`, `apps/mobile/src/app/_layout.tsx:11`, `apps/mobile/src/app/_layout.tsx:41`
+
+#### Scenario: no backend is kept
+
+- **GIVEN** the no-op gateway
+- **WHEN** its session is read and a sign-in is attempted through it
+- **THEN** the session is none and the sign-in rejects
+- **Test:** `apps/mobile/src/lib/auth/__tests__/noopAuthGateway.helper.test.ts` › "has no session and rejects a sign-in"
+
+#### Scenario: the served gateway keeps the port
+
+- **GIVEN** the auth gateway adapter, whatever backend the project keeps
+- **WHEN** it loads
+- **THEN** its gateway has every method of the `IAuthGateway` port
+- **Test:** `apps/mobile/src/lib/auth/__tests__/authGateway.adapter.test.ts` › "serves a gateway with every method of the auth gateway port"
+
+<!-- region supabase -->
+#### Scenario: the Supabase gateway is listed
+
+- **GIVEN** the `supabase` capability, whose region lists the Supabase part's gateway
+- **WHEN** the adapter loads
+- **THEN** its gateway is the one `src/lib/supabase/authGateway.adapter.ts` builds
+- **Test:** `apps/mobile/src/lib/auth/__tests__/authGateway.adapter.test.ts` › "serves the gateway the supabase capability builds"
+<!-- endregion supabase -->
+
+#### Scenario: the root layout renders
+
+- **GIVEN** the gateway of `lib/auth`
+- **WHEN** the root layout renders
+- **THEN** the auth provider bootstraps the session from that gateway
+- **Test:** `apps/mobile/src/app/__tests__/layout.route.test.tsx` › "hands the auth provider the gateway lib/auth serves"
 
 ## Open questions
 

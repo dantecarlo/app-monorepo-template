@@ -12,7 +12,11 @@ const url = process.env['EXPO_PUBLIC_SUPABASE_URL'] ?? PLACEHOLDER_URL
 const anonKey =
   process.env['EXPO_PUBLIC_SUPABASE_ANON_KEY'] ?? PLACEHOLDER_ANON_KEY
 
-if (url === PLACEHOLDER_URL || anonKey === PLACEHOLDER_ANON_KEY) {
+/** Whether both public Supabase settings are set, rather than a placeholder. */
+export const hasSupabaseSettings = (): boolean =>
+  url !== PLACEHOLDER_URL && anonKey !== PLACEHOLDER_ANON_KEY
+
+if (!hasSupabaseSettings()) {
   console.warn(
     '[supabase] Missing EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY — ' +
       'using placeholders. Auth and data calls fail until you add apps/mobile/.env.'

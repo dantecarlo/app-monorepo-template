@@ -2,8 +2,8 @@
 
 This document describes the observability seam shipped with this template. The
 default provider is **PostHog**, wired behind a provider-agnostic port in both
-apps. **Sentry** is an optional capability: the template keeps it wired as the
-superset, and `/init` prunes it unless the project picks it. Swapping to
+apps. An optional capability can wire another provider beside it, and `/init`
+prunes it unless the project picks it. Swapping to
 Console, Noop or another provider is a one-line change.
 
 ---
@@ -31,9 +31,18 @@ The template ships these adapters:
 | Adapter                                      | Location                                                                        | When to use                                                       |
 | -------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | `createPostHogObservability()`               | `apps/{web,mobile}/src/lib/observability/createPostHogObservability.adapter.ts` | **DEFAULT** — PostHog error tracking and logs                     |
-| `createSentryObservability()`                | `apps/{web,mobile}/src/lib/observability/createSentryObservability.adapter.ts`  | The optional `sentry` capability — `@sentry/nextjs` / `-native`   |
 | `createConsoleObservability({ isEnabled? })` | `@app/core`                                                                     | Development — logs scrubbed payloads to `console.error` / `.warn` |
 | `createNoopObservability()`                  | `@app/core`                                                                     | Silent — swallows all events, zero output, zero risk              |
+
+<!-- region sentry -->
+
+The optional `sentry` capability adds its adapter to both apps:
+
+| Adapter                                      | Location                                                                        | When to use                                                       |
+| -------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `createSentryObservability()`                | `apps/{web,mobile}/src/lib/observability/createSentryObservability.adapter.ts`  | The optional `sentry` capability — `@sentry/nextjs` / `-native`   |
+
+<!-- endregion sentry -->
 
 Query and mutation errors flow like this:
 
@@ -42,7 +51,7 @@ QueryCache/MutationCache.onError
   → onCaptureError callback in createQueryClient
     → toCaptureError({ observability }) bridge
       → IObservabilityPort.captureError
-        → adapter (PostHog | Sentry | console | noop | …)
+        → adapter (PostHog | console | noop | …)
 ```
 
 The bridge lives in each app at
@@ -66,7 +75,6 @@ provider is editing that single line — no consumer changes.
 ```ts
 export const observability: IObservabilityPort =
   createPostHogObservability() // DEFAULT
-// createSentryObservability()  — the sentry capability, when selected
 // createConsoleObservability() — dev logging, from @app/core
 // createNoopObservability()    — silent, from @app/core
 ```
@@ -109,7 +117,7 @@ describe('the observability port contract', () => {
 | `currentUser()`         | the user the SDK holds now, or `null`                              |
 | `delivers`              | `false` only for an adapter with no provider behind it (the no-op) |
 
-The PostHog and Sentry adapters of both apps run it, and so do the console and
+The adapters of both apps run it, and so do the console and
 no-op adapters in packages/core. It lives in packages/tooling because both apps
 and core already depend on it, and core's import boundary refuses a test
 runner or a test helper in its production code.
@@ -127,8 +135,8 @@ applies `scrubPII` to:
 - `addBreadcrumb` data
 
 The PostHog web client also drops the query string and the fragment of every
-URL the SDK attaches (below), and the Sentry config files run `scrubPII` in
-`beforeSend` and `beforeBreadcrumb` as a second pass. Any custom adapter you
+URL the SDK attaches (below), and an optional provider may run `scrubPII` again
+in its own hooks as a second pass. Any custom adapter you
 write **must** call `scrubPII` on every payload before it reaches an external
 sink; the port contract fails when it does not.
 
@@ -370,8 +378,8 @@ from (`https://us-assets.i.posthog.com` for the US cloud) in `script-src`.
 
 - **Server-side errors on web.** `posthog-js` captures in the browser only;
   capturing an error thrown in a server component, a route handler or the
-  middleware needs `posthog-node`, which the template does not install. With
-  Sentry selected, `onRequestError` in `instrumentation.ts` captures them.
+  middleware needs `posthog-node`, which the template does not install; an
+  optional provider may capture them on the server.
 - **Delivery from a real build.** Every test replaces the SDK at its module, so
   it proves the payload the adapter hands over, not what PostHog receives.
 - **What the SDKs store under each consent mode.** The tests prove the options
@@ -426,6 +434,8 @@ An EU project sets the host to `https://eu.i.posthog.com`; `us.posthog.com` is
 the PostHog app and accepts no events.
 
 ---
+
+<!-- region sentry -->
 
 ## Sentry — the optional `sentry` capability
 
@@ -486,7 +496,13 @@ composition roots.
 | `EXPO_PUBLIC_SENTRY_DSN` | yes    | Mobile DSN. Absent = Sentry disabled.                            |
 | `EXPO_PUBLIC_APP_ENV`    | yes    | Optional mobile environment tag.                                 |
 
+On the web, `onRequestError` in `instrumentation.ts` captures the server-side errors
+`posthog-js` cannot, and the Sentry config files run `scrubPII` in `beforeSend` and
+`beforeBreadcrumb` as a second pass.
+
 ---
+
+<!-- endregion sentry -->
 
 ## Adding Sentry
 

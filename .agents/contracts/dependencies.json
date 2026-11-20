@@ -319,7 +319,7 @@
     {
       "name": "@app/cloudflare",
       "category": "vendor-package",
-      "owner": "cloudflare",
+      "owner": "web-next",
       "seam": ["apps/web/src/lib/{bot-protection,origin-guard}/**"]
     },
     {
