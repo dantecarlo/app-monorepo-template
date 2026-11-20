@@ -112,6 +112,15 @@ pnpm validate --profile strict   # also the strict-only steps (none today)
 | `cost`       | `instant`, `seconds` or `minutes`, declared; the run prints the measured time beside it        |
 | `blind`      | `exported-cases`, on the one step that blinds a `defineGate` gate                              |
 
+**Every gate script is registered.** Each root script named `verify:*` or
+`*:test` is a step, or an entry of the registry's `outside` list, which names
+the script, the capability whose prune removes the entry, and the reason
+`pnpm validate` does not run it: `verify:ticket-branch` (the template's own
+branches carry no ticket id) and `verify:expo` (it reaches the network). The
+runner refuses an unregistered one, and a stale or doubled entry, before any
+step runs, so a gate added to `package.json` cannot silently stay out of the
+gate.
+
 **A capability's prune removes its gates by data.** An absent capability takes
 every step it owns, as it takes the dependency-registry entries it owns
 ([manifest.md](manifest.md) § Registry entries have owners too); nothing edits
@@ -130,8 +139,8 @@ gate the run reaches is blinded by exactly one step, whose companion's exported
 
 > **Pending merge.** The harness-config branch (unit 4.1b) adds
 > `verify:harness-config` to the old chain. It gets its registry entry when the
-> two branches meet; nothing here notices a gate script the registry does not
-> list, so the entry is added by hand at that merge.
+> two branches meet; until it does, the runner refuses the merged tree, naming
+> the script.
 
 ### 3a. Preflight — the instant gates run first
 

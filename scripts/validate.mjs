@@ -58,13 +58,16 @@ export const gate = defineGate({
     `stage, profile and cost of the known values, no key the registry does ` +
     'not know, a non-empty command or else a root package.json script of ' +
     'its id, and a stage never earlier than the one above it; the registry ' +
-    'lists at least one step.',
+    'lists at least one step; and every root script named verify:* or ' +
+    '*:test is a step or an outside entry, which names a script package.json ' +
+    'defines and no step runs, a known owner and its reason.',
   id: 'validate',
   notCovered:
     'whether a step checks what it should, which its own companion proves; ' +
     'whether the declared cost matches the time a run takes, which the run ' +
     'prints beside it; whether a step of an absent capability was left ' +
-    'behind while its script stayed; and the smokes and end-to-end tests, ' +
+    'behind while its script stayed; a gate script named otherwise ' +
+    '(check:*, report:*, *:check); and the smokes and end-to-end tests, ' +
     'which run outside the gate (docs/harness.md 3d).',
   run: analyzeRegistry
 })

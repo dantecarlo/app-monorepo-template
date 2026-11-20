@@ -48,8 +48,6 @@ const SCRATCH_PREFIX = 'gate-registry-'
 // CASES — the registry gate over synthetic contexts.
 // ---------------------------------------------------------------------------
 
-const SCRIPTS = { 'verify:a': 'node a.mjs', 'verify:b': 'node b.mjs' }
-
 const step = (fields) => ({
   capability: CORE_CAPABILITY,
   cost: 'seconds',
@@ -59,11 +57,38 @@ const step = (fields) => ({
   ...fields
 })
 
-const judged =
-  ({ registry }) =>
-  () => ({ capabilities: ['sdd'], registry, scripts: SCRIPTS })
+const away = (fields) => ({
+  capability: CORE_CAPABILITY,
+  reason: 'a project runs it in its own CI',
+  script: 'verify:c',
+  ...fields
+})
 
-const listing = ({ steps }) => judged({ registry: { steps } })
+// The scripts a registry's steps and outside entries name, so a case
+// defines every script it runs unless it hands in its own.
+const scriptsOf = ({ registry }) =>
+  Object.fromEntries(
+    [
+      ...(Array.isArray(registry.steps) ? registry.steps : [])
+        .filter((entry) => entry?.command === undefined)
+        .map((entry) => entry?.id),
+      ...(Array.isArray(registry.outside) ? registry.outside : []).map(
+        (entry) => entry?.script
+      )
+    ]
+      .filter((name) => typeof name === 'string' && name !== '')
+      .map((name) => [name, `node ${name}.mjs`])
+  )
+
+const judged =
+  ({ registry, scripts = scriptsOf({ registry }) }) =>
+  () => ({ capabilities: ['sdd'], registry, scripts })
+
+const listing = ({ outside, scripts, steps }) =>
+  judged({
+    registry: outside === undefined ? { steps } : { outside, steps },
+    scripts
+  })
 
 export const CASES = [
   {
@@ -152,7 +177,7 @@ export const CASES = [
     name: 'a blind the registry does not know is refused'
   },
   {
-    context: listing({ steps: [step({ id: 'verify:c' })] }),
+    context: listing({ scripts: {}, steps: [step({ id: 'verify:c' })] }),
     expected: 1,
     name: 'a step whose script package.json does not define is refused'
   },
@@ -160,6 +185,85 @@ export const CASES = [
     context: listing({ steps: [step({ command: ' ', id: 'turbo' })] }),
     expected: 1,
     name: 'a step with an empty command is refused'
+  },
+  {
+    context: listing({
+      scripts: { build: 'turbo run build', 'verify:a': 'node a.mjs' },
+      steps: [step({})]
+    }),
+    expected: 0,
+    name: 'a script that is neither a verify script nor a test suite needs no entry'
+  },
+  {
+    context: listing({
+      scripts: { 'verify:a': 'node a.mjs', 'verify:c': 'node c.mjs' },
+      steps: [step({})]
+    }),
+    expected: 1,
+    name: 'a verify script the registry neither runs nor lists outside is refused'
+  },
+  {
+    context: listing({
+      scripts: { 'hooks:test': 'node --test h.test.mjs', 'verify:a': 'a' },
+      steps: [step({})]
+    }),
+    expected: 1,
+    name: 'a test suite the registry neither runs nor lists outside is refused'
+  },
+  {
+    context: listing({ outside: [away({})], steps: [step({})] }),
+    expected: 0,
+    name: 'a script listed outside with its owner and reason passes'
+  },
+  {
+    context: listing({
+      outside: [away({})],
+      scripts: { 'verify:a': 'node a.mjs' },
+      steps: [step({})]
+    }),
+    expected: 1,
+    name: 'an outside entry whose script package.json does not define is refused'
+  },
+  {
+    context: listing({
+      outside: [away({ reason: ' ' })],
+      steps: [step({})]
+    }),
+    expected: 1,
+    name: 'an outside entry with no reason is refused'
+  },
+  {
+    context: listing({
+      outside: [away({ capability: 'sentry' })],
+      steps: [step({})]
+    }),
+    expected: 1,
+    name: 'an outside entry owned by a capability the manifest does not declare is refused'
+  },
+  {
+    context: listing({
+      outside: [away({ after: 'verify:a' })],
+      steps: [step({})]
+    }),
+    expected: 1,
+    name: 'an outside entry with a key the registry does not know is refused'
+  },
+  {
+    context: listing({
+      outside: [away({ script: 'verify:a' })],
+      steps: [step({})]
+    }),
+    expected: 1,
+    name: 'a script both run as a step and listed outside is refused'
+  },
+  {
+    context: listing({
+      outside: { 'verify:c': 'for CI' },
+      scripts: { 'verify:a': 'node a.mjs' },
+      steps: [step({})]
+    }),
+    expected: 1,
+    name: 'an outside list that is not an array is refused'
   }
 ]
 
@@ -362,9 +466,13 @@ const blindedProblems = ({
 
 const checks = [
   {
-    name: 'pruning a capability drops every step it owns and keeps the rest in order',
+    name: 'pruning a capability drops every step and outside entry it owns and keeps the rest in order',
     run: () => {
       const registry = {
+        outside: [
+          away({ capability: 'sdd', script: 'verify:e' }),
+          away({ script: 'verify:f' })
+        ],
         steps: [
           step({}),
           step({ capability: 'sdd', id: 'verify:b' }),
@@ -374,12 +482,17 @@ const checks = [
       }
       const pruned = pruneRegistry({ capability: 'sdd', registry })
       assert.deepEqual(ids(pruned), ['verify:a', 'verify:c'])
+      assert.deepEqual(
+        pruned.outside.map(({ script }) => script),
+        ['verify:f']
+      )
       assert.deepEqual(ids(registry), [
         'verify:a',
         'verify:b',
         'verify:c',
         'verify:d'
       ])
+      assert.equal(registry.outside.length, 2)
     }
   },
   {
@@ -533,16 +646,20 @@ const checks = [
     run: () => {
       const steps = [
         step({}),
+        step({ id: 'verify:b' }),
         step({
           command: 'node note.mjs strict',
           id: 'deep',
           profile: STRICT
         })
       ]
-      assert.deepEqual(runInScratch({ steps }).logged, ['pnpm verify:a'])
+      assert.deepEqual(runInScratch({ steps }).logged, [
+        'pnpm verify:a',
+        'pnpm verify:b'
+      ])
       assert.deepEqual(
         runInScratch({ args: ['--profile', STRICT], steps }).logged,
-        ['pnpm verify:a', 'strict']
+        ['pnpm verify:a', 'pnpm verify:b', 'strict']
       )
       const lenient = runInScratch({
         args: ['--profile', 'lenient'],

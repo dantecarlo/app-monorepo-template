@@ -19,7 +19,12 @@
 //               companion exports CASES, which scripts/validate.test.mjs
 //               re-runs against `blindGate`; they must then fail
 //
-// An absent capability takes every step it owns, the way it takes the
+// Every root script named `verify:*` or `*:test` is a step, or an entry of
+// `outside`: `{ script, capability, reason }`, a gate script `pnpm validate`
+// deliberately does not run, and why. A gate added to package.json and never
+// registered is a finding, not a gate that silently stops running.
+//
+// An absent capability takes every step and outside entry it owns, the way it takes the
 // entries of the dependency registry it owns (docs/manifest.md), so a prune
 // removes its gates by data and never edits a command chain.
 //
@@ -137,6 +142,86 @@ const orderProblems = ({ steps }) => {
   })
 }
 
+// A root script that judges the repository or runs a suite: the registry
+// runs it as a step or lists it in `outside` with the reason it does not.
+export const GATE_SCRIPT = /^verify:|:test$/u
+
+const OUTSIDE_KEYS = new Set(['capability', 'reason', 'script'])
+
+// The findings of the `outside` list: each entry names a script the root
+// package.json defines and no step runs, the owner whose prune removes the
+// entry, and why `pnpm validate` does not run the script.
+const outsideProblems = ({ capabilities, outside, scripts, stepIds }) => {
+  if (outside === undefined) return []
+  if (!Array.isArray(outside)) {
+    return [
+      {
+        detail: `${REGISTRY_FILE}: "outside" must be an array of { script, capability, reason }`,
+        id: REGISTRY_FILE
+      }
+    ]
+  }
+  return outside.flatMap((entry, index) => {
+    if (!isObject(entry)) {
+      return [
+        {
+          detail: `outside entry ${index + 1} is not an object`,
+          id: `outside ${index + 1}`
+        }
+      ]
+    }
+    const name = isText(entry.script)
+      ? entry.script
+      : `outside entry ${index + 1}`
+    const known = isText(entry.script)
+    return [
+      ...Object.keys(entry)
+        .filter((key) => !OUTSIDE_KEYS.has(key))
+        .map(
+          (key) =>
+            `${name}: key ${quoted(key)} is not one an outside entry knows (${[...OUTSIDE_KEYS].sort().join(', ')})`
+        ),
+      ...(known ? [] : [`${name}: script must be a non-empty string`]),
+      ...(isText(entry.reason)
+        ? []
+        : [
+            `${name}: reason must say why pnpm validate does not run the script`
+          ]),
+      ...oneOf({
+        field: 'capability',
+        known: [CORE_CAPABILITY, ...capabilities],
+        name,
+        value: entry.capability
+      }),
+      ...(known && !Object.hasOwn(scripts, entry.script)
+        ? [
+            `${name}: the root package.json defines no such script, so the entry is stale; a prune that unsets a script must take its entry too`
+          ]
+        : []),
+      ...(known && stepIds.has(entry.script)
+        ? [`${name}: a step runs it, so it cannot also be listed outside`]
+        : [])
+    ].map((detail) => ({ detail, id: name }))
+  })
+}
+
+// Every gate script of the root package.json that no step runs and no
+// outside entry lists: a gate added to package.json and never registered.
+const coverageProblems = ({ outside, scripts, stepIds }) => {
+  const listed = new Set(
+    (Array.isArray(outside) ? outside : [])
+      .filter(isObject)
+      .map(({ script }) => script)
+  )
+  return Object.keys(scripts)
+    .filter((name) => GATE_SCRIPT.test(name))
+    .filter((name) => !stepIds.has(name) && !listed.has(name))
+    .map((name) => ({
+      detail: `${name}: the root package.json defines this gate script, but ${REGISTRY_FILE} neither runs it as a step nor lists it in "outside" with the reason it does not run`,
+      id: name
+    }))
+}
+
 // Every problem of a registry, as findings `{ detail, id }`. `capabilities`
 // are the ids template.manifest.json declares, `scripts` the scripts of the
 // root package.json.
@@ -179,12 +264,37 @@ export const analyzeRegistry = ({ capabilities, registry, scripts }) => {
     steps: shaped.filter(({ id }) => isText(id))
   })
 
-  return [...misshapen, ...single, ...across]
+  const stepIds = new Set(
+    shaped
+      .filter((entry) => entry.command === undefined)
+      .map(({ id }) => id)
+  )
+  const listed = outsideProblems({
+    capabilities,
+    outside: registry.outside,
+    scripts,
+    stepIds
+  })
+  const unregistered = coverageProblems({
+    outside: registry.outside,
+    scripts,
+    stepIds
+  })
+
+  return [...misshapen, ...single, ...across, ...listed, ...unregistered]
 }
 
-// The registry without the steps `capability` owns, the rest in order.
+// The registry without the steps and outside entries `capability` owns, the
+// rest in order.
 export const pruneRegistry = ({ capability, registry }) => ({
   ...registry,
+  ...(Array.isArray(registry.outside)
+    ? {
+        outside: registry.outside.filter(
+          (entry) => entry.capability !== capability
+        )
+      }
+    : {}),
   steps: registry.steps.filter((entry) => entry.capability !== capability)
 })
 

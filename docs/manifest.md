@@ -80,8 +80,12 @@ by data (`docs/harness.md` § The gate registry).
 - **The gate.** `scripts/validate.mjs` refuses a step whose capability the
   manifest does not declare, and a step whose script the root `package.json`
   does not define, which is what a prune that unsets a script but keeps its
-  step leaves. `pnpm validate:test` prunes every capability and proves the
-  registry left runs.
+  step leaves. Every `verify:*` and `*:test` script is a step or an entry of
+  the registry's `outside` list, which has an owner too (`mobile-expo` for
+  `verify:expo`), so a prune that unsets a gate script must also take its step
+  or entry: `design-tokens` unsets the theme-sync scripts for that reason.
+  `pnpm validate:test` prunes every capability and proves the registry left
+  runs.
 
 ### Regions: the lines a capability owns in a file it does not claim
 

@@ -160,6 +160,18 @@
         {
           "verb": "remove-workspace",
           "entry": "packages/tokens"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.verify:theme-sync"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.verify:theme-sync:test"
         }
       ]
     },
