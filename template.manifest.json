@@ -295,7 +295,6 @@
           "verb": "remove",
           "paths": [
             "apps/mobile/src/lib/supabase/**",
-            "apps/web/src/app/SupabaseProviders.tsx",
             "apps/web/src/lib/supabase/**"
           ]
         },

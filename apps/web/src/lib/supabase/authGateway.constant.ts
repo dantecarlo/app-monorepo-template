@@ -1,25 +1,4 @@
-/** Why the no-op gateway rejects a sign-in: the cause a report carries. */
-export const AUTH_NOT_CONFIGURED_MESSAGE =
-  'Auth is not configured: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY'
-
-/** The sign-in failures the browser's auth gateway names, as AppError codes. */
-export enum SignInFailureEnum {
-  EMAIL_NOT_CONFIRMED = 'EMAIL_NOT_CONFIRMED',
-  INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
-  NOT_CONFIGURED = 'NOT_CONFIGURED',
-  RATE_LIMITED = 'RATE_LIMITED'
-}
-
-/** The catalog message of each failure, which the mutation toast shows. */
-export const SIGN_IN_FAILURE_MESSAGE_KEY: Record<
-  SignInFailureEnum,
-  string
-> = {
-  [SignInFailureEnum.EMAIL_NOT_CONFIRMED]: 'auth.error.emailNotConfirmed',
-  [SignInFailureEnum.INVALID_CREDENTIALS]: 'auth.error.invalidCredentials',
-  [SignInFailureEnum.NOT_CONFIGURED]: 'auth.error.notConfigured',
-  [SignInFailureEnum.RATE_LIMITED]: 'auth.error.rateLimited'
-}
+import { SignInFailureEnum } from '@/lib/auth/authGateway.constant'
 
 /**
  * The `name` of the error a Supabase sign-in rejects with when the auth

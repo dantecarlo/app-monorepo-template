@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { SupabaseProviders } from '@/app/SupabaseProviders'
+import { AuthProviders } from '@/app/AuthProviders'
 import {
   getAppLocale,
   getAppMessages
@@ -23,8 +23,8 @@ export const LocaleProviders = async ({
   ])
 
   return (
-    <SupabaseProviders locale={locale} messages={messages}>
+    <AuthProviders locale={locale} messages={messages}>
       {children}
-    </SupabaseProviders>
+    </AuthProviders>
   )
 }
