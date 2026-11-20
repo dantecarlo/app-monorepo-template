@@ -107,6 +107,20 @@ const DROP_STEP = '## Drop a ticket'
 const CATALOG_BOARD_CHECK =
   'matches its board page in id, title, target version and closing pull request'
 const CATALOG_BOARD_CHECK_NAMED = `It names ${CATALOG_BOARD_CHECK}.`
+// QA brings a pull request current once, before Ready to merge; every later
+// bring-current is the architect's, from a spare worktree of its own, pushed
+// unforced in the background, and a code conflict goes back to the dev
+// session. No session is asked to bring a branch current, and QA moves no
+// ticket back from Ready to merge.
+const MESSAGES = '## Messages'
+const SPARE_WORKTREE = "a spare worktree of its own, never QA's or the dev's"
+const SPARE_WORKTREE_NAMED = `It names ${SPARE_WORKTREE}.`
+const BACKGROUND_NAMED = 'It names in the background.'
+const CONFLICT_BACK_NAMED =
+  'It names a code conflict goes back to the dev session.'
+const BRING_CURRENT = '<id> bring current'
+const BRING_CURRENT_ROW = `| \`${BRING_CURRENT}\` | architect to the ticket's QA |`
+const BACK_FROM_READY = 'Ready to merge → Changes requested'
 
 // The block a process template's Ticket identity section ships: the branch
 // check's defaults, as JSON.
@@ -1057,6 +1071,88 @@ export const CASES = [
     }),
     expected: 1,
     name: 'a qa-ticket that does not stop on a dropped ticket is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'refine-ticket' })]: replace({
+          from: DETACH_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a refine-ticket whose merge queue adds no detached worktree is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'refine-ticket' })]: replace({
+          from: PUSH_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a refine-ticket whose merge queue does not push HEAD to the ticket branch is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'refine-ticket' })]: replace({
+          from: BACKGROUND_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a refine-ticket whose merge queue does not push in the background is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'refine-ticket' })]: replace({
+          from: CONFLICT_BACK_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a refine-ticket whose merge queue does not send a code conflict back to the dev session is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'refine-ticket' })]: append({
+          lines: [`- Message its QA \`${BRING_CURRENT}\`.`]
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a refine-ticket that asks QA to bring a pull request current is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: CONTRACT })]: replace({
+          from: `${MESSAGES}\n`,
+          to: `${MESSAGES}\n\n${BRING_CURRENT_ROW}\n`
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a ticket-flow whose messages carry a bring current line is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'qa-ticket' })]: append({
+          lines: ['moves:', `  - ${BACK_FROM_READY}`]
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a qa-ticket that moves a ticket back from Ready to merge is refused'
   }
 ]
 
@@ -1323,6 +1419,65 @@ const checks = [
       assert.ok(
         finding.detail.includes(CATALOG_BOARD_CHECK),
         `the finding does not name the check it owes: ${finding.detail}`
+      )
+    }
+  },
+  {
+    name: 'a refine-ticket whose merge queue brings no pull request current from a spare worktree of its own is refused',
+    run: () => {
+      const findings = gate.run(
+        skills({
+          edits: {
+            [SKILL({ folder: 'refine-ticket' })]: replace({
+              from: SPARE_WORKTREE_NAMED,
+              to: NAMES_NOTHING
+            })
+          }
+        })()
+      )
+      assert.equal(findings.length, 1, JSON.stringify(findings))
+      const [finding] = findings
+      assert.equal(finding.kind, FINDING_KIND.mention)
+      assert.equal(finding.folder, 'refine-ticket')
+      assert.ok(
+        finding.detail.startsWith(
+          `${SKILLS_ROOT}/refine-ticket/${SKILL_FILE}`
+        ),
+        `the finding does not name the file: ${finding.detail}`
+      )
+      assert.ok(
+        finding.detail.includes(MERGE_QUEUE),
+        `the finding does not name the section: ${finding.detail}`
+      )
+      assert.ok(
+        finding.detail.includes(SPARE_WORKTREE),
+        `the finding does not name the statement it owes: ${finding.detail}`
+      )
+    }
+  },
+  {
+    name: 'a qa-ticket that waits for a later bring current is refused',
+    run: () => {
+      const findings = gate.run(
+        skills({
+          edits: {
+            [SKILL({ folder: 'qa-ticket' })]: append({
+              lines: [`- **\`${BRING_CURRENT}\`** — bring it current again.`]
+            })
+          }
+        })()
+      )
+      assert.equal(findings.length, 1, JSON.stringify(findings))
+      const [finding] = findings
+      assert.equal(finding.kind, FINDING_KIND.forbidden)
+      assert.equal(finding.folder, 'qa-ticket')
+      assert.ok(
+        finding.detail.startsWith(`${SKILLS_ROOT}/qa-ticket/${SKILL_FILE}`),
+        `the finding does not name the file: ${finding.detail}`
+      )
+      assert.ok(
+        finding.detail.includes(BRING_CURRENT),
+        `the finding does not name the line: ${finding.detail}`
       )
     }
   },

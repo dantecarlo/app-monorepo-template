@@ -21,8 +21,10 @@
 //     `<id> ready to merge, hotfix` and the drop's line `<id> dropped`, rules
 //     that name
 //     both merge policies, a ticket identity that names `branchTypes` and
-//     the `json ticket-identity` block, and its ticket and release
-//     templates, the ticket's target version marked required;
+//     the `json ticket-identity` block, its ticket and release templates,
+//     the ticket's target version marked required, and no
+//     `<id> bring current`, since no session is asked to bring a branch
+//     current;
 //   - a role skill: a first paragraph that names ticket-flow's SKILL.md, and
 //     neither of the contract's two tables; `po-ticket` a drop step that
 //     sends `<id> dropped`, and no `edits:`, since the PO does no repository
@@ -31,13 +33,18 @@
 //     catalog, one pull request per close or release, and a dropped one in
 //     its `### Dropped tickets` table, a merge queue that names both merge
 //     policies, brings the catalog pull request current itself and checks
-//     its rows against the board, and a release step that names the
-//     hotfix's line; `dev-ticket` a changes requested section that stops on
-//     `<id> dropped`; `qa-ticket` a checkout step that adds a `--detach`
-//     worktree, a decide step that pushes `HEAD:<branch>`, a hand-off step
-//     that names its `<id> ready to merge, PR #<n>` line and the hotfix's
-//     line, a step that stops on `<id> dropped` when the architect writes
-//     back, and no move of a ticket to Done, which is the architect's; and
+//     its rows against the board, brings a ticket's pull request current
+//     from a spare worktree of its own, added `--detach`, pushes it with
+//     `git push origin HEAD:<branch>` in the background and sends a code
+//     conflict back to the dev session, a release step that names the
+//     hotfix's line, and no `<id> bring current`; `dev-ticket` a changes
+//     requested section that stops on `<id> dropped`; `qa-ticket` a checkout
+//     step that adds a `--detach` worktree, a decide step that pushes
+//     `HEAD:<branch>`, a hand-off step that names its
+//     `<id> ready to merge, PR #<n>` line and the hotfix's line, a step that
+//     stops on `<id> dropped` when the architect writes back, no move of a
+//     ticket to Done or back from Ready to merge, both the architect's, and
+//     no `<id> bring current`; and
 //     `release-ticket` its deploy targets, branching, migrations and a hotfix
 //     section in which QA leaves the hotfix at Ready to merge;
 //   - `process-intake`: a mapping step that names both merge policies and
@@ -248,6 +255,25 @@ const CATALOG_CURRENT = 'the architect brings it current itself'
 const CATALOG_BOARD_CHECK =
   'matches its board page in id, title, target version and closing pull request'
 
+// QA brings a pull request current once, before Ready to merge. Every later
+// bring-current is the architect's: it merges the base into a queued pull
+// request's branch from a spare worktree of its own, detached, never QA's or
+// the dev's, pushes it unforced in the background and merges it once the
+// gate passes, and a code conflict goes back to the dev session. QA and the
+// dev stay free: no skill asks a session to bring a branch current, and QA
+// moves no ticket back from Ready to merge.
+const SPARE_WORKTREE = "a spare worktree of its own, never QA's or the dev's"
+const BACKGROUND_PUSH = 'in the background'
+const CONFLICT_TO_DEV = 'a code conflict goes back to the dev session'
+const BRING_CURRENT_MESSAGE = '<id> bring current'
+const BACK_FROM_READY = 'Ready to merge → Changes requested'
+const noBringCurrent = {
+  text: BRING_CURRENT_MESSAGE,
+  why:
+    'QA brings a pull request current once, before Ready to merge, and every ' +
+    "later bring-current is the architect's own, so no session is asked for one"
+}
+
 // A ticket closed without delivery, superseded or withdrawn, ends in
 // Dropped, apart from Closed. The contract says so in a section of its own,
 // whose drop record names the ticket that superseded it; the PO decides the
@@ -338,6 +364,7 @@ export const SKILL_CONTRACTS = [
       }
     ],
     folder: 'ticket-flow',
+    forbids: [noBringCurrent],
     headings: [
       '## Pre-flight',
       BOARD_OPERATIONS_HEADING,
@@ -391,6 +418,7 @@ export const SKILL_CONTRACTS = [
   },
   {
     folder: 'refine-ticket',
+    forbids: [noBringCurrent],
     headings: [
       MERGE_QUEUE,
       DROP_STEP,
@@ -402,6 +430,11 @@ export const SKILL_CONTRACTS = [
       ...policyMentions({ heading: MERGE_QUEUE }),
       { heading: MERGE_QUEUE, text: CATALOG_CURRENT },
       { heading: MERGE_QUEUE, text: CATALOG_BOARD_CHECK },
+      { heading: MERGE_QUEUE, text: SPARE_WORKTREE },
+      { heading: MERGE_QUEUE, text: DETACHED_CHECKOUT },
+      { heading: MERGE_QUEUE, text: HEAD_PUSH },
+      { heading: MERGE_QUEUE, text: BACKGROUND_PUSH },
+      { heading: MERGE_QUEUE, text: CONFLICT_TO_DEV },
       droppedMention({ heading: DROP_STEP }),
       { heading: RECORD_STEP, text: CLOSED_CATALOG },
       { heading: RECORD_STEP, text: ONE_PULL_REQUEST },
@@ -422,7 +455,14 @@ export const SKILL_CONTRACTS = [
       {
         text: DONE_MOVE,
         why: 'the architect merges a ticket and moves it to Done'
-      }
+      },
+      {
+        text: BACK_FROM_READY,
+        why:
+          'the architect brings a queued pull request current and sends a ' +
+          'conflict or a red check back to the dev session'
+      },
+      noBringCurrent
     ],
     headings: [
       QA_CHECKOUT_STEP,
@@ -838,7 +878,8 @@ export const gate = defineGate({
     'both merge policies (manual and low-risk), a ticket identity that ' +
     `names branchTypes and the ${IDENTITY_INFO} block, and its ticket and ` +
     'release templates, the ticket template naming its target version ' +
-    `${VERSION_REQUIRED}; each role skill opens by sending the reader to ` +
+    `${VERSION_REQUIRED}, and names no ${BRING_CURRENT_MESSAGE}; each role ` +
+    'skill opens by sending the reader to ' +
     'ticket-flow ' +
     "and copies neither of the contract's tables, po-ticket has a drop " +
     `step that names ${DROPPED_MESSAGE} and names no ${EDITS}, ` +
@@ -847,13 +888,17 @@ export const gate = defineGate({
     `${DROPPED_TABLE}, a ` +
     'merge queue that names both merge policies, says that ' +
     `${CATALOG_CURRENT} and that each row the catalog pull request ` +
-    `adds ${CATALOG_BOARD_CHECK}, and a release step that ` +
-    `names ${HOTFIX_MESSAGE}, dev-ticket a changes requested section that ` +
-    `names ${DROPPED_MESSAGE}, qa-ticket a checkout step that names ` +
+    `adds ${CATALOG_BOARD_CHECK}, and that brings a ticket's pull request ` +
+    `current from ${SPARE_WORKTREE}, names ${DETACHED_CHECKOUT}, ` +
+    `${HEAD_PUSH} and ${BACKGROUND_PUSH}, and says that ` +
+    `${CONFLICT_TO_DEV}, a release step that names ${HOTFIX_MESSAGE}, and ` +
+    `no ${BRING_CURRENT_MESSAGE}, dev-ticket a changes requested section ` +
+    `that names ${DROPPED_MESSAGE}, qa-ticket a checkout step that names ` +
     `${DETACHED_CHECKOUT}, a decide step that names ${HEAD_PUSH}, a ` +
     `hand-off step that names ${READY_TO_MERGE_MESSAGE} and ` +
     `${HOTFIX_MESSAGE}, a step for when the architect writes back that ` +
-    `names ${DROPPED_MESSAGE}, and no ${DONE_MOVE}, and release-ticket its ` +
+    `names ${DROPPED_MESSAGE}, and no ${DONE_MOVE}, ${BACK_FROM_READY} or ` +
+    `${BRING_CURRENT_MESSAGE}, and release-ticket its ` +
     'deploy targets, its ' +
     'branching with the tags-only alternative, its migrations and a ' +
     `hotfix section that says ${HOTFIX_LEFT}; and ` +
