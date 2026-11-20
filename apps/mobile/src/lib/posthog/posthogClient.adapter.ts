@@ -54,8 +54,10 @@ export const posthogConsentStorage: IPostHogConsentStorage | undefined =
     ? createConsentStorage()
     : undefined
 
-// The ONE PostHog client of this app, while one exists.
-const current: { client?: PostHog } = {}
+// The ONE PostHog client of this app, while one exists, and how many times a
+// client was stopped: a stop overtakes a launch's restore of an earlier grant
+// still reading it back, as a web stop overtakes a load.
+const current: { client?: PostHog; stops: number } = { stops: 0 }
 
 const ignore = (): void => undefined
 
@@ -100,6 +102,7 @@ export const startPostHogClient = (): IPostHogClient | undefined => {
 export const stopPostHogClient = async (): Promise<void> => {
   const { client } = current
   current.client = undefined
+  current.stops += 1
   if (!client) return
   try {
     await client.optOut()
@@ -118,7 +121,9 @@ const startAfterEarlierGrant = async ({
 }: {
   consentStorage: IPostHogConsentStorage
 }): Promise<void> => {
+  const { stops } = current
   if (!(await consentStorage.isGranted())) return
+  if (stops !== current.stops) return
   await startPostHogClient()?.optIn()
 }
 

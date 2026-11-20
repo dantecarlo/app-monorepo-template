@@ -15,6 +15,13 @@ const sdk = vi.hoisted(() => ({
   shutdown: vi.fn(async (): Promise<void> => undefined)
 }))
 
+// Like posthog-react-native 4.87.0, a client reads both of its files through
+// its storage as it is constructed; every read lands here.
+const construction = vi.hoisted(() => ({
+  files: ['.posthog-rn.json', '.posthog-rn-logs.json'],
+  reads: [] as Promise<string | null>[]
+}))
+
 // The persisted properties of the SDK that hold what it has not sent yet,
 // under the names the SDK gives them.
 const QUEUES = vi.hoisted(() => ({
@@ -34,6 +41,12 @@ vi.mock('posthog-react-native', () => ({
     shutdown = sdk.shutdown
     constructor(...args: unknown[]) {
       sdk.construct(...args)
+      const storage = (
+        args[1] as { customStorage?: IPostHogConsentStorage } | undefined
+      )?.customStorage
+      construction.files.forEach((file) => {
+        if (storage) construction.reads.push(storage.getItem(file))
+      })
     }
   },
   PostHogPersistedProperty: QUEUES
@@ -53,6 +66,13 @@ const CONSENT_CALLS = [
 // The file PostHog keeps its ids in, and what a client writes into it.
 const EVENTS_KEY = '.posthog-rn.json'
 const EVENTS_PAYLOAD = '{"version":"v1","content":{"anonymous_id":"a1"}}'
+
+// Where an earlier grant left both files on the device, with a queue that
+// was never sent.
+const EVENTS_ON_DEVICE = `posthog-consent:${EVENTS_KEY}`
+const LOGS_ON_DEVICE = 'posthog-consent:.posthog-rn-logs.json'
+const OLD_BLOB =
+  '{"version":"v1","content":{"queue":[{"message":{"event":"before-revoke"}}]}}'
 
 interface IConstructedOptions {
   customStorage?: IPostHogConsentStorage
@@ -78,25 +98,36 @@ const loadConsent = async ({
   deviceRead,
   grantedEarlier = false,
   key,
-  refusesRemovals = false
+  refusesRemovalOf,
+  refusesRemovals = false,
+  storedEarlier = false
 }: {
   consent?: string
   deviceRead?: Promise<void>
   grantedEarlier?: boolean
   key?: string
+  refusesRemovalOf?: string
   refusesRemovals?: boolean
+  storedEarlier?: boolean
 }) => {
   Object.values(sdk).forEach((mock) => mock.mockClear())
+  construction.reads.length = 0
   vi.stubEnv('EXPO_PUBLIC_POSTHOG_KEY', key)
   vi.stubEnv('EXPO_PUBLIC_POSTHOG_CONSENT', consent)
   vi.resetModules()
   const device = createMemoryKeyValueStorage()
-  if (grantedEarlier) {
+  if (grantedEarlier || storedEarlier) {
     await device.setItem({ key: MARKER_ON_DEVICE, value: 'true' })
   }
+  if (storedEarlier) {
+    await device.setItem({ key: EVENTS_ON_DEVICE, value: OLD_BLOB })
+    await device.setItem({ key: LOGS_ON_DEVICE, value: OLD_BLOB })
+  }
   // A test that passes deviceRead holds every read of the device until it
-  // settles.
-  // One that passes refusesRemovals has a device that refuses every removal.
+  // settles. One that passes refusesRemovals has a device that refuses every
+  // removal, and refusesRemovalOf the removal of one key. holdRemovals holds
+  // every removal from then on until the release it returns.
+  const removals: { held?: Promise<void> } = {}
   const keyValueStorage = {
     ...device,
     getItem: async (params: { key: string }) => {
@@ -104,9 +135,19 @@ const loadConsent = async ({
       return device.getItem(params)
     },
     removeItem: async (params: { key: string }) => {
-      if (refusesRemovals) throw new Error('the device refused it')
+      await removals.held
+      if (refusesRemovals || params.key === refusesRemovalOf) {
+        throw new Error('the device refused it')
+      }
       await device.removeItem(params)
     }
+  }
+  const holdRemovals = () => {
+    const release: { open?: () => void } = {}
+    removals.held = new Promise<void>((resolve) => {
+      release.open = resolve
+    })
+    return () => release.open?.()
   }
   vi.doMock('@/lib/storage', () => ({ keyValueStorage }))
   const { createPostHogConsent } =
@@ -116,8 +157,18 @@ const loadConsent = async ({
   return {
     adapter: createPostHogConsent(),
     device,
+    holdRemovals,
     observability: createPostHogObservability()
   }
+}
+
+// A device read the test settles by hand.
+const heldRead = () => {
+  const gate: { open?: () => void } = {}
+  const deviceRead = new Promise<void>((resolve) => {
+    gate.open = resolve
+  })
+  return { deviceRead, open: () => gate.open?.() }
 }
 
 // Grants, revokes and reads the status once, as a banner would.
@@ -233,29 +284,164 @@ test('grant opens the consent storage before it constructs the client, so its fi
   )
 })
 
-test('a revoke while the launch restores an earlier grant leaves PostHog opted out', async () => {
-  const gate: { open?: () => void } = {}
-  const deviceRead = new Promise<void>((resolve) => {
-    gate.open = resolve
-  })
+// The stop overtakes the launch's restore, as a web stop overtakes a load.
+test('a revoke while the launch restores an earlier grant keeps PostHog from starting', async () => {
+  const read = heldRead()
   const { adapter, device } = await loadConsent({
     consent: 'opt-in',
-    deviceRead,
+    deviceRead: read.deviceRead,
     grantedEarlier: true,
     key: KEY
   })
 
   const revoked = adapter.revoke()
-  gate.open?.()
+  read.open()
   await revoked
+  await new Promise((resolve) => setTimeout(resolve))
 
-  expect(sdk.optIn).toHaveBeenCalledOnce()
-  expect(sdk.optOut).toHaveBeenCalledOnce()
-  expect(sdk.optOut.mock.invocationCallOrder[0]).toBeGreaterThan(
-    sdk.optIn.mock.invocationCallOrder.at(-1) ?? 0
-  )
+  expect(sdk.construct).not.toHaveBeenCalled()
+  expect(sdk.optIn).not.toHaveBeenCalled()
   expect(await device.getItem({ key: MARKER_ON_DEVICE })).toBeNull()
   expect(await adapter.getStatus()).toBe('denied')
+})
+
+// The verifier's probes, P1 to P7: a client reads both of its files as it is
+// constructed, and a queue an earlier grant left must not reach a later one.
+test('a revoke during the launch restore removes what the earlier launch stored', async () => {
+  const read = heldRead()
+  const { adapter, device } = await loadConsent({
+    consent: 'opt-in',
+    deviceRead: read.deviceRead,
+    key: KEY,
+    storedEarlier: true
+  })
+
+  const revoked = adapter.revoke()
+  read.open()
+  await revoked
+  await Promise.allSettled(construction.reads)
+
+  expect(await device.getItem({ key: MARKER_ON_DEVICE })).toBeNull()
+  expect(await device.getItem({ key: EVENTS_ON_DEVICE })).toBeNull()
+  expect(await device.getItem({ key: LOGS_ON_DEVICE })).toBeNull()
+})
+
+test('a grant after a revoke during the launch restore reads nothing the earlier launch stored', async () => {
+  const read = heldRead()
+  const { adapter } = await loadConsent({
+    consent: 'opt-in',
+    deviceRead: read.deviceRead,
+    key: KEY,
+    storedEarlier: true
+  })
+  const revoked = adapter.revoke()
+  read.open()
+  await revoked
+  await Promise.allSettled(construction.reads)
+  construction.reads.length = 0
+
+  await adapter.grant()
+
+  expect(await Promise.all(construction.reads)).toEqual([null, null])
+})
+
+test('a revoke after the launch settled removes what the earlier launch stored', async () => {
+  const { adapter, device } = await loadConsent({
+    consent: 'opt-in',
+    key: KEY,
+    storedEarlier: true
+  })
+  await vi.waitFor(() => expect(sdk.optIn).toHaveBeenCalled())
+  await Promise.allSettled(construction.reads)
+
+  await adapter.revoke()
+
+  expect(await device.getItem({ key: EVENTS_ON_DEVICE })).toBeNull()
+  expect(await device.getItem({ key: LOGS_ON_DEVICE })).toBeNull()
+})
+
+test('a re-grant in the same launch after a refused removal reads nothing from before the revoke', async () => {
+  const { adapter, device } = await loadConsent({
+    consent: 'opt-in',
+    key: KEY,
+    refusesRemovalOf: EVENTS_ON_DEVICE,
+    storedEarlier: true
+  })
+  await vi.waitFor(() => expect(sdk.optIn).toHaveBeenCalled())
+  await Promise.allSettled(construction.reads)
+  await adapter.revoke()
+  expect(await device.getItem({ key: EVENTS_ON_DEVICE })).toBe(OLD_BLOB)
+  construction.reads.length = 0
+
+  await adapter.grant()
+
+  expect(await Promise.all(construction.reads)).toEqual([null, null])
+  expect(await adapter.getStatus()).toBe('granted')
+})
+
+test('a call made while the revoke closes the storage never reaches PostHog', async () => {
+  const { adapter, holdRemovals, observability } = await loadConsent({
+    consent: 'opt-in',
+    key: KEY
+  })
+  await adapter.grant()
+  const release = holdRemovals()
+
+  const revoked = adapter.revoke()
+  await new Promise((resolve) => setTimeout(resolve))
+  observability.captureError({ error: new Error('during the revoke') })
+  expect(await adapter.getStatus()).toBe('denied')
+  release()
+  await revoked
+
+  expect(sdk.captureException).not.toHaveBeenCalled()
+})
+
+test('an opt-in launch after a grant keeps the consent storage values', async () => {
+  const { device } = await loadConsent({
+    consent: 'opt-in',
+    key: KEY,
+    storedEarlier: true
+  })
+  await vi.waitFor(() => expect(sdk.optIn).toHaveBeenCalled())
+  const reads = await Promise.all(construction.reads)
+  await new Promise((resolve) => setTimeout(resolve))
+
+  expect(reads).toEqual([OLD_BLOB, OLD_BLOB])
+  expect(await device.getItem({ key: MARKER_ON_DEVICE })).toBe('true')
+  expect(await device.getItem({ key: EVENTS_ON_DEVICE })).toBe(OLD_BLOB)
+})
+
+test('a later launch that grants reads nothing a revoked earlier launch left on the device', async () => {
+  const { adapter, device } = await loadConsent({
+    consent: 'opt-in',
+    key: KEY
+  })
+  await device.setItem({ key: EVENTS_ON_DEVICE, value: OLD_BLOB })
+  await device.setItem({ key: LOGS_ON_DEVICE, value: OLD_BLOB })
+
+  await adapter.grant()
+
+  expect(await Promise.all(construction.reads)).toEqual([null, null])
+})
+
+test('a grant reads nothing a revoked earlier grant left under the consent prefix', async () => {
+  const { adapter, device } = await loadConsent({
+    consent: 'opt-in',
+    key: KEY
+  })
+  await device.setItem({ key: EVENTS_ON_DEVICE, value: EVENTS_PAYLOAD })
+  const reads: Promise<string | null>[] = []
+  sdk.construct.mockImplementationOnce((...args: unknown[]) => {
+    const [, options] = args as [string, IConstructedOptions]
+    if (options.customStorage) {
+      reads.push(options.customStorage.getItem(EVENTS_KEY))
+    }
+  })
+
+  await adapter.grant()
+
+  expect(await Promise.all(reads)).toEqual([null])
 })
 
 test('a grant after a revoke constructs a new client and opts it in', async () => {

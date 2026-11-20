@@ -175,3 +175,74 @@ test('writes to the device again on a grant after a revoke', async () => {
   expect(await onDevice(EVENTS_ON_DEVICE)).toBeNull()
   expect(await storage.getItem(EVENTS_KEY)).toBeNull()
 })
+
+// An earlier grant leaves PostHog's files under the prefix: a revoke removes
+// them whether or not this launch read them, and a grant on a device with no
+// marker clears them before any read.
+test('removes the PostHog files under its prefix on a revoke, read or not', async () => {
+  const { createConsentStorage, onDevice } = await load()
+  const earlier = createConsentStorage()
+  await earlier.open()
+  await earlier.setItem(EVENTS_KEY, EVENTS_PAYLOAD)
+  await earlier.setItem(LOGS_KEY, LOGS_PAYLOAD)
+  const storage = createConsentStorage()
+
+  await storage.close()
+
+  expect(await onDevice(MARKER_ON_DEVICE)).toBeNull()
+  expect(await onDevice(EVENTS_ON_DEVICE)).toBeNull()
+  expect(await onDevice(LOGS_ON_DEVICE)).toBeNull()
+})
+
+test('clears the PostHog files under its prefix before a grant on a device with no marker', async () => {
+  const { createConsentStorage, device, onDevice } = await load()
+  await device.setItem({ key: EVENTS_ON_DEVICE, value: EVENTS_PAYLOAD })
+  const storage = createConsentStorage()
+
+  await storage.open()
+
+  expect(await storage.getItem(EVENTS_KEY)).toBeNull()
+  expect(await onDevice(EVENTS_ON_DEVICE)).toBeNull()
+  expect(await onDevice(MARKER_ON_DEVICE)).toBe('true')
+})
+
+test('keeps a grant in memory while a key a revoke could not remove stays on the device', async () => {
+  const { createConsentStorage, device, onDevice, real } = await load()
+  const earlier = createConsentStorage()
+  await earlier.open()
+  await earlier.setItem(EVENTS_KEY, EVENTS_PAYLOAD)
+  vi.spyOn(device, 'removeItem').mockImplementation(async ({ key }) => {
+    if (key === EVENTS_ON_DEVICE) throw REFUSED
+    await real.removeItem({ key })
+  })
+  const storage = createConsentStorage()
+  await storage.close()
+
+  await storage.open()
+  await storage.setItem(LOGS_KEY, LOGS_PAYLOAD)
+
+  expect(await storage.isGranted()).toBe(true)
+  expect(await storage.getItem(EVENTS_KEY)).toBeNull()
+  expect(await storage.getItem(LOGS_KEY)).toBe(LOGS_PAYLOAD)
+  expect(await onDevice(EVENTS_ON_DEVICE)).toBe(EVENTS_PAYLOAD)
+  expect(await onDevice(MARKER_ON_DEVICE)).toBeNull()
+  expect(await onDevice(LOGS_ON_DEVICE)).toBeNull()
+})
+
+test('writes to the device again once the key a revoke could not remove goes', async () => {
+  const { createConsentStorage, device, onDevice, real } = await load()
+  const earlier = createConsentStorage()
+  await earlier.open()
+  await earlier.setItem(EVENTS_KEY, EVENTS_PAYLOAD)
+  vi.spyOn(device, 'removeItem')
+    .mockRejectedValueOnce(REFUSED)
+    .mockImplementation(real.removeItem)
+  const storage = createConsentStorage()
+  await storage.close()
+
+  await storage.open()
+
+  expect(await storage.getItem(EVENTS_KEY)).toBeNull()
+  expect(await onDevice(EVENTS_ON_DEVICE)).toBeNull()
+  expect(await onDevice(MARKER_ON_DEVICE)).toBe('true')
+})
