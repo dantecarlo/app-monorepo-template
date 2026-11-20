@@ -1,0 +1,8 @@
+{
+  "$comment": "How each agent of .agents/agents/ is graded. gradedBy names the skills whose procedure and report the agent's output is held to: the skill the agent runs, or, when it runs no single one, the skill that defines and judges what it returns. verify:agent-context fails an agent with no entry, an entry with no gradedBy, and a gradedBy naming a folder of .claude/skills/ that holds no SKILL.md.",
+  "agents": {
+    "validator": {
+      "gradedBy": ["validate-all"]
+    }
+  }
+}

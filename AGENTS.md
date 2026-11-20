@@ -64,8 +64,9 @@ Nothing is "done" until the validation gate is green:
 ATL_TEMPLATE_SELF=1 pnpm validate
 ```
 
-`pnpm validate` starts with `pnpm agent-harness:projection-check` and
-`pnpm agent-harness:test`, runs `turbo run lint typecheck test build format:check`, then
+`pnpm validate` starts with `pnpm agent-harness:projection-check`,
+`pnpm agent-harness:test` and `pnpm verify:agent-context`, runs
+`turbo run lint typecheck test build format:check`, then
 `pnpm verify:tests`, the spec gates (`verify:specs`, and `report:spec-drift`, which
 only reports), `pnpm verify:english`, `pnpm verify:instruction-entry`,
 `pnpm verify:unicode-safety`, `pnpm verify:workflow-pins`,
@@ -78,7 +79,10 @@ structural drift fails before anything expensive). An agent is written once, in
 runtime reads (`.claude/agents/`, `.codex/`, `.opencode/agents/`, `opencode.json`,
 `.github/agents/`), and `pnpm agent-harness:projection-check` fails when one of
 those files is missing, extra, edited by hand or not committed. Never edit them:
-edit the source and regenerate. `pnpm verify:tests` checks that every unit has a
+edit the source and regenerate. Every agent names the skill that grades it, as
+`gradedBy` in `.agents/agent-context.json`, and `pnpm verify:agent-context` fails
+an agent that names none, or names a skill `.claude/skills/` does not hold.
+`pnpm verify:tests` checks that every unit has a
 test, in the `__tests__/` of its own folder and named after it, and
 `pnpm verify:maps` checks architecture-map integrity and the magic-literal
 audit. `pnpm verify:instruction-entry` checks that `AGENTS.md` and `README.md`
