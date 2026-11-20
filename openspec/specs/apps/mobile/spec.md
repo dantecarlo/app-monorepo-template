@@ -9,7 +9,7 @@
 <!-- endregion supabase -->
 > **ID prefix:** `MOBILE`
 > **Derived from:** `docs/architecture/mobile.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/observability.md`, `docs/e2e.md`, `docs/responsive.md`, `AGENTS.md`, `docs/manifest.md`, `docs/decisions/0001-pluggable-providers.md`
-> **Verified against the code:** 2026-11-20 at `c324145`
+> **Verified against the code:** 2026-11-20 at `0eee3fe`
 
 ## Purpose
 

@@ -9,7 +9,7 @@
 <!-- endregion supabase -->
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`, `docs/observability.md`, `docs/manifest.md`, `docs/decisions/0001-pluggable-providers.md`
-> **Verified against the code:** 2026-11-20 at `c324145`
+> **Verified against the code:** 2026-11-20 at `0eee3fe`
 
 ## Purpose
 
