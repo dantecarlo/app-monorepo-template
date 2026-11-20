@@ -77,6 +77,8 @@
     "verify:workflow-pins:test": "node --test scripts/verify-workflow-pins.test.mjs",
     "verify:skill-frontmatter": "node scripts/verify-skill-frontmatter.mjs",
     "verify:skill-frontmatter:test": "node --test scripts/verify-skill-frontmatter.test.mjs",
+    "verify:skill-neutrality": "node scripts/verify-skill-neutrality.mjs",
+    "verify:skill-neutrality:test": "node --test scripts/verify-skill-neutrality.test.mjs",
     "verify:router-coverage": "node scripts/verify-router-coverage.mjs",
     "verify:router-coverage:test": "node --test scripts/verify-router-coverage.test.mjs",
     "verify:skills:test": "node --test scripts/verify-skills.test.mjs",
