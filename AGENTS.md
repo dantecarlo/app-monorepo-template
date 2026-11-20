@@ -50,7 +50,7 @@ See `docs/memory.md` for the LOAD and CONTRIBUTE flow.
 | `docs/maps/global-map.md`              | Navigable index of every shared and global artifact                     |
 | `docs/memory.md`                       | Shared Engram memory — load at session start, contribute decisions back |
 | `docs/manifest.md`                     | Template manifest — file ownership and propagation                      |
-| `docs/mcp.md`                          | MCP servers — what each is for, unpinned; refresh with `pnpm mcp:docs`  |
+| `docs/mcp.md`                          | MCP servers — what each is for, pinned; refresh with `pnpm mcp:docs`    |
 | `.agents/agents/validator.agent.md`    | Adversarial standards validator subagent (neutral source)               |
 | `.agents/agents/sdd-steward.agent.md`  | SDD steward subagent: one whole SDD change, or one sync (neutral source) |
 | `.claude/skills/validate-all/SKILL.md` | Full validation harness                                                 |
@@ -72,8 +72,9 @@ ATL_TEMPLATE_SELF=1 pnpm validate
 `pnpm verify:tests`, the spec gates (`verify:specs`, and `report:spec-drift`, which
 only reports), `pnpm verify:english`, `pnpm verify:instruction-entry`,
 `pnpm verify:unicode-safety`, `pnpm verify:workflow-pins`,
-`pnpm verify:skill-frontmatter`, `pnpm verify:router-coverage`,
-`pnpm codex-budget:test` and `pnpm verify:maps`. All must pass.
+`pnpm verify:skill-frontmatter`, `pnpm verify:skill-neutrality`,
+`pnpm verify:router-coverage`, `pnpm codex-budget:test` and `pnpm verify:maps`.
+All must pass.
 
 The projection check and the manifest gates run first (they are instant, so
 structural drift fails before anything expensive). An agent is written once, in
@@ -523,8 +524,8 @@ pnpm --filter @app/supabase gen:types
 | File                     | Read by                | Holds                                                                                                                                                                          |
 | ------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `packages/supabase/.env` | Supabase CLI (sourced) | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF`                                                                                                        |
-| `apps/web/.env.local`    | Next.js                | `NEXT_PUBLIC_SUPABASE_URL`, `_ANON_KEY`, `CF_ORIGIN_SECRET`, `TURNSTILE_SECRET_KEY`, `R2_*`, `NEXT_PUBLIC_POSTHOG_KEY`, `_HOST`, `_CONSENT`, optional `NEXT_PUBLIC_SENTRY_DSN` |
-| `apps/mobile/.env`       | Expo                   | `EXPO_PUBLIC_SUPABASE_URL`, `_ANON_KEY`, `EXPO_PUBLIC_POSTHOG_KEY`, `_HOST`, `_CONSENT`, optional `EXPO_PUBLIC_SENTRY_DSN`                                                     |
+| `apps/web/.env.local`    | Next.js                | `NEXT_PUBLIC_SUPABASE_URL`, `_ANON_KEY`, `CF_ORIGIN_SECRET`, `TURNSTILE_SECRET_KEY`, `R2_*`, `NEXT_PUBLIC_POSTHOG_KEY`, `_HOST`, `_CONSENT`, an optional capability's keys |
+| `apps/mobile/.env`       | Expo                   | `EXPO_PUBLIC_SUPABASE_URL`, `_ANON_KEY`, `EXPO_PUBLIC_POSTHOG_KEY`, `_HOST`, `_CONSENT`, an optional capability's keys                                                     |
 
 A root `.env` is not read by either framework. Never put secrets in
 `NEXT_PUBLIC_` or `EXPO_PUBLIC_` namespaces.

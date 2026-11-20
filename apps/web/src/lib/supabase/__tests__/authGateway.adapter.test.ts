@@ -2,14 +2,10 @@ import {
   SERVICE_ERROR_MESSAGE_KEY_BY_CODE,
   ServiceErrorCodeEnum
 } from '@app/core'
-import { resources } from '@app/i18n'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
-import {
-  SIGN_IN_FAILURE_MESSAGE_KEY,
-  SignInFailureEnum,
-  SUPABASE_UNREACHABLE_ERROR_NAME
-} from '@/lib/supabase/authGateway.constant'
+import { SignInFailureEnum } from '@/lib/auth/authGateway.constant'
+import { SUPABASE_UNREACHABLE_ERROR_NAME } from '@/lib/supabase/authGateway.constant'
 
 const {
   mockCreateSupabaseAuthGateway,
@@ -96,24 +92,6 @@ const signInRejection = async (): Promise<unknown> => {
     .catch((error: unknown) => error)
 }
 
-// The value a dot-separated key names in a catalog, if any.
-const messageAt = ({
-  catalog,
-  key
-}: {
-  catalog: object
-  key: string
-}): unknown =>
-  key
-    .split('.')
-    .reduce<unknown>(
-      (node, segment) =>
-        node !== null && typeof node === 'object'
-          ? (node as Record<string, unknown>)[segment]
-          : undefined,
-      catalog
-    )
-
 describe('auth gateway adapter', () => {
   beforeEach(() => {
     vi.resetModules()
@@ -143,6 +121,14 @@ describe('auth gateway adapter', () => {
       code: SignInFailureEnum.NOT_CONFIGURED,
       messageKey: 'auth.error.notConfigured'
     })
+  })
+
+  test('names the Supabase settings in the cause of a sign-in without them', async () => {
+    const rejection = await signInRejection()
+
+    const { message } = (rejection as { cause: Error }).cause
+    expect(message).toContain('NEXT_PUBLIC_SUPABASE_URL')
+    expect(message).toContain('NEXT_PUBLIC_SUPABASE_ANON_KEY')
   })
 
   test('creates one Supabase auth gateway per browser with the settings', async () => {
@@ -264,20 +250,5 @@ describe('auth gateway adapter', () => {
 
     expect(await signInRejection()).toBe(banned)
     expect(await signInRejection()).toBe(plain)
-  })
-
-  test('names a message every catalog holds for each sign-in failure', () => {
-    const keys = Object.values(SignInFailureEnum).map(
-      (failure) => SIGN_IN_FAILURE_MESSAGE_KEY[failure]
-    )
-
-    expect(keys).toHaveLength(Object.keys(SignInFailureEnum).length)
-    for (const { translation } of Object.values(resources)) {
-      for (const key of keys) {
-        expect(typeof messageAt({ catalog: translation, key }), key).toBe(
-          'string'
-        )
-      }
-    }
   })
 })

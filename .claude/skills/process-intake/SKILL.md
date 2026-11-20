@@ -80,8 +80,9 @@ only what the document did not answer:
   Say that neither policy covers a merge into the production branch, a deploy, a production
   migration, a store submission or any other irreversible step: those stay the owner's word. Then ask for the
   merge method, and for the merge gate the architect runs before each merge, if the project has
-  one. A branch is always brought current by merging its base, never by a rebase: QA pushes it
-  unforced to a branch the dev session also holds, and a rebased branch cannot be.
+  one. A branch is always brought current by merging its base, never by a rebase: QA does it once,
+  before Ready to merge, and the architect every later time, from a spare worktree of its own;
+  each pushes unforced to a branch the dev session also holds, and a rebased branch cannot be.
 - **Ticket identity** — where the target version lives (a milestone, or a board field), and
   three answers the branch check reads, written as the template's `json ticket-identity` block
   in § Ticket identity:

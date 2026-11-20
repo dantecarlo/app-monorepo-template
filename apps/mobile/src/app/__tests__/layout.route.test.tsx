@@ -23,7 +23,7 @@ vi.mock('@/lib/bootstrap/splashScreen.adapter', () => ({
 vi.mock('@/lib/bootstrap/useAppBootstrap.hook', () => ({
   useAppBootstrap: mockUseAppBootstrap
 }))
-vi.mock('@/lib/supabase/authGateway.adapter', () => ({
+vi.mock('@/lib/auth/authGateway.adapter', () => ({
   authGateway: {
     getSession: mockGetSession,
     onAuthStateChange: vi.fn().mockReturnValue({ unsubscribe: vi.fn() }),
@@ -69,7 +69,7 @@ describe('RootLayout', () => {
     expect(screen.queryByText('routes')).toBeNull()
   })
 
-  test('hands the auth provider the gateway lib/supabase builds', async () => {
+  test('hands the auth provider the gateway lib/auth serves', async () => {
     mockGetSession.mockClear()
 
     render(<RootLayout />)

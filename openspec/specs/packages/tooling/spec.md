@@ -3,7 +3,7 @@
 > **Governs:** `packages/tooling/src`
 > **ID prefix:** `TOOLING`
 > **Derived from:** `docs/code-standards.md`, `docs/architecture/shared.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-19 at `dd38b99`
+> **Verified against the code:** 2026-11-20 at `c324145`
 
 ## Purpose
 
@@ -41,7 +41,7 @@ each pairing its plain ESM module with its type declarations.
   devDependency
 - **WHEN** an observability adapter test imports `@app/tooling/observability-port-contract`
 - **THEN** the import resolves at run time and its declarations type the harness
-- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "the observability port contract"
+- **Test:** `packages/core/src/ports/observability/__tests__/createNoopObservability.helper.test.ts` › "the observability port contract"
 
 ### Requirement: TOOLING-02 — The seed comes from the commit
 
@@ -220,7 +220,7 @@ template runs Vitest 4.
 The tooling package SHALL export `TREE_SPAWN_OPTIONS` frozen, with `detached` true on POSIX and
 false on Windows, so a child spawned with it leads its own process group on POSIX.
 
-**Evidence:** `packages/tooling/src/process-tree.mjs:20`
+**Evidence:** `packages/tooling/src/process-tree.mjs:22`
 
 #### Scenario: the options on the running platform
 
@@ -234,12 +234,12 @@ false on Windows, so a child spawned with it leads its own process group on POSI
 The tooling package SHALL end a child and its descendants from `signalProcessTree` (on POSIX by
 sending the signal to the child's process group, which holds its descendants only when the child
 was spawned with `TREE_SPAWN_OPTIONS`, so a child spawned without them receives the signal alone;
-on Windows by `taskkill /pid <pid> /T /F` whatever the signal), and say in its declaration and
-its JSDoc that on POSIX the descendants are reached only for a child spawned with
-`TREE_SPAWN_OPTIONS`.
+on Windows by `taskkill /pid <pid> /T /F` whatever the signal, stopped after 5 s whether or not
+the call waits for it), and say in its declaration and its JSDoc that on POSIX the descendants
+are reached only for a child spawned with `TREE_SPAWN_OPTIONS`.
 
-**Evidence:** `packages/tooling/src/process-tree.mjs:47-65`,
-`packages/tooling/src/process-tree.d.mts:6-9`, `packages/tooling/src/process-tree.mjs:34-37`
+**Evidence:** `packages/tooling/src/process-tree.mjs:47-78`, `packages/tooling/src/process-tree.mjs:19`,
+`packages/tooling/src/process-tree.d.mts:6-9`, `packages/tooling/src/process-tree.mjs:36-39`
 
 #### Scenario: a child that started a process
 
@@ -247,6 +247,13 @@ its JSDoc that on POSIX the descendants are reached only for a child spawned wit
 - **WHEN** `signalProcessTree` signals it with `SIGTERM` and `wait`
 - **THEN** it returns true, and both the child and the process it started end within ten seconds
 - **Test:** `packages/tooling/src/__tests__/process-tree.test.mjs` › "signalProcessTree ends a child and the process it started"
+
+#### Scenario: taskkill is bounded
+
+- **GIVEN** `signalProcessTree` on Windows, with `wait` and without it
+- **WHEN** it runs taskkill
+- **THEN** each call gives taskkill a 5 s timeout, so a taskkill that hangs never holds its caller
+- **Test:** `packages/tooling/src/__tests__/process-tree.test.mjs` › "on Windows taskkill is bounded at 5 s, waited for or not"
 
 #### Scenario: a POSIX child that leads no group
 
@@ -270,7 +277,7 @@ The tooling package SHALL, on Windows, run taskkill to completion before `signal
 returns when `wait` is set, and start it in the background and return true at once when it is
 not.
 
-**Evidence:** `packages/tooling/src/process-tree.mjs:48-62`
+**Evidence:** `packages/tooling/src/process-tree.mjs:49-66`
 
 #### Scenario: with wait
 
@@ -293,8 +300,8 @@ The tooling package SHALL return false from `signalProcessTree` only when the tr
 signalled and the child is still running, and true for a child that never started or has already
 ended.
 
-**Evidence:** `packages/tooling/src/process-tree.mjs:46`,
-`packages/tooling/src/process-tree.mjs:59-61`, `packages/tooling/src/process-tree.mjs:66-68`
+**Evidence:** `packages/tooling/src/process-tree.mjs:48`,
+`packages/tooling/src/process-tree.mjs:67-70`, `packages/tooling/src/process-tree.mjs:72-77`
 
 #### Scenario: a tree that already ended
 
@@ -426,7 +433,7 @@ entry the prune leaves that names a removed dependency.
 - **GIVEN** the repository's tracked files and its `template.manifest.json`
 - **WHEN** the prune of `sentry` is checked
 - **THEN** nothing is listed
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning the sentry capability of this repository leaves no dangling reference"
+- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, supabase, mobile-expo or web-next of this repository leaves no dangling reference"
 
 ### Requirement: TOOLING-17 — The registry a prune leaves stays true
 
@@ -480,12 +487,19 @@ entry names.
 - **THEN** that `package.json` is listed with the package
 - **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a kept dependency whose entry the prune removes is a leak"
 
-#### Scenario: the three prunes of this repository
+#### Scenario: the prunes of this repository
 
 - **GIVEN** the repository's tracked files, its manifest and its registry
-- **WHEN** the prune of `sentry`, of `mobile-expo` and of `supabase` is checked
+- **WHEN** the prune of `sentry`, `mobile-expo`, `supabase`, `web-next` and `cloudflare` is checked
 - **THEN** no registry finding is listed for any of them
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, mobile-expo or supabase of this repository leaves the registry true"
+- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, mobile-expo, supabase, web-next or cloudflare of this repository leaves the registry true"
+
+#### Scenario: the packages of this repository a prune takes
+
+- **GIVEN** the repository's tracked files, its manifest and its registry
+- **WHEN** the prune of `i18n` and of `design-tokens` is checked
+- **THEN** no kept `package.json` declares a package whose entry the prune takes
+- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning i18n or design-tokens of this repository keeps no package whose entry it takes"
 
 ### Requirement: TOOLING-18 — A kept spec cites no pruned file
 
@@ -567,9 +581,10 @@ capability.
 - **THEN** only the second file is listed
 - **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a leak inside a region of the pruned capability is no leak"
 
-#### Scenario: the sentry capability of this repository
+#### Scenario: four capabilities of this repository
 
 - **GIVEN** the repository's tracked files, its manifest, its registry and its regions
-- **WHEN** the prune of `sentry` is checked with every check
-- **THEN** nothing is listed
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning the sentry capability of this repository leaves no dangling reference"
+- **WHEN** the prune of `sentry`, of `supabase`, of `mobile-expo` and of `web-next` is checked with
+  every check
+- **THEN** nothing is listed for any of them
+- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, supabase, mobile-expo or web-next of this repository leaves no dangling reference"

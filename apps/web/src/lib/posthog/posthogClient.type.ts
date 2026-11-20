@@ -28,6 +28,12 @@ export interface IPostHogResetOptions {
   resetDeviceID?: boolean
 }
 
+// The one option the consent API sets after init: whether the SDK requests
+// its flags.
+export interface IPostHogFlagsConfig {
+  advanced_disable_flags: boolean
+}
+
 export interface IPostHogClient {
   addExceptionStep(
     message: string,
@@ -41,5 +47,7 @@ export interface IPostHogClient {
   identify(distinctId: string, properties?: PostHogPropertiesType): void
   opt_in_capturing(options?: IPostHogOptInOptions): void
   opt_out_capturing(): void
+  reloadFeatureFlags(): void
   reset(options?: IPostHogResetOptions): void
+  set_config(config: IPostHogFlagsConfig): void
 }
