@@ -26,7 +26,11 @@
 | SUPABASE-31 | a savepoint and transaction words outside the code | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "keeps savepoints, and transaction words inside comments, strings and bodies" | green |
 | SUPABASE-31 | a psql meta-command | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a pgTAP file with a psql meta-command, naming it: %s" | green |
 | SUPABASE-31 | an opening other than a plain begin | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses any opening other than a plain begin, naming the file: %s" | green |
-| SUPABASE-31 | a statement the masker cannot read | Not covered | not run |
+| SUPABASE-31 | a commit after a form a simpler reader misreads | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a commit hidden from a masker that misreads Postgres, naming the file: %s" | green |
+| SUPABASE-31 | a file the reader cannot pair | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a quote, a dollar sign or a comment it cannot pair, naming the file: %s" | green |
+| SUPABASE-31 | what Postgres reads as one token | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "reads what Postgres reads as one token, nested comments included: %s" | green |
+| SUPABASE-31 | the order check's reader stays as it was | `packages/supabase/src/__tests__/sqlCode.helper.test.ts` › "reads the forms the pgTAP check reads on its own exactly as before" | green |
+| SUPABASE-31 | standard_conforming_strings off | Not covered | not run |
 | SUPABASE-31 | the package's pgTAP files                  | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "bundles every pgTAP file of the package"                                                    | green       |
 | SUPABASE-31 | a branch's new migration on a linked project | Not covered                                                                                                                                                 | not run     |
 | SUPABASE-32 | no target set                              | `packages/supabase/src/__tests__/testDbRun.helper.test.ts` › "runs supabase test db --linked over the bundle when the config names no target"              | green       |
@@ -76,12 +80,31 @@ the drive letter, and `pg_prove -r` runs over it, so the bundle under the system
 directory is visible. `supabase test db --help`, run with every HTTP request sent to a dead
 local proxy, says only "Paths to test files or directories". No live run has confirmed it.
 
+## Second correction, 2026-11-20
+
+The recheck closed B1 and found B2 still open: in six forms the shared masker
+(`SQL_NON_CODE_TOKEN_PATTERN`) read a real `commit;` as part of a string, comment or body. The
+forms were an escape string with `\'`, `--` inside a quoted identifier, `'` inside one (and
+a `"a/*b"` ... `"c*/d"` pair), `$` inside identifiers (`a$b$` ... `c$b$`), a `--` comment
+ended by a lone CR, and a non-ASCII dollar tag. The fix, at `fb4785c`, gives the pgTAP check a
+reader of its own in `src/pgTapBundle.helper.ts` that splits SQL as `scan.l` does, and fails
+closed on a quote, a quoted identifier, a dollar-quoted body or a nested comment that never
+closes, and on a `$` that pairs with nothing.
+
+Seen red before the fix: 14 tests. The seven hidden commits were accepted; five of the six
+unpaired files were accepted, and the stray `$` too; and a `commit;` inside a nested comment
+was refused. The order check's reader is unchanged: `git diff 80795f1 -- src/sqlCode.constant.ts
+src/sqlCode.helper.ts src/findMigrationOrderViolations.helper.ts` is empty, and `packages/supabase/src/__tests__/sqlCode.helper.test.ts` pins its
+pattern and its output on the six forms, green before and after. The verifier's whole case list
+(`b2-check.mjs`, copied to this writer's scratchpad and pointed at this branch) refuses every
+B1, B2 and masker case and accepts both allowed files.
+
 ## Gate
 
 - `pnpm validate`: not run by this change's writer: its brief keeps the shared machine to single test files
   and the package's suite, and the session that integrates it runs it.
 - `pnpm --filter @app/supabase test`: exit 0, 2026-11-20, 11 files and 61 tests; after the
-  correction, 11 files and 82 tests.
+  correction, 11 files and 82 tests; after the second, 11 files and 98 tests.
 - `eslint` on every changed source and `tsc --noEmit` of `@app/supabase`: exit 0, 2026-11-20.
 - `verify:specs`, `verify:english`, `verify:tests`, `verify:manifest`, `verify:manifest:coverage`,
   `verify:maps`, `verify:dependency-seams`: exit 0, 2026-11-20.
@@ -91,8 +114,9 @@ local proxy, says only "Paths to test files or directories". No live run has con
 
 ## Not verified
 
-- What the masker does not read: an escape string with a quote inside it and a double-quoted
-  identifier holding `--` can hide a statement on their line from the pgTAP check.
+- `standard_conforming_strings` off, in a pgTAP file or a database: the reader assumes the
+  default, on, so `'it\'s'` is one string to Postgres and two to the reader, which can hide the
+  statement after it. A decision for the owner.
 - The bundle's SQL running on Postgres, and both live scenarios: no gate reaches a database, the
   template links no project, and an agent may not start Docker here (`AGENTS.md`).
 - The `local` target on a running stack, which is for a downstream project.
