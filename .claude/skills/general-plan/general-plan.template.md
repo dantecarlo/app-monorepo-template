@@ -231,9 +231,7 @@ tables/columns/RPCs to add — not just UI>.
 
 ### 2. Env files (exact keys)
 
-- `apps/web/.env.local` — `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, …
-- `apps/mobile/.env` — `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, …
-- `packages/supabase/.env` — `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, …
+- `<env file>` — `<exact key>`, `<exact key>`, …: one line per env file, its keys copied from the env table of the project's `AGENTS.md`
 
 ### 3. Product decisions (owner only)
 

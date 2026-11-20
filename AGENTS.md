@@ -72,8 +72,9 @@ ATL_TEMPLATE_SELF=1 pnpm validate
 `pnpm verify:tests`, the spec gates (`verify:specs`, and `report:spec-drift`, which
 only reports), `pnpm verify:english`, `pnpm verify:instruction-entry`,
 `pnpm verify:unicode-safety`, `pnpm verify:workflow-pins`,
-`pnpm verify:skill-frontmatter`, `pnpm verify:router-coverage`,
-`pnpm codex-budget:test` and `pnpm verify:maps`. All must pass.
+`pnpm verify:skill-frontmatter`, `pnpm verify:skill-neutrality`,
+`pnpm verify:router-coverage`, `pnpm codex-budget:test` and `pnpm verify:maps`.
+All must pass.
 It runs the steps of the gate registry `.agents/contracts/gates.json` in order
 (`pnpm validate --list` prints them): a gate joins `validate` as a registry
 step, never as a command chain, and a capability's prune removes the steps it

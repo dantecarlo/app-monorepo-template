@@ -259,6 +259,21 @@
       "blind": "exported-cases"
     },
     {
+      "id": "verify:skill-neutrality:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:skill-neutrality",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "instant",
+      "blind": "exported-cases"
+    },
+    {
       "id": "verify:router-coverage:test",
       "capability": "core",
       "stage": "repository",

@@ -3,9 +3,9 @@ name: refine-ticket
 description: >
   The architect role of the ticket flow: refines a ticket into specs and a plan, dispatches it
   to dev once it has a target version and nothing blocks it, dispatches each later state, keeps
-  the merge queue, closes, drops and files tickets, records each closed or dropped ticket in the
-  plan's catalog through a pull request of its own, and groups Done tickets or a hotfix into a
-  release.
+  the merge queue and its branches current, closes, drops and files tickets, records each closed
+  or dropped ticket in the plan's catalog in its own pull request, and groups Done tickets or a
+  hotfix into a release.
   USE WHEN: "<id> new", "<id> ready for QA, branch <b>", "<id> changes requested",
   "<id> ready to merge, PR #<n>", "<id> ready to merge, hotfix", "<id> merged",
   "<id> dropped", "<id> question" about the plan, "<id> version set", "merge <id>", "what waits
@@ -84,7 +84,9 @@ Does it carry a target version (`read version`)?
 ## Step 6 — Dispatch every later state
 
 - `<id> ready for QA, branch <b>` from dev → the same line to the area's QA session.
-- `<id> changes requested` from QA → the same line to the dev session.
+- `<id> changes requested` from QA → the same line to the dev session. A conflict or a red check
+  met while bringing a pull request current (§ Merge queue, step 6) goes to the dev session
+  straight from here.
 - **Merge order**: once two tickets may reach Ready to merge together, set their order
   (dependencies first) and `comment` it on each one: "merge order: 2, after #120". The merge
   queue follows it.
@@ -114,8 +116,10 @@ message the PO `<id> version change`. Then take it from Step 1, where it waits f
 The architect keeps one merge queue for the default branch and merges from it, one pull request
 at a time, under the merge policy the project layer records (`ticket-flow` rule 4): `manual`,
 the default, or `low-risk`. The owner approves each merge here, in this session, so one place
-shows what waits to merge; QA asks the owner nothing and merges nothing. A hotfix never enters
-it (§ Group a release); the architect's own closed ticket catalog pull request does (step 1).
+shows what waits to merge; QA asks the owner nothing and merges nothing. QA brings a ticket's pull
+request current once, before Ready to merge; every later bring-current is the architect's
+(step 6), so QA and the dev session stay free. A hotfix never enters the queue
+(§ Group a release); the architect's own closed ticket catalog pull request does (step 1).
 
 1. **Queue it.** On `<id> ready to merge, PR #<n>`: `read` the ticket and confirm it is at
    Ready to merge into the default branch, with the link to its evidence. The queue is every such
@@ -139,11 +143,10 @@ it (§ Group a release); the architect's own closed ticket catalog pull request 
 2. **The head only.** Only the pull request at the head of the queue is asked for or merged, and
    only while the project layer's merge gate, when it names one, passes and every condition of
    `ticket-flow` § Ready to merge holds (CI green, no conflict, its branch holding the default
-   branch's current tip). A ticket's pull request that fails one → message its QA
-   `<id> bring current`, and wait for `<id> ready to merge, PR #<n>` again, or for
-   `<id> changes requested` (Step 6). The closed ticket catalog pull request that fails one →
-   bring it current yourself (step 1), then take it from this step again; one that fails the
-   merge gate → tell the owner here; it waits in the queue.
+   branch's current tip). A ticket's pull request that fails one → bring it current yourself
+   (step 6), and take it from this step again once its gate passes. The closed ticket catalog
+   pull request that fails one → bring it current yourself (step 1), then take it from this step
+   again; one that fails the merge gate → tell the owner here; it waits in the queue.
 3. **Ask, or merge under `low-risk`.** The closed ticket catalog pull request is asked for, or
    merged under `low-risk`, only once its board check passes. No QA session checks it: the
    architect checks it here, through the project layer's adapter (`ticket-flow` § Board
@@ -207,9 +210,35 @@ it (§ Group a release); the architect's own closed ticket catalog pull request 
    - **No** → `comment` the owner's answer on the ticket, or, for the closed ticket catalog pull
      request, on the ticket or release ticket that links it; it stays in the queue.
 5. **The next one.** A merge moves the default branch's tip, so the next pull request in the
-   queue is behind it: message its QA `<id> bring current`, and take it from step 2 once QA
-   answers. When the next one is the closed ticket catalog pull request, which no QA holds,
-   bring it current yourself (step 1) and take it from step 2.
+   queue is behind it: bring it current yourself (step 6), or as step 1 says when it is the
+   closed ticket catalog pull request, and take it from step 2 once its gate passes.
+6. **Bring it current.** Every bring-current of a ticket's pull request after QA's is the
+   architect's, from a spare worktree of its own, never QA's or the dev's: theirs hold their own
+   work, and QA removed its own when it handed the ticket over. Add it once, detached, since the
+   dev session's worktree holds the ticket's branch and git refuses to check out one branch in two
+   worktrees; it builds and checks nothing.
+
+   ```bash
+   git fetch origin
+   git worktree add --detach <repo-parent>/<repo>-worktrees/architect-spare origin/<branch>
+   # the spare worktree exists already → in it: git checkout --detach origin/<branch>
+   git merge origin/<base>          # in the spare worktree; never a rebase
+   git push origin HEAD:<branch>    # never forced
+   ```
+
+   - **The merge conflicts** → `git merge --abort` and push nothing, since
+     a code conflict goes back to the dev session, never resolved here: `comment` the conflict on
+     the ticket (the files and the base commit), `move` the ticket to Changes requested, take it
+     out of the queue and message its dev session `<id> changes requested`.
+   - **No conflict** → push it unforced in the background, so this session goes on dispatching
+     while the pull request's CI runs; a push refused because the remote moved → repeat from the
+     fetch. Once its gate passes, take it from step 2. A check that turns red → as for a
+     conflict, the failing check named in the comment.
+   - **Nothing behind, and its CI must only run again** → re-run it through the host; no merge is
+     needed.
+
+   `<base>` is the default branch, or the production branch the layer names for a hotfix
+   (§ Group a release).
 
 ---
 
@@ -283,8 +312,9 @@ merges it into the production branch the layer names as that release's deploy st
    (`ticket-flow` § Ready to merge); the default branch's CI is green; and every touched area's
    staging evidence is on the release ticket: `move`, then message the CI/CD session
    `<release-id> ready for prod`. A hotfix behind that tip, because
-   another release merged since → message its QA `<id> bring current`, and wait for
-   `<id> ready to merge, hotfix` again.
+   another release merged since → bring it current yourself against the production branch
+   (§ Merge queue, step 6), and move the release only once the hotfix's gate passes; a conflict
+   or a red check sends it to the dev session from there.
 4. When the CI/CD session flags a merged ticket aimed at a later version: name, on the release
    ticket, the feature flag it sits behind, or propose its move to V through the PO (Step 1,
    the target version).
@@ -309,14 +339,14 @@ moves:
   - Backlog → Refinement
   - Refinement → Ready for dev
   - Ready to merge → Done # from the merge queue, on the owner's word or under low-risk
+  - Ready to merge → Changes requested # a conflict or a red check, when it brings it current
   - Done → Closed
   - Refinement → Ready for prod # a release ticket
   - Released → Closed
   - Backlog to Ready to merge → Dropped # on the PO's word, its pull request unmerged
 messages: ['<id> ready for dev', '<id> ready for QA, branch <b>', '<id> changes requested',
-  '<id> bring current', '<id> merged', '<id> closed', '<id> dropped', '<id> question',
-  '<id> version change', '<release-id> check on staging', '<release-id> ready for prod',
-  '<release-id> released']
+  '<id> merged', '<id> closed', '<id> dropped', '<id> question', '<id> version change',
+  '<release-id> check on staging', '<release-id> ready for prod', '<release-id> released']
 emits:
   - openspec/changes/{date}-{name}/ # through sdd, when the ticket changes a living spec
   - a ticket comment for each low-risk merge, with the Risk line it relied on
