@@ -12,6 +12,10 @@ export interface IScrubUrlParams {
   value: string
 }
 
+export interface IScrubSegmentParams {
+  segment: string
+}
+
 export interface IScrubPropertiesParams {
   properties: CapturePropertiesType
 }

@@ -20,6 +20,50 @@ test('drops the query and the fragment of a page URL', () => {
   expect(scrubUrl({ value: '/items/42' })).toBe('/items/42')
 })
 
+// Segments that read as a secret: a reset token (a JWT), an invite id (a
+// UUID), a verification token (hex), a card number and an email.
+const RESET_TOKEN =
+  'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTYifQ.c2lnbmF0dXJlMTIz'
+const INVITE_ID = '550e8400-e29b-41d4-a716-446655440000'
+const VERIFY_TOKEN = '9f86d081884c7d65'
+const CARD_NUMBER = '4111111111111111'
+
+test('replaces a path segment that reads as a secret', () => {
+  expect(
+    scrubUrl({
+      value: `https://app.example.com/reset/${RESET_TOKEN}?next=/home`
+    })
+  ).toBe('https://app.example.com/reset/:redacted')
+  expect(scrubUrl({ value: `/invite/${INVITE_ID}/accept` })).toBe(
+    '/invite/:redacted/accept'
+  )
+  expect(scrubUrl({ value: `/verify/${VERIFY_TOKEN}` })).toBe(
+    '/verify/:redacted'
+  )
+  expect(scrubUrl({ value: `/cards/${CARD_NUMBER}` })).toBe(
+    '/cards/:redacted'
+  )
+  expect(scrubUrl({ value: '/users/jane@example.com/profile' })).toBe(
+    '/users/:redacted/profile'
+  )
+  expect(scrubUrl({ value: '/users/jane%40example.com' })).toBe(
+    '/users/:redacted'
+  )
+})
+
+test('keeps route names, word slugs and short ids in the path', () => {
+  const kept = [
+    'https://app.example.com/settings/notifications-and-privacy',
+    '/blog/what-changed-in-the-2026-release',
+    '/items/42',
+    '/orders/a1b2c3d4e5',
+    'https://eu-2026-west.example.com/dashboard',
+    '$direct'
+  ]
+
+  kept.forEach((value) => expect(scrubUrl({ value })).toBe(value))
+})
+
 test('scrubs every URL property of an event and of its person', () => {
   const scrubbed = scrubCaptureUrls(
     event({

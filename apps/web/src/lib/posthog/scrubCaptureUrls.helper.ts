@@ -1,7 +1,14 @@
 import {
   CAPTURE_URL_PROPERTY_PATTERN,
+  DIGIT_PATTERN,
+  EMAIL_SEGMENT_PATTERN,
   HEATMAP_DATA_PROPERTY,
-  URL_SUFFIX_PATTERN
+  PATH_SEGMENT_SEPARATOR,
+  REDACTED_SEGMENT,
+  SECRET_SEGMENT_MIN_LENGTH,
+  URL_ORIGIN_PATTERN,
+  URL_SUFFIX_PATTERN,
+  WORD_SLUG_PATTERN
 } from '@/lib/posthog/scrubCaptureUrls.constant'
 import type {
   CapturePropertiesType,
@@ -9,12 +16,35 @@ import type {
   IScrubHeatmapDataParams,
   IScrubPropertiesParams,
   IScrubPropertyParams,
+  IScrubSegmentParams,
   IScrubUrlParams
 } from '@/lib/posthog/scrubCaptureUrls.type'
 
-/** Drops the query string and the fragment of a URL or a path. */
-export const scrubUrl = ({ value }: IScrubUrlParams): string =>
-  value.replace(URL_SUFFIX_PATTERN, '')
+// An email, or a long segment that holds a digit and is not a word slug.
+const isSecretSegment = ({ segment }: IScrubSegmentParams): boolean =>
+  EMAIL_SEGMENT_PATTERN.test(segment) ||
+  (segment.length >= SECRET_SEGMENT_MIN_LENGTH &&
+    DIGIT_PATTERN.test(segment) &&
+    !WORD_SLUG_PATTERN.test(segment))
+
+const scrubPath = ({ value }: IScrubUrlParams): string =>
+  value
+    .split(PATH_SEGMENT_SEPARATOR)
+    .map((segment) =>
+      isSecretSegment({ segment }) ? REDACTED_SEGMENT : segment
+    )
+    .join(PATH_SEGMENT_SEPARATOR)
+
+/**
+ * Drops the query string and the fragment of a URL or a path, and replaces
+ * every path segment that reads as a secret with `:redacted`. The scheme and
+ * the host of a URL are kept, and so is every other segment.
+ */
+export const scrubUrl = ({ value }: IScrubUrlParams): string => {
+  const url = value.replace(URL_SUFFIX_PATTERN, '')
+  const [origin = ''] = URL_ORIGIN_PATTERN.exec(url) ?? []
+  return `${origin}${scrubPath({ value: url.slice(origin.length) })}`
+}
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -60,9 +90,9 @@ const scrubProperties = ({
 
 /**
  * The `before_send` of the PostHog client. Every URL the SDK attaches to an
- * event, its person or its heatmap leaves without its query string and its
- * fragment. An event an earlier hook dropped stays dropped. The SDK calls
- * it with the event alone.
+ * event, its person or its heatmap leaves without its query string, its
+ * fragment and every path segment that reads as a secret. An event an
+ * earlier hook dropped stays dropped. The SDK calls it with the event alone.
  */
 export const scrubCaptureUrls = <TEvent extends ICaptureEvent>(
   event: TEvent | null
