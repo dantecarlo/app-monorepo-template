@@ -69,8 +69,8 @@ ATL_TEMPLATE_SELF=1 pnpm validate
 `pnpm verify:tests`, the spec gates (`verify:specs`, and `report:spec-drift`, which
 only reports), `pnpm verify:english`, `pnpm verify:instruction-entry`,
 `pnpm verify:unicode-safety`, `pnpm verify:workflow-pins`,
-`pnpm verify:skill-frontmatter`, `pnpm codex-budget:test`
-and `pnpm verify:maps`. All must pass.
+`pnpm verify:skill-frontmatter`, `pnpm verify:router-coverage`,
+`pnpm codex-budget:test` and `pnpm verify:maps`. All must pass.
 
 The projection check and the manifest gates run first (they are instant, so
 structural drift fails before anything expensive). An agent is written once, in
@@ -83,7 +83,10 @@ test, in the `__tests__/` of its own folder and named after it, and
 `pnpm verify:maps` checks architecture-map integrity and the magic-literal
 audit. `pnpm verify:instruction-entry` checks that `AGENTS.md` and `README.md`
 exist and that no path git lists, tracked or not yet added, is a `CLAUDE.md` or
-`CLAUDE.local.md`. `pnpm codex-budget:test` fails when this file, counted with
+`CLAUDE.local.md`. `pnpm verify:router-coverage` checks that every Router row
+below names a skill that ships, that every skill has a row, and that every
+script a "Validated by" cell cites is defined.
+`pnpm codex-budget:test` fails when this file, counted with
 CRLF endings, outgrows the `project_doc_max_bytes` that `.codex/config.toml`
 sets: Codex loads only that many bytes of it and drops the rest. Every failure
 is a blocker.

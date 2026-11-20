@@ -803,7 +803,8 @@ This table exists so that difference is visible.
 | Every skill findable        | script        | `verify:skill-frontmatter` — frontmatter parses, `name` is the folder, description within 1,024 characters with `USE WHEN:` and `DO NOT USE:` (vendored skills: parse, name and length only); not whether the triggers are the right ones |
 | `AGENTS.md` fits Codex      | test          | `codex-budget:test` — CRLF bytes within `project_doc_max_bytes`     |
 | Agent projections in sync   | script        | `agent-harness:projection-check` — each projection equals its source |
-| `AGENTS.md` LAWs and Router | review        | — no gate reads a LAW, or checks that a skill has a router row      |
+| `AGENTS.md` LAWs            | review        | — no gate reads a LAW                                               |
+| `AGENTS.md` Router          | script        | `verify:router-coverage` — every "Load skill" cell a shipped skill, every skill a row, every "Validated by" script one `package.json` defines; not whether a row routes the right requests, which review reads |
 | §22 Screens only position   | lint+script   | `local/style-positions-only` + `verify:allowlist-freshness`         |
 | §22 Values are tokens       | lint+script   | `local/style-token-values` + `verify:allowlist-freshness`           |
 | §22 The kit behind `ui/`    | lint          | `local/ui-kit-boundary` on every app                                |

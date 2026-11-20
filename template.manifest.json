@@ -109,6 +109,8 @@
     "scripts/verify-mcp-docs.mjs",
     "scripts/verify-mcp-docs.test.mjs",
     "scripts/verify-pairing.mjs",
+    "scripts/verify-router-coverage.mjs",
+    "scripts/verify-router-coverage.test.mjs",
     "scripts/verify-security-static.mjs",
     "scripts/verify-skill-frontmatter.mjs",
     "scripts/verify-skill-frontmatter.test.mjs",
