@@ -6,7 +6,10 @@ import {
   PATH_SEGMENT_SEPARATOR,
   REDACTED_SEGMENT,
   SECRET_SEGMENT_MIN_LENGTH,
-  SHORT_PART_SLUG_PATTERN,
+  SLUG_PART_MAX_LENGTH,
+  SLUG_PART_PATTERN,
+  SLUG_PART_SEPARATOR,
+  SLUG_WORD_PATTERN,
   URL_ORIGIN_PATTERN,
   URL_SUFFIX_PATTERN,
   WORD_SLUG_PATTERN
@@ -31,6 +34,20 @@ const decodeSegment = ({ segment }: IScrubSegmentParams): string => {
   }
 }
 
+// A slug of short word parts: no mixed case, no letters and digits
+// interleaved in a part, and one word of three letters at least.
+const isShortPartSlug = ({ text }: { text: string }): boolean => {
+  const parts = text.split(SLUG_PART_SEPARATOR)
+  return (
+    parts.length > 1 &&
+    parts.every(
+      (part) =>
+        part.length <= SLUG_PART_MAX_LENGTH && SLUG_PART_PATTERN.test(part)
+    ) &&
+    parts.some((part) => SLUG_WORD_PATTERN.test(part))
+  )
+}
+
 // An email, or a segment whose decoded text is long, holds a digit and is
 // not a slug.
 const isSecretSegment = ({ segment }: IScrubSegmentParams): boolean => {
@@ -40,7 +57,7 @@ const isSecretSegment = ({ segment }: IScrubSegmentParams): boolean => {
     text.length >= SECRET_SEGMENT_MIN_LENGTH &&
     DIGIT_PATTERN.test(text) &&
     !WORD_SLUG_PATTERN.test(text) &&
-    !SHORT_PART_SLUG_PATTERN.test(text)
+    !isShortPartSlug({ text })
   )
 }
 

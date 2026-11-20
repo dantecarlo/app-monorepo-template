@@ -87,7 +87,7 @@ test('keeps a slug of short parts that mix letters and digits', () => {
     '/docs/getting_started_v2_guide',
     '/blog/migrating-to-react18-today',
     '/blog/top-10000-words-list',
-    '/blog/My-Post-About-2026'
+    '/categorias/electrodom%C3%A9sticos'
   ]
 
   kept.forEach((value) => expect(scrubUrl({ value })).toBe(value))
@@ -97,6 +97,25 @@ test('keeps a slug of short parts that mix letters and digits', () => {
   expect(scrubUrl({ value: '/pay/4111-1111-1111-1111' })).toBe(
     '/pay/:redacted'
   )
+})
+
+// Random secrets come in that shape too: a base64url or nanoid token uses
+// `-` and `_` as alphabet characters, and a license, reset or invite key is
+// grouped with hyphens. Mixed case, letters and digits interleaved in one
+// part, and no word of three letters each refuse the slug.
+test('redacts a token shaped as a slug of short parts', () => {
+  const tokens = [
+    'V1StGXR8_Z5jdHi6B-myT',
+    'AbC123-dEf456-GhI789',
+    '3f9a-c2e1-77b0-aa12',
+    'a1b2-c3d4-e5f6-g7h8',
+    'K7QX-9MPL-2RTA-8WNZ',
+    'My-Post-About-2026'
+  ]
+
+  expect(
+    tokens.map((token) => scrubUrl({ value: `/reset/${token}` }))
+  ).toEqual(tokens.map(() => '/reset/:redacted'))
 })
 
 test('scrubs every URL property of an event and of its person', () => {

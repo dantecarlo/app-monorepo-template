@@ -209,13 +209,15 @@ scheme, the host and every other segment, so a route keeps its shape:
 | holds `@` or `%40`                                                                                                             | `/users/jane@example.com`                                                | `:redacted` |
 | is 16 or more characters long, holds a digit, and is not a slug                                                                | a JWT, a UUID, a hex token, a card number                                | `:redacted` |
 | is a word slug: lowercase words and numbers of at most four digits joined by hyphens                                           | `/blog/what-changed-in-the-2026-release`                                 | kept        |
-| is a slug of short parts: two or more parts of letters and digits, each of at most 11 characters, one with a letter, joined by `-` or `_` | `/products/samsung-galaxy-s24-ultra-256gb`, `/docs/getting_started_v2_guide` | kept |
+| is a slug of short word parts: two or more lowercase parts of at most 11 characters, each letters, digits or one run of each, one a word of 3 letters or more, joined by `-` or `_` | `/products/samsung-galaxy-s24-ultra-256gb`, `/docs/getting_started_v2_guide` | kept |
 | is shorter than 16 characters, or holds no digit                                                                               | `/items/42`, `/categorias/electrodom%C3%A9sticos`                        | kept        |
 
 The digit-and-length rule reads the decoded text, since every `%C3` of an
 accented word holds a digit, and a segment keeps its encoded form; one that is
 not valid percent-encoding reads as it is. A UUID stays redacted: its last
-part has 12 characters.
+part has 12 characters. Random secrets share a slug's separators, a base64url
+or nanoid token and a key grouped with hyphens, so an uppercase letter, or a
+part with letters and digits interleaved, refuses the slug.
 
 On mobile, PostHog's uncaught-exception handler defers the rethrow an
 Expo web bundle's chunk loader needs, so a web bundle leaves uncaught errors to
@@ -383,10 +385,13 @@ from (`https://us-assets.i.posthog.com` for the US cloud) in `script-src`.
   stand-in of `expo-file-system`; that a device deletes the files is the
   package's documented behaviour, which no test runs.
 - **A secret the path rule misses.** A token of letters only, one shorter
-  than 16 characters, such as a six-digit code, and one shaped as a slug, such
-  as `abcd-1234-efgh-5678-ijkl`, keep their place; a slug with a part of 12
-  characters or more and a digit, such as `internationalization-2026`, is
-  redacted.
+  than 16 characters, such as a six-digit code, and a lowercase one shaped as
+  a word slug, such as `abcd-1234-efgh-5678-ijkl`, keep their place. A token
+  in mixed case or with letters and digits interleaved in a part, such as a
+  nanoid or `K7QX-9MPL-2RTA-8WNZ`, is redacted, and so, although it is no
+  secret, is a slug with an uppercase letter, such as `My-Post-About-2026`, or
+  with a part of 12 characters or more and a digit, such as
+  `internationalization-2026`.
 - **Errors thrown before the web SDK loads.** The SDK's own capture of
   unhandled errors and rejections starts when its chunk has loaded; errors the
   app reports through the port before then wait in the queue.

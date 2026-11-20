@@ -32,12 +32,20 @@ export const DIGIT_PATTERN = /\d/u
 export const WORD_SLUG_PATTERN =
   /^(?=[^a-z]*[a-z])(?:[a-z]+|\d{1,4})(?:-(?:[a-z]+|\d{1,4}))+$/u
 
-// A slug of short parts, which it keeps too: two or more parts of letters
-// and digits joined by hyphens or underscores, each of at most 11
-// characters, one at least holding a letter. A UUID's last part has 12
-// characters, and the parts of a card number hold no letter.
-export const SHORT_PART_SLUG_PATTERN =
-  /^(?=.*\p{L})[\p{L}\d]{1,11}(?:[-_][\p{L}\d]{1,11})+$/u
+// A slug of short word parts, which it keeps too: two or more parts joined
+// by hyphens or underscores, each of at most 11 characters and each
+// lowercase letters, digits, or one run of each (`s24`, `256gb`), with one
+// part at least a word of three letters or more. Random secrets have the
+// same separators, so a part with an uppercase letter, or with letters and
+// digits interleaved (`3f9a`), refuses the slug; and a UUID's last part has
+// 12 characters.
+export const SLUG_PART_SEPARATOR = /[-_]/u
+
+export const SLUG_PART_MAX_LENGTH = 11
+
+export const SLUG_PART_PATTERN = /^(?:\p{Ll}+\d*|\d+\p{Ll}*)$/u
+
+export const SLUG_WORD_PATTERN = /^\p{Ll}{3,}$/u
 
 // What a segment that reads as a secret becomes, so the route keeps its shape.
 export const REDACTED_SEGMENT = ':redacted'
