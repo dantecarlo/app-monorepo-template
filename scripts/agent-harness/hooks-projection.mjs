@@ -2,8 +2,13 @@
 // hooks-projection — reads `.agents/hooks.json`, the neutral source of the
 // runtime hooks, and renders each runtime's wiring of them. Today that is
 // Claude Code only: `.claude/settings.json`, whose PreToolUse hooks run the
-// write guard (scripts/agent-harness/write-guard/claude-hook.mjs). Codex and
-// OpenCode get their adapters in later slices, each after a live test.
+// write guard (scripts/agent-harness/write-guard/claude-hook.mjs) and whose
+// SessionStart hooks run the process reaper
+// (scripts/agent-harness/reaper/session-start.mjs). A PreToolUse hook names
+// the tools it runs on in its matcher; a SessionStart hook may leave the
+// matcher out, and then runs on every start, resume, clear and compaction.
+// Codex and OpenCode get their adapters in later slices, each after a live
+// test.
 //
 // `.claude/settings.json` is a projection like the agent files: the
 // generator writes it and `pnpm agent-harness:projection-check` fails a hand
@@ -21,9 +26,11 @@ const SETTINGS_SCHEMA =
   'https://json.schemastore.org/claude-code-settings.json'
 const JSON_INDENT = 2
 
-// The schema is CLOSED, as the agent sources' is: exactly these keys.
+// The schema is CLOSED, as the agent sources' is: exactly these keys, each
+// required, but the events of MATCHER_OPTIONAL may leave the matcher out.
 const HOOK_KEYS = ['event', 'matcher', 'name', 'script', 'timeout']
-const EVENTS = ['PreToolUse']
+const EVENTS = ['PreToolUse', 'SessionStart']
+const MATCHER_OPTIONAL = ['SessionStart']
 const NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u
 // A repository-relative script under scripts/, with nothing a quoted shell
 // argument would end on and no `..` segment.
@@ -37,14 +44,23 @@ const problemOf = ({ hook }) => {
   const keys = Object.keys(hook).sort()
   const unknown = keys.filter((key) => !HOOK_KEYS.includes(key))
   if (unknown.length > 0) return `unknown key ${unknown.join(', ')}`
-  const missing = HOOK_KEYS.filter((key) => hook[key] === undefined)
+  const matcherOptional = MATCHER_OPTIONAL.includes(hook.event)
+  const missing = HOOK_KEYS.filter(
+    (key) =>
+      hook[key] === undefined && !(key === 'matcher' && matcherOptional)
+  )
   if (missing.length > 0) return `missing ${missing.join(', ')}`
   if (!NAME.test(hook.name)) return `name ${hook.name} is not kebab-case`
   if (!EVENTS.includes(hook.event)) {
     return `event ${hook.event} is not one of ${EVENTS.join(', ')}`
   }
-  if (typeof hook.matcher !== 'string' || hook.matcher.trim() === '') {
-    return 'matcher must name the tools it runs on'
+  if (
+    hook.matcher !== undefined &&
+    (typeof hook.matcher !== 'string' || hook.matcher.trim() === '')
+  ) {
+    return matcherOptional
+      ? 'a matcher, when given, must not be blank'
+      : 'matcher must name the tools it runs on'
   }
   if (
     typeof hook.script !== 'string' ||
@@ -94,10 +110,8 @@ export const renderClaudeSettings = ({ hooks }) => {
   const byEvent = {}
   hooks.forEach(({ event, matcher, script, timeout }) => {
     byEvent[event] ??= []
-    byEvent[event].push({
-      matcher,
-      hooks: [{ type: 'command', command: commandOf({ script }), timeout }]
-    })
+    const hooks = [{ type: 'command', command: commandOf({ script }), timeout }]
+    byEvent[event].push(matcher === undefined ? { hooks } : { matcher, hooks })
   })
   return `${JSON.stringify(
     { $schema: SETTINGS_SCHEMA, hooks: byEvent },
