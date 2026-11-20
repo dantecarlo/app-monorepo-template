@@ -64,9 +64,11 @@ export const NOT_COVERED =
   'current directory is emptied and unregistered while its directory ' +
   'stays; the prune runs in the foreground, so the merge that started it ' +
   `waits for it, for its fetch up to ${FETCH_SECONDS_VARIABLE} ` +
-  `(${FETCH_SECONDS} s unless set); and on Windows a fetch stopped at that ` +
+  `(${FETCH_SECONDS} s unless set); on Windows a fetch stopped at that ` +
   "bound ends without git's own cleanup, so a remote helper it started, " +
-  'as for https, runs on until its connection ends'
+  'as for https, runs on until its connection ends; and an ignored file ' +
+  'written in the moment between the check just before a removal and ' +
+  "git's own removal goes with the worktree"
 
 export const LOCAL_CHANGES = 'it holds local changes'
 

@@ -48,7 +48,11 @@ import {
   REASON,
   reportLines
 } from './prune-worktrees.detect.mjs'
-import { removeLeftover, removeWorktree } from './prune-worktrees.mjs'
+import {
+  removeIfStillClean,
+  removeLeftover,
+  removeWorktree
+} from './prune-worktrees.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SCRIPT = join(HERE, 'prune-worktrees.mjs')
@@ -96,6 +100,7 @@ const ENV_FILE = '.env'
 // Machine-local agent tooling the repository ignores: personal skills and
 // notes nothing writes again.
 const ATL_FILE = '.atl/my-notes.md'
+const LATE_ENV = 'KEY=late\n'
 // What the fixture repository ignores through `.git/info/exclude`.
 const IGNORED_PATHS = [
   '.atl/',
@@ -1432,6 +1437,53 @@ for (const value of ['', '0', '-1', 'soon', 'Infinity']) {
     )
   })
 }
+
+// A worktree judged clean that is given an ignored file nothing rebuilds
+// before its turn comes, as one written while the pruner removes the
+// others: the check just before the removal reads the worktree again.
+test('an ignored file written after the decision keeps the worktree, and the file stays', () => {
+  const branch = 'feat/late-ignored'
+  const { main, paths } = mergedWorktrees({
+    branches: [branch],
+    hook: false
+  })
+  appendFileSync(join(main, '.git', 'info', 'exclude'), `\n${ENV_FILE}\n`)
+  const path = paths[branch]
+  const sha = git({ args: ['rev-parse', 'HEAD'], cwd: path })
+  writeFileSync(join(path, ENV_FILE), LATE_ENV)
+  const result = removeIfStillClean({
+    root: main,
+    worktree: { branch, path, sha }
+  })
+  assert.equal(result.kept, REASON.IGNORED)
+  assert.equal(result.detail, ENV_FILE)
+  assert.equal(readFileSync(join(path, ENV_FILE), 'utf8'), LATE_ENV)
+  assert.match(
+    git({ args: ['worktree', 'list', '--porcelain'], cwd: main }),
+    /refs\/heads\/feat\/late-ignored/u
+  )
+  assert.match(
+    git({ args: ['branch', '--list', branch], cwd: main }),
+    /feat\/late-ignored/u
+  )
+})
+
+test('a worktree still clean just before its removal goes, and its branch with it', () => {
+  const branch = 'feat/still-clean'
+  const { main, paths } = mergedWorktrees({
+    branches: [branch],
+    hook: false
+  })
+  const path = paths[branch]
+  const sha = git({ args: ['rev-parse', 'HEAD'], cwd: path })
+  const result = removeIfStillClean({
+    root: main,
+    worktree: { branch, path, sha }
+  })
+  assert.equal(result.kept, null)
+  assert.ok(!existsSync(path), `${path} still exists`)
+  assert.equal(git({ args: ['branch', '--list', branch], cwd: main }), '')
+})
 
 test('the root package runs this suite from validate', () => {
   const { scripts } = JSON.parse(readFileSync(ROOT_PACKAGE, 'utf8'))

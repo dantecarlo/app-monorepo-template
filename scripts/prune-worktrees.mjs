@@ -11,15 +11,16 @@
 // runs in, not under `.claude/worktrees/` (the Claude app manages those),
 // is not locked, holds no other registered worktree inside it, is on a
 // branch whose upstream reads `[gone]` (the forge deletes a pull request's
-// head branch on merge),
-// has an empty `git status --porcelain --untracked-files=all`, marks no
-// tracked file skip-worktree or assume-unchanged (whose edits `git status`
-// and `git worktree remove` cannot see), holds no ignored file outside what
-// an install, a build or the next session writes again, its HEAD is
-// reachable from the default branch, and a plain `git worktree remove`
-// accepts it. Its branch is then deleted only while its tip is still the
-// commit it was judged at. Every other worktree is kept and printed with the
-// reason. `git status` compares bytes as git does, so a file that differs
+// head branch on merge), has an empty `git status --porcelain
+// --untracked-files=all`, marks no tracked file skip-worktree or
+// assume-unchanged (whose edits `git status` and `git worktree remove`
+// cannot see), holds no ignored file outside what an install, a build or
+// the next session writes again, its HEAD is reachable from the default
+// branch, those reads inside it still pass when they run again just before
+// its removal, and a plain `git worktree remove` accepts it. Its branch is
+// then deleted only while its tip is still the commit it was judged at.
+// Every other worktree is kept and printed with the reason. `git status`
+// compares bytes as git does, so a file that differs
 // only in its line endings, where git counts that as a change, is a local
 // change and keeps its worktree.
 //
@@ -44,9 +45,11 @@
 // upstream; on Windows, a worktree another process holds as its current
 // directory is emptied and unregistered while its directory stays; the
 // prune runs in the foreground, so the merge that started it waits for it,
-// for its fetch up to the bound; and on Windows a fetch stopped at the bound
+// for its fetch up to the bound; on Windows a fetch stopped at the bound
 // ends without git's own cleanup, so a remote helper it started, as for
-// https, runs on until its connection ends.
+// https, runs on until its connection ends; and an ignored file written in
+// the moment between the check just before a removal and git's own removal
+// goes with the worktree.
 //
 // Usage:
 //   node scripts/prune-worktrees.mjs
@@ -241,27 +244,36 @@ const decide = ({
   if (!merged.has(worktree.branch)) {
     return { ...judged, kept: REASON.NOT_IN_DEFAULT }
   }
+  return contentReason({ worktree: judged })
+}
+
+// What `git status` and `git ls-files` read inside a worktree: the reason
+// it is kept, a modified or untracked file, a tracked file `git status`
+// cannot see or an ignored file nothing writes again, or `kept: null`. A
+// read git fails keeps it. Both the decision and the check just before the
+// removal run it.
+const contentReason = ({ worktree }) => {
   try {
     const { dirty, unrebuilt } = readStatus({ worktree })
-    if (dirty) return { ...judged, kept: REASON.DIRTY }
+    if (dirty) return { ...worktree, kept: REASON.DIRTY }
     const hidden = readHidden({ worktree })
     if (hidden.length > 0) {
       return {
-        ...judged,
+        ...worktree,
         detail: listDetail({ entries: hidden }),
         kept: REASON.HIDDEN
       }
     }
     if (unrebuilt.length > 0) {
       return {
-        ...judged,
+        ...worktree,
         detail: listDetail({ entries: unrebuilt }),
         kept: REASON.IGNORED
       }
     }
-    return { ...judged, kept: null }
+    return { ...worktree, kept: null }
   } catch (error) {
-    return { ...judged, detail: error.message, kept: REASON.UNREADABLE }
+    return { ...worktree, detail: error.message, kept: REASON.UNREADABLE }
   }
 }
 
@@ -329,6 +341,16 @@ export const removeWorktree = ({ root, worktree }) => {
     // A branch with no configuration has no section to remove.
   }
   return { ...worktree, kept: null, leftover }
+}
+
+// A worktree judged removable, read again just before it goes, since the
+// pruner works through the others between its decision and this removal:
+// one that gained a change in the meantime, an ignored file nothing writes
+// again included, is kept with that reason, and the rest is removed as
+// `removeWorktree` removes it.
+export const removeIfStillClean = ({ root, worktree }) => {
+  const again = contentReason({ worktree })
+  return again.kept ? again : removeWorktree({ root, worktree })
 }
 
 // Every tracked path with a local change in `root`, staged or not, a
@@ -426,7 +448,7 @@ const pruneWorktrees = ({ cwd, dryRun, fetchSeconds }) => {
   const results = dryRun
     ? decided
     : decided.map((one) =>
-        one.kept ? one : removeWorktree({ root, worktree: one })
+        one.kept ? one : removeIfStillClean({ root, worktree: one })
       )
   if (!dryRun) git({ args: ['worktree', 'prune'], cwd: root })
   return {
