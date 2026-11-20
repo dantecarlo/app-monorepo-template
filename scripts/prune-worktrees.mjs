@@ -70,9 +70,9 @@ import {
   BRANCH_PREFIX,
   defaultBranchOf,
   DIVERGED,
+  failureLine,
   fetchSecondsFrom,
   hiddenOf,
-  LABEL,
   listDetail,
   LOCAL_CHANGES,
   localChangesOf,
@@ -463,7 +463,8 @@ const forwardMain = ({ defaultBranch, dryRun, root, worktree }) => {
 // checkout, which is moved last, after every removal; or `timedOut` when the
 // fetch outlasted `fetchSeconds`, before anything was judged. A fetch, a
 // default branch or a list git cannot read throws before anything is
-// removed.
+// removed; a step that fails after the decisions returns its `error` with
+// the results gathered before it, every removal made included.
 const pruneWorktrees = ({ cwd, dryRun, fetchSeconds }) => {
   const current = samePath({
     path: git({ args: ['rev-parse', '--show-toplevel'], cwd })
@@ -489,27 +490,38 @@ const pruneWorktrees = ({ cwd, dryRun, fetchSeconds }) => {
       worktree
     })
   )
-  const results = dryRun
-    ? decided
-    : decided.map((one) =>
-        one.kept ? one : removeIfStillClean({ root, worktree: one })
+  // Each result is kept as it comes, so a step that fails after a removal,
+  // the main checkout's included, returns with what was removed before it.
+  const results = []
+  try {
+    decided.forEach((one) =>
+      results.push(
+        dryRun || one.kept
+          ? one
+          : removeIfStillClean({ root, worktree: one })
       )
-  if (!dryRun) git({ args: ['worktree', 'prune'], cwd: root })
-  return {
-    main: forwardMain({
-      defaultBranch,
-      dryRun,
-      root,
-      worktree: worktrees[0]
-    }),
-    results
+    )
+    if (!dryRun) git({ args: ['worktree', 'prune'], cwd: root })
+    return {
+      main: forwardMain({
+        defaultBranch,
+        dryRun,
+        root,
+        worktree: worktrees[0]
+      }),
+      results
+    }
+  } catch (error) {
+    return { error, results }
   }
 }
 
-// A read that fails prints the reason and exits 1, having removed nothing;
-// a fetch that outlasts its bound prints why it skipped and exits 0. A run a
-// prune started, through the post-merge its fast-forward fires, does nothing
-// and prints nothing.
+// A read that fails before anything is removed prints the reason and exits
+// 1, saying nothing was removed; a step that fails after a removal prints
+// the report of what was done, then the reason and how many worktrees were
+// removed before it, and exits 1. A fetch that outlasts its bound prints why
+// it skipped and exits 0. A run a prune started, through the post-merge its
+// fast-forward fires, does nothing and prints nothing.
 const main = () => {
   if (process.env[NESTED_RUN_VARIABLE]) return
   try {
@@ -529,8 +541,18 @@ const main = () => {
           results: outcome.results
         })
     lines.forEach((line) => console.log(line))
+    if (outcome.error) {
+      console.error(
+        failureLine({
+          dryRun,
+          message: outcome.error.message,
+          results: outcome.results
+        })
+      )
+      process.exitCode = 1
+    }
   } catch (error) {
-    console.error(`${LABEL}: ${error.message} — nothing was removed.`)
+    console.error(failureLine({ message: error.message }))
     process.exitCode = 1
   }
 }

@@ -1538,6 +1538,33 @@ test("a dry run over an untracked file the fast-forward would overwrite names gi
   assert.match(line, /new\.txt.*would be overwritten/u)
 })
 
+// A main checkout whose branch has no commit: git cannot count how far
+// behind it is, so the last step fails after the removals. git's message
+// spans lines, and the line that ends the run follows it.
+test('a step that fails after the removals still reports what was removed, and exits 1', () => {
+  const branch = 'feat/before-failure'
+  const { main, paths } = mergedWorktrees({
+    branches: [branch],
+    hook: false
+  })
+  git({ args: ['update-ref', '-d', `refs/heads/${MAIN}`], cwd: main })
+  const run = prune({ cwd: main })
+  assert.equal(run.status, EXIT_FAILED, run.stdout)
+  assert.ok(!existsSync(paths[branch]), run.stdout)
+  assert.ok(
+    run.stdout.includes(
+      `removed ${forward({ path: paths[branch] })} (${branch})`
+    ),
+    run.stdout
+  )
+  assert.match(run.stdout, /: removed 1, kept 1; by reason: /u)
+  assert.match(
+    run.stderr,
+    /^prune-worktrees: git rev-list .+ — 1 worktree was removed before it failed, listed above\.$/msu
+  )
+  assert.doesNotMatch(run.stderr, /nothing was removed/u)
+})
+
 test('the root package runs this suite from validate', () => {
   const { scripts } = JSON.parse(readFileSync(ROOT_PACKAGE, 'utf8'))
   assert.equal(

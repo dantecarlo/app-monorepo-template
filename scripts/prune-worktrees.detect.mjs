@@ -386,6 +386,20 @@ export const reportLines = ({ dryRun, main, quiet, results }) => [
   ...notCovered({ dryRun })
 ]
 
+// The line a failed run ends with, on stderr: git's message, then what the
+// run had removed before it failed, the worktrees its report listed above,
+// or that nothing was removed. A dry run removes nothing.
+export const failureLine = ({ dryRun = false, message, results = [] }) => {
+  const removed = dryRun ? 0 : results.filter(({ kept }) => !kept).length
+  if (removed === 0) return `${LABEL}: ${message} — nothing was removed.`
+  const worktrees =
+    removed === 1 ? '1 worktree was' : `${removed} worktrees were`
+  return (
+    `${LABEL}: ${message} — ${worktrees} removed before it failed, ` +
+    'listed above.'
+  )
+}
+
 // What a run whose fetch outlasted its bound of `seconds` prints, `--quiet`
 // or not: it judged nothing, so it removed and moved nothing.
 export const skippedLines = ({ dryRun, seconds }) => [
