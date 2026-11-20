@@ -47,37 +47,60 @@ const OLD_DATE = '2025-01-01'
 const EXPO = {
   capability: 'mobile-expo',
   docs: [MCP_DOC_PATH],
+  entry: 'bin/expo-mcp.mjs',
   name: 'expo',
-  packageName: 'expo-mcp'
+  packageName: 'expo-mcp',
+  version: '0.2.4'
 }
 const NEXT = {
   capability: 'web-next',
   docs: [MCP_DOC_PATH],
+  entry: 'dist/index.js',
   name: 'next-devtools',
-  packageName: 'next-devtools-mcp'
+  packageName: 'next-devtools-mcp',
+  version: '0.4.0'
 }
 const METRO = {
   capability: 'mobile-expo',
   docs: [MCP_DOC_PATH],
+  entry: 'dist/bin/metro-mcp.js',
   name: 'metro',
-  packageName: 'metro-mcp'
+  packageName: 'metro-mcp',
+  version: '0.15.0'
 }
 
 const SHADCN = {
-  args: ['-y', 'shadcn', 'mcp'],
   capability: 'ui-kit-shadcn',
   docs: [MCP_DOC_PATH],
+  entry: 'dist/index.js',
   name: 'shadcn',
-  packageName: 'shadcn'
+  packageName: 'shadcn',
+  serverArgs: ['mcp'],
+  version: '4.23.0'
 }
 
-const entryOf = ({ args, capability, docs, name, packageName }) => ({
-  args: args ?? ['-y', packageName],
+const launcherOf = ({ entry, packageName }) =>
+  `node_modules/${packageName}/${entry}`
+
+const entryOf = ({
+  args,
   capability,
-  command: 'npx',
+  command = 'node',
   docs,
+  entry,
   name,
-  package: packageName
+  packageName,
+  serverArgs = [],
+  version
+}) => ({
+  args: args ?? [launcherOf({ entry, packageName }), ...serverArgs],
+  capability,
+  command,
+  docs,
+  entry,
+  name,
+  package: packageName,
+  version
 })
 
 const rowOf = ({ capability, name, packageName }) => ({
@@ -92,19 +115,31 @@ const rowOf = ({ capability, name, packageName }) => ({
 const docOf = ({ eol = '\n', rows }) =>
   ['# MCP servers', '', ...renderBlock({ rows }), ''].join(eol)
 
-const treeOf = ({ catalog, config, doc }) => ({
-  [MCP_CATALOG_PATH]: JSON.stringify({ servers: catalog.map(entryOf) }),
-  [MCP_DOC_PATH]: doc,
-  ...(config ? { [MCP_CONFIG_PATH]: JSON.stringify(config) } : {})
-})
+// `catalogText` and `configText` replace the file built from the entries:
+// `null` leaves the catalog out, a string is written as it is.
+const treeOf = ({ catalog, catalogText, config, configText, doc }) => {
+  const catalogFile =
+    catalogText === undefined
+      ? JSON.stringify({ servers: catalog.map(entryOf) })
+      : catalogText
+  const configFile =
+    configText ?? (config ? JSON.stringify(config) : undefined)
+  return {
+    ...(catalogFile === null ? {} : { [MCP_CATALOG_PATH]: catalogFile }),
+    [MCP_DOC_PATH]: doc,
+    ...(configFile === undefined ? {} : { [MCP_CONFIG_PATH]: configFile })
+  }
+}
 
 const walk =
-  ({ catalog = [EXPO, NEXT], config, doc }) =>
+  ({ catalog = [EXPO, NEXT], catalogText, config, configText, doc }) =>
   () =>
     withScratchTree({
       files: treeOf({
         catalog,
+        catalogText,
         config,
+        configText,
         doc: doc ?? docOf({ rows: [EXPO, NEXT].map(rowOf) })
       }),
       prefix: 'mcp-docs-verify-',
@@ -133,6 +168,10 @@ const ACME_CONFIG = {
     local: { args: ['tools/server.js'], command: 'node' }
   }
 }
+
+const NOT_EXACT =
+  'which is not an exact version: a catalog version is one release, such ' +
+  'as 1\\.2\\.3, never a range, `latest` or a tag'
 
 const CASES = [
   {
@@ -174,21 +213,23 @@ const CASES = [
     context: walk({ catalog: [EXPO, METRO, NEXT] }),
     expected: 1,
     name: 'a catalog server missing from the block fails',
-    pattern:
+    patterns: [
       /metro is in the catalog but not in the block — run `pnpm mcp:docs`/u
+    ]
   },
   {
     context: walk({ catalog: [EXPO] }),
     expected: 1,
     name: 'a block server the catalog no longer has fails',
-    pattern:
+    patterns: [
       /next-devtools is in the block but neither in the catalog nor in \.mcp\.json/u
+    ]
   },
   {
     context: walk({ config: ACME_CONFIG }),
     expected: 2,
     name: 'a .mcp.json server missing from the block fails',
-    pattern: /acme is in \.mcp\.json but not in the block/u
+    patterns: [/acme is in \.mcp\.json but not in the block/u]
   },
   {
     context: walk({
@@ -196,8 +237,9 @@ const CASES = [
     }),
     expected: 1,
     name: 'a package that differs from the catalog fails',
-    pattern:
+    patterns: [
       /expo: the block names the package expo-mcp, the catalog and \.mcp\.json name @expo\/mcp/u
+    ]
   },
   {
     context: walk({
@@ -205,8 +247,9 @@ const CASES = [
     }),
     expected: 1,
     name: 'a capability that differs from the catalog fails',
-    pattern:
+    patterns: [
       /expo: the block names the capability mobile-expo, the catalog and \.mcp\.json name mobile-rn/u
+    ]
   },
   {
     context: walk({
@@ -216,8 +259,9 @@ const CASES = [
     }),
     expected: 1,
     name: 'a version edited by hand fails',
-    pattern:
+    patterns: [
       /the generated block of docs\/mcp\.md was edited by hand: its lines do not match the digest .*run `pnpm mcp:docs`/u
+    ]
   },
   {
     context: walk({
@@ -231,7 +275,7 @@ const CASES = [
     }),
     expected: 1,
     name: 'a line added by hand inside the block fails',
-    pattern: /was edited by hand/u
+    patterns: [/was edited by hand/u]
   },
   {
     context: walk({
@@ -244,22 +288,80 @@ const CASES = [
     }),
     expected: 1,
     name: 'a block the updater never wrote fails',
-    pattern: /has no digest: `pnpm mcp:docs` never wrote it/u
+    patterns: [/has no digest: `pnpm mcp:docs` never wrote it/u]
   },
   {
     context: walk({ doc: '# MCP servers\n\nNo block here.\n' }),
     expected: 1,
     name: 'a doc without the generated block fails',
-    pattern: /docs\/mcp\.md has no "<!-- mcp-docs:start/u
+    patterns: [/docs\/mcp\.md has no "<!-- mcp-docs:start/u]
   },
   {
     context: walk({
-      catalog: [{ ...EXPO, args: ['-y', 'expo-mcp@0.2.0'] }, NEXT]
+      catalog: [
+        { ...EXPO, args: ['-y', 'expo-mcp'], command: 'npx' },
+        NEXT
+      ]
     }),
     expected: 1,
-    name: 'a catalog entry that pins its version is refused',
-    pattern:
-      /expo runs npx -y expo-mcp@0\.2\.0; a catalog command is the unpinned `npx -y expo-mcp`, then the server's own arguments \(decision 55\)/u
+    name: 'a catalog entry that runs npx is refused',
+    patterns: [
+      /expo runs npx -y expo-mcp; a catalog command never goes through npx: it is `node node_modules\/expo-mcp\/bin\/expo-mcp\.mjs`, then the server's own arguments \(decision 61\)/u
+    ]
+  },
+  {
+    context: walk({ catalog: [{ ...EXPO, version: undefined }, NEXT] }),
+    expected: 1,
+    name: 'a catalog entry with no version is refused',
+    patterns: [/mcp-servers\.json: expo has no version$/u]
+  },
+  {
+    context: walk({
+      catalog: [
+        { ...EXPO, version: '^0.2.4' },
+        { ...METRO, version: 'latest' },
+        { ...NEXT, version: 'next' }
+      ],
+      doc: docOf({ rows: [EXPO, METRO, NEXT].map(rowOf) })
+    }),
+    expected: 3,
+    name: 'a catalog version that is a range, latest or a tag is refused',
+    patterns: [
+      new RegExp(`expo pins \\^0\\.2\\.4, ${NOT_EXACT}`, 'u'),
+      new RegExp(`metro pins latest, ${NOT_EXACT}`, 'u'),
+      new RegExp(`next-devtools pins next, ${NOT_EXACT}`, 'u')
+    ]
+  },
+  {
+    context: walk({
+      catalog: [
+        { ...EXPO, args: ['node_modules/expo-mcp/dist/index.js'] },
+        NEXT
+      ]
+    }),
+    expected: 1,
+    name: 'a catalog entry whose first argument does not name its entry is refused',
+    patterns: [
+      /expo runs node node_modules\/expo-mcp\/dist\/index\.js; a catalog command is `node node_modules\/expo-mcp\/bin\/expo-mcp\.mjs`, its entry first, then the server's own arguments \(decision 61\)/u
+    ]
+  },
+  {
+    context: walk({
+      catalog: [{ ...EXPO, entry: '../other/index.js' }, NEXT]
+    }),
+    expected: 1,
+    name: 'a catalog entry whose entry leaves its package is refused',
+    patterns: [
+      /expo names the entry \.\.\/other\/index\.js, which is not a relative path inside its package/u
+    ]
+  },
+  {
+    context: walk({ catalog: [{ ...EXPO, command: 'pnpm' }, NEXT] }),
+    expected: 1,
+    name: 'a catalog npm server whose command is not node is refused',
+    patterns: [
+      /expo runs pnpm node_modules\/expo-mcp\/bin\/expo-mcp\.mjs; the command of an npm server is `node` \(decision 61\)/u
+    ]
   },
   {
     context: walk({
@@ -267,26 +369,7 @@ const CASES = [
       doc: docOf({ rows: [EXPO, NEXT, SHADCN].map(rowOf) })
     }),
     expected: 0,
-    name: 'a catalog entry with server args after its package passes'
-  },
-  {
-    context: walk({
-      catalog: [{ ...SHADCN, args: ['-y', 'shadcn@4.23.0', 'mcp'] }],
-      doc: docOf({ rows: [SHADCN].map(rowOf) })
-    }),
-    expected: 1,
-    name: 'a catalog entry that pins its version before its server args is refused',
-    pattern: /shadcn runs npx -y shadcn@4\.23\.0 mcp; a catalog command/u
-  },
-  {
-    context: walk({
-      catalog: [{ ...SHADCN, args: ['-y', 'mcp'] }],
-      doc: docOf({ rows: [SHADCN].map(rowOf) })
-    }),
-    expected: 1,
-    name: 'a catalog entry that runs no package is refused',
-    pattern:
-      /shadcn runs npx -y mcp; a catalog command is the unpinned `npx -y shadcn`/u
+    name: 'a catalog entry with server args after its entry passes'
   },
   {
     context: walk({
@@ -294,14 +377,82 @@ const CASES = [
     }),
     expected: 1,
     name: 'a catalog doc that does not exist is refused',
-    pattern: /expo names the doc docs\/gone\.md, which does not exist/u
+    patterns: [/expo names the doc docs\/gone\.md, which does not exist/u]
+  },
+  {
+    context: walk({ catalogText: null }),
+    expected: 1,
+    name: 'a missing catalog is refused',
+    patterns: [/^\.agents\/contracts\/mcp-servers\.json is missing$/u]
+  },
+  {
+    context: walk({ catalogText: '{ "servers": [' }),
+    expected: 1,
+    name: 'a catalog that is not JSON is refused',
+    patterns: [
+      /^\.agents\/contracts\/mcp-servers\.json is not valid JSON: /u
+    ]
+  },
+  {
+    context: walk({ catalogText: '{ "servers": {} }' }),
+    expected: 1,
+    name: 'a catalog with no servers array is refused',
+    patterns: [/mcp-servers\.json has no "servers" array$/u]
+  },
+  {
+    context: walk({
+      catalogText: JSON.stringify({ servers: ['expo', entryOf(NEXT)] })
+    }),
+    expected: 1,
+    name: 'a catalog entry that is not an object is refused',
+    patterns: [/mcp-servers\.json: entry 0 is not an object$/u]
+  },
+  {
+    context: walk({
+      catalog: [{ ...EXPO, capability: undefined, entry: undefined }, NEXT]
+    }),
+    expected: 1,
+    name: 'a catalog entry without its fields is refused',
+    patterns: [/mcp-servers\.json: expo has no capability, entry$/u]
+  },
+  {
+    context: walk({
+      catalog: [{ ...EXPO, packageName: 'Expo MCP' }, NEXT]
+    }),
+    expected: 1,
+    name: 'a catalog package that is not an npm name is refused',
+    patterns: [/expo names Expo MCP, which is not an npm package name$/u]
+  },
+  {
+    context: walk({ catalog: [{ ...EXPO, docs: undefined }, NEXT] }),
+    expected: 1,
+    name: 'a catalog entry with no docs list is refused',
+    patterns: [/expo has no docs list \(an empty list is allowed\)$/u]
+  },
+  {
+    context: walk({ catalog: [EXPO, EXPO, NEXT] }),
+    expected: 1,
+    name: 'a server listed twice in the catalog is refused',
+    patterns: [/mcp-servers\.json: expo is listed more than once$/u]
+  },
+  {
+    context: walk({ configText: '{ "mcpServers": {' }),
+    expected: 1,
+    name: 'a .mcp.json that is not JSON is refused',
+    patterns: [/^\.mcp\.json is not valid JSON: /u]
+  },
+  {
+    context: walk({ configText: '{ "servers": {} }' }),
+    expected: 1,
+    name: 'a .mcp.json with no mcpServers object is refused',
+    patterns: [/^\.mcp\.json has no "mcpServers" object$/u]
   }
 ]
 
 const detailsOf = (findings) =>
   findings.map((finding) => finding.detail ?? finding).join('\n')
 
-CASES.forEach(({ context, expected, name, pattern }) =>
+CASES.forEach(({ context, expected, name, patterns = [] }) =>
   test(name, () => {
     const details = detailsOf(gate.run(context()))
     assert.equal(
@@ -309,7 +460,12 @@ CASES.forEach(({ context, expected, name, pattern }) =>
       expected,
       details
     )
-    if (pattern) assert.match(details, pattern)
+    patterns.forEach((pattern) =>
+      assert.ok(
+        details.split('\n').some((line) => pattern.test(line)),
+        `${pattern} matches no finding:\n${details}`
+      )
+    )
   })
 )
 

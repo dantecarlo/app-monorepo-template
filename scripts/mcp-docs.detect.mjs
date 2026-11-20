@@ -38,13 +38,28 @@ const HEADER = [
   'Checked'
 ]
 
+const NODE = 'node'
+const NODE_MODULES = 'node_modules'
+const CATALOG_FIELDS = [
+  'name',
+  'capability',
+  'package',
+  'version',
+  'entry',
+  'command'
+]
+
 const NPX = /^npx(?:\.cmd|\.exe)?$/iu
 const NPM_NAME =
   /^(?:@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/u
+// One release: never a range, `latest` or another tag.
+const EXACT_VERSION = /^\d+\.\d+\.\d+(?:-[0-9a-z.-]+)?$/iu
 const VERSIONED = /^(?<name>@[^/@]+\/[^@]+|[^@]+)@.*$/u
 const LINE_END = /\r?\n/u
 
 const isText = (value) => typeof value === 'string' && value.trim() !== ''
+
+const baseOf = (command) => command.split(/[\\/]/u).pop()
 
 const readJson = ({ path, text }) => {
   try {
@@ -58,8 +73,7 @@ const readJson = ({ path, text }) => {
 // the command is not `npx` or its first argument is not an npm package.
 export const npmPackageOf = ({ args, command }) => {
   if (typeof command !== 'string') return null
-  const base = command.split(/[\\/]/u).pop()
-  if (!NPX.test(base) || !Array.isArray(args)) return null
+  if (!NPX.test(baseOf(command)) || !Array.isArray(args)) return null
   const spec = args.find(
     (arg) => typeof arg === 'string' && !arg.startsWith('-')
   )
@@ -68,38 +82,74 @@ export const npmPackageOf = ({ args, command }) => {
   return NPM_NAME.test(name) ? name : null
 }
 
-// `npx -y <package> [server args...]`: the package is the first argument
-// after `-y`, with no version, and the server's own arguments may follow.
-const isUnpinned = ({ args, command, packageName }) =>
-  command === 'npx' &&
+// The file `node` runs for a catalog server: the package's own bin file,
+// where a root devDependency installs it.
+const launcherOf = ({ entry, packageName }) =>
+  `${NODE_MODULES}/${packageName}/${entry}`
+
+const commandLineOf = ({ args, command }) =>
+  [command, ...(Array.isArray(args) ? args : [])].join(' ')
+
+// A relative POSIX path that stays inside the package: no leading `/`, no
+// `.` or `..` segment, no empty segment, no backslash.
+const isInsidePackage = (entry) =>
+  !entry.includes('\\') &&
+  entry
+    .split('/')
+    .every(
+      (segment) => segment !== '' && segment !== '.' && segment !== '..'
+    )
+
+// `node node_modules/<package>/<entry> [server args...]` (decision 61): the
+// launcher first, then the server's own arguments.
+const isDirect = ({ args, launcher }) =>
   Array.isArray(args) &&
-  args[0] === '-y' &&
-  args[1] === packageName &&
-  args.slice(2).every((arg) => isText(arg))
+  args[0] === launcher &&
+  args.slice(1).every((arg) => isText(arg))
+
+const commandProblem = ({ entry, label }) => {
+  const launcher = launcherOf({
+    entry: entry.entry,
+    packageName: entry.package
+  })
+  const runs = `${MCP_CATALOG_PATH}: ${label} runs ${commandLineOf(entry)}`
+  if (NPX.test(baseOf(entry.command)))
+    return (
+      `${runs}; a catalog command never goes through npx: it is ` +
+      `\`node ${launcher}\`, then the server's own arguments (decision 61)`
+    )
+  if (entry.command !== NODE)
+    return `${runs}; the command of an npm server is \`node\` (decision 61)`
+  if (!EXACT_VERSION.test(entry.version))
+    return (
+      `${MCP_CATALOG_PATH}: ${label} pins ${entry.version}, which is not an ` +
+      'exact version: a catalog version is one release, such as 1.2.3, ' +
+      'never a range, `latest` or a tag'
+    )
+  if (!isInsidePackage(entry.entry))
+    return (
+      `${MCP_CATALOG_PATH}: ${label} names the entry ${entry.entry}, which ` +
+      'is not a relative path inside its package'
+    )
+  if (!isDirect({ args: entry.args, launcher }))
+    return (
+      `${runs}; a catalog command is \`node ${launcher}\`, its entry first, ` +
+      "then the server's own arguments (decision 61)"
+    )
+  return null
+}
 
 const entryProblem = ({ entry, index }) => {
   const label = isText(entry?.name) ? entry.name : `entry ${index}`
   if (entry === null || typeof entry !== 'object' || Array.isArray(entry))
     return `${MCP_CATALOG_PATH}: ${label} is not an object`
-  const missing = ['name', 'capability', 'package', 'command'].filter(
-    (field) => !isText(entry[field])
-  )
+  const missing = CATALOG_FIELDS.filter((field) => !isText(entry[field]))
   if (missing.length > 0)
     return `${MCP_CATALOG_PATH}: ${label} has no ${missing.join(', ')}`
   if (!NPM_NAME.test(entry.package))
     return `${MCP_CATALOG_PATH}: ${label} names ${entry.package}, which is not an npm package name`
-  if (
-    !isUnpinned({
-      args: entry.args,
-      command: entry.command,
-      packageName: entry.package
-    })
-  ) {
-    return (
-      `${MCP_CATALOG_PATH}: ${label} runs ${[entry.command, ...(Array.isArray(entry.args) ? entry.args : [])].join(' ')}; ` +
-      `a catalog command is the unpinned \`npx -y ${entry.package}\`, then the server's own arguments (decision 55)`
-    )
-  }
+  const command = commandProblem({ entry, label })
+  if (command !== null) return command
   if (
     !Array.isArray(entry.docs) ||
     !entry.docs.every((path) => isText(path))
@@ -140,9 +190,12 @@ export const parseCatalog = ({ text }) => {
     return [
       {
         capability: entry.capability,
+        commandLine: commandLineOf(entry),
         docs: entry.docs,
+        entry: entry.entry,
         name: entry.name,
-        packageName: entry.package
+        packageName: entry.package,
+        version: entry.version
       }
     ]
   })

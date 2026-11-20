@@ -53,28 +53,34 @@ const PROSE_AFTER = '\n\nMore prose after the block.\n'
 const EMPTY_BLOCK = `${BLOCK_START}\n<!-- mcp-docs:end -->`
 const NO_FETCH = 'the suite reached fetch'
 
-const entry = ({ capability, docs, name, packageName }) => ({
-  args: ['-y', packageName],
+const entry = ({ bin, capability, docs, name, packageName, version }) => ({
+  args: [`node_modules/${packageName}/${bin}`],
   capability,
-  command: 'npx',
+  command: 'node',
   docs,
+  entry: bin,
   name,
-  package: packageName
+  package: packageName,
+  version
 })
 
 const CATALOG = {
   servers: [
     entry({
+      bin: 'dist/index.js',
       capability: 'web-next',
       docs: [NEXT_DOC],
       name: 'next-devtools',
-      packageName: 'next-devtools-mcp'
+      packageName: 'next-devtools-mcp',
+      version: '0.3.0'
     }),
     entry({
+      bin: 'bin/expo-mcp.mjs',
       capability: 'mobile-expo',
       docs: [EXPO_DOC],
       name: 'expo',
-      packageName: 'expo-mcp'
+      packageName: 'expo-mcp',
+      version: '0.2.0'
     })
   ]
 }
