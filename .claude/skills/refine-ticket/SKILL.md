@@ -112,7 +112,7 @@ message the PO `<id> version change`. Then take it from Step 1, where it waits f
 ## Merge queue
 
 The architect keeps one merge queue for the default branch and merges from it, one pull request
-at a time, under the merge policy the project layer records (`ticket-flow` rule 4): `manual`,
+at a time, under the merge policy of `.agents/harness.config.json` (`ticket-flow` rule 4): `manual`,
 the default, or `low-risk`. The owner approves each merge here, in this session, so one place
 shows what waits to merge; QA asks the owner nothing and merges nothing. A hotfix never enters
 it (§ Group a release); the architect's own closed ticket catalog pull request does (step 1).
@@ -174,7 +174,7 @@ it (§ Group a release); the architect's own closed ticket catalog pull request 
    check passes:
 
    ```
-   Which merge policy does the project layer record?
+   Which merge policy does `.agents/harness.config.json` record, in `delivery.mergePolicy`?
    ├── `manual`, the default, or none → ask the owner.
    └── `low-risk` → does the pull request meet every condition?
          1. it is at the head of the queue and step 2 holds; a pull request into the
@@ -303,8 +303,9 @@ merges it into the production branch the layer names as that release's deploy st
 reads:
   - .claude/skills/ticket-flow/SKILL.md
   - .claude/skills/ticket-flow/release.template.md
+  - .agents/harness.config.json # delivery.mergePolicy
 board_operations: [create, read, move, comment, link, read version]
-merge_policies: [manual, low-risk] # manual, the default, when the layer records none
+merge_policies: [manual, low-risk] # manual, the default, when .agents/harness.config.json records none
 moves:
   - Backlog → Refinement
   - Refinement → Ready for dev

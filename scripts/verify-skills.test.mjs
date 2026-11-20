@@ -35,6 +35,7 @@ import {
   SKILLS_ROOT,
   STATES_TABLE_HEADER
 } from './verify-skills.mjs'
+import { HARNESS_CONFIG } from './verify-harness-config.mjs'
 import { DEFAULT_IDENTITY, IDENTITY_INFO } from './verify-ticket-branch.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -69,7 +70,12 @@ const DONE_MOVE = 'Ready to merge → Done'
 const VERSION_REQUIRED_NAMED = 'It names **Version (required):**.'
 const HOTFIX_LEFT_NAMED = 'It names QA leaves it at Ready to merge.'
 const POLICY_FIELD = '- **Policy:**'
-const POLICY_LINE = `${POLICY_FIELD} \`manual\``
+// The merge policy is read from the harness config: the four sections that
+// name both policies name the file, and the template's Policy line names the
+// setting rather than recording a policy of its own.
+const CONFIG_NAMED = `It names \`${HARNESS_CONFIG}\`.`
+const ANY_POLICY_LINE = /^- \*\*Policy:\*\* .*$/mu
+const POLICY_RECORDED = `${POLICY_FIELD} \`manual\``
 const PRODUCTION_FIELD = '- **Production branch:**'
 const PRODUCTION_LINE = `${PRODUCTION_FIELD} \`production\``
 const IDENTITY = '## Ticket identity'
@@ -594,6 +600,42 @@ export const CASES = [
   {
     context: skills({
       edits: {
+        [SKILL({ folder: CONTRACT })]: replace({
+          from: CONFIG_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a ticket-flow whose rules never name the harness config is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'refine-ticket' })]: replace({
+          from: CONFIG_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a refine-ticket whose merge queue never names the harness config is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: INTAKE })]: replace({
+          from: CONFIG_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a process-intake whose mapping step never names the harness config is refused'
+  },
+  {
+    context: skills({
+      edits: {
         [SKILL({ folder: INTAKE })]: withoutSection({
           heading: INTAKE_MAPPING_STEP
         })
@@ -1106,14 +1148,14 @@ const checks = [
     }
   },
   {
-    name: 'a process template whose merge policy does not default to manual is refused',
+    name: 'a process template whose merge policy records a policy, not the harness config, is refused',
     run: () => {
       const findings = gate.run(
         skills({
           edits: {
             [`${INTAKE}/${PROCESS_TEMPLATE}`]: replace({
-              from: POLICY_LINE,
-              to: `${POLICY_FIELD} \`low-risk\``
+              from: ANY_POLICY_LINE,
+              to: POLICY_RECORDED
             })
           }
         })()
@@ -1131,8 +1173,8 @@ const checks = [
         `the finding does not name the line: ${finding.detail}`
       )
       assert.ok(
-        finding.detail.includes('`manual`'),
-        `the finding does not name the default it owes: ${finding.detail}`
+        finding.detail.includes(`\`${HARNESS_CONFIG}\``),
+        `the finding does not name the setting it owes: ${finding.detail}`
       )
     }
   },

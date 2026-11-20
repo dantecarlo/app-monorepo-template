@@ -17,8 +17,8 @@ description: >
 # Process intake — the project's layer of the ticket flow
 
 Read `ticket-flow` first (`.claude/skills/ticket-flow/SKILL.md`): this skill maps a team's process
-onto that core and never changes the core. It writes one file, docs/process/ticket-flow.md, from
-`ticket-flow.template.md` in this folder.
+onto that core and never changes the core. It writes docs/process/ticket-flow.md, from
+`ticket-flow.template.md` in this folder, and the merge policy, in `.agents/harness.config.json`.
 
 ---
 
@@ -67,8 +67,9 @@ only what the document did not answer:
   pull request needs the owner's word first. Say that merges into the default branch are
   approved in one place, the architect's session, from its merge queue: QA brings a ticket to
   Ready to merge and hands it to the architect, and neither asks the owner nor merges.
-- **Merge policy** — ask which of the two (`ticket-flow` rule 4), and write `manual` unless the
-  team picks the other:
+- **Merge policy** — ask which of the two (`ticket-flow` rule 4), and write it as
+  `delivery.mergePolicy` in `.agents/harness.config.json`, `manual` unless the team picks the
+  other; the layer's `Policy` line only names that setting:
   - `manual`, the default: a human in the loop; the architect asks the owner for every merge,
     in its own session.
   - `low-risk`: the architect may merge, without asking, a pull request that is Ready to merge
@@ -113,7 +114,8 @@ only what the document did not answer:
 ## Step 4 — Confirm, then write
 
 1. Show the filled layer and ask the team to confirm it. Write nothing before the yes.
-2. Write docs/process/ticket-flow.md.
+2. Write docs/process/ticket-flow.md, and the merge policy as `delivery.mergePolicy` in
+   `.agents/harness.config.json`.
 3. For a `gh` adapter, after the team confirms it: create each label once, `ticket:<state>` for
    every state and `type:<type>` for every type, with `gh label create <label> --force`.
 4. Propose the row the project's `AGENTS.md` Key docs table gains for docs/process/ticket-flow.md,
@@ -133,6 +135,7 @@ emits:
   - docs/process/ticket-flow.md
 edits:
   - AGENTS.md # the Key docs row and the role of each session, on the team's yes
+  - .agents/harness.config.json # delivery.mergePolicy only, on the team's yes
 validated_by: review
 done_when: the team confirmed docs/process/ticket-flow.md, and it names a board adapter
 ```

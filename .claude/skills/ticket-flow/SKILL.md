@@ -214,8 +214,9 @@ session may fill a dev role; exactly one QA session fills each dev area's QA rol
 3. **Subagent hygiene.** A session may split its task into subagents or subsessions. Each one is
    deleted as soon as it finishes, and none is left idle. No session duplicates another session
    that already exists for a job.
-4. **Merges follow the merge policy; the irreversible stays the owner's.** The project layer
-   records the merge policy; with none recorded, it is `manual`. The architect applies it, in its
+4. **Merges follow the merge policy; the irreversible stays the owner's.** The project records
+   it in `.agents/harness.config.json`, as `delivery.mergePolicy`; with none recorded, it is
+   `manual`. The architect applies it, in its
    merge queue (`refine-ticket` § Merge queue); QA asks the owner nothing and merges nothing.
    - **`manual`, the default**, keeps a human in the loop: the architect asks the owner before
      every merge.
@@ -394,6 +395,7 @@ deploys them (`release-ticket`). A project with no deploy target closes a ticket
 # skill: ticket-flow — the contract; it emits nothing itself.
 reads:
   - docs/process/ticket-flow.md # the project layer, written by process-intake
+  - .agents/harness.config.json # delivery.mergePolicy, the merge policy (rule 4)
 ships:
   - .claude/skills/ticket-flow/ticket.template.md
   - .claude/skills/ticket-flow/release.template.md
