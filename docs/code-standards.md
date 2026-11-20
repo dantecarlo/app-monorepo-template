@@ -736,11 +736,14 @@ self-cleaning**.
 > its rule and why the value cannot move, and `verify:allowlist-freshness` fails
 > an entry whose file no longer breaks its rule. The owner asked for it with
 > the styling pillar (2026-11-14). `eslint-dependency-seam-allowlist.json`, read
-> by `local/dependency-seam` (§23), is the one that ships with a backlog: the
-> imports that broke the rule when it landed, frozen per file and package, each
-> naming the F.8 unit that removes it, and `verify:dependency-seams` fails an
-> entry whose import is gone and every import it does not list, so it only
-> shrinks, to empty at F.8 unit 9 (decision 51). See `docs/harness.md`.
+> by `local/dependency-seam` (§23), is the one that can hold a backlog: the
+> imports a migration has yet to move, frozen per file and package, each naming
+> a migration the registry declares open, and counting only while it is open.
+> `verify:dependency-seams` fails an entry whose import is gone, an entry whose
+> migration is not open, an open migration no entry names and every import it
+> does not list, so it only shrinks. F.8 drove it to empty, and the template
+> declares no open migration, so it refuses any entry (decision 51, F59). See
+> `docs/harness.md`.
 
 > Status: **not in place.** Packages lint with `eslint .` — no
 > `--max-warnings 0`, no `reportUnusedDisableDirectives`. Tracked in §21.
@@ -808,7 +811,7 @@ This table exists so that difference is visible.
 | §22 One `tv` on web         | lint+test     | `local/dependency-seam`: the helper is `tailwind-variants`' seam    |
 | Token outputs generated     | script        | `verify:theme-sync` (and `:test`): each equals its regeneration     |
 | §23 Packages in their seams | lint+script   | `local/dependency-seam`: every import, re-export, `import()`, `require()`, `import()` type and `vi.mock` of a package, type-only ones included, only inside its seam, and an unregistered package nowhere; `verify:dependency-seams` the same for the configs ESLint ignores; not a specifier that is not a literal, a triple-slash reference, `declare module`, CSS or JSON, or a vendor type a wrapper re-exports |
-| §23 Every package registered | script       | `verify:dependency-seams`: every `package.json` dependency registered, no stale or malformed entry, every seam glob matching a file, and the allowlist holding only the imports that still break the rule; not a subpath entry no file imports any longer, a new allowlist entry for a new import, or whether a seam is the right one, which review reads |
+| §23 Every package registered | script       | `verify:dependency-seams`: every `package.json` dependency registered, no stale or malformed entry, every seam glob matching a file, the allowlist holding only the imports that still break the rule, each under a migration the registry declares open, and no open migration that no entry names; not a subpath entry no file imports any longer, a new allowlist entry for a new import under a migration still open, or whether a seam is the right one, which review reads |
 | §23 The names a wrapper owns | lint         | `local/wrapped-import`: the `expo-router` hooks and `router`, only under `src/lib/routing/`; not a subpath of `react-native` or `expo-router`, a `vi.importActual` or an `import()` type, whose names it does not read, or a `ui/` block added while an editor's ESLint server runs |
 | §24 One rule set, every app | test          | the fixture apps of `eslint-local-rules/__fixtures__/apps/` (`verify:lint-rules:test`) |
 
@@ -1002,19 +1005,24 @@ client, so an adapter that reads data over the client is a `packages/supabase/sr
 Each app's `src/lib/supabase/*.adapter.ts` is the one importer of `@app/supabase`: the client,
 typed `BackendClientType`, and the auth gateway its auth provider receives.
 
-**The migration freezes, then shrinks.** Every import that broke the rule when it landed is listed,
-one entry per file and package, in `eslint-dependency-seam-allowlist.json`, with a reason that
-starts with the F.8 unit that removes it (`F.8 unit 2: …`). F.8 units 2 to 7 drove it to empty,
-and the gate fails an entry whose import is gone, so the list cannot grow back by accident. It
-ships empty: a new import is wrapped, never listed, which review holds, since the gate accepts
-an entry whose reason names an F.8 unit.
+**A migration freezes, then shrinks.** An import a migration has yet to move is listed, one entry
+per file and package, in `eslint-dependency-seam-allowlist.json`, as
+`{ path, package, migration, reason }`. `migration` is the id of a migration the registry declares
+open in its `openMigrations`, each `{ id, note }`, and the entry counts, for `local/dependency-seam`
+and the gate alike, only while that migration is open. The gate fails an entry whose import is
+gone, an entry whose migration is not open, and an open migration no entry names, which is closed
+by removing it, so the list cannot grow back by accident. F.8 units 2 to 7 drove it to empty, and
+the template declares no open migration, so it refuses any entry: a new import is wrapped, never
+listed. A project with a migration in flight declares it and lists its imports under it; only
+review refuses a new import listed under a migration still open.
 
 > Status: **lint + script.** `local/dependency-seam` (`eslint-local-rules/dependency-seam.detect.mjs`,
 > `error` over `apps/*/**` and `packages/*/**` by pattern, so an app added later inherits it) reads
 > imports, re-exports, `import()`, `require()`, `import()` types and the `vi.mock` family.
 > `verify:dependency-seams` holds the registry to every `package.json` (no unregistered
 > dependency, no stale entry), every seam glob to a file, the configs ESLint ignores to their
-> seams, and the allowlist to the imports that still break the rule. `local/wrapped-import`
+> seams, and the allowlist to the imports that still break the rule under an open migration.
+> `local/wrapped-import`
 > (`eslint-local-rules/wrapped-import.detect.mjs`, `error` over the same pattern, with the ui
 > blocks of the workspace the config is built for) holds the names a wrapper owns. **Not
 > covered:** a name no wrapper owns by the rule's detection (`Pressable`, `TextInput`, a block

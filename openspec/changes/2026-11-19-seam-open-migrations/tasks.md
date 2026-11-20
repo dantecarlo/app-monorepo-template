@@ -1,7 +1,7 @@
 # Tasks: 2026-11-19-seam-open-migrations
 
 - [x] T1 — The registry declares its open migrations: `openMigrations` in the gate's registry shape, the open ids in `indexRegistry`, the template's `[]`, and the stale-migration finding, skipped while the allowlist cannot be read; their cases · Requirements: SEAM-16 · Commit: 4d6a924
-- [ ] T2 — An allowlist entry counts only under an open migration: `migration` on the entry, the shared predicate `namesOpenMigration`, the rule's exemption and the gate's shape check calling it, the F.8-prefix check of the reason gone; their gate and rule cases; the differential of the lint and the gate against the base · Requirements: SEAM-07 · Commit: —
+- [x] T2 — An allowlist entry counts only under an open migration: `migration` on the entry, the shared predicate `namesOpenMigration`, the rule's exemption and the gate's shape check calling it, the F.8-prefix check of the reason gone; their gate and rule cases; the differential of the lint and the gate against the base · Requirements: SEAM-07 · Commit: c0101f4
 - [ ] T3 — `docs/code-standards.md` § 23 and its § 21 row, `docs/decisions/0002-every-library-behind-an-adapter.md`, `docs/harness.md`, `docs/maps/global-map.md`, the `lib` skill and the registry's `$comment` · Requirements: none · Commit: —
 - [ ] T4 — `verify-report.md`, then the archive: the deltas merged into `openspec/specs/harness/dependency-seams/spec.md` and the folder moved to `openspec/changes/archive/2026-11-19-seam-open-migrations/` · Requirements: none · Commit: —
 

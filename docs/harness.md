@@ -73,7 +73,7 @@ The chain runs in cost order:
 | `pnpm verify:allowlist-freshness:test` | The styling allowlist gate fails a stale entry and an unlisted violation |
 | `pnpm verify:allowlist-freshness` | Every entry of `eslint-style-positioning-allowlist.json` still breaks its rule, and every violation in the `src/` of every app is listed; prints the live count |
 | `pnpm verify:dependency-seams:test` | The dependency-seam gate fails each drift it names, planted in a scratch tree, and asks ESLint which files it ignores |
-| `pnpm verify:dependency-seams` | Every `package.json` dependency is in `.agents/contracts/dependencies.json` and every entry is declared; a `package.json` it cannot read fails, naming it; every seam glob matches a file; the configs ESLint ignores import inside their seams; every entry of `eslint-dependency-seam-allowlist.json` is still a violation and every violation is listed; prints the live counts, and none against a registry it refuses |
+| `pnpm verify:dependency-seams` | Every `package.json` dependency is in `.agents/contracts/dependencies.json` and every entry is declared; a `package.json` it cannot read fails, naming it; every seam glob matches a file; the configs ESLint ignores import inside their seams; every entry of `eslint-dependency-seam-allowlist.json` is still a violation under a migration the registry declares open, every open migration is named by an entry, and every violation is listed; prints the live counts, and none against a registry it refuses |
 
 Structural drift fails here, before anything expensive builds. See
 [manifest.md](manifest.md). The projection check is step 1 of the chain: an agent
@@ -309,10 +309,13 @@ with its reason, in the diff. Turborepo does not hash the list into the lint
 task, so a lint result cached before an edit to it is reused.
 
 The third, decided with F.8 (decisions 51 and 58): `eslint-dependency-seam-allowlist.json`
-freezes the imports that broke `local/dependency-seam` when it landed, one
-`{ path, package, reason }` per file and package, the reason starting with the F.8 unit that
-removes it (`F.8 unit 2: …`). It is the one list that ships with a backlog, and units 2 to 8 drive
-it to empty. `verify:dependency-seams` re-derives every violation with the rule's own detection,
-uncached, and fails an entry whose import is gone, an import it does not list, a pair listed twice
-and an entry without its unit, so it only shrinks. Neither the list nor the registry is a
+freezes the imports a migration has yet to move, one `{ path, package, migration, reason }` per
+file and package, `migration` the id of a migration the registry declares open (the
+`openMigrations` of `.agents/contracts/dependencies.json`, each `{ id, note }`). An entry counts,
+for the rule and the gate, only while its migration is open; F.8 drove the list to empty and the
+template declares no open migration, so it refuses any entry, while a derived project lists the
+imports its open migrations have yet to move (F59). `verify:dependency-seams` re-derives every
+violation with the rule's own detection, uncached, and fails an entry whose import is gone, an
+import it does not list, a pair listed twice, an entry without an open migration and an open
+migration no entry names, so it only shrinks. Neither the list nor the registry is a
 Turborepo input of the lint task, which is why the gate does not trust a cached lint result.
