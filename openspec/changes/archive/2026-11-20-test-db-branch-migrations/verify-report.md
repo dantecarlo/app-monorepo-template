@@ -27,6 +27,8 @@
 | SUPABASE-31 | a psql meta-command | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a pgTAP file with a psql meta-command, naming it: %s" | green |
 | SUPABASE-31 | an opening other than a plain begin | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses any opening other than a plain begin, naming the file: %s" | green |
 | SUPABASE-31 | a commit after a form a simpler reader misreads | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a commit hidden from a masker that misreads Postgres, naming the file: %s" | green |
+| SUPABASE-31 | a string continued past a newline | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a commit after an escape string continued past a newline, naming the file: %s" | green |
+| SUPABASE-31 | a string continued past a newline | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "continues a string only past whitespace that holds a newline, as Postgres does: %s" | green |
 | SUPABASE-31 | a file the reader cannot pair | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a quote, a dollar sign or a comment it cannot pair, naming the file: %s" | green |
 | SUPABASE-31 | what Postgres reads as one token | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "reads what Postgres reads as one token, nested comments included: %s" | green |
 | SUPABASE-31 | the order check's reader stays as it was | `packages/supabase/src/__tests__/sqlCode.helper.test.ts` › "reads the forms the pgTAP check reads on its own exactly as before" | green |
@@ -99,12 +101,37 @@ pattern and its output on the six forms, green before and after. The verifier's 
 (`b2-check.mjs`, copied to this writer's scratchpad and pointed at this branch) refuses every
 B1, B2 and masker case and accepts both allowed files.
 
+## Third change, on the owner's word, 2026-11-20
+
+The final recheck closed the six earlier forms and found one more: Postgres joins a string,
+whitespace that holds a newline and the next `'` into one string, in the same mode
+(`quotecontinue` in `scan.l`), so a continued escape string keeps its backslash escapes; the
+reader ended the string there, closed the next part at `\'` and paired its last quote with a
+later one, hiding a real `commit;`. The owner's words, 2026-11-20 (translated from Spanish):
+"Imitate Postgres". The fix, at `ec25a89`, continues the string as `scan.l` does.
+
+Seen red before the fix: 4 tests, the verifier's three probes (a continued escape string, the
+same inside a pgTAP call, and with a `--` comment line after the newline) and one with a `--`
+comment before the newline. The brief said a comment before the newline ends the string; `scan.l`
+reads otherwise (`whitespace_with_newline` is `{horiz_whitespace}*{newline}{special_whitespace}*`
+and `horiz_whitespace` is `({horiz_space}|{comment})`), the verifier's own probe C2 reads it so,
+and reading it as a continuation fails closed: a wrong reading refuses a file, never hides a
+commit. Three pins passed before and after: an escape string followed by whitespace with no
+newline ends there, and a plain string continued past a newline, with or without a comment,
+still bundles. The verifier's `b3-check.mjs`, copied and pointed at this branch, refuses every
+B1, B2, masker and continuation case and accepts every allowed file.
+
+Two forms are still read differently from Postgres and need no fix: `select 1$a$ ' $a$; commit;
+-- '` and `select $$x$$E'\' '; commit; -- '`. Postgres rejects both as syntax errors, which
+abort the transaction, so neither can commit.
+
 ## Gate
 
 - `pnpm validate`: not run by this change's writer: its brief keeps the shared machine to single test files
   and the package's suite, and the session that integrates it runs it.
 - `pnpm --filter @app/supabase test`: exit 0, 2026-11-20, 11 files and 61 tests; after the
-  correction, 11 files and 82 tests; after the second, 11 files and 98 tests.
+  correction, 11 files and 82 tests; after the second, 11 files and 98 tests;
+  after the third, 11 files and 105 tests.
 - `eslint` on every changed source and `tsc --noEmit` of `@app/supabase`: exit 0, 2026-11-20.
 - `verify:specs`, `verify:english`, `verify:tests`, `verify:manifest`, `verify:manifest:coverage`,
   `verify:maps`, `verify:dependency-seams`: exit 0, 2026-11-20.

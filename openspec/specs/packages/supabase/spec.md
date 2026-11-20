@@ -3,7 +3,7 @@
 > **Governs:** `packages/supabase/src`, `packages/supabase/supabase/migrations`, `packages/supabase/supabase/config.toml`, `packages/supabase/package.json`, `scripts/supabase-test-db.mjs`
 > **ID prefix:** `SUPABASE`
 > **Derived from:** `packages/supabase/docs/database.md`, `AGENTS.md`, `docs/code-standards.md`
-> **Verified against the code:** 2026-11-20 at `fb4785c`
+> **Verified against the code:** 2026-11-20 at `ec25a89`
 
 ## Purpose
 
@@ -896,7 +896,7 @@ end with `rollback`, run no other statement that controls the transaction (a sav
 release and `rollback to` it excepted) and hold no psql meta-command; otherwise, or when it holds a quote, a `$` or a comment that
 reader cannot pair, test:db SHALL run nothing, naming the file.
 
-**Evidence:** `packages/supabase/src/pgTapBundle.constant.ts:3`, `packages/supabase/src/pgTapBundle.constant.ts:22-68`, `packages/supabase/src/pgTapBundle.helper.ts:42-47`, `packages/supabase/src/pgTapBundle.helper.ts:83-129`, `packages/supabase/src/pgTapBundle.helper.ts:146-149`, `packages/supabase/src/pgTapBundle.helper.ts:170-202`, `packages/supabase/src/pgTapBundle.helper.ts:206-209`, `packages/supabase/src/pgTapBundle.helper.ts:216-374`, `packages/supabase/src/pgTapBundle.helper.ts:379-426`, `packages/supabase/src/pgTapBundle.helper.ts:435-448`, `packages/supabase/src/testDbRun.helper.ts:71`, `packages/supabase/docs/database.md:409`, `packages/supabase/docs/database.md:438`
+**Evidence:** `packages/supabase/src/pgTapBundle.constant.ts:3`, `packages/supabase/src/pgTapBundle.constant.ts:22-72`, `packages/supabase/src/pgTapBundle.helper.ts:44-49`, `packages/supabase/src/pgTapBundle.helper.ts:85-131`, `packages/supabase/src/pgTapBundle.helper.ts:148-151`, `packages/supabase/src/pgTapBundle.helper.ts:172-204`, `packages/supabase/src/pgTapBundle.helper.ts:208-211`, `packages/supabase/src/pgTapBundle.helper.ts:218-410`, `packages/supabase/src/pgTapBundle.helper.ts:415-462`, `packages/supabase/src/pgTapBundle.helper.ts:471-484`, `packages/supabase/src/testDbRun.helper.ts:71`, `packages/supabase/docs/database.md:409`, `packages/supabase/docs/database.md:438`
 
 #### Scenario: the checkout's migrations, in order
 
@@ -1032,6 +1032,14 @@ reader cannot pair, test:db SHALL run nothing, naming the file.
 - **WHEN** test:db bundles the files
 - **THEN** it refuses, naming the file and the commit
 - **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a commit hidden from a masker that misreads Postgres, naming the file: %s"
+
+#### Scenario: a string continued past a newline
+
+- **GIVEN** a pgTAP file with an escape string followed by whitespace that holds a newline, with or without a `--` comment before or after it, then `'\' '; commit;`
+- **WHEN** test:db bundles the files
+- **THEN** it reads one escape string, as Postgres does, sees the commit and refuses, naming the file; whitespace with no newline ends the string, and a plain string continued past a newline still bundles
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a commit after an escape string continued past a newline, naming the file: %s"
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "continues a string only past whitespace that holds a newline, as Postgres does: %s"
 
 #### Scenario: a file the reader cannot pair
 

@@ -156,6 +156,14 @@ reader cannot pair, test:db SHALL run nothing, naming the file.
 - **THEN** it refuses, naming the file and the commit
 - **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a commit hidden from a masker that misreads Postgres, naming the file: %s"
 
+#### Scenario: a string continued past a newline
+
+- **GIVEN** a pgTAP file with an escape string followed by whitespace that holds a newline, with or without a `--` comment before or after it, then `'\' '; commit;`
+- **WHEN** test:db bundles the files
+- **THEN** it reads one escape string, as Postgres does, sees the commit and refuses, naming the file; whitespace with no newline ends the string, and a plain string continued past a newline still bundles
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a commit after an escape string continued past a newline, naming the file: %s"
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "continues a string only past whitespace that holds a newline, as Postgres does: %s"
+
 #### Scenario: a file the reader cannot pair
 
 - **GIVEN** a pgTAP file with a string, an escape string, a quoted identifier, a dollar-quoted body or a nested comment that never closes, or a `$` that pairs with nothing
