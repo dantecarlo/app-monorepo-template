@@ -44,12 +44,12 @@ and it SHALL run nothing when a pgTAP file does not open with `begin` and end wi
 - **THEN** that file is not applied
 - **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "leaves out a file the Supabase CLI does not read as a migration"
 
-#### Scenario: the migrations travel encoded
+#### Scenario: the migrations travel quoted
 
-- **GIVEN** migrations holding quotes and dollar-quoted bodies
+- **GIVEN** migrations holding quotes, the block's own dollar tags, and one ending where a tag could close
 - **WHEN** the block that applies them is built
-- **THEN** it lists every one with its file, version and name, its text base64-encoded and never raw
-- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "lists every migration of the checkout with its text encoded, never raw"
+- **THEN** it lists every one with its file, version and name, and quotes each text and the block with dollar tags none of the texts can end
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "lists every migration of the checkout, each text dollar-quoted with a tag none of them can end"
 
 #### Scenario: a version the database holds under another name
 

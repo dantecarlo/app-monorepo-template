@@ -32,7 +32,7 @@ The owner's words, verbatim:
 - **The suites run over the checkout's schema.** Before running, `test:db` copies every pgTAP
   file into a temporary bundle with a `do` block right after its opening `begin;`. The block holds
   every migration of the checkout, in name order, with the version and name the Supabase CLI
-  records, its text base64-encoded. Inside the file's own transaction it reads
+  records, its text dollar-quoted with a tag no text can end. Inside the file's own transaction it reads
   `supabase_migrations.schema_migrations` and applies, through `execute`, each migration whose
   version the ledger lacks; the file's `rollback;` takes them with it. As in #878, a `begin;` and
   `commit;` that wrap a whole file are removed first; Postgres itself refuses a `commit`,
@@ -43,7 +43,8 @@ The owner's words, verbatim:
   over a `pg` client. The template has no `pg` dependency and its runner stays the Supabase CLI
   (`supabase test db`, `pg_prove` in Docker), so the ledger is read by the `do` block, in the same
   transaction that applies the files. The block's text is a bundle the tests build and read
-  offline. A file name the CLI does not read as a migration (`<version>_<name>.sql`) is left out,
+  offline. #878 binds each text as a query parameter; a plain SQL file has none, so each text
+  is dollar-quoted with a tag chosen so that no text can close it early. A file name the CLI does not read as a migration (`<version>_<name>.sql`) is left out,
   as the CLI leaves it out of `db push`.
 - **A pgTAP file must hold its transaction.** The bundle refuses, naming it, a pgTAP file that does
   not open with `begin;` and end with `rollback;`: the migrations would outlive the run.
