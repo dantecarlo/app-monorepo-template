@@ -177,14 +177,28 @@ tables/columns/RPCs to add — not just UI>.
 <!--
   REQUIRED WITH A TICKET FLOW (docs/process/ticket-flow.md exists); drop it
   otherwise. The board is the source of every open ticket, so this section
-  records a ticket only once it is closed: one row per ticket, copied from the
-  board, added by the PO in one pull request per close or release (po-ticket
-  Step 6). Never list an open ticket here.
+  records a ticket only once it is closed or dropped: one row per ticket,
+  copied from the board, added by the architect in one pull request per close
+  or release (refine-ticket § Record the closed tickets), a dropped ticket in
+  its own table below. Never list an open ticket here.
 -->
 
 | Ticket | Title | Type | Version | Closed | Pull request |
 |---|---|---|---|---|---|
 | <#123> | <the title, as on the board> | <feature / fix / tech / chore> | <1.4.0> | <YYYY-MM-DD> | <#456> |
+
+### Dropped tickets
+
+<!--
+  A ticket closed without delivery (ticket-flow § Dropped): superseded by
+  another ticket, or withdrawn by the client. One row per ticket, from its
+  board page and its drop record; never list it in the table above, which
+  records delivered work.
+-->
+
+| Ticket | Title | Type | Version | Dropped | Reason | Superseded by |
+|---|---|---|---|---|---|---|
+| <#124> | <the title, as on the board> | <feature / fix / tech / chore> | <1.4.0> | <YYYY-MM-DD> | <the reason, from the drop record> | <#130, or none> |
 
 ## Agent Build Plan (ordered)
 

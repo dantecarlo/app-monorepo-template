@@ -44,8 +44,8 @@ Last updated: 2026-11-19
 
 ### dev-ticket
 
-- **Description**: The dev role of the ticket flow: picks up a ticket in Ready for dev, builds it in a worktree of its own on the ticket's branch (`<type>/<id>-<slug>` unless the project layer's ticket identity says otherwise), test first under the project's workflow (SDD when a living spec changes), runs the validation gate, opens the pull request that links the ticket and moves it to Ready for QA; on Changes requested, fixes it in the same worktree.
-- **Triggers**: "<id> ready for dev", "<id> changes requested", "<id> merged", "pick up ticket <id>", "build the hotfix <id>", a dev session of the ticket flow starts work
+- **Description**: The dev role of the ticket flow: picks up a ticket in Ready for dev, builds it in a worktree of its own on the ticket's branch (`<type>/<id>-<slug>` unless the project layer's ticket identity says otherwise), test first under the project's workflow (SDD when a living spec changes), runs the validation gate, opens the pull request that links the ticket and moves it to Ready for QA; on Changes requested, fixes it in the same worktree; on a drop, stops and removes the worktree.
+- **Triggers**: "<id> ready for dev", "<id> changes requested", "<id> merged", "<id> dropped", "pick up ticket <id>", "build the hotfix <id>", a dev session of the ticket flow starts work
 - **DO NOT USE**: a change with no ticket (the scope guard of `ticket-flow` files one first), checking a build (use `qa-ticket`), or a deploy (use `release-ticket`)
 - **Path**: `.claude/skills/dev-ticket/SKILL.md`
 
@@ -143,8 +143,8 @@ Last updated: 2026-11-19
 
 ### po-ticket
 
-- **Description**: The PO role of the ticket flow: guards scope, turns a client requirement into a ticket written from the ticket template with the client's words verbatim and the version it is aimed at, creates it in Backlog, never without that version, and tells the architect; answers scope questions; confirms every move of a target version, and the first version of a technical ticket; and, when a ticket closes or a release ships, records each closed ticket in the general plan's closed ticket catalog, in a pull request it sends to the architect's merge queue, the board staying the source of every open one.
-- **Triggers**: "the client asked for", "new requirement", "create a ticket for", "<id> question" about scope, "<id> version change", "<id> closed", "<release-id> released", a PO session of the ticket flow starts work
+- **Description**: The PO role of the ticket flow: guards scope, turns a client requirement into a ticket in Backlog with the client's words verbatim and the version it is aimed at, never without that version, and tells the architect; answers scope questions; confirms every move of a target version, and the first version of a technical ticket; decides every drop, superseded or withdrawn, and records why on the ticket; keeps the scope and the board, and does no repository work: the architect records each closed or dropped ticket in the general plan.
+- **Triggers**: "the client asked for", "new requirement", "create a ticket for", "the client withdrew <id>", "<id> is superseded", "<id> question" about scope or a drop, "<id> version change", "<id> closed", "<release-id> released", a PO session of the ticket flow starts work
 - **DO NOT USE**: refining a ticket into specs and a plan (use `refine-ticket`), building it (use `dev-ticket`), or a change with no client behind it, which the architect files as a technical ticket (`refine-ticket`)
 - **Path**: `.claude/skills/po-ticket/SKILL.md`
 
@@ -189,7 +189,7 @@ Last updated: 2026-11-19
 ### qa-ticket
 
 - **Description**: The QA role of the ticket flow, one session per area: checks out a ticket's branch in a detached worktree, runs the area's end-to-end checks with the project's own harness, posts the evidence as a pull request comment, then returns the ticket as Changes requested or brings the branch current, makes it Ready to merge and hands it to the architect, who keeps the merge queue and merges; brings it current again when the architect asks; never asks the owner to merge and never merges, a hotfix included, which waits at Ready to merge for its release; checks a release batch on staging.
-- **Triggers**: "<id> ready for QA, branch <b>", "check ticket <id>", "<id> bring current", "<id> merged", "<release-id> check on staging", a QA session of the ticket flow starts work
+- **Triggers**: "<id> ready for QA, branch <b>", "check ticket <id>", "<id> bring current", "<id> merged", "<id> dropped", "<release-id> check on staging", a QA session of the ticket flow starts work
 - **DO NOT USE**: a ticket this session built (rule 5 of `ticket-flow`), merging a pull request (the architect's `refine-ticket` § Merge queue), building a fix (use `dev-ticket`), or a deploy to production (use `release-ticket`)
 - **Path**: `.claude/skills/qa-ticket/SKILL.md`
 
@@ -206,8 +206,8 @@ Last updated: 2026-11-19
 
 ### refine-ticket
 
-- **Description**: The architect role of the ticket flow: refines a ticket into specs and a plan, sequences tickets that reserve one file, moves a ticket to Ready for dev once it has a target version and its dependencies are Done, dispatches each ready state, keeps the merge queue, closes and files tickets, and groups Done tickets or a hotfix into a release.
-- **Triggers**: "<id> new", "<id> ready for QA, branch <b>", "<id> changes requested", "<id> ready to merge, PR #<n>", "<id> merged", "<id> ready to merge, hotfix", "<id> question" about the plan, "<id> version set", "<id> catalog ready to merge, PR #<n>", "<release-id> catalog ready to merge, PR #<n>", "merge <id>", "what waits to merge", "<release-id> staging checked", "<release-id> released", "<release-id> <target> failed", "group a release", "file a technical ticket", an architect session of the ticket flow starts work
+- **Description**: The architect role of the ticket flow: refines a ticket into specs and a plan, dispatches it to dev once it has a target version and nothing blocks it, dispatches each later state, keeps the merge queue, closes, drops and files tickets, records each closed or dropped ticket in the plan's catalog through a pull request of its own, and groups Done tickets or a hotfix into a release.
+- **Triggers**: "<id> new", "<id> ready for QA, branch <b>", "<id> changes requested", "<id> ready to merge, PR #<n>", "<id> ready to merge, hotfix", "<id> merged", "<id> dropped", "<id> question" about the plan, "<id> version set", "merge <id>", "what waits to merge", "<release-id> staging checked", "<release-id> released", "<release-id> <target> failed", "group a release", "record the closed tickets", "file a technical ticket", an architect session of the ticket flow starts work
 - **DO NOT USE**: writing a ticket from a client's request (use `po-ticket`), building it (use `dev-ticket`), or a deploy (use `release-ticket`)
 - **Path**: `.claude/skills/refine-ticket/SKILL.md`
 
@@ -296,8 +296,8 @@ Last updated: 2026-11-19
 
 ### ticket-flow
 
-- **Description**: The contract of the ticket flow, read first by every role: the board operations and the adapter that performs them, the thirteen states and who moves each one, the architect as dispatcher, the one-line messages between sessions, the roles, the rules every role follows, a ticket's identity, target version and contents, the Ready to merge conditions and the release stage.
-- **Triggers**: a session plays a role of the ticket flow (PO, architect, dev, QA, CI/CD); "a ticket moved", "<id> new", "<id> ready for dev", "<id> ready for QA", "<id> changes requested", "<id> merged", "<release-id> ready for prod"; "which state does this ticket go to", "how do the sessions hand work over"; and before loading `po-ticket`, `refine-ticket`, `dev-ticket`, `qa-ticket` or `release-ticket`
+- **Description**: The contract of the ticket flow, read first by every role: the board operations and the adapter that performs them, the fourteen states and who moves each one, the architect as dispatcher, the one-line messages between sessions, the roles, the rules every role follows, a ticket's identity, target version and contents, the Ready to merge conditions and the release stage.
+- **Triggers**: a session plays a role of the ticket flow (PO, architect, dev, QA, CI/CD); "a ticket moved", "<id> new", "<id> ready for dev", "<id> ready for QA", "<id> changes requested", "<id> merged", "<id> dropped", "<release-id> ready for prod"; "which state does this ticket go to", "how do the sessions hand work over"; and before loading any role's skill
 - **DO NOT USE**: a change one session makes with no ticket behind it (use `sdd` or the scaffolding skills of the router), or setting up a project's process (use `process-intake`)
 - **Path**: `.claude/skills/ticket-flow/SKILL.md`
 
