@@ -140,7 +140,7 @@ one file that imports zustand, and a persisted store keeps its fields on the dev
 imports AsyncStorage. The observability port is bound to PostHog in
 `src/lib/observability/observability.adapter.ts`; its one client, `src/lib/posthog/posthogClient.adapter.ts`, is the only file that imports
 `posthog-react-native` and constructs the client only when PostHog may run (in `opt-in` mode,
-after a grant), and Sentry is an optional capability `/init` can prune. The consent API a
+after a grant). The consent API a
 banner calls is bound in `src/lib/observability/consent.adapter.ts`, and
 `EXPO_PUBLIC_POSTHOG_CONSENT` picks PostHog's consent mode
 ([../observability.md](../observability.md#consent)).

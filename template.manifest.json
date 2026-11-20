@@ -237,6 +237,12 @@
           "path": "scripts.smoke:web"
         },
         {
+          "verb": "patch-json",
+          "file": "knip.json",
+          "op": "unset",
+          "path": "workspaces.apps/web"
+        },
+        {
           "verb": "remove",
           "paths": ["apps/web/**"]
         }

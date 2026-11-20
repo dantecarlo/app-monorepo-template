@@ -664,11 +664,14 @@ scrubbed copy, which keeps the `[circular]` markers of the place that made it.
 
 **Note:** the result therefore shares each scrubbed copy wherever the input shared the object: a
 graph, not a tree. A serializer with no depth limit writes a shared copy once per path that
-reaches it, so a sink that serializes the result needs a depth limit of its own. The Sentry
-configs of both apps leave `normalizeDepth` at Sentry's default of 3, and Sentry (`prepareEvent`
-in `@sentry/core` 10.61.0 for apps/web and 10.75.2 for apps/mobile) normalizes the data of every
-breadcrumb and the `user`, `contexts` and `extra` of an event to that depth before `beforeSend`
-runs, which covers every place the apps put a scrubbed value.
+reaches it, so a sink that serializes the result needs a depth limit of its own.
+
+<!-- region sentry -->
+The Sentry configs of both apps leave `normalizeDepth` at Sentry's default of 3, and Sentry
+(`prepareEvent` in `@sentry/core` 10.61.0 for apps/web and 10.75.2 for apps/mobile) normalizes
+the data of every breadcrumb and the `user`, `contexts` and `extra` of an event to that depth
+before `beforeSend` runs, which covers every place the apps put a scrubbed value.
+<!-- endregion sentry -->
 
 **Evidence:** `packages/core/src/utils/scrubPII.helper.ts:77-101`,
 `packages/core/src/utils/scrubPII.helper.ts:18-25`

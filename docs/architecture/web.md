@@ -17,8 +17,6 @@ only differences from mobile are the routing layer and the UI primitives.
 apps/web/
 ├── next.config.ts · postcss.config.mjs · tailwind.config.cjs
 │                                  # next.config.ts applies every next-<capability>.config.ts beside it
-├── next-sentry.config.ts · instrumentation.ts · sentry.{client,server,edge}.config.ts
-│                                  # the optional sentry capability (docs/observability.md)
 └── src/
     ├── middleware.ts              # origin lock (originGuard adapter)
     ├── app/                       # Next App Router — ROUTING ONLY (RSC)
@@ -48,6 +46,11 @@ apps/web/
     │                              # zustand import), supabase, theme
     └── stores/  helpers/ (layout.style.ts: positioning only)  validation/  i18n/  test/
 ```
+
+<!-- region sentry -->
+The optional `sentry` capability adds `next-sentry.config.ts`, `instrumentation.ts` and
+`sentry.{client,server,edge}.config.ts` at the app root ([../observability.md](../observability.md)).
+<!-- endregion sentry -->
 
 Every folder that holds a unit keeps that unit's test in its own `__tests__/`, named after it:
 `components/ui/Button/__tests__/Button.component.test.tsx`, `stores/__tests__/auth.store.test.ts`,
@@ -188,8 +191,7 @@ an unreachable Supabase as the network error.
 - **Observability**: the composition root `src/lib/observability/observability.adapter.ts` binds
   the PostHog adapter, whose one client is `src/lib/posthog/posthogClient.adapter.ts`, the only
   file that imports `posthog-js`, by a dynamic `import()` only when PostHog may run, so the SDK
-  is not among the chunks a page loads at start; Sentry is an optional capability `/init` can
-  prune. The consent composition root `src/lib/observability/consent.adapter.ts` binds the
+  is not among the chunks a page loads at start. The consent composition root `src/lib/observability/consent.adapter.ts` binds the
   consent API a banner calls, and `NEXT_PUBLIC_POSTHOG_CONSENT` picks PostHog's consent mode
   (see [../observability.md](../observability.md#consent)).
 
