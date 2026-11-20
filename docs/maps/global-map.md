@@ -6,9 +6,8 @@
 > [screen-map.template.md](screen-map.template.md), filled once per screen.
 >
 > Binding rules: [../code-standards.md](../code-standards.md). Layer model:
-> [../architecture/shared.md](../architecture/shared.md),
-> [../architecture/web.md](../architecture/web.md),
-> [../architecture/mobile.md](../architecture/mobile.md).
+> [../architecture/shared.md](../architecture/shared.md), and each app's own
+> doc beside it in [../architecture/](../architecture/).
 >
 > This file is gated: `node scripts/verify-maps.mjs` fails if any path
 > referenced below no longer exists. Update the map when you move things.
@@ -464,7 +463,6 @@ only — enforced by ESLint and by `node scripts/verify-maps.mjs`.
 | Dependency registry     | `.agents/contracts/dependencies.json` | Every package or subpath the workspace declares or imports, with its category, its seam (the files that may import it, §23) and its owner, the capability whose prune removes it |
 | Dependency seam gate    | `scripts/verify-dependency-seams.mjs`, `scripts/verify-dependency-seams.test.mjs`, `scripts/dependency-seams.detect.mjs`, `eslint-dependency-seam-allowlist.json` | Every `package.json` dependency registered, no stale entry, every seam glob matching a file, the configs ESLint ignores inside their seams, and the frozen allowlist only shrinking, each entry under a migration the registry declares open (`pnpm verify:dependency-seams`, `:test`) |
 | Web render smoke        | `scripts/smoke-web-render.mjs`                                                                                                                                                            | Probes a started `next start` for HTTP 200 and a marker (`pnpm smoke:web`)                    |
-| Mobile export smoke     | `scripts/assert-expo-export.mjs`                                                                                                                                                          | Asserts the Expo export holds an iOS and an Android bundle (`pnpm smoke:mobile`)              |
 | Project rename          | `scripts/init-project.mjs`                                                                                                                                                                | Rewrites `@app/*`, `app-monorepo-template`, and bundle ID to a real project slug              |
 | Identity guard          | `scripts/check-identity.mjs`                                                                                                                                                              | Fails if template-default identity is still present; wired into `pnpm validate`               |
 | SDD operating model     | `openspec/README.md`                                                                                                                                                                      | When a change needs a spec, the lifecycle of a large change, and what checks each rule        |
@@ -536,7 +534,7 @@ only — enforced by ESLint and by `node scripts/verify-maps.mjs`.
 | SDD steward subagent    | `.agents/agents/sdd-steward.agent.md` | Neutral source of the agent that runs one SDD change, or one sync, in one context; graded by the `sdd` skill; its projections are generated |
 | Image posture doc       | `docs/images.md`                                                                                                                                                                          | Image cost/hotlink/scrape protection — edge cache, signed URLs, WAF rules, bot mode           |
 | Code standards          | `docs/code-standards.md`                                                                                                                                                                  | Every binding coding rule and the §21 rule-to-validation ledger                               |
-| Architecture docs       | `docs/architecture/shared.md`, `docs/architecture/web.md`, `docs/architecture/mobile.md`                                                                                                  | The sharing model and the per-app fractal structure                                           |
+| Architecture docs       | `docs/architecture/shared.md` and each app's doc beside it                                                                                                  | The sharing model and the per-app fractal structure                                           |
 | Decision records        | `docs/decisions/`                                                                                                                                                                         | ADRs: `0001-pluggable-providers.md` and `0002-every-library-behind-an-adapter.md`             |
 | Screen map template     | `docs/maps/screen-map.template.md`                                                                                                                                                        | Starting point for a per-screen map                                                           |
 | E2E and responsive docs | `docs/e2e.md`, `docs/responsive.md`                                                                                                                                                       | The Playwright harness and the responsive viewport matrix                                     |
@@ -544,6 +542,14 @@ only — enforced by ESLint and by `node scripts/verify-maps.mjs`.
 | Observability doc       | `docs/observability.md`                                                                                                                                                                   | Error and event reporting through the observability port                                      |
 | Shared memory doc       | `docs/memory.md`                                                                                                                                                                          | Loading and contributing the shared Engram memory                                             |
 | Propagation doc         | `docs/propagation.md`                                                                                                                                                                     | Selective sync of template improvements into derived projects                                 |
+
+<!-- region mobile-expo -->
+
+| Thing                   | Path                                                                                                                                                                                      | What it does                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Mobile export smoke     | `scripts/assert-expo-export.mjs`                                                                                                                                                          | Asserts the Expo export holds an iOS and an Android bundle (`pnpm smoke:mobile`)              |
+
+<!-- endregion mobile-expo -->
 
 ---
 
