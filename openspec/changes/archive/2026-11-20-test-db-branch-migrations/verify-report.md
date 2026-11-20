@@ -26,13 +26,19 @@
 | SUPABASE-31 | a savepoint and transaction words outside the code | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "keeps savepoints, and transaction words inside comments, strings and bodies" | green |
 | SUPABASE-31 | a psql meta-command | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a pgTAP file with a psql meta-command, naming it: %s" | green |
 | SUPABASE-31 | an opening other than a plain begin | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses any opening other than a plain begin, naming the file: %s" | green |
-| SUPABASE-31 | a commit after a form a simpler reader misreads | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a commit hidden from a masker that misreads Postgres, naming the file: %s" | green |
-| SUPABASE-31 | a string continued past a newline | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a commit after an escape string continued past a newline, naming the file: %s" | green |
-| SUPABASE-31 | a string continued past a newline | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "continues a string only past whitespace that holds a newline, as Postgres does: %s" | green |
-| SUPABASE-31 | a file the reader cannot pair | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a quote, a dollar sign or a comment it cannot pair, naming the file: %s" | green |
-| SUPABASE-31 | what Postgres reads as one token | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "reads what Postgres reads as one token, nested comments included: %s" | green |
+| SUPABASE-31 | a commit after a form a simpler reader misreads | `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "refuses a commit hidden from a masker that misreads Postgres, naming the file: %s" | green |
+| SUPABASE-31 | a string continued past a newline | `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "refuses a commit after an escape string continued past a newline, naming the file: %s" | green |
+| SUPABASE-31 | a string continued past a newline | `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "continues a string only past whitespace that holds a newline, as Postgres does: %s" | green |
+| SUPABASE-31 | a file the reader cannot pair | `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "refuses a quote, a dollar sign or a comment it cannot pair, naming the file: %s" | green |
+| SUPABASE-31 | what Postgres reads as one token | `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "reads what Postgres reads as one token, nested comments included: %s" | green |
 | SUPABASE-31 | the order check's reader stays as it was | `packages/supabase/src/__tests__/sqlCode.helper.test.ts` › "reads the forms the pgTAP check reads on its own exactly as before" | green |
-| SUPABASE-31 | standard_conforming_strings off | Not covered | not run |
+| SUPABASE-31 | standard strings forced on | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "forces standard_conforming_strings on right after the begin, before the migrations" | green |
+| SUPABASE-31 | a file that could turn standard strings off | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a pgTAP file that could turn standard_conforming_strings off, naming it: %s" | green |
+| SUPABASE-31 | a mention in a comment or a string | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "keeps a pgTAP file that mentions the setting only in a comment or a string: %s" | green |
+| SUPABASE-31 | the reader's two views | `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "blanks every comment, string, quoted identifier and dollar body, keeping each offset" | green |
+| SUPABASE-31 | the reader's two views | `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "keeps the quoted identifiers and dollar bodies in the view a mention is searched in" | green |
+| SUPABASE-31 | the reader's two views | `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "reads nothing when a token never closes or a $ pairs with nothing" | green |
+| SUPABASE-31 | a change built at run time | Not covered | not run |
 | SUPABASE-31 | the package's pgTAP files                  | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "bundles every pgTAP file of the package"                                                    | green       |
 | SUPABASE-31 | a branch's new migration on a linked project | Not covered                                                                                                                                                 | not run     |
 | SUPABASE-32 | no target set                              | `packages/supabase/src/__tests__/testDbRun.helper.test.ts` › "runs supabase test db --linked over the bundle when the config names no target"              | green       |
@@ -125,13 +131,35 @@ Two forms are still read differently from Postgres and need no fix: `select 1$a$
 -- '` and `select $$x$$E'\' '; commit; -- '`. Postgres rejects both as syntax errors, which
 abort the transaction, so neither can commit.
 
+## Fourth change, on the owner's word, 2026-11-20
+
+The owner chose, for `standard_conforming_strings` off, 2026-11-20 (translated from Spanish):
+"Force it and refuse mentions". The fix, at `4f29212`, inserts `set local
+standard_conforming_strings = on;` right after each file's first `begin;`, before the
+migrations block, and refuses a file whose code, quoted identifiers and dollar bodies included,
+names the setting in any case or calls `set_config`, or runs `reset all`, which would undo a
+`set local`. A mention inside a comment or a string stays allowed. The reader moved to
+`src/pgTapCode.helper.ts` with a test of its own, and the reader-focused cases of the bundle's
+test moved there with it, so every file stays under 500 lines.
+
+Seen red before the fix: 8 tests (the forced line, in the new test and in the exact bundle the
+splice test compares, and six refusals: `set`, mixed-case `SET`, `set_config` of the setting,
+a quoted `pg_catalog."set_config"`, `set_config` inside a `do` body, and `reset all`), and the
+reader's new test, red until the module existed. Three tests passed before and after, pinning
+that a mention inside a comment or a string is kept.
+
+The one remaining gap, not covered on the owner's word: a change of the setting the file does
+not name, as `execute` of a name built at run time or a function the migrations or the database
+hold.
+
 ## Gate
 
 - `pnpm validate`: not run by this change's writer: its brief keeps the shared machine to single test files
   and the package's suite, and the session that integrates it runs it.
 - `pnpm --filter @app/supabase test`: exit 0, 2026-11-20, 11 files and 61 tests; after the
   correction, 11 files and 82 tests; after the second, 11 files and 98 tests;
-  after the third, 11 files and 105 tests.
+  after the third, 11 files and 105 tests;
+  after the fourth, 12 files and 118 tests.
 - `eslint` on every changed source and `tsc --noEmit` of `@app/supabase`: exit 0, 2026-11-20.
 - `verify:specs`, `verify:english`, `verify:tests`, `verify:manifest`, `verify:manifest:coverage`,
   `verify:maps`, `verify:dependency-seams`: exit 0, 2026-11-20.
@@ -141,9 +169,8 @@ abort the transaction, so neither can commit.
 
 ## Not verified
 
-- `standard_conforming_strings` off, in a pgTAP file or a database: the reader assumes the
-  default, on, so `'it\'s'` is one string to Postgres and two to the reader, which can hide the
-  statement after it. A decision for the owner.
+- A change of `standard_conforming_strings` the file does not name (`execute` of a name built
+  at run time, or a function of the migrations or the database): the one remaining gap.
 - The bundle's SQL running on Postgres, and both live scenarios: no gate reaches a database, the
   template links no project, and an agent may not start Docker here (`AGENTS.md`).
 - The `local` target on a running stack, which is for a downstream project.

@@ -17,7 +17,10 @@ strings, quoted identifiers and dollar-quoted bodies blanked, split as the Postg
 them, a pgTAP file SHALL open with a plain `begin`,
 end with `rollback`, run no other statement that controls the transaction (a savepoint, its
 release and `rollback to` it excepted) and hold no psql meta-command; otherwise, or when it holds a quote, a `$` or a comment that
-reader cannot pair, test:db SHALL run nothing, naming the file.
+reader cannot pair, test:db SHALL run nothing, naming the file. The bundle SHALL set
+`standard_conforming_strings` on, locally, right after each file's first `begin`, before the
+migrations, and test:db SHALL run nothing when a file's code, quoted identifiers and dollar
+bodies included, names that setting or `set_config`, or runs `reset all`.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -154,29 +157,29 @@ reader cannot pair, test:db SHALL run nothing, naming the file.
 - **GIVEN** a pgTAP file whose `commit;` follows an escape string with `\'`, `--`, `'` or `/*` inside a quoted identifier, a `$` inside identifiers, a `--` comment ended by a lone CR, or a non-ASCII dollar tag
 - **WHEN** test:db bundles the files
 - **THEN** it refuses, naming the file and the commit
-- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a commit hidden from a masker that misreads Postgres, naming the file: %s"
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "refuses a commit hidden from a masker that misreads Postgres, naming the file: %s"
 
 #### Scenario: a string continued past a newline
 
 - **GIVEN** a pgTAP file with an escape string followed by whitespace that holds a newline, with or without a `--` comment before or after it, then `'\' '; commit;`
 - **WHEN** test:db bundles the files
 - **THEN** it reads one escape string, as Postgres does, sees the commit and refuses, naming the file; whitespace with no newline ends the string, and a plain string continued past a newline still bundles
-- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a commit after an escape string continued past a newline, naming the file: %s"
-- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "continues a string only past whitespace that holds a newline, as Postgres does: %s"
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "refuses a commit after an escape string continued past a newline, naming the file: %s"
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "continues a string only past whitespace that holds a newline, as Postgres does: %s"
 
 #### Scenario: a file the reader cannot pair
 
 - **GIVEN** a pgTAP file with a string, an escape string, a quoted identifier, a dollar-quoted body or a nested comment that never closes, or a `$` that pairs with nothing
 - **WHEN** test:db bundles the files
 - **THEN** it refuses, naming the file
-- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a quote, a dollar sign or a comment it cannot pair, naming the file: %s"
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "refuses a quote, a dollar sign or a comment it cannot pair, naming the file: %s"
 
 #### Scenario: what Postgres reads as one token
 
 - **GIVEN** a pgTAP file with a `commit;` inside a nested comment, and one with escape strings, doubled quotes, quoted identifiers, `a$b$`, `$1`, a non-ASCII dollar tag and a comment ended by CRLF
 - **WHEN** test:db bundles the files
 - **THEN** it bundles both
-- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "reads what Postgres reads as one token, nested comments included: %s"
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "reads what Postgres reads as one token, nested comments included: %s"
 
 #### Scenario: the order check's reader stays as it was
 
@@ -185,26 +188,42 @@ reader cannot pair, test:db SHALL run nothing, naming the file.
 - **THEN** its pattern and its output on the six forms are what they were before the pgTAP reader
 - **Test:** `packages/supabase/src/__tests__/sqlCode.helper.test.ts` › "reads the forms the pgTAP check reads on its own exactly as before"
 
-#### Scenario: standard_conforming_strings off
+#### Scenario: standard strings forced on
 
-- **GIVEN** a pgTAP file, or a database, that turns `standard_conforming_strings` off, and a `commit;` after `'it\'s'`
+- **GIVEN** a pgTAP file that opens with `begin;`
+- **WHEN** test:db bundles it
+- **THEN** the bundle holds `set local standard_conforming_strings = on;` once, after the `begin;` and before the migrations block and the file's own statements
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "forces standard_conforming_strings on right after the begin, before the migrations"
+
+#### Scenario: a file that could turn standard strings off
+
+- **GIVEN** a pgTAP file that sets `standard_conforming_strings`, in any case, calls `set_config`, plainly, through a quoted name or inside a `do` body, or runs `reset all`
 - **WHEN** test:db bundles the files
-- **THEN** the commit would not be seen
-- **Test:** Not covered — the reader assumes the default, on; with it off Postgres reads one string where the reader reads two, which can hide the statement after it
+- **THEN** it refuses, naming the file
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a pgTAP file that could turn standard_conforming_strings off, naming it: %s"
 
-#### Scenario: the package's pgTAP files
+#### Scenario: a mention in a comment or a string
 
-- **GIVEN** the pgTAP files and the migrations of the package
-- **WHEN** test:db bundles them
-- **THEN** every pgTAP file is bundled
-- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "bundles every pgTAP file of the package"
+- **GIVEN** a pgTAP file that names the setting, `set_config` or `reset all` only in a comment or a string
+- **WHEN** test:db bundles the files
+- **THEN** it bundles the file
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "keeps a pgTAP file that mentions the setting only in a comment or a string: %s"
 
-#### Scenario: a branch's new migration on a linked project
+#### Scenario: the reader's two views
 
-- **GIVEN** a linked project whose ledger lacks a migration the branch adds, and a test of it
-- **WHEN** the owner runs test:db
-- **THEN** the test passes and the project's schema and ledger are as they were
-- **Test:** Not covered — no gate reaches a database and the template links no project; `packages/supabase/docs/database.md` § 9 holds the owner's command
+- **GIVEN** a pgTAP file
+- **WHEN** `toPgTapCode` reads it
+- **THEN** its code view blanks every comment, string, quoted identifier and dollar body, its searchable view only the comments and strings, both keep every offset, and an unclosed token or a stray `$` reads as nothing
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "blanks every comment, string, quoted identifier and dollar body, keeping each offset"
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "keeps the quoted identifiers and dollar bodies in the view a mention is searched in"
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "reads nothing when a token never closes or a $ pairs with nothing"
+
+#### Scenario: a change built at run time
+
+- **GIVEN** a pgTAP file that changes `standard_conforming_strings` without naming it, as `execute` of `'standard_' || 'conforming_strings'`, or a function of the migrations or the database that sets it
+- **WHEN** test:db bundles the files
+- **THEN** the reader could read a later string differently from Postgres
+- **Test:** Not covered — no reading of the file sees a name it builds at run time or a function it calls; the one remaining gap, on the owner's word
 
 ### Requirement: SUPABASE-32 — The test:db target is configurable
 
