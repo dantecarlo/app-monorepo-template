@@ -100,6 +100,8 @@ The chain runs in cost order:
 | `pnpm write-guard:test`         | The write guard decides every cell of its table, its errors and its switch-off, reads every Windows spelling of a path (or refuses what it cannot read) and every checkout that holds it, judges a 10,000-folder path in under a second, every checkout rule glob matches a file and every module the hook loads is a rule file, and the real hook answers a payload on stdin end to end, through a junction too (see 3f) |
 | `pnpm verify:agent-context:test` | The agent-context gate fails each defect it names, on synthetic entries and over a scratch tree |
 | `pnpm verify:agent-context`     | Every agent of `.agents/agents/` has an entry in `.agents/agent-context.json` whose `gradedBy` names the skills that grade it, each a folder of `.claude/skills/` holding a `SKILL.md`, whose `writes` is true or false, whose `surface`, if any, lists repository-relative folders beside `writes: true`, and which holds no other key; no entry names an agent that is gone (see 3e) |
+| `pnpm verify:harness-config:test` | The harness config gate fails each defect it names, against the repository's schema, and over a scratch tree; the schema's merge policies are the ones the ticket skills name, `manual` the default |
+| `pnpm verify:harness-config`    | `.agents/harness.config.json` holds only the sections and settings `.agents/contracts/harness-config.schema.json` declares, each a value it allows and every required one there, the database-test mode under a `supabase` backend only; the schema uses only the keywords the gate reads (see 3g) |
 | `pnpm verify:manifest`          | `template.manifest.json` is well formed                   |
 | `pnpm verify:manifest:coverage` | Every tracked file has exactly one owner, no stale claims |
 | `pnpm verify:manifest:test`     | The pure engine behind both still behaves                 |
@@ -349,6 +351,34 @@ surface is read against the nearest checkout that holds the target; no agent
 declares a surface yet. User-level settings moved by `CLAUDE_CONFIG_DIR`, and
 the managed settings an administrator installs, are not read. Nor why a rule
 changed, which review reads.
+
+### 3g. The harness config
+
+`.agents/harness.config.json` holds the project's harness settings, one file,
+and `.agents/contracts/harness-config.schema.json` is their contract: every
+section, setting, allowed value and default. The template ships the defaults.
+
+| Setting                  | Values                                | Read by |
+| ------------------------ | ------------------------------------- | ------- |
+| `workflow.mode`          | `sdd` (default), `odd` (decision 40)  | nothing yet; `/init` section 8 asks it. The `sdd` prune sets `odd` |
+| `delivery.mergePolicy`   | `manual` (default), `low-risk` (decision 38) | the architect's merge queue: `ticket-flow` rule 4 and `refine-ticket` § Merge queue; `process-intake` writes it |
+| `backend.kind`           | `supabase` (default), `own`, `none`   | nothing yet; the `supabase` prune sets `none`. `own` is a backend of the project's, which the harness does not manage |
+| `backend.databaseTests`  | `linked` (default), `local`, `off`; under `supabase` only | nothing yet: F57 keeps its own setting in `packages/supabase/package.json`, which moves here once both have merged |
+
+`pnpm verify:harness-config` holds the file to the schema, and validates by
+it rather than restating its rules, so a new setting or value is a change to
+the schema alone. A missing or unparsable file, a key the schema does not
+declare, a value it does not allow, a missing setting and a database-test mode
+under a backend other than `supabase` each fail it. It reads only the JSON
+Schema keywords it knows (`type`, `properties`, `required`,
+`additionalProperties`, `enum`, `const`, `if`, `then`, `else`, and the
+annotations), and refuses any other in the schema, as it refuses a default
+outside its own values: a rule it skipped would pass every config.
+
+**Not covered:** whether a setting is the right one for the project; whether
+the tree agrees with the file (a `supabase` backend with no
+`packages/supabase`); and anything that reads `workflow.mode` or `backend`,
+which nothing does yet.
 
 ---
 
