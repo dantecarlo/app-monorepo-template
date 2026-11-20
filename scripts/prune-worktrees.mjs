@@ -33,6 +33,8 @@
 // removals, the main checkout's line and the summary line only.
 //
 // `.husky/post-merge` runs it with `--quiet` after a local merge or pull.
+// This file runs git and touches the disk; every decision it takes from
+// what git printed is in prune-worktrees.detect.mjs.
 //
 // Not covered (NOT_COVERED, the last line of a dry run): a dry run still
 // runs `git fetch --prune origin`, which it needs to read a `[gone]`
@@ -52,94 +54,34 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { gitFreeEnv } from './git-free-env.mjs'
+import {
+  BRANCH_PREFIX,
+  defaultBranchOf,
+  hiddenOf,
+  LABEL,
+  listDetail,
+  LOCAL_CHANGES,
+  localChangesOf,
+  NESTED_RUN_VARIABLE,
+  optionsFrom,
+  parseBranchNames,
+  parseUpstreams,
+  parseWorktrees,
+  REASON,
+  refusalOf,
+  REMOTE,
+  reportLines,
+  samePath,
+  statusOf,
+  structuralReason,
+  UPSTREAM_FORMAT
+} from './prune-worktrees.detect.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 
-const LABEL = 'prune-worktrees'
-const REMOTE = 'origin'
 const REMOTE_HEAD = `refs/remotes/${REMOTE}/HEAD`
-const REMOTES_PREFIX = 'refs/remotes/'
-const REMOTE_PREFIX = `${REMOTE}/`
-const GONE = '[gone]'
-const DETACHED_BRANCH = '(detached)'
-const CLAUDE_APP_DIR = '/.claude/worktrees/'
-const BRANCH_PREFIX = 'refs/heads/'
-const FIELD_SEPARATOR = '\t'
-const IGNORED_PREFIX = '!! '
-const HINT_PREFIX = 'hint:'
-// A porcelain status entry: two status letters and a space before the path;
-// a rename or a copy is followed by an entry holding its source.
-const STATUS_COLUMNS = 3
-const RENAMED = /^(?:[RC].|.[RC]) /u
-// `git ls-files -v`: a lower-case tag marks a file assume-unchanged, and
-// `S` marks it skip-worktree.
-const HIDDEN_TAG = /^(?:[a-z]|S) /u
-
-const OPTION = { DRY_RUN: '--dry-run', QUIET: '--quiet' }
-
-// Set on every git this runs. The fast-forward of the main checkout fires
-// that checkout's post-merge, which starts this command again from there;
-// that run would no longer see the worktree this one protects as its own.
-export const NESTED_RUN_VARIABLE = 'PRUNE_WORKTREES_RUNNING'
-
-export const NOT_COVERED =
-  'a dry run still runs git fetch --prune origin, which it needs to read ' +
-  'a [gone] upstream; on Windows, a worktree another process holds as its ' +
-  'current directory is emptied and unregistered while its directory ' +
-  'stays; and the prune runs in the foreground, so the merge that started ' +
-  'it waits for it'
-
-export const LOCAL_CHANGES = 'it holds local changes'
-
-// Ignored paths that an install, a build, a typecheck, a test run or the
-// next session writes again: a directory of the first names at any depth;
-// one of the second names at the root or at a workspace root
-// (`apps/<name>/`, `packages/<name>/`); a path under one of the prefixes; a
-// file of these names. An env file is none of them: nothing writes it
-// again, so a worktree that holds one is kept.
-const REBUILT_ANYWHERE = new Set(['node_modules'])
-const REBUILT_AT_ROOTS = new Set([
-  '.codegraph',
-  '.expo',
-  '.next',
-  '.nyc_output',
-  '.turbo',
-  'coverage',
-  'dist',
-  'dist-web',
-  'out',
-  'playwright-report',
-  'test-results'
-])
-const WORKSPACE_GROUPS = new Set(['apps', 'packages'])
-const WORKSPACE_ROOT_DEPTH = 2
-// `.atl/` is not among them: it holds machine-local agent tooling, personal
-// skills included, that nothing writes again.
-const REBUILT_PREFIXES = ['.husky/_/']
-const REBUILT_FILE =
-  /(?:^|\/)(?:next-env\.d\.ts|expo-env\.d\.ts|[^/]+\.tsbuildinfo)$/
-const LISTED_IGNORED = 3
 // 64 MiB of git output.
 const GIT_OUTPUT_BYTES = 67_108_864
-
-export const REASON = {
-  CLAUDE_APP: 'under .claude/worktrees/, which the Claude app manages',
-  CURRENT: 'the worktree this command runs in',
-  DETACHED: 'detached HEAD',
-  DIRTY: 'uncommitted or untracked changes',
-  HIDDEN:
-    'git status cannot see a tracked file marked skip-worktree or assume-unchanged',
-  HOLDS_WORKTREE: 'another registered worktree sits inside it',
-  IGNORED: 'it holds ignored files nothing rebuilds',
-  LOCKED: 'locked',
-  MAIN: 'the main checkout',
-  NO_UPSTREAM: 'its branch has no upstream',
-  NOT_IN_DEFAULT: 'its HEAD is not in the default branch',
-  REMOVE_FAILED: 'git could not remove it',
-  TRACKS_DEFAULT: 'its branch tracks the default branch',
-  UNREADABLE: 'git could not read it',
-  UPSTREAM_PRESENT: 'its upstream branch still exists'
-}
 
 // One git command run in `cwd` without the GIT_* variables a hook exports,
 // which would otherwise point it at the hook's repository, and with
@@ -166,52 +108,17 @@ const git = ({ args, cwd, trim = true }) => {
   }
 }
 
-// A path in one spelling: forward slashes, and on Windows one letter case.
-const samePath = ({ path }) => {
-  const forward = resolve(path).replaceAll('\\', '/')
-  return process.platform === 'win32' ? forward.toLowerCase() : forward
-}
-
-// `--dry-run` and `--quiet`; any other option throws, naming it.
-export const optionsFrom = ({ argv }) => {
-  const given = argv.slice(2)
-  const unknown = given.filter(
-    (option) => !Object.values(OPTION).includes(option)
-  )
-  if (unknown.length > 0) {
-    throw new Error(
-      `unknown option ${unknown.join(', ')}; it takes ` +
-        `${OPTION.DRY_RUN} and ${OPTION.QUIET}`
-    )
-  }
-  return {
-    dryRun: given.includes(OPTION.DRY_RUN),
-    quiet: given.includes(OPTION.QUIET)
-  }
-}
-
-// Every worktree `git worktree list --porcelain` prints, as its path, its
-// branch and, when it is locked, the lock with its reason, the main checkout
-// first; a detached checkout reads `(detached)`.
+// Every worktree of the repository `root` belongs to, the main checkout
+// first.
 const listWorktrees = ({ root }) =>
-  git({ args: ['worktree', 'list', '--porcelain'], cwd: root })
-    .split(/\r?\n\r?\n/)
-    .flatMap((block) => {
-      const path = (block.match(/^worktree (.+)$/m) ?? [])[1]
-      if (!path) return []
-      const branch = (
-        (block.match(/^branch (.+)$/m) ?? [])[1] ?? DETACHED_BRANCH
-      ).replace(BRANCH_PREFIX, '')
-      const lock = block.match(/^locked(?: (.+))?$/m)
-      return [
-        lock
-          ? { branch, lock: { reason: lock[1] }, path }
-          : { branch, path }
-      ]
+  parseWorktrees({
+    porcelain: git({
+      args: ['worktree', 'list', '--porcelain'],
+      cwd: root
     })
+  })
 
-// The default branch: the one `origin/HEAD` names, as its local name, its
-// remote-tracking name and its full ref. Unset, it throws with the command
+// The default branch `origin/HEAD` names. Unset, it throws with the command
 // that sets it.
 const readDefaultBranch = ({ root }) => {
   const ref = (() => {
@@ -227,40 +134,21 @@ const readDefaultBranch = ({ root }) => {
       )
     }
   })()
-  const tracking = ref.replace(REMOTES_PREFIX, '')
-  return {
-    branch: tracking.replace(REMOTE_PREFIX, ''),
-    ref: tracking,
-    upstream: ref
-  }
+  return defaultBranchOf({ ref })
 }
 
-// Every local branch with its tip, its upstream ref and its
-// `[gone]`/`[ahead 1]` tracking state; a branch with no upstream reads an
-// empty ref.
 const readUpstreams = ({ root }) =>
-  new Map(
-    git({
-      args: [
-        'for-each-ref',
-        '--format=%(refname)%09%(objectname)%09%(upstream)%09%(upstream:track)',
-        BRANCH_PREFIX
-      ],
+  parseUpstreams({
+    listing: git({
+      args: ['for-each-ref', UPSTREAM_FORMAT, BRANCH_PREFIX],
       cwd: root
     })
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .map((line) => {
-        const [ref, sha, upstream = '', track = ''] =
-          line.split(FIELD_SEPARATOR)
-        return [ref.replace(BRANCH_PREFIX, ''), { sha, track, upstream }]
-      })
-  )
+  })
 
 // Every local branch whose tip is reachable from the default branch.
 const readMerged = ({ defaultBranch, root }) =>
-  new Set(
-    git({
+  parseBranchNames({
+    listing: git({
       args: [
         'for-each-ref',
         `--merged=${defaultBranch.ref}`,
@@ -269,99 +157,31 @@ const readMerged = ({ defaultBranch, root }) =>
       ],
       cwd: root
     })
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .map((ref) => ref.replace(BRANCH_PREFIX, ''))
-  )
-
-// The reason a worktree is kept that needs no read inside it, or null.
-// `registered` is every registered worktree path, in one spelling.
-const structuralReason = ({
-  current,
-  defaultBranch,
-  isMain,
-  registered,
-  upstream,
-  worktree
-}) => {
-  const path = samePath({ path: worktree.path })
-  if (isMain) return REASON.MAIN
-  if (path === current) return REASON.CURRENT
-  if (worktree.lock) return REASON.LOCKED
-  if (path.includes(CLAUDE_APP_DIR)) return REASON.CLAUDE_APP
-  if (registered.some((other) => other.startsWith(`${path}/`))) {
-    return REASON.HOLDS_WORKTREE
-  }
-  if (worktree.branch === DETACHED_BRANCH) return REASON.DETACHED
-  if (!upstream?.upstream) return REASON.NO_UPSTREAM
-  if (upstream.upstream === defaultBranch.upstream) {
-    return REASON.TRACKS_DEFAULT
-  }
-  if (upstream.track !== GONE) return REASON.UPSTREAM_PRESENT
-  return null
-}
-
-const isAtRoot = ({ at, segments }) =>
-  at === 0 ||
-  (at === WORKSPACE_ROOT_DEPTH && WORKSPACE_GROUPS.has(segments[0]))
-
-const isRebuilt = ({ entry }) => {
-  const segments = entry.replace(/\/$/, '').split('/')
-  const inDirectory = segments.slice(
-    0,
-    entry.endsWith('/') ? undefined : -1
-  )
-  return (
-    inDirectory.some(
-      (segment, at) =>
-        REBUILT_ANYWHERE.has(segment) ||
-        (REBUILT_AT_ROOTS.has(segment) && isAtRoot({ at, segments }))
-    ) ||
-    REBUILT_PREFIXES.some((prefix) => entry.startsWith(prefix)) ||
-    REBUILT_FILE.test(entry)
-  )
-}
-
-// The worktree's `git status`: whether anything is modified or untracked,
-// and each path an ignore pattern matches, a matched directory as one entry
-// ending in `/`, that nothing writes again.
-const readStatus = ({ worktree }) => {
-  const entries = git({
-    args: [
-      '--no-optional-locks',
-      'status',
-      '--porcelain',
-      '-z',
-      '--ignored=matching',
-      '--untracked-files=all'
-    ],
-    cwd: worktree.path
   })
-    .split('\0')
-    .filter(Boolean)
-  const ignored = entries
-    .filter((entry) => entry.startsWith(IGNORED_PREFIX))
-    .map((entry) => entry.slice(IGNORED_PREFIX.length))
-  return {
-    dirty: ignored.length < entries.length,
-    unrebuilt: ignored.filter((entry) => !isRebuilt({ entry }))
-  }
-}
 
-// Every tracked file the worktree marks assume-unchanged or skip-worktree:
-// `git status` and `git worktree remove` skip both, so an edit to one is
-// invisible to them and lost with the worktree.
+const readStatus = ({ worktree }) =>
+  statusOf({
+    porcelain: git({
+      args: [
+        '--no-optional-locks',
+        'status',
+        '--porcelain',
+        '-z',
+        '--ignored=matching',
+        '--untracked-files=all'
+      ],
+      cwd: worktree.path
+    })
+  })
+
 const readHidden = ({ worktree }) =>
-  git({ args: ['ls-files', '-v', '-z'], cwd: worktree.path, trim: false })
-    .split('\0')
-    .filter((entry) => HIDDEN_TAG.test(entry))
-    .map((entry) => entry.replace(HIDDEN_TAG, ''))
-
-const listDetail = ({ entries }) => {
-  const listed = entries.slice(0, LISTED_IGNORED).join(', ')
-  const more = entries.length - LISTED_IGNORED
-  return more > 0 ? `${listed} and ${more} more` : listed
-}
+  hiddenOf({
+    listing: git({
+      args: ['ls-files', '-v', '-z'],
+      cwd: worktree.path,
+      trim: false
+    })
+  })
 
 // The reason a worktree is kept, or null when it is removed, with the tip
 // its branch was judged at. Only a worktree that passes every other check
@@ -485,45 +305,19 @@ export const removeWorktree = ({ root, worktree }) => {
 // Every tracked path with a local change in `root`, staged or not, a
 // line-ending-only one included; untracked files are left to git.
 const readLocalChanges = ({ root }) =>
-  git({
-    args: [
-      '--no-optional-locks',
-      'status',
-      '--porcelain',
-      '-z',
-      '--untracked-files=no'
-    ],
-    cwd: root,
-    trim: false
+  localChangesOf({
+    porcelain: git({
+      args: [
+        '--no-optional-locks',
+        'status',
+        '--porcelain',
+        '-z',
+        '--untracked-files=no'
+      ],
+      cwd: root,
+      trim: false
+    })
   })
-    .split('\0')
-    .filter(Boolean)
-    .reduce(
-      ({ paths, source }, entry) =>
-        source
-          ? { paths, source: false }
-          : {
-              paths: [...paths, entry.slice(STATUS_COLUMNS)],
-              source: RENAMED.test(entry)
-            },
-      { paths: [], source: false }
-    ).paths
-
-// Why git refused: its first line that is not a hint, followed by the files
-// it lists, one per tab-indented line.
-const refusalOf = ({ error }) => {
-  const lines = String(error.stderr ?? error.message).split(/\r?\n/u)
-  const reason =
-    lines.find(
-      (line) => line.trim() !== '' && !line.startsWith(HINT_PREFIX)
-    ) ?? error.message
-  const files = lines
-    .filter((line) => line.startsWith('\t'))
-    .map((line) => line.trim())
-  return files.length > 0
-    ? `${reason} ${listDetail({ entries: files })}`
-    : reason
-}
 
 // The main checkout brought to the default branch when it sits on it, by a
 // fast-forward. Any tracked local change blocks it before git is asked, a
@@ -613,73 +407,6 @@ const pruneWorktrees = ({ cwd, dryRun }) => {
     results
   }
 }
-
-const commits = ({ count }) => `${count} commit${count === 1 ? '' : 's'}`
-
-// The line for the main checkout, or null when it sits at the default
-// branch.
-const mainLine = ({ dryRun, main }) => {
-  if (main === undefined) return null
-  const where = `the main checkout ${main.path}`
-  if (main.branch !== undefined) {
-    return `${LABEL}: left ${where} on ${main.branch}, not ${main.wanted}`
-  }
-  if (main.behind === 0) return null
-  const by = `by ${commits({ count: main.behind })} to ${main.ref}`
-  if (main.moved) return `${LABEL}: fast-forwarded ${where} ${by}`
-  if (main.detail === undefined) {
-    return `${LABEL}: would fast-forward ${where} ${by}`
-  }
-  return (
-    `${LABEL}: ${dryRun ? 'would leave' : 'left'} ${where} ` +
-    `${commits({ count: main.behind })} behind ${main.ref}: ${main.detail}`
-  )
-}
-
-const decisionLine = ({ dryRun, result }) => {
-  const branch =
-    result.branch === DETACHED_BRANCH ? 'detached' : result.branch
-  const where = `${result.path} (${branch})`
-  if (result.kept) {
-    const detail = result.detail ? `: ${result.detail}` : ''
-    return `${LABEL}: kept ${where}: ${result.kept}${detail}`
-  }
-  const verb = dryRun ? 'would remove' : 'removed'
-  const leftover = result.leftover
-    ? `; its directory stays: ${result.leftover}`
-    : ''
-  const kept = result.detail ? `; its branch stays: ${result.detail}` : ''
-  return `${LABEL}: ${verb} ${where}${leftover}${kept}`
-}
-
-const summaryLine = ({ dryRun, results }) => {
-  const kept = results.filter(({ kept: reason }) => reason)
-  const counts = kept.reduce(
-    (tally, { kept: reason }) =>
-      tally.set(reason, (tally.get(reason) ?? 0) + 1),
-    new Map()
-  )
-  const byReason = [...counts]
-    .map(([reason, count]) => `${reason} ${count}`)
-    .join(', ')
-  const verb = dryRun ? 'would remove' : 'removed'
-  return (
-    `${LABEL}: ${verb} ${results.length - kept.length}, ` +
-    `kept ${kept.length}; by reason: ${byReason || 'none'}`
-  )
-}
-
-// One line per worktree, a kept one left out under `--quiet`, the main
-// checkout's line when it was behind or off the default branch, the summary
-// line, and for a dry run what it does not cover.
-export const reportLines = ({ dryRun, main, quiet, results }) => [
-  ...results
-    .filter((result) => !quiet || !result.kept)
-    .map((result) => decisionLine({ dryRun, result })),
-  ...[mainLine({ dryRun, main })].filter((line) => line !== null),
-  summaryLine({ dryRun, results }),
-  ...(dryRun ? [`${LABEL}: not covered: ${NOT_COVERED}`] : [])
-]
 
 // A read that fails prints the reason and exits 1, having removed nothing.
 // A run a prune started, through the post-merge its fast-forward fires,

@@ -98,6 +98,7 @@
     "scripts/mcp-docs.detect.mjs",
     "scripts/move-tests-into-blocks.mjs",
     "scripts/move-tests-into-blocks.test.mjs",
+    "scripts/prune-worktrees.detect.mjs",
     "scripts/prune-worktrees.mjs",
     "scripts/prune-worktrees.test.mjs",
     "scripts/update-mcp-docs.mjs",

@@ -43,10 +43,9 @@ import {
   NOT_COVERED,
   optionsFrom,
   REASON,
-  removeLeftover,
-  removeWorktree,
   reportLines
-} from './prune-worktrees.mjs'
+} from './prune-worktrees.detect.mjs'
+import { removeLeftover, removeWorktree } from './prune-worktrees.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SCRIPT = join(HERE, 'prune-worktrees.mjs')
