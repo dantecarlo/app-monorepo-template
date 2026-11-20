@@ -11,9 +11,14 @@
 //   |                            |                 |           | in surface  |
 //   | writer, main, unlisted     | —               | ask       | —           |
 //
+//   | Agent context unreadable   | deny for every subagent, writers too;   |
+//   |                            | the main session is judged as above     |
+//
 // "—" prints nothing. The guard never allows: it only asks or refuses, and
 // otherwise leaves the call to the runtime's own permissions. A deny wins
-// over an ask, and an ask over nothing. An error refuses a policed agent
+// over an ask, and an ask over nothing. A rule file is read against every
+// checkout that holds the target and against the home folder. An error,
+// a path spelling paths.mjs cannot read among them, refuses a policed agent
 // (read-only, surface, or one whose entry cannot be read) and asks anyone
 // else. `ATL_WRITE_GUARD=off` (the policy's switchOff) silences it all.
 //
@@ -28,6 +33,7 @@ import {
   actorFor,
   AGENT_CONTEXT_FILE,
   assertPolicy,
+  homeRuleFor,
   isSwitchedOff,
   POLICY_FILE,
   ruleFor,
@@ -88,7 +94,16 @@ const guardError = ({ actor, denied, problem, tool }) =>
 
 // -- the decision ------------------------------------------------------------
 
-export const FILE_TOOLS = Object.freeze(['Edit', 'NotebookEdit', 'Write'])
+// The key each file tool names its target with. A key another tool uses is
+// never read: a stray `file_path` beside a NotebookEdit's `notebook_path`
+// names nothing that tool writes.
+const TARGET_KEY = Object.freeze({
+  Edit: 'file_path',
+  NotebookEdit: 'notebook_path',
+  Write: 'file_path'
+})
+
+export const FILE_TOOLS = Object.freeze(Object.keys(TARGET_KEY).sort())
 
 // Left to the slice that ports the donor's shell tokenizer.
 export const UNJUDGED_TOOLS = Object.freeze(['Bash', 'PowerShell'])
@@ -104,9 +119,8 @@ const POLICED = [
 const ask = ({ reason }) => ({ decision: VERDICT.ask, reason })
 const deny = ({ reason }) => ({ decision: VERDICT.deny, reason })
 
-const targetOf = ({ payload }) => {
-  const input = payload.tool_input
-  const target = input?.file_path ?? input?.notebook_path
+const targetOf = ({ payload, tool }) => {
+  const target = payload.tool_input?.[TARGET_KEY[tool]]
   if (typeof target !== 'string' || target.trim() === '') {
     throw new Error('the call names no file path')
   }
@@ -128,10 +142,22 @@ const inSurface = ({ actor, relative }) => {
   )
 }
 
+// The rule the target falls under, read against every checkout that holds
+// it, so a `.git` planted inside one cannot hide a rule file below it, and
+// against the home folder for the user-level files.
+const ruleOf = ({ policy, where }) =>
+  (where.roots ?? []).reduce(
+    (found, { relative }) => found ?? ruleFor({ policy, relative }),
+    undefined
+  ) ??
+  (where.homeRelative === undefined
+    ? undefined
+    : homeRuleFor({ policy, relative: where.homeRelative }))
+
 const judge = ({ actor, host, payload, policy, tool }) => {
   if (actor.kind === ACTOR_KIND.unknown) throw new Error(actor.problem)
   assertPolicy({ policy })
-  const text = targetOf({ payload })
+  const text = targetOf({ payload, tool })
   const where = classify({ cwd: cwdOf({ payload }), host, text })
   if (
     where.kind === TARGET_KIND.sink ||
@@ -140,9 +166,7 @@ const judge = ({ actor, host, payload, policy, tool }) => {
     return undefined
   }
   const inRepository = where.kind === TARGET_KIND.repo
-  const rule = inRepository
-    ? ruleFor({ policy, relative: where.relative })
-    : undefined
+  const rule = ruleOf({ policy, where })
   const call = { actor, rule, text, tool }
 
   if (actor.kind === ACTOR_KIND.readOnly) {

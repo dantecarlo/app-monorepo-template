@@ -2,8 +2,10 @@
 // ---------------------------------------------------------------------------
 // decide — the write guard's decision for the file tools, cell by cell of
 // the decision table in docs/harness.md § 3f, plus the errors, the
-// switch-off variable and the tools this slice does not judge. The policy,
-// the agent context and the host are synthetic, so no case reads the disk.
+// switch-off variable, the tools this slice does not judge, and the
+// verifier's probes of the per-tool path key and of a planted .git. The
+// policy, the agent context and the host are synthetic (decide.fixtures.mjs),
+// so no case reads the disk. decide.paths.test.mjs holds the path cases.
 //
 // Usage:
 //   node --test scripts/agent-harness/write-guard/decide.test.mjs
@@ -12,73 +14,16 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
+import {
+  AGENT_CONTEXT,
+  decisionOf,
+  HOST,
+  POLICY,
+  REPO,
+  SCRATCH,
+  verdict
+} from './decide.fixtures.mjs'
 import { decide, FILE_TOOLS, UNJUDGED_TOOLS } from './decide.mjs'
-
-const REPO = 'C:\\work\\repo'
-const SCRATCH = 'C:\\Users\\me\\AppData\\Local\\Temp'
-
-const POLICY = {
-  ruleFiles: [
-    { glob: 'AGENTS.md', what: 'the LAWs and the router' },
-    { glob: '.claude/skills/**', what: 'a skill' },
-    { glob: 'scripts/verify-*', what: 'a gate' }
-  ],
-  switchOff: { value: 'off', variable: 'ATL_WRITE_GUARD' }
-}
-
-const AGENT_CONTEXT = {
-  agents: {
-    'e2e-author': {
-      surface: [
-        'apps/mobile/.maestro/',
-        'docs/qa/',
-        '.claude/skills/e2e/'
-      ],
-      writes: true
-    },
-    'sdd-steward': { writes: true },
-    validator: { writes: false }
-  }
-}
-
-const HOST = {
-  env: {},
-  isCheckout: ({ dir }) =>
-    ['c:/work/repo', 'c:/users/me/appdata/local/temp/clone'].includes(
-      dir.toLowerCase()
-    ),
-  ownRoot: REPO,
-  scratchRoots: [SCRATCH, '/tmp'],
-  windows: true
-}
-
-const payloadFor = ({ agent, cwd = REPO, filePath, tool = 'Write' }) => ({
-  ...(agent === undefined ? {} : { agent_type: agent }),
-  cwd,
-  tool_input:
-    tool === 'NotebookEdit'
-      ? { new_source: 'x', notebook_path: filePath }
-      : { content: 'x', file_path: filePath },
-  tool_name: tool
-})
-
-const verdict = ({
-  agent,
-  agentContext = AGENT_CONTEXT,
-  cwd,
-  env = {},
-  filePath,
-  policy = POLICY,
-  tool
-}) =>
-  decide({
-    agentContext,
-    host: { ...HOST, env },
-    payload: payloadFor({ agent, cwd, filePath, tool }),
-    policy
-  })
-
-const decisionOf = (input) => verdict(input)?.decision ?? '—'
 
 // The target of each column of the table.
 const TARGETS = {
@@ -171,74 +116,6 @@ test('the file tools are Edit, Write and NotebookEdit', () => {
     'NotebookEdit',
     'Write'
   ])
-})
-
-// -- the surface, ported from Certifipago's guard ------------------------------
-for (const filePath of [
-  'apps/mobile/.maestro/flows/login.yaml',
-  'docs/qa/traceability.md',
-  `${REPO}\\apps\\mobile\\.maestro\\a.yaml`,
-  `${SCRATCH}\\shot.png`
-]) {
-  test(`e2e-author may write ${filePath}`, () => {
-    assert.equal(verdict({ agent: 'e2e-author', filePath }), undefined)
-  })
-}
-
-for (const filePath of [
-  'apps/web/src/a.ts',
-  'apps/mobile/.maestro/../src/a.ts',
-  'docs/qa-other/a.md'
-]) {
-  test(`e2e-author may not write ${filePath}`, () => {
-    const found = verdict({ agent: 'e2e-author', filePath })
-    assert.equal(found?.decision, 'deny')
-    assert.match(found.reason, /e2e-author/)
-    assert.match(found.reason, /apps\/mobile\/\.maestro\//)
-    assert.match(found.reason, /docs\/qa\//)
-  })
-}
-
-// -- path spellings --------------------------------------------------------------
-for (const filePath of [
-  'C:\\work\\repo\\AGENTS.md',
-  'c:/work/repo/AGENTS.md',
-  '/c/work/repo/AGENTS.md',
-  'C:\\WORK\\Repo\\agents.md',
-  'docs/../AGENTS.md',
-  'C:\\work\\repo\\docs\\..\\AGENTS.md'
-]) {
-  test(`the main session is asked before any spelling of a rule file: ${filePath}`, () => {
-    assert.equal(decisionOf({ filePath }), 'ask')
-  })
-}
-
-test('a scratch path that walks back out is refused for a read-only agent', () => {
-  assert.equal(
-    decisionOf({
-      agent: 'validator',
-      filePath: `${SCRATCH}\\..\\..\\a.ts`
-    }),
-    'deny'
-  )
-})
-
-test('a write into a repository that lives under a scratch root is refused', () => {
-  assert.equal(
-    decisionOf({
-      agent: 'validator',
-      cwd: `${SCRATCH}\\clone`,
-      filePath: 'apps/web/src/probe.txt'
-    }),
-    'deny'
-  )
-})
-
-test('a rule file of a repository under a scratch root still asks the main session', () => {
-  assert.equal(
-    decisionOf({ cwd: `${SCRATCH}\\clone`, filePath: 'AGENTS.md' }),
-    'ask'
-  )
 })
 
 // -- the reasons ---------------------------------------------------------------
@@ -408,6 +285,86 @@ for (const payload of [
     )
   })
 }
+
+// -- spellings Windows reads as another path (verifier probes 1, 2, 4) --------
+const OTHER_SPELLINGS = [
+  '\\\\?\\C:\\work\\repo\\AGENTS.md',
+  '\\\\.\\C:\\work\\repo\\AGENTS.md',
+  '\\\\?\\UNC\\localhost\\C$\\work\\repo\\AGENTS.md',
+  '\\\\localhost\\C$\\work\\repo\\AGENTS.md',
+  'C:\\work\\repo\\AGENTS.md::$DATA',
+  'C:\\work\\repo\\.agents\\contracts::$INDEX_ALLOCATION\\write-guard.json',
+  'C:AGENTS.md'
+]
+
+test('Given a device, UNC, stream or drive-relative spelling of a rule file, when the main session writes it, then the guard asks', () => {
+  for (const filePath of OTHER_SPELLINGS) {
+    assert.equal(decisionOf({ filePath }), 'ask', filePath)
+  }
+})
+
+test('every such spelling asks a writer and refuses a read-only agent', () => {
+  for (const filePath of OTHER_SPELLINGS) {
+    assert.equal(decisionOf({ agent: 'sdd-steward', filePath }), 'ask')
+    assert.equal(decisionOf({ agent: 'validator', filePath }), 'deny')
+  }
+})
+
+const PLANTED = {
+  ...HOST,
+  isCheckout: ({ dir }) =>
+    ['c:/work/repo', 'c:/work/repo/.agents'].includes(dir.toLowerCase())
+}
+
+test('Given a .git planted inside a checkout, when the main session writes a rule file below it, then the guard still asks', () => {
+  assert.equal(
+    decisionOf({
+      filePath: 'C:\\work\\repo\\.agents\\contracts\\write-guard.json',
+      host: PLANTED
+    }),
+    'ask'
+  )
+})
+
+test('Given NotebookEdit with a stray file_path, when its notebook_path is a rule file, then the guard asks', () => {
+  const found = decide({
+    agentContext: AGENT_CONTEXT,
+    host: HOST,
+    payload: {
+      cwd: REPO,
+      tool_input: { file_path: 'docs\\x.md', notebook_path: 'AGENTS.md' },
+      tool_name: 'NotebookEdit'
+    },
+    policy: POLICY
+  })
+  assert.equal(found?.decision, 'ask')
+})
+
+test('Write and Edit read file_path, and a stray notebook_path changes nothing', () => {
+  for (const tool of ['Edit', 'Write']) {
+    const input = { file_path: 'docs\\x.md', notebook_path: 'AGENTS.md' }
+    assert.equal(
+      decide({
+        agentContext: AGENT_CONTEXT,
+        host: HOST,
+        payload: { cwd: REPO, tool_input: input, tool_name: tool },
+        policy: POLICY
+      }),
+      undefined
+    )
+    const found = decide({
+      agentContext: AGENT_CONTEXT,
+      host: HOST,
+      payload: {
+        cwd: REPO,
+        tool_input: { notebook_path: 'AGENTS.md' },
+        tool_name: tool
+      },
+      policy: POLICY
+    })
+    assert.match(found?.reason ?? '', /names no file path/)
+  }
+})
 
 test('no cell of the table ever allows', () => {
   const decisions = TABLE.flatMap(({ agent, row }) =>

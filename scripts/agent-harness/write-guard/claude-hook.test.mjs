@@ -2,8 +2,9 @@
 // ---------------------------------------------------------------------------
 // claude-hook — end to end: the real hook as Claude Code runs it, a
 // PreToolUse payload on stdin and the committed policy and agent context of
-// this checkout. The broken-policy case runs a copy of the hook from a
-// scratch tree in the OS temp directory, which `withScratchTree` removes.
+// this checkout. The broken-guard cases run a copy of the hook from a
+// scratch tree in the OS temp directory, which `withScratchTree` removes;
+// the junction case builds its own scratch tree and removes it.
 //
 // Usage:
 //   node --test scripts/agent-harness/write-guard/claude-hook.test.mjs
@@ -11,13 +12,22 @@
 
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { readdirSync, readFileSync } from 'node:fs'
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import { withScratchTree } from '../../gate/scratch.mjs'
+import { EARLY_SWITCH_OFF } from './claude-hook.mjs'
 import { AGENT_CONTEXT_FILE, POLICY_FILE, SWITCH_OFF } from './policy.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -272,6 +282,98 @@ test('END TO END: an engine that fails to load asks the main session and refuses
       )
     }
   })
+})
+
+for (const module of [
+  `${GUARD_DIRECTORY}/policy.mjs`,
+  'scripts/manifest.mjs',
+  'scripts/manifest-owners.mjs'
+]) {
+  test(`END TO END: ATL_WRITE_GUARD=off still silences a hook whose ${module} cannot load`, () => {
+    withScratchTree({
+      files: {
+        ...brokenPolicyTree(),
+        [POLICY_FILE]: readFileSync(join(REPO_ROOT, POLICY_FILE), 'utf8'),
+        [module]: "throw new Error('cannot load')\n"
+      },
+      prefix: 'write-guard-hook-',
+      use: ({ root }) => {
+        const hook = join(root, GUARD_DIRECTORY, 'claude-hook.mjs')
+        const input = payloadFor({
+          agent: 'validator',
+          cwd: root,
+          filePath: join(root, 'AGENTS.md')
+        })
+        assert.equal(
+          spawnHook({ hook, input })?.permissionDecision,
+          'deny'
+        )
+        assert.equal(
+          spawnHook({
+            env: { [SWITCH_OFF.variable]: SWITCH_OFF.value },
+            hook,
+            input
+          }),
+          null
+        )
+      }
+    })
+  })
+}
+
+test('the hook reads the switch-off the policy names, before it imports it', () => {
+  assert.deepEqual(EARLY_SWITCH_OFF, SWITCH_OFF)
+})
+
+// A junction is a link the file tools write through. Removing the scratch
+// tree removes the junctions, never what they point at.
+test('Given a junction to a rule folder, when the main session or a read-only agent writes through it, then the guard asks or refuses', () => {
+  const scratch = mkdtempSync(join(tmpdir(), 'write-guard-junction-'))
+  try {
+    const repo = join(scratch, 'repo')
+    mkdirSync(join(repo, '.git'), { recursive: true })
+    mkdirSync(join(repo, '.agents', 'contracts'), { recursive: true })
+    writeFileSync(
+      join(repo, '.agents', 'contracts', 'write-guard.json'),
+      '{}'
+    )
+    symlinkSync(
+      join(repo, '.agents', 'contracts'),
+      join(repo, 'notes'),
+      'junction'
+    )
+    symlinkSync(
+      join(repo, '.agents'),
+      join(scratch, 'into-agents'),
+      'junction'
+    )
+    assert.equal(
+      spawnHook({
+        input: payloadFor({
+          cwd: repo,
+          filePath: join(repo, 'notes', 'write-guard.json')
+        })
+      })?.permissionDecision,
+      'ask'
+    )
+    assert.equal(
+      spawnHook({
+        input: payloadFor({
+          agent: 'validator',
+          cwd: repo,
+          filePath: join(
+            scratch,
+            'into-agents',
+            'contracts',
+            'write-guard.json'
+          )
+        })
+      })?.permissionDecision,
+      'deny'
+    )
+  } finally {
+    rmSync(scratch, { force: true, recursive: true })
+  }
 })
 
 test('END TO END: the hook never prints allow', () => {

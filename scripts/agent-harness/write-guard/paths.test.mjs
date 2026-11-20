@@ -121,6 +121,142 @@ for (const text of ['/dev/null', 'NUL', '/dev/stderr']) {
   })
 }
 
+// -- Windows spellings that name a file another way ------------------------------
+for (const text of [
+  '\\\\?\\C:\\work\\repo\\AGENTS.md',
+  '\\\\.\\C:\\work\\repo\\AGENTS.md',
+  '\\\\?\\UNC\\localhost\\C$\\work\\repo\\AGENTS.md',
+  '\\\\localhost\\C$\\work\\repo\\AGENTS.md',
+  '\\\\127.0.0.1\\c$\\work\\repo\\AGENTS.md'
+]) {
+  test(`a device or local-share prefix is read as the drive path: ${text}`, () => {
+    const found = where({ text })
+    assert.deepEqual(
+      { kind: found.kind, relative: found.relative },
+      { kind: 'repo', relative: 'AGENTS.md' }
+    )
+  })
+}
+
+for (const [text, problem] of [
+  ['C:\\work\\repo\\AGENTS.md::$DATA', /stream/],
+  ['C:\\work\\repo\\AGENTS.md:x', /stream/],
+  [
+    'C:\\work\\repo\\.agents\\contracts::$INDEX_ALLOCATION\\a.json',
+    /stream/
+  ],
+  ['C:AGENTS.md', /drive-relative/],
+  ['\\\\?\\Volume{0d1e}\\AGENTS.md', /device path/]
+]) {
+  test(`a spelling the guard cannot read throws, naming why: ${text}`, () => {
+    assert.throws(() => where({ text }), problem)
+  })
+}
+
+test('a share on another host is outside, and its folders are never probed', () => {
+  const probed = []
+  const found = classify({
+    cwd: REPO,
+    host: {
+      ...HOST,
+      isCheckout: ({ dir }) => {
+        probed.push(dir)
+        return false
+      },
+      realpath: ({ path }) => {
+        probed.push(path)
+        return null
+      }
+    },
+    text: '\\\\files.example\\share\\AGENTS.md'
+  })
+  assert.equal(found.kind, 'outside')
+  assert.deepEqual(probed, [])
+})
+
+// A disk that holds the repository, where `realpath` canonicalises an
+// existing path (8.3 names, links, letter case) and returns null otherwise.
+const DISK = {
+  'c:/': 'C:\\',
+  'c:/work': 'C:\\work',
+  'c:/work/repo': 'C:\\work\\repo',
+  'c:/work/repo/.agents': 'C:\\work\\repo\\.agents',
+  'c:/work/repo/.agents/contracts': 'C:\\work\\repo\\.agents\\contracts',
+  'c:/work/repo/agents~1': 'C:\\work\\repo\\.agents',
+  'c:/work/repo/agents~1/contracts': 'C:\\work\\repo\\.agents\\contracts',
+  'c:/work/repo/templa~1.jso': 'C:\\work\\repo\\template.manifest.json',
+  'c:/work/repo/notes': 'C:\\work\\repo\\.agents\\contracts'
+}
+const ON_DISK = {
+  ...HOST,
+  realpath: ({ path }) => DISK[path.toLowerCase()] ?? null
+}
+const onDisk = ({ text }) => classify({ cwd: REPO, host: ON_DISK, text })
+
+for (const [text, relative] of [
+  [
+    'C:\\work\\repo\\AGENTS~1\\contracts\\write-guard.json',
+    '.agents/contracts/write-guard.json'
+  ],
+  ['C:\\work\\repo\\TEMPLA~1.JSO', 'template.manifest.json'],
+  [
+    'C:\\work\\repo\\notes\\write-guard.json',
+    '.agents/contracts/write-guard.json'
+  ]
+]) {
+  test(`the deepest existing folder is canonicalised, the rest appended: ${text}`, () => {
+    assert.equal(onDisk({ text }).relative, relative)
+  })
+}
+
+test('a short name that does not resolve throws instead of being read literally', () => {
+  assert.throws(
+    () => onDisk({ text: 'C:\\work\\repo\\NEWDIR~1\\a.md' }),
+    /short name/
+  )
+  assert.equal(
+    onDisk({ text: 'C:\\work\\repo\\notes~\\a.md' }).kind,
+    'repo'
+  )
+})
+
+// -- every enclosing checkout ---------------------------------------------------
+test('a target lists every checkout that holds it, nearest first', () => {
+  const found = classify({
+    cwd: REPO,
+    host: {
+      ...HOST,
+      isCheckout: ({ dir }) =>
+        ['c:/work/repo', 'c:/work/repo/.agents'].includes(
+          dir.toLowerCase()
+        )
+    },
+    text: 'C:\\work\\repo\\.agents\\contracts\\write-guard.json'
+  })
+  assert.deepEqual(
+    found.roots.map(({ relative }) => relative),
+    ['contracts/write-guard.json', '.agents/contracts/write-guard.json']
+  )
+})
+
+test('a clone under a scratch root lists only the checkouts below that root', () => {
+  const found = classify({
+    cwd: REPO,
+    host: {
+      ...HOST,
+      isCheckout: ({ dir }) =>
+        ['c:/users/me', 'c:/users/me/appdata/local/temp/clone'].includes(
+          dir.toLowerCase()
+        )
+    },
+    text: `${SCRATCH}\\clone\\AGENTS.md`
+  })
+  assert.deepEqual(
+    found.roots.map(({ relative }) => relative),
+    ['AGENTS.md']
+  )
+})
+
 test('the live host lists the OS temp dir among its scratch roots', () => {
   const host = liveHost({ environment: {}, ownRoot: REPO })
   assert.ok(
@@ -129,4 +265,9 @@ test('the live host lists the OS temp dir among its scratch roots', () => {
   )
   assert.equal(host.ownRoot, REPO)
   assert.equal(typeof host.isCheckout({ dir: tmpdir() }), 'boolean')
+  assert.equal(typeof host.realpath({ path: tmpdir() }), 'string')
+  assert.equal(
+    host.realpath({ path: `${tmpdir()}/write-guard-no-such-file` }),
+    null
+  )
 })

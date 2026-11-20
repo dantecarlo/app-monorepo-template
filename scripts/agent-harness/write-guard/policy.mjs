@@ -84,16 +84,50 @@ export const assertPolicy = ({ policy }) => {
   }
 }
 
+// A glob that starts `~/` names a file of the home folder, matched against
+// the path relative to it; every other glob is read relative to a checkout.
+const HOME_PREFIX = '~/'
+
+// A `.git` below a checkout root moves the root every glob is read from, so
+// it is a rule path whatever the policy lists. It is not a policy entry,
+// so no edit of the policy can drop it.
+export const GIT_RULE = Object.freeze({
+  glob: '**/.git',
+  what: 'a .git file or folder, which moves the root every rule glob is read from'
+})
+
+const GIT_SEGMENT = /(?:^|\/)\.git(?:\/|$)/iu
+
+const globMatches = ({ glob, path }) =>
+  globToRegExp({ pattern: glob.toLowerCase() }).test(path.toLowerCase())
+
+const asRule = ({ rule }) =>
+  rule === undefined ? undefined : { glob: rule.glob, what: rule.what }
+
 // The rule a checkout-relative path falls under, or undefined.
-export const ruleFor = ({ policy, relative }) => {
-  const path = relative.toLowerCase()
-  const rule = policy.ruleFiles.find(({ glob }) =>
-    globToRegExp({ pattern: glob.toLowerCase() }).test(path)
-  )
-  return rule === undefined
-    ? undefined
-    : { glob: rule.glob, what: rule.what }
-}
+export const ruleFor = ({ policy, relative }) =>
+  GIT_SEGMENT.test(relative)
+    ? { ...GIT_RULE }
+    : asRule({
+        rule: policy.ruleFiles.find(
+          ({ glob }) =>
+            !glob.startsWith(HOME_PREFIX) &&
+            globMatches({ glob, path: relative })
+        )
+      })
+
+// The rule a path relative to the home folder falls under, or undefined.
+export const homeRuleFor = ({ policy, relative }) =>
+  asRule({
+    rule: policy.ruleFiles.find(
+      ({ glob }) =>
+        glob.startsWith(HOME_PREFIX) &&
+        globMatches({
+          glob: glob.slice(HOME_PREFIX.length),
+          path: relative
+        })
+    )
+  })
 
 // Read without anything that can throw: an unreadable policy still leaves
 // the documented variable to switch the guard off.

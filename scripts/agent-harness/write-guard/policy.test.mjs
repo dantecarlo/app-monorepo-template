@@ -24,6 +24,8 @@ import {
   actorFor,
   AGENT_CONTEXT_FILE,
   assertPolicy,
+  GIT_RULE,
+  homeRuleFor,
   isSwitchedOff,
   loadGuardFiles,
   POLICY_FILE,
@@ -72,10 +74,13 @@ test('the committed policy and agent context both read', () => {
   assert.doesNotThrow(() => assertPolicy({ policy }))
 })
 
-test('every rule glob of the committed policy matches a file git lists', () => {
+// A glob that starts `~/` names a file of the user's home folder, which no
+// checkout lists; the next test reads those through the home folder.
+test('every checkout rule glob of the committed policy matches a file git lists', () => {
   const files = listedFiles()
   const unmatched = policy.ruleFiles
     .map(({ glob }) => glob)
+    .filter((glob) => !glob.startsWith('~/'))
     .filter(
       (glob) =>
         !files.some((file) =>
@@ -85,6 +90,47 @@ test('every rule glob of the committed policy matches a file git lists', () => {
         )
     )
   assert.deepEqual(unmatched, [], `globs matching nothing: ${unmatched}`)
+})
+
+test('the committed policy guards the user-level Claude Code settings, by their path in the home folder', () => {
+  for (const relative of [
+    '.claude/settings.json',
+    '.claude/settings.local.json'
+  ]) {
+    assert.notEqual(homeRuleFor({ policy, relative }), undefined, relative)
+    assert.equal(
+      ruleFor({ policy, relative: `x/${relative}` })?.glob,
+      undefined
+    )
+  }
+  assert.equal(
+    homeRuleFor({ policy, relative: '.claude/CLAUDE.md' }),
+    undefined
+  )
+  assert.equal(homeRuleFor({ policy, relative: 'AGENTS.md' }), undefined)
+})
+
+test('a .git anywhere below a checkout root is a rule path, whatever the policy lists', () => {
+  for (const relative of [
+    '.git',
+    '.git/config',
+    '.agents/.git',
+    'a/.GIT/HEAD'
+  ]) {
+    assert.equal(
+      ruleFor({
+        policy: { ruleFiles: [], switchOff: SWITCH_OFF },
+        relative
+      })?.glob,
+      GIT_RULE.glob,
+      relative
+    )
+  }
+  assert.equal(
+    ruleFor({ policy, relative: 'docs/.github/x.md' }),
+    undefined
+  )
+  assert.equal(ruleFor({ policy, relative: 'docs/a.git' }), undefined)
 })
 
 for (const relative of [
@@ -113,6 +159,8 @@ for (const relative of [
   'scripts/agent-harness/write-guard/decide.mjs',
   'scripts/manifest.mjs',
   'scripts/manifest-owners.mjs',
+  '.agents/agents/validator.agent.md',
+  '.claude/agents/validator.md',
   '.husky/pre-commit',
   '.github/workflows/ci.yml'
 ]) {
@@ -127,7 +175,7 @@ for (const relative of [
   'apps/web/src/app/page.tsx',
   'scripts/agent-harness/adapters.mjs',
   'scripts/check-identity.mjs',
-  '.claude/agents/validator.md'
+  '.codex/agents/validator.toml'
 ]) {
   test(`the committed policy leaves ${relative} out`, () => {
     assert.equal(ruleFor({ policy, relative }), undefined)
