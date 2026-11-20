@@ -3,7 +3,7 @@
 > **Governs:** `packages/supabase/src`, `packages/supabase/supabase/migrations`, `packages/supabase/supabase/config.toml`, `packages/supabase/package.json`, `scripts/supabase-test-db.mjs`
 > **ID prefix:** `SUPABASE`
 > **Derived from:** `packages/supabase/docs/database.md`, `AGENTS.md`, `docs/code-standards.md`
-> **Verified against the code:** 2026-11-20 at `2dd6749`
+> **Verified against the code:** 2026-11-20 at `27f01c9`
 
 ## Purpose
 
@@ -888,10 +888,14 @@ every migration of the checkout whose version the target database's ledger
 (`supabase_migrations.schema_migrations`) lacks, in name order, so the file's `rollback` takes
 them with it and the database ends as it was. It SHALL apply each one through a PL/pgSQL
 `execute`, without a `begin` and a `commit` that wrap the whole file, and stop on the first that
-fails, naming it; it SHALL apply none when the ledger holds a file's version under another name;
-and it SHALL run nothing when a pgTAP file does not open with `begin` and end with `rollback`.
+fails, naming it; it SHALL apply none when the ledger holds a file's version under another name or
+under none, and run nothing when two files share a version, naming both. Read with its comments,
+string literals and dollar-quoted bodies blanked, a pgTAP file SHALL open with a plain `begin`,
+end with `rollback`, run no other statement that controls the transaction (a savepoint, its
+release and `rollback to` it excepted) and hold no psql meta-command; otherwise test:db SHALL run
+nothing, naming the file.
 
-**Evidence:** `packages/supabase/src/pgTapBundle.constant.ts:3`, `packages/supabase/src/pgTapBundle.helper.ts:23-28`, `packages/supabase/src/pgTapBundle.helper.ts:69-88`, `packages/supabase/src/pgTapBundle.helper.ts:105-108`, `packages/supabase/src/pgTapBundle.helper.ts:129-161`, `packages/supabase/src/pgTapBundle.helper.ts:165-168`, `packages/supabase/src/pgTapBundle.helper.ts:187-196`, `packages/supabase/src/pgTapBundle.helper.ts:199-202`, `packages/supabase/src/testDbRun.helper.ts:69`, `packages/supabase/docs/database.md:409`
+**Evidence:** `packages/supabase/src/pgTapBundle.constant.ts:3`, `packages/supabase/src/pgTapBundle.constant.ts:22-47`, `packages/supabase/src/pgTapBundle.helper.ts:34-39`, `packages/supabase/src/pgTapBundle.helper.ts:75-121`, `packages/supabase/src/pgTapBundle.helper.ts:138-141`, `packages/supabase/src/pgTapBundle.helper.ts:162-194`, `packages/supabase/src/pgTapBundle.helper.ts:198-201`, `packages/supabase/src/pgTapBundle.helper.ts:210-259`, `packages/supabase/src/pgTapBundle.helper.ts:268-281`, `packages/supabase/src/sqlCode.constant.ts:4-5`, `packages/supabase/src/testDbRun.helper.ts:71`, `packages/supabase/docs/database.md:409`
 
 #### Scenario: the checkout's migrations, in order
 
@@ -921,6 +925,13 @@ and it SHALL run nothing when a pgTAP file does not open with `begin` and end wi
 - **THEN** that file is not applied
 - **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "leaves out a file the Supabase CLI does not read as a migration"
 
+#### Scenario: two files share a version
+
+- **GIVEN** two migration files with the same version
+- **WHEN** test:db reads the migrations folder
+- **THEN** it runs nothing, naming both files and the version
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses two migrations with the same version, naming both"
+
 #### Scenario: the migrations travel quoted
 
 - **GIVEN** migrations holding quotes, the block's own dollar tags, and one ending where a tag could close
@@ -934,6 +945,13 @@ and it SHALL run nothing when a pgTAP file does not open with `begin` and end wi
 - **WHEN** the block runs
 - **THEN** it raises, naming the file and both names, before it applies any migration
 - **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "stops on a version the database holds under another name before it applies any migration"
+
+#### Scenario: a ledger row with no name
+
+- **GIVEN** a database whose ledger holds a file's version with no name
+- **WHEN** the block runs
+- **THEN** it raises as for another name, before it applies any migration
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "treats a ledger row with no name as a conflict"
 
 #### Scenario: a migration the ledger lacks
 
@@ -971,6 +989,49 @@ and it SHALL run nothing when a pgTAP file does not open with `begin` and end wi
 - **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a pgTAP file that does not open with begin, naming it"
 - **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a pgTAP file that does not end with rollback, naming it"
 
+#### Scenario: a rollback only in a comment
+
+- **GIVEN** a pgTAP file whose only `rollback;` sits in a comment after a `commit;`, with LF or CRLF line ends
+- **WHEN** test:db bundles the files
+- **THEN** it refuses, naming the file
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a pgTAP file whose rollback is only in a trailing comment, naming it"
+
+#### Scenario: a transaction controlled in between
+
+- **GIVEN** a pgTAP file that runs `commit`, `end`, `abort`, `rollback`, `begin`, `start transaction`, `prepare transaction`, `commit prepared` or `set transaction` between its first `begin;` and its last `rollback;`
+- **WHEN** test:db bundles the files
+- **THEN** it refuses, naming the file and the statement
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a pgTAP file that ends its transaction before its last rollback, naming it: %s"
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses $statement between the first begin and the last rollback, naming the file"
+
+#### Scenario: a savepoint and transaction words outside the code
+
+- **GIVEN** a pgTAP file with a savepoint, its release, `rollback to` it, and transaction words in comments, strings and a `do` body
+- **WHEN** test:db bundles the files
+- **THEN** it bundles the file
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "keeps savepoints, and transaction words inside comments, strings and bodies"
+
+#### Scenario: a psql meta-command
+
+- **GIVEN** a pgTAP file with `\i`, `\set` or `\gexec`
+- **WHEN** test:db bundles the files
+- **THEN** it refuses, naming the file
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a pgTAP file with a psql meta-command, naming it: %s"
+
+#### Scenario: an opening other than a plain begin
+
+- **GIVEN** a pgTAP file that opens with `begin isolation level serializable;` or `start transaction;`
+- **WHEN** test:db bundles the files
+- **THEN** it refuses, naming the file: conservative, since the block runs first
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses any opening other than a plain begin, naming the file: %s"
+
+#### Scenario: a statement the masker cannot read
+
+- **GIVEN** a pgTAP file whose escape string holds a quote (`E'it\'s'`), or whose double-quoted identifier holds `--`
+- **WHEN** test:db bundles the files
+- **THEN** a transaction-control statement on that line would not be seen
+- **Test:** Not covered — the masker of the order check reads neither, so a statement on the same line can escape the check
+
 #### Scenario: the package's pgTAP files
 
 - **GIVEN** the pgTAP files and the migrations of the package
@@ -990,11 +1051,12 @@ and it SHALL run nothing when a pgTAP file does not open with `begin` and end wi
 The supabase package's `test:db` SHALL read its target from `config.testDbTarget` of
 `packages/supabase/package.json`: `linked`, the default when the key is unset, runs the bundled
 suites with `supabase test db --linked`; `local` runs them with `supabase test db --local`; `off`
-runs no database test and exits 0; any other value runs nothing and exits 1, naming the three. A
+runs no database test and exits 0; any other value, `null` included, runs nothing and exits 1,
+naming the key and the three. A
 run SHALL exit with the CLI's status and remove the bundle; with `--dry-run` it SHALL write the
 bundle and name the command without running it.
 
-**Evidence:** `packages/supabase/package.json:22`, `packages/supabase/package.json:24-26`, `packages/supabase/src/testDbRun.constant.ts:3-10`, `packages/supabase/src/testDbRun.constant.ts:17-22`, `packages/supabase/src/testDbRun.helper.ts:55-67`, `packages/supabase/src/testDbRun.helper.ts:72-93`, `scripts/supabase-test-db.mjs:61-62`, `scripts/supabase-test-db.mjs:66-69`
+**Evidence:** `packages/supabase/package.json:22`, `packages/supabase/package.json:24-26`, `packages/supabase/src/testDbRun.constant.ts:3-10`, `packages/supabase/src/testDbRun.constant.ts:17-22`, `packages/supabase/src/testDbRun.helper.ts:55-69`, `packages/supabase/src/testDbRun.helper.ts:74-95`, `scripts/supabase-test-db.mjs:63-65`, `scripts/supabase-test-db.mjs:70-73`
 
 #### Scenario: no target set
 
@@ -1030,6 +1092,13 @@ bundle and name the command without running it.
 - **WHEN** test:db runs
 - **THEN** it runs nothing and exits 1, naming the value and the three targets
 - **Test:** `packages/supabase/src/__tests__/testDbRun.helper.test.ts` › "refuses a target it does not know, naming the ones it takes"
+
+#### Scenario: a null target
+
+- **GIVEN** `config.testDbTarget` set to `null`
+- **WHEN** test:db runs
+- **THEN** it runs nothing and exits 1, naming the key and the three targets
+- **Test:** `packages/supabase/src/__tests__/testDbRun.helper.test.ts` › "refuses a null target, naming the setting"
 
 #### Scenario: a dry run
 
