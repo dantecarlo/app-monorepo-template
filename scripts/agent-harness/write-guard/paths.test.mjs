@@ -174,6 +174,31 @@ test('a share on another host is outside, and its folders are never probed', () 
   assert.deepEqual(probed, [])
 })
 
+test('an admin share of a host outside localHosts throws, and is never probed', () => {
+  const probed = []
+  const host = {
+    ...HOST,
+    isCheckout: ({ dir }) => {
+      probed.push(dir)
+      return false
+    },
+    realpath: ({ path }) => {
+      probed.push(path)
+      return null
+    }
+  }
+  for (const text of [
+    '\\\\192.168.31.168\\C$\\work\\repo\\AGENTS.md',
+    '\\\\?\\UNC\\0--1.ipv6-literal.net\\c$\\work\\repo\\AGENTS.md'
+  ]) {
+    assert.throws(
+      () => classify({ cwd: REPO, host, text }),
+      /admin share of a host/
+    )
+  }
+  assert.deepEqual(probed, [])
+})
+
 // A disk that holds the repository, where `realpath` canonicalises an
 // existing path (8.3 names, links, letter case) and returns null otherwise.
 const DISK = {

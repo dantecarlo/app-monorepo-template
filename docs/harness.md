@@ -310,9 +310,12 @@ rest is appended. The spellings it cannot read are refused for a policed agent
 and asked of anyone else: an NTFS stream (`AGENTS.md::$DATA`,
 `contracts::$INDEX_ALLOCATION\…`), a drive-relative path (`C:AGENTS.md`), a
 device path that names no drive (`\\?\Volume{…}\`), a share of this machine
-that is no drive share, and a short name that names nothing on disk. A share
-on another host is outside, and is never probed, so a slow network cannot run
-the hook past its timeout. The walk costs a few probes whatever the depth: a
+that is no drive share, an admin drive share (`\\<host>\C$\…`) of any other
+host, since this machine also answers to its LAN address
+(`\\192.168.x.y\C$\…`) and to an IPv6 literal (`\\0--1.ipv6-literal.net\C$\…`),
+and a short name that names nothing on disk. Any other share on another host is
+outside. No share is ever probed, so a slow network cannot run the hook past
+its timeout. The walk costs a few probes whatever the depth: a
 path 10,000 folders deep is judged in milliseconds.
 
 Every reason names the rule, the file and how to proceed; a rule file cites the

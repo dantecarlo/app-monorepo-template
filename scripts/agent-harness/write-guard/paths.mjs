@@ -25,9 +25,11 @@
 // refuses a policed agent and asks anyone else: an NTFS stream (a `:` after
 // the drive, `AGENTS.md::$DATA`), a drive-relative path (`C:AGENTS.md`), a
 // device path that is no drive (`\\?\Volume{...}\`), a share of this machine
-// that is no drive share, and a short name (`NEWDIR~1`) that names nothing on
-// disk. A share on another host is outside, and is never probed, so a slow
-// network cannot run the hook past its timeout.
+// that is no drive share, an admin drive share (`\\<host>\C$\`) of any host
+// outside `localHosts`, since this machine also answers to its LAN address and
+// to an IPv6 literal, and a short name (`NEWDIR~1`) that names nothing on
+// disk. Any other share on another host is outside. No share is ever probed,
+// so a slow network cannot run the hook past its timeout.
 //
 // Ported from the path half of Certifipago's
 // .claude/scripts/enforce-agent-writes.mjs, with one change: a target is
@@ -100,11 +102,20 @@ const unprefixed = ({ host, text, windows }) => {
     })
   }
   const share = UNC.exec(text)
+  if (share === null) return text
   const localHosts = host.localHosts ?? LOCAL_HOSTS
-  if (share === null || !localHosts.includes(share[1].toLowerCase())) {
-    return text
-  }
+  const isLocal = localHosts.includes(share[1].toLowerCase())
   const drive = DRIVE_SHARE.exec(share[2])
+  // An admin drive share (`C$`) of a host outside `localHosts` may still be
+  // this machine, named by its LAN address or an IPv6 literal, and telling
+  // would need the network; so it is not read.
+  if (drive !== null && !isLocal) {
+    return unreadable({
+      text,
+      why: 'is an admin share of a host the guard cannot tell from this machine'
+    })
+  }
+  if (!isLocal) return text
   if (drive === null) {
     return unreadable({
       text,

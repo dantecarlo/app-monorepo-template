@@ -204,6 +204,42 @@ for (const [label, agent, segment, expected] of [
   })
 }
 
+// -- admin drive shares (verifier probe durable2) ------------------------------
+// `\\<host>\C$\` names drive C: of that host, and this machine answers to its
+// LAN IP and to an IPv6 literal the guard cannot list, so an admin share of a
+// host outside `localHosts` cannot be read: it may be this disk.
+test('Given an admin drive share named by an IP address or an IPv6 literal, when the main session writes a rule file through it, then the guard asks', () => {
+  for (const filePath of [
+    '\\\\192.168.31.168\\C$\\work\\repo\\AGENTS.md',
+    '\\\\?\\UNC\\192.168.31.168\\C$\\work\\repo\\AGENTS.md',
+    '\\\\0--1.ipv6-literal.net\\C$\\work\\repo\\AGENTS.md'
+  ]) {
+    assert.equal(decisionOf({ filePath }), 'ask', filePath)
+    assert.equal(
+      decisionOf({ agent: 'validator', filePath }),
+      'deny',
+      filePath
+    )
+  }
+})
+
+test('an admin share of another host asks a writer, naming why', () => {
+  const filePath = '\\\\fileserver\\d$\\docs\\a.md'
+  assert.equal(decisionOf({ agent: 'sdd-steward', filePath }), 'ask')
+  assert.match(verdict({ filePath }).reason, /admin share/)
+})
+
+test('a share on another host that is no admin share stays outside', () => {
+  for (const filePath of [
+    '\\\\fileserver\\docs\\AGENTS.md',
+    '\\\\?\\UNC\\fileserver\\docs\\AGENTS.md'
+  ]) {
+    assert.equal(decisionOf({ filePath }), '—', filePath)
+    assert.equal(decisionOf({ agent: 'sdd-steward', filePath }), '—')
+    assert.equal(decisionOf({ agent: 'validator', filePath }), 'deny')
+  }
+})
+
 // -- the user-level settings, by their path in the home folder ------------------
 const AT_HOME = { ...HOST, homeDir: 'C:\\Users\\me' }
 
