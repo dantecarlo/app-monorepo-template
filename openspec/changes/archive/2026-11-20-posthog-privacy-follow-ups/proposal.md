@@ -1,6 +1,6 @@
 # Proposal: PostHog privacy follow-ups
 
-> **Status:** open
+> **Status:** archived — 2026-11-20
 
 ## Why
 

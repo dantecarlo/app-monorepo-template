@@ -6,7 +6,7 @@
 <!-- endregion sentry -->
 > **ID prefix:** `MOBILE`
 > **Derived from:** `docs/architecture/mobile.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/observability.md`, `docs/e2e.md`, `docs/responsive.md`, `AGENTS.md`, `docs/manifest.md`, `docs/decisions/0001-pluggable-providers.md`
-> **Verified against the code:** 2026-11-19 at `dd38b99`
+> **Verified against the code:** 2026-11-20 at `79b55e8`
 
 ## Purpose
 
@@ -1208,7 +1208,7 @@ at launch in `granted` and `memory` mode, and in `opt-in` mode only once consent
 `EXPO_PUBLIC_POSTHOG_HOST` or, without it, to the US ingestion host. Without a key it SHALL
 construct none, so every observability call is a no-op and no request leaves the app.
 
-**Evidence:** `apps/mobile/src/lib/posthog/posthogClient.constant.ts:4-11`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:56-77`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:95-97`
+**Evidence:** `apps/mobile/src/lib/posthog/posthogClient.constant.ts:4-11`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:57`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:82-90`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:124-126`
 
 #### Scenario: no key
 
@@ -1237,7 +1237,7 @@ The mobile app SHALL construct PostHog, under every consent mode, with session r
 lifecycle events off, console errors off, unhandled rejections captured, and uncaught exceptions
 captured only on native, never in a web bundle.
 
-**Evidence:** `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:17-36`, `apps/mobile/src/lib/posthog/posthogClient.constant.ts:22-28`, `apps/mobile/src/lib/posthog/posthogClient.constant.ts:49-53`
+**Evidence:** `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:18-37`, `apps/mobile/src/lib/posthog/posthogClient.constant.ts:22-28`, `apps/mobile/src/lib/posthog/posthogClient.constant.ts:53-57`
 
 #### Scenario: replay and lifecycle events
 
@@ -1290,7 +1290,7 @@ when it names one, constructing PostHog in `granted` mode with the options it ha
 setting existed. It SHALL throw a configuration error that names the variable and the accepted
 values when, with a key set, the value names anything else.
 
-**Evidence:** `apps/mobile/src/lib/posthog/posthogClient.constant.ts:33-44`, `apps/mobile/src/lib/posthog/resolveConsentMode.helper.ts:15-26`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:42-44`
+**Evidence:** `apps/mobile/src/lib/posthog/posthogClient.constant.ts:33-44`, `apps/mobile/src/lib/posthog/resolveConsentMode.helper.ts:15-26`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:43-45`
 
 #### Scenario: no setting
 
@@ -1327,13 +1327,13 @@ values when, with a key set, the value names anything else.
 
 The mobile app SHALL construct no PostHog client in `opt-in` mode until consent is granted,
 through the consent API (MOBILE-55) or by a grant from an earlier launch held in the consent
-storage of MOBILE-54, which constructs it at launch and opts it in; it SHALL construct it with
-`defaultOptIn: false` and that consent storage as its `customStorage`, so it captures and stores
-nothing until it is opted in. In `memory` mode it SHALL construct PostHog with
-`persistence: 'memory'`, so it captures but keeps nothing on the device. Each mode adds nothing
-else to the `granted` options.
+storage of MOBILE-54, which constructs it at launch and opts it in, a failure of that opt-in
+rejecting nothing and leaving it opted out; it SHALL construct it with `defaultOptIn: false` and
+that consent storage as its `customStorage`, so it captures and stores nothing until it is opted
+in. In `memory` mode it SHALL construct PostHog with `persistence: 'memory'`, so it captures but
+keeps nothing on the device. Each mode adds nothing else to the `granted` options.
 
-**Evidence:** `apps/mobile/src/lib/posthog/posthogClient.constant.ts:49-53`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:17-36`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:50-54`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:86-101`
+**Evidence:** `apps/mobile/src/lib/posthog/posthogClient.constant.ts:53-57`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:18-37`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:51-54`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:113-134`
 
 #### Scenario: `opt-in` before a grant
 
@@ -1357,6 +1357,14 @@ else to the `granted` options.
 - **THEN** one client is constructed and opted in
 - **Test:** `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "opts in at launch after a grant from an earlier launch"
 
+#### Scenario: a launch whose opt-in fails
+
+- **GIVEN** a key, the consent mode `opt-in`, a grant stored by an earlier launch and an SDK whose
+  opt-in rejects
+- **WHEN** the client module loads
+- **THEN** no rejection is left unhandled
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "rejects nothing when the launch fails to opt in again"
+
 #### Scenario: `memory`
 
 - **GIVEN** a key and the consent mode `memory`
@@ -1366,27 +1374,38 @@ else to the `granted` options.
 
 ### Requirement: MOBILE-54 — The consent storage writes to the device only after a grant
 
-The mobile app SHALL give PostHog, in `opt-in` mode, a storage that keeps every value it is
-handed in memory until consent is granted; on a grant writes a grant marker, the held values and
-every later value under its own prefix to the device's key-value storage, `keyValueStorage` of
-MOBILE-56; reads the marker back at the next launch; and on a revoke stops writing to the device
-and removes the marker and every key it wrote or read.
+The mobile app SHALL give PostHog, in `opt-in` mode, a storage that keeps nothing while consent is
+not granted, reading no value and dropping every value it is handed; on a grant writes a grant
+marker to the device's key-value storage, `keyValueStorage` of MOBILE-56, and once the device holds
+it writes every later value there under its own prefix; when the device refuses the marker, keeps
+the grant and every later value in memory for this launch only; reads the marker back at the next
+launch; and on a revoke stops writing to the device, forgets every value it holds, waits for every
+device write it already issued and then removes the marker and every key it wrote or read, going
+on past a removal the device refuses, and SHALL write to the device again on a later grant.
 
-**Evidence:** `apps/mobile/src/lib/posthog/consentStorage.adapter.ts:21-91`, `apps/mobile/src/lib/posthog/consentStorage.constant.ts:3-8`
+**Evidence:** `apps/mobile/src/lib/posthog/consentStorage.adapter.ts:28-133`, `apps/mobile/src/lib/posthog/consentStorage.constant.ts:3-8`
 
 #### Scenario: before a grant
 
 - **GIVEN** a consent storage with no earlier grant
 - **WHEN** PostHog writes a value and reads it back
-- **THEN** it reads the value, and the device storage holds nothing
+- **THEN** it reads nothing back, and the device storage holds nothing
 - **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "keeps every value off the device before a grant"
 
 #### Scenario: a grant
 
-- **GIVEN** a consent storage holding a value written before a grant
-- **WHEN** it is opened, and PostHog writes another value
-- **THEN** the device storage holds the marker and both values under the storage's prefix
-- **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "writes the held values and every later one to the device after a grant"
+- **GIVEN** a consent storage with no earlier grant
+- **WHEN** it is opened, and PostHog writes a value
+- **THEN** the device storage holds the marker and the value under the storage's prefix
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "writes the grant marker and every later value to the device after a grant"
+
+#### Scenario: a grant the device refuses
+
+- **GIVEN** a consent storage whose device refuses the marker
+- **WHEN** it is opened, and PostHog writes a value and reads it back
+- **THEN** nothing throws, the storage reads as granted, the value reads back from memory, the
+  device holds nothing and a new consent storage reads as not granted
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "keeps the grant in memory for this launch when the device refuses it"
 
 #### Scenario: the next launch
 
@@ -1402,20 +1421,45 @@ and removes the marker and every key it wrote or read.
 - **THEN** the device storage holds nothing, and the storage reads as not granted
 - **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "removes every value it wrote on a revoke and writes none after"
 
+#### Scenario: a write in flight at a revoke
+
+- **GIVEN** a granted consent storage with a device write still in flight
+- **WHEN** it is closed, and the write then lands
+- **THEN** the device storage holds nothing
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "removes every key only after the writes it already issued land"
+
+#### Scenario: a removal the device refuses
+
+- **GIVEN** a granted consent storage with values on the device, whose device refuses the removal
+  of one key
+- **WHEN** it is closed
+- **THEN** nothing throws, the other keys are removed and the storage reads as not granted
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "goes on removing the other keys when the device refuses one"
+
+#### Scenario: a grant after a revoke
+
+- **GIVEN** a consent storage granted, written to and closed, then handed a value
+- **WHEN** it is opened again, and PostHog writes another value
+- **THEN** the device holds the marker and the later value, and neither value of before the
+  second grant
+- **Test:** `apps/mobile/src/lib/posthog/__tests__/consentStorage.adapter.test.ts` › "writes to the device again on a grant after a revoke"
+
 ### Requirement: MOBILE-55 — The consent API grants, revokes and reads the status
 
 The mobile app SHALL export a consent API, the `IConsentPort` of packages/core, from its
 observability barrel, bound to PostHog in the composition root `consent.adapter.ts`. In `opt-in`
-mode with a key, `grant` SHALL construct the client (MOBILE-49), open the consent storage and
-then opt PostHog in; `revoke` SHALL close the consent storage, drop the client so later calls are
-dropped (MOBILE-60), and opt it out and reset it keeping no property, the device id included, a
-client the launch built to restore a grant from an earlier launch included, and a later grant
-SHALL construct a new client; and `getStatus` SHALL read `granted` while the storage
-holds a grant, `denied` after a revoke in the same launch, and `pending` otherwise. In `granted`
-and `memory` mode and without a key, `getStatus` SHALL read `not-required`, and `grant` and
-`revoke` SHALL construct nothing and call nothing on PostHog.
+mode with a key, `grant` SHALL open the consent storage, construct the client (MOBILE-49) and then
+opt PostHog in; `revoke` SHALL close the consent storage, drop the client so later calls are
+dropped (MOBILE-60), and opt it out, drop every event and log record it still queues and shut it
+down, so nothing captured before the revoke is sent after it and its flush timers stop, a client
+the launch built to restore a grant from an earlier launch included, a device storage that refuses
+a removal included; a later grant SHALL construct a new client, which reads nothing the dropped one
+stored; and `getStatus` SHALL read `granted` while the storage holds a grant, `denied` after a
+revoke in the same launch, and `pending` otherwise. In `granted` and `memory` mode and without a
+key, `getStatus` SHALL read `not-required`, and `grant` and `revoke` SHALL construct nothing and
+call nothing on PostHog.
 
-**Evidence:** `apps/mobile/src/lib/observability/createPostHogConsent.adapter.ts:25-58`, `apps/mobile/src/lib/observability/createPostHogConsent.constant.ts:3`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:59-82`, `apps/mobile/src/lib/observability/consent.adapter.ts:7`, `apps/mobile/src/lib/observability/index.ts:1`
+**Evidence:** `apps/mobile/src/lib/observability/createPostHogConsent.adapter.ts:25-53`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:61-69`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:82-111`, `apps/mobile/src/lib/posthog/posthogClient.constant.ts:46-48`, `apps/mobile/src/lib/observability/consent.adapter.ts:7`, `apps/mobile/src/lib/observability/index.ts:1`
 
 #### Scenario: before a choice
 
@@ -1432,13 +1476,31 @@ and `memory` mode and without a key, `getStatus` SHALL read `not-required`, and 
   the status reads `granted`
 - **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "grant constructs the client once, opens the consent storage, opts PostHog in and reads granted"
 
+#### Scenario: the client's first write
+
+- **GIVEN** a key, the consent mode `opt-in` and a client that writes to its storage as it is
+  constructed
+- **WHEN** consent is granted
+- **THEN** the device holds that write under the consent storage's prefix
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "grant opens the consent storage before it constructs the client, so its first write reaches the device"
+
 #### Scenario: a revoke
 
 - **GIVEN** a key, the consent mode `opt-in` and a grant
 - **WHEN** consent is revoked, and an error is captured after it
-- **THEN** the device storage holds nothing, PostHog is opted out and reset keeping no property,
-  the error never reaches PostHog and the status reads `denied`
-- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "revoke closes the consent storage, drops the client, opts it out, resets it and reads denied"
+- **THEN** the device storage holds nothing, PostHog is opted out, its event and log queues are
+  emptied before it is shut down, it is not reset, the error never reaches PostHog and the status
+  reads `denied`
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "revoke closes the consent storage, drops the client, opts it out, empties its queues, shuts it down and reads denied"
+
+#### Scenario: a revoke the device storage fails
+
+- **GIVEN** a key, the consent mode `opt-in`, a grant and a device storage that refuses every
+  removal
+- **WHEN** consent is revoked, and an error is captured after it
+- **THEN** nothing throws, PostHog is opted out and shut down, the error never reaches PostHog and
+  the status reads `denied`
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a revoke whose storage removals fail still stops the client and reads denied"
 
 #### Scenario: a revoke while the launch restores an earlier grant
 
@@ -1455,6 +1517,14 @@ and `memory` mode and without a key, `getStatus` SHALL read `not-required`, and 
 - **WHEN** consent is granted again
 - **THEN** a second client is constructed and opted in, and the status reads `granted`
 - **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a grant after a revoke constructs a new client and opts it in"
+
+#### Scenario: what the dropped client stored
+
+- **GIVEN** a key, the consent mode `opt-in`, a grant and a client that writes its state while it
+  shuts down
+- **WHEN** consent is revoked and granted again
+- **THEN** the new client reads nothing back from the consent storage
+- **Test:** `apps/mobile/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a grant after a revoke starts a client that reads nothing the dropped one stored"
 
 #### Scenario: a mode that asks no consent
 
@@ -1604,7 +1674,7 @@ The mobile app's PostHog observability adapter SHALL drop every call while the a
 PostHog client, without a key and in `opt-in` mode before a grant and after a revoke, and SHALL
 hold none of them for a later client.
 
-**Evidence:** `apps/mobile/src/lib/observability/createPostHogObservability.adapter.ts:30-79`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:59-60`
+**Evidence:** `apps/mobile/src/lib/observability/createPostHogObservability.adapter.ts:30-79`, `apps/mobile/src/lib/posthog/posthogClient.adapter.ts:72-73`
 
 #### Scenario: before a grant
 
