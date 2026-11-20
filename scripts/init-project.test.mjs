@@ -21,6 +21,9 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { before, test } from 'node:test'
 
+import { gitFreeEnv } from './git-free-env.mjs'
+import { withHookGitDir } from './hook-git-dir.mjs'
+
 const REPO_ROOT = resolve(import.meta.dirname, '..')
 const SLUG = 'demo-app'
 const TEMPLATE_NAME = 'app-monorepo-template'
@@ -37,31 +40,50 @@ const listFiles = () =>
     ['ls-files', '--cached', '--others', '--exclude-standard', '-z'],
     {
       cwd: REPO_ROOT,
-      encoding: 'utf8'
+      encoding: 'utf8',
+      env: gitFreeEnv()
     }
   )
     .split('\0')
     .filter(Boolean)
 
 let copy = ''
+let hookRun = { decoyWritten: true, result: [] }
 
+// The copy is taken and renamed under a decoy GIT_DIR, as a git hook would
+// run this suite, so every case below also proves the listing read this
+// repository and not the one a hook exports (decision 33).
 before(() => {
-  copy = mkdtempSync(join(tmpdir(), 'init-project-'))
-  for (const file of listFiles()) {
-    const target = join(copy, file)
-    mkdirSync(dirname(target), { recursive: true })
-    try {
-      cpSync(join(REPO_ROOT, file), target)
-    } catch (error) {
-      // A file deleted in the working tree but not yet in git's index.
-      if (error.code !== 'ENOENT') throw error
+  hookRun = withHookGitDir({
+    use: () => {
+      copy = mkdtempSync(join(tmpdir(), 'init-project-'))
+      process.on('exit', () =>
+        rmSync(copy, { force: true, recursive: true })
+      )
+      const listed = listFiles()
+      for (const file of listed) {
+        const target = join(copy, file)
+        mkdirSync(dirname(target), { recursive: true })
+        try {
+          cpSync(join(REPO_ROOT, file), target)
+        } catch (error) {
+          // A file deleted in the working tree but not yet in git's index.
+          if (error.code !== 'ENOENT') throw error
+        }
+      }
+      execFileSync(process.execPath, ['scripts/init-project.mjs', SLUG], {
+        cwd: copy,
+        env: gitFreeEnv(),
+        stdio: 'ignore'
+      })
+      return listed
     }
-  }
-  execFileSync(process.execPath, ['scripts/init-project.mjs', SLUG], {
-    cwd: copy,
-    stdio: 'ignore'
   })
-  process.on('exit', () => rmSync(copy, { force: true, recursive: true }))
+})
+
+test("END TO END: under a hook's GIT_DIR, the copy is listed from this repository and the hook's repository is left alone", () => {
+  assert.equal(hookRun.decoyWritten, false)
+  assert.deepEqual(hookRun.result, listFiles())
 })
 
 const read = ({ root, file }) => readFileSync(join(root, file), 'utf8')
@@ -110,7 +132,7 @@ test('no template identity token is left', () => {
   assert.doesNotThrow(() =>
     execFileSync(process.execPath, ['scripts/check-identity.mjs'], {
       cwd: copy,
-      env: { ...process.env, ATL_TEMPLATE_SELF: '' },
+      env: { ...gitFreeEnv(), ATL_TEMPLATE_SELF: '' },
       stdio: 'ignore'
     })
   )

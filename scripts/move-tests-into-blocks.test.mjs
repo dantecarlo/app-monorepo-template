@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url'
 
 import { gitFreeEnv } from './git-free-env.mjs'
 import { withScratchTree } from './gate/scratch.mjs'
+import { withHookGitDir } from './hook-git-dir.mjs'
 import {
   planMoves,
   rewriteCitations,
@@ -119,6 +120,32 @@ test('a test beside its unit moves into the __tests__/ of its folder with git mv
       assert.match(result.stdout, /moved 1 test\(s\)/u)
     }
   })
+})
+
+test("END TO END: under a hook's GIT_DIR, the test moves with git mv inside the scratch repository and the hook's repository is left alone", () => {
+  const { decoyWritten, result } = withHookGitDir({
+    use: () =>
+      inRepository({
+        files: {
+          [STORE]: 'export const s = 1\n',
+          [STORE_TEST]: "test('s', () => {})\n"
+        },
+        use: ({ root }) => {
+          const moved = run({ root })
+          return {
+            moved,
+            status: git({ args: ['status', '--porcelain'], root }).stdout
+          }
+        }
+      })
+  })
+
+  assert.equal(decoyWritten, false)
+  assert.equal(result.moved.status, PASSED, result.moved.stderr)
+  assert.match(
+    result.status,
+    /^R {2}apps\/web\/src\/stores\/auth\.store\.test\.ts -> apps\/web\/src\/stores\/__tests__\/auth\.store\.test\.ts$/mu
+  )
 })
 
 test('a moved test reaches its unit through the @/ alias its workspace maps onto src', () => {

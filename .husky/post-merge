@@ -1,0 +1,4 @@
+# Removes the worktree of every branch a pull request merged, then
+# fast-forwards the main checkout, listing only what it changed. A failure
+# here never fails the merge.
+node "$(dirname "$0")/../scripts/prune-worktrees.mjs" --quiet || true
