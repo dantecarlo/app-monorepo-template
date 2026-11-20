@@ -72,12 +72,14 @@ export const sessionStart = async ({
         stderr: (line) => errors.push(line),
         stdout
       }),
+      // The timer holds the process until the race is decided, so a reaper
+      // that hangs on nothing still ends in the line below, never in Node's
+      // unsettled-await exit 13; `finally` clears it.
       new Promise((done) => {
         timer = setTimeout(
           () => done(TIMED_OUT),
           boundMs ?? contract.boundSeconds * MS_PER_SECOND + MARGIN_MS
         )
-        timer.unref?.()
       })
     ])
     if (outcome === TIMED_OUT) {

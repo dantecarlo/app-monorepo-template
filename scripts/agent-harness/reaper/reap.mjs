@@ -16,6 +16,12 @@
 // that reaches it ends no tree it had not already decided on, says so and
 // exits 1.
 //
+// A run that ends processes takes the lock of lock.mjs first, and exits 0
+// at once when another reaper holds it. Right before the kills it lists the
+// processes again, and leaves, with its reason, every tree whose root pid
+// is gone or now names a process that started at another time: a tree
+// kill would follow a reused pid.
+//
 // Usage:
 //   node scripts/agent-harness/reaper/reap.mjs            (pnpm reap)
 //   node scripts/agent-harness/reaper/reap.mjs --kill     (pnpm reap:kill)
@@ -26,6 +32,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { loadContract } from './contract.mjs'
+import { LOCK_PATH, takeLock } from './lock.mjs'
 import { planReap } from './plan.mjs'
 import { endTrees, listProcesses } from './platform.mjs'
 
@@ -121,11 +128,23 @@ const reportDryRun = ({ contract, options, plan, stdout }) => {
   )
 }
 
-const reportKill = ({ contract, options, plan, results, stderr, stdout }) => {
+const CHANGED = 'its pid no longer names the process it planned to end'
+
+const reportKill = ({
+  changed,
+  contract,
+  options,
+  plan,
+  results,
+  stderr,
+  stdout
+}) => {
   const byPid = new Map(results.map((result) => [result.pid, result]))
-  const ended = plan.candidates.filter(({ pid }) => byPid.get(pid)?.ended)
+  const moved = new Set(changed.map(({ pid }) => pid))
+  const meant = plan.candidates.filter(({ pid }) => !moved.has(pid))
+  const ended = meant.filter(({ pid }) => byPid.get(pid)?.ended)
   const failed = results.filter(({ ended: done }) => !done)
-  const left = plan.candidates.filter(({ pid }) => !byPid.has(pid))
+  const left = meant.filter(({ pid }) => !byPid.has(pid))
   const endedMb = ended.reduce((sum, { mb }) => sum + mb, 0)
   failed.forEach(({ detail, pid }) =>
     stderr(`${LABEL}: could not end pid ${pid}: ${detail}`)
@@ -134,6 +153,7 @@ const reportKill = ({ contract, options, plan, results, stderr, stdout }) => {
     stdout(
       JSON.stringify({
         ...planJson({ contract, mode: 'kill', plan }),
+        changed: changed.map(({ pid }) => pid),
         ended: ended.map(({ pid }) => pid),
         failed,
         left: left.map(({ pid }) => pid)
@@ -144,6 +164,9 @@ const reportKill = ({ contract, options, plan, results, stderr, stdout }) => {
       ended.forEach((candidate) =>
         stdout(`${LABEL}: ended ${describe({ candidate })}`)
       )
+      changed.forEach(({ family, pid }) =>
+        stdout(`${LABEL}: left pid ${pid}, ${family}: ${CHANGED}`)
+      )
       keptLines({ plan }).forEach((line) => stdout(line))
     }
     stdout(`${LABEL}: ended ${treesOf({ count: ended.length })}, ${endedMb} MB`)
@@ -151,23 +174,79 @@ const reportKill = ({ contract, options, plan, results, stderr, stdout }) => {
   if (left.length > 0) {
     stderr(
       `${LABEL}: reached its ${contract.boundSeconds} s bound after ending ` +
-        `${ended.length} of ${plan.candidates.length} trees; it left ` +
+        `${ended.length} of ${meant.length} trees; it left ` +
         left.map(({ pid }) => `pid ${pid}`).join(', ')
     )
   }
   return failed.length > 0 || left.length > 0 ? EXIT.FAILED : EXIT.OK
 }
 
+const listingFailure = ({ contract, error, when }) =>
+  error.timedOut
+    ? `${LABEL}: the process listing${when} did not finish within its ` +
+      `${contract.boundSeconds} s bound, so nothing was ended`
+    : `${LABEL}: ${error.message}; nothing was ended`
+
+// The candidates whose root pid still names the process the plan read, and
+// the ones whose pid is gone or names a process that started at another
+// time, from a listing read again right before the kills.
+const sortByIdentity = ({ candidates, processes }) => {
+  const now = new Map(processes.map((process) => [process.pid, process]))
+  const same = ({ pid, startMs }) => now.get(pid)?.startMs === startMs
+  return {
+    changed: candidates.filter((candidate) => !same(candidate)),
+    unchanged: candidates.filter((candidate) => same(candidate))
+  }
+}
+
+// The kill phase, under the lock: the second listing, then the kills of the
+// trees whose identity held.
+const killPlanned = async ({ contract, options, plan, run, stderr, stdout }) => {
+  const report = ({ changed = [], results = [] } = {}) =>
+    reportKill({ changed, contract, options, plan, results, stderr, stdout })
+  if (plan.candidates.length === 0 || run.remainingMs() <= 0) return report()
+  let again
+  try {
+    again = await listProcesses({
+      platform: run.platform,
+      spawn: run.spawn,
+      timeoutMs: Math.max(MIN_TIMEOUT_MS, run.remainingMs())
+    })
+  } catch (error) {
+    stderr(listingFailure({ contract, error, when: ' before the kills' }))
+    return EXIT.FAILED
+  }
+  const { changed, unchanged } = sortByIdentity({
+    candidates: plan.candidates,
+    processes: again
+  })
+  const results =
+    unchanged.length === 0 || run.remainingMs() <= 0
+      ? []
+      : await endTrees({ ...run, candidates: unchanged })
+  return report({ changed, results })
+}
+
+const lockedOut = ({ lockPath, options, stdout }) => {
+  stdout(
+    options.json
+      ? JSON.stringify({ locked: lockPath, mode: 'kill' })
+      : `${LABEL}: another reaper holds ${lockPath}, so this run ends nothing`
+  )
+  return EXIT.OK
+}
+
 /**
  * One run of the reaper over the machine's processes, its options in
- * `argv`. Every effect is injected: `clock`, `platform`, `selfPid`,
- * `spawn`, `signal` and `sleep` default to the live ones, and `stdout` and
- * `stderr` take one line each. Resolves the exit code.
+ * `argv`. Every effect is injected: `clock`, `lockPath`, `platform`,
+ * `selfPid`, `spawn`, `signal` and `sleep` default to the live ones, and
+ * `stdout` and `stderr` take one line each. Resolves the exit code.
  */
 export const runReaper = async ({
   argv,
   clock = Date.now,
   contract,
+  lockPath = LOCK_PATH,
   platform = process.platform,
   selfPid = process.pid,
   signal,
@@ -181,41 +260,45 @@ export const runReaper = async ({
     stderr(`${LABEL}: ${options.problem}; ${USAGE}`)
     return EXIT.FAILED
   }
-  const deadline = clock() + contract.boundSeconds * MS_PER_SECOND
-  const remainingMs = () => deadline - clock()
-  let processes
+  let lock = null
+  if (options.kill) {
+    try {
+      lock = takeLock({ path: lockPath })
+    } catch (error) {
+      stderr(`${LABEL}: cannot take the lock ${lockPath}: ${error.message}`)
+      return EXIT.FAILED
+    }
+    if (lock === null) return lockedOut({ lockPath, options, stdout })
+  }
   try {
-    processes = await listProcesses({
+    const deadline = clock() + contract.boundSeconds * MS_PER_SECOND
+    const run = {
       platform,
-      spawn,
-      timeoutMs: Math.max(MIN_TIMEOUT_MS, remainingMs())
-    })
-  } catch (error) {
-    stderr(
-      error.timedOut
-        ? `${LABEL}: the process listing did not finish within its ` +
-            `${contract.boundSeconds} s bound, so nothing was ended`
-        : `${LABEL}: ${error.message}; nothing was ended`
-    )
-    return EXIT.FAILED
+      remainingMs: () => deadline - clock(),
+      signal,
+      sleep,
+      spawn
+    }
+    let processes
+    try {
+      processes = await listProcesses({
+        platform,
+        spawn,
+        timeoutMs: Math.max(MIN_TIMEOUT_MS, run.remainingMs())
+      })
+    } catch (error) {
+      stderr(listingFailure({ contract, error, when: '' }))
+      return EXIT.FAILED
+    }
+    const plan = planReap({ contract, now: clock(), platform, processes, selfPid })
+    if (!options.kill) {
+      reportDryRun({ contract, options, plan, stdout })
+      return EXIT.OK
+    }
+    return await killPlanned({ contract, options, plan, run, stderr, stdout })
+  } finally {
+    lock?.release()
   }
-  const plan = planReap({ contract, now: clock(), platform, processes, selfPid })
-  if (!options.kill) {
-    reportDryRun({ contract, options, plan, stdout })
-    return EXIT.OK
-  }
-  const results =
-    plan.candidates.length === 0 || remainingMs() <= 0
-      ? []
-      : await endTrees({
-          candidates: plan.candidates,
-          platform,
-          remainingMs,
-          signal,
-          sleep,
-          spawn
-        })
-  return reportKill({ contract, options, plan, results, stderr, stdout })
 }
 
 const main = async () => {

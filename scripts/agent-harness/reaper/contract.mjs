@@ -3,11 +3,16 @@
 // processes the reaper may end, through a closed schema: a key it does not
 // name, a missing field, an id used twice or a pattern that does not compile
 // throws, naming the file and the entry, so the reaper ends nothing from a
-// contract it cannot read. Each pattern compiles case-insensitive; a wrapper
-// family's pattern is read against the process name (plan.mjs). The
-// optional `spare` list names, in the same shape without `wrapper`, the
-// processes the reaper never ends, nor any tree that holds one: a daemon
-// detached by design reads as an orphan.
+// contract it cannot read.
+//
+// A family is { id, match, what, wrapper? }. Each entry of `match` holds an
+// `exe` pattern, read against the process's own executable path, and may
+// hold a `script` pattern, read against the script an interpreter runs, and
+// an `args` pattern, read against the arguments after it (plan.mjs reads
+// those three from the command line); every pattern compiles
+// case-insensitive. The optional `spare` list names, in the same shape
+// without `wrapper`, the processes the reaper never ends, nor any tree that
+// holds one.
 // ---------------------------------------------------------------------------
 
 import { readFileSync } from 'node:fs'
@@ -16,11 +21,13 @@ import { join } from 'node:path'
 export const CONTRACT = '.agents/contracts/process-reaper.json'
 
 const TOP_KEYS = ['$comment', 'boundSeconds', 'families', 'graceSeconds', 'spare']
-const FAMILY_KEYS = ['id', 'pattern', 'what', 'wrapper']
-const REQUIRED_FAMILY_KEYS = ['id', 'pattern', 'what']
+const FAMILY_KEYS = ['id', 'match', 'what', 'wrapper']
+const REQUIRED_TEXT_KEYS = ['id', 'what']
+const MATCH_KEYS = ['args', 'exe', 'script']
 const SECONDS_KEYS = ['boundSeconds', 'graceSeconds']
 const ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u
 const PATTERN_FLAGS = 'iu'
+const FAMILIES = 'families'
 
 const refuse = ({ problem }) => {
   throw new Error(`${CONTRACT}: ${problem}`)
@@ -32,26 +39,46 @@ const isObject = (value) =>
 const unknownKeys = ({ allowed, value }) =>
   Object.keys(value).filter((key) => !allowed.includes(key))
 
-const compile = ({ id, pattern }) => {
+const compile = ({ label, pattern, where }) => {
   try {
     return new RegExp(pattern, PATTERN_FLAGS)
   } catch (error) {
     return refuse({
-      problem: `family ${id}: pattern does not compile (${error.message})`
+      problem: `family ${label}: ${where} does not compile (${error.message})`
     })
   }
 }
 
-const familyOf = ({ family, index, list = 'families' }) => {
+const parseMatch = ({ entry, index, label }) => {
+  const where = `match[${index}]`
+  if (!isObject(entry)) refuse({ problem: `family ${label}: ${where} is not an object` })
+  const unknown = unknownKeys({ allowed: MATCH_KEYS, value: entry })
+  if (unknown.length > 0) {
+    refuse({ problem: `family ${label}: ${where}: unknown key ${unknown.join(', ')}` })
+  }
+  if (typeof entry.exe !== 'string' || entry.exe.trim() === '') {
+    refuse({ problem: `family ${label}: ${where} has no exe pattern` })
+  }
+  return Object.fromEntries(
+    MATCH_KEYS.filter((key) => entry[key] !== undefined).map((key) => {
+      if (typeof entry[key] !== 'string') {
+        refuse({ problem: `family ${label}: ${where}.${key} is not a pattern` })
+      }
+      return [key, compile({ label, pattern: entry[key], where: `${where}.${key}` })]
+    })
+  )
+}
+
+const parseFamily = ({ family, index, list }) => {
   if (!isObject(family)) refuse({ problem: `${list}[${index}] is not an object` })
   const label = typeof family.id === 'string' ? family.id : `${list}[${index}]`
   const allowed =
-    list === 'families' ? FAMILY_KEYS : FAMILY_KEYS.filter((key) => key !== 'wrapper')
+    list === FAMILIES ? FAMILY_KEYS : FAMILY_KEYS.filter((key) => key !== 'wrapper')
   const unknown = unknownKeys({ allowed, value: family })
   if (unknown.length > 0) {
     refuse({ problem: `family ${label}: unknown key ${unknown.join(', ')}` })
   }
-  const missing = REQUIRED_FAMILY_KEYS.filter(
+  const missing = REQUIRED_TEXT_KEYS.filter(
     (key) => typeof family[key] !== 'string' || family[key].trim() === ''
   )
   if (missing.length > 0) {
@@ -63,10 +90,14 @@ const familyOf = ({ family, index, list = 'families' }) => {
   if (family.wrapper !== undefined && family.wrapper !== true) {
     refuse({ problem: `family ${family.id}: wrapper is true or absent` })
   }
+  if (!Array.isArray(family.match) || family.match.length === 0) {
+    refuse({ problem: `family ${family.id}: match must be a non-empty list` })
+  }
   return {
     id: family.id,
-    pattern: family.pattern,
-    regex: compile({ id: family.id, pattern: family.pattern }),
+    match: family.match.map((entry, at) =>
+      parseMatch({ entry, index: at, label: family.id })
+    ),
     what: family.what,
     wrapper: family.wrapper === true
   }
@@ -91,14 +122,14 @@ export const parseContract = ({ text }) => {
   if (!Array.isArray(parsed.families) || parsed.families.length === 0) {
     refuse({ problem: 'families must be a non-empty list' })
   }
-  const families = parsed.families.map((family, index) =>
-    familyOf({ family, index })
-  )
   if (parsed.spare !== undefined && !Array.isArray(parsed.spare)) {
     refuse({ problem: 'spare must be a list' })
   }
-  const spare = (parsed.spare ?? []).map((entry, index) =>
-    familyOf({ family: entry, index, list: 'spare' })
+  const families = parsed.families.map((family, index) =>
+    parseFamily({ family, index, list: FAMILIES })
+  )
+  const spare = (parsed.spare ?? []).map((family, index) =>
+    parseFamily({ family, index, list: 'spare' })
   )
   const seen = new Set()
   ;[...families, ...spare].forEach(({ id }) => {

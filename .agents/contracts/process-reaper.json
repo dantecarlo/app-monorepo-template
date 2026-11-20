@@ -1,60 +1,183 @@
 {
-  "$comment": "The families of processes the reaper (scripts/agent-harness/reaper/) may end, each with an id, a pattern read case-insensitive against the command line (against the process name for a wrapper family), and what it is. The reaper ends an orphan, a process whose parent pid names no live process or one that started after it (on POSIX also one under pid 1 or the user's subreaper), only when it matches a family, and then with its whole descendant tree; it never touches its own ancestry, a tree that holds a process younger than graceSeconds, or anything outside these families, and it ends within boundSeconds. spare names, in the same shape, the processes it never ends, nor any tree that holds one: a daemon detached by design reads as an orphan while every session still uses it. Each family is safe to end as an orphan because its only reader is gone: an MCP server talks over the stdio of the session that started it, so once that session is dead nothing reads it again, and its npx launcher only waits on it; vitest, tinypool and jest workers, tsc and esbuild serve the test run or the build that started them; turbo starts again on its next run, its daemon included; git-remote-https serves one fetch, pull or push, over once git is gone; and a cmd.exe or conhost.exe wrapper is ended only with the one reapable process it wraps. A family changes only when the owner asks: this is a rule file (the LAW 'A rule is not edited to fit the work', AGENTS.md). See docs/harness.md section 3g.",
+  "$comment": "The families of processes the reaper (scripts/agent-harness/reaper/) may end, and the processes it spares. Each family names what it is and how a process matches it: one or more match entries, each with an exe pattern read against the process's own executable path, a script pattern read against the script an interpreter (node, python) runs, its first argument that is not a flag, and an args pattern read against the arguments after it; every pattern is case-insensitive, and nothing anywhere in the arguments makes a family by itself. The reaper ends an orphan, a process whose parent pid names no live process or one that started after it (on POSIX also one under pid 1 or the user's subreaper), only when it matches a family, and then with its whole descendant tree. A wrapper family (consoles, POSIX shells, the npx launcher) is read only by what it wraps: an orphaned wrapper goes only with the one reapable process it wraps. It never touches its own ancestry, a tree that holds a spared process, a tree that holds a process younger than graceSeconds, or anything outside the families; it ends within boundSeconds. The families are one-shot runs only: persistent and watch work is never reaped without the owner's word, so turbo run dev or start, the turbo daemon, vitest without run, tsc --watch, tsserver, and the dev servers (next dev, expo start, metro) match no family. Each family is safe to end as an orphan because its only reader is gone: an MCP server talks over the stdio of the session that started it, and its npx launcher only waits on it; vitest, tinypool and jest workers, tsc and esbuild serve the test run or the build that started them; turbo starts again on its next run; git-remote-https serves one fetch, pull or push, over once git is gone. spare names, in the same shape, what reads as an orphan while it still works: a shared MCP proxy, the Git for Windows (MSYS) runtime, whose processes report a parent already gone by design, and tmux or screen, servers detached by design. A family or a spare entry changes only when the owner asks: this is a rule file (the LAW 'A rule is not edited to fit the work', AGENTS.md). See docs/harness.md section 3g.",
   "graceSeconds": 60,
   "boundSeconds": 8,
   "families": [
     {
       "id": "npx-mcp",
-      "pattern": "(?:npx-cli\\.js|\\bnpm(?:\\.cmd)?\"?\\s+exec\\b|[\\\\/]_npx[\\\\/]).*[\\s\"'^@/\\\\-]mcp(?![\\w-])",
-      "what": "An MCP server npx started, and the npx launcher that waits on it: a launcher (npx-cli.js, or npm exec on POSIX) or an entrypoint under the npx cache (_npx), whose command line names an MCP package (a word that ends in -mcp, or the argument mcp)"
+      "match": [
+        {
+          "exe": "(?:^|/)node(?:js)?(?:\\.exe)?$",
+          "script": "(?:^|/)_npx/[^/]+/node_modules/(?:\\.bin/[^/]*-mcp$|(?:@[^/]+/)?[^/]*-mcp/)"
+        }
+      ],
+      "what": "An MCP server npx started from its cache: node running a script under _npx/<hash>/node_modules/ of a package whose name ends in -mcp"
     },
     {
       "id": "mcp-server",
-      "pattern": "context7-mcp|\\bcodegraph\\b.*\\bserve\\b.*--mcp\\b|\\bshadcn\\b.*[\\s\"'^]mcp\\b|next-devtools-mcp|metro-mcp|expo-mcp|react-native-docs-mcp|@lottiefiles[\\\\/][\\w-]*mcp|scrapling-mcp",
-      "what": "A known MCP server entrypoint, however it was launched: context7-mcp, codegraph serve --mcp, shadcn mcp, next-devtools-mcp, metro-mcp, expo-mcp, react-native-docs-mcp, a @lottiefiles MCP and scrapling-mcp"
+      "match": [
+        {
+          "exe": "(?:^|/)node(?:js)?(?:\\.exe)?$",
+          "script": "(?:^|/)node_modules/(?:@upstash/context7-mcp/|next-devtools-mcp/|metro-mcp/|expo-mcp/|react-native-docs-mcp/|@lottiefiles/[^/]*mcp[^/]*/|\\.bin/(?:context7-mcp|next-devtools-mcp|metro-mcp|expo-mcp|react-native-docs-mcp)$)"
+        },
+        {
+          "args": "(?:^|\\s)mcp(?:\\s|$)",
+          "exe": "(?:^|/)node(?:js)?(?:\\.exe)?$",
+          "script": "(?:^|/)node_modules/(?:shadcn/|\\.bin/shadcn$)"
+        },
+        {
+          "args": "(?:^|\\s)serve\\s(?:.*\\s)?--mcp(?:\\s|$)",
+          "exe": "(?:^|/)node(?:js)?(?:\\.exe)?$",
+          "script": "(?:^|/)node_modules/(?:@colbymchenry/codegraph[^/]*/|\\.bin/codegraph$)"
+        },
+        {
+          "exe": "(?:^|/)scrapling-mcp(?:\\.exe)?$"
+        },
+        {
+          "exe": "(?:^|/)python[\\d.]*w?(?:\\.exe)?$",
+          "script": "(?:^|/)scrapling-mcp(?:\\.exe)?$"
+        }
+      ],
+      "what": "A known MCP server entrypoint, by the package its script sits in: context7-mcp, next-devtools-mcp, metro-mcp, expo-mcp, react-native-docs-mcp, a @lottiefiles MCP, shadcn mcp, codegraph serve --mcp, and scrapling-mcp"
     },
     {
       "id": "vitest",
-      "pattern": "[\\\\/]vitest[\\\\/]|[\\\\/]tinypool[\\\\/]",
-      "what": "A vitest run and its tinypool or fork workers"
+      "match": [
+        {
+          "args": "^(?!.*(?:^|\\s)(?:--watch|-w|watch|dev|--ui)(?:[\\s=]|$)).*(?:^|\\s)(?:run|--run)(?:\\s|$)",
+          "exe": "(?:^|/)node(?:js)?(?:\\.exe)?$",
+          "script": "(?:^|/)node_modules/(?:vitest/vitest\\.mjs|\\.bin/vitest)$"
+        },
+        {
+          "exe": "(?:^|/)node(?:js)?(?:\\.exe)?$",
+          "script": "(?:^|/)node_modules/(?:tinypool/|vitest/dist/workers?/)"
+        }
+      ],
+      "what": "A one-shot vitest run (vitest run, never the watch mode a bare vitest starts) and its tinypool or fork workers"
     },
     {
       "id": "turbo",
-      "pattern": "[\\\\/]turbo(?:-(?:windows|linux|darwin)-[\\w-]+)?[\\\\/]bin[\\\\/]turbo(?:\\.exe)?\\b|(?:^|[\\\\/\"\\s])turbo(?:\\.exe)?\"?\\s+(?:run|daemon|--skip-infer)\\b",
-      "what": "turbo: its node shim, its native binary and its daemon"
+      "match": [
+        {
+          "args": "^(?!.*(?:^|\\s)(?:daemon|watch|--watch)(?:\\s|$))(?!.*(?:^|\\s)(?:\\S*#)?(?:dev|start)(?:\\s|$)).*(?:^|\\s)run(?:\\s|$)",
+          "exe": "(?:^|/)turbo(?:\\.exe)?$"
+        },
+        {
+          "args": "^(?!.*(?:^|\\s)(?:daemon|watch|--watch)(?:\\s|$))(?!.*(?:^|\\s)(?:\\S*#)?(?:dev|start)(?:\\s|$)).*(?:^|\\s)run(?:\\s|$)",
+          "exe": "(?:^|/)node(?:js)?(?:\\.exe)?$",
+          "script": "(?:^|/)node_modules/(?:turbo/bin/turbo|\\.bin/turbo)$"
+        }
+      ],
+      "what": "A one-shot turbo run, its native binary or its node shim: never turbo run dev or start, turbo watch, or the turbo daemon"
     },
     {
       "id": "esbuild",
-      "pattern": "(?:^|[\\\\/\"\\s])esbuild(?:\\.exe)?\"?\\s+--service\\b",
-      "what": "The esbuild service a build, a bundler or a test run started"
+      "match": [
+        {
+          "args": "^(?!.*(?:^|\\s)--(?:watch|serve)(?:[\\s=]|$)).*(?:^|\\s)--service(?:[\\s=]|$)",
+          "exe": "(?:^|/)esbuild(?:\\.exe)?$"
+        }
+      ],
+      "what": "The esbuild service a build, a bundler or a test run started (--service), never esbuild --watch or --serve"
     },
     {
       "id": "tsc",
-      "pattern": "[\\\\/]typescript[\\\\/](?:lib|bin)[\\\\/]tsc(?:\\.js)?\\b",
-      "what": "The TypeScript compiler, tsc"
+      "match": [
+        {
+          "args": "^(?!.*(?:^|\\s)(?:--watch|-w)(?:[\\s=]|$))",
+          "exe": "(?:^|/)node(?:js)?(?:\\.exe)?$",
+          "script": "(?:^|/)node_modules/(?:typescript/(?:lib|bin)/tsc(?:\\.js)?|\\.bin/tsc)$"
+        }
+      ],
+      "what": "A one-shot TypeScript compile, tsc: never tsc --watch or -w, and never tsserver"
     },
     {
       "id": "jest",
-      "pattern": "[\\\\/]jest-worker[\\\\/]|[\\\\/]jest(?:-cli)?[\\\\/]bin[\\\\/]jest(?:\\.js)?\\b",
-      "what": "A jest run and its workers"
+      "match": [
+        {
+          "exe": "(?:^|/)node(?:js)?(?:\\.exe)?$",
+          "script": "(?:^|/)node_modules/jest-worker/"
+        },
+        {
+          "args": "^(?!.*(?:^|\\s)--watch(?:All)?(?:[\\s=]|$))",
+          "exe": "(?:^|/)node(?:js)?(?:\\.exe)?$",
+          "script": "(?:^|/)node_modules/(?:jest(?:-cli)?/bin/jest(?:\\.js)?|\\.bin/jest)$"
+        }
+      ],
+      "what": "A one-shot jest run and its workers, never jest --watch or --watchAll"
     },
     {
       "id": "git-remote-https",
-      "pattern": "(?:^|[\\\\/\"\\s])git(?:\\.exe)?\"?\\s+remote-https?\\b|[\\\\/]git-remote-https?(?:\\.exe)?\"?(?:\\s|$)",
+      "match": [
+        {
+          "exe": "(?:^|/)git-remote-https?(?:\\.exe)?$"
+        },
+        {
+          "args": "^remote-https?\\s",
+          "exe": "(?:^|/)git(?:\\.exe)?$"
+        }
+      ],
       "what": "The http or https remote helper a git fetch, pull or push started"
     },
     {
       "id": "console-wrapper",
-      "pattern": "^(?:cmd|conhost)\\.exe$",
-      "what": "A cmd.exe or conhost.exe wrapper, matched by its name and ended only with the one reapable process it wraps",
+      "match": [
+        {
+          "exe": "(?:^|/)(?:cmd|conhost|powershell|pwsh)(?:\\.exe)?$"
+        },
+        {
+          "exe": "(?:^|/)node(?:js)?(?:\\.exe)?$",
+          "script": "(?:^|/)npm/bin/np[mx]-cli\\.js$"
+        },
+        {
+          "exe": "(?:^|/)np[mx](?:\\.cmd)?$"
+        },
+        {
+          "exe": "^(?:/(?:[^/]+/)*)?(?:sh|bash|dash|zsh|env|timeout)$"
+        }
+      ],
+      "what": "A console, a POSIX shell or the npx launcher (cmd.exe, conhost.exe, powershell, pwsh, npx-cli.js, npm exec, sh, bash, env, timeout): read only by what it wraps, never by its own command line, and ended only with the one reapable process it wraps",
       "wrapper": true
     }
   ],
   "spare": [
     {
       "id": "mcp-proxy",
-      "pattern": "(?:^|[\\\\/\"])mcp-proxy(?:\\.exe)?\"?(?:\\s|$)",
-      "what": "A shared MCP proxy (mcp-proxy) that serves MCP servers to every session over HTTP: it runs detached by design, so it reads as an orphan while the sessions still use it"
+      "match": [
+        {
+          "exe": "(?:^|/)mcp-proxy(?:\\.exe)?$"
+        },
+        {
+          "exe": "(?:^|/)python[\\d.]*w?(?:\\.exe)?$",
+          "script": "(?:^|/)mcp-proxy(?:\\.exe)?$|^mcp_proxy(?:\\.|$)"
+        },
+        {
+          "exe": "(?:^|/)node(?:js)?(?:\\.exe)?$",
+          "script": "(?:^|/)node_modules/(?:mcp-proxy/|\\.bin/mcp-proxy$)|(?:^|/)mcp-proxy\\.[cm]?js$"
+        }
+      ],
+      "what": "A shared MCP proxy that serves MCP servers to every session over HTTP, however it is launched (the mcp-proxy executable, python -m mcp_proxy, or a node mcp-proxy script): it runs detached by design, so it reads as an orphan while the sessions still use it"
+    },
+    {
+      "id": "msys-runtime",
+      "match": [
+        {
+          "exe": "^[a-z]:/(?:[^/]+/)*usr/bin/[^/]+$"
+        },
+        {
+          "exe": "(?:^|/)(?:sh|bash|dash|zsh|env|timeout|sleep)\\.exe$"
+        }
+      ],
+      "what": "A Git for Windows (MSYS) process, any executable of its usr/bin and its shells: the MSYS runtime reports a parent that is already gone, by design, while it still works"
+    },
+    {
+      "id": "terminal-multiplexer",
+      "match": [
+        {
+          "exe": "(?:^|/)(?:tmux|screen)(?:\\.exe)?$"
+        }
+      ],
+      "what": "tmux or screen: a server detached by design that holds live shells"
     }
   ]
 }
