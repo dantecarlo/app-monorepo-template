@@ -61,8 +61,23 @@ const PROSE_AFTER = '\n\nMore prose after the block.\n'
 const EMPTY_BLOCK = `${BLOCK_START}\n<!-- mcp-docs:end -->`
 const NO_FETCH = 'the suite reached fetch'
 
-const entry = ({ bin, capability, docs, name, packageName, version }) => ({
-  args: [`node_modules/${packageName}/${bin}`],
+// Written out, never imported: the updater's own constant would hide a
+// wrong one.
+const LAUNCHER = 'scripts/mcp/launch.mjs'
+
+const launcherCommand = ({ name }) => `node ${LAUNCHER} ${name}`
+
+const entry = ({
+  area,
+  bin,
+  capability,
+  docs,
+  name,
+  packageName,
+  version
+}) => ({
+  area,
+  args: [LAUNCHER, name],
   capability,
   command: 'node',
   docs,
@@ -73,6 +88,7 @@ const entry = ({ bin, capability, docs, name, packageName, version }) => ({
 })
 
 const NEXT_ENTRY = {
+  area: 'web',
   bin: NEXT_BIN,
   capability: 'web-next',
   docs: [NEXT_DOC],
@@ -85,6 +101,7 @@ const CATALOG = {
   servers: [
     entry(NEXT_ENTRY),
     entry({
+      area: 'mobile',
       bin: EXPO_BIN,
       capability: 'mobile-expo',
       docs: [EXPO_DOC],
@@ -255,7 +272,7 @@ test('a changed pin rewrites its row and prints the review paths', async () => {
   assert.deepEqual(rowNamed({ name: 'next-devtools', root }), {
     capability: 'web-next',
     checked: DAY_TWO,
-    command: `node node_modules/next-devtools-mcp/${NEXT_NEW_BIN}`,
+    command: launcherCommand({ name: 'next-devtools' }),
     latest: '0.4.0',
     name: 'next-devtools',
     packageName: 'next-devtools-mcp',
@@ -265,7 +282,7 @@ test('a changed pin rewrites its row and prints the review paths', async () => {
   assert.deepEqual(rowNamed({ name: 'expo', root }), {
     capability: 'mobile-expo',
     checked: DAY_ONE,
-    command: `node node_modules/expo-mcp/${EXPO_BIN}`,
+    command: launcherCommand({ name: 'expo' }),
     latest: '0.2.0',
     name: 'expo',
     packageName: 'expo-mcp',
@@ -275,9 +292,7 @@ test('a changed pin rewrites its row and prints the review paths', async () => {
   const doc = read({ path: MCP_DOC_PATH, root })
   assert.ok(doc.includes('`"next-devtools-mcp": "0.4.0"`'), doc)
   assert.ok(
-    doc.includes(
-      `\`node node_modules/next-devtools-mcp/${NEXT_NEW_BIN}\``
-    ),
+    doc.includes(`\`${launcherCommand({ name: 'next-devtools' })}\``),
     doc
   )
   assert.ok(doc.startsWith(PROSE_BEFORE), 'the prose before the block')
@@ -561,6 +576,48 @@ test('a .mcp.json server launched from node_modules is listed with its package',
     read({ path: MCP_DOC_PATH, root }),
     /\| acme +\| project +\| `@acme\/mcp-server` +\| — +\| `node node_modules\/@acme\/mcp-server\/dist\/cli\.js` +\| 3\.1\.4 +\|/u
   )
+})
+
+test('a .mcp.json server that runs the launcher is listed with its catalog package', async () => {
+  const root = treeOf({
+    config: {
+      mcpServers: {
+        'docs-expo': { args: [LAUNCHER, 'expo'], command: 'node' },
+        expo: { args: [LAUNCHER, 'expo'], command: 'node' }
+      }
+    }
+  })
+
+  const result = await run({
+    now: AT_DAY_ONE,
+    packages: REGISTRY_DAY_ONE,
+    root
+  })
+
+  assert.equal(result.code, PASSED, result.errors.join('\n'))
+  assert.deepEqual(
+    result.asked.filter((name) => name === 'expo-mcp'),
+    ['expo-mcp', 'expo-mcp']
+  )
+  const expoRow = {
+    checked: DAY_ONE,
+    command: launcherCommand({ name: 'expo' }),
+    latest: '0.2.0',
+    packageName: 'expo-mcp',
+    published: '2026-10-20'
+  }
+  assert.deepEqual(rowNamed({ name: 'expo', root }), {
+    ...expoRow,
+    capability: 'mobile-expo',
+    name: 'expo',
+    version: '0.2.0'
+  })
+  assert.deepEqual(rowNamed({ name: 'docs-expo', root }), {
+    ...expoRow,
+    capability: PROJECT_CAPABILITY,
+    name: 'docs-expo',
+    version: null
+  })
 })
 
 test('a non-npm command is listed as not on npm', async () => {
