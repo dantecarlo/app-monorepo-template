@@ -187,3 +187,49 @@ export const gitTreeTargets = ({ rest, sub }) => {
     ? []
     : splitArgs({ args: rest, valued: TREE_VALUED }).operands
 }
+
+// The subcommands that rewrite working-tree files, with the flags that keep
+// one to the index or to a dry run.
+const TREE_REWRITERS = new Set([
+  'am',
+  'apply',
+  'checkout',
+  'checkout-index',
+  'cherry-pick',
+  'clean',
+  'merge',
+  'mv',
+  'pull',
+  'read-tree',
+  'rebase',
+  'reset',
+  'restore',
+  'revert',
+  'rm',
+  'sparse-checkout',
+  'stash',
+  'submodule',
+  'switch'
+])
+const TREE_ONLY_WITH = { reset: ['--hard', '--merge', '--keep'] }
+const TREE_NEVER_WITH = {
+  apply: ['--cached', '--check', '--numstat', '--stat', '--summary']
+}
+
+/**
+ * Whether `git <sub>` rewrites working-tree files, so that one it names
+ * may be a rule file: a git write (gitWrite) that is no index, history or
+ * branch change alone.
+ */
+export const rewritesTree = ({ rest, sub }) => {
+  if (gitWrite({ rest, sub }) === undefined || !TREE_REWRITERS.has(sub)) {
+    return false
+  }
+  const texts = rest.map(({ text }) => text)
+  const needs = TREE_ONLY_WITH[sub]
+  if (needs !== undefined && !texts.some((text) => needs.includes(text))) {
+    return false
+  }
+  const never = TREE_NEVER_WITH[sub] ?? []
+  return !texts.some((text) => never.includes(text))
+}

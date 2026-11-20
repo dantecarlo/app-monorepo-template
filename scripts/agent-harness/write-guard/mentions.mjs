@@ -17,7 +17,13 @@
 // and the caller asks: the cap keeps the hook inside its timeout.
 // ---------------------------------------------------------------------------
 
-import { classify } from './paths.mjs'
+import {
+  expandGlob,
+  GLOB_MODE,
+  hasGlob,
+  patternRule
+} from './globs.mjs'
+import { cachedClassify, isDeadline } from './paths.mjs'
 import { ruleOf } from './target.mjs'
 
 export const MAX_MENTIONS = 256
@@ -42,14 +48,38 @@ const piecesOf = ({ word }) => {
 const readable = ({ piece }) =>
   piece !== '' && !piece.startsWith('-') && !UNSET.test(piece)
 
+const NUL = String.fromCharCode(0)
+const BACKSLASH = String.fromCharCode(92)
+
+const literalRule = ({ cwd, host, piece, policy }) =>
+  ruleOf({
+    holds: true,
+    policy,
+    where: cachedClassify({ cwd, host, text: piece })
+  })
+
+// A piece with a wildcard is what it matches on the disk, or, when the
+// guard cannot expand it, the rule its pattern could name.
+const globRule = ({ cwd, host, piece, policy }) => {
+  const pattern = piece.replaceAll(BACKSLASH, '/')
+  const matches = expandGlob({ cwd, host, pattern })
+  if (matches === undefined) {
+    return patternRule({ cwd, host, mode: GLOB_MODE.bash, pattern, policy })
+  }
+  return matches.reduce(
+    (found, match) =>
+      found ?? literalRule({ cwd, host, piece: match, policy }),
+    undefined
+  )
+}
+
 const ruleNamed = ({ cwd, host, piece, policy }) => {
   try {
-    return ruleOf({
-      holds: true,
-      policy,
-      where: classify({ cwd, host, text: piece })
-    })
-  } catch {
+    return hasGlob({ pattern: piece })
+      ? globRule({ cwd, host, piece, policy })
+      : literalRule({ cwd, host, piece, policy })
+  } catch (error) {
+    if (isDeadline({ error })) throw error
     // A spelling the guard cannot read names nothing it can judge.
     return undefined
   }
@@ -69,6 +99,7 @@ export const namedRule = ({ cwd, host, policy, text }) => {
   const pieces = [
     ...new Set(
       expanded
+        .replaceAll(NUL, ' ')
         .split(SEPARATORS)
         .flatMap((word) => piecesOf({ word }))
         .map((piece) =>

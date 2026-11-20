@@ -6,22 +6,27 @@
 // every one outside scratch, and anyone is asked before one that is a rule
 // file. A surface agent is held to its surface only for SURFACE_WRITERS.
 //
-// git is read by writers.git.mjs, and the package managers and JS tools by
-// writers.tools.mjs.
+// A file written into a folder is judged by the name it gets there: cp, mv
+// and install into a folder, the members tar and unzip extract, the name
+// curl -O and wget give a download. The writers the donor did not know are
+// writers.editors.mjs's; git is read by writers.git.mjs, and the package
+// managers and JS tools by writers.tools.mjs.
 //
 // Ported from the file writers of Certifipago's
 // .claude/scripts/enforce-agent-writes.mjs.
 // ---------------------------------------------------------------------------
 
 import {
-  clusters,
-  hasFlag,
   literal,
   mktempTarget,
   operandsOf,
   optionValue,
+  parseOptions,
   splitArgs
 } from './expansion.mjs'
+import { absolutePath } from './paths.mjs'
+import { SAFE, UNKNOWN } from './scan.mjs'
+import { EDITOR_WRITERS, isRemote } from './writers.editors.mjs'
 
 // The folder a command writes into when it names none.
 export const CWD = literal({ text: '.' })
@@ -37,6 +42,83 @@ const lastOrTarget = ({ args, valued = [] }) => {
   })
   if (target) return [target]
   return operands.length > 1 ? [operands.at(-1)] : []
+}
+
+const TRAILING_SEPARATORS = /[\\/]+$/u
+const LAST_SEGMENT = /^.*[\\/]/su
+const FOLDER_NAMES = new Set(['.', '..'])
+
+// The name a path gets when it is copied or moved into a folder: its last
+// segment, or SAFE when it is built from what the guard cannot see, since a
+// name holds no separator.
+const nameOf = ({ path }) =>
+  path.text.includes(UNKNOWN)
+    ? SAFE
+    : path.text.replace(TRAILING_SEPARATORS, '').replace(LAST_SEGMENT, '')
+
+/** The word for `name`, a relative path, below the folder `dir`. */
+export const under = ({ dir, name }) => {
+  const base = dir.text.replace(TRAILING_SEPARATORS, '')
+  return {
+    raw: `${dir.raw.replace(TRAILING_SEPARATORS, '')}/${name}`,
+    text: `${base}/${name}`,
+    unknown: dir.unknown
+  }
+}
+
+// Whether a destination is a folder: `.`, `..`, one that ends in a
+// separator, or one the disk says is a folder.
+const isFolder = ({ state, target }) => {
+  if (
+    FOLDER_NAMES.has(target.text) ||
+    TRAILING_SEPARATORS.test(target.text)
+  ) {
+    return true
+  }
+  try {
+    return (
+      state.host?.isDirectory?.({
+        path: absolutePath({
+          cwd: state.cwd ?? undefined,
+          host: state.host,
+          text: target.text
+        })
+      }) === true
+    )
+  } catch {
+    return false
+  }
+}
+
+// cp, mv and install: into a folder, each source by its name there. mv
+// also writes, by removing it, every source.
+const copyTargets = ({ args, move, short, state }) => {
+  const parsed = parseOptions({
+    args,
+    long: ['--suffix', '--target-directory'],
+    short
+  })
+  const dir = parsed.value({ long: '--target-directory', short: 't' })
+  const { operands } = parsed
+  const sources = dir ? operands : operands.slice(0, -1)
+  const dest = dir ?? operands.at(-1)
+  if (dest === undefined || (!dir && operands.length < 2)) return []
+  const written =
+    dir || sources.length > 1 || isFolder({ state, target: dest })
+      ? sources.map((path) => under({ dir: dest, name: nameOf({ path }) }))
+      : [dest]
+  return move ? [...sources, ...written] : written
+}
+
+const URL_TAIL = /[?#].*$/su
+const URL_HEAD = /^[a-z][a-z0-9+.-]*:\/\/[^/]*/iu
+
+// The name a download gets: the last segment of the URL's path, or
+// undefined when it has none.
+const urlName = ({ url }) => {
+  const path = url.text.replace(URL_TAIL, '').replace(URL_HEAD, '')
+  const name = path.replace(LAST_SEGMENT, '')
+  return name === '' ? undefined : name
 }
 
 // The files sed edits in place: the operands after the script, when a
@@ -108,93 +190,187 @@ const perlTargets = ({ args }) => {
   return code ? operands : operands.slice(1)
 }
 
-const tarTargets = ({ args }) => {
+const TAR_VALUED = 'bCfFgHIKLNTVX'
+const TAR_LONG_VALUED = [
+  '--directory',
+  '--exclude',
+  '--exclude-from',
+  '--file',
+  '--files-from',
+  '--format',
+  '--group',
+  '--mode',
+  '--mtime',
+  '--newer',
+  '--owner',
+  '--transform',
+  '--use-compress-program'
+]
+const TAR_CREATE = ['c', 'r', 'u']
+const TAR_CREATE_LONG = ['--append', '--create', '--update']
+
+// tar's options, the old bundled form included (`tar xzf a.tgz`, each
+// value letter taking the next argument in order), and its operands: the
+// members it extracts, or the files it archives.
+const tarParse = ({ args }) => {
   const first = args[0]?.text ?? ''
   const bundled = first !== '' && !first.startsWith('-')
-  const valued = ['f', 'C']
-  const found = clusters({ args: bundled ? args.slice(1) : args, valued })
-  const letters = [
-    ...(bundled ? first : ''),
-    ...found.map((one) => one.letter)
-  ]
-  const { options } = splitArgs({
-    args,
-    valued: ['-C', '-f', '--directory', '--file']
+  const letters = bundled ? [...first] : []
+  const bundledValues = {}
+  let next = 1
+  letters
+    .filter((letter) => TAR_VALUED.includes(letter))
+    .forEach((letter) => {
+      bundledValues[letter] = args[next]
+      next += 1
+    })
+  const parsed = parseOptions({
+    args: bundled ? args.slice(next) : args,
+    long: TAR_LONG_VALUED,
+    short: TAR_VALUED
   })
-  // `tar xzf a.tgz`: each value letter of the bundle takes the next
-  // argument, in order.
-  const bundledValue = ({ letter }) =>
-    bundled && first.includes(letter)
-      ? args[
-          1 +
-            [...first]
-              .filter((one) => valued.includes(one))
-              .indexOf(letter)
-        ]
-      : undefined
-  const valueOf = ({ letter, long }) =>
-    optionValue({ flags: [`-${letter}`, long], options }) ??
-    found.find((one) => one.letter === letter)?.value ??
-    bundledValue({ letter })
-  const extract =
-    letters.includes('x') ||
-    hasFlag({ flags: ['--extract', '--get'], options })
-  const create =
-    ['c', 'r', 'u'].some((letter) => letters.includes(letter)) ||
-    hasFlag({ flags: ['--create', '--append', '--update'], options })
-  if (extract)
-    return [valueOf({ letter: 'C', long: '--directory' }) ?? CWD]
-  const file = valueOf({ letter: 'f', long: '--file' })
+  const all = [...letters, ...parsed.letters.map(({ letter }) => letter)]
+  return {
+    has: ({ letters: wanted, long }) =>
+      wanted.some((letter) => all.includes(letter)) ||
+      parsed.has({ long }),
+    operands: parsed.operands,
+    valueOf: ({ letter, long }) =>
+      parsed.value({ long, short: letter }) ?? bundledValues[letter]
+  }
+}
+
+const tarTargets = ({ args }) => {
+  const tar = tarParse({ args })
+  if (tar.has({ letters: ['x'], long: ['--extract', '--get'] })) {
+    const dir = tar.valueOf({ letter: 'C', long: '--directory' }) ?? CWD
+    return tar.operands.length === 0
+      ? [dir]
+      : tar.operands.map((member) => under({ dir, name: member.text }))
+  }
+  const create = tar.has({ letters: TAR_CREATE, long: TAR_CREATE_LONG })
+  const file = tar.valueOf({ letter: 'f', long: '--file' })
   return create && file && file.text !== '-' ? [file] : []
 }
 
+const CURL_SHORT = 'oDcbdHXuAeEFKmTwxyYzrCUQtP'
+const CURL_LONG = [
+  '--config',
+  '--connect-timeout',
+  '--cookie',
+  '--cookie-jar',
+  '--data',
+  '--data-binary',
+  '--data-raw',
+  '--dump-header',
+  '--form',
+  '--header',
+  '--max-time',
+  '--output',
+  '--output-dir',
+  '--proxy',
+  '--referer',
+  '--request',
+  '--retry',
+  '--user',
+  '--user-agent'
+]
+
 const curlTargets = ({ args }) => {
-  const { options } = splitArgs({
-    args,
-    valued: ['--output', '--dump-header', '--cookie-jar', '--output-dir']
+  const parsed = parseOptions({ args, long: CURL_LONG, short: CURL_SHORT })
+  const outputs = parsed.values({
+    long: ['--output', '--dump-header', '--cookie-jar'],
+    short: ['o', 'D', 'c']
   })
-  const found = clusters({
-    args: args.filter((arg) => !arg.text.startsWith('--')),
-    valued: [...'oDcbdHXuAeEFKmTwxyYzrCUQtP']
+  const dir = parsed.value({ long: '--output-dir' }) ?? CWD
+  const remote = parsed.has({
+    long: ['--remote-name', '--remote-name-all'],
+    short: ['O']
   })
-  const dir = optionValue({ flags: ['--output-dir'], options }) ?? CWD
-  const remoteName =
-    found.some(({ letter }) => 'OJ'.includes(letter)) ||
-    hasFlag({ flags: ['--remote-name', '--remote-name-all'], options })
-  return [
-    ...found
-      .filter(({ letter, value }) => 'oDc'.includes(letter) && value)
-      .map(({ value }) => value),
-    ...['--output', '--dump-header', '--cookie-jar']
-      .map((flag) => optionValue({ flags: [flag], options }))
-      .filter(Boolean),
-    ...(remoteName ? [dir] : [])
-  ].filter((target) => target.text !== '-')
+  const headerName = parsed.has({
+    long: ['--remote-header-name'],
+    short: ['J']
+  })
+  const named = !remote
+    ? []
+    : parsed.operands.length === 0
+      ? [dir]
+      : parsed.operands.map((url) => {
+          const name = headerName ? SAFE : urlName({ url })
+          return name === undefined ? dir : under({ dir, name })
+        })
+  return [...outputs, ...named].filter((target) => target.text !== '-')
 }
 
+const WGET_SHORT = 'aABDeiIlOoPQRtTUwX'
+const WGET_LONG = [
+  '--accept',
+  '--append-output',
+  '--base',
+  '--directory-prefix',
+  '--domains',
+  '--execute',
+  '--header',
+  '--input-file',
+  '--level',
+  '--output-document',
+  '--output-file',
+  '--reject',
+  '--timeout',
+  '--tries',
+  '--user-agent',
+  '--wait'
+]
+const WGET_INDEX = 'index.html'
+
 const wgetTargets = ({ args }) => {
-  const { options } = splitArgs({
-    args,
-    valued: [
-      '-O',
-      '-P',
-      '-o',
-      '-a',
-      '--output-document',
-      '--directory-prefix'
-    ]
+  const parsed = parseOptions({ args, long: WGET_LONG, short: WGET_SHORT })
+  if (parsed.has({ long: ['--spider'] })) return []
+  const document = parsed.value({ long: '--output-document', short: 'O' })
+  const logs = parsed.values({
+    long: ['--output-file', '--append-output'],
+    short: ['o', 'a']
   })
-  if (hasFlag({ flags: ['--spider'], options })) return []
-  const document = optionValue({
-    flags: ['-O', '--output-document'],
-    options
-  })
-  const logs = ['-o', '-a']
-    .map((flag) => optionValue({ flags: [flag], options }))
-    .filter(Boolean)
-  const dir = optionValue({ flags: ['-P', '--directory-prefix'], options })
-  const body = document ? [document] : [dir ?? CWD]
+  const dir =
+    parsed.value({ long: '--directory-prefix', short: 'P' }) ?? CWD
+  const body = document
+    ? [document]
+    : parsed.operands.length === 0
+      ? [dir]
+      : parsed.operands.map((url) =>
+          under({ dir, name: urlName({ url }) ?? WGET_INDEX })
+        )
   return [...logs, ...body].filter((target) => target.text !== '-')
+}
+
+const UNZIP_LISTS = /^-[a-zA-Z]*[ltpvZc]/u
+const UNZIP_FOLDER = 'd'
+const UNZIP_PASSWORD = 'P'
+
+// `unzip [-opts] file [members] [-x excluded] [-d folder]`.
+const unzipTargets = ({ args }) => {
+  if (args.some(({ text }) => UNZIP_LISTS.test(text))) return []
+  let dir
+  let excluding = false
+  const operands = []
+  for (let at = 0; at < args.length; at += 1) {
+    const { text } = args[at]
+    if (text === '-x') excluding = true
+    else if (text.startsWith('-') && text.length > 1) {
+      excluding = false
+      const d = text.indexOf(UNZIP_FOLDER)
+      if (d > 0) {
+        const rest = text.slice(d + 1)
+        dir = rest === '' ? args[at + 1] : { ...args[at], text: rest }
+        if (rest === '') at += 1
+      } else if (text.endsWith(UNZIP_PASSWORD)) at += 1
+    } else if (!excluding) operands.push(args[at])
+  }
+  const folder = dir ?? CWD
+  const members = operands.slice(1)
+  return members.length === 0
+    ? [folder]
+    : members.map((member) => under({ dir: folder, name: member.text }))
 }
 
 const compressorTargets = ({ args }) =>
@@ -213,7 +389,8 @@ export const FILE_WRITERS = {
   chgrp: ({ args }) => operandsOf({ args }).slice(1),
   chmod: ({ args }) => operandsOf({ args }).slice(1),
   chown: ({ args }) => operandsOf({ args }).slice(1),
-  cp: ({ args }) => lastOrTarget({ args }),
+  cp: ({ args, state }) =>
+    copyTargets({ args, move: false, short: 'St', state }),
   curl: curlTargets,
   dd: ({ args }) =>
     args
@@ -221,10 +398,10 @@ export const FILE_WRITERS = {
       .map((arg) => ({ ...arg, text: arg.text.slice('of='.length) })),
   gunzip: compressorTargets,
   gzip: compressorTargets,
-  install: ({ args }) =>
+  install: ({ args, state }) =>
     args.some(({ text }) => text === '-d')
       ? operandsOf({ args, valued: ['-m', '-o', '-g'] })
-      : lastOrTarget({ args, valued: ['-m', '-o', '-g', '-S'] }),
+      : copyTargets({ args, move: false, short: 'gmoSt', state }),
   ln: ({ args }) => {
     const targets = lastOrTarget({ args })
     return targets.length > 0 ? targets : [CWD]
@@ -234,20 +411,15 @@ export const FILE_WRITERS = {
   mktemp: ({ args, state }) => [
     literal({ text: mktempTarget({ args, state }) })
   ],
-  mv: ({ args }) => {
-    const { operands, options } = splitArgs({ args, valued: ['-t'] })
-    const target = optionValue({
-      flags: ['-t', '--target-directory'],
-      options
-    })
-    return target ? [target, ...operands] : operands
-  },
-  patch: ({ args }) =>
-    args.some(({ text }) => text === '--dry-run') ? [] : [CWD],
+  mv: ({ args, state }) =>
+    copyTargets({ args, move: true, short: 'St', state }),
   perl: perlTargets,
   rm: ({ args }) => operandsOf({ args }),
   rmdir: ({ args }) => operandsOf({ args }),
-  rsync: ({ args }) => operandsOf({ args }).slice(-1),
+  rsync: ({ args }) =>
+    operandsOf({ args, valued: ['-e', '--rsh'] })
+      .slice(-1)
+      .filter((target) => !isRemote({ target })),
   sd: ({ args }) =>
     args.some(({ text }) => text === '-p' || text === '--preview')
       ? []
@@ -256,11 +428,11 @@ export const FILE_WRITERS = {
     inPlaceTargets({ args, codeLetters: 'ef', valued: 'efl' }),
   shred: ({ args }) => operandsOf({ args, valued: ['-n', '-s'] }),
   sort: ({ args }) => {
-    const { options } = splitArgs({
+    const out = parseOptions({
       args,
-      valued: ['-o', '-k', '-t', '-S']
-    })
-    const out = optionValue({ flags: ['-o', '--output'], options })
+      long: ['--buffer-size', '--key', '--output', '--temporary-directory'],
+      short: 'kostST'
+    }).value({ long: '--output', short: 'o' })
     return out ? [out] : []
   },
   tar: tarTargets,
@@ -276,13 +448,10 @@ export const FILE_WRITERS = {
     operandsOf({ args, valued: ['-f', '-s', '-w'] }).slice(1, 2),
   unlink: ({ args }) => operandsOf({ args }),
   unxz: compressorTargets,
-  unzip: ({ args }) => {
-    if (args.some(({ text }) => /^-[ltpvZc]+$/.test(text))) return []
-    const { options } = splitArgs({ args, valued: ['-d', '-x'] })
-    return [optionValue({ flags: ['-d'], options }) ?? CWD]
-  },
+  unzip: unzipTargets,
   wget: wgetTargets,
-  xz: compressorTargets
+  xz: compressorTargets,
+  ...EDITOR_WRITERS
 }
 
 // The commands a surface agent is held to; the rest is its workflow.

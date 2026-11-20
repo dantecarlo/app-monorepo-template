@@ -19,6 +19,7 @@ import {
   literal,
   operandsOf,
   optionValue,
+  parseOptions,
   splitArgs
 } from './expansion.mjs'
 import { SAFE, UNKNOWN } from './scan.mjs'
@@ -152,4 +153,82 @@ test('clusters reads each letter of a short-option bundle and the value one take
       ['D', 'h']
     ]
   )
+})
+
+// -- globs, NUL bytes and brace overflow ---------------------------------------
+for (const [text, pattern] of [
+  ['*.md', '*.md'],
+  ['scripts/*.mjs', 'scripts/*.mjs'],
+  ['AGENT?.md', 'AGENT?.md'],
+  ['"a b"/*.md', 'a b/*.md']
+]) {
+  test(`an unquoted wildcard makes a word a glob: ${text}`, () => {
+    assert.equal(expanded({ text }).glob?.pattern, pattern)
+  })
+}
+
+for (const text of ["'*.md'", '"*.md"', 'a\\*', 'plain.md']) {
+  test(`a quoted or escaped wildcard, or none, makes no glob: ${text}`, () => {
+    assert.equal(expanded({ text }).glob, undefined)
+  })
+}
+
+test('a quoted wildcard beside an unquoted one is escaped in the pattern', () => {
+  assert.equal(expanded({ text: '"*"*' }).glob.pattern, '\\**')
+})
+
+test('a word ends at its first NUL, as Bash reads it', () => {
+  assert.equal(
+    expand({
+      state: stateFor(),
+      word: { parts: [{ lit: 'AGENTS.md\u0000.txt', quoted: false }], raw: 'x' }
+    }).text,
+    'AGENTS.md'
+  )
+})
+
+test('a brace expansion past its bound is unknown, by what it is', () => {
+  const found = expand({
+    state: stateFor(),
+    word: { parts: [{ overflow: true }], raw: '{1..9999}' }
+  })
+  assert.ok(found.text.includes(UNKNOWN))
+  assert.match(found.unknown[0], /brace expansion/)
+})
+
+// -- options, clustered and long ------------------------------------------------
+for (const [texts, value, operands] of [
+  [['-qO', 'out.json', 'url'], 'out.json', ['url']],
+  [['-qOout.json', 'url'], 'out.json', ['url']],
+  [['-fsSLo', 'out.json', 'url'], 'out.json', ['url']],
+  [['--output', 'out.json', 'url'], 'out.json', ['url']],
+  [['--output=out.json', 'url'], 'out.json', ['url']],
+  [['-q', 'url', '--', '-x'], undefined, ['url', '-x']]
+]) {
+  test(`parseOptions reads a value from a cluster or a long option: ${texts.join(' ')}`, () => {
+    const parsed = parseOptions({
+      args: args({ texts }),
+      long: ['--output'],
+      short: 'oO'
+    })
+    assert.equal(
+      parsed.value({ long: '--output', short: ['o', 'O'] })?.text,
+      value
+    )
+    assert.deepEqual(
+      parsed.operands.map(({ text }) => text),
+      operands
+    )
+  })
+}
+
+test('parseOptions says which flags a call holds', () => {
+  const parsed = parseOptions({
+    args: args({ texts: ['-sSLO', '--remote-name-all', 'u'] }),
+    long: [],
+    short: ''
+  })
+  assert.equal(parsed.has({ long: ['--remote-name-all'] }), true)
+  assert.equal(parsed.has({ short: ['O'] }), true)
+  assert.equal(parsed.has({ short: ['o'] }), false)
 })

@@ -18,7 +18,7 @@ import {
   readCode,
   stdinCode
 } from './inline-code.mjs'
-import { classify, TARGET_KIND } from './paths.mjs'
+import { cachedClassify, isDeadline, TARGET_KIND } from './paths.mjs'
 import {
   firstOfChecks,
   isReadOnly,
@@ -57,10 +57,11 @@ const reportTarget = ({ rest, state }) => {
 const isScratch = ({ state, text }) => {
   try {
     return (
-      classify({ cwd: state.cwd ?? undefined, host: state.host, text })
+      cachedClassify({ cwd: state.cwd ?? undefined, host: state.host, text })
         .kind === TARGET_KIND.scratch
     )
-  } catch {
+  } catch (error) {
+    if (isDeadline({ error })) throw error
     return false
   }
 }
@@ -148,6 +149,27 @@ const interpreterVerdict = ({ args, command, name, producer, state }) => {
     state
   })
 }
+
+// The programs programVerdict judges, whatever it finds of them.
+const JUDGED = new Set([
+  'cmd',
+  'codegraph',
+  'eval',
+  'gh',
+  'perl',
+  'pnpm',
+  'powershell',
+  'pwsh',
+  'ruby'
+])
+
+/** Whether programVerdict knows `name`, so it is no unknown program. */
+export const isKnownProgram = ({ name }) =>
+  JUDGED.has(name) ||
+  SHELLS.has(name) ||
+  INTERPRETERS.has(name) ||
+  PACKAGE_MANAGERS.has(name) ||
+  JS_TOOLS.has(name)
 
 /** The finding of a program whose writes the guard does not read. */
 export const programVerdict = ({

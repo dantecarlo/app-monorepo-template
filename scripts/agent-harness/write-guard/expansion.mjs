@@ -20,6 +20,8 @@
 
 import { posix } from 'node:path'
 
+import { MAX_BRACE_WORDS } from './braces.mjs'
+import { hasGlob } from './globs.mjs'
 import { SAFE, UNKNOWN } from './scan.mjs'
 
 const SCRATCH_VARIABLES = new Set(['TEMP', 'TMP', 'TMPDIR'])
@@ -117,6 +119,75 @@ export const clusters = ({ args, valued }) => {
   return found
 }
 
+const asList = ({ value }) =>
+  value === undefined ? [] : Array.isArray(value) ? value : [value]
+
+/**
+ * The options and operands of `args`, short ones read in clusters
+ * (`-fsSLo out`, `-qO file`, `-qOfile`): `long` lists the long options and
+ * `short` the letters that take a value. `value` and `has` look an option
+ * up by its long spellings and its letters.
+ */
+export const parseOptions = ({ args, long = [], short = '' }) => {
+  const options = []
+  const letters = []
+  const operands = []
+  let ended = false
+  for (let k = 0; k < args.length; k += 1) {
+    const arg = args[k]
+    const { text } = arg
+    if (ended || text === '-' || !text.startsWith('-')) {
+      operands.push(arg)
+    } else if (text === '--') ended = true
+    else if (text.startsWith('--')) {
+      const eq = text.indexOf('=')
+      if (eq > 0) {
+        options.push({
+          flag: text.slice(0, eq),
+          value: { ...arg, text: text.slice(eq + 1) }
+        })
+      } else if (long.includes(text) && k + 1 < args.length) {
+        options.push({ flag: text, value: args[k + 1] })
+        k += 1
+      } else options.push({ flag: text })
+    } else {
+      for (let c = 1; c < text.length; c += 1) {
+        const letter = text[c]
+        if (!short.includes(letter)) {
+          letters.push({ letter })
+          continue
+        }
+        const rest = text.slice(c + 1)
+        if (rest !== '') {
+          letters.push({ letter, value: { ...arg, text: rest } })
+        } else if (k + 1 < args.length) {
+          letters.push({ letter, value: args[k + 1] })
+          k += 1
+        } else letters.push({ letter })
+        break
+      }
+    }
+  }
+  const values = ({ long: names, short: chars }) => [
+    ...options
+      .filter(({ flag, value }) => value && asList({ value: names }).includes(flag))
+      .map(({ value }) => value),
+    ...letters
+      .filter(({ letter, value }) => value && asList({ value: chars }).includes(letter))
+      .map(({ value }) => value)
+  ]
+  return {
+    has: ({ long: names, short: chars }) =>
+      options.some(({ flag }) => asList({ value: names }).includes(flag)) ||
+      letters.some(({ letter }) => asList({ value: chars }).includes(letter)),
+    letters,
+    operands,
+    options,
+    value: (lookup) => values(lookup)[0],
+    values
+  }
+}
+
 // The path `mktemp` creates: below `-p`, after a template's folder, or in
 // the OS temp dir.
 export const mktempTarget = ({ args, state }) => {
@@ -155,28 +226,67 @@ const parameterValue = ({ part, state }) => {
   return { text: UNKNOWN, unknown: [`$${part.param}`] }
 }
 
+const GLOB_SPECIAL = /[*?[\\]/gu
+const escapeGlob = ({ text }) => text.replace(GLOB_SPECIAL, '\\$&')
+const NUL = '\u0000'
+const beforeNul = ({ text }) => {
+  const at = text.indexOf(NUL)
+  return at < 0 ? text : text.slice(0, at)
+}
+
+// One part as a path, with the pattern Bash would glob it as: only an
+// unquoted literal keeps its wildcards.
+const partValue = ({ index, part, state }) => {
+  if ('lit' in part) {
+    const home =
+      index === 0 && !part.quoted && /^~(?=\/|$)/.test(part.lit)
+    const text = home ? homeOf({ state }) + part.lit.slice(1) : part.lit
+    return {
+      ...known({ text }),
+      pattern: home
+        ? escapeGlob({ text: homeOf({ state }) }) + part.lit.slice(1)
+        : part.quoted
+          ? escapeGlob({ text })
+          : text
+    }
+  }
+  const value = part.overflow
+    ? {
+        text: UNKNOWN,
+        unknown: [`a brace expansion of more than ${MAX_BRACE_WORDS} words`]
+      }
+    : 'safe' in part
+      ? known({ text: SAFE })
+      : 'param' in part
+        ? parameterValue({ part, state })
+        : part.process
+          ? known({ text: PROCESS_DEVICE })
+          : substitutionValue({ script: part.sub, state })
+  return { ...value, pattern: escapeGlob({ text: value.text }) }
+}
+
 /**
- * The word as a path: `{ raw, text, unknown }`, where `unknown` names what
- * the text depends on and the command never sets.
+ * The word as a path: `{ raw, text, unknown, glob }`, where `unknown`
+ * names what the text depends on and the command never sets, and `glob`
+ * holds the pattern Bash would expand it as, when it holds a wildcard. A
+ * word ends at its first NUL, as Bash reads it.
  */
 export const expand = ({ state, word }) => {
-  const values = word.parts.map((part, index) => {
-    if ('lit' in part) {
-      return known({
-        text:
-          index === 0 && !part.quoted && /^~(?=\/|$)/.test(part.lit)
-            ? homeOf({ state }) + part.lit.slice(1)
-            : part.lit
-      })
-    }
-    if ('safe' in part) return known({ text: SAFE })
-    if ('param' in part) return parameterValue({ part, state })
-    if (part.process) return known({ text: PROCESS_DEVICE })
-    return substitutionValue({ script: part.sub, state })
+  const values = word.parts.map((part, index) =>
+    partValue({ index, part, state })
+  )
+  const text = beforeNul({
+    text: values.map((value) => value.text).join('')
+  })
+  const pattern = beforeNul({
+    text: values.map((value) => value.pattern).join('')
   })
   return {
+    ...(hasGlob({ pattern }) && !text.includes(UNKNOWN)
+      ? { glob: { pattern } }
+      : {}),
     raw: word.raw,
-    text: values.map((value) => value.text).join(''),
+    text,
     unknown: values.flatMap((value) => value.unknown)
   }
 }

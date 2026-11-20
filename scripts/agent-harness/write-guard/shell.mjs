@@ -20,9 +20,10 @@
 // .claude/scripts/enforce-agent-writes.mjs.
 // ---------------------------------------------------------------------------
 
+import { braceExpand } from './braces.mjs'
 import { joinContinuations } from './continuations.mjs'
 import { expand, known, splitArgs } from './expansion.mjs'
-import { absolutePath, classify, TARGET_KIND } from './paths.mjs'
+import { absolutePath, cachedClassify, TARGET_KIND } from './paths.mjs'
 import { SAFE, UNKNOWN } from './scan.mjs'
 import { commandName, judgeArgs } from './shell.commands.mjs'
 import {
@@ -95,6 +96,25 @@ const heredocVerdict = ({ redirect, state }) => {
   }
 }
 
+// The words Bash's brace expansion makes of `word`; past its bound, one
+// word built from what the guard cannot see.
+const bracedWords = ({ word }) => {
+  const found = braceExpand({ word })
+  return found.overflow
+    ? [{ parts: [{ overflow: true }], raw: word.raw }]
+    : found.words
+}
+
+// Where a command's own words start: past the keywords before it, and the
+// `-p` of `time -p`.
+const keywordsEnd = ({ words }) => {
+  let at = 0
+  while (at < words.length && KEYWORDS.has(words[at].raw)) {
+    at += words[at].raw === 'time' && words[at + 1]?.raw === '-p' ? 2 : 1
+  }
+  return at
+}
+
 const isWritingRedirect = ({ redirect }) =>
   redirect.target !== undefined &&
   !['<', '<<<', 'dup'].includes(redirect.op)
@@ -103,11 +123,15 @@ const redirectVerdict = ({ redirects, state }) =>
   strongestOf({
     items: redirects.filter((redirect) => isWritingRedirect({ redirect })),
     judge: (redirect) =>
-      targetFinding({
-        contained: isPoliced({ state }),
-        state,
-        target: expand({ state, word: redirect.target }),
-        via: `${redirect.fd ?? ''}${redirect.op}`
+      strongestOf({
+        items: bracedWords({ word: redirect.target }),
+        judge: (word) =>
+          targetFinding({
+            contained: isPoliced({ state }),
+            state,
+            target: expand({ state, word }),
+            via: `${redirect.fd ?? ''}${redirect.op}`
+          })
       })
   })
 
@@ -139,8 +163,7 @@ const loopVariable = ({ command, state }) =>
 
 // What the command itself does, once its substitutions are judged.
 const ownVerdict = ({ command, producer, state }) => {
-  const start = command.words.findIndex((word) => !KEYWORDS.has(word.raw))
-  const words = start < 0 ? [] : command.words.slice(start)
+  const words = command.words.slice(keywordsEnd({ words: command.words }))
   const head = words[0]?.raw
   if (head === undefined || head === 'case' || head === 'function') {
     return undefined
@@ -150,7 +173,9 @@ const ownVerdict = ({ command, producer, state }) => {
     const [, , keyword, ...list] = words
     const values =
       keyword?.raw === 'in'
-        ? list.map((word) => expand({ state, word }))
+        ? list
+            .flatMap((word) => bracedWords({ word }))
+            .map((word) => expand({ state, word }))
         : []
     const items = values.every((value) => value.unknown.length === 0)
       ? values.map((value) => value.text)
@@ -169,7 +194,10 @@ const ownVerdict = ({ command, producer, state }) => {
       .forEach((word) => assign({ state, word }))
     return undefined
   }
-  const args = words.slice(first).map((word) => expand({ state, word }))
+  const args = words
+    .slice(first)
+    .flatMap((word) => bracedWords({ word }))
+    .map((word) => expand({ state, word }))
   const name = commandName({ arg: args[0] })
   if (name === 'cd' || name === 'pushd' || name === 'popd') {
     changeDirectory({ args: args.slice(1), name, state })
@@ -290,7 +318,7 @@ export const judgeBash = ({ actor, command, cwd, host, policy }) => {
     // The checkout `git rev-parse --show-toplevel` prints.
     rootOf: () => {
       if (root === undefined) {
-        const where = classify({ host, text: start })
+        const where = cachedClassify({ host, text: start })
         root = where.kind === TARGET_KIND.repo ? where.root : null
       }
       return root ?? undefined

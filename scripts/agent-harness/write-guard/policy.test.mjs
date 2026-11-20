@@ -25,6 +25,7 @@ import {
   AGENT_CONTEXT_FILE,
   assertPolicy,
   GIT_RULE,
+  heldFoldersOf,
   heldRuleFor,
   homeHeldRuleFor,
   homeRuleFor,
@@ -441,4 +442,14 @@ test('a folder of the home folder holds the user-level settings', () => {
     heldRuleFor({ policy: HELD_POLICY, relative: '~' }),
     undefined
   )
+})
+
+test('heldFoldersOf lists every folder below which a glob matches', () => {
+  assert.deepEqual(heldFoldersOf({ glob: '.claude/skills/**' }), [
+    '.claude/skills',
+    '.claude'
+  ])
+  assert.deepEqual(heldFoldersOf({ glob: 'scripts/verify-*' }), ['scripts'])
+  assert.deepEqual(heldFoldersOf({ glob: 'AGENTS.md' }), [])
+  assert.deepEqual(heldFoldersOf({ glob: '**/*allowlist*.json' }), [])
 })

@@ -18,7 +18,13 @@
 // .claude/scripts/enforce-agent-writes.mjs.
 // ---------------------------------------------------------------------------
 
-import { ANSI_BODY, repeat, UNKNOWN, unreadable } from './scan.mjs'
+import {
+  ANSI_BODY,
+  decodeAnsi,
+  repeat,
+  UNKNOWN,
+  unreadable
+} from './scan.mjs'
 import { CASE_START, createCaseReader } from './tokenizer.case.mjs'
 
 export const KEYWORDS = new Set([
@@ -176,7 +182,7 @@ export const createParser = ({ depth = 0, source }) => {
       ANSI_BODY.lastIndex = i + 2
       const match = ANSI_BODY.exec(s)
       if (!match) unreadable({ problem: 'an unterminated quote' })
-      parts.push({ lit: match?.[1] ?? '', quoted: true })
+      parts.push({ lit: decodeAnsi({ text: match?.[1] ?? '' }), quoted: true })
       i = ANSI_BODY.lastIndex
     } else {
       const name = /^(?:[A-Za-z_]\w*|[\d@*#?$!-])/.exec(s.slice(i + 1))
@@ -252,7 +258,11 @@ export const createParser = ({ depth = 0, source }) => {
         } else if (WORD_END.test(c)) {
           return false
         } else if (c === '\\') {
-          if (s[i + 1] !== '\n') text += s[i + 1] ?? ''
+          // An escaped character is quoted: `\*` is no glob, `\~` no home.
+          if (s[i + 1] !== '\n' && s[i + 1] !== undefined) {
+            flush()
+            parts.push({ lit: s[i + 1], quoted: true })
+          }
           i += 2
         } else if (c === "'") {
           const end = s.indexOf("'", i + 1)

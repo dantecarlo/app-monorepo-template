@@ -14,6 +14,7 @@ import { test } from 'node:test'
 
 import {
   absolutePath,
+  cachedClassify,
   classify,
   isAbsolutePath,
   liveHost,
@@ -335,3 +336,47 @@ for (const [text, absolute] of [
     assert.equal(isAbsolutePath({ host: HOST, text }), absolute)
   })
 }
+
+// -- the checkout root itself, and the cache of one call ---------------------
+test('a checkout root that exists is inside that checkout, by an empty relative path', () => {
+  const found = classify({
+    cwd: REPO,
+    host: { ...HOST, realpath: ({ path }) => path },
+    text: '.'
+  })
+  assert.equal(found.kind, 'repo')
+  assert.equal(found.relative, '')
+})
+
+test('cachedClassify reads one target from the disk once per call', () => {
+  let walks = 0
+  const host = {
+    ...HOST,
+    cache: new Map(),
+    isCheckout: (call) => {
+      walks += 1
+      return HOST.isCheckout(call)
+    }
+  }
+  const first = cachedClassify({ cwd: REPO, host, text: 'docs/a.md' })
+  const probes = walks
+  assert.deepEqual(cachedClassify({ cwd: REPO, host, text: 'docs/a.md' }), first)
+  assert.equal(walks, probes)
+})
+
+test('cachedClassify throws once the call is past its deadline', () => {
+  const host = { ...HOST, cache: new Map(), deadline: 10, now: () => 11 }
+  assert.throws(
+    () => cachedClassify({ cwd: REPO, host, text: 'docs/a.md' }),
+    /deadline/
+  )
+})
+
+test('the live host globs, tells a folder and tells what exists', () => {
+  const host = liveHost({ environment: {}, ownRoot: REPO })
+  assert.equal(host.isDirectory({ path: tmpdir() }), true)
+  assert.equal(host.exists({ path: tmpdir() }), true)
+  assert.equal(host.exists({ path: `${tmpdir()}/write-guard-no-such` }), false)
+  assert.ok(Array.isArray(host.glob({ cwd: tmpdir(), pattern: '*' })))
+  assert.equal(host.glob({ cwd: tmpdir(), pattern: '**/*' }), undefined)
+})

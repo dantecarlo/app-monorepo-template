@@ -23,7 +23,7 @@
 // policed agent and asks anyone else.
 // ---------------------------------------------------------------------------
 
-import { classify, isAbsolutePath, TARGET_KIND } from './paths.mjs'
+import { cachedClassify, isAbsolutePath, TARGET_KIND } from './paths.mjs'
 import {
   ACTOR_KIND,
   heldRuleFor,
@@ -40,6 +40,7 @@ export const LEVEL = Object.freeze({
 })
 
 export const FINDING_KIND = Object.freeze({
+  program: 'program',
   readOnly: 'read-only',
   rule: 'rule',
   surface: 'surface',
@@ -130,7 +131,7 @@ export const judgeTarget = ({
       names: unknown.length > 0 ? unknown : [UNKNOWN_FOLDER]
     })
   }
-  const where = classify({ cwd: cwd ?? undefined, host, text })
+  const where = cachedClassify({ cwd: cwd ?? undefined, host, text })
   if (
     where.kind === TARGET_KIND.sink ||
     where.kind === TARGET_KIND.scratch

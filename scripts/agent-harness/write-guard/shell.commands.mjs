@@ -19,6 +19,9 @@
 // ---------------------------------------------------------------------------
 
 import { optionValue, splitArgs } from './expansion.mjs'
+import { GLOB_MODE } from './globs.mjs'
+import { namedRule } from './mentions.mjs'
+import { READERS, unknownProgramVerdict } from './readers.mjs'
 import { SAFE, UNKNOWN } from './scan.mjs'
 import {
   changedDirectory,
@@ -30,19 +33,21 @@ import {
   strongestOf,
   targetFinding
 } from './shell.findings.mjs'
-import { programVerdict } from './shell.programs.mjs'
+import { isKnownProgram, programVerdict } from './shell.programs.mjs'
 import { FINDING_KIND, LEVEL } from './target.mjs'
 import { CWD, FILE_WRITERS, SURFACE_WRITERS } from './writers.mjs'
 import {
   gitFileTargets,
   gitTreeTargets,
-  gitWrite
+  gitWrite,
+  rewritesTree
 } from './writers.git.mjs'
 
 const MAX_WRAPPERS = 8
 
 const WRAPPERS = {
   builtin: [],
+  busybox: [],
   caffeinate: [],
   chronic: [],
   command: [],
@@ -56,6 +61,7 @@ const WRAPPERS = {
   time: [],
   timeout: ['-s', '-k', '--signal', '--kill-after'],
   watch: ['-n', '--interval'],
+  toybox: [],
   winpty: []
 }
 
@@ -92,13 +98,16 @@ export const unwrap = ({ args, depth = 0 }) => {
   return unwrap({ args: args.slice(command), depth: depth + 1 })
 }
 
-const BRACES = /{[^}]*}/g
+const BRACES = /\{[^}]*\}/g
 
-// Runs a command with `{}` standing for the files find, fd or xargs feed it.
+// Runs a command with `{}` standing for the files find, fd or xargs feed it;
+// a `{}` alone becomes the placeholder itself, a pattern find's names give.
 const innerCommand = ({ args, placeholder, state }) =>
   judgeArgs({
     args: args.map((arg) =>
-      /\{[^}]*\}/.test(arg.text)
+      arg.text === '{}'
+        ? { ...placeholder, raw: arg.raw }
+        : /\{[^}]*\}/.test(arg.text)
         ? {
             ...arg,
             text: arg.text.replace(BRACES, placeholder.text),
@@ -113,12 +122,47 @@ const innerCommand = ({ args, placeholder, state }) =>
 
 const below = ({ root }) => ({ ...root, text: `${root.text}/${SAFE}` })
 
+const FIND_NAMES = /^-i?name$/u
+const FIND_PATHS = /^-i?(?:path|wholename)$/u
+const TRAILING_SLASHES = /\/+$/u
+
+// The files find matches below each root, as patterns the guard judges
+// without the disk: `<root>/**/<name>` for -name, the path for -path.
+const findPatterns = ({ args, roots }) =>
+  args.flatMap((arg, at) => {
+    const value = args[at + 1]
+    if (value === undefined) return []
+    if (FIND_NAMES.test(arg.text)) {
+      return roots.map((root) => ({
+        glob: {
+          disk: false,
+          mode: GLOB_MODE.findName,
+          pattern: `${root.text.replace(TRAILING_SLASHES, '')}/**/${value.text}`
+        },
+        raw: `${root.raw} -name ${value.raw}`,
+        text: value.text,
+        unknown: [...root.unknown, ...value.unknown]
+      }))
+    }
+    return FIND_PATHS.test(arg.text)
+      ? [
+          {
+            glob: { disk: false, mode: GLOB_MODE.findPath, pattern: value.text },
+            raw: `-path ${value.raw}`,
+            text: value.text,
+            unknown: value.unknown
+          }
+        ]
+      : []
+  })
+
 const findVerdict = ({ args, state }) => {
   const firstExpression = args.findIndex(({ text }) => /^[-(!]/.test(text))
   const starts =
     firstExpression < 0 ? args : args.slice(0, firstExpression)
   const roots = starts.length > 0 ? starts : [CWD]
-  const placeholder = below({ root: roots[0] })
+  const patterns = findPatterns({ args, roots })
+  const placeholder = patterns[0] ?? below({ root: roots[0] })
   const contained = isPoliced({ state })
   const checks = []
   let skip = -1
@@ -127,7 +171,7 @@ const findVerdict = ({ args, state }) => {
     if (arg.text === '-delete') {
       checks.push(() =>
         strongestOf({
-          items: roots,
+          items: [...roots, ...patterns],
           judge: (target) =>
             targetFinding({
               contained,
@@ -322,6 +366,26 @@ const surfaceGitVerdict = ({ rest, state, sub }) => {
   return undefined
 }
 
+// A git subcommand that rewrites the working tree and names a rule path:
+// asked of anyone the guard does not police, refused to a surface agent. A
+// read-only agent is refused every git write already.
+const treeRewriteVerdict = ({ rest, state, sub }) => {
+  if (isReadOnly({ state }) || !rewritesTree({ rest, sub })) return undefined
+  const named = namedRule({
+    cwd: state.cwd ?? undefined,
+    host: state.host,
+    policy: state.policy,
+    text: rest.map(({ text }) => text).join(' ')
+  })
+  if (named?.rule === undefined) return undefined
+  return {
+    kind: FINDING_KIND.rule,
+    level: isSurface({ state }) ? LEVEL.deny : LEVEL.ask,
+    rule: named.rule,
+    shape: `git ${sub} ${named.token}`
+  }
+}
+
 const gitVerdict = ({ args, state }) => {
   let skip = -1
   let at = args.length
@@ -358,6 +422,7 @@ const gitVerdict = ({ args, state }) => {
         isSurface({ state })
           ? surfaceGitVerdict({ rest, state: scoped, sub })
           : undefined,
+      () => treeRewriteVerdict({ rest, state: scoped, sub }),
       () =>
         strongestOf({
           items: gitTreeTargets({ rest, sub }),
@@ -403,6 +468,9 @@ export const judgeArgs = ({ args: wrapped, command, producer, state }) => {
   if (name === 'fd') return fdVerdict({ args: rest, state })
   if (name === 'git') return gitVerdict({ args: rest, state })
   const writer = FILE_WRITERS[name]
+  const known =
+    writer !== undefined || READERS.has(name) || isKnownProgram({ name })
+  if (!known) return unknownProgramVerdict({ args, rest, state })
   const contained =
     isReadOnly({ state }) ||
     (isSurface({ state }) && SURFACE_WRITERS.has(name))

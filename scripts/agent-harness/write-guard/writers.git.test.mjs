@@ -16,7 +16,8 @@ import { literal } from './expansion.mjs'
 import {
   gitFileTargets,
   gitTreeTargets,
-  gitWrite
+  gitWrite,
+  rewritesTree
 } from './writers.git.mjs'
 
 const call = ({ command }) => {
@@ -126,5 +127,29 @@ for (const [command, targets] of [
       gitTreeTargets(call({ command })).map(({ text }) => text),
       targets
     )
+  })
+}
+
+for (const [command, rewrites] of [
+  ['stash push -- AGENTS.md', true],
+  ['stash pop', true],
+  ['stash list', false],
+  ['checkout-index -f -- AGENTS.md', true],
+  ['checkout main', true],
+  ['reset --hard HEAD', true],
+  ['reset HEAD -- AGENTS.md', false],
+  ['apply fix.patch', true],
+  ['apply --cached fix.patch', false],
+  ['apply --check fix.patch', false],
+  ['merge main', true],
+  ['pull', true],
+  ['add AGENTS.md', false],
+  ['commit -m x', false],
+  ['tag v1', false],
+  ['push', false],
+  ['status', false]
+]) {
+  test(`a git subcommand is read as one that rewrites the working tree or not: git ${command}`, () => {
+    assert.equal(rewritesTree(call({ command })), rewrites)
   })
 }

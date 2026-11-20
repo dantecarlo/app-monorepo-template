@@ -86,7 +86,7 @@ export const assertPolicy = ({ policy }) => {
 
 // A glob that starts `~/` names a file of the home folder, matched against
 // the path relative to it; every other glob is read relative to a checkout.
-const HOME_PREFIX = '~/'
+export const HOME_PREFIX = '~/'
 
 // A `.git` below a checkout root moves the root every glob is read from, so
 // it is a rule path whatever the policy lists. It is not a policy entry,
@@ -136,6 +136,18 @@ const folderBelowOf = ({ glob }) => {
   const segments = glob.toLowerCase().split('/')
   const wild = segments.findIndex((segment) => segment.includes('*'))
   return segments.slice(0, wild < 0 ? -1 : wild).join('/')
+}
+
+/**
+ * Every folder below which `glob` matches, from its own folder up to the
+ * first segment: `.claude/skills/**` gives `.claude/skills` and `.claude`.
+ * A glob that matches at the root gives none.
+ */
+export const heldFoldersOf = ({ glob }) => {
+  const below = folderBelowOf({ glob })
+  if (below === '') return []
+  const segments = below.split('/')
+  return segments.map((_, at) => segments.slice(0, at + 1).join('/')).reverse()
 }
 
 const heldBy = ({ globs, relative }) => {
