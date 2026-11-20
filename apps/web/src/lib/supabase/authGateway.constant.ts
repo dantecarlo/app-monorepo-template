@@ -1,6 +1,6 @@
 import { SignInFailureEnum } from '@/lib/auth/authGateway.constant'
 
-/** Why the gateway rejects a sign-in without the Supabase settings: the cause a report carries. */
+/** Why a sign-in without the Supabase settings rejects: its cause. */
 export const SUPABASE_NOT_CONFIGURED_MESSAGE =
   'Auth is not configured: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY'
 

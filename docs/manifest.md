@@ -60,11 +60,12 @@ per entry on 2026-11-19.
   and the `cloudflare` prune takes it with its `remove-dep`.
 - **The cross-cutting case is a verb.** A `remove-dep` that takes a package
   from the last `package.json` declaring it also takes the package's entries,
-  unless their owner is `core`. The `i18n`, `cloudflare` and `design-tokens`
-  capabilities take their `@app/*` package from the apps this way. So `@sentry/nextjs` belongs to `web-next`,
+  unless their owner is `core`. So `@sentry/nextjs` belongs to `web-next`,
   whose `package.json` declares it, and the `sentry` prune's `remove-dep`
   takes it; a web-only project that keeps Sentry loses the
-  `@sentry/react-native` entry with `mobile-expo`.
+  `@sentry/react-native` entry with `mobile-expo`. The `i18n`, `cloudflare`
+  and `design-tokens` capabilities take their `@app/*` package from the apps
+  the same way.
 - **The gate.** `verify:manifest:coverage` fails an entry with no owner and an
   owner the manifest does not declare; `verify:dependency-seams` refuses an
   owner that is not text.

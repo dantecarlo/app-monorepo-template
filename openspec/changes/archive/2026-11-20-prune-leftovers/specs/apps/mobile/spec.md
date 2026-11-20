@@ -45,6 +45,48 @@ gateway whose session is none and whose sign-in rejects.
 
 ## MODIFIED Requirements
 
+### Requirement: MOBILE-42 — Every block paints the active theme
+
+The mobile app SHALL paint every themed colour of its blocks, the text, surfaces, borders, icons
+and indicators of `src/components/ui/` and of a screen's own `components/`, from the active
+theme: a StyleSheet through `createThemedStyles` and `useThemedStyles`, a view through
+`useThemeTokens`, and a NativeWind colour class through the preset's `var(--c-*)` read of the
+variable the root frame declares (MOBILE-05, TOKENS-12), the preset of packages/tokens its Tailwind
+config SHALL load, so switching to the light theme repaints the whole app; a colour the tokens
+share between the themes MAY still be read from the static palette.
+
+**Evidence:** `apps/mobile/src/lib/theme/createThemedStyles.helper.ts:16`, `apps/mobile/src/lib/theme/createThemedStyles.helper.ts:24`, `apps/mobile/src/lib/theme/useThemedStyles.hook.ts:7`, `apps/mobile/src/components/ui/Text/Text.component.tsx:13`, `apps/mobile/src/components/ui/Icon/Icon.component.tsx:21`, `packages/tokens/tailwind-preset.cjs:22`, `apps/mobile/src/lib/theme/useRootTheme.hook.ts:24`, `apps/mobile/tailwind.config.js:5-8`
+
+#### Scenario: a text variant under the light theme
+
+- **GIVEN** the light theme is active
+- **WHEN** the `Text` block renders the caption variant
+- **THEN** its colour is the light theme's tertiary text colour
+- **Test:** `apps/mobile/src/components/ui/Text/__tests__/Text.component.test.tsx` › "paints a variant in the active theme's colour"
+
+#### Scenario: a class-styled block under the light theme
+
+- **GIVEN** the light theme is active
+- **WHEN** a block paints through a NativeWind colour class, such as the secondary `Button`'s `text-text-primary`
+- **THEN** the class reads `var(--c-text-primary)` from the preset, and the root frame declares that variable with the light value
+- **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset reads every themed colour from its --c- variable, declared in both themes"
+- **Test:** `apps/mobile/src/app/__tests__/layout.route.test.tsx` › "wraps the routes in the variables of the active theme"
+
+#### Scenario: a themed style sheet
+
+- **GIVEN** a style builder over a palette
+- **WHEN** it is turned into themed styles and read under each theme
+- **THEN** each theme's sheet holds that theme's colours, and the hook returns the active one
+- **Test:** `apps/mobile/src/lib/theme/__tests__/createThemedStyles.helper.test.ts` › "builds one style sheet per theme from its palette"
+- **Test:** `apps/mobile/src/lib/theme/__tests__/useThemedStyles.hook.test.ts` › "returns the sheet of the active theme"
+
+#### Scenario: no block reads the static dark palette
+
+- **GIVEN** every style file, constant file and view under `src/components/ui/` and under the screens' `components/`
+- **WHEN** their reads of the static `colors` palette are listed
+- **THEN** none of them reads a themed colour
+- **Test:** `apps/mobile/src/lib/theme/__tests__/createThemedStyles.helper.test.ts` › "leaves no block reading a themed colour from the static dark palette"
+
 ### Requirement: MOBILE-29 — Session bootstrap from the auth gateway
 
 The mobile app SHALL set the auth status to loading on mount, then store the session the auth

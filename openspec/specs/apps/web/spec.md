@@ -671,7 +671,7 @@ with the not-configured failure (WEB-46), whose cause names both settings; other
 auth gateway per browser, whose sign-in names its failures (WEB-46).
 
 
-**Evidence:** `apps/web/src/lib/supabase/authGateway.adapter.ts:78-99`, `apps/web/src/lib/auth/authGateway.adapter.ts:11-23`, `apps/web/src/app/AuthProviders.tsx:22`
+**Evidence:** `apps/web/src/lib/supabase/authGateway.adapter.ts:69-100`, `apps/web/src/lib/auth/authGateway.adapter.ts:11-23`, `apps/web/src/app/AuthProviders.tsx:22`
 
 #### Scenario: the Supabase settings are missing
 
@@ -1435,7 +1435,7 @@ its `auth.error` message key; and `NETWORK_ERROR` with `helper.error.network` wh
 be reached. Any other rejection SHALL pass through unchanged, and the auth service makes it the
 generic error (WEB-13).
 
-**Evidence:** `apps/web/src/lib/supabase/authGateway.adapter.ts:32-76`, `apps/web/src/lib/supabase/authGateway.adapter.ts:78`, `apps/web/src/lib/auth/noopAuthGateway.helper.ts:10-39`, `apps/web/src/lib/auth/authGateway.constant.ts:6-22`, `apps/web/src/lib/supabase/authGateway.constant.ts:7-19`, `apps/web/src/services/Auth/auth.service.ts:19`
+**Evidence:** `apps/web/src/lib/supabase/authGateway.adapter.ts:23-67`, `apps/web/src/lib/supabase/authGateway.adapter.ts:69-71`, `apps/web/src/lib/auth/noopAuthGateway.helper.ts:10-44`, `apps/web/src/lib/auth/authGateway.constant.ts:6-22`, `apps/web/src/lib/supabase/authGateway.constant.ts:4-5`, `apps/web/src/lib/supabase/authGateway.constant.ts:11-23`, `apps/web/src/services/Auth/auth.service.ts:19`
 
 #### Scenario: the Supabase settings are missing
 
@@ -2506,7 +2506,7 @@ packages/supabase (SUPABASE-30): `getSupabaseClient` of `client.adapter.ts` retu
 Supabase client or a Supabase generic; the browser's auth gateway SHALL be built over the very
 client `getSupabaseClient` creates (WEB-20).
 
-**Evidence:** `apps/web/src/lib/supabase/client.adapter.ts:21-23`, `apps/web/src/lib/supabase/server.adapter.ts:14`, `apps/web/src/lib/supabase/authGateway.adapter.ts:114-116`, `packages/supabase/src/backendClient.type.ts:9-11`
+**Evidence:** `apps/web/src/lib/supabase/client.adapter.ts:21-23`, `apps/web/src/lib/supabase/server.adapter.ts:14`, `apps/web/src/lib/supabase/authGateway.adapter.ts:96-98`, `packages/supabase/src/backendClient.type.ts:9-11`
 
 #### Scenario: the browser client's type
 
@@ -2625,7 +2625,7 @@ gateway whose session is none and whose sign-in rejects with the `NOT_CONFIGURED
 `auth.error.notConfigured` key. Every sign-in failure the app names SHALL have its `auth.error`
 message key in every catalog.
 
-**Evidence:** `apps/web/src/lib/auth/authGateway.adapter.ts:11-23`, `apps/web/src/lib/auth/noopAuthGateway.helper.ts:10-39`, `apps/web/src/lib/auth/authGateway.constant.ts:2-22`, `apps/web/src/services/Auth/auth.service.ts:7`, `apps/web/src/app/AuthProviders.tsx:22`
+**Evidence:** `apps/web/src/lib/auth/authGateway.adapter.ts:11-23`, `apps/web/src/lib/auth/noopAuthGateway.helper.ts:10-44`, `apps/web/src/lib/auth/authGateway.constant.ts:2-22`, `apps/web/src/services/Auth/auth.service.ts:7`, `apps/web/src/app/AuthProviders.tsx:22`
 
 #### Scenario: no backend is kept
 

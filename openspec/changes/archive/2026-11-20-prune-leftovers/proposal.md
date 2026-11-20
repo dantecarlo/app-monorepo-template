@@ -84,6 +84,6 @@ The owner's words, verbatim:
 
 - `openspec/specs/packages/tooling/spec.md`: modifies TOOLING-01, TOOLING-17 and TOOLING-20
 - `openspec/specs/apps/web/spec.md`: adds WEB-85; modifies WEB-20 and WEB-46
-- `openspec/specs/apps/mobile/spec.md`: adds MOBILE-83; modifies MOBILE-29 and MOBILE-75
+- `openspec/specs/apps/mobile/spec.md`: adds MOBILE-83; modifies MOBILE-29, MOBILE-42 and MOBILE-75
 - `openspec/specs/packages/i18n/spec.md`: modifies I18N-11
 - `openspec/specs/packages/tokens/spec.md`: modifies TOKENS-12 and TOKENS-13

@@ -669,7 +669,7 @@ The mobile app SHALL build its Supabase client from EXPO_PUBLIC_SUPABASE_URL and
 EXPO_PUBLIC_SUPABASE_ANON_KEY, and fall back to placeholder values with one console warning when
 either is unset.
 
-**Evidence:** `apps/mobile/src/lib/supabase/client.adapter.ts:8-20`, `apps/mobile/src/lib/supabase/client.adapter.ts:31-34`
+**Evidence:** `apps/mobile/src/lib/supabase/client.adapter.ts:8-24`, `apps/mobile/src/lib/supabase/client.adapter.ts:35-38`
 
 #### Scenario: both values set
 
@@ -987,11 +987,11 @@ The mobile app SHALL paint every themed colour of its blocks, the text, surfaces
 and indicators of `src/components/ui/` and of a screen's own `components/`, from the active
 theme: a StyleSheet through `createThemedStyles` and `useThemedStyles`, a view through
 `useThemeTokens`, and a NativeWind colour class through the preset's `var(--c-*)` read of the
-variable the root frame declares (MOBILE-05, TOKENS-12), so switching to the light theme repaints
-the whole app; a colour the tokens share between the themes MAY still be read from the static
-palette.
+variable the root frame declares (MOBILE-05, TOKENS-12), the preset of packages/tokens its Tailwind
+config SHALL load, so switching to the light theme repaints the whole app; a colour the tokens
+share between the themes MAY still be read from the static palette.
 
-**Evidence:** `apps/mobile/src/lib/theme/createThemedStyles.helper.ts:16`, `apps/mobile/src/lib/theme/createThemedStyles.helper.ts:24`, `apps/mobile/src/lib/theme/useThemedStyles.hook.ts:7`, `apps/mobile/src/components/ui/Text/Text.component.tsx:13`, `apps/mobile/src/components/ui/Icon/Icon.component.tsx:21`, `packages/tokens/tailwind-preset.cjs:22`, `apps/mobile/src/lib/theme/useRootTheme.hook.ts:24`
+**Evidence:** `apps/mobile/src/lib/theme/createThemedStyles.helper.ts:16`, `apps/mobile/src/lib/theme/createThemedStyles.helper.ts:24`, `apps/mobile/src/lib/theme/useThemedStyles.hook.ts:7`, `apps/mobile/src/components/ui/Text/Text.component.tsx:13`, `apps/mobile/src/components/ui/Icon/Icon.component.tsx:21`, `packages/tokens/tailwind-preset.cjs:22`, `apps/mobile/src/lib/theme/useRootTheme.hook.ts:24`, `apps/mobile/tailwind.config.js:5-8`
 
 #### Scenario: a text variant under the light theme
 
@@ -2048,7 +2048,7 @@ whose sign-in rejects naming both settings; it SHALL list that gateway in the `s
 `src/lib/auth/authGateway.adapter.ts` (MOBILE-83); only the `*.adapter.ts` files of
 `src/lib/supabase/` SHALL import `@app/supabase`, tests included.
 
-**Evidence:** `apps/mobile/src/lib/supabase/authGateway.adapter.ts:11-13`, `apps/mobile/src/lib/auth/authGateway.adapter.ts:4-15`, `.agents/contracts/dependencies.json:305-310`
+**Evidence:** `apps/mobile/src/lib/supabase/authGateway.adapter.ts:11-12`, `apps/mobile/src/lib/supabase/authGateway.adapter.ts:20-22`, `apps/mobile/src/lib/auth/authGateway.adapter.ts:4-15`, `.agents/contracts/dependencies.json:305-310`
 
 #### Scenario: the gateway over the app's client
 
@@ -2081,7 +2081,7 @@ The mobile app SHALL type its Supabase client, `supabase` of `src/lib/supabase/c
 as the opaque `BackendClientType` of packages/supabase (SUPABASE-30), so no type of the app names
 the Supabase client or a Supabase generic.
 
-**Evidence:** `apps/mobile/src/lib/supabase/client.adapter.ts:31-34`, `packages/supabase/src/backendClient.type.ts:9-11`
+**Evidence:** `apps/mobile/src/lib/supabase/client.adapter.ts:35-38`, `packages/supabase/src/backendClient.type.ts:9-11`
 
 #### Scenario: the client's type
 
@@ -2284,7 +2284,7 @@ The mobile app SHALL hand the auth provider, from its root layout, the gateway
 lists, each listed inside that capability's region, or, when the project keeps none, a no-op
 gateway whose session is none and whose sign-in rejects.
 
-**Evidence:** `apps/mobile/src/lib/auth/authGateway.adapter.ts:11-23`, `apps/mobile/src/lib/auth/noopAuthGateway.helper.ts:11-16`, `apps/mobile/src/app/_layout.tsx:11`, `apps/mobile/src/app/_layout.tsx:41`
+**Evidence:** `apps/mobile/src/lib/auth/authGateway.adapter.ts:11-23`, `apps/mobile/src/lib/auth/noopAuthGateway.helper.ts:12-21`, `apps/mobile/src/app/_layout.tsx:11`, `apps/mobile/src/app/_layout.tsx:41`
 
 #### Scenario: no backend is kept
 
