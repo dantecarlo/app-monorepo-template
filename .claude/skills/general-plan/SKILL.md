@@ -74,9 +74,10 @@ single-feature spec, or pure refactor/code tasks.
   board is the source of every open ticket, its content included, so the plan
   names no open ticket: What's PENDING points at the board through that file,
   the Path to Launch names target versions, and § Closed Ticket Catalog
-  records each ticket once it closes, one row per ticket, which the PO adds in
-  one pull request per close or release (`po-ticket` Step 6). Without a ticket
-  flow, PENDING keeps its backlog rows and the catalog is dropped.
+  records each ticket once it closes, one row per ticket, which the architect
+  adds in one pull request per close or release (`refine-ticket` § Record the
+  closed tickets). Without a ticket flow, PENDING keeps its backlog rows and the
+  catalog is left out.
 
 ## Required vs Optional Sections
 
@@ -184,7 +185,7 @@ Run in order. Reading code is the point — do not write the doc from memory.
    With a ticket flow, a gap becomes a ticket on the board through the flow
    (`ticket-flow` rule 1), never a row here: PENDING keeps its one line that
    points at the board, and § Closed Ticket Catalog gains a row only when a
-   ticket closes (`po-ticket` Step 6).
+   ticket closes (`refine-ticket` § Record the closed tickets).
 7. **Separate the blockers.** Sort what only the human can supply into the four
    NEEDS FROM OWNER subsections; sort technical forks into Agent-Blocking
    Decisions (or fold them into owner asks if few).

@@ -1,26 +1,18 @@
 ---
 name: refine-ticket
 description: >
-  The architect role of the ticket flow: refines a ticket into specs
-  and a plan, sequences tickets that reserve one file, moves a ticket
-  to Ready for dev once it has a target version and its dependencies
-  are Done, dispatches each ready state, keeps the merge queue, closes
-  and files tickets, and groups Done tickets or a hotfix into a
-  release.
-  USE WHEN: "<id> new", "<id> ready for QA, branch <b>",
-  "<id> changes requested", "<id> ready to merge, PR #<n>",
-  "<id> merged",
-  "<id> ready to merge, hotfix",
-  "<id> question" about the plan, "<id> version set",
-  "<id> catalog ready to merge, PR #<n>",
-  "<release-id> catalog ready to merge, PR #<n>", "merge <id>",
-  "what waits to merge", "<release-id> staging checked",
-  "<release-id> released", "<release-id> <target> failed",
-  "group a release", "file a technical ticket",
-  an architect session of the ticket flow starts work.
-  DO NOT USE: writing a ticket from a client's request (use
-  `po-ticket`), building it (use `dev-ticket`), or a deploy (use
-  `release-ticket`).
+  The architect role of the ticket flow: refines a ticket into specs and a plan, dispatches it
+  to dev once it has a target version and nothing blocks it, dispatches each later state, keeps
+  the merge queue, closes and files tickets, records each closed ticket in the plan's catalog
+  through a pull request of its own, and groups Done tickets or a hotfix into a release.
+  USE WHEN: "<id> new", "<id> ready for QA, branch <b>", "<id> changes requested",
+  "<id> ready to merge, PR #<n>", "<id> ready to merge, hotfix", "<id> merged",
+  "<id> question" about the plan, "<id> version set", "merge <id>", "what waits to merge",
+  "<release-id> staging checked", "<release-id> released", "<release-id> <target> failed",
+  "group a release", "record the closed tickets", "file a technical ticket", an architect
+  session of the ticket flow starts work.
+  DO NOT USE: writing a ticket from a client's request (use `po-ticket`), building it (use
+  `dev-ticket`), or a deploy (use `release-ticket`).
 ---
 
 # Refine ticket — the architect: specs, plan, reservations, the merge queue and every dispatch
@@ -95,12 +87,10 @@ Does it carry a target version (`read version`)?
   (dependencies first) and `comment` it on each one: "merge order: 2, after #120". The merge
   queue follows it.
 - `<id> ready to merge, PR #<n>` from QA → § Merge queue.
-- `<release-id> catalog ready to merge, PR #<n>` or `<id> catalog ready to merge, PR #<n>` from
-  the PO → § Merge queue.
 - Once it is merged (§ Merge queue), or on `<id> merged` from the CI/CD session for a hotfix →
   message the ticket's QA and dev sessions `<id> merged`; with no deploy target in the project
-  layer, `move` it to Closed and message the PO `<id> closed`; otherwise it waits for its
-  release (§ Group a release).
+  layer, `move` it to Closed, message the PO `<id> closed`, and record it (§ Record the closed
+  tickets); otherwise it waits for its release (§ Group a release).
 - `<id> ready to merge, hotfix` from QA → the hotfix stays out of the merge queue and waits,
   unmerged, for a release ticket of its own (§ Group a release).
 
@@ -122,7 +112,7 @@ The architect keeps one merge queue for the default branch and merges from it, o
 at a time, under the merge policy the project layer records (`ticket-flow` rule 4): `manual`,
 the default, or `low-risk`. The owner approves each merge here, in this session, so one place
 shows what waits to merge; QA asks the owner nothing and merges nothing. A hotfix never enters
-it (§ Group a release); the PO's closed ticket catalog pull request does (step 1).
+it (§ Group a release); the architect's own closed ticket catalog pull request does (step 1).
 
 1. **Queue it.** On `<id> ready to merge, PR #<n>`: `read` the ticket and confirm it is at
    Ready to merge into the default branch, with the link to its evidence. The queue is every such
@@ -132,27 +122,29 @@ it (§ Group a release); the PO's closed ticket catalog pull request does (step 
    Merge queue
    1. <id> — PR #<n> — <evidence link> — <Risk line> — current with <base>, CI green
    2. <id> — PR #<n> — <evidence link> — <Risk line> — to be brought current
-   3. <release-id> catalog — PR #<n> — <board check link> — every row matches the board
+   3. <release-id> catalog — PR #<n> — <board check link> — every row matches the board — current with <base>, CI green
    ```
 
-   **The closed ticket catalog pull request.** On `<release-id> catalog ready to merge, PR #<n>`
-   from the PO, or `<id> catalog ready to merge, PR #<n>` for a single close outside a release
-   (`po-ticket` Step 6): queue that pull request like any other, in the merge order, merged on
-   the owner's word. It carries no ticket of its own, so the Ready to merge conditions of a
-   ticket do not apply to it: no QA holds it, and its merge moves no ticket. Before the owner is
-   asked for it, the architect checks it against the board (step 3).
+   **The closed ticket catalog pull request.** The pull request § Record the closed tickets opens
+   joins the queue at once, in the merge order, under the same merge policy as a ticket's; no
+   message announces it, since this session both opens and merges it. It carries no ticket of its
+   own and no QA holds it, so the architect brings it current itself: it merges the default
+   branch into the catalog branch, never a rebase, keeps every row of both sides when the table
+   conflicts, pushes unforced, lets its CI run again and checks it against the board again
+   (step 3). Its merge moves no ticket.
 
 2. **The head only.** Only the pull request at the head of the queue is asked for or merged, and
-   only while the project layer's merge gate, when it names one, passes and, for a ticket's pull
-   request, every condition of `ticket-flow` § Ready to merge holds (CI green, no conflict, its
-   branch holding the default branch's current tip). A ticket's pull request that fails one →
-   message its QA `<id> bring current`, and wait for `<id> ready to merge, PR #<n>` again, or for
-   `<id> changes requested` (Step 6). The closed ticket catalog pull request that fails the merge
-   gate → tell the owner here; it waits in the queue.
-3. **Ask, or merge under `low-risk`.** The closed ticket catalog pull request is merged on the
-   owner's word under every policy, and the owner is asked for it only once its board check
-   passes. No QA session checks it: the architect checks it here, through the project layer's
-   adapter (`ticket-flow` § Board operations):
+   only while the project layer's merge gate, when it names one, passes and every condition of
+   `ticket-flow` § Ready to merge holds (CI green, no conflict, its branch holding the default
+   branch's current tip). A ticket's pull request that fails one → message its QA
+   `<id> bring current`, and wait for `<id> ready to merge, PR #<n>` again, or for
+   `<id> changes requested` (Step 6). The closed ticket catalog pull request that fails one →
+   bring it current yourself (step 1), then take it from this step again; one that fails the
+   merge gate → tell the owner here; it waits in the queue.
+3. **Ask, or merge under `low-risk`.** The closed ticket catalog pull request is asked for, or
+   merged under `low-risk`, only once its board check passes. No QA session checks it: the
+   architect checks it here, through the project layer's adapter (`ticket-flow` § Board
+   operations):
 
    - **Read each ticket.** `read` and `read version`, on the board, every ticket the pull
      request's branch adds a row of § Closed Ticket Catalog for.
@@ -167,13 +159,13 @@ it (§ Group a release); the PO's closed ticket catalog pull request does (step 
      - <id> — <title> — <target version> — PR #<m> — mismatch: <field>, the board says <value>
      ```
 
-   - **Every row matches** → ask the owner, naming that comment. **A mismatch** → the pull
-     request goes back to the PO, not to the owner: `comment` the mismatch on the ticket or
-     release ticket that links it, message the PO `<id> question` (the release ticket's id for a
-     release), and it waits in the queue until the PO sends its catalog line again; then check it
-     again from the first row.
+   - **Every row matches** → go on below, naming that comment when you ask the owner. **A
+     mismatch** → rewrite that row from its board page on the catalog branch, push it unforced,
+     and check it again from the first row; nothing goes to the PO, and the owner is asked
+     nothing until every row matches.
 
-   For a ticket's pull request:
+   For a ticket's pull request, and for the closed ticket catalog pull request once its board
+   check passes:
 
    ```
    Which merge policy does the project layer record?
@@ -192,13 +184,15 @@ it (§ Group a release); the PO's closed ticket catalog pull request does (step 
    To ask, show the queue and say in this session: "`<id>` is ready to merge: PR #<n>, evidence
    `<link>`, CI green, current with `<base>`. Merge it?"; for the closed ticket catalog pull
    request, "The closed ticket catalog of `<release-id>` (or `<id>`) is ready to merge: PR #<n>,
-   every row matches the board, check `<link>`. Merge it?"
+   every row matches the board, check `<link>`, CI green, current with `<base>`. Merge it?"
    Wait for the owner's word here; a relay from another session does not count. When another
    merge lands before the answer, go back to step 2.
 4. **Merge.**
-   - **Yes, for the closed ticket catalog pull request** → merge it with the project layer's
-     merge method. It moves no ticket and sends no `<id> merged`. When the host refuses the
-     merge, tell the owner here; it waits in the queue.
+   - **Yes, or every `low-risk` condition met, for the closed ticket catalog pull request** →
+     merge it with the project layer's merge method. After a `low-risk` merge, `comment` the
+     ticket or release ticket it records: "Catalog PR #<n> merged under the `low-risk` merge
+     policy; it qualified by only passive files." It moves no ticket and sends no `<id> merged`.
+     When the host refuses the merge, tell the owner here; it waits in the queue.
    - **Yes, or every `low-risk` condition met** → merge it with the project layer's merge
      method. After a `low-risk` merge, `comment` the ticket: "Merged under the `low-risk` merge
      policy. Risk line: `<the pull request's Risk line>`; it qualified by <`Risk: none` | only
@@ -209,7 +203,29 @@ it (§ Group a release); the PO's closed ticket catalog pull request does (step 
 5. **The next one.** A merge moves the default branch's tip, so the next pull request in the
    queue is behind it: message its QA `<id> bring current`, and take it from step 2 once QA
    answers. When the next one is the closed ticket catalog pull request, which no QA holds,
-   take it from step 2 at once.
+   bring it current yourself (step 1) and take it from step 2.
+
+---
+
+## Record the closed tickets
+
+The board is the source of every open ticket (`ticket-flow` § Board operations): the general plan
+records a ticket only once it is closed, and the architect writes that record, so the PO does no
+repository work.
+
+On a close outside a release (Step 6, with no deploy target) or on `<release-id> released`
+(§ Group a release):
+
+1. `read` and `read version`, on the board, the ticket, or every ticket the release lists.
+2. On a branch of its own, cut from the default branch, add one row per ticket to
+   docs/GENERAL_PLAN.md § Closed Ticket Catalog, through `general-plan`, each copied from the
+   ticket's board page: its id, title, type, target version, the day it closed and its pull
+   request. Copy no open ticket into the plan, and never refresh its pending work from the
+   board: the plan points at the board.
+3. Commit the rows and open one pull request per close or release, its body naming each ticket
+   it records; `comment` its link on the ticket, or on the release ticket.
+4. Queue it in the merge queue at once (§ Merge queue): this session keeps it current, checks it
+   against the board and merges it there.
 
 ---
 
@@ -242,7 +258,8 @@ merges it into the production branch the layer names as that release's deploy st
 5. On `<release-id> <target> failed`: `read` the comment, plan the fix as a ticket, and the
    release waits in Refinement until step 3 holds again.
 6. On `<release-id> released`: `move` every ticket it lists, and the release ticket, to Closed,
-   and message the PO `<release-id> released`.
+   message the PO `<release-id> released`, and record the tickets it lists (§ Record the closed
+   tickets).
 
 ---
 
@@ -268,12 +285,15 @@ messages: ['<id> ready for dev', '<id> ready for QA, branch <b>', '<id> changes 
 emits:
   - openspec/changes/{date}-{name}/ # through sdd, when the ticket changes a living spec
   - a ticket comment for each low-risk merge, with the Risk line it relied on
+  - the closed ticket catalog pull request of each close or release
   - a pull request comment with the board check of each closed ticket catalog pull request
+edits:
+  - docs/GENERAL_PLAN.md # § Closed Ticket Catalog only, through general-plan, one pull request per close or release
 validated_by: verify:specs
 done_when: >-
   the ticket is in Ready for dev with its plan, or merged from the merge queue and Done, or the
-  closed ticket catalog pull request checked against the board and merged on the owner's word,
-  or a release is in Ready for prod
+  closed ticket catalog pull request opened, kept current, checked against the board and merged
+  under the merge policy, or a release is in Ready for prod
 ```
 
 ---

@@ -15,8 +15,8 @@
 // ticket, and the plan names none, so three more checks run, on the text
 // outside HTML comments:
 //
-//   - a "## Closed Ticket Catalog" section, where the PO records each ticket
-//     once it closes
+//   - a "## Closed Ticket Catalog" section, where the architect records each
+//     ticket once it closes
 //   - that section holds the catalog table, CATALOG_HEADER below
 //   - the PENDING section names process/ticket-flow.md, its pointer to the
 //     board

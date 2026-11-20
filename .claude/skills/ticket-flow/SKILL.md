@@ -48,7 +48,8 @@ performs them: its kind, and for each operation the command or tool call.
 **The board is the source of every open ticket**, its content included: the requirement, the
 acceptance criteria, the state, the target version, the plan and every comment. Nothing in the
 repository writes or mirrors an open ticket. The general plan records a ticket only once it is
-closed, in its § Closed Ticket Catalog (`po-ticket` Step 6); read an open ticket on the board.
+closed, in its § Closed Ticket Catalog, which the architect writes (`refine-ticket` § Record the
+closed tickets); read an open ticket on the board.
 
 | Operation | What it does | GitHub Issues, through `gh` |
 | --- | --- | --- |
@@ -95,10 +96,10 @@ The project layer maps its own state names onto these.
 | Changes requested | QA, with a comment: from In QA, or from Ready to merge on a red CI or a conflict when it brings the branch current | Architect, then the architect tells the dev session: `<id> changes requested` | `ticket:changes-requested` |
 | Ready to merge | QA: checks passed and § Ready to merge met; QA asks no one and merges nothing | Architect: `<id> ready to merge, PR #<n>`, and the architect queues it; for a hotfix into the production branch, `<id> ready to merge, hotfix` | `ticket:ready-to-merge` |
 | Done | Architect: merges it from its merge queue, on the owner's word or under the `low-risk` policy (rule 4); for a hotfix, CI/CD merges it into the production branch as its release's deploy step | QA and the dev session: `<id> merged`, sent by the architect; for a hotfix, CI/CD tells the architect, and the architect tells them | `ticket:done` |
-| Closed | Architect: after Done when the project declares no deploy target, or once the release that lists the ticket is Released | PO: `<id> closed`, and the PO records it in the general plan's closed ticket catalog | `ticket:closed` |
+| Closed | Architect: after Done when the project declares no deploy target, or once the release that lists the ticket is Released | PO: `<id> closed`; the architect records it in the general plan's closed ticket catalog | `ticket:closed` |
 | Ready for prod | Architect: a release ticket whose tickets are Done, or a hotfix at Ready to merge, § Release stage met | the CI/CD session: `<release-id> ready for prod` | `ticket:ready-for-prod` |
 | In release | CI/CD, on the owner's word | none (it runs each deploy target the release touches, in order) | `ticket:in-release` |
-| Released | CI/CD, after checking production | Architect: `<release-id> released`; the architect closes the tickets it lists and tells the PO `<release-id> released`, and the PO records the tickets it lists in the general plan's closed ticket catalog | `ticket:released` |
+| Released | CI/CD, after checking production | Architect: `<release-id> released`; the architect closes the tickets it lists, records them in the general plan's closed ticket catalog, and tells the PO `<release-id> released` | `ticket:released` |
 
 A failed deploy target sends the release ticket back to Refinement, with a comment. No other
 transition exists.
@@ -111,8 +112,9 @@ Every "ready" state reaches the next session through the architect: dev tells th
 architect tells QA; QA tells the architect, the architect tells dev or the CI/CD session. The
 architect also sets the merge order and keeps the merge queue: it asks the owner for each merge,
 in its own session (rule 6), or merges without asking under the `low-risk` policy (rule 4), one
-pull request at a time (`refine-ticket` § Merge queue). It groups Done tickets into releases and
-closes tickets. QA asks the owner nothing and merges nothing. The one merge that is not the
+pull request at a time (`refine-ticket` § Merge queue). It groups Done tickets into releases,
+closes tickets, and records each closed ticket in the general plan's closed ticket catalog, in a
+pull request of its own that it queues, keeps current and merges like the others. QA asks the owner nothing and merges nothing. The one merge that is not the
 architect's is a hotfix's into the production branch: the CI/CD session runs it as the deploy
 step of the hotfix's release.
 
@@ -134,7 +136,6 @@ needs it, the branch. It carries no requirement, decision or file list: those li
 | `<id> bring current` | architect to the ticket's QA: a pull request of the merge queue that a merge left behind its base, or whose CI must run again |
 | `<id> merged` | architect to the ticket's QA and dev sessions; for a hotfix, CI/CD to architect, then architect to them |
 | `<id> closed` | architect to PO |
-| `<id> catalog ready to merge, PR #<n>` | PO to architect: the closed ticket catalog pull request of a single close outside a release, for the merge queue |
 | `<id> question` | any session to the owner of the answer: the PO for scope, the architect for the plan, the dev session for its build |
 | `<id> scope changed` | PO to architect |
 | `<id> version change` | architect to PO: a target version proposed on the ticket, a move or the first one of a ticket that has none |
@@ -144,7 +145,6 @@ needs it, the branch. It carries no requirement, decision or file list: those li
 | `<release-id> ready for prod` | architect to the CI/CD session |
 | `<release-id> <target> failed` | CI/CD to architect |
 | `<release-id> released` | CI/CD to architect, then architect to PO |
-| `<release-id> catalog ready to merge, PR #<n>` | PO to architect: the closed ticket catalog pull request of a release, for the merge queue |
 
 A question is asked on the ticket first (`comment`), then announced with its one line; the answer
 goes back into the ticket. A message reaches a session through whatever the runtime offers.
@@ -158,8 +158,8 @@ session may fill a dev role; exactly one QA session fills each dev area's QA rol
 
 | Role | Responsibility | Skill |
 | --- | --- | --- |
-| PO | Turns a client requirement into a ticket, quoting the client verbatim; owns scope, and every change of scope goes through it; records each closed ticket in the general plan's closed ticket catalog, never an open one | `po-ticket` |
-| Architect | Refines a ticket into specs and a technical plan (areas, subtasks, reserved files, dependencies); dispatches every transition; sets the merge order, keeps the merge queue and merges one pull request at a time, on the owner's word or under the `low-risk` policy; groups releases; closes tickets; creates technical tickets | `refine-ticket` |
+| PO | Turns a client requirement into a ticket, quoting the client verbatim; owns scope, and every change of scope goes through it; keeps the scope and the board, and does no repository work | `po-ticket` |
+| Architect | Refines a ticket into specs and a technical plan (areas, subtasks, reserved files, dependencies); dispatches every transition; sets the merge order, keeps the merge queue and merges one pull request at a time, on the owner's word or under the `low-risk` policy; groups releases; closes tickets and records each in the general plan's closed ticket catalog, never an open one; creates technical tickets | `refine-ticket` |
 | Dev | One or more sessions per area (App, Web, Backend): builds a ticket in its own worktree and branch, test first | `dev-ticket` |
 | QA | One per area, Backend included: checks out the branch, runs the area's end-to-end checks with evidence, returns the ticket or brings it to Ready to merge and hands it to the architect, brings it current again when the architect asks; merges nothing; checks a release on staging | `qa-ticket` |
 | CI/CD | One session runs every deploy target, a hotfix's merge into the production branch included, and never decides whether to release: the owner's word does, per release and per irreversible step | `release-ticket` |
@@ -311,10 +311,11 @@ the queue, and only while all three conditions hold. After each merge it message
 next one `<id> bring current`: QA brings that branch current and re-checks it before the
 architect asks for it or merges it.
 
-The PO's closed ticket catalog pull request (`po-ticket` Step 6) joins the same queue, merged on
-the owner's word. It carries no ticket of its own, so it owes none of the three conditions and no
-QA brings it current; before the owner is asked for it, the architect checks each row it adds
-against its board page (`refine-ticket` § Merge queue).
+The architect's closed ticket catalog pull request (`refine-ticket` § Record the closed tickets)
+joins the same queue, under the same merge policy. It carries no ticket of its own and no QA holds
+it, so the architect meets the three conditions itself, bringing it current by merging its base;
+before it asks the owner for it or merges it, it checks each row it adds against its board page
+(`refine-ticket` § Merge queue).
 
 A red CI or a conflict after Ready to merge sends the ticket back to Changes requested, with a
 comment: QA moves it, when it brings the branch current.

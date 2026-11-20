@@ -21,10 +21,12 @@
 //     the `json ticket-identity` block, and its ticket and release
 //     templates, the ticket's target version marked required;
 //   - a role skill: a first paragraph that names ticket-flow's SKILL.md, and
-//     neither of the contract's two tables; `po-ticket` a close step that
+//     neither of the contract's two tables; `po-ticket` no `edits:`, since
+//     the PO does no repository work; `refine-ticket` a close step that
 //     records the closed tickets in the plan's closed ticket catalog, one
-//     pull request per close or release; `refine-ticket` a merge queue
-//     that names both merge policies and a release step that names the
+//     pull request per close or release, a merge queue that names both merge
+//     policies, brings the catalog pull request current itself and checks
+//     its rows against the board, and a release step that names the
 //     hotfix's line; `qa-ticket` a checkout step that adds a `--detach`
 //     worktree, a decide step that pushes `HEAD:<branch>`, a hand-off step
 //     that names its `<id> ready to merge, PR #<n>` line and the hotfix's
@@ -209,26 +211,22 @@ const BOARD_SOURCE = 'source of every open ticket'
 const BOARD_OPERATIONS_HEADING = '## Board operations'
 const BOARD_ADAPTER_HEADING = '## Board adapter'
 
-// On a close or a release the PO records each closed ticket in the general
-// plan's catalog, in one pull request, and copies no open ticket there.
-const PO_CLOSE_STEP = '## Step 6 — Record the closed tickets'
+// On a close or a release the architect, not the PO, records each closed
+// ticket in the general plan's catalog, in one pull request, and copies no
+// open ticket there; the PO does no repository work, so its CONTRACT lists
+// no file it edits.
+const RECORD_STEP = '## Record the closed tickets'
 const CLOSED_CATALOG = '§ Closed Ticket Catalog'
 const ONE_PULL_REQUEST = 'one pull request per close or release'
+const EDITS = 'edits:'
 
-// That pull request joins the architect's merge queue: once it is open the
-// PO sends one of these lines, the release form for the close of a release
-// and the id form for a single close outside one, the contract carries both,
-// and the merge queue takes the pull request on either.
-const CATALOG_MESSAGES = [
-  '<release-id> catalog ready to merge, PR #<n>',
-  '<id> catalog ready to merge, PR #<n>'
-]
-const CATALOG_LINES = CATALOG_MESSAGES.join(' and ')
-
-// Before the architect asks the owner for that pull request, it reads on
-// the board every ticket the pull request adds a row for and checks each
-// row against the ticket's board page, commenting the check on the pull
-// request; no QA session checks it.
+// That pull request joins the architect's merge queue with no message, since
+// the session that opens it merges it. No QA holds it, so the architect
+// brings it current itself, and before it asks the owner for it or merges it
+// it reads on the board every ticket the pull request adds a row for and
+// checks each row against the ticket's board page, commenting the check on
+// the pull request.
+const CATALOG_CURRENT = 'the architect brings it current itself'
 const CATALOG_BOARD_CHECK =
   'matches its board page in id, title, target version and closing pull request'
 
@@ -246,13 +244,6 @@ const codeOf = ({ text }) => `\`${text}\``
 // A section that must name every merge policy, each in backticks.
 const policyMentions = ({ heading }) =>
   MERGE_POLICIES.map((policy) => ({ heading, text: codeOf({ text: policy }) }))
-
-// A section that must name both catalog lines, each in backticks.
-const catalogMentions = ({ heading }) =>
-  CATALOG_MESSAGES.map((message) => ({
-    heading,
-    text: codeOf({ text: message })
-  }))
 
 // The ticket identity a section must describe: the block the branch check
 // reads, and `branchTypes`, the field a branch's prefix comes from.
@@ -319,7 +310,6 @@ export const SKILL_CONTRACTS = [
       { heading: '## Pre-flight', text: 'process-intake' },
       { heading: BOARD_OPERATIONS_HEADING, text: BOARD_SOURCE },
       hotfixMention({ heading: MESSAGES_HEADING }),
-      ...catalogMentions({ heading: MESSAGES_HEADING }),
       ...policyMentions({ heading: RULES_HEADING }),
       ...identityMentions({ heading: IDENTITY_HEADING })
     ],
@@ -339,21 +329,24 @@ export const SKILL_CONTRACTS = [
   },
   {
     folder: 'po-ticket',
-    headings: [PO_CLOSE_STEP, ...SHAPE_HEADINGS],
-    mentions: [
-      { heading: PO_CLOSE_STEP, text: CLOSED_CATALOG },
-      { heading: PO_CLOSE_STEP, text: ONE_PULL_REQUEST },
-      ...catalogMentions({ heading: PO_CLOSE_STEP })
+    forbids: [
+      {
+        text: EDITS,
+        why: 'the PO does no repository work: the architect records the closed ticket catalog'
+      }
     ],
+    headings: SHAPE_HEADINGS,
     role: true
   },
   {
     folder: 'refine-ticket',
-    headings: [MERGE_QUEUE, RELEASE_STEP, ...SHAPE_HEADINGS],
+    headings: [MERGE_QUEUE, RECORD_STEP, RELEASE_STEP, ...SHAPE_HEADINGS],
     mentions: [
       ...policyMentions({ heading: MERGE_QUEUE }),
-      ...catalogMentions({ heading: MERGE_QUEUE }),
+      { heading: MERGE_QUEUE, text: CATALOG_CURRENT },
       { heading: MERGE_QUEUE, text: CATALOG_BOARD_CHECK },
+      { heading: RECORD_STEP, text: CLOSED_CATALOG },
+      { heading: RECORD_STEP, text: ONE_PULL_REQUEST },
       hotfixMention({ heading: RELEASE_STEP })
     ],
     role: true
@@ -774,18 +767,17 @@ export const gate = defineGate({
     'ticket-flow has its sections, a row for every state, role and board ' +
     'operation, board operations that name the board the ' +
     `${BOARD_SOURCE}, a pre-flight that names process-intake, messages that name ` +
-    `${HOTFIX_MESSAGE} and ${CATALOG_LINES}, rules that name ` +
+    `${HOTFIX_MESSAGE}, rules that name ` +
     'both merge policies (manual and low-risk), a ticket identity that ' +
     `names branchTypes and the ${IDENTITY_INFO} block, and its ticket and ` +
     'release templates, the ticket template naming its target version ' +
     `${VERSION_REQUIRED}; each role skill opens by sending the reader to ` +
     'ticket-flow ' +
-    "and copies neither of the contract's tables, po-ticket has a close " +
-    `step that names ${CLOSED_CATALOG}, ${ONE_PULL_REQUEST} and ` +
-    `${CATALOG_LINES}, ` +
-    'refine-ticket has a ' +
-    'merge queue that names both merge policies and ' +
-    `${CATALOG_LINES} and says that each row the catalog pull request ` +
+    "and copies neither of the contract's tables, po-ticket names no " +
+    `${EDITS}, refine-ticket has a close step that names ` +
+    `${CLOSED_CATALOG} and ${ONE_PULL_REQUEST}, a ` +
+    'merge queue that names both merge policies, says that ' +
+    `${CATALOG_CURRENT} and that each row the catalog pull request ` +
     `adds ${CATALOG_BOARD_CHECK}, and a release step that ` +
     `names ${HOTFIX_MESSAGE}, qa-ticket a checkout step that names ` +
     `${DETACHED_CHECKOUT}, a decide step that names ${HEAD_PUSH}, a ` +

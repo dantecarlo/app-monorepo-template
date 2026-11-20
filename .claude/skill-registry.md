@@ -143,9 +143,9 @@ Last updated: 2026-11-19
 
 ### po-ticket
 
-- **Description**: The PO role of the ticket flow: guards scope, turns a client requirement into a ticket written from the ticket template with the client's words verbatim and the version it is aimed at, creates it in Backlog, never without that version, and tells the architect; answers scope questions; confirms every move of a target version, and the first version of a technical ticket; and, when a ticket closes or a release ships, records each closed ticket in the general plan's closed ticket catalog, in a pull request it sends to the architect's merge queue, the board staying the source of every open one.
+- **Description**: The PO role of the ticket flow: guards scope, turns a client requirement into a ticket written from the ticket template with the client's words verbatim and the version it is aimed at, creates it in Backlog, never without that version, and tells the architect; answers scope questions; confirms every move of a target version, and the first version of a technical ticket; keeps the scope and the board, and does no repository work: the architect records each closed ticket in the general plan.
 - **Triggers**: "the client asked for", "new requirement", "create a ticket for", "<id> question" about scope, "<id> version change", "<id> closed", "<release-id> released", a PO session of the ticket flow starts work
-- **DO NOT USE**: refining a ticket into specs and a plan (use `refine-ticket`), building it (use `dev-ticket`), or a change with no client behind it, which the architect files as a technical ticket (`refine-ticket`)
+- **DO NOT USE**: refining a ticket into specs and a plan (use `refine-ticket`), building it (use `dev-ticket`), recording a closed ticket in the general plan (the architect's `refine-ticket`), or a change with no client behind it, which the architect files as a technical ticket (`refine-ticket`)
 - **Path**: `.claude/skills/po-ticket/SKILL.md`
 
 ---
@@ -206,8 +206,8 @@ Last updated: 2026-11-19
 
 ### refine-ticket
 
-- **Description**: The architect role of the ticket flow: refines a ticket into specs and a plan, sequences tickets that reserve one file, moves a ticket to Ready for dev once it has a target version and its dependencies are Done, dispatches each ready state, keeps the merge queue, closes and files tickets, and groups Done tickets or a hotfix into a release.
-- **Triggers**: "<id> new", "<id> ready for QA, branch <b>", "<id> changes requested", "<id> ready to merge, PR #<n>", "<id> merged", "<id> ready to merge, hotfix", "<id> question" about the plan, "<id> version set", "<id> catalog ready to merge, PR #<n>", "<release-id> catalog ready to merge, PR #<n>", "merge <id>", "what waits to merge", "<release-id> staging checked", "<release-id> released", "<release-id> <target> failed", "group a release", "file a technical ticket", an architect session of the ticket flow starts work
+- **Description**: The architect role of the ticket flow: refines a ticket into specs and a plan, dispatches it to dev once it has a target version and nothing blocks it, dispatches each later state, keeps the merge queue, closes and files tickets, records each closed ticket in the plan's catalog through a pull request of its own, and groups Done tickets or a hotfix into a release.
+- **Triggers**: "<id> new", "<id> ready for QA, branch <b>", "<id> changes requested", "<id> ready to merge, PR #<n>", "<id> ready to merge, hotfix", "<id> merged", "<id> question" about the plan, "<id> version set", "merge <id>", "what waits to merge", "<release-id> staging checked", "<release-id> released", "<release-id> <target> failed", "group a release", "record the closed tickets", "file a technical ticket", an architect session of the ticket flow starts work
 - **DO NOT USE**: writing a ticket from a client's request (use `po-ticket`), building it (use `dev-ticket`), or a deploy (use `release-ticket`)
 - **Path**: `.claude/skills/refine-ticket/SKILL.md`
 

@@ -178,8 +178,8 @@ tables/columns/RPCs to add — not just UI>.
   REQUIRED WITH A TICKET FLOW (docs/process/ticket-flow.md exists); drop it
   otherwise. The board is the source of every open ticket, so this section
   records a ticket only once it is closed: one row per ticket, copied from the
-  board, added by the PO in one pull request per close or release (po-ticket
-  Step 6). Never list an open ticket here.
+  board, added by the architect in one pull request per close or release
+  (refine-ticket § Record the closed tickets). Never list an open ticket here.
 -->
 
 | Ticket | Title | Type | Version | Closed | Pull request |

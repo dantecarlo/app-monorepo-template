@@ -9,8 +9,8 @@
 // one thing. The checks then run the check as a process over a scratch tree
 // in the OS temp directory, which `withScratchTree` removes, and over the
 // repository itself. It also runs the checks of the general plan's
-// validator, which the PO's close step writes through, since no other script
-// runs a test under .claude/skills/.
+// validator, which the architect's close step writes through, since no other
+// script runs a test under .claude/skills/.
 //
 // Usage:
 //   node --test scripts/verify-skills.test.mjs
@@ -77,15 +77,15 @@ const BRANCH_TYPES_NAMED = 'It names `branchTypes`.'
 const BLOCK_NAMED = `It names \`${IDENTITY_INFO}\`.`
 const REQUIRED_SLUG = '"slug": "required"'
 const SOURCE_NAMED = 'It names source of every open ticket.'
-const PO_CLOSE_STEP = '## Step 6 — Record the closed tickets'
+// The architect, not the PO, records each closed ticket in the general plan's
+// catalog, in one pull request per close or release, and brings that pull
+// request current itself, since no QA holds it.
+const RECORD_STEP = '## Record the closed tickets'
 const CATALOG_NAMED = 'It names § Closed Ticket Catalog.'
 const ONE_PULL_REQUEST_NAMED = 'It names one pull request per close or release.'
-// The two lines that send the PO's closed ticket catalog pull request to the
-// architect's merge queue: the release form and the id form.
-const CATALOG_MESSAGES_NAMED = [
-  'It names `<release-id> catalog ready to merge, PR #<n>`.',
-  'It names `<id> catalog ready to merge, PR #<n>`.'
-]
+const CATALOG_CURRENT_NAMED = 'It names the architect brings it current itself.'
+// The PO does no repository work, so its CONTRACT lists no file it edits.
+const EDITS = 'edits:'
 // Before the architect asks the owner for that pull request, it checks each
 // row the pull request adds against the ticket's board page.
 const CATALOG_BOARD_CHECK =
@@ -227,14 +227,6 @@ const append =
   ({ lines }) =>
   ({ text }) =>
     [text, ...lines].join('\n')
-
-// Drops both catalog lines from a section, so each case proves the check
-// judges the release form and the id form apart: two findings, one per line.
-const withoutCatalogMessages = ({ text }) =>
-  CATALOG_MESSAGES_NAMED.reduce(
-    (result, line) => result.replace(line, NAMES_NOTHING),
-    text
-  )
 
 const SKILL = ({ folder }) => `${folder}/${SKILL_FILE}`
 
@@ -835,58 +827,49 @@ export const CASES = [
   {
     context: skills({
       edits: {
-        [SKILL({ folder: 'po-ticket' })]: withoutSection({
-          heading: PO_CLOSE_STEP
+        [SKILL({ folder: 'refine-ticket' })]: withoutSection({
+          heading: RECORD_STEP
         })
       }
     }),
     expected: 1,
-    name: 'a po-ticket without its close step is refused'
+    name: 'a refine-ticket without its close step is refused'
   },
   {
     context: skills({
       edits: {
-        [SKILL({ folder: 'po-ticket' })]: replace({
+        [SKILL({ folder: 'refine-ticket' })]: replace({
           from: CATALOG_NAMED,
           to: NAMES_NOTHING
         })
       }
     }),
     expected: 1,
-    name: 'a po-ticket whose close step names no closed ticket catalog is refused'
+    name: 'a refine-ticket whose close step names no closed ticket catalog is refused'
   },
   {
     context: skills({
       edits: {
-        [SKILL({ folder: 'po-ticket' })]: replace({
+        [SKILL({ folder: 'refine-ticket' })]: replace({
           from: ONE_PULL_REQUEST_NAMED,
           to: NAMES_NOTHING
         })
       }
     }),
     expected: 1,
-    name: 'a po-ticket whose close step does not open one pull request per close or release is refused'
+    name: 'a refine-ticket whose close step does not open one pull request per close or release is refused'
   },
   {
     context: skills({
-      edits: { [SKILL({ folder: CONTRACT })]: withoutCatalogMessages }
+      edits: {
+        [SKILL({ folder: 'refine-ticket' })]: replace({
+          from: CATALOG_CURRENT_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
     }),
-    expected: 2,
-    name: 'a ticket-flow whose messages name no catalog line is refused'
-  },
-  {
-    context: skills({
-      edits: { [SKILL({ folder: 'po-ticket' })]: withoutCatalogMessages }
-    }),
-    expected: 2,
-    name: 'a po-ticket whose close step sends no catalog message is refused'
-  },
-  {
-    context: skills({
-      edits: { [SKILL({ folder: 'refine-ticket' })]: withoutCatalogMessages }
-    }),
-    expected: 2,
-    name: 'a refine-ticket whose merge queue takes no catalog pull request is refused'
+    expected: 1,
+    name: 'a refine-ticket whose merge queue does not bring the catalog pull request current is refused'
   }
 ]
 
@@ -1094,6 +1077,32 @@ const checks = [
       assert.ok(
         finding.detail.includes(DONE_MOVE),
         `the finding does not name the move: ${finding.detail}`
+      )
+    }
+  },
+  {
+    name: 'a po-ticket that edits a repository file is refused',
+    run: () => {
+      const findings = gate.run(
+        skills({
+          edits: {
+            [SKILL({ folder: 'po-ticket' })]: append({
+              lines: [EDITS, '  - docs/GENERAL_PLAN.md']
+            })
+          }
+        })()
+      )
+      assert.equal(findings.length, 1, JSON.stringify(findings))
+      const [finding] = findings
+      assert.equal(finding.kind, FINDING_KIND.forbidden)
+      assert.equal(finding.folder, 'po-ticket')
+      assert.ok(
+        finding.detail.startsWith(`${SKILLS_ROOT}/po-ticket/${SKILL_FILE}`),
+        `the finding does not name the file: ${finding.detail}`
+      )
+      assert.ok(
+        finding.detail.includes(EDITS),
+        `the finding does not name what the PO must not list: ${finding.detail}`
       )
     }
   },
