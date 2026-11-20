@@ -1,6 +1,6 @@
 # Proposal: the harness config, and the merge policy read from it
 
-> **Status:** open
+> **Status:** archived — 2026-11-20
 
 ## Why
 
