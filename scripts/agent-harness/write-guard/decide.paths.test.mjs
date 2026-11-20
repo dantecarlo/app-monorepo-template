@@ -11,7 +11,7 @@
 // ---------------------------------------------------------------------------
 
 import assert from 'node:assert/strict'
-import { dirname, resolve } from 'node:path'
+import { dirname, resolve, sep } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
@@ -176,12 +176,14 @@ for (const filePath of [
 }
 
 // -- the walk is linear in the depth of the path ------------------------------
+// Spelled with this platform's separator, so on POSIX the case walks a real
+// deep path rather than one name full of backslashes.
 const DEADLINE_MS = 1000
 const DEPTH = 10_000
 
 for (const [label, agent, segment, expected] of [
-  ['10,000 folders deep', 'validator', 'a\\', 'deny'],
-  ['10,000 a\\..\\ pairs long', undefined, 'a\\..\\', 'ask']
+  ['10,000 folders deep', 'validator', `a${sep}`, 'deny'],
+  ['10,000 a/../ pairs long', undefined, `a${sep}..${sep}`, 'ask']
 ]) {
   test(`a path ${label} is judged on the real disk in well under a second`, () => {
     const start = performance.now()
@@ -192,7 +194,7 @@ for (const [label, agent, segment, expected] of [
         ...(agent === undefined ? {} : { agent_type: agent }),
         cwd: REPO_ROOT,
         tool_input: {
-          file_path: `${REPO_ROOT}\\${segment.repeat(DEPTH)}AGENTS.md`
+          file_path: `${REPO_ROOT}${sep}${segment.repeat(DEPTH)}AGENTS.md`
         },
         tool_name: 'Write'
       },
