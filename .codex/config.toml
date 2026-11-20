@@ -14,6 +14,10 @@ project_doc_max_bytes = 65536
 max_depth = 2
 max_threads = 4
 
+[agents.sdd-steward]
+description = "Runs Spec-Driven Development for this repository on request, in one of four modes. propose: receives the owner's request in their words, reads the living specs and code it touches, and writes the change folder (proposal, spec deltas, tasks) as one commit, then stops for the owner's review. apply: receives an approved change, builds its tasks test first, writes the verify report and archives the deltas into openspec/specs/. sync <spec>: writes or refreshes one living spec from the code and checks every requirement against its evidence. discard <change>: archives a change that will not be finished, with its reason. Reads the sdd skill and openspec/README.md. Never pushes, never opens a pull request, never merges."
+config_file = "agents/sdd-steward.toml"
+
 [agents.validator]
 description = "Fresh-context adversarial standards validator. Used by the validate-all harness — one instance per validation GROUP. Receives a GROUP focus and a SCOPE (list of changed files or a git diff), reads the binding docs and the relevant vendored skill, then validates ONLY its group. Returns a structured findings list by severity plus a final PASS/FAIL verdict for the group. Read-only: never edits files."
 config_file = "agents/validator.toml"

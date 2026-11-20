@@ -52,6 +52,7 @@ See `docs/memory.md` for the LOAD and CONTRIBUTE flow.
 | `docs/manifest.md`                     | Template manifest — file ownership and propagation                      |
 | `docs/mcp.md`                          | MCP servers — what each is for, unpinned; refresh with `pnpm mcp:docs`  |
 | `.agents/agents/validator.agent.md`    | Adversarial standards validator subagent (neutral source)               |
+| `.agents/agents/sdd-steward.agent.md`  | SDD steward subagent: one whole SDD change, or one sync (neutral source) |
 | `.claude/skills/validate-all/SKILL.md` | Full validation harness                                                 |
 
 ---
@@ -119,8 +120,10 @@ server and run after `pnpm validate` in CI, not inside it.
 A change that adds, modifies or removes a requirement of a living spec, or creates
 a unit no spec describes yet, runs the SDD lifecycle: load the `sdd` skill and
 follow `openspec/README.md` (proposal, spec deltas, a design only for an
-architecture decision, tasks, apply test first, verify, archive). A small change
-needs no spec; its commit and pull request are the record. Owner requests are
+architecture decision, tasks, apply test first, verify, archive). The phases run
+in one context, the main session or the `sdd-steward` agent, never one subagent
+per phase. A small change needs no spec; its commit and pull request are the
+record. Owner requests are
 quoted in English, translated and marked when written in another language.
 
 ---

@@ -16,7 +16,8 @@ spec format (§ 2.2), the lifecycle (§ 3), who owns what (§ 4) and what checks
 skill is the procedure that applies them, one mode at a time. Without it a large change leaves
 no record a reviewer can read, and a living spec drifts from the code with nothing to notice.
 
-Every phase runs in this one context, the main session. Never spawn one agent per phase.
+Every phase runs in this one context: the main session or the `sdd-steward` agent. Never spawn
+one agent per phase.
 
 ## Step 0 — Size the request
 

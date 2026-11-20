@@ -188,9 +188,10 @@ them.
 
 Every agent also names the skill that grades it, in `.agents/agent-context.json`:
 `gradedBy` lists the skills whose procedure and report its output is held to,
-the skill it runs or, when it runs no single one, the skill that defines and
-judges what it returns (`validator` answers to `validate-all`, which sets its
-groups and its report and rolls their verdicts into one). An agent added
+the skill it runs (`sdd-steward` runs `sdd`) or, when it runs no single one,
+the skill that defines and judges what it returns (`validator` answers to
+`validate-all`, which sets its groups and its report and rolls their verdicts
+into one). An agent added
 without its entry fails `pnpm verify:agent-context`, as does an entry with no
 `gradedBy`, a `gradedBy` naming a folder of `.claude/skills/` that holds no
 `SKILL.md`, and an entry whose agent is gone. Whether the named skill is the
