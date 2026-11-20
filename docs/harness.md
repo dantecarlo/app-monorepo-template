@@ -51,8 +51,8 @@ what it would remove and move, touching nothing. It starts with `git fetch
 --prune origin`, stopped after 30 s or the seconds
 `PRUNE_WORKTREES_FETCH_SECONDS` names, rounded up to whole milliseconds
 (any value that is not a positive number fails the run before it touches
-anything); a fetch stopped there
-skips the prune and the fast-forward, prints one line that says so, under
+anything); a fetch stopped there is ended with every process it started
+(`taskkill /T /F` on Windows, section 3g), skips the prune and the fast-forward, prints one line that says so, under
 `--quiet` too, and exits 0, so a stalled remote holds a merge or a pull for
 that long at most. After the fetch it removes a linked worktree only when
 its branch's upstream is gone, its HEAD is in the default branch (the one
@@ -93,8 +93,9 @@ so the rest of that hook still runs. A dry run ends with what the pruner
 does not cover: it still runs `git fetch --prune`, a worktree another
 process holds as its current directory on Windows is emptied and
 unregistered, the merge waits for the prune, on Windows a fetch stopped at
-its bound ends without git's own cleanup, so a remote helper it started
-(https) runs on until its connection ends, and an ignored file written in
+its bound ends without git's own cleanup (its remote helper is ended with it
+since the process reaper's change, though the printed line still says it runs
+on: F74), and an ignored file written in
 the moment between the last check and git's own removal goes with the
 worktree.
 `core.hooksPath` stays the relative `.husky/_` husky writes at repository
@@ -126,6 +127,7 @@ The chain runs in cost order:
 | `pnpm agent-harness:projection-check` | Every projected agent file equals what its neutral source renders, and is committed (see 3e) |
 | `pnpm agent-harness:test`       | The projector's reader, adapters, hook projection, writer, checker and sync still behave |
 | `pnpm write-guard:test`         | The write guard decides every cell of its table, its errors and its switch-off, reads every Windows spelling of a path (or refuses what it cannot read) and every checkout that holds it, judges a 10,000-folder path in under a second, every checkout rule glob matches a file and every module the hook loads is a rule file, and the real hook answers a payload on stdin end to end, through a junction too (see 3f) |
+| `pnpm reap:test`               | The process reaper's core decides each rule over synthetic process tables (an orphan, a live parent, a reused pid, POSIX reparenting, unknown names, the console wrappers, its own ancestry, a spared daemon, the grace period); the adapter lists and ends on each platform through an injected spawn; the command's modes, bound and exit codes; the session hook's kill mode and its exit 0 on any failure; and `runBounded` ends a real child's tree on Windows (see 3g) |
 | `pnpm verify:agent-context:test` | The agent-context gate fails each defect it names, on synthetic entries and over a scratch tree |
 | `pnpm verify:agent-context`     | Every agent of `.agents/agents/` has an entry in `.agents/agent-context.json` whose `gradedBy` names the skills that grade it, each a folder of `.claude/skills/` holding a `SKILL.md`, whose `writes` is true or false, whose `surface`, if any, lists repository-relative folders beside `writes: true`, and which holds no other key; no entry names an agent that is gone (see 3e) |
 | `pnpm verify:manifest`          | `template.manifest.json` is well formed                   |
@@ -171,7 +173,7 @@ the pre-commit hook on staged files.
 | `verify:skill-frontmatter` | Every `.claude/skills/*/SKILL.md` has a frontmatter that parses, a `name` that is its folder, and a description of at most 1,024 characters once parsed (the line break a `>` block keeps counted) that holds `USE WHEN:` and `DO NOT USE:`; a skill `.claude/skills-lock.json` lists (archify) is vendored and gets the parse, name and length checks only. `verify:skill-frontmatter:test` plants each refusal, both quoting styles and both block styles |
 | `verify:skill-neutrality` | No file under `.claude/skills/` (a `SKILL.md`, a template, a reference or a script, a vendored skill included) names a downstream project: a name `.agents/contracts/downstream-projects.json` declares for one, matched as a whole word in any letter case, so a product name also catches the package scope, slug and bundle id built from it, and a name inside a longer word does not. A downstream project's core-purity gate refuses a first-party skill that names a product, so a template skill that names one is refused on sync. The list names donor products, so it is `template-maintainer` material and never ships: a derived project finds it absent and the gate forbids nothing, saying so in its denominator, while the template, run with `ATL_TEMPLATE_SELF=1`, fails without it; a list that does not parse, declares no project, or gives a project no name fails too. A new downstream project is one entry of that list. `verify:skill-neutrality:test` plants each refusal with synthetic names and runs the gate over a scratch tree |
 | `git-free-env:test`, `hook-git-dir:test` | `gitFreeEnv()` drops every `GIT_*` variable, in any case, from the environment a script hands to git or to a child; `withHookGitDir` runs a flow with `GIT_DIR` and `GIT_INDEX_FILE` naming a decoy repository, as a git hook exports them, reports whether anything under the decoy changed, and puts both variables back and removes the decoy however the flow ends. Every suite that spawns git runs one end-to-end case under it and asserts the decoy is left alone; `init-project:test` takes its whole copy under it |
-| `worktrees:prune:test` | `scripts/prune-worktrees.test.mjs` drives the pruner (Layer 2) over a scratch origin, its clone and one linked worktree per case, `--dry-run` first: the merged clean worktree goes and its branch with it; every reason to keep one is seen kept and printed, an ignored file nothing rebuilds, an env file, a file under `.atl/`, a note beside the two skill-registry files in `.atl/`, a lock, an edit hidden by `--skip-worktree` or `--assume-unchanged` and a file that differs only in its line endings among them; a branch whose tip moved after it was judged stays; an `.atl/` that holds only those two files goes with its worktree; an ignored file nothing rebuilds, written after the decision, keeps the worktree at the check just before its removal, and a worktree still clean there goes with its branch; a dry run removes and moves nothing, states the real run's decisions and ends with what is not covered; the main checkout is fast-forwarded to `origin/HEAD`'s branch, whatever its name, and is left, with the reason, over any tracked local change, staged, line-ending-only or in a file the fast-forward does not touch, and over git's refusal, named by its first line that is not a hint and the files it lists; a dry run says it would leave a main checkout that diverged, and one with an untracked file the fast-forward would overwrite, with git's refusal, and touches neither, while a file whose timestamp alone changed and an `index.lock` already in the main checkout leave its "would fast-forward" as it was; the worktree the command runs in survives the `post-merge` that fast-forward fires; an unset `origin/HEAD` exits 1 naming `git remote set-head origin --auto`; a step that fails after a removal exits 1 and still reports the removal, never "nothing was removed"; a fetch from a remote that never answers is stopped at `PRUNE_WORKTREES_FETCH_SECONDS`, and the run says so, removes and moves nothing and exits 0, where the same repositories with a remote that answers are pruned and moved; the bound is 30 s, a value that is not a positive number throws, naming it, and one that is no whole number of milliseconds is rounded up; and the real `.husky/post-merge`, run by `git hook run`, prunes and exits 0 even when the pruner fails |
+| `worktrees:prune:test` | `scripts/prune-worktrees.test.mjs` drives the pruner (Layer 2) over a scratch origin, its clone and one linked worktree per case, `--dry-run` first: the merged clean worktree goes and its branch with it; every reason to keep one is seen kept and printed, an ignored file nothing rebuilds, an env file, a file under `.atl/`, a note beside the two skill-registry files in `.atl/`, a lock, an edit hidden by `--skip-worktree` or `--assume-unchanged` and a file that differs only in its line endings among them; a branch whose tip moved after it was judged stays; an `.atl/` that holds only those two files goes with its worktree; an ignored file nothing rebuilds, written after the decision, keeps the worktree at the check just before its removal, and a worktree still clean there goes with its branch; a dry run removes and moves nothing, states the real run's decisions and ends with what is not covered; the main checkout is fast-forwarded to `origin/HEAD`'s branch, whatever its name, and is left, with the reason, over any tracked local change, staged, line-ending-only or in a file the fast-forward does not touch, and over git's refusal, named by its first line that is not a hint and the files it lists; a dry run says it would leave a main checkout that diverged, and one with an untracked file the fast-forward would overwrite, with git's refusal, and touches neither, while a file whose timestamp alone changed and an `index.lock` already in the main checkout leave its "would fast-forward" as it was; the worktree the command runs in survives the `post-merge` that fast-forward fires; an unset `origin/HEAD` exits 1 naming `git remote set-head origin --auto`; a step that fails after a removal exits 1 and still reports the removal, never "nothing was removed"; a fetch from a remote that never answers is stopped at `PRUNE_WORKTREES_FETCH_SECONDS`, and the run says so, removes and moves nothing and exits 0, where the same repositories with a remote that answers are pruned and moved; on Windows a fetch stopped at its bound ends the ssh command git started; the bound is 30 s, a value that is not a positive number throws, naming it, and one that is no whole number of milliseconds is rounded up; and the real `.husky/post-merge`, run by `git hook run`, prunes and exits 0 even when the pruner fails |
 | `verify:router-coverage` | Every "Load skill" cell of the Router tables of `AGENTS.md` (its `## Router` section) names, in backticks, a skill with a `.claude/skills/<name>/SKILL.md`, and every skill, read as `verify:skill-frontmatter` reads them, has a row; every "Validated by" cell is `review` or cites, in backticks, only scripts the root `package.json` defines, the text outside the backticks (`lint` (jsx-a11y)) explaining them; a Router table missing either column, a Router with no table and an `AGENTS.md` with no Router fail too. An `/init` prune that drops a skill leaves its row dead and fails this gate until Stage 6 removes the row. `verify:router-coverage:test` plants each refusal and runs the gate over a scratch tree |
 | `codex-budget:test`   | The generated `.codex/config.toml` sets `project_doc_max_bytes` above every table header, and `AGENTS.md`, counted with CRLF endings, fits it: Codex drops what is past the budget |
 | `check:identity`      | The template's default identity is gone (skipped on self)                                 |
@@ -238,7 +240,7 @@ runtime reads, and `scripts/agent-harness/` holds the projector:
 | `.codex/agents/<name>.toml`, `.codex/config.toml` | Codex; the config also holds the `AGENTS.md` budget |
 | `.opencode/agents/<name>.md`, `opencode.json` | OpenCode |
 | `.github/agents/<name>.agent.md`    | Copilot     |
-| `.claude/settings.json`             | Claude Code: the hooks of `.agents/hooks.json` (3f) |
+| `.claude/settings.json`             | Claude Code: the hooks of `.agents/hooks.json` (3f, 3g) |
 | `.agents/projection-manifest.json`  | none: the sha256 of every output |
 
 To change an agent, edit its source, run `pnpm agent-harness:generate` (or
@@ -378,6 +380,74 @@ surface is read against the nearest checkout that holds the target; no agent
 declares a surface yet. User-level settings moved by `CLAUDE_CONFIG_DIR`, and
 the managed settings an administrator installs, are not read. Nor why a rule
 changed, which review reads.
+
+### 3g. The process reaper
+
+On Windows a killed parent does not take its children with it. A Claude Code
+session that crashes or is restarted, a background shell the harness stops, or
+a stopped `pnpm validate` leaves its MCP servers, turbo, the vitest workers,
+esbuild and `git-remote-https` running with a dead parent, and over a day they
+fill the machine's memory. The reaper ends them; the owner asked for it as
+priority 1 on 2026-11-20.
+
+| Piece                                            | What it is |
+| ------------------------------------------------ | ---------- |
+| `.agents/contracts/process-reaper.json`          | The families it may end, the processes it spares, the 60 s grace and the 8 s bound; a rule file |
+| `scripts/agent-harness/reaper/plan.mjs`          | The pure core: from the process list, as data, the trees to end and the trees kept, each with its reason |
+| `scripts/agent-harness/reaper/platform.mjs`      | The adapter: it lists with `Get-CimInstance Win32_Process` on Windows and `ps` on POSIX, and ends a tree with `taskkill /PID <pid> /T /F`, or SIGTERM then SIGKILL after 2 s |
+| `scripts/agent-harness/reaper/bounded-child.mjs` | `runBounded`: a child with a time bound, ended with its whole tree at the bound; the worktree pruner's fetch runs through it |
+| `scripts/agent-harness/reaper/reap.mjs`          | The command, `pnpm reap` and `pnpm reap:kill` |
+| `scripts/agent-harness/reaper/session-start.mjs` | The Claude Code `SessionStart` hook |
+
+**What it ends.** An orphan: a process whose parent pid names no live process,
+or names one that started after it (the pid was reused); on POSIX also one
+under pid 1 or the user's subreaper (`systemd --user`, a WSL `/init`). It ends
+an orphan only when its command line matches a family of the contract, and then
+with its whole descendant tree: an MCP server npx started and its npx launcher,
+the known MCP server entrypoints (context7, codegraph, shadcn, next-devtools,
+metro, expo-mcp, react-native-docs, lottiefiles, scrapling), vitest and its
+tinypool workers, turbo, esbuild, tsc, jest workers and `git-remote-https`. A
+`cmd.exe` or `conhost.exe` is read by its name alone and goes only with the one
+reapable process it wraps, its childless consoles aside. Each `npx -y <pkg>`
+server is four processes, `cmd.exe`, `conhost.exe`, the npx launcher and the
+server, and the launcher holds about as much memory as the server.
+
+**What it never ends.** Its own ancestry; a tree that holds a process the
+contract spares, today the shared MCP proxy `mcp-proxy`, which runs detached by
+design and so reads as an orphan while every session still uses it; a tree that
+holds a process younger than 60 s, or one whose start time the listing cannot
+read; and anything outside the families. Every tree it keeps is printed with
+its reason.
+
+**The commands.** `pnpm reap` is a dry run: one line per tree it would end (its
+root pid, family, age, process count and MB), one per tree it keeps and why,
+then the total MB. `pnpm reap:kill` ends them; `--json` prints the plan as one
+JSON line and `--quiet` only the total line. It exits 0 when it finished, with
+or without ends, and 1 on a failure: a listing that fails, a tree it could not
+end, an unknown option. It ends within 8 s: a run that reaches the bound ends
+no tree it had not already decided on, says so and exits 1.
+
+**The hook.** `.agents/hooks.json` runs `session-start.mjs` at every
+`SessionStart`, with no matcher (start, resume, clear and compaction) and a
+15 s hook timeout: the reaper with `--kill --quiet`, whose total line Claude
+Code adds to the session's context. It never blocks or fails the session: the
+reaper is imported inside a `try`, and whatever goes wrong prints one line to
+stderr and exits 0. Like the write guard it runs from the main checkout
+(`${CLAUDE_PROJECT_DIR}`). To switch it off, put `"disableAllHooks": true` in
+`.claude/settings.local.json`.
+
+**Not covered:** an orphan whose parent pid was reused by a process that does
+not read as newer than it, such as one whose start time the listing cannot
+read, stays; a runaway that still has its parent is out of scope, however much
+memory it holds; and so is an orphan outside the families: on Windows a Git for
+Windows shell breaks the parent chain by design, so an `sh.exe` that runs a git
+hook reads as an orphan while it works, and no shell is a family, and an
+orphaned `pnpm` keeps the turbo or vitest below it, whose parent is still alive.
+A tool's own daemon that matches a family is ended (turbo's starts again on its
+next run); one that must survive is added to the spare list, on the owner's
+word. On POSIX a process forked between the SIGTERM and the SIGKILL is not
+reached, and the pruner's stopped fetch still signals git alone, as before.
+Codex, OpenCode and Copilot run no adapter, as for the write guard.
 
 ---
 
