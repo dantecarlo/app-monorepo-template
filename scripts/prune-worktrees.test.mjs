@@ -1428,6 +1428,80 @@ test('a fetch that outlasts its bound skips the prune and the fast-forward, says
   assert.notEqual(git({ args: ['rev-parse', 'HEAD'], cwd: main }), before)
 })
 
+// An ssh command that writes its pid to the file its first argument names
+// and never answers: git starts it, through a shell on Windows, and waits
+// on it, so the fetch is stopped at its bound with that tree below it.
+const STALLED_SSH_SOURCE =
+  "require('node:fs').writeFileSync(process.argv[2], String(process.pid)); " +
+  'setInterval(() => {}, 1000)'
+const SSH_BOUND_SECONDS = '3'
+const ENDED_WITHIN_MS = 10_000
+const POLL_MS = 100
+
+const isRunning = ({ pid }) => {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (error) {
+    return error.code === 'EPERM'
+  }
+}
+
+test(
+  'on Windows a fetch stopped at its bound ends the processes git started',
+  {
+    skip:
+      process.platform !== 'win32' &&
+      'on POSIX the bound still stops git alone, as before'
+  },
+  async () => {
+    const { main, paths } = mergedWorktrees({
+      branches: ['feat/stalled-ssh'],
+      hook: false
+    })
+    const scratch = scratchRoot({ prefix: 'prune-ssh-' })
+    const stall = join(scratch, 'stalled-ssh.cjs')
+    const pidFile = join(scratch, 'ssh.pid')
+    writeFileSync(stall, STALLED_SSH_SOURCE)
+    const quoted = (path) => `"${forward({ path })}"`
+    git({
+      args: [
+        'config',
+        'core.sshCommand',
+        [process.execPath, stall, pidFile].map(quoted).join(' ')
+      ],
+      cwd: main
+    })
+    git({ args: ['config', 'ssh.variant', 'simple'], cwd: main })
+    git({
+      args: ['remote', 'set-url', 'origin', `ssh://${LOOPBACK}/origin.git`],
+      cwd: main
+    })
+    let pid
+    try {
+      const run = spawnSync(process.execPath, [SCRIPT, '--quiet'], {
+        cwd: main,
+        encoding: 'utf8',
+        env: { ...gitFreeEnv(), [FETCH_SECONDS_VARIABLE]: SSH_BOUND_SECONDS },
+        timeout: STALL_GUARD_MS
+      })
+      assert.ok(existsSync(pidFile), `the ssh command never started: ${run.stderr}`)
+      pid = Number(readFileSync(pidFile, 'utf8'))
+      assert.equal(run.status, EXIT_OK, `${run.error ?? ''} ${run.stderr}`)
+      assert.match(run.stdout, /skipped: git fetch --prune origin did not finish/u)
+      assert.ok(existsSync(paths['feat/stalled-ssh']))
+      let waited = 0
+      while (isRunning({ pid }) && waited < ENDED_WITHIN_MS) {
+        await new Promise((done) => setTimeout(done, POLL_MS))
+        waited += POLL_MS
+      }
+      assert.equal(isRunning({ pid }), false, `ssh command ${pid} still runs`)
+    } finally {
+      if (pid !== undefined && isRunning({ pid })) process.kill(pid)
+    }
+  }
+)
+
 test('the fetch is bound to 30 s unless PRUNE_WORKTREES_FETCH_SECONDS names another positive number', () => {
   assert.equal(fetchSecondsFrom({ env: {} }), 30)
   assert.equal(
