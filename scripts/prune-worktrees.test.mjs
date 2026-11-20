@@ -38,6 +38,9 @@ import { fileURLToPath } from 'node:url'
 import { gitFreeEnv } from './git-free-env.mjs'
 import { withHookGitDir } from './hook-git-dir.mjs'
 import {
+  LOCAL_CHANGES,
+  NESTED_RUN_VARIABLE,
+  NOT_COVERED,
   optionsFrom,
   REASON,
   removeLeftover,
@@ -58,10 +61,15 @@ const UNSAVED_FILE = 'unsaved-work.txt'
 const LATE_FILE = 'late.txt'
 const README = 'README.md'
 const README_TEXT = 'README\n'
+// A second tracked file of the main checkout, one no fast-forward touches.
+const OTHER = 'b.txt'
+const OTHER_TEXT = 'b\n'
+const PUSHED_FILE = 'new.txt'
+const LOCK_REASON = 'probe'
+const HIDDEN_EDIT = 'local edit nobody committed\n'
 // Ignored files an install, a build, a typecheck, a test run or the next
 // session writes again.
 const REBUILT_FILES = {
-  '.atl/skill-registry.md': '\n',
   '.husky/_/h': '\n',
   '.turbo/cache.json': '{}\n',
   'apps/mobile/.expo/settings.json': '{}\n',
@@ -80,6 +88,9 @@ const PLAN_FILE = 'odd/tasks/plan.md'
 const NOTE_FILE = 'docs/coverage/notes.md'
 const NAMED_FILE = 'coverage'
 const ENV_FILE = '.env'
+// Machine-local agent tooling the repository ignores: personal skills and
+// notes nothing writes again.
+const ATL_FILE = '.atl/my-notes.md'
 // What the fixture repository ignores through `.git/info/exclude`.
 const IGNORED_PATHS = [
   '.atl/',
@@ -99,8 +110,6 @@ const IGNORED_PATHS = [
   NAMED_FILE,
   ''
 ]
-// What git says when a fast-forward would overwrite a local change.
-const GIT_REFUSAL = /local changes .* would be overwritten by merge/u
 const COMMITTER = 'probe <probe@example.invalid> 1700000000 +0000'
 const IDENTITY = [
   '-c',
@@ -148,7 +157,7 @@ const forward = ({ path }) => path.replaceAll('\\', '/')
 // with its text; `untrackedFile` writes one the repository does not ignore;
 // `hidesUntracked` sets `status.showUntrackedFiles=no` for that worktree
 // alone; `crlf` rewrites its tracked file with CRLF endings and nothing
-// else.
+// else; `locked` runs `git worktree lock` on it.
 const CASES = [
   { branch: 'feat/merged', dir: 'merged', ignored: true, merged: true },
   {
@@ -168,6 +177,20 @@ const CASES = [
     dir: 'env',
     files: { [ENV_FILE]: 'KEY=local\n' },
     kept: REASON.IGNORED,
+    merged: true
+  },
+  {
+    branch: 'feat/atl',
+    dir: 'atl',
+    files: { [ATL_FILE]: 'personal\n' },
+    kept: REASON.IGNORED,
+    merged: true
+  },
+  {
+    branch: 'feat/locked',
+    dir: 'locked',
+    kept: REASON.LOCKED,
+    locked: true,
     merged: true
   },
   {
@@ -201,7 +224,11 @@ const CASES = [
     merged: true,
     untrackedFile: UNSAVED_FILE
   },
-  { branch: 'feat/unmerged', dir: 'unmerged', kept: REASON.NOT_IN_DEFAULT },
+  {
+    branch: 'feat/unmerged',
+    dir: 'unmerged',
+    kept: REASON.NOT_IN_DEFAULT
+  },
   {
     branch: 'feat/upstream',
     dir: 'upstream',
@@ -311,7 +338,10 @@ before(() => {
     cwd: origin,
     input: historyStream()
   })
-  git({ args: ['clone', '-q', ...BYTE_ENDINGS, origin, main], cwd: scratch })
+  git({
+    args: ['clone', '-q', ...BYTE_ENDINGS, origin, main],
+    cwd: scratch
+  })
   appendFileSync(
     join(main, '.git', 'info', 'exclude'),
     IGNORED_PATHS.join('\n')
@@ -331,6 +361,7 @@ before(() => {
         files = {},
         hidesUntracked,
         ignored,
+        locked,
         untracked,
         untrackedFile
       }) => {
@@ -339,6 +370,12 @@ before(() => {
           ? ['--no-track', '-b', branch, path, `origin/${branch}`]
           : [path, branch]
         git({ args: ['worktree', 'add', '-q', ...track], cwd: main })
+        if (locked) {
+          git({
+            args: ['worktree', 'lock', '--reason', LOCK_REASON, path],
+            cwd: main
+          })
+        }
         if (hidesUntracked) {
           git({
             args: [
@@ -429,6 +466,7 @@ before(() => {
     fileOf({ branch: 'feat/line-endings' })
   )
   const afterReal = {
+    atlStays: existsSync(join(paths['feat/atl'], ATL_FILE)),
     branches: git({ args: ['branch', '--list'], cwd: main }),
     exists: Object.fromEntries(
       Object.entries({ ...paths, detached, tracking }).map(
@@ -569,6 +607,34 @@ test('an env file keeps the worktree: nothing writes it again', () => {
   )
 })
 
+// `.atl/` is machine-local agent tooling the repository ignores: personal
+// skills and notes, which no install or session writes again.
+test('a file under .atl/ keeps the worktree and stays', () => {
+  assert.ok(fixture.afterReal.atlStays, `${ATL_FILE} was deleted`)
+  assert.ok(
+    lineFor({ branch: 'feat/atl' })?.includes(`${REASON.IGNORED}: .atl/`),
+    fixture.real.stdout
+  )
+})
+
+test('a locked worktree is kept with its lock reason, in the dry run as in the real one', () => {
+  const kept = `${REASON.LOCKED}: ${LOCK_REASON}`
+  const dryLine = fixture.dryRun.stdout
+    .split(/\r?\n/u)
+    .find((one) => one.includes('(feat/locked)'))
+  assert.ok(dryLine?.includes(`kept `), dryLine)
+  assert.ok(dryLine.endsWith(kept), dryLine)
+  assert.ok(lineFor({ branch: 'feat/locked' })?.endsWith(kept))
+})
+
+test('a dry run names what it does not cover as its last line', () => {
+  const last = fixture.dryRun.stdout.trim().split(/\r?\n/u).at(-1)
+  assert.equal(last, `prune-worktrees: not covered: ${NOT_COVERED}`)
+  assert.match(NOT_COVERED, /fetch --prune/u)
+  assert.match(NOT_COVERED, /current directory/u)
+  assert.match(NOT_COVERED, /foreground/u)
+})
+
 test('a file that differs only in its line endings is a local change and keeps the worktree', () => {
   assert.ok(fixture.afterReal.exists['feat/line-endings'])
   assert.equal(
@@ -668,9 +734,10 @@ test('the main checkout is kept', () => {
 
 test('the summary line counts the removed and the kept by reason', () => {
   const summary = fixture.real.stdout.trim().split(/\r?\n/).at(-1)
-  assert.match(summary, /: removed 1, kept 14; by reason: /)
+  assert.match(summary, /: removed 1, kept 16; by reason: /)
   assert.ok(summary.includes(`${REASON.DIRTY} 2`), summary)
-  assert.ok(summary.includes(`${REASON.IGNORED} 2`), summary)
+  assert.ok(summary.includes(`${REASON.IGNORED} 3`), summary)
+  assert.ok(summary.includes(`${REASON.LOCKED} 1`), summary)
   assert.ok(summary.includes(`${REASON.MAIN} 1`), summary)
 })
 
@@ -698,6 +765,80 @@ test('outside a git repository it exits 1 and removes nothing', () => {
   })
   assert.equal(result.status, EXIT_FAILED)
   assert.match(result.stderr, /nothing was removed/)
+})
+
+// The fast-forward of the main checkout fires that checkout's own
+// post-merge, which would start the pruner again from there.
+test('a run started from inside a prune exits 0 at once and prints nothing', () => {
+  const outside = scratchRoot({ prefix: 'prune-nested-' })
+  const result = spawnSync(process.execPath, [SCRIPT], {
+    cwd: outside,
+    encoding: 'utf8',
+    env: { ...gitFreeEnv(), [NESTED_RUN_VARIABLE]: '1' }
+  })
+  assert.equal(result.status, EXIT_OK, result.stderr)
+  assert.equal(result.stdout, '')
+  assert.equal(result.stderr, '')
+})
+
+// A branch that moved between the decision and the removal keeps the
+// commits it gained.
+test('a branch whose tip moved since it was judged is kept when its worktree goes', () => {
+  const scratch = scratchRoot({ prefix: 'prune-moved-' })
+  const root = join(scratch, 'main')
+  const path = join(scratch, 'moved')
+  git({ args: ['init', '-q', '-b', MAIN, root], cwd: scratch })
+  git({ args: ['commit', '-q', '--allow-empty', '-m', 'init'], cwd: root })
+  git({
+    args: ['worktree', 'add', '-q', '-b', 'feat/moved', path],
+    cwd: root
+  })
+  const judged = git({ args: ['rev-parse', 'HEAD'], cwd: path })
+  git({ args: ['commit', '-q', '--allow-empty', '-m', 'late'], cwd: path })
+  const result = removeWorktree({
+    root,
+    worktree: { branch: 'feat/moved', path, sha: judged }
+  })
+  assert.equal(result.kept, null)
+  assert.ok(!existsSync(path), `${path} still exists`)
+  assert.match(result.detail, /feat\/moved/u)
+  assert.match(
+    git({ args: ['branch', '--list', 'feat/moved'], cwd: root }),
+    /feat\/moved/u
+  )
+})
+
+test('a branch still at its judged tip is deleted with its worktree, and its config with it', () => {
+  const scratch = scratchRoot({ prefix: 'prune-judged-' })
+  const root = join(scratch, 'main')
+  const path = join(scratch, 'judged')
+  git({ args: ['init', '-q', '-b', MAIN, root], cwd: scratch })
+  git({ args: ['commit', '-q', '--allow-empty', '-m', 'init'], cwd: root })
+  git({
+    args: ['worktree', 'add', '-q', '-b', 'feat/judged', path],
+    cwd: root
+  })
+  git({
+    args: ['config', 'branch.feat/judged.remote', 'origin'],
+    cwd: root
+  })
+  const judged = git({ args: ['rev-parse', 'HEAD'], cwd: path })
+  const result = removeWorktree({
+    root,
+    worktree: { branch: 'feat/judged', path, sha: judged }
+  })
+  assert.equal(result.kept, null)
+  assert.equal(result.detail, undefined)
+  assert.equal(
+    git({ args: ['branch', '--list', 'feat/judged'], cwd: root }),
+    ''
+  )
+  const config = spawnSync(
+    'git',
+    ['config', '--get-regexp', '^branch\\.feat/judged\\.'],
+    { cwd: root, encoding: 'utf8', env: gitFreeEnv() }
+  )
+  assert.equal(config.stdout, '')
 })
 
 test('an unknown option throws, naming it', () => {
@@ -762,10 +903,18 @@ test('post-merge exits 0 when the prune fails, and says nothing was removed', ()
 })
 
 // A main checkout one commit behind its origin: a bare origin whose default
-// branch is `branch`, the main clone, and a second clone that pushes a
-// change to README.md. `prepare` runs in the main clone before the command
-// does.
-const behindMain = ({ args = [], branch = MAIN, prepare = () => {} }) => {
+// branch is `branch` and whose first commit holds README.md, b.txt and the
+// `* text=auto` this repository's `.gitattributes` sets; the main clone; and
+// a second clone that pushes `push`, by default a change to README.md.
+// `prepare` runs in the main clone before the command does, which starts
+// under `env`.
+const behindMain = ({
+  args = [],
+  branch = MAIN,
+  env = gitFreeEnv(),
+  prepare = () => {},
+  push = { [README]: 'README v2\n' }
+}) => {
   const scratch = scratchRoot({ prefix: 'prune-forward-' })
   const origin = join(scratch, 'origin.git')
   const main = join(scratch, 'main')
@@ -781,35 +930,63 @@ const behindMain = ({ args = [], branch = MAIN, prepare = () => {} }) => {
       `commit refs/heads/${branch}`,
       `committer ${COMMITTER}`,
       data({ text: 'init' }),
+      'M 100644 inline .gitattributes',
+      data({ text: '* text=auto\n' }),
       `M 100644 inline ${README}`,
       data({ text: README_TEXT }),
+      `M 100644 inline ${OTHER}`,
+      data({ text: OTHER_TEXT }),
       ''
     ].join('\n')
   })
-  git({ args: ['clone', '-q', ...BYTE_ENDINGS, origin, main], cwd: scratch })
+  git({
+    args: ['clone', '-q', ...BYTE_ENDINGS, origin, main],
+    cwd: scratch
+  })
   git({
     args: ['clone', '-q', ...BYTE_ENDINGS, origin, pusher],
     cwd: scratch
   })
-  writeFileSync(join(pusher, README), 'README v2\n')
-  git({ args: ['commit', '-q', '-am', 'v2'], cwd: pusher })
+  Object.entries(push).forEach(([file, text]) =>
+    writeFileSync(join(pusher, file), text)
+  )
+  git({ args: ['add', '--all'], cwd: pusher })
+  git({ args: ['commit', '-q', '-m', 'v2'], cwd: pusher })
   git({ args: ['push', '-q', 'origin', branch], cwd: pusher })
   const before = git({ args: ['rev-parse', 'HEAD'], cwd: main })
   prepare({ main })
   const run = spawnSync(process.execPath, [SCRIPT, ...args], {
     cwd: main,
     encoding: 'utf8',
-    env: gitFreeEnv()
+    env
   })
   return {
     before,
     head: git({ args: ['rev-parse', 'HEAD'], cwd: main }),
     main,
+    other: readFileSync(join(main, OTHER), 'utf8'),
     readme: readFileSync(join(main, README), 'utf8'),
     run,
     tip: git({ args: ['rev-parse', `origin/${branch}`], cwd: main })
   }
 }
+
+// Rewrites a checked-out file with the other line endings and nothing else.
+// Under `* text=auto` a checkout writes the platform's endings, CRLF on
+// Windows and LF elsewhere, so the change starts from what is on disk.
+const flipEndings = ({ path }) => {
+  const text = readFileSync(path, 'utf8')
+  const flipped = text.includes('\r\n')
+    ? text.replaceAll('\r\n', '\n')
+    : text.replaceAll('\n', '\r\n')
+  writeFileSync(path, flipped)
+  return flipped
+}
+
+// The line that says the main checkout stayed one commit behind, and why.
+const leftLine = ({ main, reason }) =>
+  `left the main checkout ${forward({ path: main })} 1 commit behind ` +
+  `origin/${MAIN}: ${reason}`
 
 test('a main checkout on main behind origin is fast-forwarded', () => {
   const { head, main, run, tip } = behindMain({})
@@ -866,31 +1043,128 @@ test('a local change the fast-forward would overwrite stays, unmoved', () => {
   assert.equal(readme, 'local edit\n')
   assert.ok(
     run.stdout.includes(
-      `left the main checkout ${forward({ path: main })} 1 commit behind ` +
-        `origin/${MAIN}: `
+      leftLine({ main, reason: `${LOCAL_CHANGES}: ${README}` })
     ),
     run.stdout
   )
-  assert.match(run.stdout, GIT_REFUSAL)
 })
 
 test('a file that differs only in its line endings blocks the fast-forward and stays', () => {
-  const crlf = README_TEXT.replace('\n', '\r\n')
+  const flipped = {}
   const { before, head, main, readme, run } = behindMain({
-    prepare: ({ main: checkout }) =>
-      writeFileSync(join(checkout, README), crlf)
+    prepare: ({ main: checkout }) => {
+      flipped.text = flipEndings({ path: join(checkout, README) })
+    }
   })
   assert.equal(run.status, EXIT_OK, run.stderr)
   assert.equal(head, before)
-  assert.equal(readme, crlf)
+  assert.equal(readme, flipped.text)
   assert.ok(
     run.stdout.includes(
-      `left the main checkout ${forward({ path: main })} 1 commit behind ` +
-        `origin/${MAIN}: `
+      leftLine({ main, reason: `${LOCAL_CHANGES}: ${README}` })
     ),
     run.stdout
   )
-  assert.match(run.stdout, GIT_REFUSAL)
+})
+
+// Plan row 3.3: any tracked local change blocks the fast-forward, not only
+// one in a file the fast-forward would update.
+test('a local change to a file the fast-forward does not touch blocks it too', () => {
+  const { before, head, main, other, run } = behindMain({
+    prepare: ({ main: checkout }) =>
+      writeFileSync(join(checkout, OTHER), 'b edited\n')
+  })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.equal(head, before)
+  assert.equal(other, 'b edited\n')
+  assert.ok(
+    run.stdout.includes(
+      leftLine({ main, reason: `${LOCAL_CHANGES}: ${OTHER}` })
+    ),
+    run.stdout
+  )
+})
+
+test('a line-ending-only change to a file the fast-forward does not touch blocks it', () => {
+  const flipped = {}
+  const { before, head, main, other, run } = behindMain({
+    prepare: ({ main: checkout }) => {
+      flipped.text = flipEndings({ path: join(checkout, OTHER) })
+    }
+  })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.equal(head, before)
+  assert.equal(other, flipped.text)
+  assert.ok(
+    run.stdout.includes(
+      leftLine({ main, reason: `${LOCAL_CHANGES}: ${OTHER}` })
+    ),
+    run.stdout
+  )
+})
+
+test('a staged change blocks the fast-forward, and a dry run says so', () => {
+  const stage = ({ main: checkout }) => {
+    writeFileSync(join(checkout, OTHER), 'b staged\n')
+    git({ args: ['add', OTHER], cwd: checkout })
+  }
+  const real = behindMain({ prepare: stage })
+  const dry = behindMain({ args: ['--dry-run'], prepare: stage })
+  assert.equal(real.run.status, EXIT_OK, real.run.stderr)
+  assert.equal(real.head, real.before)
+  assert.ok(
+    real.run.stdout.includes(
+      leftLine({ main: real.main, reason: `${LOCAL_CHANGES}: ${OTHER}` })
+    ),
+    real.run.stdout
+  )
+  assert.ok(
+    dry.run.stdout.includes(
+      leftLine({
+        main: dry.main,
+        reason: `${LOCAL_CHANGES}: ${OTHER}`
+      }).replace('left the', 'would leave the')
+    ),
+    dry.run.stdout
+  )
+})
+
+test("git's refusal is named by its first line that is not a hint, with the files it lists", () => {
+  const { before, head, main, run } = behindMain({
+    prepare: ({ main: checkout }) =>
+      writeFileSync(join(checkout, PUSHED_FILE), 'local\n'),
+    push: { [PUSHED_FILE]: 'upstream\n' }
+  })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.equal(head, before)
+  assert.ok(run.stdout.includes(leftLine({ main, reason: 'error: ' })))
+  assert.match(
+    run.stdout,
+    new RegExp(`would be overwritten by merge: ${PUSHED_FILE}$`, 'mu')
+  )
+})
+
+test("a main checkout that diverged is left with git's fatal line, not a hint", () => {
+  const { head, main, run, tip } = behindMain({
+    prepare: ({ main: checkout }) =>
+      git({
+        args: ['commit', '-q', '--allow-empty', '-m', 'local'],
+        cwd: checkout
+      })
+  })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.notEqual(head, tip)
+  const line = run.stdout
+    .split(/\r?\n/u)
+    .find((one) => one.includes('left the main checkout'))
+  assert.ok(line?.startsWith('prune-worktrees: left'), run.stdout)
+  assert.ok(
+    line.includes(
+      `${forward({ path: main })} 1 commit behind origin/${MAIN}: fatal: `
+    ),
+    line
+  )
+  assert.doesNotMatch(line, /hint:/u)
 })
 
 test('a main checkout on another branch is not moved', () => {
@@ -935,18 +1209,147 @@ test('with no origin/HEAD the default branch is unknown: it exits 1, names the f
   assert.match(run.stderr, /nothing was removed/)
 })
 
+// The command starts with the hook's GIT_DIR and GIT_INDEX_FILE in its
+// environment, as `.husky/post-merge` starts it, so its own git calls must
+// drop them.
 test("END TO END: under a hook's GIT_DIR, the fixture and the command keep to the scratch repositories and the hook's repository is left alone", () => {
   const { decoyWritten, result } = withHookGitDir({
-    use: () => behindMain({})
+    use: () => behindMain({ env: { ...process.env } })
   })
   assert.equal(decoyWritten, false)
   assert.equal(result.run.status, EXIT_OK, result.run.stderr)
   assert.equal(result.head, result.tip)
 })
 
+// A bare origin, its main clone, a forge clone that merges pull requests,
+// and one linked worktree per branch: each branch pushed, merged into main
+// by the forge with a merge commit, and deleted on origin, which leaves the
+// main clone behind. `hook` gives the main clone the real post-merge.
+const mergedWorktrees = ({ branches, hook }) => {
+  const scratch = scratchRoot({ prefix: 'prune-merged-' })
+  const origin = join(scratch, 'origin.git')
+  const main = join(scratch, 'main')
+  const forge = join(scratch, 'forge')
+  git({
+    args: ['init', '-q', '--bare', '-b', MAIN, origin],
+    cwd: scratch
+  })
+  git({
+    args: ['clone', '-q', ...BYTE_ENDINGS, origin, main],
+    cwd: scratch
+  })
+  writeFileSync(join(main, README), README_TEXT)
+  git({ args: ['add', README], cwd: main })
+  git({ args: ['commit', '-q', '-m', 'init'], cwd: main })
+  git({ args: ['push', '-q', 'origin', MAIN], cwd: main })
+  git({ args: ['remote', 'set-head', 'origin', '--auto'], cwd: main })
+  if (hook) installPostMerge({ main })
+  git({
+    args: ['clone', '-q', ...BYTE_ENDINGS, origin, forge],
+    cwd: scratch
+  })
+  const paths = Object.fromEntries(
+    branches.map((branch) => {
+      const path = join(scratch, branch.replaceAll('/', '-'))
+      git({
+        args: [
+          'worktree',
+          'add',
+          '-q',
+          '-b',
+          branch,
+          path,
+          `origin/${MAIN}`
+        ],
+        cwd: main
+      })
+      writeFileSync(join(path, fileOf({ branch })), textOf({ branch }))
+      git({ args: ['add', '--all'], cwd: path })
+      git({ args: ['commit', '-q', '-m', branch], cwd: path })
+      git({ args: ['push', '-q', '-u', 'origin', branch], cwd: path })
+      git({ args: ['fetch', '-q'], cwd: forge })
+      git({
+        args: [
+          'merge',
+          '-q',
+          '--no-ff',
+          '-m',
+          `Merge pull request from owner/${branch}`,
+          `origin/${branch}`
+        ],
+        cwd: forge
+      })
+      git({ args: ['push', '-q', 'origin', MAIN], cwd: forge })
+      git({
+        args: ['push', '-q', 'origin', '--delete', branch],
+        cwd: forge
+      })
+      return [branch, path]
+    })
+  )
+  return { main, paths }
+}
+
+const prune = ({ cwd, env = gitFreeEnv() }) =>
+  spawnSync(process.execPath, [SCRIPT], { cwd, encoding: 'utf8', env })
+
+test("the worktree the command runs in survives the post-merge hook the main checkout's fast-forward fires", () => {
+  const { main, paths } = mergedWorktrees({
+    branches: ['feat/current'],
+    hook: true
+  })
+  const current = paths['feat/current']
+  const run = prune({
+    cwd: current,
+    env: {
+      ...gitFreeEnv(),
+      GIT_DIR: join(main, '.git', 'worktrees', 'feat-current')
+    }
+  })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.match(run.stdout, /fast-forwarded the main checkout/u)
+  assert.ok(
+    existsSync(join(current, README)),
+    'the worktree it runs in was emptied'
+  )
+  assert.match(
+    git({ args: ['worktree', 'list', '--porcelain'], cwd: main }),
+    /refs\/heads\/feat\/current/u
+  )
+})
+
+for (const flag of ['--skip-worktree', '--assume-unchanged']) {
+  test(`a local edit hidden by ${flag} keeps its worktree`, () => {
+    const { main, paths } = mergedWorktrees({
+      branches: ['feat/hidden'],
+      hook: false
+    })
+    const hidden = paths['feat/hidden']
+    git({ args: ['update-index', flag, README], cwd: hidden })
+    writeFileSync(join(hidden, README), HIDDEN_EDIT)
+    const run = prune({ cwd: main })
+    assert.equal(run.status, EXIT_OK, run.stderr)
+    assert.ok(existsSync(join(hidden, README)), run.stdout)
+    assert.equal(readFileSync(join(hidden, README), 'utf8'), HIDDEN_EDIT)
+    assert.ok(
+      run.stdout.includes(
+        keptLine({
+          branch: 'feat/hidden',
+          path: hidden,
+          reason: `${REASON.HIDDEN}: ${README}`
+        })
+      ),
+      run.stdout
+    )
+  })
+}
+
 test('the root package runs this suite from validate', () => {
   const { scripts } = JSON.parse(readFileSync(ROOT_PACKAGE, 'utf8'))
-  assert.equal(scripts['worktrees:prune'], 'node scripts/prune-worktrees.mjs')
+  assert.equal(
+    scripts['worktrees:prune'],
+    'node scripts/prune-worktrees.mjs'
+  )
   assert.equal(
     scripts['worktrees:prune:test'],
     'node --test scripts/prune-worktrees.test.mjs'

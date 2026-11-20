@@ -49,16 +49,26 @@ worktree ran it, and is the only hook that changes other checkouts.
 `pnpm worktrees:prune` runs the same pruner by hand, and `--dry-run` prints
 what it would remove and move, touching nothing. After `git fetch --prune
 origin` it removes a linked worktree only when its branch's upstream is
-gone, its HEAD is in the default branch (the one `origin/HEAD` names), and
+gone, its HEAD is in the default branch (the one `origin/HEAD` names),
 `git status` shows nothing modified or untracked and no ignored file outside
 what an install, a build or the next session writes again (`node_modules/`,
-the build outputs at a root, `.atl/`, `.husky/_/`); an env file keeps it.
-It never removes the main checkout, the worktree it runs in, a worktree
-under `.claude/worktrees/` or one holding another worktree. Last, it
-fast-forwards the main checkout with `git merge --ff-only` when that
-checkout is on the default branch; when git refuses, because of a local
-change, a line-ending-only change git counts as one, or a local commit, the
-checkout stays and a line says how far behind it is and what git said.
+the build outputs at a root, `.husky/_/`), and `git ls-files -v` marks no
+file skip-worktree or assume-unchanged, edits `git status` cannot see; an
+env file and anything under `.atl/` keep it. It never removes the main
+checkout, the worktree it runs in, a locked worktree, one under
+`.claude/worktrees/` or one holding another worktree, and it deletes the
+branch only while its tip is the commit it judged. Last, it fast-forwards
+the main checkout with `git merge --ff-only` when that checkout is on the
+default branch. Any tracked local change there, staged or not, a
+line-ending-only one included, blocks it, and so does whatever git refuses
+(a local commit, an untracked file the merge would overwrite); the checkout
+then stays and a line says how far behind it is and why. The fast-forward
+fires that checkout's own `post-merge`; the pruner runs it with
+`PRUNE_WORKTREES_RUNNING` set, and a run that finds it set exits at once,
+so the rest of that hook still runs. A dry run ends with what the pruner
+does not cover: it still runs `git fetch --prune`, a worktree another
+process holds as its current directory on Windows is emptied and
+unregistered, and the merge waits for the prune.
 `core.hooksPath` stays the relative `.husky/_` husky writes at repository
 level, so each worktree runs the hooks of its own checkout. Never set it per
 worktree or as an absolute path: git 2.55 copied an absolute per-worktree
@@ -131,7 +141,7 @@ the pre-commit hook on staged files.
 | `verify:workflow-pins` | Every `uses:` of every workflow under `.github/workflows/` (`.yml` or `.yaml`), a step and a reusable workflow alike, is pinned to a full 40-character commit SHA, the tag it was resolved from kept as a comment; a local action (`./`) and a Docker image (`docker://`) are exempt; a line inside any block scalar (`\|` or `>`, a `run:` script and a folded `name:` alike) is not judged, a comment never opens one, and a quoted `"uses":` key is judged. `verify:workflow-pins:test` plants a tag, a branch, a short SHA and a missing ref |
 | `verify:skill-frontmatter` | Every `.claude/skills/*/SKILL.md` has a frontmatter that parses, a `name` that is its folder, and a description of at most 1,024 characters once parsed (the line break a `>` block keeps counted) that holds `USE WHEN:` and `DO NOT USE:`; a skill `.claude/skills-lock.json` lists (archify) is vendored and gets the parse, name and length checks only. `verify:skill-frontmatter:test` plants each refusal, both quoting styles and both block styles |
 | `git-free-env:test`, `hook-git-dir:test` | `gitFreeEnv()` drops every `GIT_*` variable, in any case, from the environment a script hands to git or to a child; `withHookGitDir` runs a flow with `GIT_DIR` and `GIT_INDEX_FILE` naming a decoy repository, as a git hook exports them, reports whether anything under the decoy changed, and puts both variables back and removes the decoy however the flow ends. Every suite that spawns git runs one end-to-end case under it and asserts the decoy is left alone; `init-project:test` takes its whole copy under it |
-| `worktrees:prune:test` | `scripts/prune-worktrees.test.mjs` drives the pruner (Layer 2) over a scratch origin, its clone and one linked worktree per case, `--dry-run` first: the merged clean worktree goes and its branch with it; every reason to keep one is seen kept and printed, an ignored file nothing rebuilds and an env file among them, and a file that differs only in its line endings; a dry run removes and moves nothing; the main checkout is fast-forwarded to `origin/HEAD`'s branch, whatever its name, and is left, with git's reason, over a local change or a line-ending-only one; an unset `origin/HEAD` exits 1 naming `git remote set-head origin --auto`; and the real `.husky/post-merge`, run by `git hook run`, prunes and exits 0 even when the pruner fails |
+| `worktrees:prune:test` | `scripts/prune-worktrees.test.mjs` drives the pruner (Layer 2) over a scratch origin, its clone and one linked worktree per case, `--dry-run` first: the merged clean worktree goes and its branch with it; every reason to keep one is seen kept and printed, an ignored file nothing rebuilds, an env file, a file under `.atl/`, a lock, an edit hidden by `--skip-worktree` or `--assume-unchanged` and a file that differs only in its line endings among them; a branch whose tip moved after it was judged stays; a dry run removes and moves nothing, states the real run's decisions and ends with what is not covered; the main checkout is fast-forwarded to `origin/HEAD`'s branch, whatever its name, and is left, with the reason, over any tracked local change, staged, line-ending-only or in a file the fast-forward does not touch, and over git's refusal, named by its first line that is not a hint and the files it lists; the worktree the command runs in survives the `post-merge` that fast-forward fires; an unset `origin/HEAD` exits 1 naming `git remote set-head origin --auto`; and the real `.husky/post-merge`, run by `git hook run`, prunes and exits 0 even when the pruner fails |
 | `codex-budget:test`   | The generated `.codex/config.toml` sets `project_doc_max_bytes` above every table header, and `AGENTS.md`, counted with CRLF endings, fits it: Codex drops what is past the budget |
 | `check:identity`      | The template's default identity is gone (skipped on self)                                 |
 | `knip`                | No dead exports, no unlisted or unused dependencies                                       |
