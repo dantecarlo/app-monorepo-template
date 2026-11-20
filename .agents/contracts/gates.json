@@ -375,6 +375,21 @@
       "blind": "exported-cases"
     },
     {
+      "id": "verify:updaters:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:updaters",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "instant",
+      "blind": "exported-cases"
+    },
+    {
       "id": "verify:ticket-branch:test",
       "capability": "core",
       "stage": "repository",

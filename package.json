@@ -74,6 +74,8 @@
     "verify:ticket-branch:test": "node --test scripts/verify-ticket-branch.test.mjs",
     "verify:unicode-safety": "node scripts/verify-unicode-safety.mjs",
     "verify:unicode-safety:test": "node --test scripts/verify-unicode-safety.test.mjs",
+    "verify:updaters": "node scripts/verify-updaters.mjs",
+    "verify:updaters:test": "node --test scripts/verify-updaters.test.mjs",
     "verify:workflow-pins": "node scripts/verify-workflow-pins.mjs",
     "verify:workflow-pins:test": "node --test scripts/verify-workflow-pins.test.mjs",
     "verify:skill-frontmatter": "node scripts/verify-skill-frontmatter.mjs",

@@ -1,0 +1,15 @@
+{
+  "$comment": "The updater registry: every periodic updater, run by pnpm updaters:run (scripts/updaters/run.mjs) and held by pnpm verify:updaters (scripts/verify-updaters.mjs). Each entry declares every key, and no other: id, kebab-case and unique, which names the branch updates/<id> its pull request comes from; command, pnpm <script> of a root script that keeps the updater contract (with --check it writes nothing and exits 0 when current, 2 when out of date and 1 on a failure; --json prints the run as one JSON document); runsIn, where it runs: ci, local or both; network, the hosts it reaches; secrets, the variables it reads; writes, the repository paths it may write; proposal, true when its pull request proposes a rule change; and verify, the pnpm <script> commands its change must pass. The rule-proposal rule: a writes path the write guard classifies as a rule file (ruleFor of scripts/agent-harness/write-guard/policy.mjs over .agents/contracts/write-guard.json, never a list kept here), or one with a wildcard, needs proposal: true, and whatever proposal says, a pull request whose diff touches a rule path opens as a draft labelled rule-proposal that quotes the LAW 'A rule is not edited to fit the work' (AGENTS.md): an updater proposes a rule change and the owner decides it. An updater never merges, approves or enables auto-merge, never pushes to the default branch, and never sets ATL_WRITE_GUARD. This registry is a contract, so the write guard asks before anyone edits it. See docs/harness.md section 3g.",
+  "updaters": [
+    {
+      "id": "mcp-docs",
+      "command": "pnpm mcp:docs",
+      "runsIn": ["ci"],
+      "network": ["registry.npmjs.org"],
+      "secrets": [],
+      "writes": ["docs/mcp.md"],
+      "proposal": false,
+      "verify": ["pnpm verify:mcp-docs"]
+    }
+  ]
+}
