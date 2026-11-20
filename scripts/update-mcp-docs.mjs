@@ -19,11 +19,23 @@
 //     failed request exits 1, names what failed, and leaves the doc as it
 //     was. Every other result is still printed.
 //
+// It is the first updater of .agents/contracts/updaters.json, so it keeps
+// the updater contract (docs/harness.md section 3g):
+//
+//   --check  asks the registry the same way and writes nothing: it exits 0
+//            when the block is current, 2 when a run would rewrite it, and
+//            1 on any failure the update exits 1 for; it prints the server
+//            lines and no `review:` line, since it wrote nothing
+//   --json   prints the run as one JSON document on stdout and nothing else
+//            there: { mode, problems, review, servers, status, updater,
+//            writes }, status one of current, outdated (--check only),
+//            updated or failed; stderr and the exit code are unchanged
+//
 // This is the only command that uses the network, and only when run
 // explicitly; `pnpm verify:mcp-docs` judges the block offline.
 //
 // Usage:
-//   node scripts/update-mcp-docs.mjs [--root <dir>]
+//   node scripts/update-mcp-docs.mjs [--check] [--json] [--root <dir>]
 // ---------------------------------------------------------------------------
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
@@ -36,6 +48,7 @@ import {
   MCP_CATALOG_PATH,
   MCP_CONFIG_PATH,
   MCP_DOC_PATH,
+  NOT_ON_NPM,
   parseCatalog,
   parseMcpConfig,
   planRows,
@@ -49,8 +62,28 @@ const REGISTRY = 'https://registry.npmjs.org'
 // package that publishes often, such as shadcn.
 const REQUEST_TIMEOUT_MS = 60_000
 const DATE_LENGTH = 10
+const JSON_INDENT = 2
 const EXIT_FAILED = 1
+const EXIT_OUTDATED = 2
 const EXIT_PASSED = 0
+const UPDATER_ID = 'mcp-docs'
+
+const MODE = Object.freeze({ check: 'check', update: 'update' })
+
+const STATUS = Object.freeze({
+  current: 'current',
+  failed: 'failed',
+  outdated: 'outdated',
+  updated: 'updated'
+})
+
+const CHANGE = Object.freeze({
+  failed: 'failed',
+  new: 'new',
+  notOnNpm: NOT_ON_NPM,
+  released: 'released',
+  unchanged: 'unchanged'
+})
 
 const readText = ({ path, root }) => {
   const target = join(root, path)
@@ -99,12 +132,6 @@ export const fetchFromRegistry = async ({ packageName }) => {
 
 const todayUtc = () => new Date().toISOString().slice(0, DATE_LENGTH)
 
-const fail = ({ problems, warn }) => {
-  problems.forEach((problem) => warn(`mcp-docs: ${problem}`))
-  warn(`mcp-docs: ${MCP_DOC_PATH} left as it was`)
-  return { code: EXIT_FAILED }
-}
-
 const askRegistry = async ({ fetchLatest, servers }) => {
   const npm = servers.filter(({ packageName }) => packageName !== null)
   const settled = await Promise.allSettled(
@@ -126,49 +153,111 @@ const askRegistry = async ({ fetchLatest, servers }) => {
   return { latest, problems }
 }
 
-const describe = ({ latest, released, server }) => {
-  if (server.packageName === null)
-    return `mcp-docs: ${server.name} is not on npm; no version to check`
-  const found = latest.get(server.name)
-  if (found === undefined) return null
+const changeOf = ({ released, server }) => {
   const change = released.find(({ name }) => name === server.name)
-  const note =
-    change === undefined
-      ? 'unchanged'
-      : change.from === null
-        ? 'new in the block'
-        : `was ${change.from}`
-  return `mcp-docs: ${server.name} ${server.packageName} ${found.version} (${note})`
+  if (change === undefined) return CHANGE.unchanged
+  return change.from === null ? CHANGE.new : CHANGE.released
 }
 
-// A failed run reports what it found but names no doc to review: it wrote
-// nothing, so the next run that writes still sees the change.
-const report = ({ latest, print, released, reviews, servers }) =>
-  servers.forEach((server) => {
-    const line = describe({ latest, released, server })
+// One server as the run found it: its package and version, the version the
+// block recorded before, and what changed between the two.
+const summaryOf = ({ latest, previous, released, server }) => {
+  const record = {
+    from: previous.get(server.name)?.version ?? null,
+    name: server.name,
+    package: server.packageName,
+    version: null
+  }
+  if (server.packageName === null)
+    return { ...record, change: CHANGE.notOnNpm, from: null }
+  const found = latest.get(server.name)
+  if (found === undefined) return { ...record, change: CHANGE.failed }
+  return {
+    ...record,
+    change: changeOf({ released, server }),
+    version: found.version
+  }
+}
+
+const NOTE = Object.freeze({
+  [CHANGE.new]: () => 'new in the block',
+  [CHANGE.released]: ({ from }) => `was ${from}`,
+  [CHANGE.unchanged]: () => 'unchanged'
+})
+
+const describe = ({ summary }) => {
+  if (summary.change === CHANGE.notOnNpm)
+    return `mcp-docs: ${summary.name} is not on npm; no version to check`
+  if (summary.change === CHANGE.failed) return null
+  return `mcp-docs: ${summary.name} ${summary.package} ${summary.version} (${NOTE[summary.change](summary)})`
+}
+
+const reviewsOf = ({ released, server }) =>
+  released
+    .filter(({ name }) => name === server.name)
+    .flatMap(({ docs }) => docs)
+
+// A failed run, and a check, report what they found but name no doc to
+// review: they wrote nothing, so the next run that writes still sees the
+// change.
+const report = ({ print, released, reviews, servers, summaries }) =>
+  servers.forEach((server, index) => {
+    const line = describe({ summary: summaries[index] })
     if (line !== null) print(line)
     if (!reviews) return
-    released
-      .filter(({ name }) => name === server.name)
-      .flatMap(({ docs }) => docs)
-      .forEach((path) => print(`review: ${path}`))
+    reviewsOf({ released, server }).forEach((path) =>
+      print(`review: ${path}`)
+    )
   })
 
+// The document `--json` prints, from what the run decided.
+const documentOf = ({ mode, outcome }) => ({
+  mode,
+  problems: outcome.problems ?? [],
+  review: outcome.review ?? [],
+  servers: outcome.servers ?? [],
+  status: outcome.status,
+  updater: UPDATER_ID,
+  writes: outcome.writes ?? []
+})
+
 export const updateMcpDocs = async ({
+  check = false,
   fetchLatest = fetchFromRegistry,
+  json = false,
   print = console.log,
   root = REPO_ROOT,
   today = todayUtc(),
   warn = console.error
 }) => {
+  const mode = check ? MODE.check : MODE.update
+  const say = json ? () => {} : print
+  const finish = (outcome) => {
+    if (json) {
+      print(
+        JSON.stringify(documentOf({ mode, outcome }), null, JSON_INDENT)
+      )
+    }
+    return { code: outcome.code, status: outcome.status }
+  }
+  const fail = ({ problems, servers }) => {
+    problems.forEach((problem) => warn(`mcp-docs: ${problem}`))
+    warn(`mcp-docs: ${MCP_DOC_PATH} left as it was`)
+    return finish({
+      code: EXIT_FAILED,
+      problems,
+      servers,
+      status: STATUS.failed
+    })
+  }
+
   const { catalog, config, doc } = readSources({ root })
   const sourceProblems = [...catalog.problems, ...config.problems]
-  if (sourceProblems.length > 0)
-    return fail({ problems: sourceProblems, warn })
+  if (sourceProblems.length > 0) return fail({ problems: sourceProblems })
   if (doc === null)
-    return fail({ problems: [`${MCP_DOC_PATH} is missing`], warn })
+    return fail({ problems: [`${MCP_DOC_PATH} is missing`] })
   const block = readBlock({ text: doc })
-  if (block.problem) return fail({ problems: [block.problem], warn })
+  if (block.problem) return fail({ problems: [block.problem] })
 
   const servers = listServers({
     catalog: catalog.servers,
@@ -181,27 +270,66 @@ export const updateMcpDocs = async ({
     servers,
     today
   })
+  const previous = new Map(block.rows.map((row) => [row.name, row]))
+  const summaries = servers.map((server) =>
+    summaryOf({ latest, previous, released, server })
+  )
   if (problems.length > 0) {
-    report({ latest, print, released, reviews: false, servers })
-    return fail({ problems, warn })
+    report({ print: say, released, reviews: false, servers, summaries })
+    return fail({ problems, servers: summaries })
   }
 
-  report({ latest, print, released, reviews: true, servers })
+  report({ print: say, released, reviews: !check, servers, summaries })
+  const review = servers.flatMap((server) => reviewsOf({ released, server }))
   const { text } = replaceBlock({ rows, text: doc })
   if (text === doc) {
-    print(`mcp-docs: no server changed; ${MCP_DOC_PATH} left as it was`)
-    return { code: EXIT_PASSED }
+    say(
+      `mcp-docs: no server changed; ${MCP_DOC_PATH} ` +
+        (check ? 'is current' : 'left as it was')
+    )
+    return finish({
+      code: EXIT_PASSED,
+      servers: summaries,
+      status: STATUS.current
+    })
+  }
+  if (check) {
+    say(
+      `mcp-docs: out of date; \`pnpm mcp:docs\` would rewrite the generated block of ${MCP_DOC_PATH} ` +
+        '(--check writes nothing)'
+    )
+    return finish({
+      code: EXIT_OUTDATED,
+      review,
+      servers: summaries,
+      status: STATUS.outdated,
+      writes: [MCP_DOC_PATH]
+    })
   }
   writeFileSync(join(root, MCP_DOC_PATH), text)
-  print(`mcp-docs: wrote the generated block of ${MCP_DOC_PATH}`)
-  return { code: EXIT_PASSED }
+  say(`mcp-docs: wrote the generated block of ${MCP_DOC_PATH}`)
+  return finish({
+    code: EXIT_PASSED,
+    review,
+    servers: summaries,
+    status: STATUS.updated,
+    writes: [MCP_DOC_PATH]
+  })
 }
 
 const main = async () => {
   const { values } = parseArgs({
-    options: { root: { default: REPO_ROOT, type: 'string' } }
+    options: {
+      check: { default: false, type: 'boolean' },
+      json: { default: false, type: 'boolean' },
+      root: { default: REPO_ROOT, type: 'string' }
+    }
   })
-  const { code } = await updateMcpDocs({ root: resolve(values.root) })
+  const { code } = await updateMcpDocs({
+    check: values.check,
+    json: values.json,
+    root: resolve(values.root)
+  })
   process.exitCode = code
 }
 

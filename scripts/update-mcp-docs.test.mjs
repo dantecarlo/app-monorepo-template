@@ -135,17 +135,26 @@ const treeOf = ({ catalog = CATALOG, config, doc }) => {
 
 const read = ({ path, root }) => readFileSync(join(root, path), 'utf8')
 
-const run = async ({ packages, root, today }) => {
+const run = async ({ check, json, packages, root, today }) => {
   const lines = { errors: [], out: [] }
   const registry = registryOf({ packages })
   const result = await updateMcpDocs({
+    check,
     fetchLatest: registry.fetchLatest,
+    json,
     print: (line) => lines.out.push(line),
     root,
     today,
     warn: (line) => lines.errors.push(line)
   })
   return { ...result, ...lines, asked: registry.asked }
+}
+
+// The bytes and the modification time of the doc, to prove a run wrote
+// nothing.
+const docState = ({ root }) => {
+  const target = join(root, MCP_DOC_PATH)
+  return { bytes: readFileSync(target), mtimeMs: statSync(target).mtimeMs }
 }
 
 const rowsOf = ({ root }) =>
@@ -345,6 +354,315 @@ test('a non-npm command is listed as not on npm', async () => {
       'u'
     )
   )
+})
+
+// The update mode as it was before `--check` and `--json`: every line it
+// prints, on stdout and stderr, and its exit code, over a first write, a
+// run that finds nothing new, a release and a failed request.
+test('the update mode prints the lines and exit codes it printed before --check', async () => {
+  const root = treeOf({
+    config: {
+      mcpServers: {
+        expo: { args: ['-y', 'expo-mcp'], command: 'npx' },
+        local: { args: ['tools/mcp-server.js'], command: 'node' },
+        'next-devtools': {
+          args: ['-y', 'next-devtools-mcp'],
+          command: 'npx'
+        }
+      }
+    }
+  })
+  const withoutExpo = Object.fromEntries(
+    Object.entries(REGISTRY_DAY_TWO).filter(
+      ([name]) => name !== 'expo-mcp'
+    )
+  )
+  const notOnNpm = 'mcp-docs: local is not on npm; no version to check'
+  const steps = [
+    {
+      code: PASSED,
+      errors: [],
+      out: [
+        'mcp-docs: expo expo-mcp 0.2.0 (new in the block)',
+        `review: ${EXPO_DOC}`,
+        notOnNpm,
+        'mcp-docs: next-devtools next-devtools-mcp 0.3.0 (new in the block)',
+        `review: ${NEXT_DOC}`,
+        `mcp-docs: wrote the generated block of ${MCP_DOC_PATH}`
+      ],
+      packages: REGISTRY_DAY_ONE,
+      today: DAY_ONE
+    },
+    {
+      code: PASSED,
+      errors: [],
+      out: [
+        'mcp-docs: expo expo-mcp 0.2.0 (unchanged)',
+        notOnNpm,
+        'mcp-docs: next-devtools next-devtools-mcp 0.3.0 (unchanged)',
+        `mcp-docs: no server changed; ${MCP_DOC_PATH} left as it was`
+      ],
+      packages: REGISTRY_DAY_ONE,
+      today: DAY_TWO
+    },
+    {
+      code: FAILED,
+      errors: [
+        'mcp-docs: expo (expo-mcp): the registry request failed: 404 Not Found: expo-mcp',
+        `mcp-docs: ${MCP_DOC_PATH} left as it was`
+      ],
+      out: [
+        notOnNpm,
+        'mcp-docs: next-devtools next-devtools-mcp 0.4.0 (was 0.3.0)'
+      ],
+      packages: withoutExpo,
+      today: DAY_TWO
+    },
+    {
+      code: PASSED,
+      errors: [],
+      out: [
+        'mcp-docs: expo expo-mcp 0.2.0 (unchanged)',
+        notOnNpm,
+        'mcp-docs: next-devtools next-devtools-mcp 0.4.0 (was 0.3.0)',
+        `review: ${NEXT_DOC}`,
+        `mcp-docs: wrote the generated block of ${MCP_DOC_PATH}`
+      ],
+      packages: REGISTRY_DAY_TWO,
+      today: DAY_TWO
+    }
+  ]
+
+  for (const { code, errors, out, packages, today } of steps) {
+    const result = await run({ packages, root, today })
+    assert.deepEqual(
+      { code: result.code, errors: result.errors, out: result.out },
+      { code, errors, out }
+    )
+  }
+})
+
+const OUTDATED = 2
+const CURRENT_LINE = `mcp-docs: no server changed; ${MCP_DOC_PATH} is current`
+const OUTDATED_LINE =
+  `mcp-docs: out of date; \`pnpm mcp:docs\` would rewrite the generated block of ${MCP_DOC_PATH} ` +
+  '(--check writes nothing)'
+
+const isReview = (line) => line.startsWith('review: ')
+
+test('--check over a current block exits 0 and writes nothing', async () => {
+  const root = treeOf({})
+  await run({ packages: REGISTRY_DAY_ONE, root, today: DAY_ONE })
+  const before = docState({ root })
+
+  const result = await run({
+    check: true,
+    packages: REGISTRY_DAY_ONE,
+    root,
+    today: DAY_TWO
+  })
+
+  assert.equal(result.code, PASSED, result.errors.join('\n'))
+  assert.deepEqual(docState({ root }), before)
+  assert.deepEqual(result.out, [
+    'mcp-docs: expo expo-mcp 0.2.0 (unchanged)',
+    'mcp-docs: next-devtools next-devtools-mcp 0.3.0 (unchanged)',
+    CURRENT_LINE
+  ])
+  assert.deepEqual(result.errors, [])
+})
+
+test('--check over an out-of-date block exits 2 and writes nothing', async () => {
+  const root = treeOf({})
+  await run({ packages: REGISTRY_DAY_ONE, root, today: DAY_ONE })
+  const before = docState({ root })
+
+  const result = await run({
+    check: true,
+    packages: REGISTRY_DAY_TWO,
+    root,
+    today: DAY_TWO
+  })
+
+  assert.equal(result.code, OUTDATED, result.errors.join('\n'))
+  assert.deepEqual(docState({ root }), before)
+  assert.deepEqual(result.out, [
+    'mcp-docs: expo expo-mcp 0.2.0 (unchanged)',
+    'mcp-docs: next-devtools next-devtools-mcp 0.4.0 (was 0.3.0)',
+    OUTDATED_LINE
+  ])
+  assert.ok(!result.out.some(isReview), result.out)
+  assert.deepEqual(result.errors, [])
+})
+
+test('--check exits 1 and writes nothing when a registry request fails', async () => {
+  const root = treeOf({})
+  await run({ packages: REGISTRY_DAY_ONE, root, today: DAY_ONE })
+  const before = docState({ root })
+
+  const result = await run({
+    check: true,
+    packages: { 'next-devtools-mcp': REGISTRY_DAY_TWO['next-devtools-mcp'] },
+    root,
+    today: DAY_TWO
+  })
+
+  assert.equal(result.code, FAILED)
+  assert.deepEqual(docState({ root }), before)
+  assert.deepEqual(result.errors, [
+    'mcp-docs: expo (expo-mcp): the registry request failed: 404 Not Found: expo-mcp',
+    `mcp-docs: ${MCP_DOC_PATH} left as it was`
+  ])
+  assert.ok(!result.out.some(isReview), result.out)
+})
+
+test('--json prints the run as one JSON document', async () => {
+  const root = treeOf({
+    config: {
+      mcpServers: {
+        expo: { args: ['-y', 'expo-mcp'], command: 'npx' },
+        local: { args: ['tools/mcp-server.js'], command: 'node' },
+        'next-devtools': {
+          args: ['-y', 'next-devtools-mcp'],
+          command: 'npx'
+        }
+      }
+    }
+  })
+  await run({ packages: REGISTRY_DAY_ONE, root, today: DAY_ONE })
+
+  const result = await run({
+    json: true,
+    packages: REGISTRY_DAY_TWO,
+    root,
+    today: DAY_TWO
+  })
+
+  assert.equal(result.code, PASSED, result.errors.join('\n'))
+  assert.equal(result.out.length, 1, result.out)
+  assert.deepEqual(JSON.parse(result.out[0]), {
+    mode: 'update',
+    problems: [],
+    review: [NEXT_DOC],
+    servers: [
+      {
+        change: 'unchanged',
+        from: '0.2.0',
+        name: 'expo',
+        package: 'expo-mcp',
+        version: '0.2.0'
+      },
+      {
+        change: NOT_ON_NPM,
+        from: null,
+        name: 'local',
+        package: null,
+        version: null
+      },
+      {
+        change: 'released',
+        from: '0.3.0',
+        name: 'next-devtools',
+        package: 'next-devtools-mcp',
+        version: '0.4.0'
+      }
+    ],
+    status: 'updated',
+    updater: 'mcp-docs',
+    writes: [MCP_DOC_PATH]
+  })
+  assert.equal(rowNamed({ name: 'next-devtools', root }).version, '0.4.0')
+  assert.deepEqual(result.errors, [])
+})
+
+test('--json with --check prints the plan and writes nothing', async () => {
+  const root = treeOf({})
+  await run({ packages: REGISTRY_DAY_ONE, root, today: DAY_ONE })
+  const before = docState({ root })
+
+  const outdated = await run({
+    check: true,
+    json: true,
+    packages: REGISTRY_DAY_TWO,
+    root,
+    today: DAY_TWO
+  })
+  const failed = await run({
+    check: true,
+    json: true,
+    packages: {},
+    root,
+    today: DAY_TWO
+  })
+
+  assert.equal(outdated.code, OUTDATED, outdated.errors.join('\n'))
+  assert.deepEqual(docState({ root }), before)
+  assert.equal(outdated.out.length, 1, outdated.out)
+  const plan = JSON.parse(outdated.out[0])
+  assert.equal(plan.mode, 'check')
+  assert.equal(plan.status, 'outdated')
+  assert.deepEqual(plan.writes, [MCP_DOC_PATH])
+  assert.deepEqual(plan.review, [NEXT_DOC])
+  assert.deepEqual(plan.problems, [])
+
+  assert.equal(failed.code, FAILED)
+  assert.equal(failed.out.length, 1, failed.out)
+  const refused = JSON.parse(failed.out[0])
+  assert.equal(refused.status, 'failed')
+  assert.deepEqual(refused.writes, [])
+  assert.deepEqual(refused.review, [])
+  assert.equal(refused.problems.length, 2, refused.problems)
+})
+
+// A `fetch` for a child process that answers each package of `packages` as
+// the registry does, with its `latest` dist-tag and its publish time.
+const registryModule = ({ packages }) =>
+  'data:text/javascript,' +
+  encodeURIComponent(
+    `const packages = ${JSON.stringify(packages)};` +
+      'globalThis.fetch = async (url) => {' +
+      "const name = decodeURIComponent(String(url).split('/').slice(3).join('/'));" +
+      'const found = packages[name];' +
+      "if (!found) return { ok: false, status: 404, statusText: 'Not Found' };" +
+      'return { ok: true, json: async () => ({' +
+      "'dist-tags': { latest: found.version }," +
+      'time: { [found.version]: found.published } }) };' +
+      '};'
+  )
+
+test('the command exits 2 under --check and 0 without it over the same out-of-date doc', async () => {
+  const root = treeOf({})
+  await run({ packages: REGISTRY_DAY_ONE, root, today: DAY_ONE })
+  const before = docState({ root })
+  const command = ({ flags }) =>
+    spawnSync(
+      process.execPath,
+      [
+        '--import',
+        registryModule({ packages: REGISTRY_DAY_TWO }),
+        UPDATER,
+        '--root',
+        root,
+        ...flags
+      ],
+      { encoding: 'utf8' }
+    )
+
+  const checked = command({ flags: ['--check'] })
+  const afterCheck = docState({ root })
+  const updated = command({ flags: [] })
+
+  assert.equal(checked.status, OUTDATED, checked.stderr)
+  assert.ok(checked.stdout.includes(OUTDATED_LINE), checked.stdout)
+  assert.deepEqual(afterCheck, before)
+  assert.equal(updated.status, PASSED, updated.stderr)
+  assert.ok(
+    updated.stdout.includes(
+      `mcp-docs: wrote the generated block of ${MCP_DOC_PATH}`
+    ),
+    updated.stdout
+  )
+  assert.equal(rowNamed({ name: 'next-devtools', root }).version, '0.4.0')
 })
 
 test('the command exits 1 and requests nothing when the doc has no generated block', () => {
