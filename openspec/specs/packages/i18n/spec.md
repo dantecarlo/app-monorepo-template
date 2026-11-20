@@ -159,6 +159,7 @@ TranslationValuesType.
 - **THEN** those constants and types are available, and TranslationKeysType is not
 - **Test:** `packages/i18n/src/__tests__/index.test.ts` › "the entry point exposes the language contract and the translator types"
 
+<!-- region web-next -->
 ### Requirement: I18N-11 — The catalogs carry a message per sign-in failure
 
 The i18n package SHALL define, in every catalog, one message for each sign-in failure the web
@@ -173,6 +174,7 @@ auth.error.notConfigured and auth.error.rateLimited.
 - **WHEN** every catalog is searched for it
 - **THEN** each catalog holds a value for every key
 - **Test:** `apps/web/src/lib/auth/__tests__/authGateway.constant.test.ts` › "names a message every catalog holds for each sign-in failure"
+<!-- endregion web-next -->
 
 ### Requirement: I18N-12 — One translator type for both apps
 

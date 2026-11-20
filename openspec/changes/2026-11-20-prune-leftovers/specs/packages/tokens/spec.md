@@ -46,3 +46,26 @@ The web app SHALL load no Tailwind JavaScript config: its CSS entry imports the 
 - **THEN** it imports the generated theme, holds no `@config` and no `tailwind.config.cjs` exists
 - **Test:** `apps/web/src/app/__tests__/globals.test.ts` › "imports the generated theme and loads no JS config"
 <!-- endregion web-next -->
+
+### Requirement: TOKENS-13 — The outputs carry the scales as CSS lengths
+
+The tokens package SHALL give the generated preset and web theme the spacing, inset, radius,
+layout-width, font family, font size, glyph size and shadow tokens, the numeric ones written as
+pixel or rem lengths, and the web app SHALL take its spacing, radius, layout-width and font-size
+utilities from the generated web theme alone.
+
+**Evidence:** written at archive, from the code: the generator and the outputs of this package, with no file of an app.
+
+#### Scenario: a Tailwind config resolves a spacing utility
+
+- **GIVEN** a Tailwind config that requires the preset
+- **WHEN** it resolves a spacing utility such as p-lg
+- **THEN** the value is 16px, the lg spacing token
+- **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset carries every scale token as a CSS length"
+
+#### Scenario: the web theme carries the scales
+
+- **GIVEN** the web theme rendered from the source
+- **WHEN** its `@theme inline` block is read
+- **THEN** every scale token is there as a CSS length
+- **Test:** `packages/tokens/scripts/__tests__/generate.test.ts` › "inlines every scale in @theme inline as a CSS length"

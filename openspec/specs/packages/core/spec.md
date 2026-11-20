@@ -806,12 +806,14 @@ The core package SHALL declare the consent port, `IConsentPort`, whose `grant`, 
 - **THEN** it holds exactly `granted`, `denied`, `pending` and `not-required`
 - **Test:** `packages/core/src/ports/consent/__tests__/consentStatus.type.test.ts` › "names the four consent statuses"
 
+<!-- region web-next -->
 #### Scenario: an app implements the port
 
 - **GIVEN** the web app's consent composition root, typed as `IConsentPort`
 - **WHEN** consent is granted through it
 - **THEN** its provider receives the grant
 - **Test:** `apps/web/src/lib/observability/__tests__/consent.adapter.test.ts` › "binds the PostHog consent by default"
+<!-- endregion web-next -->
 
 ### Requirement: CORE-28 — The key-value storage port
 

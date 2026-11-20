@@ -275,6 +275,12 @@
           "file": "package.json",
           "op": "unset",
           "path": "scripts.verify:expo"
+        },
+        {
+          "verb": "patch-json",
+          "file": "knip.json",
+          "op": "unset",
+          "path": "workspaces.apps/mobile"
         }
       ]
     },

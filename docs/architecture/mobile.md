@@ -209,3 +209,25 @@ There is no `src/features/` folder; the sample code already follows the layout a
 | Login form                                                                        | `screens/Login/`                                           |
 | Items data access                                                                 | `src/services/Items/` (transversal)                        |
 | Session state                                                                     | `src/hooks/useSession.hook.ts`, `src/stores/auth.store.ts` |
+
+## What an optional capability adds
+
+Each capability below adds files to the app; its region here goes with its prune, and this
+doc with the `mobile-expo` prune.
+
+<!-- region supabase -->
+The `supabase` capability adds the app's wiring of `@app/supabase`:
+
+| Thing                         | Path                                                                            | Suffix           | What it holds                                                                                                                                                                                                                                                                                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Supabase client wiring        | `apps/mobile/src/lib/supabase/client.adapter.ts`                                | `.adapter.ts`    | App-local client adapter over `@app/supabase`; the client is the opaque `BackendClientType`                                                                                                                                                                                                                                                       |
+| Auth gateway wiring (mobile)  | `apps/mobile/src/lib/supabase/authGateway.adapter.ts`                           | `.adapter.ts`    | The Supabase auth gateway over the app's client, which lib/auth lists |
+<!-- endregion supabase -->
+
+<!-- region sentry -->
+The optional `sentry` capability adds its adapter beside the observability root:
+
+| Thing                   | Path                                                                     | Suffix        | What it holds                                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Sentry adapter (mobile) | `apps/mobile/src/lib/observability/createSentryObservability.adapter.ts` | `.adapter.ts` | `IObservabilityPort` over `@sentry/react-native`; module-scope init; scrubPII; no-ops without EXPO_PUBLIC_SENTRY_DSN |
+<!-- endregion sentry -->

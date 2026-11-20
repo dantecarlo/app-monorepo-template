@@ -38,7 +38,7 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | Design tokens             | `packages/tokens/src/tokens.constant.ts`                                         | `.constant.ts` | Colors, spacing, type scale — the design source of truth                                                                                   |
 | Token generator           | `packages/tokens/scripts/generate.mjs`                                           | `.mjs`         | Writes every token output from the source (`pnpm --filter @app/tokens generate`); tested by `packages/tokens/scripts/__tests__/generate.test.ts` |
 | Web theme (generated)     | `packages/tokens/theme.css`                                                      | `.css`         | Both themes' `--c-*` colours, `@theme` and the scales in `@theme inline`; `apps/web/src/app/globals.css` imports it as `@app/tokens/theme.css` |
-| Tailwind preset (generated) | `packages/tokens/tailwind-preset.cjs`                                          | `.cjs`         | The NativeWind preset `apps/mobile/tailwind.config.js` loads: the dark colours and the scales |
+| Tailwind preset (generated) | `packages/tokens/tailwind-preset.cjs`                                          | `.cjs`         | The NativeWind preset the mobile Tailwind config loads: the dark colours and the scales |
 | Theme variables (generated) | `packages/tokens/src/themeVars.constant.ts`                                    | `.constant.ts` | The `--c-*` value of every themed colour per theme, for NativeWind's `vars()` |
 | Theme names (generated)   | `packages/tokens/src/themeNames.constant.ts`                                     | `.constant.ts` | The name of every token utility the web theme declares, per Tailwind namespace; the web's shared `tv` registers it with tailwind-merge |
 | Preset test               | `packages/tokens/__tests__/tailwind-preset.test.ts`                              | `.test.ts`     | The preset reads each themed colour from its --c- variable and resolves to the dark colours under the dark variables; every scale as a CSS length, the font stacks and the shadows |
@@ -270,6 +270,7 @@ one screen it stays screen-local.
 
 ---
 
+<!-- region mobile-expo -->
 ## 3. Per-app shared globals — Mobile (`apps/mobile/src/`)
 
 Same shape as web, but UI is React Native / NativeWind. Imported via `@/*`.
@@ -366,30 +367,14 @@ Same shape as web, but UI is React Native / NativeWind. Imported via `@/*`.
 | Route tree                    | `apps/mobile/src/app`                                                           | Expo Router      | `_layout.tsx` (boots through `src/lib/bootstrap`, imports project modules only), `index.tsx`, file-based routes                                                                                                                                                                                                                                                                                                     |
 | Test infra                    | `apps/mobile/src/test`                                                          | (no suffix)      | Vitest setup + mocks, createQueryWrapper of query.helper.tsx (harness, not a unit); each unit's test sits in its own folder's `__tests__/`, a route test as `<route>.route.test.tsx`                                                                                                                                                                                                      |
 
-<!-- region supabase -->
-
-The `supabase` capability adds the app's wiring of `@app/supabase`:
-
-| Thing                         | Path                                                                            | Suffix           | What it holds                                                                                                                                                                                                                                                                                                                                     |
-| ----------------------------- | ------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Supabase client wiring        | `apps/mobile/src/lib/supabase/client.adapter.ts`                                | `.adapter.ts`    | App-local client adapter over `@app/supabase`; the client is the opaque `BackendClientType`                                                                                                                                                                                                                                                       |
-| Auth gateway wiring (mobile)  | `apps/mobile/src/lib/supabase/authGateway.adapter.ts`                           | `.adapter.ts`    | The Supabase auth gateway over the app's client, which lib/auth lists |
-
-<!-- endregion supabase -->
-
-<!-- region sentry -->
-
-The optional `sentry` capability adds its adapter beside the observability root:
-
-| Thing                   | Path                                                                     | Suffix        | What it holds                                                                                                        |
-| ----------------------- | ------------------------------------------------------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Sentry adapter (mobile) | `apps/mobile/src/lib/observability/createSentryObservability.adapter.ts` | `.adapter.ts` | `IObservabilityPort` over `@sentry/react-native`; module-scope init; scrubPII; no-ops without EXPO_PUBLIC_SENTRY_DSN |
-
-<!-- endregion sentry -->
-
 The same reserved-by-convention folders apply (`constants/`, `hooks/`,
 `components/`, `validation/`): add them per app only once a thing is shared by
 more than one screen.
+
+The rows an optional capability adds to the mobile app, its backend wiring and its
+error-monitoring adapter, sit in that capability's region of
+[../architecture/mobile.md](../architecture/mobile.md).
+<!-- endregion mobile-expo -->
 
 ---
 
@@ -404,8 +389,15 @@ fetching, layout, and local members. Their internals are mapped per screen by
 | Web    | `apps/web/src/screens`    | `apps/web/src/screens/ItemsDashboard`    |
 | Web    | `apps/web/src/screens`    | `apps/web/src/screens/ItemsSummary`      |
 | Web    | `apps/web/src/screens`    | `apps/web/src/screens/Login`             |
+
+<!-- region mobile-expo -->
+
+| App    | Screens root              | Example screen                           |
+| ------ | ------------------------- | ---------------------------------------- |
 | Mobile | `apps/mobile/src/screens` | `apps/mobile/src/screens/ItemsDashboard` |
 | Mobile | `apps/mobile/src/screens` | `apps/mobile/src/screens/Login`          |
+
+<!-- endregion mobile-expo -->
 
 Data flow inside every screen: **screen → hook → service → adapter**. A screen
 never calls `fetch` directly and never holds business logic in the view.
@@ -420,10 +412,18 @@ never calls `fetch` directly and never holds business logic in the view.
 | Web theme       | `packages/tokens/theme.css`                                                           | Generated; both themes, `@theme` and `@theme inline` |
 | Tailwind preset | `packages/tokens/tailwind-preset.cjs`                                                 | Generated; mobile NativeWind only                 |
 | Web Tailwind    | `apps/web/src/app/globals.css`                                                        | Imports the generated theme; no JS config; keeps the hand-written glass card, body and utilities |
-| Mobile Tailwind | `apps/mobile/tailwind.config.js`                                                      | Extends the generated preset                      |
-| Layout classes | `apps/web/src/helpers/layout.style.ts`, `apps/mobile/src/helpers/layout.style.ts` | Positioning only; every look lives in a component block (`local/style-positions-only`) |
+| Layout classes | `apps/web/src/helpers/layout.style.ts` | Positioning only; every look lives in a component block (`local/style-positions-only`) |
 | Web variants    | `apps/web/src/components/ui/variants.helper.ts`                               | The one `tv` every web ui style file builds with; registers every token name of `@app/tokens` (`themeNames`) with tailwind-merge; `VariantUnionsType`, the variants a `tv` config takes, which each block's constant test holds its unions to |
 | Web fonts       | `apps/web/src/app/fonts/`                                                             | Inter and Montserrat, self-hosted through `next/font/local`: one Latin variable woff2 per family, with its OFL text |
+<!-- region mobile-expo -->
+
+| Concern         | Where                                                                                 | Notes                                             |
+| --------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Mobile Tailwind | `apps/mobile/tailwind.config.js`                                                      | Extends the generated preset                      |
+| Layout classes | `apps/mobile/src/helpers/layout.style.ts` | Positioning only; every look lives in a component block (`local/style-positions-only`) |
+
+<!-- endregion mobile-expo -->
+
 Inline literals (numbers/strings) belong in `*.constant.ts` or `*.style.ts`
 only — enforced by ESLint and by `node scripts/verify-maps.mjs`.
 

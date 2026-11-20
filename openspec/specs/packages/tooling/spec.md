@@ -41,7 +41,7 @@ each pairing its plain ESM module with its type declarations.
   devDependency
 - **WHEN** an observability adapter test imports `@app/tooling/observability-port-contract`
 - **THEN** the import resolves at run time and its declarations type the harness
-- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "the observability port contract"
+- **Test:** `packages/core/src/ports/observability/__tests__/createNoopObservability.helper.test.ts` › "the observability port contract"
 
 ### Requirement: TOOLING-02 — The seed comes from the commit
 
@@ -426,7 +426,7 @@ entry the prune leaves that names a removed dependency.
 - **GIVEN** the repository's tracked files and its `template.manifest.json`
 - **WHEN** the prune of `sentry` is checked
 - **THEN** nothing is listed
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning the sentry capability of this repository leaves no dangling reference"
+- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, mobile-expo or web-next of this repository leaves no dangling reference"
 
 ### Requirement: TOOLING-17 — The registry a prune leaves stays true
 
@@ -572,4 +572,4 @@ capability.
 - **GIVEN** the repository's tracked files, its manifest, its registry and its regions
 - **WHEN** the prune of `sentry` is checked with every check
 - **THEN** nothing is listed
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning the sentry capability of this repository leaves no dangling reference"
+- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, mobile-expo or web-next of this repository leaves no dangling reference"

@@ -504,11 +504,21 @@ const pruneRepository = ({ capabilityId, regions = dropRegions }) =>
     readText: ({ path }) => readFileSync(join(REPO_ROOT, path), 'utf8')
   })
 
+const CLEAN_PRUNES = ['sentry', 'mobile-expo', 'web-next']
+
 test(
-  'pruning the sentry capability of this repository leaves no dangling reference',
-  { skip: skipUnless('sentry') },
+  'pruning sentry, mobile-expo or web-next of this repository leaves no dangling reference',
+  { skip: !CLEAN_PRUNES.some(declares) && 'none of them is declared' },
   () => {
-    assert.deepEqual(pruneRepository({ capabilityId: 'sentry' }), [])
+    assert.deepEqual(
+      CLEAN_PRUNES.filter(declares).flatMap((capabilityId) =>
+        pruneRepository({ capabilityId }).map((leak) => ({
+          capabilityId,
+          ...leak
+        }))
+      ),
+      []
+    )
   }
 )
 
