@@ -147,7 +147,7 @@ export const CASES = [
     name: 'a cost the registry does not know is refused'
   },
   {
-    context: listing({ steps: [step({ blind: 'cases' })] }),
+    context: listing({ steps: [step({ blind: 'private-cases' })] }),
     expected: 1,
     name: 'a blind the registry does not know is refused'
   },
@@ -305,15 +305,11 @@ const gateIn = async ({ module }) => {
 
 const COMPANION_SUFFIX = '.test.mjs'
 
-// A companion that exports its CASES, read as text: a private-cases
-// companion is never imported, since one that registers its tests at load
-// would run them inside this suite.
-const EXPORTED_CASES =
-  /\bexport\s+(?:const|let)\s+CASES\b|\bexport\s*\{[^}]*\bCASES\b[^}]*\}/u
-
-// What blinding one gate module needs: its gate, the steps reaching it, the
-// one that carries `blind`, and its companion's CASES when they are
-// exported; or the problems that stop it from being blinded at all.
+// What blinding one gate module needs: its gate, the one step of those
+// reaching it that carries `blind`, and its companion's exported CASES; or
+// the problems that stop it from being blinded at all. A companion registers
+// its tests only as the entry point (registerCases), so importing it here
+// runs none of them.
 const loadBlinding = async ({ module, steps }) => {
   const found = await gateIn({ module })
   const carriers = steps.filter(({ blind }) => blind !== undefined)
@@ -331,7 +327,7 @@ const loadBlinding = async ({ module, steps }) => {
       ]
     }
   }
-  const [{ blind, id }] = carriers
+  const [{ id }] = carriers
   const companion = module.replace(/\.mjs$/u, COMPANION_SUFFIX)
   const companionFile = join(REPO_ROOT, companion)
   if (!existsSync(companionFile)) {
@@ -339,19 +335,7 @@ const loadBlinding = async ({ module, steps }) => {
       problems: [`${id}: its companion ${companion} does not exist`]
     }
   }
-  const exported = EXPORTED_CASES.test(readFileSync(companionFile, 'utf8'))
-  if (blind === BLIND.private) {
-    return {
-      problems: exported
-        ? [
-            `${id}: ${companion} exports CASES, so its blind is ${BLIND.exported}`
-          ]
-        : []
-    }
-  }
-  const { CASES: cases } = exported
-    ? await import(pathToFileURL(companionFile).href)
-    : {}
+  const { CASES: cases } = await import(pathToFileURL(companionFile).href)
   if (!Array.isArray(cases)) {
     return { problems: [`${id}: ${companion} exports no CASES to blind`] }
   }

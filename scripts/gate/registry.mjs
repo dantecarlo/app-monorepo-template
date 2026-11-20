@@ -1,10 +1,11 @@
 // ---------------------------------------------------------------------------
 // The gate registry — what `pnpm validate` runs, as data.
 //
-// scripts/gate/registry.json lists every step of the gate in the order it
-// runs (scripts/validate.mjs runs them). A step runs the root package.json
-// script its `id` names, as `pnpm <id>`, unless it carries a `command`. Each
-// step names:
+// .agents/contracts/gates.json lists every step of the gate in the order it
+// runs (scripts/validate.mjs runs them). It is a contract, so the write
+// guard asks before anyone edits it: dropping a step drops a gate. A step
+// runs the root package.json script its `id` names, as `pnpm <id>`, unless
+// it carries a `command`. Each step names:
 //
 //   capability  the owner whose prune removes it: `core`, never pruned, or
 //               a capability of template.manifest.json
@@ -14,11 +15,9 @@
 //   profile     the lowest quality profile that runs it: standard runs under
 //               every profile, strict only under strict
 //   cost        instant, seconds or minutes: what one run takes, declared
-//   blind       optional: how the gate the step runs is proven to assert
-//               something. exported-cases: its companion exports CASES, which
-//               scripts/validate.test.mjs re-runs against `blindGate`;
-//               private-cases: the companion keeps its CASES private and
-//               blinds them itself
+//   blind       on the one step that blinds a gate: exported-cases, its
+//               companion exports CASES, which scripts/validate.test.mjs
+//               re-runs against `blindGate`; they must then fail
 //
 // An absent capability takes every step it owns, the way it takes the
 // entries of the dependency registry it owns (docs/manifest.md), so a prune
@@ -27,7 +26,7 @@
 // Pure: the runner reads the files and hands their contents in.
 // ---------------------------------------------------------------------------
 
-export const REGISTRY_FILE = 'scripts/gate/registry.json'
+export const REGISTRY_FILE = '.agents/contracts/gates.json'
 export const CORE_CAPABILITY = 'core'
 
 // In run order: a step's stage is never earlier than the stage above it.
@@ -43,10 +42,7 @@ export const PROFILES = Object.freeze(['standard', 'strict'])
 
 export const COSTS = Object.freeze(['instant', 'seconds', 'minutes'])
 
-export const BLIND = Object.freeze({
-  exported: 'exported-cases',
-  private: 'private-cases'
-})
+export const BLIND = Object.freeze({ exported: 'exported-cases' })
 
 const BLINDS = Object.values(BLIND)
 const REQUIRED_KEYS = ['capability', 'cost', 'id', 'profile', 'stage']

@@ -134,7 +134,7 @@ const ACME_CONFIG = {
   }
 }
 
-const CASES = [
+export const CASES = [
   {
     context: walk({}),
     expected: 0,
@@ -301,8 +301,12 @@ const CASES = [
 const detailsOf = (findings) =>
   findings.map((finding) => finding.detail ?? finding).join('\n')
 
+// The tests register only while this file is the entry point, as under
+// `node --test`, so another script can import CASES without running them.
+const register = import.meta.main ? test : () => undefined
+
 CASES.forEach(({ context, expected, name, pattern }) =>
-  test(name, () => {
+  register(name, () => {
     const details = detailsOf(gate.run(context()))
     assert.equal(
       details === '' ? 0 : details.split('\n').length,
@@ -313,7 +317,7 @@ CASES.forEach(({ context, expected, name, pattern }) =>
   })
 )
 
-test('the gate exits 1 and names the server the block is missing', () => {
+register('the gate exits 1 and names the server the block is missing', () => {
   const result = runGate({ catalog: [EXPO, METRO, NEXT] })
   assert.equal(result.status, FAILED, result.stderr)
   assert.match(result.stderr, /verify-mcp-docs: 1 problem/u)
@@ -323,7 +327,7 @@ test('the gate exits 1 and names the server the block is missing', () => {
   )
 })
 
-test('the gate exits 0 over a block the updater wrote and states what it judged', () => {
+register('the gate exits 0 over a block the updater wrote and states what it judged', () => {
   const result = runGate({ doc: docOf({ rows: [EXPO, NEXT].map(rowOf) }) })
   assert.equal(result.status, PASSED, result.stderr)
   assert.match(
@@ -332,7 +336,7 @@ test('the gate exits 0 over a block the updater wrote and states what it judged'
   )
 })
 
-test('the gate makes no network request', () => {
+register('the gate makes no network request', () => {
   const realFetch = globalThis.fetch
   const calls = []
   globalThis.fetch = (...args) => {
@@ -347,7 +351,7 @@ test('the gate makes no network request', () => {
   assert.deepEqual(calls, [])
 })
 
-test('every case fails against a blinded gate', () => {
+register('every case fails against a blinded gate', () => {
   const red = CASES.filter(({ expected }) => expected > 0)
   const failures = runCases({ cases: red, gate: blindGate({ gate }) })
   assert.equal(failures.length, red.length)

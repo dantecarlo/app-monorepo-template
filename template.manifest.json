@@ -4,6 +4,7 @@
     ".agents/agent-context.json",
     ".agents/agents/**",
     ".agents/contracts/dependencies.json",
+    ".agents/contracts/gates.json",
     ".agents/contracts/mcp-servers.json",
     ".agents/contracts/write-guard.json",
     ".agents/hooks.json",
