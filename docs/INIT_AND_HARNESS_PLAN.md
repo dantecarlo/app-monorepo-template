@@ -113,13 +113,12 @@ Requested by the owner: everything below "Next" and "Pending", in that order (L6
 
 **In flight:** none.
 
-**Next:** F.11 and the rest of Stage F.
+**Next:** `verify:router-coverage` (F27), the rest of Step 3.2 part B, then Step 3.3.
 
 **Pending, in order:**
-- F.11 of Stage F, and the small follow-ups F43, F44, F49 and F50.
+- Step 3.2 part B: `verify:router-coverage` (F27). `gradedBy` and `sdd-steward` are done: every agent names its grading skill in `.agents/agent-context.json`, which `verify:agent-context` holds, and `sdd-steward` runs one SDD change in one context.
+- Step 3.3, then Stages 4 to 7; F.11 lands with Stage 6, whose executor its questions need.
 - F33, when the owner decides it.
-- Step 3.2 part B: `gradedBy`, `sdd-steward` and `verify:router-coverage` (F27).
-- Step 3.3, then Stages 4 to 7.
 
 **Waiting on Certifipago (F.10):**
 - Done there: #823 (the D-S2 revert), #824 (the strict `verify:test-location`, with 29 frozen tests) and #827 (the projector YAML and TOML fix).
@@ -417,10 +416,10 @@ master after these merges.
 | Merge policy as a setting (T17, decision 38)                                                                         | #759                | `delivery.mergePolicy` in the harness config; `/init` section 7 asks it                                                                                                     | T3 (P4), T6                      | open   |
 | Design review owed by changed paths (T15)                                                                            | #760                | the path-to-review-skill contract and the PR hook                                                                                                                           | T5 (PF)                          | open   |
 | SDD by size: `openspec/`, the `sdd` skill, `verify:specs`, `report:spec-drift`                                       | master `cda657025`  | the same machinery without the product specs; `c4ab3d9`–`72301ed`                                                                                                           | T1a                              | closed |
-| `sdd-steward`, the agent that runs a whole SDD change in one context                                                 | master `cda657025`  | the agent and its projections                                                                                                                                               | T2 (P2)                          | open   |
+| `sdd-steward`, the agent that runs a whole SDD change in one context                                                 | master `cda657025`  | the agent and its projections                                                                                                                                               | T2 (P2)                          | closed: `.agents/agents/sdd-steward.agent.md` and its projections (Step 3.2 part B) |
 | Vendored-skill overlays (`.agents/skill-overlays/`)                                                                  | #770                | overlays for the template's vendored skills                                                                                                                                 | T4 (PS)                          | open   |
 | Security skills and their evals; `security-sweep` triages through `fp-check`                                         | #767, #774          | the same skills without product rows                                                                                                                                        | T4 (PS)                          | open   |
-| Eval fixtures outside the portable skills, blind eval worktrees, agents name the skill that grades them (`gradedBy`) | master `cda657025`  | the same in the eval harness and the agent context                                                                                                                          | T2, T4                           | open   |
+| Eval fixtures outside the portable skills, blind eval worktrees, agents name the skill that grades them (`gradedBy`) | master `cda657025`  | the same in the eval harness and the agent context                                                                                                                          | T2, T4                           | open: `gradedBy` landed in `.agents/agent-context.json` with `verify:agent-context` (Step 3.2 part B); the eval harness, its fixtures and blind worktrees wait for Stage 5 |
 | Workflow-hardening gate, `no-dynamic-inner-html` lint rule, `.env.<name>` ignore                                     | master `cda657025`  | the same gate, rule and ignore line                                                                                                                                         | T3                               | open   |
 | Knowledge-routing hook (PD1 T19)                                                                                     | #779 (`7c95e77e4`)  | the hook and its contract                                                                                                                                                   | T4, T5                           | open   |
 | Package-private `#src` aliases                                                                                       | #792 (`4784c939b`)  | the same aliases in the five template packages                                                                                                                              | T1c                              | open   |
