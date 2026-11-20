@@ -232,157 +232,103 @@ const tree = ({ declared }) => ({
     : { [CONTEXT_FILE]: JSON.stringify({ agents: declared }) })
 })
 
+// Each fixture and the one kind of finding it must report.
+const KINDS = [
+  [
+    {
+      agents: [SCRIBE],
+      declared: withScout({ entry: { gradedBy: [MISSING_SKILL] } })
+    },
+    FINDING_KIND.stale
+  ],
+  [
+    { declared: scoutWith({ fields: { gradedBy: [MISSING_SKILL] } }) },
+    FINDING_KIND.unknownSkill
+  ],
+  [
+    {
+      declared: null,
+      problems: [{ path: CONTEXT_FILE, reason: 'does not parse' }]
+    },
+    FINDING_KIND.unreadable
+  ],
+  [{ declared: { [SCRIBE]: DECLARED[SCRIBE] } }, FINDING_KIND.undeclared],
+  [
+    { declared: withScout({ entry: { writes: false } }) },
+    FINDING_KIND.ungraded
+  ],
+  [
+    { declared: scoutWith({ fields: { gradedBy: [] } }) },
+    FINDING_KIND.shape
+  ],
+  [
+    { declared: withScout({ entry: { gradedBy: [SCOUTING] } }) },
+    FINDING_KIND.undeclaredWrites
+  ],
+  [
+    { declared: scribeWith({ fields: { surfaces: ['docs/'] } }) },
+    FINDING_KIND.unknownKey
+  ],
+  [
+    { declared: scoutWith({ fields: { surface: ['docs/qa/'] } }) },
+    FINDING_KIND.shape
+  ]
+]
+
+// Each declaration and the exact details it must report.
+const DETAILS = [
+  [
+    withScout({ entry: { gradedBy: [SCOUTING] } }),
+    'scout: says nothing of what it may write; add writes: true or ' +
+      'writes: false'
+  ],
+  [
+    scoutWith({ fields: { writes: 'no' } }),
+    'scout: writes must be true or false'
+  ],
+  [
+    scoutWith({ fields: { surface: ['docs/qa/'] } }),
+    'scout: a surface holds a writer to folders, and writes: false ' +
+      'writes nowhere; drop surface or set writes: true'
+  ],
+  [
+    scribeWith({ fields: { surface: [] } }),
+    'scribe: surface must be a non-empty list of repository-relative ' +
+      'folders'
+  ],
+  [
+    scribeWith({ fields: { surface: ['../out'] } }),
+    'scribe: surface folder "../out" must be relative to the repository ' +
+      'root, with no ".." and no drive'
+  ],
+  [
+    scribeWith({ fields: { surfaces: ['docs/'] } }),
+    'scribe: surfaces is no key of an agent-context entry; the keys are ' +
+      'gradedBy, surface and writes'
+  ]
+]
+
 const checks = [
   {
     name: 'each branch reports its own kind, and a stale entry is not graded',
-    run: () => {
-      assert.deepEqual(
-        kindsOf({
-          findings: gate.run(
-            context({
-              agents: [SCRIBE],
-              declared: withScout({ entry: { gradedBy: [MISSING_SKILL] } })
-            })()
-          )
-        }),
-        [FINDING_KIND.stale]
+    run: () =>
+      KINDS.forEach(([fixture, kind]) =>
+        assert.deepEqual(
+          kindsOf({ findings: gate.run(context(fixture)()) }),
+          [kind],
+          JSON.stringify(fixture)
+        )
       )
-      assert.deepEqual(
-        kindsOf({
-          findings: gate.run(
-            context({
-              declared: scoutWith({
-                fields: { gradedBy: [MISSING_SKILL] }
-              })
-            })()
-          )
-        }),
-        [FINDING_KIND.unknownSkill]
-      )
-      assert.deepEqual(
-        kindsOf({
-          findings: gate.run(
-            context({
-              declared: null,
-              problems: [{ path: CONTEXT_FILE, reason: 'does not parse' }]
-            })()
-          )
-        }),
-        [FINDING_KIND.unreadable]
-      )
-      assert.deepEqual(
-        kindsOf({
-          findings: gate.run(
-            context({ declared: { [SCRIBE]: DECLARED[SCRIBE] } })()
-          )
-        }),
-        [FINDING_KIND.undeclared]
-      )
-      assert.deepEqual(
-        kindsOf({
-          findings: gate.run(
-            context({
-              declared: withScout({ entry: { writes: false } })
-            })()
-          )
-        }),
-        [FINDING_KIND.ungraded]
-      )
-      assert.deepEqual(
-        kindsOf({
-          findings: gate.run(
-            context({
-              declared: scoutWith({ fields: { gradedBy: [] } })
-            })()
-          )
-        }),
-        [FINDING_KIND.shape]
-      )
-      assert.deepEqual(
-        kindsOf({
-          findings: gate.run(
-            context({
-              declared: withScout({ entry: { gradedBy: [SCOUTING] } })
-            })()
-          )
-        }),
-        [FINDING_KIND.undeclaredWrites]
-      )
-      assert.deepEqual(
-        kindsOf({
-          findings: gate.run(
-            context({
-              declared: scribeWith({ fields: { surfaces: ['docs/'] } })
-            })()
-          )
-        }),
-        [FINDING_KIND.unknownKey]
-      )
-      assert.deepEqual(
-        kindsOf({
-          findings: gate.run(
-            context({
-              declared: scoutWith({ fields: { surface: ['docs/qa/'] } })
-            })()
-          )
-        }),
-        [FINDING_KIND.shape]
-      )
-    }
   },
   {
     name: 'a finding names the agent and what its writes or surface lacks',
-    run: () => {
-      const detailsOf = ({ declared }) =>
-        gate.run(context({ declared })()).map(({ detail }) => detail)
-      assert.deepEqual(
-        detailsOf({
-          declared: withScout({ entry: { gradedBy: [SCOUTING] } })
-        }),
-        [
-          'scout: says nothing of what it may write; add writes: true ' +
-            'or writes: false'
-        ]
+    run: () =>
+      DETAILS.forEach(([declared, detail]) =>
+        assert.deepEqual(
+          gate.run(context({ declared })()).map((found) => found.detail),
+          [detail]
+        )
       )
-      assert.deepEqual(
-        detailsOf({ declared: scoutWith({ fields: { writes: 'no' } }) }),
-        ['scout: writes must be true or false']
-      )
-      assert.deepEqual(
-        detailsOf({
-          declared: scoutWith({ fields: { surface: ['docs/qa/'] } })
-        }),
-        [
-          'scout: a surface holds a writer to folders, and writes: false ' +
-            'writes nowhere; drop surface or set writes: true'
-        ]
-      )
-      assert.deepEqual(
-        detailsOf({ declared: scribeWith({ fields: { surface: [] } }) }),
-        [
-          'scribe: surface must be a non-empty list of repository-relative ' +
-            'folders'
-        ]
-      )
-      assert.deepEqual(
-        detailsOf({
-          declared: scribeWith({ fields: { surface: ['../out'] } })
-        }),
-        [
-          'scribe: surface folder "../out" must be relative to the ' +
-            'repository root, with no ".." and no drive'
-        ]
-      )
-      assert.deepEqual(
-        detailsOf({
-          declared: scribeWith({ fields: { surfaces: ['docs/'] } })
-        }),
-        [
-          'scribe: surfaces is no key of an agent-context entry; the keys ' +
-            'are gradedBy, surface and writes'
-        ]
-      )
-    }
   },
   {
     name: 'a finding names the agent and the skill that does not exist',
