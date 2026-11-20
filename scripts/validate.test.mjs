@@ -564,13 +564,17 @@ const checks = [
     }
   },
   {
-    name: 'the validate chain runs the steps of the registry, in order',
+    name: 'pnpm validate runs the registry, and the registry suite is one of its steps',
     run: () => {
       const { registry, scripts } = repository()
-      assert.deepEqual(
-        scripts.validate.split(' && '),
-        planRun({ profile: STANDARD, registry }).map(
-          ({ command }) => command
+      assert.equal(scripts.validate, 'node scripts/validate.mjs')
+      assert.equal(
+        scripts['validate:test'],
+        'node --test scripts/validate.test.mjs'
+      )
+      assert.ok(
+        ids({ steps: planRun({ profile: STANDARD, registry }) }).includes(
+          'validate:test'
         )
       )
     }

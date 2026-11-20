@@ -317,24 +317,32 @@ CASES.forEach(({ context, expected, name, pattern }) =>
   })
 )
 
-register('the gate exits 1 and names the server the block is missing', () => {
-  const result = runGate({ catalog: [EXPO, METRO, NEXT] })
-  assert.equal(result.status, FAILED, result.stderr)
-  assert.match(result.stderr, /verify-mcp-docs: 1 problem/u)
-  assert.match(
-    result.stderr,
-    /metro is in the catalog but not in the block/u
-  )
-})
+register(
+  'the gate exits 1 and names the server the block is missing',
+  () => {
+    const result = runGate({ catalog: [EXPO, METRO, NEXT] })
+    assert.equal(result.status, FAILED, result.stderr)
+    assert.match(result.stderr, /verify-mcp-docs: 1 problem/u)
+    assert.match(
+      result.stderr,
+      /metro is in the catalog but not in the block/u
+    )
+  }
+)
 
-register('the gate exits 0 over a block the updater wrote and states what it judged', () => {
-  const result = runGate({ doc: docOf({ rows: [EXPO, NEXT].map(rowOf) }) })
-  assert.equal(result.status, PASSED, result.stderr)
-  assert.match(
-    result.stdout,
-    /verify-mcp-docs: PASS — 2 server\(s\) of the catalog and \.mcp\.json against 2 row\(s\) of the generated block/u
-  )
-})
+register(
+  'the gate exits 0 over a block the updater wrote and states what it judged',
+  () => {
+    const result = runGate({
+      doc: docOf({ rows: [EXPO, NEXT].map(rowOf) })
+    })
+    assert.equal(result.status, PASSED, result.stderr)
+    assert.match(
+      result.stdout,
+      /verify-mcp-docs: PASS — 2 server\(s\) of the catalog and \.mcp\.json against 2 row\(s\) of the generated block/u
+    )
+  }
+)
 
 register('the gate makes no network request', () => {
   const realFetch = globalThis.fetch

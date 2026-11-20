@@ -1353,5 +1353,9 @@ test('the root package runs this suite from validate', () => {
     scripts['worktrees:prune:test'],
     'node --test scripts/prune-worktrees.test.mjs'
   )
-  assert.ok(scripts.validate.includes('pnpm worktrees:prune:test'))
+  // validate runs the gate registry, so the suite is one of its steps.
+  const { steps } = JSON.parse(
+    readFileSync(join(HERE, '..', '.agents/contracts/gates.json'), 'utf8')
+  )
+  assert.ok(steps.some(({ id }) => id === 'worktrees:prune:test'))
 })
