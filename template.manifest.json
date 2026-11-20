@@ -305,6 +305,12 @@
           "file": "apps/mobile/package.json",
           "name": "@supabase/supabase-js",
           "scope": "dependencies"
+        },
+        {
+          "verb": "patch-json",
+          "file": "knip.json",
+          "op": "unset",
+          "path": "ignoreBinaries"
         }
       ]
     },
