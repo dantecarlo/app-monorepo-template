@@ -302,10 +302,196 @@ export const CASES = [
     }),
     expected: 1,
     name: 'a schema default its own values refuse is refused'
+  },
+  {
+    context: contextOf({
+      config: edited({
+        edit: ({ copy }) => {
+          copy.delivery.x = 'low-risk'
+        },
+        value: HEALTHY
+      }),
+      schema: edited({
+        edit: ({ copy }) => {
+          copy.properties.delivery.additionalProperties = {
+            enum: ['manual']
+          }
+        },
+        value: SCHEMA
+      })
+    }),
+    expected: 1,
+    name: 'an additionalProperties schema the gate does not apply is refused'
+  },
+  {
+    context: contextOf({
+      config: { ...HEALTHY, x: 'low-risk' },
+      schema: { ...SCHEMA, additionalProperties: { type: 'string' } }
+    }),
+    expected: 1,
+    name: 'an additionalProperties type at the root, which the gate does not apply, is refused'
+  },
+  {
+    context: contextOf({
+      config: { ...HEALTHY, x: 1 },
+      schema: { ...SCHEMA, additionalProperties: { const: 1 } }
+    }),
+    expected: 1,
+    name: 'an additionalProperties const at the root, which the gate does not apply, is refused'
+  },
+  {
+    context: schemaWith({
+      edit: ({ copy }) => {
+        delete copy.properties.delivery.additionalProperties
+      }
+    }),
+    expected: 1,
+    name: 'an object the schema leaves open to undeclared keys is refused'
+  },
+  {
+    context: schemaWith({
+      edit: ({ copy }) => {
+        copy.additionalProperties = true
+      }
+    }),
+    expected: 1,
+    name: 'an object the schema opens with additionalProperties true is refused'
+  },
+  {
+    context: contextOf({
+      configText: textOf({ value: HEALTHY }).replace(
+        '"mergePolicy": "manual"',
+        '"mergePolicy": "low-risk",\n    "mergePolicy": "manual"'
+      )
+    }),
+    expected: 1,
+    name: 'a merge policy given twice is refused, not read as its last value'
+  },
+  {
+    context: contextOf({
+      configText: textOf({ value: HEALTHY }).replace(
+        '"mergePolicy": "manual"',
+        '"mergePolicy": "low-risk",\n    "merge\\u0050olicy": "manual"'
+      )
+    }),
+    expected: 1,
+    name: 'a key given twice under two spellings of one name is refused'
+  },
+  {
+    context: contextOf({
+      configText: textOf({ value: HEALTHY }).replace(
+        '"workflow": {',
+        '"workflow": {\n    "mode": "odd"\n  },\n  "workflow": {'
+      )
+    }),
+    expected: 1,
+    name: 'a section given twice is refused'
+  },
+  {
+    context: contextOf({
+      schemaText: textOf({ value: SCHEMA }).replace(
+        '"mergePolicy": {',
+        '"mergePolicy": {\n "enum": ["manual"],'
+      )
+    }),
+    expected: 1,
+    name: 'a key the schema gives twice is refused'
+  },
+  {
+    context: configWith({
+      edit: ({ copy }) => {
+        copy.$comment = 'The file.'
+        copy.delivery.$comment = 'The section.'
+      }
+    }),
+    expected: 0,
+    name: 'a key given once in each of two objects is no duplicate'
   }
 ]
 
 const checks = [
+  {
+    name: 'an additionalProperties schema is named as a value the gate cannot read',
+    run: () => {
+      const findings = findingsOf({
+        context: schemaWith({
+          edit: ({ copy }) => {
+            copy.properties.delivery.additionalProperties = {
+              enum: ['manual']
+            }
+          }
+        })
+      })
+      assert.equal(findings.length, 1, JSON.stringify(findings))
+      const [finding] = findings
+      assert.equal(finding.kind, FINDING_KIND.keyword)
+      assert.equal(finding.path, HARNESS_CONFIG_SCHEMA)
+      assert.match(
+        finding.detail,
+        /#\/properties\/delivery gives `additionalProperties` a value verify-harness-config cannot read/u
+      )
+    }
+  },
+  {
+    name: 'an open object is named with where it sits and what it owes',
+    run: () => {
+      const findings = findingsOf({
+        context: schemaWith({
+          edit: ({ copy }) => {
+            delete copy.properties.delivery.additionalProperties
+          }
+        })
+      })
+      assert.equal(findings.length, 1, JSON.stringify(findings))
+      const [finding] = findings
+      assert.equal(finding.kind, FINDING_KIND.open)
+      assert.equal(finding.path, HARNESS_CONFIG_SCHEMA)
+      assert.match(
+        finding.detail,
+        /#\/properties\/delivery .*`"additionalProperties": false`/u
+      )
+    }
+  },
+  {
+    name: 'a duplicate key is named by its path, and the file is judged no further',
+    run: () => {
+      const findings = findingsOf({
+        context: contextOf({
+          configText: textOf({ value: HEALTHY }).replace(
+            '"mergePolicy": "manual"',
+            '"mergePolicy": "low-risk",\n    "mergePolicy": "auto"'
+          )
+        })
+      })
+      assert.equal(findings.length, 1, JSON.stringify(findings))
+      const [finding] = findings
+      assert.equal(finding.kind, FINDING_KIND.duplicate)
+      assert.equal(finding.path, HARNESS_CONFIG)
+      assert.match(
+        finding.detail,
+        /`delivery\.mergePolicy` is given more than once/u
+      )
+    }
+  },
+  {
+    name: 'a duplicate key in the schema is named by its path in the schema',
+    run: () => {
+      const [finding] = findingsOf({
+        context: contextOf({
+          schemaText: textOf({ value: SCHEMA }).replace(
+            '"mergePolicy": {',
+            '"mergePolicy": {\n "enum": ["manual"],'
+          )
+        })
+      })
+      assert.equal(finding.kind, FINDING_KIND.duplicate)
+      assert.equal(finding.path, HARNESS_CONFIG_SCHEMA)
+      assert.match(
+        finding.detail,
+        /`properties\.delivery\.properties\.mergePolicy\.enum` is given more than once/u
+      )
+    }
+  },
   {
     name: 'a finding names the file, the setting and the values it allows',
     run: () => {

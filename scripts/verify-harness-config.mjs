@@ -8,14 +8,17 @@
 // with its database-test mode. .agents/contracts/harness-config.schema.json
 // is their contract, and this gate holds the file to it:
 //
-//   - both files exist and parse; a file that is gone is a finding of its
-//     own, since a walk that skips an absent file reports green over it;
+//   - both files exist and parse, and each gives a key once in an object; a
+//     file that is gone is a finding of its own, since a walk that skips an
+//     absent file reports green over it, and so is a repeated key, which
+//     JSON.parse reads as its last value while a reader may act on the first;
 //   - every key the file holds is one the schema declares, every value one
 //     it allows, and every setting it marks required is there, the
 //     database-test mode under a supabase backend only;
 //   - the schema uses only the keywords this gate reads, each with a value
-//     it can read, and every default is one of its own values, so a rule
-//     written in the schema is never skipped in silence.
+//     it can read, closes every object it declares with
+//     `additionalProperties: false`, and every default is one of its own
+//     values, so a rule written in the schema is never skipped in silence.
 //
 // The gate validates BY the schema rather than restating its rules: a new
 // setting or value is a change to the schema alone. What the schema cannot
@@ -45,9 +48,11 @@ export const HARNESS_CONFIG_SCHEMA =
 export const MERGE_POLICY_KEY = 'delivery.mergePolicy'
 
 export const FINDING_KIND = Object.freeze({
+  duplicate: 'duplicate-key',
   forbidden: 'forbidden',
   keyword: 'keyword',
   missing: 'missing',
+  open: 'open-object',
   required: 'required',
   type: 'type',
   unknownKey: 'unknown-key',
@@ -87,6 +92,7 @@ const ASSERTIONS = [
 const KEYWORDS = [...ANNOTATIONS, ...ASSERTIONS]
 const BRANCHES = ['if', 'then', 'else']
 const ROOT_POINTER = '#'
+const CLOSED = '"additionalProperties": false'
 
 const isRecord = ({ value }) =>
   value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -143,10 +149,11 @@ const judgeKeywordValues = ({ pointer, schema }) => {
         schema.required.every((value) => isText({ value }))
     ],
     ['enum', Array.isArray(schema.enum)],
+    // A schema here would be a rule on every undeclared key, which this gate
+    // does not apply; only true or false is read, so none passes in silence.
     [
       'additionalProperties',
-      typeof schema.additionalProperties === 'boolean' ||
-        isRecord({ value: schema.additionalProperties })
+      typeof schema.additionalProperties === 'boolean'
     ]
   ].filter(
     ([keyword, readable]) => Object.hasOwn(schema, keyword) && !readable
@@ -161,7 +168,30 @@ const judgeKeywordValues = ({ pointer, schema }) => {
   )
 }
 
-const judgeSchema = ({ pointer, schema }) => {
+// An object the schema declares, by its type or its properties, lets no
+// undeclared key through, so "every key is one the schema declares" holds of
+// the whole file. A conditional branch refines the object it sits on, whose
+// own `additionalProperties: false` holds its keys, so a branch owes none.
+const judgeClosed = ({ branch, pointer, schema }) => {
+  const declaresObject =
+    schema.type === 'object' || Object.hasOwn(schema, 'properties')
+  const open =
+    !Object.hasOwn(schema, 'additionalProperties') ||
+    schema.additionalProperties === true
+  return branch || !declaresObject || !open
+    ? []
+    : [
+        schemaFinding({
+          detail:
+            `${pointer} is an object that lets through a key it does not ` +
+            `declare; every object of the schema sets ${codeOf({ text: CLOSED })}, ` +
+            'so every key the config holds is one it declares',
+          kind: FINDING_KIND.open
+        })
+      ]
+}
+
+const judgeSchema = ({ branch = false, pointer, schema }) => {
   if (typeof schema === 'boolean') return []
   if (!isRecord({ value: schema })) {
     return [
@@ -194,6 +224,8 @@ const judgeSchema = ({ pointer, schema }) => {
         ]
       : []
   const unreadable = judgeKeywordValues({ pointer, schema })
+  const closed =
+    unreadable.length === 0 ? judgeClosed({ branch, pointer, schema }) : []
   const outsideItsValues =
     Object.hasOwn(schema, 'default') &&
     Array.isArray(schema.enum) &&
@@ -210,6 +242,7 @@ const judgeSchema = ({ pointer, schema }) => {
   const properties = isRecord({ value: schema.properties })
     ? Object.entries(schema.properties).flatMap(([key, child]) =>
         judgeSchema({
+          branch,
           pointer: `${pointer}/properties/${key}`,
           schema: child
         })
@@ -219,24 +252,19 @@ const judgeSchema = ({ pointer, schema }) => {
     Object.hasOwn(schema, keyword)
   ).flatMap((keyword) =>
     judgeSchema({
+      branch: true,
       pointer: `${pointer}/${keyword}`,
       schema: schema[keyword]
     })
   )
-  const additional = isRecord({ value: schema.additionalProperties })
-    ? judgeSchema({
-        pointer: `${pointer}/additionalProperties`,
-        schema: schema.additionalProperties
-      })
-    : []
   return [
     ...unknown,
     ...type,
     ...unreadable,
+    ...closed,
     ...outsideItsValues,
     ...properties,
-    ...branches,
-    ...additional
+    ...branches
   ]
 }
 
@@ -360,9 +388,103 @@ const judgeValue = ({ path, reason, schema, value }) => {
   ]
 }
 
+// --- Repeated keys -----------------------------------------------------------
+
+// JSON whitespace, the characters a number or a literal ends at, and the
+// width of an escape's first two characters, which the scan steps over.
+const JSON_SPACE = [' ', '\t', '\n', '\r']
+const VALUE_END = [',', ']', '}']
+const QUOTE = '"'
+const ESCAPE = '\\'
+const ESCAPE_WIDTH = 2
+
+// Every key path a JSON text gives more than once in one object, once each.
+// JSON.parse keeps the last value of a repeated key, while a reader of the
+// text may act on the first, so a file that repeats one says two things. The
+// text has parsed already, so the scan reads only its structure, and it
+// compares each key decoded: `"a"` and `"a"` are one key to JSON.parse.
+export const repeatedKeysOf = ({ text }) => {
+  const cursor = { at: 0 }
+  const found = []
+  const peek = () => text[cursor.at]
+  const skipSpace = () => {
+    while (JSON_SPACE.includes(peek())) cursor.at += 1
+  }
+  const readString = () => {
+    const start = cursor.at
+    cursor.at += 1
+    while (peek() !== QUOTE)
+      cursor.at += peek() === ESCAPE ? ESCAPE_WIDTH : 1
+    cursor.at += 1
+    return JSON.parse(text.slice(start, cursor.at))
+  }
+  const skipScalar = () => {
+    while (
+      cursor.at < text.length &&
+      !VALUE_END.includes(peek()) &&
+      !JSON_SPACE.includes(peek())
+    ) {
+      cursor.at += 1
+    }
+  }
+  // The members of the object or list the cursor opens, to its close.
+  const readMembers = ({ close, member }) => {
+    cursor.at += 1
+    skipSpace()
+    if (peek() === close) {
+      cursor.at += 1
+      return
+    }
+    for (let index = 0; ; index += 1) {
+      member({ index })
+      skipSpace()
+      const separator = peek()
+      cursor.at += 1
+      if (separator === close) return
+    }
+  }
+  const readObject = ({ path }) => {
+    const seen = new Set()
+    const repeated = new Set()
+    readMembers({
+      close: '}',
+      member: () => {
+        skipSpace()
+        const key = readString()
+        if (seen.has(key) && !repeated.has(key)) {
+          repeated.add(key)
+          found.push([...path, key])
+        }
+        seen.add(key)
+        skipSpace()
+        cursor.at += 1
+        readValue({ path: [...path, key] })
+      }
+    })
+  }
+  const readValue = ({ path }) => {
+    skipSpace()
+    if (peek() === '{') {
+      readObject({ path })
+    } else if (peek() === '[') {
+      readMembers({
+        close: ']',
+        member: ({ index }) =>
+          readValue({ path: [...path, String(index)] })
+      })
+    } else if (peek() === QUOTE) {
+      readString()
+    } else {
+      skipScalar()
+    }
+  }
+  readValue({ path: [] })
+  return found
+}
+
 // --- Reading -----------------------------------------------------------------
 
-// A file that is gone or does not parse, named on its own.
+// A file that is gone, does not parse or gives a key twice, named on its own.
 const parse = ({ file }) => {
   if (file.text === null) {
     return {
@@ -376,7 +498,20 @@ const parse = ({ file }) => {
     }
   }
   try {
-    return { problems: [], value: JSON.parse(file.text) }
+    const value = JSON.parse(file.text)
+    return {
+      problems: repeatedKeysOf({ text: file.text }).map((path) =>
+        finding({
+          detail:
+            `${settingOf({ path })} is given more than once: JSON.parse ` +
+            'keeps its last value while a reader may act on the first, so ' +
+            'the file gives each key once',
+          kind: FINDING_KIND.duplicate,
+          path: file.path
+        })
+      ),
+      value
+    }
   } catch (error) {
     return {
       problems: [
@@ -421,21 +556,25 @@ export const settingsOf = ({ schema }) =>
 
 export const gate = defineGate({
   claims:
-    `${HARNESS_CONFIG} and ${HARNESS_CONFIG_SCHEMA} exist and parse; ` +
-    'every key the config holds is one the schema declares, every value ' +
-    'one it allows, every setting it marks required is there, and the ' +
-    'database-test mode sits under a supabase backend only; the schema ' +
-    'uses only the keywords this gate reads, each with a value it can ' +
-    'read, and every default is one of its own values.',
+    `${HARNESS_CONFIG} and ${HARNESS_CONFIG_SCHEMA} exist and parse, and ` +
+    'neither gives a key twice in one object; every key the config holds ' +
+    'is one the schema declares, every value one it allows, every setting ' +
+    'it marks required is there, and the database-test mode sits under a ' +
+    'supabase backend only; the schema uses only the keywords this gate ' +
+    'reads, each with a value it can read (additionalProperties true or ' +
+    'false, never a schema), sets additionalProperties false on every ' +
+    'object it declares outside a conditional branch, and every default ' +
+    'is one of its own values.',
   id: 'verify-harness-config',
   notCovered:
     'whether a setting is the right one for the project, which its owner ' +
     'decides; whether the tree agrees with the file (a supabase backend ' +
     'with no packages/supabase, an sdd workflow with no openspec/); ' +
     'whether anything reads a setting: the ticket skills read ' +
-    `${MERGE_POLICY_KEY} as prose (verify-skills proves they name it), and ` +
-    'nothing reads workflow.mode or the backend yet; and the JSON Schema ' +
-    'keywords this gate refuses rather than reads.',
+    `${MERGE_POLICY_KEY} as prose, from the default branch's copy ` +
+    '(verify-skills proves they say so), and nothing reads workflow.mode ' +
+    'or the backend yet; and the JSON Schema keywords this gate refuses ' +
+    'rather than reads.',
   run: judge
 })
 
