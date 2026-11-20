@@ -149,8 +149,22 @@ const asGlobs = (value) =>
     ? value.filter((glob) => typeof glob === 'string')
     : []
 
-// `{ entries, testInfrastructure }`: the entries by name. A registry that
-// cannot be read indexes nothing, so every package is unregistered.
+// The ids of the migrations the registry declares open. A registry without
+// `openMigrations`, or one that cannot be read, declares none.
+const openMigrationIdsOf = ({ registry }) => {
+  const declared = Array.isArray(registry?.openMigrations)
+    ? registry.openMigrations
+    : []
+  return new Set(
+    declared
+      .map((migration) => migration?.id)
+      .filter((id) => typeof id === 'string')
+  )
+}
+
+// `{ entries, openMigrations, testInfrastructure }`: the entries by name and
+// the ids of the open migrations. A registry that cannot be read indexes
+// nothing, so every package is unregistered and no migration is open.
 export const indexRegistry = ({ registry }) => {
   const entries = new Map()
   const packages = Array.isArray(registry?.packages)
@@ -163,6 +177,7 @@ export const indexRegistry = ({ registry }) => {
     })
   return {
     entries,
+    openMigrations: openMigrationIdsOf({ registry }),
     testInfrastructure: asGlobs(registry?.testInfrastructure)
   }
 }

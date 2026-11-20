@@ -666,5 +666,6 @@
       "owner": "mobile-expo",
       "seam": []
     }
-  ]
+  ],
+  "openMigrations": []
 }

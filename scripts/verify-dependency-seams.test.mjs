@@ -43,6 +43,11 @@ const SCHEMA = 'apps/web/src/validation/example.schema.ts'
 const METRO = 'apps/mobile/metro.config.js'
 
 const UNIT = 'F.8 unit 2: the i18n seam takes this import.'
+const MIGRATION = 'f8-unit-2'
+const migration = (id = MIGRATION) => ({
+  id,
+  note: 'F.8 unit 2: the translators move behind lib/i18n.'
+})
 
 const core = (name) => ({ category: 'core', name })
 const zod = (seam = ['apps/*/src/validation/**']) => ({
@@ -94,10 +99,13 @@ const entry = ({ path = SCREEN, reason = UNIT, name = 'zod' } = {}) => ({
 const text = (value) =>
   typeof value === 'string' ? value : JSON.stringify(value)
 
+// `open`, when given, is the registry's openMigrations; a registry without
+// the field declares none.
 const treeOf = ({
   allowlist = [],
   entries = BASE_ENTRIES,
   files = {},
+  open,
   registry
 }) => ({
   ...BASE_FILES,
@@ -106,7 +114,8 @@ const treeOf = ({
   [REGISTRY]: text(
     registry ?? {
       packages: entries,
-      testInfrastructure: ['{apps,packages}/*/src/test/**']
+      testInfrastructure: ['{apps,packages}/*/src/test/**'],
+      ...(open === undefined ? {} : { openMigrations: open })
     }
   )
 })
@@ -391,12 +400,81 @@ export const CASES = [
     context: walk({ allowlist: '{ "path": "x" }' }),
     expected: 1,
     name: 'an allowlist that is not a JSON array is refused'
+  },
+  {
+    context: walk({ open: [] }),
+    expected: 0,
+    name: 'a registry that declares no open migration passes'
+  },
+  {
+    context: walk({ open: [migration()] }),
+    expected: 1,
+    name: 'a declared migration no allowlist entry names is stale'
   }
 ]
 
 const findingsOf = (tree) => gate.run(walk(tree)())
 
+// Registries whose openMigrations break their shape, with what the refusal
+// names.
+const MALFORMED_DECLARATIONS = [
+  { open: MIGRATION, said: /"openMigrations" is not an array/u },
+  { open: [{ note: 'x' }], said: /open migration 0 has no id/u },
+  {
+    open: [{ id: MIGRATION }],
+    said: /open migration f8-unit-2 has no note/u
+  },
+  {
+    open: [{ ...migration(), status: 'open' }],
+    said: /open migration f8-unit-2 has keys a migration does not define: status/u
+  },
+  {
+    open: [migration(), migration()],
+    said: /open migration f8-unit-2 is declared twice/u
+  }
+]
+
 const checks = [
+  {
+    name: 'a malformed open-migration declaration is refused, naming it',
+    run: () => {
+      MALFORMED_DECLARATIONS.forEach(({ open, said }) => {
+        const findings = findingsOf({ files: ZOD_IN_SCREEN, open })
+        assert.equal(findings.length, 1, JSON.stringify(findings))
+        assert.equal(findings[0].kind, FINDING_KIND.registryMalformed)
+        assert.match(findings[0].detail, said)
+      })
+    }
+  },
+  {
+    name: 'a stale migration names its id and the remedy',
+    run: () => {
+      const findings = findingsOf({ open: [migration()] })
+      assert.equal(findings.length, 1, JSON.stringify(findings))
+      assert.equal(findings[0].kind, FINDING_KIND.migrationStale)
+      assert.match(
+        findings[0].detail,
+        /open migration f8-unit-2 is named by no entry of eslint-dependency-seam-allowlist\.json/u
+      )
+      assert.match(
+        findings[0].detail,
+        /close it by removing it from "openMigrations"/u
+      )
+    }
+  },
+  {
+    name: 'no migration is called stale while the allowlist cannot be read',
+    run: () => {
+      const findings = findingsOf({
+        allowlist: '{ "path": "x" }',
+        open: [migration()]
+      })
+      assert.deepEqual(
+        findings.map(({ kind }) => kind),
+        [FINDING_KIND.allowlistMalformed]
+      )
+    }
+  },
   {
     name: 'an entry whose owner is not text is malformed',
     run: () => {

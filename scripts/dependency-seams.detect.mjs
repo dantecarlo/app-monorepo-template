@@ -27,6 +27,7 @@ export const FINDING_KIND = Object.freeze({
   allowlistMalformed: 'allowlist-malformed',
   allowlistStale: 'allowlist-stale',
   allowlistUnlisted: 'allowlist-unlisted',
+  migrationStale: 'migration-stale',
   registryMalformed: 'registry-malformed',
   staleEntry: 'stale-entry',
   unlinted: 'unlinted',
@@ -46,9 +47,11 @@ export const DEPENDENCY_FIELDS = Object.freeze([
 
 const REGISTRY_KEYS = new Set([
   '$comment',
+  'openMigrations',
   'packages',
   'testInfrastructure'
 ])
+const MIGRATION_KEYS = new Set(['id', 'note'])
 const ENTRY_KEYS = new Set([
   'category',
   'name',
@@ -141,6 +144,43 @@ const entryProblem = ({ entry }) => {
 const labelOf = ({ entry, index }) =>
   isText(entry?.name) ? entry.name : `entry ${index}`
 
+const migrationProblem = ({ migration }) => {
+  if (!isObject(migration)) return 'is not an object'
+  const extra = unknownKeys({ allowed: MIGRATION_KEYS, value: migration })
+  if (extra.length > 0) {
+    return `has keys a migration does not define: ${extra.join(', ')}`
+  }
+  if (!isText(migration.id)) return 'has no id'
+  if (!isText(migration.note)) {
+    return 'has no note: say what the migration moves'
+  }
+  return null
+}
+
+// The open migrations, `{ id, note }` each. The field is optional: a
+// registry without it declares none.
+const openMigrationFindings = ({ registry }) => {
+  if (!Object.hasOwn(registry, 'openMigrations')) return []
+  if (!Array.isArray(registry.openMigrations)) {
+    return [
+      malformed(
+        '"openMigrations" is not an array: list the open migrations as { id, note }, or [] for none'
+      )
+    ]
+  }
+  const seen = new Set()
+  return registry.openMigrations.flatMap((migration, index) => {
+    const label = isText(migration?.id) ? migration.id : index
+    const problem = migrationProblem({ migration })
+    if (problem) return [malformed(`open migration ${label} ${problem}`)]
+    if (seen.has(migration.id)) {
+      return [malformed(`open migration ${label} is declared twice`)]
+    }
+    seen.add(migration.id)
+    return []
+  })
+}
+
 export const registryFindings = ({ registry }) => {
   const extra = unknownKeys({ allowed: REGISTRY_KEYS, value: registry })
   const infrastructure = globsProblem({
@@ -153,6 +193,7 @@ export const registryFindings = ({ registry }) => {
       ? [malformed(`has keys it does not define: ${extra.join(', ')}`)]
       : []),
     ...(infrastructure ? [malformed(infrastructure)] : []),
+    ...openMigrationFindings({ registry }),
     ...registry.packages.flatMap((entry, index) => {
       const problem = entryProblem({ entry })
       if (problem) {
@@ -361,6 +402,23 @@ export const allowlistFindings = ({ allowlist, violations }) => {
   return [...shape, ...stale, ...unlisted]
 }
 
+// A migration is done once no entry names it, so its declaration is stale.
+// An allowlist that cannot be read names nothing anyone can see, so no
+// migration is called stale until it reads.
+export const staleMigrationFindings = ({ allowlist, index }) => {
+  if (allowlistUnreadable({ allowlist })) return []
+  const named = new Set(allowlist.map((entry) => entry?.migration))
+  return [...index.openMigrations]
+    .filter((id) => !named.has(id))
+    .map((id) => ({
+      detail:
+        `${DEPENDENCY_REGISTRY_FILE}: the open migration ${id} is named by ` +
+        `no entry of ${SEAM_ALLOWLIST_FILE}, so it is done: close it by ` +
+        'removing it from "openMigrations"',
+      kind: FINDING_KIND.migrationStale
+    }))
+}
+
 // ---------------------------------------------------------------------------
 // The whole verdict
 // ---------------------------------------------------------------------------
@@ -404,7 +462,8 @@ export const judgeSeams = ({
       : staleEntryFindings({ manifests: read, registry })),
     ...unmatchedGlobFindings({ files, registry }),
     ...unlintedFindings({ violations }),
-    ...allowlistFindings({ allowlist, violations })
+    ...allowlistFindings({ allowlist, violations }),
+    ...staleMigrationFindings({ allowlist, index })
   ]
 }
 
