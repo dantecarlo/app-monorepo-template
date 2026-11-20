@@ -68,15 +68,6 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | i18n constants            | `packages/i18n/src/locales/i18n.constant.ts`                                     | `.constant.ts` | Locale codes + default-locale constant                                                                                                     |
 | i18n resources            | `packages/i18n/src/locales/resources.constant.ts`                                | `.constant.ts` | Catalog registry consumed by each app's i18n adapter                                                                                       |
 | i18n translator type      | `packages/i18n/src/translator/appTranslator.type.ts`                             | `.type.ts`     | IAppTranslator (t, has, locale) both apps implement in lib/i18n; TranslationKeyType, a path to a message of the English catalog            |
-| Backend client            | `packages/supabase/src/client.adapter.ts`                                        | `.adapter.ts`  | Browser/native Supabase client factory; satisfies `IBackendClientProvider<BackendClientType>`, the client wrapped opaque                   |
-| Backend server client     | `packages/supabase/src/server.adapter.ts`                                        | `.adapter.ts`  | Cookie-aware SSR client factory; propagates session to RLS via @supabase/ssr; returns `BackendClientType`                                  |
-| Backend client type       | `packages/supabase/src/backendClient.type.ts`                                    | `.type.ts`     | `BackendClientType`: the branded, opaque client the factories hand out; names no Supabase type |
-| Backend client wrapper    | `packages/supabase/src/backendClient.adapter.ts`                                 | `.adapter.ts`  | `toBackendClient` and `fromBackendClient`: the one place the opaque client and the SDK client meet |
-| Supabase error mapper     | `packages/supabase/src/mapSupabaseError.adapter.ts`                              | `.adapter.ts`  | `IServiceErrorMapper` implementation — maps Postgrest errors to `ServiceErrorCodeType`                                                     |
-| Supabase error builder    | `packages/supabase/src/buildSupabaseServiceError.helper.ts`                      | `.helper.ts`   | Wired default: `buildServiceError` + `mapSupabaseError`; use in services                                                                   |
-| Supabase auth gateway     | `packages/supabase/src/supabaseAuth.adapter.ts`                                  | `.adapter.ts`  | `createSupabaseAuthGateway` — implements `IAuthGateway` over a `BackendClientType`, unwrapped once                                         |
-| Backend types             | `packages/supabase/src/types.ts`                                                 | `.ts`          | Generated DB types + typed exports                                                                                                         |
-| DB conventions doc        | `packages/supabase/docs/database.md`                                             | `.md`          | Postgres/Supabase conventions: migrations, schemas, RLS, RBAC, audit, pgTAP                                                                |
 | Cloudflare constants      | `packages/cloudflare/src/cloudflare.constant.ts`                                 | `.constant.ts` | Turnstile siteverify URL + field names, x-cf-origin-secret header (no magic strings)                                                       |
 | Turnstile adapter         | `packages/cloudflare/src/createTurnstileBotProtection.adapter.ts`                | `.adapter.ts`  | `createTurnstileBotProtection` — implements `IBotProtectionPort`; plain fetch siteverify; degrades to success without TURNSTILE_SECRET_KEY |
 | Origin-guard adapter      | `packages/cloudflare/src/createCloudflareOriginGuard.adapter.ts`                 | `.adapter.ts`  | `createCloudflareOriginGuard` — implements `IOriginGuardPort`; header compare; passes through without CF_ORIGIN_SECRET                     |
@@ -93,11 +84,39 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | Prune boundary            | `packages/tooling/src/prune-boundary.mjs`                                        | `.mjs`         | `findPruneLeaks`: what a prune leaves dangling (imports, paths, plugins, env keys, spec citations, registry); its test checks `sentry`, and the registry for `mobile-expo` and `supabase` |
 
 Each package exposes its public surface through a barrel: `packages/core/src/index.ts`,
-`packages/i18n/src/index.ts`, `packages/supabase/src/index.ts`, `packages/tokens/src/index.ts`,
-`packages/cloudflare/src/index.ts`.
+`packages/i18n/src/index.ts`, `packages/tokens/src/index.ts`, `packages/cloudflare/src/index.ts`.
 
-**Pluggable providers.** PostHog (observability; Sentry the optional capability), Cloudflare (bot-protection +
-origin-guard), and Supabase (backend) are the DEFAULT adapters, each behind a
+<!-- region supabase -->
+
+The `supabase` capability adds the backend package, its barrel `packages/supabase/src/index.ts`
+and each app's wiring of it (sections 2 and 3):
+
+| Thing                     | Path                                                                             | Suffix         | What it holds                                                                                                                              |
+| ------------------------- | -------------------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Backend client            | `packages/supabase/src/client.adapter.ts`                                        | `.adapter.ts`  | Browser/native Supabase client factory; satisfies `IBackendClientProvider<BackendClientType>`, the client wrapped opaque                   |
+| Backend server client     | `packages/supabase/src/server.adapter.ts`                                        | `.adapter.ts`  | Cookie-aware SSR client factory; propagates session to RLS via @supabase/ssr; returns `BackendClientType`                                  |
+| Backend client type       | `packages/supabase/src/backendClient.type.ts`                                    | `.type.ts`     | `BackendClientType`: the branded, opaque client the factories hand out; names no Supabase type |
+| Backend client wrapper    | `packages/supabase/src/backendClient.adapter.ts`                                 | `.adapter.ts`  | `toBackendClient` and `fromBackendClient`: the one place the opaque client and the SDK client meet |
+| Supabase error mapper     | `packages/supabase/src/mapSupabaseError.adapter.ts`                              | `.adapter.ts`  | `IServiceErrorMapper` implementation — maps Postgrest errors to `ServiceErrorCodeType`                                                     |
+| Supabase error builder    | `packages/supabase/src/buildSupabaseServiceError.helper.ts`                      | `.helper.ts`   | Wired default: `buildServiceError` + `mapSupabaseError`; use in services                                                                   |
+| Supabase auth gateway     | `packages/supabase/src/supabaseAuth.adapter.ts`                                  | `.adapter.ts`  | `createSupabaseAuthGateway` — implements `IAuthGateway` over a `BackendClientType`, unwrapped once                                         |
+| Backend types             | `packages/supabase/src/types.ts`                                                 | `.ts`          | Generated DB types + typed exports                                                                                                         |
+| DB conventions doc        | `packages/supabase/docs/database.md`                                             | `.md`          | Postgres/Supabase conventions: migrations, schemas, RLS, RBAC, audit, pgTAP                                                                |
+
+**Backend provider swap.** `@app/core` defines the ports; `@app/supabase` is the
+wired default adapter. To replace Supabase: (1) implement `IAuthGateway`,
+`IBackendClientProvider`, and `IServiceErrorMapper` in a new adapter package;
+(2) build each app's gateway in a folder of its own and list it in the app's
+`src/lib/auth/authGateway.adapter.ts`; (3) keep service signatures unchanged —
+the service seam is the only place the client is touched. RLS policies, SQL
+migrations, and `supabase/config.toml` are adapter-owned and must be reproduced
+in the replacement package.
+
+<!-- endregion supabase -->
+
+
+**Pluggable providers.** Each provider (observability, bot-protection and
+origin-guard, backend) is the DEFAULT adapter of its capability, behind a
 `@app/core` port and swappable via a one-line composition-root edit. See
 [../decisions/0001-pluggable-providers.md](../decisions/0001-pluggable-providers.md).
 
@@ -107,13 +126,6 @@ only inside the seam `.agents/contracts/dependencies.json` names for it (a `ui/`
 `local/wrapped-import` and `pnpm verify:dependency-seams`, and wrapped through the `lib` skill.
 See [../decisions/0002-every-library-behind-an-adapter.md](../decisions/0002-every-library-behind-an-adapter.md).
 
-**Backend provider swap.** `@app/core` defines the ports; `@app/supabase` is the
-wired default adapter. To replace Supabase: (1) implement `IAuthGateway`,
-`IBackendClientProvider`, and `IServiceErrorMapper` in a new adapter package;
-(2) repoint each app's `src/lib/supabase/*.adapter.ts` to the new package;
-(3) keep service signatures unchanged — the service seam is the only place the
-client is touched. RLS policies, SQL migrations, and `supabase/config.toml`
-are adapter-owned and must be reproduced in the replacement package.
 
 **Rule of thumb**: imports React / RN / DOM or a UI lib → it does NOT belong
 here (it goes per-app, sections 2–3). Pure logic / values / contracts → here.
@@ -186,10 +198,9 @@ the `@/*` alias. UI here is DOM / shadcn / Tailwind.
 | Router test double       | `apps/web/src/test/routing.helper.ts`                                        | `.helper.ts`       | createRoutingDouble: the module a test hands to vi.mock('@/lib/routing'), a router of spies                                                                                                                                                                                                                                                       |
 | Cache policy adapter     | `apps/web/src/lib/cache/cachePolicy.adapter.ts`                              | `.adapter.ts`      | applyCachePolicy({ life, tags }): sets a 'use cache' function's life profile and tags; the only `next/cache` import                                                                                                                                                                                                                              |
 | Cache-life profiles      | `apps/web/src/lib/cache/cachePolicy.constant.ts`                             | `.constant.ts`     | CacheLifeEnum, the seven profiles Next ships; a profile configured in next.config.ts adds its member here                                                                                                                                                                                                                                         |
-| Supabase client wiring   | `apps/web/src/lib/supabase/client.adapter.ts`                                | `.adapter.ts`      | App-local client adapter over `@app/supabase`; `getSupabaseClient` returns the opaque `BackendClientType`                                                                                                                                                                                                                                         |
-| Supabase server wiring   | `apps/web/src/lib/supabase/server.adapter.ts`                                | `.adapter.ts`      | App-local server adapter over `@app/supabase`; resolves to the opaque `BackendClientType`                                                                                                                                                                                                                                                         |
-| Auth gateway wiring      | `apps/web/src/lib/supabase/authGateway.adapter.ts`                           | `.adapter.ts`      | The browser's one auth gateway, shared by the auth provider and the auth service; a no-op on the server or without the Supabase settings                                                                                                                                                                                                          |
-| Auth gateway constants   | `apps/web/src/lib/supabase/authGateway.constant.ts`                          | `.constant.ts`     | SignInFailureEnum, the auth.error message key of each failure, the Supabase Auth codes and unreachable-error name it maps, and the no-op gateway's rejection cause                                                                                                                                                                                |
+| Auth gateway             | `apps/web/src/lib/auth/authGateway.adapter.ts`                               | `.adapter.ts`      | The browser's one auth gateway, shared by the auth provider and the auth service: the one a backend capability lists in its region, or the no-op one |
+| No-op auth gateway       | `apps/web/src/lib/auth/noopAuthGateway.helper.ts`                            | `.helper.ts`       | createNoopAuthGateway: no session, and a sign-in that rejects with the not-configured failure; toSignInFailure |
+| Sign-in failures         | `apps/web/src/lib/auth/authGateway.constant.ts`                              | `.constant.ts`     | SignInFailureEnum, the auth.error message key of each failure, and the no-op gateway's rejection cause |
 | Auth store               | `apps/web/src/stores/auth.store.ts`                                          | `.store.ts`        | Session+status slice through createAppStore; depends on IAuthSession (port), no SDK; exports selectSession/selectAuthStatus/useSession                                                                                                                                                                                                                           |
 | Global stores            | `apps/web/src/stores/ui.store.ts`, `apps/web/src/stores/toast.store.ts`      | `.store.ts`        | Cross-screen slices through createAppStore                                                                                                                                                                                                                                                                                                                       |
 | Auth provider            | `apps/web/src/components/AuthProvider/AuthProvider.component.tsx`            | `.component.tsx`   | Mounts auth bootstrap; takes IAuthGateway via prop (gateway injected at wiring)                                                                                                                                                                                                                                                                   |
@@ -225,6 +236,19 @@ the `@/*` alias. UI here is DOM / shadcn / Tailwind.
 | Google brand glyph (web) | `apps/web/src/components/ui/SocialAuthButton/GoogleGlyph.constant.ts`        | `.constant.ts`     | Third-party Google brand colors (not design tokens)                                                                                                                                                                                                                                                                                               |
 | Route tree               | `apps/web/src/app`                                                           | Next App Router    | RSC pages, layout, providers                                                                                                                                                                                                                                                                                                                      |
 | Test infra               | `apps/web/src/test`                                                          | (no suffix)        | Vitest setup, MSW mocks, test helper, createQueryWrapper of query.helper.tsx (harness, not a unit); each unit's test sits in its own folder's `__tests__/`                                                                                                                                                                                                                                 |
+
+<!-- region supabase -->
+
+The `supabase` capability adds the app's wiring of `@app/supabase`:
+
+| Thing                    | Path                                                                         | Suffix             | What it holds                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------ | ---------------------------------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Supabase client wiring   | `apps/web/src/lib/supabase/client.adapter.ts`                                | `.adapter.ts`      | App-local client adapter over `@app/supabase`; `getSupabaseClient` returns the opaque `BackendClientType`                                                                                                                                                                                                                                         |
+| Supabase server wiring   | `apps/web/src/lib/supabase/server.adapter.ts`                                | `.adapter.ts`      | App-local server adapter over `@app/supabase`; resolves to the opaque `BackendClientType`                                                                                                                                                                                                                                                         |
+| Auth gateway wiring      | `apps/web/src/lib/supabase/authGateway.adapter.ts`                           | `.adapter.ts`      | The Supabase part of the auth gateway, which lib/auth lists; a no-op on the server or without the Supabase settings                                                                                                                                                                                                          |
+| Auth gateway constants   | `apps/web/src/lib/supabase/authGateway.constant.ts`                          | `.constant.ts`     | The sign-in failure of each Supabase Auth code, and the name of the unreachable error                                                                                                                                                                                |
+
+<!-- endregion supabase -->
 
 <!-- region sentry -->
 
@@ -308,8 +332,8 @@ Same shape as web, but UI is React Native / NativeWind. Imported via `@/*`.
 | App bootstrap hook            | `apps/mobile/src/lib/bootstrap/useAppBootstrap.hook.ts`                         | `.hook.ts`       | useAppBootstrap: loads APP_FONTS, hides the splash once they load or one fails, and tells the root layout when it may render |
 | App fonts                     | `apps/mobile/src/lib/bootstrap/useAppBootstrap.constant.ts`                     | `.constant.ts`   | APP_FONTS: the Inter and Montserrat faces the app renders its text in; with the hook, the only font-package imports |
 | Safe-area provider            | `apps/mobile/src/lib/bootstrap/AppSafeAreaProvider.component.tsx`               | `.component.tsx` | AppSafeAreaProvider: the root's safe area; with `ui/AuthShell`, the only `react-native-safe-area-context` import |
-| Supabase client wiring        | `apps/mobile/src/lib/supabase/client.adapter.ts`                                | `.adapter.ts`    | App-local client adapter over `@app/supabase`; the client is the opaque `BackendClientType`                                                                                                                                                                                                                                                       |
-| Auth gateway wiring (mobile)  | `apps/mobile/src/lib/supabase/authGateway.adapter.ts`                           | `.adapter.ts`    | The app's one auth gateway over its client, which the root layout hands the auth provider |
+| Auth gateway (mobile)         | `apps/mobile/src/lib/auth/authGateway.adapter.ts`                               | `.adapter.ts`    | The app's one auth gateway, which the root layout hands the auth provider: the one a backend capability lists in its region, or the no-op one |
+| No-op auth gateway (mobile)   | `apps/mobile/src/lib/auth/noopAuthGateway.helper.ts`                            | `.helper.ts`     | createNoopAuthGateway: no session, and a sign-in that rejects |
 | Auth store                    | `apps/mobile/src/stores/auth.store.ts`                                          | `.store.ts`      | Session+status slice through createAppStore; depends on IAuthSession (port), no SDK                                                                                                                                                                                                                                                                              |
 | Global stores                 | `apps/mobile/src/stores/ui.store.ts`, `apps/mobile/src/stores/toast.store.ts`   | `.store.ts`      | Cross-screen slices through createAppStore                                                                                                                                                                                                                                                                                                                       |
 | Auth provider                 | `apps/mobile/src/components/AuthProvider/AuthProvider.component.tsx`            | `.component.tsx` | Mounts auth bootstrap; takes IAuthGateway via prop                                                                                                                                                                                                                                                                                                |
@@ -341,6 +365,17 @@ Same shape as web, but UI is React Native / NativeWind. Imported via `@/*`.
 | Google brand glyph (mobile)   | `apps/mobile/src/components/ui/SocialAuthButton/GoogleGlyph.constant.ts`        | `.constant.ts`   | Third-party Google brand colors (not design tokens)                                                                                                                                                                                                                                                                                               |
 | Route tree                    | `apps/mobile/src/app`                                                           | Expo Router      | `_layout.tsx` (boots through `src/lib/bootstrap`, imports project modules only), `index.tsx`, file-based routes                                                                                                                                                                                                                                                                                                     |
 | Test infra                    | `apps/mobile/src/test`                                                          | (no suffix)      | Vitest setup + mocks, createQueryWrapper of query.helper.tsx (harness, not a unit); each unit's test sits in its own folder's `__tests__/`, a route test as `<route>.route.test.tsx`                                                                                                                                                                                                      |
+
+<!-- region supabase -->
+
+The `supabase` capability adds the app's wiring of `@app/supabase`:
+
+| Thing                         | Path                                                                            | Suffix           | What it holds                                                                                                                                                                                                                                                                                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Supabase client wiring        | `apps/mobile/src/lib/supabase/client.adapter.ts`                                | `.adapter.ts`    | App-local client adapter over `@app/supabase`; the client is the opaque `BackendClientType`                                                                                                                                                                                                                                                       |
+| Auth gateway wiring (mobile)  | `apps/mobile/src/lib/supabase/authGateway.adapter.ts`                           | `.adapter.ts`    | The Supabase auth gateway over the app's client, which lib/auth lists |
+
+<!-- endregion supabase -->
 
 <!-- region sentry -->
 

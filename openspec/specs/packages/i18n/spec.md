@@ -165,14 +165,14 @@ The i18n package SHALL define, in every catalog, one message for each sign-in fa
 auth gateway names: auth.error.emailNotConfirmed, auth.error.invalidCredentials,
 auth.error.notConfigured and auth.error.rateLimited.
 
-**Evidence:** `packages/i18n/src/locales/en.json:6-11`, `packages/i18n/src/locales/es.json:6-11`, `apps/web/src/lib/supabase/authGateway.constant.ts:14-22`
+**Evidence:** `packages/i18n/src/locales/en.json:6-11`, `packages/i18n/src/locales/es.json:6-11`, `apps/web/src/lib/auth/authGateway.constant.ts:14-22`
 
 #### Scenario: a rejected sign-in reaches the user
 
 - **GIVEN** the message key of each sign-in failure the web auth gateway names
 - **WHEN** every catalog is searched for it
 - **THEN** each catalog holds a value for every key
-- **Test:** `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "names a message every catalog holds for each sign-in failure"
+- **Test:** `apps/web/src/lib/auth/__tests__/authGateway.constant.test.ts` › "names a message every catalog holds for each sign-in failure"
 
 ### Requirement: I18N-12 — One translator type for both apps
 

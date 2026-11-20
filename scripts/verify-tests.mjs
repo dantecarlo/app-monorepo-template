@@ -105,15 +105,18 @@ const isExempt = ({ expoApps, path }) =>
 // reason, or one whose test now sits correctly or is gone, fails the gate, so
 // the list only shrinks. The goal is none.
 //
-// The one below checks a folder of SQL tests as a whole, so no single file is
-// its unit.
+// The supabase capability's one below checks a folder of SQL tests as a
+// whole, so no single file is its unit.
 export const FROZEN = Object.freeze([
+  // A capability's exception sits in its region (docs/manifest.md § Regions).
+  // region supabase
   {
     path: 'packages/supabase/src/__tests__/supabaseSql.test.ts',
     reason:
       'checks every pgTAP file under `supabase/tests/` together; the unit is ' +
       'the folder, not a file'
   }
+  // endregion supabase
 ])
 
 export const FINDING_KIND = Object.freeze({

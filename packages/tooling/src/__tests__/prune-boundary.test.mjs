@@ -555,6 +555,29 @@ test(
   }
 )
 
+// The supabase prune of this repository, held to every check but the
+// import strings of the lint-rule cases under eslint-local-rules/, which
+// spell the SDK in fixture code: no file of the apps imports what the
+// prune deletes, no .env.example keeps a Supabase key, and no kept spec
+// cites a Supabase file.
+const APPS_FOLDER = 'apps/'
+const SUPABASE_KINDS = new Set(['env', 'import', 'spec'])
+
+test(
+  'pruning supabase of this repository leaves no app import, env key or spec citation dangling',
+  { skip: skipUnless('supabase') },
+  () => {
+    assert.deepEqual(
+      pruneRepository({ capabilityId: 'supabase' }).filter(
+        ({ file, kind }) =>
+          SUPABASE_KINDS.has(kind) &&
+          (kind !== 'import' || file.startsWith(APPS_FOLDER))
+      ),
+      []
+    )
+  }
+)
+
 // The Sentry part of each app's spec, its Governs line and its
 // requirements, sits in a sentry region of that spec (openspec/README.md
 // § 2.2). The sentry prune must drop it with the region; read with the

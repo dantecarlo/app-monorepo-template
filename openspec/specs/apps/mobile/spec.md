@@ -4,6 +4,9 @@
 <!-- region sentry -->
 > **Governs:** `apps/mobile/src/lib/observability/createSentryObservability.adapter.ts`
 <!-- endregion sentry -->
+<!-- region supabase -->
+> **Governs:** `apps/mobile/src/lib/supabase`
+<!-- endregion supabase -->
 > **ID prefix:** `MOBILE`
 > **Derived from:** `docs/architecture/mobile.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/observability.md`, `docs/e2e.md`, `docs/responsive.md`, `AGENTS.md`, `docs/manifest.md`, `docs/decisions/0001-pluggable-providers.md`
 > **Verified against the code:** 2026-11-19 at `dd38b99`
@@ -659,6 +662,7 @@ with the cache it came from.
 - **THEN** the port's captureError receives both, once
 - **Test:** `apps/mobile/src/lib/observability/__tests__/toCaptureError.helper.test.ts` › "forwards error and context to captureError"
 
+<!-- region supabase -->
 ### Requirement: MOBILE-28 — Supabase client from the environment
 
 The mobile app SHALL build its Supabase client from EXPO_PUBLIC_SUPABASE_URL and
@@ -680,6 +684,7 @@ either is unset.
 - **WHEN** the client module loads
 - **THEN** the client is created with the placeholder URL and key, and one warning is logged
 - **Test:** `apps/mobile/src/lib/supabase/__tests__/client.adapter.test.ts` › "falls back to placeholders and warns when env is absent"
+<!-- endregion supabase -->
 
 ### Requirement: MOBILE-29 — Session bootstrap from the auth gateway
 
@@ -687,7 +692,7 @@ The mobile app SHALL set the auth status to loading on mount, then store the ses
 Supabase auth gateway returns with the status authenticated or unauthenticated, and keep both in
 step with every later auth state change until unmount.
 
-**Evidence:** `apps/mobile/src/components/AuthProvider/useAuthBootstrap.hook.ts:12-30`, `apps/mobile/src/lib/supabase/authGateway.adapter.ts:11-13`, `apps/mobile/src/app/_layout.tsx:41`
+**Evidence:** `apps/mobile/src/components/AuthProvider/useAuthBootstrap.hook.ts:12-30`, `apps/mobile/src/lib/auth/authGateway.adapter.ts:22-23`, `apps/mobile/src/app/_layout.tsx:41`
 
 #### Scenario: before the gateway answers
 
@@ -2032,6 +2037,7 @@ root layout imports project modules only and its test mocks project modules, nev
   such an import (harness/dependency-seams SEAM-03) and `pnpm verify:dependency-seams` fails an
   allowlist entry or a violation for it (SEAM-07), both inside `pnpm validate`
 
+<!-- region supabase -->
 ### Requirement: MOBILE-75 — The auth gateway is built in lib/supabase
 
 The mobile app SHALL build its one auth gateway in `src/lib/supabase/authGateway.adapter.ts`, a
@@ -2054,7 +2060,7 @@ root layout SHALL hand that gateway to the auth provider; only the `*.adapter.ts
 - **GIVEN** the gateway of `lib/supabase`
 - **WHEN** the root layout renders
 - **THEN** the auth provider bootstraps the session from that gateway
-- **Test:** `apps/mobile/src/app/__tests__/layout.route.test.tsx` › "hands the auth provider the gateway lib/supabase builds"
+- **Test:** `apps/mobile/src/app/__tests__/layout.route.test.tsx` › "hands the auth provider the gateway lib/auth serves"
 
 #### Scenario: a file outside lib/supabase imports the package
 
@@ -2079,6 +2085,7 @@ the Supabase client or a Supabase generic.
 - **WHEN** the type of the client it exports is read
 - **THEN** it is `BackendClientType`
 - **Test:** `apps/mobile/src/lib/supabase/__tests__/client.adapter.test.ts` › "types the client as the opaque backend client"
+<!-- endregion supabase -->
 
 ### Requirement: MOBILE-77 — The Text block takes the classes and the role a block sets
 

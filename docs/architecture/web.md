@@ -24,7 +24,7 @@ apps/web/
     ├── app/                       # Next App Router — ROUTING ONLY (RSC)
     │   ├── layout.tsx             # root layout: fonts, theme script, ThemeProvider, providers
     │   ├── fonts/                 # Inter and Montserrat woff2 + their OFL texts (next/font/local)
-    │   ├── providers.tsx · SupabaseProviders.tsx   # AppI18nProvider, AppQueryProvider, AuthProvider, Toast
+    │   ├── providers.tsx · AuthProviders.tsx   # AppI18nProvider, AppQueryProvider, AuthProvider, Toast
     │   ├── error.tsx              # root segment boundary: render crash → ErrorState + retry, reported once
     │   ├── global-error.tsx       # root layout crash: own html/body → ErrorState + retry, reported once
     │   ├── globals.css            # Tailwind CSS 4 entry: imports the generated @app/tokens/theme.css
@@ -84,13 +84,20 @@ export default LoginPage
   that refetches. A failed mutation is the toast, from its error's `messageKey`.
 - **Sign-in**: a valid login submit runs the `useSignIn` mutation, which calls the auth gateway
   port through `src/services/Auth/` and replaces the route with `/`; a rejection is the mutation
-  toast, never a field error. The browser gateway lives in
-  `src/lib/supabase/authGateway.adapter.ts`, shared by the auth provider and the auth service: a
-  no-op during server rendering and without the Supabase settings. The gateway names each sign-in
-  failure it knows as an `AppError` with its `auth.error` message key (`NOT_CONFIGURED`, and
-  `INVALID_CREDENTIALS`, `EMAIL_NOT_CONFIRMED` and `RATE_LIMITED` from the Supabase Auth code),
-  and an unreachable Supabase as the network error, so the toast says what went wrong; any other
+  toast, never a field error. The browser gateway is `src/lib/auth/authGateway.adapter.ts`,
+  shared by the auth provider and the auth service: the gateway of the backend capability the
+  project keeps, which that capability lists there in its region, or a no-op gateway whose
+  sign-in rejects with `NOT_CONFIGURED`. A gateway names each sign-in failure it knows as an
+  `AppError` with its `auth.error` message key, so the toast says what went wrong; any other
   rejection stays generic.
+
+<!-- region supabase -->
+The `supabase` capability's gateway is `src/lib/supabase/authGateway.adapter.ts`: a no-op during
+server rendering and without the Supabase settings, and otherwise a Supabase gateway that names
+`INVALID_CREDENTIALS`, `EMAIL_NOT_CONFIRMED` and `RATE_LIMITED` from the Supabase Auth code, and
+an unreachable Supabase as the network error.
+<!-- endregion supabase -->
+
 - **Queries and stores behind their seams**: a hook queries through `useAppQuery` and
   `useAppMutation` of `src/lib/query/`, which take and return the app's own types, invalidates
   with `useInvalidateAppQuery`, and the providers render `AppQueryProvider`; only `src/lib/query/`

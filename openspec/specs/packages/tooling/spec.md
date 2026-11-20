@@ -485,7 +485,7 @@ entry names.
 - **GIVEN** the repository's tracked files, its manifest and its registry
 - **WHEN** the prune of `sentry`, of `mobile-expo` and of `supabase` is checked
 - **THEN** no registry finding is listed for any of them
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, mobile-expo or supabase of this repository leaves the registry true"
+- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, mobile-expo, supabase, web-next or cloudflare of this repository leaves the registry true"
 
 ### Requirement: TOOLING-18 — A kept spec cites no pruned file
 

@@ -4,6 +4,9 @@
 <!-- region sentry -->
 > **Governs:** `apps/web/src/lib/observability/createSentryObservability.adapter.ts`, `apps/web/next-sentry.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
 <!-- endregion sentry -->
+<!-- region supabase -->
+> **Governs:** `apps/web/src/lib/supabase`
+<!-- endregion supabase -->
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`, `docs/observability.md`, `docs/manifest.md`, `docs/decisions/0001-pluggable-providers.md`
 > **Verified against the code:** 2026-11-19 at `dd38b99`
@@ -394,7 +397,7 @@ and when it rejects it SHALL queue an error toast with the message resolved from
 no field error and leave the route unchanged. The sign-in result the screen keeps holds the user
 id and not the access token.
 
-**Evidence:** `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:45`, `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:69`, `apps/web/src/screens/Login/hooks/useSignIn.hook.ts:33-45`, `apps/web/src/services/Auth/auth.service.ts:19-21`, `apps/web/src/services/Auth/Auth.adapter.ts:10`, `apps/web/src/screens/Login/Login.constant.ts:24`, `apps/web/src/lib/query/useAppMutation.hook.ts:60`, `apps/web/src/lib/supabase/authGateway.adapter.ts:73-86`
+**Evidence:** `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:45`, `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:69`, `apps/web/src/screens/Login/hooks/useSignIn.hook.ts:33-45`, `apps/web/src/services/Auth/auth.service.ts:19-21`, `apps/web/src/services/Auth/Auth.adapter.ts:10`, `apps/web/src/screens/Login/Login.constant.ts:24`, `apps/web/src/lib/query/useAppMutation.hook.ts:60`, `apps/web/src/lib/auth/authGateway.adapter.ts:22-23`
 
 #### Scenario: the gateway accepts the credentials
 
@@ -658,6 +661,7 @@ unsubscribe from those changes on unmount.
 - **Test:** `apps/web/src/components/AuthProvider/__tests__/useAuthBootstrap.hook.test.ts` › "subscribes to auth state changes"
 - **Test:** `apps/web/src/components/AuthProvider/__tests__/useAuthBootstrap.hook.test.ts` › "calls unsubscribe on unmount"
 
+<!-- region supabase -->
 ### Requirement: WEB-20 — The auth gateway is a no-op without Supabase settings
 
 The web app SHALL give the auth provider and the auth service one gateway: a no-op gateway during
@@ -666,7 +670,7 @@ server rendering and in a browser where `NEXT_PUBLIC_SUPABASE_URL` or
 with the not-configured failure (WEB-46); otherwise one Supabase auth gateway per browser, whose
 sign-in names its failures (WEB-46).
 
-**Evidence:** `apps/web/src/lib/supabase/authGateway.adapter.ts:88-99`, `apps/web/src/lib/supabase/authGateway.adapter.ts:110-118`, `apps/web/src/app/SupabaseProviders.tsx:22`
+**Evidence:** `apps/web/src/lib/supabase/authGateway.adapter.ts:88-99`, `apps/web/src/lib/supabase/authGateway.adapter.ts:110-118`, `apps/web/src/app/AuthProviders.tsx:22`
 
 #### Scenario: the Supabase settings are missing
 
@@ -732,6 +736,7 @@ store for reading and writing the session cookies.
 - **WHEN** the server client is created twice
 - **THEN** the factory runs twice
 - **Test:** `apps/web/src/lib/supabase/__tests__/server.adapter.test.ts` › "returns a fresh client instance per call"
+<!-- endregion supabase -->
 
 ### Requirement: WEB-23 — Queries and mutations share fixed retry and freshness defaults
 
@@ -1410,6 +1415,7 @@ that no string segment of a key is a value the user typed or the data supplied, 
 - **THEN** both queries are invalidated
 - **Test:** `apps/web/src/lib/query/__tests__/queryKeys.constant.test.ts` › "invalidates every items query through the items all key"
 
+<!-- region supabase -->
 ### Requirement: WEB-46 — The auth gateway names each sign-in failure
 
 The web app SHALL reject a sign-in through the browser's auth gateway with an `AppError` that
@@ -1455,7 +1461,8 @@ generic error (WEB-13).
 - **GIVEN** the message key of every failure the gateway names
 - **WHEN** every catalog is searched for it
 - **THEN** each catalog holds a value for every key
-- **Test:** `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "names a message every catalog holds for each sign-in failure"
+- **Test:** `apps/web/src/lib/auth/__tests__/authGateway.constant.test.ts` › "names a message every catalog holds for each sign-in failure"
+<!-- endregion supabase -->
 
 ### Requirement: WEB-47 — The busy labels come from the catalogs
 
@@ -2488,6 +2495,7 @@ included; every other file, tests included, reaches them through `@/lib/routing`
   such an import (harness/dependency-seams SEAM-03) and `pnpm verify:dependency-seams` fails an
   allowlist entry or a violation for it (SEAM-07), both inside `pnpm validate`
 
+<!-- region supabase -->
 ### Requirement: WEB-80 — The Supabase clients are the opaque backend client
 
 The web app SHALL type the clients of `src/lib/supabase/` as the opaque `BackendClientType` of
@@ -2519,6 +2527,7 @@ client `getSupabaseClient` creates (WEB-20).
 - **THEN** the Supabase auth gateway is created over the same client the browser client adapter
   created and returns
 - **Test:** `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "hands the gateway the very client the browser client adapter creates"
+<!-- endregion supabase -->
 
 <!-- region sentry -->
 ### Requirement: WEB-81 — The Sentry adapter scrubs PII and stays silent without a DSN
