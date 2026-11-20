@@ -97,7 +97,7 @@ The chain runs in cost order:
 | ------------------------------- | --------------------------------------------------------- |
 | `pnpm agent-harness:projection-check` | Every projected agent file equals what its neutral source renders, and is committed (see 3e) |
 | `pnpm agent-harness:test`       | The projector's reader, adapters, hook projection, writer, checker and sync still behave |
-| `pnpm write-guard:test`         | The write guard decides every cell of its table, its errors and its switch-off, reads every Windows spelling of a path (or refuses what it cannot read) and every checkout that holds it, judges a 10,000-folder path in under a second, every checkout rule glob matches a file and every module the hook loads is a rule file, and the real hook answers a payload on stdin end to end, through a junction too (see 3f) |
+| `pnpm write-guard:test`         | The write guard decides every cell of its table, its errors and its switch-off, for the file tools, Bash and PowerShell; it reads every Windows spelling of a path (or refuses what it cannot read) and every checkout that holds it, and judges a 10,000-folder path and a pathological 30-item list in under a second. Every Bash case of Certifipago's guard is ported, every checkout rule glob matches a file, every module the hook loads is a rule file, and the real hook answers a payload on stdin end to end, through a junction too (see 3f) |
 | `pnpm verify:agent-context:test` | The agent-context gate fails each defect it names, on synthetic entries and over a scratch tree |
 | `pnpm verify:agent-context`     | Every agent of `.agents/agents/` has an entry in `.agents/agent-context.json` whose `gradedBy` names the skills that grade it, each a folder of `.claude/skills/` holding a `SKILL.md`, whose `writes` is true or false, whose `surface`, if any, lists repository-relative folders beside `writes: true`, and which holds no other key; no entry names an agent that is gone (see 3e) |
 | `pnpm verify:manifest`          | `template.manifest.json` is well formed                   |
@@ -243,8 +243,9 @@ skill's evals with the agent as the executor.
 ### 3f. The agent write guard
 
 A Claude Code hook that asks the human before anyone, the main session
-included, edits a rule file, and refuses a read-only agent's writes. It backs
-the LAW "A rule is not edited to fit the work" (`AGENTS.md`), which review alone
+included, edits a rule file, and refuses a read-only agent's writes. It reads
+the file tools (Edit, Write, NotebookEdit), Bash and PowerShell. It backs the
+LAW "A rule is not edited to fit the work" (`AGENTS.md`), which review alone
 held before (F66). It is written once, for every runtime, and wired per
 runtime:
 
@@ -252,8 +253,8 @@ runtime:
 | -------------------------------------- | ---------------------------------------------------------------------------- |
 | `.agents/contracts/write-guard.json`   | The policy: the rule-file globs, each with what it guards, and the switch-off variable |
 | `.agents/agent-context.json`           | `writes` and `surface` of each agent (3e)                                    |
-| `scripts/agent-harness/write-guard/`   | The engine, `paths.mjs`, `policy.mjs` and `decide.mjs`, and the Claude Code adapter, `claude-hook.mjs`, each with its test |
-| `.agents/hooks.json`                   | The neutral hook source: name, event, matcher, script, timeout               |
+| `scripts/agent-harness/write-guard/`   | The engine: `paths.mjs`, `policy.mjs`, `target.mjs` (one path, by actor), `decide.mjs` and `reasons.mjs`; the Bash reader, ported from Certifipago (`scan`, `continuations`, `tokenizer`, `tokenizer.case`, `expansion`); the writers (`writers`, `writers.git`, `writers.tools`, `inline-code`); the Bash judge (`shell`, `shell.commands`, `shell.programs`, `shell.findings`, `mentions`); `powershell.mjs`; and the Claude Code adapter, `claude-hook.mjs`. Each has its test |
+| `.agents/hooks.json`                   | The neutral hook source: name, event, matcher (`Bash\|PowerShell\|Edit\|Write\|NotebookEdit`), script, timeout |
 | `.claude/settings.json`                | Generated from it by `pnpm agent-harness:generate` (3e); never edited by hand |
 
 The rule files are the lint configs and local rules, `commitlint.config.js`,
@@ -275,18 +276,20 @@ too, and a `.git` planted inside a checkout cannot hide one. A glob that starts
 `.git` file or folder below a checkout root is a rule path as well, set in the
 engine rather than the policy, since a planted one would move the root.
 
-For Edit, Write and NotebookEdit it decides as follows. "—" prints nothing,
+It decides as follows, for each path a call writes. "—" prints nothing,
 which leaves the call to the session's own permissions; the guard never
-allows. A deny wins over an ask.
+allows. A deny wins over an ask, and the main session is never refused.
 
-| Target                                        | Read-only agent | Surface agent | Writer, main session or unlisted agent |
+| Target or input                               | Read-only agent | Surface agent | Writer, main session or unlisted agent |
 | --------------------------------------------- | --------------- | ------------- | -------------------------------------- |
 | Scratch (the OS temp dir, `$TEMP`, `$TMP`, `$TMPDIR`, `/tmp`) or a sink (`/dev/null`) | — | — | — |
-| Rule file                                     | deny            | ask           | ask                                    |
+| Rule file, or, for Bash and PowerShell, a folder below the root that holds rule files (`rm -rf .claude`) | deny | ask | ask |
 | Surface path that is not a rule file          | n/a             | —             | —                                      |
 | Other repository path                         | deny            | deny          | —                                      |
 | Outside the repository, not scratch           | deny            | deny          | —                                      |
 | A path spelling it cannot read (below)        | deny            | deny          | ask                                    |
+| Bash it cannot read (below)                   | deny            | deny          | ask if it names a rule path            |
+| PowerShell                                    | deny            | deny          | ask on a write cmdlet that names a rule path |
 | Guard error                                   | deny            | deny          | ask                                    |
 | `.agents/agent-context.json` unreadable       | deny            | deny          | deny for every subagent, writers and unlisted agents included; the main session is judged as above |
 | `ATL_WRITE_GUARD=off`                         | —               | —             | —                                      |
@@ -318,6 +321,56 @@ outside. No share is ever probed, so a slow network cannot run the hook past
 its timeout. The walk costs a few probes whatever the depth: a
 path 10,000 folders deep is judged in milliseconds.
 
+A Bash command is read by a shell parser ported from Certifipago's guard, not
+by a pattern. Line continuations go first, where Bash drops them; then come
+quotes, substitutions (`$(…)`, backticks, `$(( ))`), here-docs, groups,
+pipelines, loops and `case`. A variable resolves only from an assignment
+earlier in the same command, since Bash calls share no shell state. `$TEMP`,
+`$TMP` and `$TMPDIR` are the OS temp dir, and `$HOME` and `~` the home folder.
+`cd` moves the folder relative paths resolve against, and a loop variable is
+judged item by item. Every path the command writes is judged as a file tool's
+target, through the same reading of its spelling:
+
+- redirects (`>`, `>>`, `2>`, `&>`, `>|`);
+- `tee`, `cp`, `mv`, `rm`, `mkdir`, `touch`, `ln`, `chmod`, `sed -i`,
+  `perl -i`, `sd`, `dd of=`, `sort -o`, `tar -x` and `-c`, `unzip`,
+  `curl -o`, `wget` and the rest of `writers.mjs`;
+- `git archive -o`, `git diff --output` and `git format-patch`;
+- the pathspecs of `git checkout`, `restore`, `rm`, `mv` and `clean`;
+- the inner command of `find -exec`, `fd -x` and `xargs`;
+- the literal paths `node -e` and `python -c` code writes, and the commands
+  that code starts.
+
+A read-only agent is also refused the programs whose writes the guard does
+not read: a git subcommand that changes the tree, index, history or branches;
+a package manager; a pnpm or JS-tool form outside the read-only ones
+(`pnpm verify:*`, `<name>:test`, `test`, `lint`, `vitest run`,
+`prettier --check`, …); an inner shell (`bash -c`, `eval`, `cmd /c`,
+`powershell -Command`); inline code built at run time; and a target that
+depends on a variable the command never sets. A surface agent is held to its
+surface for the commands that write its own files (`cp`, `mv`, `rm`, `tee`,
+`sed -i`, …), redirects, `find`, and `git add` and `git commit`; its other
+programs are its workflow, as in the donor.
+
+A command the guard cannot read is one it cannot parse: an unterminated
+quote, a here-doc with no end, a line continuation that splits `$(`,
+nesting past 32 levels. It also covers, for the main session, a writer or an
+unlisted agent, one of the programs above. Such a command is refused to a
+policed agent. Anyone else is asked only when the command names a rule path
+somewhere in its text: every word, split on the separators of Bash and
+PowerShell, on `=` and on a `:` past a drive, is read as a path against the
+folder the command runs in (`mentions.mjs`). Past 256 distinct words the
+guard does not read on, and asks. A 30-item list of the shape that made a
+backtracking pattern take seconds is judged in well under a second.
+
+The PowerShell tool is not parsed. A read-only or surface agent is refused it
+and told to use Bash. Anyone else is asked when the command holds a write and
+names a rule path. A write is `Set-Content`, `Out-File`, `Add-Content`,
+`New-Item`, `Copy-Item`, `Move-Item`, `Remove-Item`, `Rename-Item`,
+`Clear-Content` or `Tee-Object`, by name, module-qualified or by alias
+(`sc`, `ni`, `cp`, `rm`, `del`, `ren`, `md`, …), or a `>` or `>>` outside
+quotes (`2>&1` merges streams and writes no file).
+
 Every reason names the rule, the file and how to proceed; a rule file cites the
 LAW. Stdin that is not a JSON payload prints nothing, and a hook that crashes,
 or whose engine fails to load, still refuses a subagent and asks the main
@@ -339,16 +392,39 @@ is generated.
 - **Live check** (decision 34), 2026-11-20, in a clone under the temp dir with the
   generated settings: `claude -p` asked to Write `AGENTS.md` was refused with the
   guard's reason, and asked to Write `docs/write-guard-probe.md` it succeeded.
+  Again for Bash, the same day, with `--allowedTools Bash`: `echo x > AGENTS.md`
+  was refused with the guard's reason and left `AGENTS.md` as it was, and
+  `echo x > docs/write-guard-probe.md` wrote the file.
 
-**Not covered:** Bash and PowerShell, for every actor: a shell command can still
-write a rule file, or make the junction or link a file tool then writes
-through, and the donor's tokenizer comes in a later slice. Codex, OpenCode and
-Copilot run no adapter yet; each gets one after a live test. A surface agent
-may write its surface folders in any other checkout on the disk, since a
-surface is read against the nearest checkout that holds the target; no agent
-declares a surface yet. User-level settings moved by `CLAUDE_CONFIG_DIR`, and
-the managed settings an administrator installs, are not read. Nor why a rule
-changed, which review reads.
+**Not covered:**
+
+- **A script's inside.** `node probe.mjs`, `bash x.sh` and a `pnpm` script can
+  still write a rule file, and a generator such as
+  `pnpm agent-harness:generate` rewrites `.claude/settings.json` unasked.
+- **A rule path a command builds.** A command the guard cannot read asks only
+  when its text names a rule path, so a path built from a variable set outside
+  it, from `$(cat list)` or by gluing words, passes unasked.
+- **The root and commands that name no path.** A folder holds rule files only
+  below the root, so `rm -rf .` and `git checkout -- .` ask nothing. So do
+  `git reset --hard`, `git stash`, `git checkout <branch>`, `git merge`,
+  `git apply` and `patch`, which rewrite rule files without naming them.
+- **PowerShell beyond its write cmdlets.** `Set-ItemProperty`, the `Export-`
+  cmdlets, .NET calls (`[IO.File]::WriteAllText`) and a rule path built at run
+  time are not read.
+- **A `:` in a Bash target.** It is read as an NTFS stream, though Git Bash
+  maps it to another character, so a read-only agent's `$S/a:test.log` is
+  refused.
+- **An alias of this machine's own name** in a share that is no admin share
+  stays outside (F71).
+- **Other runtimes.** Codex, OpenCode and Copilot run no adapter yet; each
+  gets one after a live test.
+- **A surface in another checkout.** A surface agent may write its surface
+  folders in any other checkout on the disk, since a surface is read against
+  the nearest checkout that holds the target; no agent declares a surface yet.
+- **Moved or managed settings.** User-level settings moved by
+  `CLAUDE_CONFIG_DIR`, and the managed settings an administrator installs, are
+  not read.
+- **Why a rule changed.** Review reads that.
 
 ---
 
