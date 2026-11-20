@@ -33,8 +33,9 @@ import { PostHogConsentModeEnum } from '@/lib/posthog/posthogClient.constant'
  * its flags and resets it, which clears every value it stored and its choice
  * and, with the flags paused, requests none, so the refusal holds for this
  * page only. A grant after a revoke resumes the flags and reloads them once.
- * When a revoke and a grant overlap a load, the later one decides. In any other mode, and while the app may not
- * load PostHog, every call changes nothing and the status is not-required.
+ * When a revoke and a grant overlap a load, the later one decides. In any
+ * other mode, and while the app may not load PostHog, every call changes
+ * nothing and the status is not-required.
  */
 export const createPostHogConsent = (): IConsentPort => {
   const isAsked =
