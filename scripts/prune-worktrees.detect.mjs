@@ -37,12 +37,36 @@ const OPTION = { DRY_RUN: '--dry-run', QUIET: '--quiet' }
 // its own.
 export const NESTED_RUN_VARIABLE = 'PRUNE_WORKTREES_RUNNING'
 
+// The bound, in seconds, on the `git fetch --prune origin` a run starts
+// with: a stalled remote would otherwise hold the merge or the pull whose
+// post-merge started it.
+export const FETCH_SECONDS_VARIABLE = 'PRUNE_WORKTREES_FETCH_SECONDS'
+const FETCH_SECONDS = 30
+
+// 30, or the positive number of seconds FETCH_SECONDS_VARIABLE names; any
+// other value, an empty one included, throws, naming the variable and it.
+export const fetchSecondsFrom = ({ env }) => {
+  const value = env[FETCH_SECONDS_VARIABLE]
+  if (value === undefined) return FETCH_SECONDS
+  const seconds = Number(value)
+  if (value.trim() === '' || !Number.isFinite(seconds) || seconds <= 0) {
+    throw new Error(
+      `${FETCH_SECONDS_VARIABLE} must be a positive number of seconds, ` +
+        `not "${value}"`
+    )
+  }
+  return seconds
+}
+
 export const NOT_COVERED =
   'a dry run still runs git fetch --prune origin, which it needs to read ' +
   'a [gone] upstream; on Windows, a worktree another process holds as its ' +
   'current directory is emptied and unregistered while its directory ' +
-  'stays; and the prune runs in the foreground, so the merge that started ' +
-  'it waits for it'
+  'stays; the prune runs in the foreground, so the merge that started it ' +
+  `waits for it, for its fetch up to ${FETCH_SECONDS_VARIABLE} ` +
+  `(${FETCH_SECONDS} s unless set); and on Windows a fetch stopped at that ` +
+  "bound ends without git's own cleanup, so a remote helper it started, " +
+  'as for https, runs on until its connection ends'
 
 export const LOCAL_CHANGES = 'it holds local changes'
 
@@ -340,6 +364,9 @@ const summaryLine = ({ dryRun, results }) => {
   )
 }
 
+const notCovered = ({ dryRun }) =>
+  dryRun ? [`${LABEL}: not covered: ${NOT_COVERED}`] : []
+
 // One line per worktree, a kept one left out under `--quiet`, the main
 // checkout's line when it was behind or off the default branch, the summary
 // line, and for a dry run what it does not cover.
@@ -349,5 +376,14 @@ export const reportLines = ({ dryRun, main, quiet, results }) => [
     .map((result) => decisionLine({ dryRun, result })),
   ...[mainLine({ dryRun, main })].filter((line) => line !== null),
   summaryLine({ dryRun, results }),
-  ...(dryRun ? [`${LABEL}: not covered: ${NOT_COVERED}`] : [])
+  ...notCovered({ dryRun })
+]
+
+// What a run whose fetch outlasted its bound of `seconds` prints, `--quiet`
+// or not: it judged nothing, so it removed and moved nothing.
+export const skippedLines = ({ dryRun, seconds }) => [
+  `${LABEL}: skipped: git fetch --prune ${REMOTE} did not finish within ` +
+    `${seconds} s, so no worktree was removed and the main checkout was ` +
+    'not moved',
+  ...notCovered({ dryRun })
 ]

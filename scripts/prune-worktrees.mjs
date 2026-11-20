@@ -3,12 +3,15 @@
 // worktrees:prune — removes the linked worktree of every branch a pull
 // request merged, and that branch, then fast-forwards the main checkout.
 //
-// After `git fetch --prune origin`, the default branch is the one
-// `origin/HEAD` names. A linked worktree is removed only when it is not the
-// main checkout, not the worktree this runs in, not under
-// `.claude/worktrees/` (the Claude app manages those), is not locked, holds
-// no other registered worktree inside it, is on a branch whose upstream
-// reads `[gone]` (the forge deletes a pull request's head branch on merge),
+// It starts with `git fetch --prune origin`, stopped after 30 s or the
+// seconds PRUNE_WORKTREES_FETCH_SECONDS names; a fetch stopped there skips
+// the prune and the fast-forward, says so in one line and exits 0. After
+// it, the default branch is the one `origin/HEAD` names. A linked worktree
+// is removed only when it is not the main checkout, not the worktree this
+// runs in, not under `.claude/worktrees/` (the Claude app manages those),
+// is not locked, holds no other registered worktree inside it, is on a
+// branch whose upstream reads `[gone]` (the forge deletes a pull request's
+// head branch on merge),
 // has an empty `git status --porcelain --untracked-files=all`, marks no
 // tracked file skip-worktree or assume-unchanged (whose edits `git status`
 // and `git worktree remove` cannot see), holds no ignored file outside what
@@ -39,8 +42,11 @@
 // Not covered (NOT_COVERED, the last line of a dry run): a dry run still
 // runs `git fetch --prune origin`, which it needs to read a `[gone]`
 // upstream; on Windows, a worktree another process holds as its current
-// directory is emptied and unregistered while its directory stays; and the
-// prune runs in the foreground, so the merge that started it waits for it.
+// directory is emptied and unregistered while its directory stays; the
+// prune runs in the foreground, so the merge that started it waits for it,
+// for its fetch up to the bound; and on Windows a fetch stopped at the bound
+// ends without git's own cleanup, so a remote helper it started, as for
+// https, runs on until its connection ends.
 //
 // Usage:
 //   node scripts/prune-worktrees.mjs
@@ -57,6 +63,7 @@ import { gitFreeEnv } from './git-free-env.mjs'
 import {
   BRANCH_PREFIX,
   defaultBranchOf,
+  fetchSecondsFrom,
   hiddenOf,
   LABEL,
   listDetail,
@@ -72,6 +79,7 @@ import {
   REMOTE,
   reportLines,
   samePath,
+  skippedLines,
   statusOf,
   structuralReason,
   UPSTREAM_FORMAT
@@ -82,29 +90,50 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const REMOTE_HEAD = `refs/remotes/${REMOTE}/HEAD`
 // 64 MiB of git output.
 const GIT_OUTPUT_BYTES = 67_108_864
+const MS_PER_SECOND = 1000
+// The code Node gives a child it stopped at its timeout.
+const TIMED_OUT = 'ETIMEDOUT'
 
 // One git command run in `cwd` without the GIT_* variables a hook exports,
 // which would otherwise point it at the hook's repository, and with
 // NESTED_RUN_VARIABLE set for any hook it fires. Its output, trimmed; a
 // failure throws git's own message, its stderr kept on the error.
 // `trim: false` keeps the output whole, the leading space of a porcelain
-// status line included.
-const git = ({ args, cwd, trim = true }) => {
+// status line included. A git still running after `timeout` milliseconds is
+// stopped, and its error reads `timedOut`.
+const git = ({ args, cwd, timeout, trim = true }) => {
   try {
     const output = execFileSync('git', args, {
       cwd,
       encoding: 'utf8',
       env: { ...gitFreeEnv(), [NESTED_RUN_VARIABLE]: '1' },
       maxBuffer: GIT_OUTPUT_BYTES,
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout
     })
     return trim ? output.trim() : output
   } catch (error) {
     const stderr = String(error.stderr || error.message).trim()
     throw Object.assign(
       new Error(`git ${args.join(' ')} failed in ${cwd}: ${stderr}`),
-      { stderr }
+      { stderr, timedOut: error.code === TIMED_OUT }
     )
+  }
+}
+
+// `git fetch --prune origin`, stopped after `seconds`: true when it
+// finished, false when it was stopped. A fetch git fails throws.
+const fetchOrigin = ({ root, seconds }) => {
+  try {
+    git({
+      args: ['fetch', '--quiet', '--prune', REMOTE],
+      cwd: root,
+      timeout: seconds * MS_PER_SECOND
+    })
+    return true
+  } catch (error) {
+    if (error.timedOut) return false
+    throw error
   }
 }
 
@@ -365,15 +394,18 @@ const forwardMain = ({ defaultBranch, dryRun, root, worktree }) => {
 
 // Every worktree of the repository `cwd` belongs to, each with the reason it
 // is kept (`kept: null` for one removed), and what became of the main
-// checkout, which is moved last, after every removal. A fetch, a default
-// branch or a list git cannot read throws before anything is removed.
-const pruneWorktrees = ({ cwd, dryRun }) => {
+// checkout, which is moved last, after every removal; or `timedOut` when the
+// fetch outlasted `fetchSeconds`, before anything was judged. A fetch, a
+// default branch or a list git cannot read throws before anything is
+// removed.
+const pruneWorktrees = ({ cwd, dryRun, fetchSeconds }) => {
   const current = samePath({
     path: git({ args: ['rev-parse', '--show-toplevel'], cwd })
   })
   const worktrees = listWorktrees({ root: current })
   const root = worktrees[0].path
-  git({ args: ['fetch', '--quiet', '--prune', REMOTE], cwd: root })
+  if (!fetchOrigin({ root, seconds: fetchSeconds }))
+    return { timedOut: true }
   const defaultBranch = readDefaultBranch({ root })
   const upstreams = readUpstreams({ root })
   const merged = readMerged({ defaultBranch, root })
@@ -408,20 +440,29 @@ const pruneWorktrees = ({ cwd, dryRun }) => {
   }
 }
 
-// A read that fails prints the reason and exits 1, having removed nothing.
-// A run a prune started, through the post-merge its fast-forward fires,
-// does nothing and prints nothing.
+// A read that fails prints the reason and exits 1, having removed nothing;
+// a fetch that outlasts its bound prints why it skipped and exits 0. A run a
+// prune started, through the post-merge its fast-forward fires, does nothing
+// and prints nothing.
 const main = () => {
   if (process.env[NESTED_RUN_VARIABLE]) return
   try {
     const { dryRun, quiet } = optionsFrom({ argv: process.argv })
-    const { main: mainCheckout, results } = pruneWorktrees({
+    const fetchSeconds = fetchSecondsFrom({ env: process.env })
+    const outcome = pruneWorktrees({
       cwd: process.cwd(),
-      dryRun
+      dryRun,
+      fetchSeconds
     })
-    reportLines({ dryRun, main: mainCheckout, quiet, results }).forEach(
-      (line) => console.log(line)
-    )
+    const lines = outcome.timedOut
+      ? skippedLines({ dryRun, seconds: fetchSeconds })
+      : reportLines({
+          dryRun,
+          main: outcome.main,
+          quiet,
+          results: outcome.results
+        })
+    lines.forEach((line) => console.log(line))
   } catch (error) {
     console.error(`${LABEL}: ${error.message} — nothing was removed.`)
     process.exitCode = 1

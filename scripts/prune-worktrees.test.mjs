@@ -30,6 +30,7 @@ import {
   symlinkSync,
   writeFileSync
 } from 'node:fs'
+import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { after, before, test } from 'node:test'
@@ -38,6 +39,8 @@ import { fileURLToPath } from 'node:url'
 import { gitFreeEnv } from './git-free-env.mjs'
 import { withHookGitDir } from './hook-git-dir.mjs'
 import {
+  FETCH_SECONDS_VARIABLE,
+  fetchSecondsFrom,
   LOCAL_CHANGES,
   NESTED_RUN_VARIABLE,
   NOT_COVERED,
@@ -55,6 +58,9 @@ const POST_MERGE = join(HERE, '..', '.husky', 'post-merge')
 const EXIT_OK = 0
 const EXIT_FAILED = 1
 const REMOVE_RETRIES = 10
+const LOOPBACK = '127.0.0.1'
+// How long a test waits for a command that a stalled remote could hold.
+const STALL_GUARD_MS = 20_000
 const MAIN = 'main'
 const UNSAVED_FILE = 'unsaved-work.txt'
 const LATE_FILE = 'late.txt'
@@ -1339,6 +1345,90 @@ for (const flag of ['--skip-worktree', '--assume-unchanged']) {
         })
       ),
       run.stdout
+    )
+  })
+}
+
+// A remote that accepts the connection and never answers: the system
+// completes the handshake while the test waits on the command, and git waits
+// for a reply that never comes. `close` destroys every socket it accepted,
+// so a git the command did not stop ends too.
+const stalledRemote = async () => {
+  const sockets = []
+  const server = createServer((socket) => {
+    socket.on('error', () => {})
+    sockets.push(socket)
+  })
+  await new Promise((done) => server.listen(0, LOOPBACK, done))
+  return {
+    close: async () => {
+      await new Promise((done) => setImmediate(done))
+      sockets.forEach((socket) => socket.destroy())
+      await new Promise((done) => server.close(done))
+    },
+    url: `git://${LOOPBACK}:${server.address().port}/origin.git`
+  }
+}
+
+test('a fetch that outlasts its bound skips the prune and the fast-forward, says why and exits 0', async () => {
+  const branch = 'feat/stalled'
+  const { main, paths } = mergedWorktrees({
+    branches: [branch],
+    hook: false
+  })
+  git({ args: ['fetch', '-q', '--prune'], cwd: main })
+  const originUrl = git({
+    args: ['remote', 'get-url', 'origin'],
+    cwd: main
+  })
+  const before = git({ args: ['rev-parse', 'HEAD'], cwd: main })
+  const remote = await stalledRemote()
+  git({ args: ['remote', 'set-url', 'origin', remote.url], cwd: main })
+  const run = spawnSync(process.execPath, [SCRIPT, '--quiet'], {
+    cwd: main,
+    encoding: 'utf8',
+    env: { ...gitFreeEnv(), [FETCH_SECONDS_VARIABLE]: '1' },
+    timeout: STALL_GUARD_MS
+  })
+  await remote.close()
+  assert.equal(run.status, EXIT_OK, `${run.error ?? ''} ${run.stderr}`)
+  assert.equal(
+    run.stdout.trim(),
+    'prune-worktrees: skipped: git fetch --prune origin did not finish ' +
+      'within 1 s, so no worktree was removed and the main checkout was ' +
+      'not moved'
+  )
+  assert.equal(run.stderr, '')
+  assert.ok(existsSync(paths[branch]), `${paths[branch]} was removed`)
+  assert.match(
+    git({ args: ['branch', '--list', branch], cwd: main }),
+    /feat\/stalled/u
+  )
+  assert.equal(git({ args: ['rev-parse', 'HEAD'], cwd: main }), before)
+  // The same repositories with a remote that answers: the worktree the
+  // stalled run kept goes, and the main checkout moves.
+  git({ args: ['remote', 'set-url', 'origin', originUrl], cwd: main })
+  const answered = prune({ cwd: main })
+  assert.equal(answered.status, EXIT_OK, answered.stderr)
+  assert.ok(!existsSync(paths[branch]), answered.stdout)
+  assert.notEqual(git({ args: ['rev-parse', 'HEAD'], cwd: main }), before)
+})
+
+test('the fetch is bound to 30 s unless PRUNE_WORKTREES_FETCH_SECONDS names another positive number', () => {
+  assert.equal(fetchSecondsFrom({ env: {} }), 30)
+  assert.equal(
+    fetchSecondsFrom({ env: { [FETCH_SECONDS_VARIABLE]: '2.5' } }),
+    2.5
+  )
+})
+
+for (const value of ['', '0', '-1', 'soon', 'Infinity']) {
+  test(`PRUNE_WORKTREES_FETCH_SECONDS="${value}" throws, naming the variable and the value`, () => {
+    assert.throws(
+      () => fetchSecondsFrom({ env: { [FETCH_SECONDS_VARIABLE]: value } }),
+      (error) =>
+        error.message.includes(FETCH_SECONDS_VARIABLE) &&
+        error.message.includes(`"${value}"`)
     )
   })
 }
