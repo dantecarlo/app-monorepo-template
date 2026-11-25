@@ -6,6 +6,7 @@
 - [x] T4 — The POSIX SIGKILL: `platform.mjs` `endOnPosix` lists again after the 2 s wait and sends SIGKILL only to the pids whose start time held, and none when that listing fails or the bound has run out; cases in `platform.test.mjs`; `docs/harness.md` § 3g · Requirements: REAP-07 · Commit: cc3f9134
 - [x] T5 — The lock: `lock.mjs` writes a unique token, takes a stale lock under an exclusive guard, removes a stale guard only while it holds what it read, and releases only its own token; `lock.test.mjs`, with one real two-process case; `docs/harness.md` § 3g · Requirements: REAP-11 · Commit: c559cd82
 - [x] T6 — `verify-report.md`, then the archive: the deltas merged into `openspec/specs/harness/process-reaper/spec.md`, the evidence lines this change moved refreshed, and the folder moved to `openspec/changes/archive/2026-11-25-reaper-fixes/` · Requirements: REAP-03, REAP-07, REAP-11, REAP-12 · Commit: ab260731, and the archive that moves this folder
+- [x] T7 — The verifier's correction: `etime` for age and parent order on POSIX and `lstart` for identity only (B1, with `clock-change.test.mjs`); a lock gone when read is created again and a stale one removed only while it holds the bytes read (A1); `--watch=<value>` (A4); an empty second listing ends no tree (A7); both spec files, `docs/harness.md` § 3g and this report · Requirements: REAP-02, REAP-03, REAP-07, REAP-11 · Commit: 4a1777a6
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of
