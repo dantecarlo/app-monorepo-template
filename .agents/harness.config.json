@@ -1,6 +1,6 @@
 {
   "$schema": "./contracts/harness-config.schema.json",
-  "$comment": "The project's harness settings, one file. pnpm verify:harness-config holds it to .agents/contracts/harness-config.schema.json: an unknown key, a value the schema does not allow, or a missing setting fails the gate. See docs/harness.md section 3g.",
+  "$comment": "The project's harness settings, one file. pnpm verify:harness-config holds it to .agents/contracts/harness-config.schema.json: an unknown key, a value the schema does not allow, or a missing setting fails the gate. See docs/harness.md section 3h.",
   "workflow": {
     "$comment": "Decision 40. Read by /init (Stage 6), which asks it; the template runs sdd, as AGENTS.md § Spec-driven changes says. The sdd prune of template.manifest.json sets odd.",
     "mode": "sdd"
