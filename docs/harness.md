@@ -547,7 +547,7 @@ field it marks required. Each block takes its own `$comment`.
 
 | Fact                     | Value                                 | Read by |
 | ------------------------ | ------------------------------------- | ------- |
-| `identity.product`, `identity.repository`, `identity.packageScope` | required, non-blank text; the template's are `app-monorepo-template`, `dantecarlo/app-monorepo-template` and `@app` | nothing in the template yet; a product-name gate forbids each in the portable core. `pnpm run init` renames the template's slug in the first two, and leaves `@app` and the repository's owner (F76) |
+| `identity.product`, `identity.repository`, `identity.packageScope` | required, non-blank text; the template's are `app-monorepo-template`, `dantecarlo/app-monorepo-template` and `@app` | nothing in the template yet; a product-name gate forbids each in the portable core. `pnpm run init <slug>` writes `<slug>`, the bare `<slug>` and `@<slug>`, the scope it gives every package, and leaves every other line byte for byte; it knows no owner, so the project sets `repository` to `owner/name` later |
 | `vocabulary.forbiddenInCore` | required in its block: a list of non-blank text | nothing in the template; a product-name gate forbids each beside `identity` |
 | `stack.monorepo`, `stack.mobile`, `stack.web`, `stack.backend`, `stack.architecture` | optional text | nothing. The template records `monorepo` and `architecture` only: the `web-next` and `mobile-expo` prunes remove an app, and `backend.kind` holds the backend |
 | `core.directory`         | required in its block: non-blank text | nothing in the template, which has no portable core of its own; a product-name gate walks it. Never `packages/core/src`, the domain, which names its product |

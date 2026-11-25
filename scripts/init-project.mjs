@@ -27,6 +27,11 @@
 //                            kept in sync with app.json expo.name. The web
 //                            metadata.title reads APP_NAME from i18n, so all
 //                            three identity sources stay consistent.
+//   8. .agents/harness.config.json  the identity block: product <slug>,
+//                            packageScope @<slug>, repository <slug>. init
+//                            knows no owner, so the repository is the bare
+//                            name, and the project sets owner/name later.
+//                            Only those three values change, in place.
 //
 // Idempotent: re-running with the same slug is a no-op.
 // ---------------------------------------------------------------------------
@@ -242,6 +247,47 @@ try {
   touched.push(turboPath)
 } catch {
   console.warn('init-project: WARN — turbo.json not found; skipped.')
+}
+
+// .agents/harness.config.json — the identity block names the project. Each
+// value is replaced in place, so every other block, every $comment and the
+// line endings stay byte for byte. The repository is the bare name: init
+// knows no owner, and the project writes owner/name there later.
+const harnessConfigPath = '.agents/harness.config.json'
+const IDENTITY = {
+  packageScope: `@${slug}`,
+  product: slug,
+  repository: slug
+}
+const identityValue = ({ key }) =>
+  new RegExp(`("${key}"\\s*:\\s*)"(?:[^"\\\\]|\\\\.)*"`, 'u')
+try {
+  const raw = readFileSync(resolve(REPO_ROOT, harnessConfigPath), 'utf8')
+  const updated = Object.entries(IDENTITY).reduce(
+    (text, [key, value]) =>
+      text.replace(
+        identityValue({ key }),
+        (_, head) => `${head}${JSON.stringify(value)}`
+      ),
+    raw
+  )
+  const { identity } = JSON.parse(updated)
+  const named = Object.entries(IDENTITY).every(
+    ([key, value]) => identity?.[key] === value
+  )
+  if (named) {
+    writeFileSync(resolve(REPO_ROOT, harnessConfigPath), updated, 'utf8')
+    touched.push(harnessConfigPath)
+  } else {
+    console.warn(
+      `init-project: WARN — ${harnessConfigPath} holds no identity block ` +
+        'with product, packageScope and repository; skipped.'
+    )
+  }
+} catch {
+  console.warn(
+    `init-project: WARN — ${harnessConfigPath} not found or invalid; skipped.`
+  )
 }
 
 // ---------------------------------------------------------------------------

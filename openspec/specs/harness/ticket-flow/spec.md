@@ -2275,7 +2275,10 @@ another type, and a blank value; a finding about a list item SHALL name its plac
 The template's `.agents/harness.config.json` SHALL name the template in `identity` and record
 only `stack` facts that hold under every prune. When `.agents/harness.config.json` is absent,
 `process-intake` § Step 4 SHALL write `identity` with the project's own names, never the
-template's.
+template's. `pnpm run init <slug>` SHALL rewrite `identity` to `product` `<slug>`,
+`packageScope` `@<slug>`, the scope it gives every package, and `repository` the bare `<slug>`,
+which the project sets to `owner/name` later, leaving every other line of the file, its line
+endings included, byte for byte; the renamed file SHALL pass `pnpm verify:harness-config`.
 
 **Evidence:** `.agents/contracts/harness-config.schema.json:8`,
 `.agents/contracts/harness-config.schema.json:18`, `.agents/contracts/harness-config.schema.json:22`,
@@ -2289,7 +2292,8 @@ template's.
 `scripts/verify-harness-config.mjs:167`, `scripts/verify-harness-config.mjs:269`,
 `scripts/verify-harness-config.mjs:338`, `scripts/verify-harness-config.mjs:354`,
 `.agents/harness.config.json:4`, `.agents/harness.config.json:23`,
-`.claude/skills/process-intake/SKILL.md:121`
+`.claude/skills/process-intake/SKILL.md:121`, `scripts/init-project.mjs:256`,
+`scripts/init-project.mjs:257`, `scripts/init-project.mjs:269`, `scripts/init-project.mjs:279`
 
 #### Scenario: the template's harness config
 
@@ -2482,3 +2486,25 @@ template's.
   never the template's
 - **Test:** Not covered — the rule is a procedure an intake session follows; no runner drives a
   session, and `verify:harness-config` cannot tell a project's own name from the template's
+
+#### Scenario: a renamed project's identity
+
+- **GIVEN** a copy of the template renamed by `pnpm run init demo-app`
+- **WHEN** its `.agents/harness.config.json` is read
+- **THEN** `identity` holds `product` `demo-app`, `packageScope` `@demo-app` and `repository`
+  `demo-app`
+- **Test:** `scripts/init-project.test.mjs` › "the harness config names the renamed project"
+
+#### Scenario: the rename keeps the rest of the file
+
+- **GIVEN** the same renamed copy
+- **WHEN** its `.agents/harness.config.json` is compared with the template's, line by line
+- **THEN** every line but the three identity values is the same, and each line keeps its ending
+- **Test:** `scripts/init-project.test.mjs` › "the harness config keeps every other line byte for byte, and its line endings"
+
+#### Scenario: the renamed config passes its gate
+
+- **GIVEN** the same renamed copy
+- **WHEN** `scripts/verify-harness-config.mjs` runs in it
+- **THEN** it exits 0
+- **Test:** `scripts/init-project.test.mjs` › "the renamed harness config passes verify:harness-config"
