@@ -126,3 +126,17 @@ test('a pattern that can name no rule file names none', () => {
     )
   }
 })
+
+test('a recursive pattern names a .git only when its own last segment could be one', () => {
+  const rule = ({ pattern }) =>
+    patternRule({
+      cwd: 'C:/work/repo',
+      host: HOST,
+      mode: GLOB_MODE.findName,
+      pattern,
+      policy: { ...POLICY, ruleFiles: [{ glob: 'AGENTS.md', what: 'the LAWs' }] }
+    })?.glob
+  assert.equal(rule({ pattern: 'docs/**/AGENTS.md' }), undefined)
+  assert.equal(rule({ pattern: 'docs/**/*.orig' }), undefined)
+  assert.equal(rule({ pattern: 'docs/**/.git*' }), '**/.git')
+})

@@ -125,6 +125,16 @@ const below = ({ root }) => ({ ...root, text: `${root.text}/${SAFE}` })
 const FIND_NAMES = /^-i?name$/u
 const FIND_PATHS = /^-i?(?:path|wholename)$/u
 const TRAILING_SLASHES = /\/+$/u
+const BACKSLASHES = /\\/gu
+const WILDCARDS = /[*?[]/gu
+
+// A find root as the literal head of a pattern: its own separators read as
+// `/`, and its wildcards escaped, since find reads the root literally.
+const rootPattern = ({ root }) =>
+  root.text
+    .replace(BACKSLASHES, '/')
+    .replace(WILDCARDS, '\\$&')
+    .replace(TRAILING_SLASHES, '')
 
 // The files find matches below each root, as patterns the guard judges
 // without the disk: `<root>/**/<name>` for -name, the path for -path.
@@ -137,7 +147,7 @@ const findPatterns = ({ args, roots }) =>
         glob: {
           disk: false,
           mode: GLOB_MODE.findName,
-          pattern: `${root.text.replace(TRAILING_SLASHES, '')}/**/${value.text}`
+          pattern: `${rootPattern({ root })}/**/${value.text}`
         },
         raw: `${root.raw} -name ${value.raw}`,
         text: value.text,

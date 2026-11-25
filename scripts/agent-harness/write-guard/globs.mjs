@@ -40,7 +40,9 @@ const SKIP_FOLDERS = { skip: 3 }
 const DOT = '.'
 const SEPARATOR = '/'
 const ESCAPE = '\\'
-const GIT_GLOBS = ['**/.git', '**/.git/**']
+// A pattern names a .git only when its own last segment could be one: a
+// recursive pattern meets `**/.git/**` through any `.git` folder below it.
+const GIT_GLOBS = ['**/.git']
 
 const lit = ({ char }) => ({ char: char.toLowerCase() })
 
