@@ -57,6 +57,7 @@ requirements in several specs, each linking to its neighbour by ID.
 | [harness/dependency-seams](specs/harness/dependency-seams/spec.md) | `SEAM` |
 | [harness/ticket-flow](specs/harness/ticket-flow/spec.md) | `TICKET` |
 | [harness/process-reaper](specs/harness/process-reaper/spec.md) | `REAP` |
+| [harness/updaters](specs/harness/updaters/spec.md) | `UPDATERS` |
 
 Each spec's header is the one place that states what it governs, in its `Governs` lines (§ 2.2);
 this table names the spec and its prefix only, so the two cannot drift apart.
@@ -69,8 +70,9 @@ Not specified yet: the rest of the agent harness and the validation gates, whose
 [docs/code-standards.md](../docs/code-standards.md) § 21 maps one by one to the check that backs
 each. The MCP catalog, its updater and its gate (harness/mcp) are the first harness unit with a
 spec, the ticket flow's skills and checks (harness/ticket-flow) the second, the dependency
-registry with its rule and gate (harness/dependency-seams) the third, and the process reaper with
-its contract, its command and its session hook (harness/process-reaper) the fourth.
+registry with its rule and gate (harness/dependency-seams) the third, the process reaper with
+its contract, its command and its session hook (harness/process-reaper) the fourth, and the
+updater registry with its gate and its runner (harness/updaters) the fifth.
 
 ### 2.2 What a spec holds
 

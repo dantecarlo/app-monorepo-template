@@ -1,6 +1,6 @@
 # Proposal: the updater registry, its gate, and the runner that turns an update into a pull request
 
-> **Status:** open
+> **Status:** archived — 2026-11-25
 
 ## Why
 
