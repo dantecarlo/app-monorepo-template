@@ -73,7 +73,7 @@ const inScratch = ({ files, use }) =>
     use
   })
 
-test('the committed hook source renders the write guard for the Claude Code shell and file tools', () => {
+test('the committed hook source renders the write guard for the Claude Code shell and file tools, then the no-force hook for the shell tools', () => {
   const settings = JSON.parse(
     renderClaudeSettings({ hooks: readHookSource({ root: REPO_ROOT }) })
   )
@@ -88,6 +88,17 @@ test('the committed hook source renders the write guard for the Claude Code shel
           }
         ],
         matcher: MATCHER
+      },
+      {
+        hooks: [
+          {
+            command:
+              'node "${CLAUDE_PROJECT_DIR}/scripts/agent-harness/no-force/claude-hook.mjs"',
+            timeout: 5,
+            type: 'command'
+          }
+        ],
+        matcher: 'Bash|PowerShell'
       }
     ])
 })
