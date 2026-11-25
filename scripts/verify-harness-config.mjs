@@ -5,16 +5,19 @@
 //
 // .agents/harness.config.json holds the settings the harness reads: the
 // workflow (decision 40), the merge policy (decision 38) and the backend,
-// with its database-test mode. .agents/contracts/harness-config.schema.json
-// is their contract, and this gate holds the file to it:
+// with its database-test mode; and the project's facts: its identity, and,
+// when it records them, its vocabulary, stack, portable core and skill
+// trees. .agents/contracts/harness-config.schema.json is their contract,
+// and this gate holds the file to it:
 //
 //   - both files exist and parse, and each gives a key once in an object; a
 //     file that is gone is a finding of its own, since a walk that skips an
 //     absent file reports green over it, and so is a repeated key, which
 //     JSON.parse reads as its last value while a reader may act on the first;
 //   - every key the file holds is one the schema declares, every value one
-//     it allows, and every setting it marks required is there, the
-//     database-test mode under a supabase backend only;
+//     it allows, every item of a list one its `items` allows, no text
+//     shorter than its `minLength`, and every setting it marks required is
+//     there, the database-test mode under a supabase backend only;
 //   - the schema uses only the keywords this gate reads, each with a value
 //     it can read, closes every object it declares with
 //     `additionalProperties: false`, and every default is one of its own
@@ -39,6 +42,7 @@ import { defineGate, reportGate } from './gate/gate.mjs'
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT_FLAG = '--root'
 const NOT_FOUND = -1
+const SINGULAR = 1
 
 export const HARNESS_CONFIG = '.agents/harness.config.json'
 export const HARNESS_CONFIG_SCHEMA =
@@ -64,7 +68,7 @@ export const FINDING_KIND = Object.freeze({
 const MISSING_WHY = {
   [HARNESS_CONFIG]:
     "the project's harness settings (its workflow, merge policy and " +
-    'backend) are recorded nowhere else',
+    'backend) and its identity are recorded nowhere else',
   [HARNESS_CONFIG_SCHEMA]:
     'nothing says which settings the harness config may hold'
 }
@@ -84,6 +88,8 @@ const ASSERTIONS = [
   'else',
   'enum',
   'if',
+  'items',
+  'minLength',
   'properties',
   'required',
   'then',
@@ -99,8 +105,15 @@ const isRecord = ({ value }) =>
 
 const isText = ({ value }) => typeof value === 'string'
 
+const isList = ({ value }) => Array.isArray(value)
+
+// A schema is an object or true or false.
+const isSchema = ({ value }) =>
+  typeof value === 'boolean' || isRecord({ value })
+
 // The types a schema may give, how each is tested, and how it reads.
 const TYPES = {
+  array: { name: 'a list', test: isList },
   object: { name: 'an object', test: isRecord },
   string: { name: 'text', test: isText }
 }
@@ -149,6 +162,11 @@ const judgeKeywordValues = ({ pointer, schema }) => {
         schema.required.every((value) => isText({ value }))
     ],
     ['enum', Array.isArray(schema.enum)],
+    ['items', isSchema({ value: schema.items })],
+    [
+      'minLength',
+      Number.isInteger(schema.minLength) && schema.minLength >= 0
+    ],
     // A schema here would be a rule on every undeclared key, which this gate
     // does not apply; only true or false is read, so none passes in silence.
     [
@@ -248,6 +266,13 @@ const judgeSchema = ({ branch = false, pointer, schema }) => {
         })
       )
     : []
+  const items = isSchema({ value: schema.items })
+    ? judgeSchema({
+        branch,
+        pointer: `${pointer}/items`,
+        schema: schema.items
+      })
+    : []
   const branches = BRANCHES.filter((keyword) =>
     Object.hasOwn(schema, keyword)
   ).flatMap((keyword) =>
@@ -264,6 +289,7 @@ const judgeSchema = ({ branch = false, pointer, schema }) => {
     ...closed,
     ...outsideItsValues,
     ...properties,
+    ...items,
     ...branches
   ]
 }
@@ -306,6 +332,37 @@ const judgeEnum = ({ path, schema, value }) =>
         })
       ]
 
+const charactersOf = ({ count }) =>
+  `${count} character${count === SINGULAR ? '' : 's'}`
+
+const judgeMinLength = ({ path, schema, value }) =>
+  !Object.hasOwn(schema, 'minLength') ||
+  !isText({ value }) ||
+  value.length >= schema.minLength
+    ? []
+    : [
+        configFinding({
+          detail:
+            `${settingOf({ path })} is ${JSON.stringify(value)}; it is ` +
+            `text of at least ${charactersOf({ count: schema.minLength })}`,
+          kind: FINDING_KIND.value
+        })
+      ]
+
+// Every item of a list, judged by the schema its `items` gives and named
+// by its place, as `vocabulary.forbiddenInCore.1`.
+const judgeItems = ({ path, reason, schema, value }) =>
+  Object.hasOwn(schema, 'items') && isList({ value })
+    ? value.flatMap((item, index) =>
+        judgeValue({
+          path: [...path, String(index)],
+          reason,
+          schema: schema.items,
+          value: item
+        })
+      )
+    : []
+
 const judgeRequired = ({ path, reason, schema, value }) =>
   (schema.required ?? [])
     .filter((key) => !Object.hasOwn(value, key))
@@ -347,7 +404,9 @@ const judgeValue = ({ path, reason, schema, value }) => {
   if (typed.length > 0) return typed
   const scalar = [
     ...judgeConst({ path, schema, value }),
-    ...judgeEnum({ path, schema, value })
+    ...judgeEnum({ path, schema, value }),
+    ...judgeMinLength({ path, schema, value }),
+    ...judgeItems({ path, reason, schema, value })
   ]
   if (!isRecord({ value })) return scalar
   const children = Object.entries(schema.properties ?? {})
@@ -558,9 +617,11 @@ export const gate = defineGate({
   claims:
     `${HARNESS_CONFIG} and ${HARNESS_CONFIG_SCHEMA} exist and parse, and ` +
     'neither gives a key twice in one object; every key the config holds ' +
-    'is one the schema declares, every value one it allows, every setting ' +
-    'it marks required is there, and the database-test mode sits under a ' +
-    'supabase backend only; the schema uses only the keywords this gate ' +
+    'is one the schema declares, every value one it allows, every item of ' +
+    'a list one its items allows, no text shorter than its minLength, ' +
+    'every setting it marks required, the identity among them, is there, ' +
+    'and the database-test mode sits under a supabase backend only; the ' +
+    'schema uses only the keywords this gate ' +
     'reads, each with a value it can read (additionalProperties true or ' +
     'false, never a schema), sets additionalProperties false on every ' +
     'object it declares outside a conditional branch, and every default ' +
@@ -572,9 +633,11 @@ export const gate = defineGate({
     'with no packages/supabase, an sdd workflow with no openspec/); ' +
     'whether anything reads a setting: the ticket skills read ' +
     `${MERGE_POLICY_KEY} as prose, from the default branch's copy ` +
-    '(verify-skills proves they say so), and nothing reads workflow.mode ' +
-    'or the backend yet; and the JSON Schema keywords this gate refuses ' +
-    'rather than reads.',
+    '(verify-skills proves they say so), and nothing in the template reads ' +
+    'workflow.mode, the backend or the facts yet; whether the identity ' +
+    'names this project rather than the template it came from, or the ' +
+    'paths of core and skills exist; and the JSON Schema keywords this ' +
+    'gate refuses rather than reads.',
   run: judge
 })
 
