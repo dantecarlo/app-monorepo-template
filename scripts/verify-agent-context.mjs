@@ -260,7 +260,7 @@ export const gate = defineGate({
     'binding documents a delegated agent must name; whether writes and ' +
     'surface are the right ones for the agent, which review reads; and ' +
     'whether a runtime enforces them, which the write guard does for the ' +
-    'Claude Code file tools only (write-guard:test proves it).',
+    'Claude Code file tools, Bash and PowerShell only (write-guard:test proves it).',
   run: judge
 })
 

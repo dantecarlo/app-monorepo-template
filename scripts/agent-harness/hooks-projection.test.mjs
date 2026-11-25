@@ -30,6 +30,9 @@ import {
 const HERE = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(HERE, '..', '..')
 
+// The write guard's matcher: the shell tools and the file tools.
+const MATCHER = 'Bash|PowerShell|Edit|Write|NotebookEdit'
+
 const REAPER = {
   event: 'SessionStart',
   name: 'process-reaper',
@@ -39,7 +42,7 @@ const REAPER = {
 
 const HOOK = {
   event: 'PreToolUse',
-  matcher: 'Edit|Write|NotebookEdit',
+  matcher: MATCHER,
   name: 'write-guard',
   script: 'scripts/agent-harness/write-guard/claude-hook.mjs',
   timeout: 10
@@ -70,7 +73,7 @@ const inScratch = ({ files, use }) =>
     use
   })
 
-test('the committed hook source renders the write guard for the Claude Code file tools', () => {
+test('the committed hook source renders the write guard for the Claude Code shell and file tools', () => {
   const settings = JSON.parse(
     renderClaudeSettings({ hooks: readHookSource({ root: REPO_ROOT }) })
   )
@@ -84,7 +87,7 @@ test('the committed hook source renders the write guard for the Claude Code file
             type: 'command'
           }
         ],
-        matcher: 'Edit|Write|NotebookEdit'
+        matcher: MATCHER
       }
     ])
 })
@@ -140,7 +143,7 @@ test('hooks of one event share its list, in source order', () => {
   )
   assert.deepEqual(
     settings.hooks.PreToolUse.map(({ matcher }) => matcher),
-    ['Edit|Write|NotebookEdit', 'Read']
+    [MATCHER, 'Read']
   )
 })
 

@@ -2,7 +2,8 @@
 // ---------------------------------------------------------------------------
 // claude-hook — the Claude Code adapter of the write guard: a PreToolUse
 // hook, wired by `.claude/settings.json`, which `pnpm agent-harness:generate`
-// renders from `.agents/hooks.json` (matcher `Edit|Write|NotebookEdit`).
+// renders from `.agents/hooks.json` (matcher
+// `Bash|PowerShell|Edit|Write|NotebookEdit`).
 //
 // It reads the PreToolUse payload on stdin ({ agent_type, cwd, tool_name,
 // tool_input }), the policy and the agent context of the checkout it runs
@@ -30,8 +31,10 @@ const OWN_ROOT = resolve(HERE, '..', '..', '..')
 const EVENT = 'PreToolUse'
 
 // The switch-off the policy names, spelled here so it is read before the
-// policy's module is imported; a test holds the two equal.
-export const EARLY_SWITCH_OFF = Object.freeze({
+// policy's module is imported; a test, which spawns the hook over a policy
+// module that cannot load, holds the two equal. This file imports no module
+// of the guard at its top, so nothing can fail to load before this point.
+const EARLY_SWITCH_OFF = Object.freeze({
   value: 'off',
   variable: 'ATL_WRITE_GUARD'
 })
@@ -111,4 +114,7 @@ const main = async () => {
   }
 }
 
-if (import.meta.main) await main()
+// A Node that sets no `main` on import.meta (before 24.2.0) still runs the
+// hook: skipping it would let every call through. Only an importer, for
+// which it is false, skips it; the tests spawn the hook and never import it.
+if (import.meta.main !== false) await main()

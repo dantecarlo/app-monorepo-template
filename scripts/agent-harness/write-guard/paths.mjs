@@ -37,7 +37,7 @@
 // file of a sibling worktree is a rule file too.
 // ---------------------------------------------------------------------------
 
-import { existsSync, realpathSync } from 'node:fs'
+import { existsSync, globSync, realpathSync, statSync } from 'node:fs'
 import { homedir, hostname, tmpdir } from 'node:os'
 import { join, posix } from 'node:path'
 
@@ -235,7 +235,7 @@ const split = ({ path }) => {
  */
 const canonical = ({ host, path }) => {
   if (typeof host.realpath !== 'function') {
-    return { from: parentOf({ path }), path, rest: [] }
+    return { from: path, path, rest: [] }
   }
   const real = ({ of }) => {
     const found = host.realpath({ path: of })
@@ -245,7 +245,9 @@ const canonical = ({ host, path }) => {
   }
   const whole = real({ of: path })
   if (whole !== null) {
-    return { from: parentOf({ path: whole }), path: whole, rest: [] }
+    // The walk starts at the path itself: a checkout root is inside its
+    // checkout, and a file holds no `.git`, so it costs one probe more.
+    return { from: whole, path: whole, rest: [] }
   }
   const parent = parentOf({ path })
   const parentReal = parent === null ? null : real({ of: parent })
@@ -301,6 +303,19 @@ const resolveTarget = ({ cwd, host, text }) => {
         remote: false
       }
 }
+
+/**
+ * The absolute path `text` names, resolved against `cwd` and spelled as
+ * `classify` reads it, without touching the disk: the folder a shell
+ * command moves to. A spelling the guard cannot read throws.
+ */
+export const absolutePath = ({ cwd, host, text }) =>
+  resolveTarget({ cwd, host, text }).path
+
+// Whether `text` names a path from a root, a drive or a share rather than
+// from the folder a command runs in. Nothing is read from the disk.
+export const isAbsolutePath = ({ host, text }) =>
+  ABSOLUTE.test(slashed({ text, windows: host.windows }))
 
 const canonicalRoots = ({ host, roots }) =>
   roots
@@ -381,8 +396,75 @@ export const classify = ({ cwd, host, text }) => {
   }
 }
 
+export const DEADLINE_PROBLEM =
+  'the command is too large to judge before the hook deadline'
+
+// Whether `error` is the deadline's, which no caller may swallow: a hook
+// that runs on past its timeout lets the call through.
+export const isDeadline = ({ error }) =>
+  error?.message === DEADLINE_PROBLEM
+
+/**
+ * `classify`, read once per target for one call when `host.cache` is a
+ * Map, and refused once the call is past `host.deadline` (by `host.now`):
+ * a hook that runs past its timeout lets the call through.
+ */
+export const cachedClassify = ({ cwd, host, text }) => {
+  const key = `${cwd ?? ''}\u0000${text}`
+  if (host.cache?.has(key)) {
+    const hit = host.cache.get(key)
+    if (hit instanceof Error) throw hit
+    return hit
+  }
+  if (
+    typeof host.deadline === 'number' &&
+    (host.now ?? Date.now)() > host.deadline
+  ) {
+    throw new Error(DEADLINE_PROBLEM)
+  }
+  try {
+    const where = classify({ cwd, host, text })
+    host.cache?.set(key, where)
+    return where
+  } catch (error) {
+    host.cache?.set(key, error)
+    throw error
+  }
+}
+
 const SCRATCH_VARIABLES = ['TEMP', 'TMP', 'TMPDIR']
 const POSIX_SCRATCH = '/tmp'
+
+// The most wildcard segments a glob may hold for the live host to expand
+// it; `**` is never expanded, so a glob cannot walk the disk.
+const MAX_GLOB_SEGMENTS = 2
+const WILDCARD = /[*?[]/u
+
+const globOnDisk = ({ cwd, pattern }) => {
+  const segments = pattern.replaceAll('\\', SEPARATOR).split(SEPARATOR)
+  if (
+    pattern.includes('**') ||
+    segments.filter((segment) => WILDCARD.test(segment)).length >
+      MAX_GLOB_SEGMENTS
+  ) {
+    return undefined
+  }
+  try {
+    return globSync(pattern.replaceAll('\\', SEPARATOR), { cwd }).map(
+      (found) => (ABSOLUTE.test(found) ? found : join(cwd, found))
+    )
+  } catch {
+    return undefined
+  }
+}
+
+const isDirectoryOnDisk = ({ path }) => {
+  try {
+    return statSync(path).isDirectory()
+  } catch {
+    return false
+  }
+}
 
 const realpathOrNull = ({ path }) => {
   try {
@@ -396,8 +478,11 @@ const realpathOrNull = ({ path }) => {
 // folder and the environment. Tests hand `decide` a synthetic one instead.
 export const liveHost = ({ environment = process.env, ownRoot } = {}) => ({
   env: environment,
+  exists: ({ path }) => existsSync(path),
+  glob: globOnDisk,
   homeDir: homedir(),
   isCheckout: ({ dir }) => existsSync(join(dir, '.git')),
+  isDirectory: isDirectoryOnDisk,
   localHosts: [...LOCAL_HOSTS, hostname().toLowerCase()],
   ownRoot,
   realpath: realpathOrNull,

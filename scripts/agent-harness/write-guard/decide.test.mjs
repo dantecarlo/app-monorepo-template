@@ -2,10 +2,10 @@
 // ---------------------------------------------------------------------------
 // decide — the write guard's decision for the file tools, cell by cell of
 // the decision table in docs/harness.md § 3f, plus the errors, the
-// switch-off variable, the tools this slice does not judge, and the
-// verifier's probes of the per-tool path key and of a planted .git. The
-// policy, the agent context and the host are synthetic (decide.fixtures.mjs),
-// so no case reads the disk. decide.paths.test.mjs holds the path cases.
+// switch-off variable, the tools it leaves alone, and the verifier's
+// probes of the per-tool path key and of a planted .git. The policy, the
+// agent context and the host are synthetic (decide.fixtures.mjs), so no
+// case reads the disk. decide.paths.test.mjs holds the path cases.
 //
 // Usage:
 //   node --test scripts/agent-harness/write-guard/decide.test.mjs
@@ -23,7 +23,7 @@ import {
   SCRATCH,
   verdict
 } from './decide.fixtures.mjs'
-import { decide, FILE_TOOLS, UNJUDGED_TOOLS } from './decide.mjs'
+import { decide, FILE_TOOLS, SHELL_TOOLS } from './decide.mjs'
 
 // The target of each column of the table.
 const TARGETS = {
@@ -242,29 +242,24 @@ test('ATL_WRITE_GUARD=off silences every verdict', () => {
   )
 })
 
-for (const tool of UNJUDGED_TOOLS) {
-  test(`${tool} is not judged in this slice, for any actor`, () => {
-    for (const agent of ['validator', 'e2e-author', undefined]) {
-      assert.equal(
-        decide({
-          agentContext: AGENT_CONTEXT,
-          host: HOST,
-          payload: {
-            ...(agent === undefined ? {} : { agent_type: agent }),
-            cwd: REPO,
-            tool_input: { command: 'echo x > AGENTS.md' },
-            tool_name: tool
-          },
-          policy: POLICY
-        }),
-        undefined
-      )
-    }
-  })
-}
-
-test('the tools left to a later slice are Bash and PowerShell', () => {
-  assert.deepEqual([...UNJUDGED_TOOLS].sort(), ['Bash', 'PowerShell'])
+// Bash and PowerShell have suites of their own: decide.bash*.test.mjs and
+// decide.shell.test.mjs.
+test('the shell tools are Bash and PowerShell, and both are judged', () => {
+  assert.deepEqual([...SHELL_TOOLS].sort(), ['Bash', 'PowerShell'])
+  for (const tool of SHELL_TOOLS) {
+    const found = decide({
+      agentContext: AGENT_CONTEXT,
+      host: HOST,
+      payload: {
+        agent_type: 'validator',
+        cwd: REPO,
+        tool_input: { command: 'echo x > AGENTS.md' },
+        tool_name: tool
+      },
+      policy: POLICY
+    })
+    assert.equal(found?.decision, 'deny', tool)
+  }
 })
 
 for (const payload of [

@@ -4,14 +4,15 @@
 // PreToolUse payload on stdin and the committed policy and agent context of
 // this checkout. The broken-guard cases run a copy of the hook from a
 // scratch tree in the OS temp directory, which `withScratchTree` removes;
-// the junction case builds its own scratch tree and removes it.
+// the junction case builds its own scratch tree and removes it. No case
+// imports the hook: each spawns it, and each checks it never prints allow
+// (claude-hook.fixtures.mjs). The shell tools are claude-hook.shell.test.mjs's.
 //
 // Usage:
 //   node --test scripts/agent-harness/write-guard/claude-hook.test.mjs
 // ---------------------------------------------------------------------------
 
 import assert from 'node:assert/strict'
-import { spawnSync } from 'node:child_process'
 import {
   mkdirSync,
   mkdtempSync,
@@ -22,65 +23,20 @@ import {
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { join } from 'node:path'
 import { test } from 'node:test'
-import { fileURLToPath } from 'node:url'
 
 import { withScratchTree } from '../../gate/scratch.mjs'
-import { EARLY_SWITCH_OFF } from './claude-hook.mjs'
+import {
+  GUARD_DIRECTORY,
+  HOOK,
+  LOADED_MODULES,
+  payloadFor,
+  rawHookOutput,
+  REPO_ROOT,
+  spawnHook
+} from './claude-hook.fixtures.mjs'
 import { AGENT_CONTEXT_FILE, POLICY_FILE, SWITCH_OFF } from './policy.mjs'
-
-const HERE = dirname(fileURLToPath(import.meta.url))
-const HOOK = join(HERE, 'claude-hook.mjs')
-const REPO_ROOT = resolve(HERE, '..', '..', '..')
-const GUARD_DIRECTORY = 'scripts/agent-harness/write-guard'
-// The modules outside the guard's folder that it loads: its glob reader.
-const LOADED_MODULES = [
-  'scripts/manifest.mjs',
-  'scripts/manifest-owners.mjs'
-]
-
-// The environment the hook starts in, without a switch-off a developer may
-// have exported.
-const CLEAN_ENV = Object.fromEntries(
-  Object.entries(process.env).filter(
-    ([key]) => key !== SWITCH_OFF.variable
-  )
-)
-
-const outputs = []
-
-const spawnHook = ({ env = {}, hook = HOOK, input }) => {
-  const result = spawnSync(process.execPath, [hook], {
-    encoding: 'utf8',
-    env: { ...CLEAN_ENV, ...env },
-    input
-  })
-  assert.equal(result.status, 0, result.stderr)
-  assert.equal(result.stderr, '')
-  outputs.push(result.stdout)
-  return result.stdout === ''
-    ? null
-    : JSON.parse(result.stdout).hookSpecificOutput
-}
-
-const payloadFor = ({
-  agent,
-  cwd = REPO_ROOT,
-  filePath,
-  tool = 'Write'
-}) =>
-  JSON.stringify({
-    ...(agent === undefined ? {} : { agent_type: agent }),
-    cwd,
-    hook_event_name: 'PreToolUse',
-    session_id: 'write-guard-test',
-    tool_input:
-      tool === 'NotebookEdit'
-        ? { new_source: 'x', notebook_path: filePath }
-        : { content: 'x', file_path: filePath },
-    tool_name: tool
-  })
 
 test('END TO END: the main session is asked before it writes AGENTS.md', () => {
   const output = spawnHook({
@@ -173,20 +129,6 @@ test('END TO END: ATL_WRITE_GUARD=off prints nothing', () => {
       input: payloadFor({
         agent: 'validator',
         filePath: join(REPO_ROOT, 'AGENTS.md')
-      })
-    }),
-    null
-  )
-})
-
-test('END TO END: a Bash command prints nothing in this slice', () => {
-  assert.equal(
-    spawnHook({
-      input: JSON.stringify({
-        agent_type: 'validator',
-        cwd: REPO_ROOT,
-        tool_input: { command: 'echo x > AGENTS.md' },
-        tool_name: 'Bash'
       })
     }),
     null
@@ -322,7 +264,63 @@ for (const module of [
 }
 
 test('the hook reads the switch-off the policy names, before it imports it', () => {
-  assert.deepEqual(EARLY_SWITCH_OFF, SWITCH_OFF)
+  withScratchTree({
+    files: {
+      ...brokenPolicyTree(),
+      [POLICY_FILE]: readFileSync(join(REPO_ROOT, POLICY_FILE), 'utf8'),
+      [`${GUARD_DIRECTORY}/policy.mjs`]: "throw new Error('cannot load')\n"
+    },
+    prefix: 'write-guard-hook-',
+    use: ({ root }) => {
+      const hook = join(root, GUARD_DIRECTORY, 'claude-hook.mjs')
+      const input = payloadFor({
+        agent: 'validator',
+        cwd: root,
+        filePath: join(root, 'docs', 'a.md')
+      })
+      assert.equal(
+        spawnHook({
+          env: { [SWITCH_OFF.variable]: SWITCH_OFF.value },
+          hook,
+          input
+        }),
+        null
+      )
+      assert.equal(
+        spawnHook({ env: { [SWITCH_OFF.variable]: 'on' }, hook, input })
+          ?.permissionDecision,
+        'deny'
+      )
+    }
+  })
+})
+
+// On a Node with no import.meta.main the entry must still run: a hook that
+// runs nothing lets every call through. The copy spells it as that Node
+// sees it.
+test('END TO END: a hook on a Node without import.meta.main still judges the call', () => {
+  const entry = readFileSync(HOOK, 'utf8')
+  const spellings = entry.split('import.meta.main').length - 1
+  assert.equal(spellings, 1, 'the entry reads import.meta.main once')
+  withScratchTree({
+    files: {
+      ...brokenPolicyTree(),
+      [POLICY_FILE]: readFileSync(join(REPO_ROOT, POLICY_FILE), 'utf8'),
+      [`${GUARD_DIRECTORY}/claude-hook.mjs`]: entry.replace(
+        'import.meta.main',
+        'undefined'
+      )
+    },
+    prefix: 'write-guard-hook-',
+    use: ({ root }) => {
+      // The scratch tree is no checkout, so the target is this one's.
+      const output = spawnHook({
+        hook: join(root, GUARD_DIRECTORY, 'claude-hook.mjs'),
+        input: payloadFor({ filePath: join(REPO_ROOT, 'AGENTS.md') })
+      })
+      assert.equal(output?.permissionDecision, 'ask')
+    }
+  })
 })
 
 // A junction is a link the file tools write through. Removing the scratch
@@ -376,10 +374,27 @@ test('Given a junction to a rule folder, when the main session or a read-only ag
   }
 })
 
+// Every case asserts it through spawnHook too; this one runs its own calls,
+// so it holds whichever cases run beside it.
 test('END TO END: the hook never prints allow', () => {
-  assert.ok(outputs.length > 0, 'no case ran the hook')
+  const printed = [
+    payloadFor({ filePath: join(REPO_ROOT, 'AGENTS.md') }),
+    payloadFor({ filePath: join(REPO_ROOT, 'docs', 'notes.md') }),
+    payloadFor({
+      agent: 'validator',
+      filePath: join(REPO_ROOT, 'docs', 'notes.md')
+    }),
+    payloadFor({
+      agent: 'validator',
+      filePath: join(tmpdir(), 'write-guard-probe.log')
+    })
+  ].map((input) => rawHookOutput({ input }))
+  assert.ok(
+    printed.some((output) => output !== ''),
+    'no verdict printed'
+  )
   assert.deepEqual(
-    outputs.filter((output) => output.includes('"allow"')),
+    printed.filter((output) => output.includes('"allow"')),
     []
   )
 })

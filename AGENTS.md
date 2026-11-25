@@ -259,10 +259,10 @@ written reason, records a false positive. Reaching for one to silence a finding
 that is true is what this LAW forbids.
 
 **Enforced by** the write guard (`docs/harness.md` §3f, `pnpm write-guard:test`):
-in Claude Code, an Edit, Write or NotebookEdit of a rule file asks the human
-first, the main session included, and a read-only agent is refused. It does not
-read Bash or PowerShell, nor run in Codex, OpenCode or Copilot. Beyond that,
-review: no gate can tell why a rule changed.
+in Claude Code, an Edit, Write, NotebookEdit, Bash or PowerShell write of a rule
+file asks the human first, the main session included, and a read-only agent is
+refused. It does not read a script's inside, nor run in Codex, OpenCode or
+Copilot. Beyond that, review: no gate can tell why a rule changed.
 
 ### Every change is architectural — LAW
 

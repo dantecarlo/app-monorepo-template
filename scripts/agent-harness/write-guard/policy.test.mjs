@@ -25,6 +25,9 @@ import {
   AGENT_CONTEXT_FILE,
   assertPolicy,
   GIT_RULE,
+  heldFoldersOf,
+  heldRuleFor,
+  homeHeldRuleFor,
   homeRuleFor,
   isSwitchedOff,
   loadGuardFiles,
@@ -388,4 +391,68 @@ test('a surface actor carries its folders, normalised', () => {
 test('the policy file the hook reads is the contract under .agents/contracts', () => {
   assert.equal(POLICY_FILE, '.agents/contracts/write-guard.json')
   assert.equal(AGENT_CONTEXT_FILE, '.agents/agent-context.json')
+})
+
+// -- a folder that holds rule files --------------------------------------------
+const HELD_POLICY = {
+  ruleFiles: [
+    { glob: 'AGENTS.md', what: 'the LAWs' },
+    { glob: '.claude/skills/**', what: 'a skill' },
+    { glob: 'scripts/verify-*', what: 'a gate' },
+    { glob: '**/*allowlist*.json', what: 'an allowlist' },
+    { glob: '~/.claude/settings.json', what: 'the user-level settings' }
+  ],
+  switchOff: SWITCH_OFF
+}
+
+for (const [relative, glob] of [
+  ['.claude', '.claude/skills/**'],
+  ['.Claude/', '.claude/skills/**'],
+  ['.claude/skills', '.claude/skills/**'],
+  ['scripts', 'scripts/verify-*']
+]) {
+  test(`a folder holds the rule files a glob reads below it: ${relative}`, () => {
+    const rule = heldRuleFor({ policy: HELD_POLICY, relative })
+    assert.equal(rule?.glob, glob)
+    assert.equal(rule.held, true)
+  })
+}
+
+for (const relative of [
+  '',
+  'apps',
+  'apps/web/.next',
+  'scripts/gate',
+  '.claude/agents'
+]) {
+  test(`a folder that holds no rule file, or the root, holds none: "${relative}"`, () => {
+    assert.equal(heldRuleFor({ policy: HELD_POLICY, relative }), undefined)
+  })
+}
+
+test('a folder of the home folder holds the user-level settings', () => {
+  assert.equal(
+    homeHeldRuleFor({ policy: HELD_POLICY, relative: '.claude' })?.glob,
+    '~/.claude/settings.json'
+  )
+  assert.equal(
+    homeHeldRuleFor({ policy: HELD_POLICY, relative: '' }),
+    undefined
+  )
+  assert.equal(
+    heldRuleFor({ policy: HELD_POLICY, relative: '~' }),
+    undefined
+  )
+})
+
+test('heldFoldersOf lists every folder below which a glob matches', () => {
+  assert.deepEqual(heldFoldersOf({ glob: '.claude/skills/**' }), [
+    '.claude/skills',
+    '.claude'
+  ])
+  assert.deepEqual(heldFoldersOf({ glob: 'scripts/verify-*' }), [
+    'scripts'
+  ])
+  assert.deepEqual(heldFoldersOf({ glob: 'AGENTS.md' }), [])
+  assert.deepEqual(heldFoldersOf({ glob: '**/*allowlist*.json' }), [])
 })
