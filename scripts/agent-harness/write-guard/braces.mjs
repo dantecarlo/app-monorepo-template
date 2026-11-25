@@ -115,5 +115,16 @@ export const braceExpand = ({ word }) => {
     }
     pending.push(...expanded.reverse())
   }
-  return { words: done }
+  // `{AGENTS.md,}` leaves an empty word, which Bash drops: only an unquoted
+  // part can be empty this way, so a word holding a quoted part stays.
+  return {
+    words: done.filter(
+      (next) =>
+        next === word ||
+        !next.parts.every(
+          (part) =>
+            'lit' in part && part.quoted !== true && part.lit === ''
+        )
+    )
+  }
 }

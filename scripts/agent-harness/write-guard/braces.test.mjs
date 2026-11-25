@@ -67,3 +67,13 @@ test('the parts around the braces are kept', () => {
   assert.equal(words.length, 2)
   assert.ok(words.every((word) => word.parts[0].quoted === true))
 })
+
+test('an empty word a brace expansion leaves is dropped, as Bash drops it', () => {
+  assert.deepEqual(texts({ text: '{AGENTS.md,}' }), ['AGENTS.md'])
+  assert.deepEqual(texts({ text: '{,}' }), [])
+  assert.deepEqual(texts({ text: 'x{,}' }), ['x', 'x'])
+  assert.equal(
+    braceExpand({ word: wordOf({ text: '""{a,}' }) }).words.length,
+    2
+  )
+})
