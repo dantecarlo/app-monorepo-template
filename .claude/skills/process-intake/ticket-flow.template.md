@@ -67,7 +67,7 @@
 
 ## Merge policy
 
-- **Policy:** `manual`
+- **Policy:** `delivery.mergePolicy` in `.agents/harness.config.json`
 - **What each policy allows:** `manual`, the default, keeps a human in the loop: the architect
   asks the owner for every merge, in its own session. `low-risk` lets the architect merge,
   without asking, a pull request that meets every condition of `ticket-flow` rule 4 (Ready to

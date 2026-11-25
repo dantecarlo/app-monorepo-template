@@ -4,19 +4,22 @@
 -- Source of truth: packages/supabase/docs/database.md (pgTAP workflow).
 --
 -- Run with: pnpm --filter @app/supabase test:db
---   (which executes: supabase test db --linked)
+--   (which runs supabase test db --linked, or the target config.testDbTarget names, over a
+--   copy of this folder where each file applies the checkout's pending migrations right after
+--   its begin;)
 --
--- NOTE: the CLI enables pgtap on the linked project, then runs pg_prove in a
--- Docker container, so a person or a CI job with Docker runs this file. It is
--- intentionally NOT in the offline pnpm validate gate; AGENTS.md forbids an
--- agent to start Docker.
+-- NOTE: the CLI enables pgtap on the target, then runs pg_prove in a Docker container, so a
+-- person or a CI job with Docker runs this file. It is intentionally NOT in the offline pnpm
+-- validate gate; AGENTS.md forbids an agent to start Docker.
 --
 -- Every .sql file in this folder is a suite pg_prove runs on its own, and pg_prove fails one
 -- whose output has no plan; src/__tests__/supabaseSql.test.ts checks offline that each file
 -- calls plan() and finish(). The conventions every suite shares are here and in
 -- packages/supabase/docs/database.md (pgTAP workflow).
 --
--- TRANSACTION: the whole file runs in BEGIN / ROLLBACK, so no state persists.
+-- TRANSACTION: the whole file runs in BEGIN / ROLLBACK, so no state persists. test:db applies
+-- the checkout's pending migrations inside it and refuses a file that does not open with
+-- begin; and end with rollback; (packages/supabase/docs/database.md, pgTAP workflow).
 --
 -- IMPERSONATION: auth.uid() reads request.jwt.claims ->> 'sub'. Use:
 --   set local "request.jwt.claims" to '{"sub":"<uuid>","role":"authenticated"}';

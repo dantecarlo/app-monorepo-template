@@ -664,11 +664,14 @@ scrubbed copy, which keeps the `[circular]` markers of the place that made it.
 
 **Note:** the result therefore shares each scrubbed copy wherever the input shared the object: a
 graph, not a tree. A serializer with no depth limit writes a shared copy once per path that
-reaches it, so a sink that serializes the result needs a depth limit of its own. The Sentry
-configs of both apps leave `normalizeDepth` at Sentry's default of 3, and Sentry (`prepareEvent`
-in `@sentry/core` 10.61.0 for apps/web and 10.75.2 for apps/mobile) normalizes the data of every
-breadcrumb and the `user`, `contexts` and `extra` of an event to that depth before `beforeSend`
-runs, which covers every place the apps put a scrubbed value.
+reaches it, so a sink that serializes the result needs a depth limit of its own.
+
+<!-- region sentry -->
+The Sentry configs of both apps leave `normalizeDepth` at Sentry's default of 3, and Sentry
+(`prepareEvent` in `@sentry/core` 10.61.0 for apps/web and 10.75.2 for apps/mobile) normalizes
+the data of every breadcrumb and the `user`, `contexts` and `extra` of an event to that depth
+before `beforeSend` runs, which covers every place the apps put a scrubbed value.
+<!-- endregion sentry -->
 
 **Evidence:** `packages/core/src/utils/scrubPII.helper.ts:77-101`,
 `packages/core/src/utils/scrubPII.helper.ts:18-25`
@@ -745,7 +748,7 @@ package, no `@/` alias, no `#` key but `#src/`, and no `node:` builtin.
 - **GIVEN** a production file of packages/core that imports `createClient` from the Supabase SDK
 - **WHEN** it is linted
 - **THEN** lint reports `vendorInCore` for it
-- **Test:** `eslint-local-rules/index.test.mjs` › "import { createClient } from '@supabase/supabase-js'"
+- **Test:** `eslint-local-rules/index.test.mjs` › "a vendor SDK import is refused in core"
 
 #### Scenario: a Node builtin
 
@@ -806,12 +809,14 @@ The core package SHALL declare the consent port, `IConsentPort`, whose `grant`, 
 - **THEN** it holds exactly `granted`, `denied`, `pending` and `not-required`
 - **Test:** `packages/core/src/ports/consent/__tests__/consentStatus.type.test.ts` › "names the four consent statuses"
 
+<!-- region web-next -->
 #### Scenario: an app implements the port
 
 - **GIVEN** the web app's consent composition root, typed as `IConsentPort`
 - **WHEN** consent is granted through it
 - **THEN** its provider receives the grant
 - **Test:** `apps/web/src/lib/observability/__tests__/consent.adapter.test.ts` › "binds the PostHog consent by default"
+<!-- endregion web-next -->
 
 ### Requirement: CORE-28 — The key-value storage port
 

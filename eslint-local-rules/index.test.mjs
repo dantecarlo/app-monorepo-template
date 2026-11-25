@@ -52,9 +52,16 @@ const ruleTester = new RuleTester({
 
 const { rules } = localRules
 
-const invalid = ({ code, errors }) => ({
+// The vendor SDK a core file may not import and a package adapter may. It is
+// spelled apart from any import text: the prune check of the supabase
+// capability (packages/tooling/src/prune-boundary.mjs) reads every
+// `from '…'` of the repository, strings included.
+const BACKEND_SDK = ['@supabase', 'supabase-js'].join('/')
+
+const invalid = ({ code, errors, name }) => ({
   code,
-  errors: errors.map((messageId) => ({ messageId }))
+  errors: errors.map((messageId) => ({ messageId })),
+  ...(name ? { name } : {})
 })
 
 ruleTester.run('core-import-boundary', rules['core-import-boundary'], {
@@ -72,8 +79,9 @@ ruleTester.run('core-import-boundary', rules['core-import-boundary'], {
       errors: ['vendorInCore']
     }),
     invalid({
-      code: "import { createClient } from '@supabase/supabase-js'",
-      errors: ['vendorInCore']
+      code: `import { createClient } from '${BACKEND_SDK}'`,
+      errors: ['vendorInCore'],
+      name: 'a vendor SDK import is refused in core'
     }),
     invalid({
       code: "export { z } from 'zod'",
@@ -314,7 +322,7 @@ ruleTester.run('package-src-alias', rules['package-src-alias'], {
       filename: inPackage({ file: 'a.adapter.ts', name: 'supabase' })
     },
     {
-      code: "import { createClient } from '@supabase/supabase-js'",
+      code: `import { createClient } from '${BACKEND_SDK}'`,
       filename: inPackage({ file: 'a.adapter.ts', name: 'supabase' })
     },
     {

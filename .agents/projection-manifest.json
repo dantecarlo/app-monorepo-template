@@ -3,7 +3,7 @@
   "outputs": {
     ".claude/agents/sdd-steward.md": "829a9c4c52d9358411292c05071e824962e6879d90fb9df771a26d9130485178",
     ".claude/agents/validator.md": "2d2d3a4279843076362bb5fe434ca4f0d563359ebc9ab21d593b8fdc0d9dfcc0",
-    ".claude/settings.json": "dd675c1cb62382525683cd6174c320b6e77ae2112baa770b9236fd62c80099fd",
+    ".claude/settings.json": "c503da58aecb1f30d48c673c461fb0bce64ffb232fdd1742e7703d089b312307",
     ".codex/agents/sdd-steward.toml": "c938d654b911822a9b539762167a941ef3c93842cc1e7b272459675e4c9f0b48",
     ".codex/agents/validator.toml": "5ed96d6a3fb499d172520131437d27dea8494e0ddf042132da52c5a8164a74e4",
     ".codex/config.toml": "885e007db4166803f1b0935529a24ae51bf2bb6378252363978482483557b5d3",

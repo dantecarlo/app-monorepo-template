@@ -5,17 +5,23 @@
 //
 // It reads the catalog (.agents/contracts/mcp-servers.json), .mcp.json when
 // one exists, and docs/mcp.md, and fails:
-//   - a malformed catalog: an entry without its fields, a command that is
-//     not the unpinned `npx -y <package> [server args...]` (decision 55),
-//     a doc that does not exist; or a .mcp.json that does not parse;
+//   - a malformed catalog: an entry without its fields, an area other than
+//     web or mobile, a version that is not exact (a range, `latest` or a
+//     tag), an entry outside its package, server args that are not a list
+//     of words, a command that is not `node scripts/mcp/launch.mjs <its
+//     name>` (decision 61: never `npx`), a doc that does not exist; or a
+//     .mcp.json that does not parse;
+//   - a .mcp.json server named like a catalog server that does not run the
+//     launcher with its own name, and one that runs the launcher with no
+//     catalog name or more than that name;
 //   - a block that is missing, or that differs from what the updater wrote:
 //     its end marker carries a digest of its lines, so a value or a line
 //     typed by hand fails; `pnpm mcp:docs` rewrites it;
-//   - a server, a package or a capability that differs between the block
-//     and the catalog plus .mcp.json.
+//   - a server, a package, a capability, a pinned version or a command that
+//     differs between the block and the catalog plus .mcp.json.
 //
-// Versions are informational: the gate never judges whether one is the
-// latest, and it makes no network request. Only `pnpm mcp:docs` asks the
+// Latest releases are informational: the gate never judges whether a pin is
+// the latest, and it makes no network request. Only `pnpm mcp:docs` asks the
 // registry, and only when run explicitly.
 //
 // Usage:
@@ -29,6 +35,7 @@ import { parseArgs } from 'node:util'
 import { defineGate, reportGate } from './gate/gate.mjs'
 import {
   digestOf,
+  launcherProblems,
   listServers,
   MCP_CATALOG_PATH,
   MCP_CONFIG_PATH,
@@ -40,6 +47,13 @@ import { readSources } from './update-mcp-docs.mjs'
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const RUN_UPDATER = 'run `pnpm mcp:docs`'
 const SOURCES = `the catalog and ${MCP_CONFIG_PATH}`
+// What a row must agree on: its label, the server's field, the row's field.
+const COMPARED = [
+  ['package', 'packageName', 'packageName'],
+  ['capability', 'capability', 'capability'],
+  ['pinned version', 'version', 'version'],
+  ['command', 'commandLine', 'command']
+]
 
 export const collectContext = ({ root }) => readSources({ root })
 
@@ -65,16 +79,13 @@ const differences = ({ expected, rows }) => {
           `${server.name} is in ${source} but not in the block — ${RUN_UPDATER}`
         ]
       }
-      return [
-        ['package', 'packageName'],
-        ['capability', 'capability']
-      ]
-        .filter(([, field]) => row[field] !== server[field])
-        .map(
-          ([label, field]) =>
-            `${server.name}: the block names the ${label} ${row[field] ?? '—'}, ` +
-            `${SOURCES} name ${server[field] ?? '—'} — ${RUN_UPDATER}`
-        )
+      return COMPARED.filter(
+        ([, field, rowField]) => row[rowField] !== server[field]
+      ).map(
+        ([label, field, rowField]) =>
+          `${server.name}: the block names the ${label} ${row[rowField] ?? '—'}, ` +
+          `${SOURCES} name ${server[field] ?? '—'} — ${RUN_UPDATER}`
+      )
     }),
     ...rows
       .filter(({ name }) => !known.has(name))
@@ -113,20 +124,31 @@ const blockFindings = ({ doc }) => {
 export const gate = defineGate({
   claims:
     `the generated block of ${MCP_DOC_PATH} is the one \`pnpm mcp:docs\` ` +
-    `wrote, and lists every server, package and capability of ${MCP_CATALOG_PATH} ` +
-    `plus ${MCP_CONFIG_PATH} and no other; every catalog entry is the ` +
-    'unpinned `npx -y <package> [server args...]` and names docs that exist.',
+    'wrote, and lists every server, package, capability, pinned version ' +
+    `and command of ${MCP_CATALOG_PATH} plus ${MCP_CONFIG_PATH} and no ` +
+    'other; every catalog entry has the area web or mobile, pins an exact ' +
+    'version, runs `node scripts/mcp/launch.mjs <its name>`, never `npx`, ' +
+    `and names docs that exist; and every ${MCP_CONFIG_PATH} server named ` +
+    'like a catalog server, or that runs the launcher, runs it with one ' +
+    'catalog name.',
   id: 'verify-mcp-docs',
   notCovered:
-    'whether a recorded version is still the latest, which only ' +
-    '`pnpm mcp:docs` asks the registry; whether the prose of the doc ' +
-    'still describes what a server does after a release; and a digest ' +
+    'whether a pin is still the latest release, or old enough for the ' +
+    'release-age policy, which only `pnpm mcp:docs` asks the registry; ' +
+    'whether the entry is the bin file the pinned release publishes, or ' +
+    'is installed, which the session-start check reads; whether a server ' +
+    'starts when the launcher imports its entry; whether the prose of the ' +
+    'doc still describes what a server does after a release; and a digest ' +
     'recomputed by hand, which review reads in the diff.',
   run: ({ catalog, config, doc, docsPresent }) => {
     const sourceProblems = [
       ...catalog.problems,
       ...config.problems,
-      ...missingDocs({ catalog, docsPresent })
+      ...missingDocs({ catalog, docsPresent }),
+      ...launcherProblems({
+        catalog: catalog.servers,
+        config: config.servers
+      })
     ]
     const { block, findings } = blockFindings({ doc })
     if (block === undefined || catalog.problems.length > 0)

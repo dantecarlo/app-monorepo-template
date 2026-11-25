@@ -11,6 +11,27 @@ const KEY = 'phc_contract_key'
 const HOST = 'https://eu.i.posthog.com'
 const GRANT_RECORD_KEY = 'posthog-consent:granted'
 
+// What posthog-js keeps for the key under `granted`: its persistence in a
+// cookie and in local and session storage, and a part beside it. And what it
+// keeps for another project and what the app keeps, which stay.
+const SDK_PERSISTENCE = `ph_${KEY}_posthog`
+const SDK_WINDOW_ID = `ph_${KEY}_window_id`
+const OTHER_PERSISTENCE = 'ph_phc_other_key_posthog'
+const APP_VALUE = 'app.theme'
+
+const storeAsGranted = () => {
+  localStorage.setItem(SDK_PERSISTENCE, 'stored')
+  localStorage.setItem(OTHER_PERSISTENCE, 'stored')
+  localStorage.setItem(APP_VALUE, 'dark')
+  sessionStorage.setItem(SDK_WINDOW_ID, 'stored')
+  document.cookie = `${SDK_PERSISTENCE}=stored; path=/`
+}
+
+const hasCookie = ({ name }: { name: string }) =>
+  document.cookie
+    .split(';')
+    .some((cookie) => cookie.trim().startsWith(`${name}=`))
+
 // The client reads the environment once, when its module loads: each test
 // loads a fresh copy under its own environment.
 const loadClient = async ({
@@ -74,6 +95,8 @@ afterEach(() => {
   vi.unstubAllEnvs()
   vi.unstubAllGlobals()
   localStorage.clear()
+  sessionStorage.clear()
+  document.cookie = `${SDK_PERSISTENCE}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`
 })
 
 test('never loads PostHog without a key', async () => {
@@ -140,6 +163,42 @@ test('loads PostHog at start in opt-in mode after a grant from an earlier visit'
   expect(await posthogClient.settled()).toBeDefined()
   expect(loadSdk).toHaveBeenCalledOnce()
   expect(init).toHaveBeenCalledOnce()
+})
+
+// A project that switches from `granted` to `opt-in` leaves what `granted`
+// stored where posthog-js put it, and nothing loads the SDK to read it.
+test('removes what PostHog stored before at an opt-in start with no grant', async () => {
+  storeAsGranted()
+
+  await loadClient({ consent: 'opt-in', key: KEY })
+
+  expect(localStorage.getItem(SDK_PERSISTENCE)).toBeNull()
+  expect(sessionStorage.getItem(SDK_WINDOW_ID)).toBeNull()
+  expect(hasCookie({ name: SDK_PERSISTENCE })).toBe(false)
+  expect(localStorage.getItem(OTHER_PERSISTENCE)).toBe('stored')
+  expect(localStorage.getItem(APP_VALUE)).toBe('dark')
+  expect(loadSdk).not.toHaveBeenCalled()
+})
+
+test('keeps what PostHog stored at an opt-in start after a grant', async () => {
+  storeAsGranted()
+  localStorage.setItem(GRANT_RECORD_KEY, 'true')
+
+  await loadClient({ consent: 'opt-in', key: KEY })
+
+  expect(localStorage.getItem(SDK_PERSISTENCE)).toBe('stored')
+  expect(sessionStorage.getItem(SDK_WINDOW_ID)).toBe('stored')
+  expect(hasCookie({ name: SDK_PERSISTENCE })).toBe(true)
+})
+
+test('keeps what PostHog stored outside opt-in mode', async () => {
+  storeAsGranted()
+
+  await startClient({ consent: 'granted', key: KEY })
+
+  expect(localStorage.getItem(SDK_PERSISTENCE)).toBe('stored')
+  expect(sessionStorage.getItem(SDK_WINDOW_ID)).toBe('stored')
+  expect(hasCookie({ name: SDK_PERSISTENCE })).toBe(true)
 })
 
 test('turns session recording and autocapture off', async () => {

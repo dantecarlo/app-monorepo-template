@@ -4,8 +4,12 @@
     ".agents/agent-context.json",
     ".agents/agents/**",
     ".agents/contracts/dependencies.json",
+    ".agents/contracts/gates.json",
+    ".agents/contracts/harness-config.schema.json",
     ".agents/contracts/mcp-servers.json",
+    ".agents/contracts/process-reaper.json",
     ".agents/contracts/write-guard.json",
+    ".agents/harness.config.json",
     ".agents/hooks.json",
     ".agents/projection-manifest.json",
     ".claude/agents/**",
@@ -99,6 +103,7 @@
     "scripts/manifest.mjs",
     "scripts/manifest.test.mjs",
     "scripts/mcp-docs.detect.mjs",
+    "scripts/mcp/**",
     "scripts/move-tests-into-blocks.mjs",
     "scripts/move-tests-into-blocks.test.mjs",
     "scripts/prune-worktrees.detect.mjs",
@@ -106,12 +111,16 @@
     "scripts/prune-worktrees.test.mjs",
     "scripts/update-mcp-docs.mjs",
     "scripts/update-mcp-docs.test.mjs",
+    "scripts/validate.mjs",
+    "scripts/validate.test.mjs",
     "scripts/verify-agent-context.mjs",
     "scripts/verify-agent-context.test.mjs",
     "scripts/verify-allowlist-freshness.mjs",
     "scripts/verify-allowlist-freshness.test.mjs",
     "scripts/verify-dependency-seams.mjs",
     "scripts/verify-dependency-seams.test.mjs",
+    "scripts/verify-harness-config.mjs",
+    "scripts/verify-harness-config.test.mjs",
     "scripts/verify-instruction-entry.mjs",
     "scripts/verify-instruction-entry.test.mjs",
     "scripts/verify-manifest-coverage.mjs",
@@ -157,6 +166,30 @@
         {
           "verb": "remove-workspace",
           "entry": "packages/tokens"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.verify:theme-sync"
+        },
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.verify:theme-sync:test"
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/web/package.json",
+          "name": "@app/tokens",
+          "scope": "dependencies"
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/mobile/package.json",
+          "name": "@app/tokens",
+          "scope": "dependencies"
         }
       ]
     },
@@ -180,6 +213,18 @@
             "apps/web/src/i18n/**",
             "apps/web/src/lib/i18n/**"
           ]
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/web/package.json",
+          "name": "@app/i18n",
+          "scope": "dependencies"
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/mobile/package.json",
+          "name": "@app/i18n",
+          "scope": "dependencies"
         }
       ]
     },
@@ -213,6 +258,12 @@
           "file": "package.json",
           "op": "unset",
           "path": "scripts.smoke:web"
+        },
+        {
+          "verb": "patch-json",
+          "file": "knip.json",
+          "op": "unset",
+          "path": "workspaces.apps/web"
         },
         {
           "verb": "remove",
@@ -253,6 +304,12 @@
           "file": "package.json",
           "op": "unset",
           "path": "scripts.verify:expo"
+        },
+        {
+          "verb": "patch-json",
+          "file": "knip.json",
+          "op": "unset",
+          "path": "workspaces.apps/mobile"
         }
       ]
     },
@@ -262,7 +319,8 @@
       "group": "backend",
       "claims": [
         "openspec/specs/packages/supabase/spec.md",
-        "packages/supabase/**"
+        "packages/supabase/**",
+        "scripts/supabase-test-db.mjs"
       ],
       "onAbsent": [
         {
@@ -273,7 +331,6 @@
           "verb": "remove",
           "paths": [
             "apps/mobile/src/lib/supabase/**",
-            "apps/web/src/app/SupabaseProviders.tsx",
             "apps/web/src/lib/supabase/**"
           ]
         },
@@ -306,6 +363,25 @@
           "file": "apps/mobile/package.json",
           "name": "@supabase/supabase-js",
           "scope": "dependencies"
+        },
+        {
+          "verb": "patch-json",
+          "file": ".agents/harness.config.json",
+          "op": "set",
+          "path": "backend.kind",
+          "value": "none"
+        },
+        {
+          "verb": "patch-json",
+          "file": ".agents/harness.config.json",
+          "op": "unset",
+          "path": "backend.databaseTests"
+        },
+        {
+          "verb": "patch-json",
+          "file": "knip.json",
+          "op": "unset",
+          "path": "ignoreBinaries"
         }
       ]
     },
@@ -332,6 +408,12 @@
             "apps/web/src/lib/image-delivery/**",
             "apps/web/src/lib/origin-guard/**"
           ]
+        },
+        {
+          "verb": "remove-dep",
+          "file": "apps/web/package.json",
+          "name": "@app/cloudflare",
+          "scope": "dependencies"
         }
       ]
     },
@@ -488,6 +570,7 @@
         "openspec/config.yaml",
         "openspec/specs/harness/dependency-seams/spec.md",
         "openspec/specs/harness/mcp/spec.md",
+        "openspec/specs/harness/process-reaper/spec.md",
         "openspec/specs/harness/ticket-flow/spec.md",
         "openspec/specs/packages/core/spec.md",
         "openspec/specs/packages/tooling/spec.md",
@@ -527,6 +610,13 @@
           "file": "package.json",
           "op": "unset",
           "path": "scripts.report:spec-drift:test"
+        },
+        {
+          "verb": "patch-json",
+          "file": ".agents/harness.config.json",
+          "op": "set",
+          "path": "workflow.mode",
+          "value": "odd"
         },
         {
           "paths": ["openspec/specs/**"],

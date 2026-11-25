@@ -4,8 +4,9 @@
 // The caller runs git and hands over what it printed; these functions only
 // read it and decide: the options, the worktree list, the branches and their
 // upstreams, a worktree's status and hidden files, the main checkout's local
-// changes, why git refused a fast-forward, and every line the command prints.
-// No filesystem and no git here.
+// changes, why git refused a fast-forward, the install a fast-forward that
+// changed the lockfile runs, and every line the command prints. No
+// filesystem and no git here.
 // ---------------------------------------------------------------------------
 
 import { resolve } from 'node:path'
@@ -37,14 +38,99 @@ const OPTION = { DRY_RUN: '--dry-run', QUIET: '--quiet' }
 // its own.
 export const NESTED_RUN_VARIABLE = 'PRUNE_WORKTREES_RUNNING'
 
+// The bound, in seconds, on the `git fetch --prune origin` a run starts
+// with: a stalled remote would otherwise hold the merge or the pull whose
+// post-merge started it.
+export const FETCH_SECONDS_VARIABLE = 'PRUNE_WORKTREES_FETCH_SECONDS'
+const FETCH_SECONDS = 30
+
+// The bound, in seconds, on the `pnpm install` a fast-forward that changed
+// the lockfile runs: an install that hangs would otherwise hold the merge.
+export const INSTALL_SECONDS_VARIABLE = 'PRUNE_WORKTREES_INSTALL_SECONDS'
+const INSTALL_SECONDS = 120
+
+// `fallback`, or the positive number of seconds `variable` names; any other
+// value, an empty one included, throws, naming the variable and it.
+const secondsFrom = ({ env, fallback, variable }) => {
+  const value = env[variable]
+  if (value === undefined) return fallback
+  const seconds = Number(value)
+  if (value.trim() === '' || !Number.isFinite(seconds) || seconds <= 0) {
+    throw new Error(
+      `${variable} must be a positive number of seconds, not "${value}"`
+    )
+  }
+  return seconds
+}
+
+// 30, or the positive number of seconds FETCH_SECONDS_VARIABLE names.
+export const fetchSecondsFrom = ({ env }) =>
+  secondsFrom({
+    env,
+    fallback: FETCH_SECONDS,
+    variable: FETCH_SECONDS_VARIABLE
+  })
+
+// 120, or the positive number of seconds INSTALL_SECONDS_VARIABLE names.
+export const installSecondsFrom = ({ env }) =>
+  secondsFrom({
+    env,
+    fallback: INSTALL_SECONDS,
+    variable: INSTALL_SECONDS_VARIABLE
+  })
+
+// The lockfile whose change, in a fast-forward, makes the run install; the
+// install it runs, a plain `pnpm install` that may resolve again and so
+// rewrite the lockfile (the owner, 2026-11-25, translated from Spanish:
+// "Change to pnpm i"); and the command a person runs when it fails.
+export const LOCKFILE = 'pnpm-lock.yaml'
+const INSTALL_ARGS = ['install']
+const INSTALL_LINE = `pnpm ${INSTALL_ARGS.join(' ')}`
+const RETRY_COMMAND = INSTALL_LINE
+
+// The command and arguments that run the install: through cmd.exe on
+// Windows, where pnpm is a `.cmd` only a shell starts, and `pnpm` itself
+// elsewhere.
+export const installCommandOf = ({ comspec, platform }) =>
+  platform === 'win32'
+    ? {
+        args: ['/d', '/s', '/c', 'pnpm', ...INSTALL_ARGS],
+        command: comspec ?? 'cmd.exe'
+      }
+    : { args: [...INSTALL_ARGS], command: 'pnpm' }
+
+// What a finished install run says about itself: `installed`, or `failed`
+// with why, from what `runBounded` resolved.
+export const installOutcomeOf = ({ run, seconds }) => {
+  if (run.timedOut)
+    return { state: 'failed', why: `did not finish within ${seconds} s` }
+  if (run.error)
+    return {
+      state: 'failed',
+      why: `could not start: ${run.error.message}`
+    }
+  if (run.code !== 0) return { state: 'failed', why: `exited ${run.code}` }
+  return { state: 'installed' }
+}
+
 export const NOT_COVERED =
   'a dry run still runs git fetch --prune origin, which it needs to read ' +
   'a [gone] upstream; on Windows, a worktree another process holds as its ' +
   'current directory is emptied and unregistered while its directory ' +
-  'stays; and the prune runs in the foreground, so the merge that started ' +
-  'it waits for it'
+  'stays; the prune runs in the foreground, so the merge that started it ' +
+  `waits for it, for its fetch up to ${FETCH_SECONDS_VARIABLE} ` +
+  `(${FETCH_SECONDS} s unless set); on Windows a fetch stopped at that ` +
+  "bound ends with every process it started, but without git's own " +
+  'cleanup, so a lock file of git may stay behind; and an ignored file ' +
+  'written in the moment between the check just before a removal and ' +
+  "git's own removal goes with the worktree"
 
 export const LOCAL_CHANGES = 'it holds local changes'
+// Why a dry run predicts that git would not fast-forward the main checkout:
+// its HEAD is not an ancestor of the default branch.
+export const DIVERGED =
+  'it holds commits the default branch does not, so git would not ' +
+  'fast-forward it'
 
 // Ignored paths that an install, a build, a typecheck, a test run or the
 // next session writes again: a directory of the first names at any depth;
@@ -68,8 +154,9 @@ const REBUILT_AT_ROOTS = new Set([
 ])
 const WORKSPACE_GROUPS = new Set(['apps', 'packages'])
 const WORKSPACE_ROOT_DEPTH = 2
-// `.atl/` is not among them: it holds machine-local agent tooling, personal
-// skills included, that nothing writes again.
+// `.atl/` is not among them: besides the skill registry, which the
+// skill-registry skill writes again (SKILL_REGISTRY_FILES), it holds
+// machine-local agent tooling, personal skills included, that nothing does.
 const REBUILT_PREFIXES = ['.husky/_/']
 const REBUILT_FILE =
   /(?:^|\/)(?:next-env\.d\.ts|expo-env\.d\.ts|[^/]+\.tsbuildinfo)$/
@@ -236,6 +323,24 @@ export const statusOf = ({ porcelain }) => {
   }
 }
 
+// The directory of machine-local agent tooling at a worktree's root, and the
+// two files of it the skill-registry skill writes again.
+export const AGENT_TOOLING_DIR = '.atl/'
+const SKILL_REGISTRY_FILES = new Set([
+  '.skill-registry.cache.json',
+  'skill-registry.md'
+])
+
+// Whether what an ignored entry under `.atl/` holds is the skill registry
+// and nothing else. `items` is what the caller found there on disk, by name
+// under `.atl/` and whether it is a regular file: the children of `.atl/`
+// when the entry is the directory itself, else the one path it names. A
+// name the registry does not hold, or one that is not a regular file, a link
+// or a directory included, is something else, and so is an empty list.
+export const isSkillRegistry = ({ items }) =>
+  items.length > 0 &&
+  items.every(({ file, name }) => file && SKILL_REGISTRY_FILES.has(name))
+
 // Every tracked file a `git ls-files -v -z` listing marks assume-unchanged
 // or skip-worktree: `git status` and `git worktree remove` skip both, so an
 // edit to one is invisible to them and lost with the worktree.
@@ -340,14 +445,88 @@ const summaryLine = ({ dryRun, results }) => {
   )
 }
 
+// What the install after a fast-forward leaves out, added to a dry run's
+// last line only when it would install, so every other run prints what it
+// printed before the install existed.
+export const INSTALL_NOT_COVERED =
+  `the install runs in the foreground too, up to ${INSTALL_SECONDS_VARIABLE} ` +
+  `(${INSTALL_SECONDS} s unless set), only after a fast-forward this run ` +
+  `made, never after a merge or a pull that changed ${LOCKFILE} itself, and ` +
+  'an install that fails or is stopped leaves node_modules as pnpm left it'
+
+const notCovered = ({ dryRun, install }) => {
+  if (!dryRun) return []
+  const more = install === undefined ? '' : `; ${INSTALL_NOT_COVERED}`
+  return [`${LABEL}: not covered: ${NOT_COVERED}${more}`]
+}
+
+// The install's line, or null: a dry run's and a finished install's are
+// left out under `--quiet`, a failed one never is.
+const installLine = ({ dryRun, install, main, quiet }) => {
+  if (install === undefined) return null
+  const where = `in ${main.path}`
+  if (install.state === 'failed') {
+    const changed = dryRun ? 'changes with the fast-forward' : 'changed'
+    return (
+      `${LABEL}: ${LOCKFILE} ${changed} and ${INSTALL_LINE} ${install.why}; ` +
+      `run \`${RETRY_COMMAND}\` ${where}`
+    )
+  }
+  if (quiet) return null
+  return install.state === 'would'
+    ? `${LABEL}: ${LOCKFILE} changes with the fast-forward, so it would ` +
+        `run ${INSTALL_LINE} ${where}`
+    : `${LABEL}: ${LOCKFILE} changed, so it ran ${INSTALL_LINE} ${where}`
+}
+
+// The line an install that rewrote the lockfile in the main checkout adds,
+// under `--quiet` too, or null. It never offers `git checkout --`, which in
+// a checkout other worktrees share has wiped other sessions' work.
+const rewroteLine = ({ install, main }) =>
+  install?.rewrote
+    ? `${LABEL}: ${INSTALL_LINE} rewrote ${LOCKFILE} in ${main.path}; ` +
+      'commit it on a branch, or run ' +
+      `\`git restore --source=HEAD -- ${LOCKFILE}\` (this discards the ` +
+      "install's lockfile change)"
+    : null
+
 // One line per worktree, a kept one left out under `--quiet`, the main
-// checkout's line when it was behind or off the default branch, the summary
-// line, and for a dry run what it does not cover.
-export const reportLines = ({ dryRun, main, quiet, results }) => [
+// checkout's line when it was behind or off the default branch, the
+// install's line after a fast-forward that changed the lockfile and the
+// line of an install that rewrote it, the summary line, and for a dry run
+// what it does not cover.
+export const reportLines = ({ dryRun, install, main, quiet, results }) => [
   ...results
     .filter((result) => !quiet || !result.kept)
     .map((result) => decisionLine({ dryRun, result })),
-  ...[mainLine({ dryRun, main })].filter((line) => line !== null),
+  ...[
+    mainLine({ dryRun, main }),
+    installLine({ dryRun, install, main, quiet }),
+    rewroteLine({ install, main })
+  ].filter((line) => line !== null),
   summaryLine({ dryRun, results }),
-  ...(dryRun ? [`${LABEL}: not covered: ${NOT_COVERED}`] : [])
+  ...notCovered({ dryRun, install })
+]
+
+// The line a failed run ends with, on stderr: git's message, then what the
+// run had removed before it failed, the worktrees its report listed above,
+// or that nothing was removed. A dry run removes nothing.
+export const failureLine = ({ dryRun = false, message, results = [] }) => {
+  const removed = dryRun ? 0 : results.filter(({ kept }) => !kept).length
+  if (removed === 0) return `${LABEL}: ${message} — nothing was removed.`
+  const worktrees =
+    removed === 1 ? '1 worktree was' : `${removed} worktrees were`
+  return (
+    `${LABEL}: ${message} — ${worktrees} removed before it failed, ` +
+    'listed above.'
+  )
+}
+
+// What a run whose fetch outlasted its bound of `seconds` prints, `--quiet`
+// or not: it judged nothing, so it removed and moved nothing.
+export const skippedLines = ({ dryRun, seconds }) => [
+  `${LABEL}: skipped: git fetch --prune ${REMOTE} did not finish within ` +
+    `${seconds} s, so no worktree was removed and the main checkout was ` +
+    'not moved',
+  ...notCovered({ dryRun })
 ]

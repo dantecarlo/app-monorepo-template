@@ -33,6 +33,13 @@ const REPO_ROOT = resolve(HERE, '..', '..')
 // The write guard's matcher: the shell tools and the file tools.
 const MATCHER = 'Bash|PowerShell|Edit|Write|NotebookEdit'
 
+const REAPER = {
+  event: 'SessionStart',
+  name: 'process-reaper',
+  script: 'scripts/agent-harness/reaper/session-start.mjs',
+  timeout: 15
+}
+
 const HOOK = {
   event: 'PreToolUse',
   matcher: MATCHER,
@@ -70,8 +77,7 @@ test('the committed hook source renders the write guard for the Claude Code shel
   const settings = JSON.parse(
     renderClaudeSettings({ hooks: readHookSource({ root: REPO_ROOT }) })
   )
-  assert.deepEqual(settings.hooks, {
-    PreToolUse: [
+  assert.deepEqual(settings.hooks.PreToolUse, [
       {
         hooks: [
           {
@@ -83,8 +89,33 @@ test('the committed hook source renders the write guard for the Claude Code shel
         ],
         matcher: MATCHER
       }
-    ]
-  })
+    ])
+})
+
+test('the committed hook source renders the reaper at session start, with no matcher', () => {
+  const settings = JSON.parse(
+    renderClaudeSettings({ hooks: readHookSource({ root: REPO_ROOT }) })
+  )
+  assert.deepEqual(Object.keys(settings.hooks), ['PreToolUse', 'SessionStart'])
+  assert.deepEqual(settings.hooks.SessionStart, [
+    {
+      hooks: [
+        {
+          command:
+            'node "${CLAUDE_PROJECT_DIR}/scripts/agent-harness/reaper/session-start.mjs"',
+          timeout: 15,
+          type: 'command'
+        }
+      ]
+    }
+  ])
+})
+
+test('a SessionStart hook may carry a matcher, which renders as given', () => {
+  const settings = JSON.parse(
+    renderClaudeSettings({ hooks: [{ ...REAPER, matcher: 'startup' }] })
+  )
+  assert.equal(settings.hooks.SessionStart[0].matcher, 'startup')
 })
 
 test('the committed .claude/settings.json is what its source renders', () => {
@@ -136,6 +167,8 @@ for (const [name, hooks] of [
     [{ ...HOOK, event: 'Stop' }]
   ],
   ['a blank matcher', [{ ...HOOK, matcher: ' ' }]],
+  ['a PreToolUse hook with no matcher', [{ ...HOOK, matcher: undefined }]],
+  ['a SessionStart hook with a blank matcher', [{ ...REAPER, matcher: '' }]],
   [
     'a timeout that is not a positive whole number',
     [{ ...HOOK, timeout: 0 }]
@@ -154,6 +187,42 @@ for (const [name, hooks] of [
     })
   })
 }
+
+test('a PreToolUse hook with no matcher is refused as missing it, in the words it always used', () => {
+  for (const [hook, message] of [
+    [{ ...HOOK, matcher: undefined }, `${HOOKS_SOURCE} hooks[0]: missing matcher`],
+    [
+      { ...HOOK, matcher: undefined, name: undefined },
+      `${HOOKS_SOURCE} hooks[0]: missing matcher, name`
+    ]
+  ]) {
+    inScratch({
+      files: { [HOOKS_SOURCE]: sourceText({ hooks: [hook] }) },
+      use: ({ root }) => {
+        assert.throws(() => readHookSource({ root }), { message })
+      }
+    })
+  }
+})
+
+test('a SessionStart hook may leave its matcher out, and nothing else', () => {
+  inScratch({
+    files: { [HOOKS_SOURCE]: sourceText({ hooks: [REAPER] }) },
+    use: ({ root }) => {
+      assert.deepEqual(readHookSource({ root }), [REAPER])
+    }
+  })
+  inScratch({
+    files: {
+      [HOOKS_SOURCE]: sourceText({ hooks: [{ ...REAPER, name: undefined }] })
+    },
+    use: ({ root }) => {
+      assert.throws(() => readHookSource({ root }), {
+        message: `${HOOKS_SOURCE} hooks[0]: missing name`
+      })
+    }
+  })
+})
 
 test('a hook source that does not parse is refused, naming the file', () => {
   inScratch({
