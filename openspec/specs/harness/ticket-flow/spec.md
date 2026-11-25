@@ -784,22 +784,40 @@ follows, `refine-ticket` § Merge queue, `process-intake` § Step 3 and the Merg
 `.agents/harness.config.json`, and that section's `Policy` line SHALL name `delivery.mergePolicy`
 in `.agents/harness.config.json`, so the project layer records no policy of its own. The schema
 `.agents/contracts/harness-config.schema.json` SHALL allow exactly the two policies the ticket
-skills name, `manual` its default, and `pnpm verify:harness-config` SHALL refuse any other value.
+skills name, `manual` its default, and `pnpm verify:harness-config` SHALL refuse any other value,
+a key given twice in one object of either file, an `additionalProperties` other than `true` or
+`false`, and an object of the schema, outside an `if`, `then` or `else`, that does not set
+`additionalProperties` to `false`. `ticket-flow` § Rules every role follows and `refine-ticket`
+§ Merge queue, the two sections that read the policy, SHALL each say that a missing setting, any
+value other than `low-risk`, a missing file, or a file that does not parse means `manual`, and
+that the policy is read from the default branch's copy, never from the pull request's own branch,
+which could otherwise change its own policy; the structural check SHALL hold both to say so. When
+`.agents/harness.config.json` is absent, `process-intake` § Step 4 SHALL write the whole template
+file, every section and setting the schema requires, with the chosen policy, then run
+`pnpm verify:harness-config`.
 A merge into the production branch the layer names, a deploy, a production migration, a store
 submission and every other irreversible step SHALL stay the owner's word under every policy, as
 `ticket-flow` rule 4 and `release-ticket` say; and under neither policy SHALL the architect or QA
 merge a pull request into the production branch (TICKET-24).
 
 **Evidence:** `.claude/skills/ticket-flow/SKILL.md:219`,
-`.claude/skills/ticket-flow/SKILL.md:220`, `.claude/skills/refine-ticket/SKILL.md:117`,
-`.claude/skills/refine-ticket/SKILL.md:150`, `.claude/skills/refine-ticket/SKILL.md:180`,
-`.claude/skills/process-intake/SKILL.md:70`, `.claude/skills/process-intake/SKILL.md:118`,
+`.claude/skills/ticket-flow/SKILL.md:220`, `.claude/skills/ticket-flow/SKILL.md:221`,
+`.claude/skills/ticket-flow/SKILL.md:223`, `.claude/skills/refine-ticket/SKILL.md:117`,
+`.claude/skills/refine-ticket/SKILL.md:150`, `.claude/skills/refine-ticket/SKILL.md:176`,
+`.claude/skills/refine-ticket/SKILL.md:177`, `.claude/skills/refine-ticket/SKILL.md:179`,
+`.claude/skills/refine-ticket/SKILL.md:185`, `.claude/skills/process-intake/SKILL.md:70`,
+`.claude/skills/process-intake/SKILL.md:118`, `.claude/skills/process-intake/SKILL.md:119`,
+`.claude/skills/process-intake/SKILL.md:122`,
 `.claude/skills/process-intake/ticket-flow.template.md:68`,
 `.claude/skills/process-intake/ticket-flow.template.md:70`,
 `.claude/skills/release-ticket/SKILL.md:24`, `.agents/contracts/harness-config.schema.json:47`,
-`.agents/contracts/harness-config.schema.json:48`, `scripts/verify-skills.mjs:160`,
-`scripts/verify-skills.mjs:307`, `scripts/verify-skills.mjs:317`, `scripts/verify-skills.mjs:430`,
-`scripts/verify-skills.mjs:663`, `scripts/verify-harness-config.mjs:269`
+`.agents/contracts/harness-config.schema.json:48`, `scripts/verify-skills.mjs:165`,
+`scripts/verify-skills.mjs:312`, `scripts/verify-skills.mjs:324`, `scripts/verify-skills.mjs:326`,
+`scripts/verify-skills.mjs:335`, `scripts/verify-skills.mjs:409`, `scripts/verify-skills.mjs:449`,
+`scripts/verify-skills.mjs:450`, `scripts/verify-skills.mjs:683`,
+`scripts/verify-harness-config.mjs:156`, `scripts/verify-harness-config.mjs:175`,
+`scripts/verify-harness-config.mjs:297`, `scripts/verify-harness-config.mjs:406`,
+`scripts/verify-harness-config.mjs:503`
 
 #### Scenario: the skills of the repository
 
@@ -814,21 +832,21 @@ merge a pull request into the production branch (TICKET-24).
 
 - **GIVEN** a `ticket-flow` whose rules never name `low-risk`
 - **WHEN** the structural check runs
-- **THEN** it reports one finding
+- **THEN** it reports two findings: the policy, and the fail-closed clause, which names it
 - **Test:** `scripts/verify-skills.test.mjs` › "a ticket-flow whose rules name no low-risk merge policy is refused"
 
 #### Scenario: the architect's merge queue drops `manual`
 
 - **GIVEN** a `refine-ticket` whose § Merge queue never names `manual`
 - **WHEN** the structural check runs
-- **THEN** it reports one finding
+- **THEN** it reports two findings: the policy, and the fail-closed clause, which names it
 - **Test:** `scripts/verify-skills.test.mjs` › "a refine-ticket whose merge queue names no manual merge policy is refused"
 
 #### Scenario: the architect's merge queue drops `low-risk`
 
 - **GIVEN** a `refine-ticket` whose § Merge queue never names `low-risk`
 - **WHEN** the structural check runs
-- **THEN** it reports one finding
+- **THEN** it reports two findings: the policy, and the fail-closed clause, which names it
 - **Test:** `scripts/verify-skills.test.mjs` › "a refine-ticket whose merge queue names no low-risk merge policy is refused"
 
 #### Scenario: the architect's merge queue is gone
@@ -913,7 +931,8 @@ merge a pull request into the production branch (TICKET-24).
 
 - **GIVEN** a `ticket-flow` whose rules never name `low-risk`
 - **WHEN** the structural check runs
-- **THEN** its finding names the file, the section and the policy
+- **THEN** the finding for the policy names the file, the section and the policy, beside the
+  fail-closed clause's
 - **Test:** `scripts/verify-skills.test.mjs` › "a dropped merge policy is named with its file and section"
 
 #### Scenario: a hotfix under `low-risk`
@@ -927,6 +946,74 @@ merge a pull request into the production branch (TICKET-24).
 - **Test:** Not covered — the rule is a procedure the QA and architect sessions follow; no runner
   drives a session, and the structural check only proves the skills name both policies and the
   hotfix's message
+
+#### Scenario: the contract does not fail closed
+
+- **GIVEN** a `ticket-flow` whose rules never say that a value other than `low-risk`, a missing
+  file, or a file that does not parse means `manual`
+- **WHEN** the structural check runs
+- **THEN** it reports one finding
+- **Test:** `scripts/verify-skills.test.mjs` › "a ticket-flow whose rules do not fail closed to manual is refused"
+
+#### Scenario: the contract does not say which copy is read
+
+- **GIVEN** a `ticket-flow` whose rules never say that the policy is read from the default
+  branch's copy, never from the pull request's own branch
+- **WHEN** the structural check runs
+- **THEN** it reports one finding
+- **Test:** `scripts/verify-skills.test.mjs` › "a ticket-flow whose rules do not read the policy from the default branch's copy is refused"
+
+#### Scenario: the merge queue does not fail closed
+
+- **GIVEN** a `refine-ticket` whose § Merge queue never says that a value other than
+  `low-risk`, a missing file, or a file that does not parse means `manual`
+- **WHEN** the structural check runs
+- **THEN** it reports one finding
+- **Test:** `scripts/verify-skills.test.mjs` › "a refine-ticket whose merge queue does not fail closed to manual is refused"
+
+#### Scenario: the merge queue does not say which copy is read
+
+- **GIVEN** a `refine-ticket` whose § Merge queue never says that the policy is read from the
+  default branch's copy, never from the pull request's own branch
+- **WHEN** the structural check runs
+- **THEN** it reports one finding
+- **Test:** `scripts/verify-skills.test.mjs` › "a refine-ticket whose merge queue does not read the policy from the default branch's copy is refused"
+
+#### Scenario: a merge policy given twice
+
+- **GIVEN** a harness config whose `delivery` gives `mergePolicy` twice, `low-risk` then
+  `manual`
+- **WHEN** `pnpm verify:harness-config` runs
+- **THEN** it reports one finding, naming the setting, rather than reading `manual`, the last
+  value, as `JSON.parse` does
+- **Test:** `scripts/verify-harness-config.test.mjs` › "a merge policy given twice is refused, not read as its last value"
+
+#### Scenario: a schema object open to undeclared keys
+
+- **GIVEN** a schema whose `delivery` object does not set `additionalProperties`
+- **WHEN** `pnpm verify:harness-config` runs
+- **THEN** it reports one finding: every object of the schema sets
+  `"additionalProperties": false`
+- **Test:** `scripts/verify-harness-config.test.mjs` › "an object the schema leaves open to undeclared keys is refused"
+
+#### Scenario: an `additionalProperties` the gate does not apply
+
+- **GIVEN** a schema whose `delivery` sets `additionalProperties` to a schema,
+  `{ "enum": ["manual"] }`, and a config whose `delivery` holds an undeclared key `x`
+- **WHEN** `pnpm verify:harness-config` runs
+- **THEN** it reports one finding, a keyword value the gate cannot read, rather than a rule it
+  skips in silence
+- **Test:** `scripts/verify-harness-config.test.mjs` › "an additionalProperties schema the gate does not apply is refused"
+
+#### Scenario: the intake in a project with no harness config
+
+- **GIVEN** a project with no `.agents/harness.config.json`, and a team that picks `low-risk`
+- **WHEN** `process-intake` writes on the team's yes
+- **THEN** it writes the whole template file, every section and setting the schema requires, with
+  `low-risk` as `delivery.mergePolicy`, then runs `pnpm verify:harness-config`, which finds
+  nothing
+- **Test:** Not covered — the rule is a procedure a `process-intake` session follows; no runner
+  drives a session, and no check reads its Step 4
 ### Requirement: TICKET-21 — The branch check judges under the project's ticket identity
 
 `scripts/verify-ticket-branch.mjs` SHALL take its ticket identity from the one fenced block with
@@ -1305,7 +1392,8 @@ to merge condition holds (CI green, no conflict, the branch holding the default 
 tip); a pull request that fails one SHALL be brought current by the architect itself, a ticket's
 from its spare worktree (TICKET-33) and the closed ticket catalog pull request as TICKET-31 says.
 It SHALL merge on the owner's word, asked in the architect's own session, under the `manual`
-policy or when `.agents/harness.config.json` records none; and, under `low-risk`, without asking only a pull
+policy, or when the default branch's copy of `.agents/harness.config.json` records no `low-risk`
+(TICKET-20); and, under `low-risk`, without asking only a pull
 request whose Risk line is `Risk: none` or that changes only passive files, and whose merge sets
 off no irreversible step, recording on the ticket, or on the ticket or release ticket the closed
 ticket catalog pull request records, that it merged under `low-risk` and what it relied on. A pull
@@ -1315,7 +1403,8 @@ and dev sessions `<id> merged`, and after every merge it SHALL bring the next pu
 queue current itself. `ticket-flow`'s states table SHALL name the architect as the session that
 enters Done, a hotfix aside (TICKET-24), and its § Messages SHALL carry
 `<id> ready to merge, PR #<n>`, from QA to the architect, and no line that asks a session to
-bring a branch current. The structural check SHALL hold `refine-ticket` to have a § Merge queue.
+bring a branch current. The structural check SHALL hold `refine-ticket` to have a § Merge queue, which reads the
+policy from the default branch's copy and fails closed to `manual` (TICKET-20).
 
 **Evidence:** `.claude/skills/refine-ticket/SKILL.md:84`,
 `.claude/skills/refine-ticket/SKILL.md:93`, `.claude/skills/refine-ticket/SKILL.md:114`,
@@ -1323,13 +1412,15 @@ bring a branch current. The structural check SHALL hold `refine-ticket` to have 
 `.claude/skills/refine-ticket/SKILL.md:124`, `.claude/skills/refine-ticket/SKILL.md:135`,
 `.claude/skills/refine-ticket/SKILL.md:138`, `.claude/skills/refine-ticket/SKILL.md:143`,
 `.claude/skills/refine-ticket/SKILL.md:146`, `.claude/skills/refine-ticket/SKILL.md:150`,
-`.claude/skills/refine-ticket/SKILL.md:176`, `.claude/skills/refine-ticket/SKILL.md:199`,
-`.claude/skills/refine-ticket/SKILL.md:200`, `.claude/skills/refine-ticket/SKILL.md:208`,
-`.claude/skills/refine-ticket/SKILL.md:212`, `.claude/skills/refine-ticket/SKILL.md:213`,
-`.claude/skills/ticket-flow/SKILL.md:98`, `.claude/skills/ticket-flow/SKILL.md:142`,
-`.claude/skills/ticket-flow/SKILL.md:171`, `.claude/skills/ticket-flow/SKILL.md:348`,
-`.claude/skills/ticket-flow/SKILL.md:351`, `.claude/skills/ticket-flow/SKILL.md:357`,
-`scripts/verify-skills.mjs:197`, `scripts/verify-skills.mjs:420`, `scripts/verify-skills.mjs:423`
+`.claude/skills/refine-ticket/SKILL.md:176`, `.claude/skills/refine-ticket/SKILL.md:177`,
+`.claude/skills/refine-ticket/SKILL.md:179`, `.claude/skills/refine-ticket/SKILL.md:181`,
+`.claude/skills/refine-ticket/SKILL.md:204`, `.claude/skills/refine-ticket/SKILL.md:205`,
+`.claude/skills/refine-ticket/SKILL.md:213`, `.claude/skills/refine-ticket/SKILL.md:217`,
+`.claude/skills/refine-ticket/SKILL.md:218`, `.claude/skills/ticket-flow/SKILL.md:98`,
+`.claude/skills/ticket-flow/SKILL.md:142`, `.claude/skills/ticket-flow/SKILL.md:171`,
+`.claude/skills/ticket-flow/SKILL.md:351`, `.claude/skills/ticket-flow/SKILL.md:354`,
+`.claude/skills/ticket-flow/SKILL.md:360`, `scripts/verify-skills.mjs:202`,
+`scripts/verify-skills.mjs:439`, `scripts/verify-skills.mjs:442`, `scripts/verify-skills.mjs:450`
 
 #### Scenario: the skills of the repository
 
@@ -1377,6 +1468,24 @@ bring a branch current. The structural check SHALL hold `refine-ticket` to have 
   `<id> merged`
 - **Test:** Not covered — the rule is a procedure an architect session follows; no runner drives
   a session
+
+#### Scenario: the merge queue does not say which copy is read
+
+- **GIVEN** a `refine-ticket` whose § Merge queue never says that the policy is read from the
+  default branch's copy, never from the pull request's own branch
+- **WHEN** the structural check runs
+- **THEN** it reports one finding
+- **Test:** `scripts/verify-skills.test.mjs` › "a refine-ticket whose merge queue does not read the policy from the default branch's copy is refused"
+
+#### Scenario: a pull request that sets its own policy to `low-risk`
+
+- **GIVEN** a default branch whose `.agents/harness.config.json` records `manual`, and a pull
+  request at the head of the queue, Ready to merge, that says `Risk: none` and whose own branch
+  sets `delivery.mergePolicy` to `low-risk`
+- **WHEN** the architect reaches its merge
+- **THEN** it reads `manual` from the default branch's copy and asks the owner, as under `manual`
+- **Test:** Not covered — the rule is a procedure an architect session follows; no runner drives
+  a session, and the structural check only proves the merge queue says which copy it reads
 
 ### Requirement: TICKET-26 — Every ticket carries a target version
 

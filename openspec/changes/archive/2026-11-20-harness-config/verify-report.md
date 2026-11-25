@@ -91,3 +91,45 @@ all new.
   citations of `scripts/verify-skills.mjs`, `.claude/skills/ticket-flow/SKILL.md` and
   `.claude/skills/refine-ticket/SKILL.md` in 15 other requirements, left as they were so the
   merge with `main`, which remapped the same lines, stays clean; they want a `sync` after it.
+
+## The verifier's correction
+
+An independent verifier read the change after the archive and found one blocker and five
+advisories. Each was fixed test first where a runner reaches it (task T4).
+
+| Item | Finding | Fix | Commit |
+| ---- | ------- | --- | ------ |
+| 1, blocker | An `additionalProperties` schema was checked but never applied, so an undeclared key passed under it | `additionalProperties` is read only as `true` or `false`; any other value is a keyword finding | `277eada` |
+| 2 | A key given twice in one object: `JSON.parse` keeps the last value, while a reader may act on the first | a repeated key, in either file, is a finding that names its path | `277eada` |
+| 3 | The skills did not say what a missing, broken or unknown setting means, nor which copy of the file is read, so a pull request could change its own policy | `ticket-flow` rule 4 and `refine-ticket` § Merge queue say that a value other than `low-risk`, a missing file, or a file that does not parse means `manual`, and that the policy is read from the default branch's copy, never from the pull request's own branch; `verify-skills` requires both phrases in both sections | `17b43ad` |
+| 4 | `process-intake`, in a project with no config, wrote the key alone: a file that fails the gate | Step 4 writes the whole template file with the chosen policy, then runs `pnpm verify:harness-config` | `344f28c` |
+| 5 | An object of the schema could leave out `additionalProperties` and let an undeclared key through | every object outside an `if`, `then` or `else` sets `additionalProperties` to `false` | `277eada` |
+| 6 | The record did not hold items 1 to 5 | TICKET-20 and TICKET-25, with their evidence lines, in this delta and the living spec; this section; T4; `docs/harness.md` 3g and the rows of `verify:harness-config`, `:test` and `verify:skills:test` | the record's commit |
+
+**RED before GREEN.**
+
+- Items 1, 2 and 5: the 14 cases and checks `277eada` adds to
+  `scripts/verify-harness-config.test.mjs`, run against the gate of `d57ce3e`, its parent: 13 of
+  50 failed, each of the 9 refusal cases with "expected 1 finding(s), got 0" and 4 checks on the
+  finding they name; the case "a key given once in each of two objects is no duplicate" passed,
+  as it must.
+- Item 3: before `scripts/verify-skills.mjs` changed, its 4 new cases failed with "expected 1
+  finding(s), got 0". The fail-closed clause names both policies, so a section that drops one
+  drops the clause with it: the 3 policy-drop cases now remove every mention of the policy and
+  expect 2 findings, and failed with "expected 2 finding(s), got 1", and the check "a dropped
+  merge policy is named with its file and section" with `1 !== 2`. Once the gate changed and
+  before the skills did, the run over the repository reported 4 findings, the two phrases missing
+  from each section.
+- Item 4: no runner drives `process-intake`; structural readback only.
+
+**Gate.** `pnpm verify:skills:test` 107 of 107 (103 before), `pnpm verify:harness-config:test` 50
+of 50 (36 before `277eada`), `pnpm verify:harness-config`, `pnpm verify:specs`, `pnpm verify:english`,
+`pnpm verify:skill-frontmatter` and `pnpm verify:router-coverage` exit 0, and ESLint over both
+changed scripts; `pnpm validate` was not run.
+
+**Not verified.** The evidence lines of the requirements this correction does not modify: it moved
+lines of `.claude/skills/ticket-flow/SKILL.md` after line 222 by 3, of
+`.claude/skills/refine-ticket/SKILL.md` after line 175 by 5, and of `scripts/verify-skills.mjs`
+and `scripts/verify-harness-config.mjs`; they want a `sync`. This delta's TICKET-25 keeps its body
+from before the merge with `main`; its evidence lines now cite the tree after the correction, as
+the living spec's do.
