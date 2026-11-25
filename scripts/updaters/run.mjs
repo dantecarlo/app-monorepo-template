@@ -2,7 +2,7 @@
 // ---------------------------------------------------------------------------
 // pnpm updaters:run — runs every updater of .agents/contracts/updaters.json
 // that runs where this run does, and turns each one that is out of date
-// into one pull request (docs/harness.md section 3g).
+// into one pull request (docs/harness.md section 3i).
 //
 // It refuses a registry `pnpm verify:updaters` refuses, before it runs
 // anything. Then, for each updater whose `runsIn` holds `--where`:
