@@ -2,19 +2,23 @@
 // The cases of local/wrapped-import (./wrapped-import.detect.mjs), run by
 // ./index.test.mjs through `registerWrappedImportCases`.
 //
-// The rule cases lint paths of this repository, so each one is judged by the
-// ui blocks the mobile app has on disk (Text, Modal, Button, StatusBar) and
-// the test-infrastructure globs of the real registry. Their files do not
-// exist; only the folders they would sit in are read. The detection case
+// The rule cases lint paths of this repository's mobile app, each judged by
+// the ui blocks of a scratch tree of their own (Text, Modal, Button,
+// StatusBar), passed as the rule's workspaceRoot, and by the
+// test-infrastructure globs of the real registry, so a mobile-expo prune
+// leaves them nothing to read. Their files do not exist; only the folders
+// they would sit in are read. The detection case
 // builds a scratch tree for blocks the app does not have, and the fixture
 // case lints the fixture app `__fixtures__/apps/fixture-expo/` through the
 // config eslint.config.mjs builds for __fixtures__/ (./eslint-config.cases.mjs).
 // ---------------------------------------------------------------------------
 
 import assert from 'node:assert/strict'
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, test } from 'node:test'
+import { after, describe, test } from 'node:test'
 
 import { RuleTester } from 'eslint'
 import tseslint from 'typescript-eslint'
@@ -35,10 +39,22 @@ const ERROR_SEVERITY = 2
 const { HOOK_OUTSIDE_ROUTING, PRIMITIVE_OUTSIDE_BLOCK, WHOLE_MODULE } =
   WRAPPED_FINDING
 
+// The ui blocks the rule cases are judged by, under the app the cases lint.
+const RULE_CASE_BLOCKS = ['Button', 'Modal', 'StatusBar', 'Text']
+const MOBILE = 'apps/mobile/src'
+const BLOCKS_ROOT = mkdtempSync(join(tmpdir(), 'wrapped-import-blocks-'))
+RULE_CASE_BLOCKS.forEach((block) =>
+  mkdirSync(join(BLOCKS_ROOT, MOBILE, 'components/ui', block), {
+    recursive: true
+  })
+)
+after(() => rmSync(BLOCKS_ROOT, { force: true, recursive: true }))
+
 const at = ({ code, name, path }) => ({
   code,
   filename: join(REPO_ROOT, path),
-  name
+  name,
+  options: [{ workspaceRoot: BLOCKS_ROOT }]
 })
 
 const refused = ({ code, kinds, name, path }) => ({
@@ -46,7 +62,6 @@ const refused = ({ code, kinds, name, path }) => ({
   errors: kinds.map((messageId) => ({ messageId }))
 })
 
-const MOBILE = 'apps/mobile/src'
 const SCREEN = `${MOBILE}/screens/Example/Example.screen.tsx`
 const SCREEN_HOOK = `${MOBILE}/screens/Example/hooks/useExample.hook.ts`
 const SCREEN_TEST = `${MOBILE}/screens/Example/__tests__/Example.screen.test.tsx`

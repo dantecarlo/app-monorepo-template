@@ -4,8 +4,11 @@
 // request merged, and that branch, then fast-forwards the main checkout.
 //
 // It starts with `git fetch --prune origin`, stopped after 30 s or the
-// seconds PRUNE_WORKTREES_FETCH_SECONDS names; a fetch stopped there skips
-// the prune and the fast-forward, says so in one line and exits 0. After
+// seconds PRUNE_WORKTREES_FETCH_SECONDS names, with every process it
+// started, a remote helper or an ssh command included (`runBounded` of
+// scripts/agent-harness/reaper/, `taskkill /T /F` on Windows); a fetch
+// stopped there skips the prune and the fast-forward, says so in one line
+// and exits 0. After
 // it, the default branch is the one `origin/HEAD` names. A linked worktree
 // is removed only when it is not the main checkout, not the worktree this
 // runs in, not under `.claude/worktrees/` (the Claude app manages those),
@@ -39,8 +42,20 @@
 // (`git read-tree -m -u --dry-run`) against a refreshed copy of the index,
 // so it names a local commit or an untracked file the fast-forward would
 // overwrite, never a file whose timestamp alone changed, and takes no lock
-// in the main checkout. `--quiet` prints the
-// removals, the main checkout's line and the summary line only.
+// in the main checkout. A fast-forward that changes pnpm-lock.yaml then runs
+// `pnpm install` in the main checkout, through `runBounded` and stopped with
+// its tree after 120 s or the seconds PRUNE_WORKTREES_INSTALL_SECONDS names,
+// so the pinned MCP entries and every other dependency follow the lockfile
+// the checkout now holds; an install that fails or is stopped prints one
+// line with the `pnpm install` to run, and the run still exits 0. An install
+// that rewrites pnpm-lock.yaml, as a plain `pnpm install` may, adds one line
+// saying so: commit it on a branch, or discard it with `git restore
+// --source=HEAD -- pnpm-lock.yaml`. The bound is read
+// only when an install is due: a value that is not a positive number then
+// skips the install with the same line, and a fast-forward that leaves the
+// lockfile as it was installs nothing and never reads it. A dry run says it would
+// install. `--quiet` prints the removals, the main checkout's line, an
+// install's failure and the summary line only.
 //
 // `.husky/post-merge` runs it with `--quiet` after a local merge or pull.
 // This file runs git and touches the disk; every decision it takes from
@@ -52,8 +67,8 @@
 // directory is emptied and unregistered while its directory stays; the
 // prune runs in the foreground, so the merge that started it waits for it,
 // for its fetch up to the bound; on Windows a fetch stopped at the bound
-// ends without git's own cleanup, so a remote helper it started, as for
-// https, runs on until its connection ends; and an ignored file written in
+// ends without git's own cleanup, its remote helper ended with it; and an
+// ignored file written in
 // the moment between the check just before a removal and git's own removal
 // goes with the worktree.
 //
@@ -61,6 +76,7 @@
 //   node scripts/prune-worktrees.mjs
 //   node scripts/prune-worktrees.mjs --dry-run
 //   node scripts/prune-worktrees.mjs --quiet
+//   PRUNE_WORKTREES_INSTALL_SECONDS=300 node scripts/prune-worktrees.mjs
 // ---------------------------------------------------------------------------
 
 import { execFileSync } from 'node:child_process'
@@ -76,6 +92,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { runBounded } from './agent-harness/reaper/bounded-child.mjs'
 import { gitFreeEnv } from './git-free-env.mjs'
 import {
   AGENT_TOOLING_DIR,
@@ -85,10 +102,14 @@ import {
   failureLine,
   fetchSecondsFrom,
   hiddenOf,
+  installCommandOf,
+  installOutcomeOf,
+  installSecondsFrom,
   isSkillRegistry,
   listDetail,
   LOCAL_CHANGES,
   localChangesOf,
+  LOCKFILE,
   NESTED_RUN_VARIABLE,
   optionsFrom,
   parseBranchNames,
@@ -111,8 +132,6 @@ const REMOTE_HEAD = `refs/remotes/${REMOTE}/HEAD`
 // 64 MiB of git output.
 const GIT_OUTPUT_BYTES = 67_108_864
 const MS_PER_SECOND = 1000
-// The code Node gives a child it stopped at its timeout.
-const TIMED_OUT = 'ETIMEDOUT'
 // `git merge-base --is-ancestor` exits 1 when the first commit is not an
 // ancestor of the second; any other failure is an error.
 const NOT_ANCESTOR = 1
@@ -125,46 +144,67 @@ const INDEX_COPY_PREFIX = 'prune-worktrees-index-'
 // NESTED_RUN_VARIABLE set for any hook it fires. Its output, trimmed; a
 // failure throws git's own message, its stderr kept on the error.
 // `trim: false` keeps the output whole, the leading space of a porcelain
-// status line included. A git still running after `timeout` milliseconds is
-// stopped, and its error reads `timedOut`; a git that exits non-zero leaves
-// its exit code on the error as `status`. `env` adds variables after the
-// GIT_* ones are dropped, as GIT_INDEX_FILE for a copy of the index.
-const git = ({ args, cwd, env = {}, timeout, trim = true }) => {
+// status line included. A git that exits non-zero leaves its exit code on
+// the error as `status`. `env` adds variables after the GIT_* ones are
+// dropped, as GIT_INDEX_FILE for a copy of the index.
+const gitEnv = ({ env = {} } = {}) => ({
+  ...gitFreeEnv(),
+  ...env,
+  [NESTED_RUN_VARIABLE]: '1'
+})
+
+const gitFailure = ({ args, cwd, status, stderr }) =>
+  Object.assign(new Error(`git ${args.join(' ')} failed in ${cwd}: ${stderr}`), {
+    status,
+    stderr
+  })
+
+const git = ({ args, cwd, env, trim = true }) => {
   try {
     const output = execFileSync('git', args, {
       cwd,
       encoding: 'utf8',
-      env: { ...gitFreeEnv(), ...env, [NESTED_RUN_VARIABLE]: '1' },
+      env: gitEnv({ env }),
       maxBuffer: GIT_OUTPUT_BYTES,
-      stdio: ['ignore', 'pipe', 'pipe'],
-      timeout
+      stdio: ['ignore', 'pipe', 'pipe']
     })
     return trim ? output.trim() : output
   } catch (error) {
-    const stderr = String(error.stderr || error.message).trim()
-    throw Object.assign(
-      new Error(`git ${args.join(' ')} failed in ${cwd}: ${stderr}`),
-      { status: error.status, stderr, timedOut: error.code === TIMED_OUT }
-    )
+    throw gitFailure({
+      args,
+      cwd,
+      status: error.status,
+      stderr: String(error.stderr || error.message).trim()
+    })
   }
 }
 
 // `git fetch --prune origin`, stopped after `seconds`, rounded up to the
-// whole milliseconds Node takes: true when it finished, false when it was
-// stopped. A fetch git fails throws.
-const fetchOrigin = ({ root, seconds }) => {
-  try {
-    git({
-      args: ['fetch', '--quiet', '--prune', REMOTE],
-      cwd: root,
-      timeout: Math.ceil(seconds * MS_PER_SECOND)
-    })
-    return true
-  } catch (error) {
-    if (error.timedOut) return false
-    throw error
-  }
+// whole milliseconds Node takes, with every process it started: true when
+// it finished, false when it was stopped. A fetch git fails throws.
+const fetchOrigin = async ({ root, seconds }) => {
+  const args = ['fetch', '--quiet', '--prune', REMOTE]
+  const run = await runBounded({
+    args,
+    command: 'git',
+    cwd: root,
+    env: gitEnv(),
+    timeoutMs: Math.ceil(seconds * MS_PER_SECOND)
+  })
+  if (run.timedOut) return false
+  if (run.error || run.code !== 0) throw fetchFailureOf({ args, cwd: root, run })
+  return true
 }
+
+// The error of a fetch that `runBounded` saw fail: git's stderr, else the
+// spawn's own error, else the exit code.
+export const fetchFailureOf = ({ args, cwd, run }) =>
+  gitFailure({
+    args,
+    cwd,
+    status: run.code,
+    stderr: run.stderr.trim() || run.error?.message || `exited ${run.code}`
+  })
 
 // Every worktree of the repository `root` belongs to, the main checkout
 // first.
@@ -487,6 +527,68 @@ const predictedRefusal = ({ ref, root }) => {
   }
 }
 
+// `git diff --quiet` exits 1 when the files it compares differ.
+const DIFFERS = 1
+
+// Whether the lockfile differs between HEAD in `root` and `ref`, the commit
+// a fast-forward moves it to.
+const lockfileChanges = ({ ref, root }) =>
+  git({
+    args: ['diff', '--name-only', 'HEAD', ref, '--', LOCKFILE],
+    cwd: root
+  }) !== ''
+
+// Whether the install left the lockfile of `root` other than HEAD holds
+// (`git diff --quiet -- pnpm-lock.yaml`). A diff git cannot run reads as
+// no rewrite: the install never fails the run.
+const lockfileRewritten = ({ root }) => {
+  try {
+    git({ args: ['diff', '--quiet', '--', LOCKFILE], cwd: root })
+    return false
+  } catch (error) {
+    return error.status === DIFFERS
+  }
+}
+
+// `pnpm install` in `root`, stopped after `seconds` with every process it
+// started: `installed`, or `failed` with why, and `rewrote` when it left
+// the lockfile changed. It never throws: a failed install never fails the
+// run.
+const installIn = async ({ root, seconds }) => {
+  const { args, command } = installCommandOf({
+    comspec: process.env.ComSpec,
+    platform: process.platform
+  })
+  const run = await runBounded({
+    args,
+    command,
+    cwd: root,
+    env: gitEnv(),
+    timeoutMs: Math.ceil(seconds * MS_PER_SECOND)
+  })
+  return {
+    ...installOutcomeOf({ run, seconds }),
+    rewrote: lockfileRewritten({ root })
+  }
+}
+
+// The install a fast-forward that changed the lockfile makes: run after a
+// real one, `would` for a dry run that predicts one, and none otherwise.
+// Its bound is read from `env` only then; a bound that is not a positive
+// number is a failed install that never ran, which fails nothing else.
+const installAfter = async ({ dryRun, env, main, root }) => {
+  if (!main.lockChanged) return undefined
+  if (dryRun ? main.detail !== undefined : !main.moved) return undefined
+  let seconds
+  try {
+    seconds = installSecondsFrom({ env })
+  } catch (error) {
+    const verb = dryRun ? 'would not run' : 'was not run'
+    return { state: 'failed', why: `${verb}: ${error.message}` }
+  }
+  return dryRun ? { state: 'would' } : installIn({ root, seconds })
+}
+
 // The main checkout brought to the default branch when it sits on it, by a
 // fast-forward. Any tracked local change blocks it before git is asked, a
 // dry run included, and git refuses whatever else would be lost, a local
@@ -519,10 +621,11 @@ const forwardMain = ({ defaultBranch, dryRun, root, worktree }) => {
       moved: false
     }
   }
+  const lockChanged = lockfileChanges({ ref: defaultBranch.ref, root })
   if (dryRun) {
     const refusal = predictedRefusal({ ref: defaultBranch.ref, root })
     return refusal === undefined
-      ? { ...at, behind, moved: false }
+      ? { ...at, behind, lockChanged, moved: false }
       : { ...at, behind, detail: refusal, moved: false }
   }
   try {
@@ -530,7 +633,7 @@ const forwardMain = ({ defaultBranch, dryRun, root, worktree }) => {
       args: ['merge', '--ff-only', '--quiet', defaultBranch.ref],
       cwd: root
     })
-    return { ...at, behind, moved: true }
+    return { ...at, behind, lockChanged, moved: true }
   } catch (error) {
     return { ...at, behind, detail: refusalOf({ error }), moved: false }
   }
@@ -538,18 +641,20 @@ const forwardMain = ({ defaultBranch, dryRun, root, worktree }) => {
 
 // Every worktree of the repository `cwd` belongs to, each with the reason it
 // is kept (`kept: null` for one removed), and what became of the main
-// checkout, which is moved last, after every removal; or `timedOut` when the
-// fetch outlasted `fetchSeconds`, before anything was judged. A fetch, a
+// checkout, which is moved last, after every removal, with the install a
+// fast-forward that changed the lockfile made (its bound read from `env`);
+// or `timedOut` when the fetch outlasted `fetchSeconds`, before anything
+// was judged. A fetch, a
 // default branch or a list git cannot read throws before anything is
 // removed; a step that fails after the decisions returns its `error` with
 // the results gathered before it, every removal made included.
-const pruneWorktrees = ({ cwd, dryRun, fetchSeconds }) => {
+const pruneWorktrees = async ({ cwd, dryRun, env, fetchSeconds }) => {
   const current = samePath({
     path: git({ args: ['rev-parse', '--show-toplevel'], cwd })
   })
   const worktrees = listWorktrees({ root: current })
   const root = worktrees[0].path
-  if (!fetchOrigin({ root, seconds: fetchSeconds }))
+  if (!(await fetchOrigin({ root, seconds: fetchSeconds })))
     return { timedOut: true }
   const defaultBranch = readDefaultBranch({ root })
   const upstreams = readUpstreams({ root })
@@ -580,13 +685,15 @@ const pruneWorktrees = ({ cwd, dryRun, fetchSeconds }) => {
       )
     )
     if (!dryRun) git({ args: ['worktree', 'prune'], cwd: root })
+    const main = forwardMain({
+      defaultBranch,
+      dryRun,
+      root,
+      worktree: worktrees[0]
+    })
     return {
-      main: forwardMain({
-        defaultBranch,
-        dryRun,
-        root,
-        worktree: worktrees[0]
-      }),
+      install: await installAfter({ dryRun, env, main, root }),
+      main,
       results
     }
   } catch (error) {
@@ -600,20 +707,22 @@ const pruneWorktrees = ({ cwd, dryRun, fetchSeconds }) => {
 // removed before it, and exits 1. A fetch that outlasts its bound prints why
 // it skipped and exits 0. A run a prune started, through the post-merge its
 // fast-forward fires, does nothing and prints nothing.
-const main = () => {
+const main = async () => {
   if (process.env[NESTED_RUN_VARIABLE]) return
   try {
     const { dryRun, quiet } = optionsFrom({ argv: process.argv })
     const fetchSeconds = fetchSecondsFrom({ env: process.env })
-    const outcome = pruneWorktrees({
+    const outcome = await pruneWorktrees({
       cwd: process.cwd(),
       dryRun,
+      env: process.env,
       fetchSeconds
     })
     const lines = outcome.timedOut
       ? skippedLines({ dryRun, seconds: fetchSeconds })
       : reportLines({
           dryRun,
+          install: outcome.install,
           main: outcome.main,
           quiet,
           results: outcome.results
@@ -639,5 +748,5 @@ if (
   process.argv[1] &&
   resolve(process.argv[1]) === resolve(HERE, 'prune-worktrees.mjs')
 ) {
-  main()
+  await main()
 }

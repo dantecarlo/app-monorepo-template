@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ---------------------------------------------------------------------------
-// validate — runs the gate registry, scripts/gate/registry.json.
+// validate — runs the gate registry, .agents/contracts/gates.json.
 //
 // Every step the profile runs runs in registry order, through the shell,
 // from the repository root: `pnpm <id>`, or the step's own command. The

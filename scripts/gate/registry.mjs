@@ -174,6 +174,13 @@ const outsideProblems = ({ capabilities, outside, scripts, stepIds }) => {
       ? entry.script
       : `outside entry ${index + 1}`
     const known = isText(entry.script)
+    const doubled =
+      known &&
+      outside
+        .slice(0, index)
+        .some(
+          (earlier) => isObject(earlier) && earlier.script === entry.script
+        )
     return [
       ...Object.keys(entry)
         .filter((key) => !OUTSIDE_KEYS.has(key))
@@ -198,6 +205,7 @@ const outsideProblems = ({ capabilities, outside, scripts, stepIds }) => {
             `${name}: the root package.json defines no such script, so the entry is stale; a prune that unsets a script must take its entry too`
           ]
         : []),
+      ...(doubled ? [`${name}: it is listed outside more than once`] : []),
       ...(known && stepIds.has(entry.script)
         ? [`${name}: a step runs it, so it cannot also be listed outside`]
         : [])

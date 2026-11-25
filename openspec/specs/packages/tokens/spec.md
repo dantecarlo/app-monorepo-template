@@ -3,7 +3,7 @@
 > **Governs:** `packages/tokens/src`, `packages/tokens/scripts`, `packages/tokens/theme.css`, `packages/tokens/tailwind-preset.cjs`
 > **ID prefix:** `TOKENS`
 > **Derived from:** `docs/architecture/shared.md`
-> **Verified against the code:** 2026-11-16 at `eeeaac7`
+> **Verified against the code:** 2026-11-20 at `c324145`
 
 ## Purpose
 
@@ -175,10 +175,13 @@ The tokens package SHALL expose every token group as a named export from its ent
 The tokens package SHALL ship the generated Tailwind preset, exported as tailwind-preset.cjs,
 whose theme.extend.colors hold, in the dark theme's shape, each themed colour as a read of its
 `--c-*` variable, under the name `themeVars` and the web theme declare it, and each colour the
-themes share as its literal value, and which the mobile Tailwind config loads; the web app SHALL
-load no Tailwind JavaScript config.
+themes share as its literal value, for an app's Tailwind config to load.
 
-**Evidence:** `packages/tokens/scripts/generate.mjs:331-344`, `packages/tokens/scripts/generate.mjs:351`, `packages/tokens/tailwind-preset.cjs:22`, `packages/tokens/package.json:9`, `apps/mobile/tailwind.config.js:7`, `apps/web/src/app/globals.css:3`
+<!-- region web-next -->
+The web app SHALL load no Tailwind JavaScript config: its CSS entry imports the generated theme.
+<!-- endregion web-next -->
+
+**Evidence:** `packages/tokens/scripts/generate.mjs:331-344`, `packages/tokens/scripts/generate.mjs:351`, `packages/tokens/tailwind-preset.cjs:22`, `packages/tokens/package.json:9`
 
 #### Scenario: a themed colour is resolved
 
@@ -201,12 +204,14 @@ load no Tailwind JavaScript config.
 - **THEN** it is the literal value of the shared colour
 - **Test:** `packages/tokens/__tests__/tailwind-preset.test.ts` › "the preset writes every shared colour as a literal"
 
+<!-- region web-next -->
 #### Scenario: the web app loads no JavaScript config
 
 - **GIVEN** the web app's CSS entry
 - **WHEN** it is read
 - **THEN** it imports the generated theme, holds no `@config` and no `tailwind.config.cjs` exists
 - **Test:** `apps/web/src/app/__tests__/globals.test.ts` › "imports the generated theme and loads no JS config"
+<!-- endregion web-next -->
 
 ### Requirement: TOKENS-13 — The outputs carry the scales as CSS lengths
 
@@ -215,7 +220,7 @@ layout-width, font family, font size, glyph size and shadow tokens, the numeric 
 pixel or rem lengths, and the web app SHALL take its spacing, radius, layout-width and font-size
 utilities from the generated web theme alone.
 
-**Evidence:** `packages/tokens/scripts/generate.mjs:225`, `packages/tokens/scripts/generate.mjs:234`, `packages/tokens/scripts/generate.mjs:352`, `packages/tokens/scripts/generate.mjs:375`, `packages/tokens/theme.css:119`, `packages/tokens/tailwind-preset.cjs:56`, `packages/tokens/tailwind-preset.cjs:100`, `apps/web/src/app/globals.css:3`
+**Evidence:** `packages/tokens/scripts/generate.mjs:225`, `packages/tokens/scripts/generate.mjs:234`, `packages/tokens/scripts/generate.mjs:352`, `packages/tokens/scripts/generate.mjs:375`, `packages/tokens/theme.css:119`, `packages/tokens/tailwind-preset.cjs:56`, `packages/tokens/tailwind-preset.cjs:100`
 
 #### Scenario: a Tailwind config resolves a spacing utility
 
@@ -424,12 +429,14 @@ that is `duration`: Tailwind 4 builds `duration-*` from `--transition-duration-*
 - **THEN** it holds no `duration` namespace
 - **Test:** `packages/tokens/src/__tests__/themeNames.constant.test.ts` › "leaves out a namespace whose variables make no utility, by its rule"
 
+<!-- region web-next -->
 #### Scenario: a listed name makes a utility
 
 - **GIVEN** the web app's Tailwind and the generated web theme
 - **WHEN** one utility of every name in `themeNames` is compiled, and `duration-shimmer`
 - **THEN** each listed name produces a rule and `duration-shimmer` produces none
 - **Test:** `apps/web/src/components/ui/__tests__/variants.helper.test.ts` › "lists only theme names the web's Tailwind turns into a utility"
+<!-- endregion web-next -->
 
 ## Open questions
 

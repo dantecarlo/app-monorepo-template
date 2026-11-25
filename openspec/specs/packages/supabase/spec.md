@@ -1,9 +1,9 @@
 # packages/supabase — living spec
 
-> **Governs:** `packages/supabase/src`, `packages/supabase/supabase/migrations`, `packages/supabase/supabase/config.toml`
+> **Governs:** `packages/supabase/src`, `packages/supabase/supabase/migrations`, `packages/supabase/supabase/config.toml`, `packages/supabase/package.json`, `scripts/supabase-test-db.mjs`
 > **ID prefix:** `SUPABASE`
 > **Derived from:** `packages/supabase/docs/database.md`, `AGENTS.md`, `docs/code-standards.md`
-> **Verified against the code:** 2026-11-18 at `a69a1b7`
+> **Verified against the code:** 2026-11-25 at `6cdbbaa`
 
 ## Purpose
 
@@ -11,7 +11,8 @@ The supabase package is the default backend adapter: the anon-key browser client
 server client, handed out as one opaque backend client type, the auth gateway, the Postgrest
 error mapper and the AppError builder, and the database, with row-level security enabled and
 forced on four tables, the API roles' privileges narrowed where row-level security does not
-reach, the RBAC tables and helpers, the append-only audit log and the seed. The ports, AppError and the message-key map belong to
+reach, the RBAC tables and helpers, the append-only audit log and the seed, and `test:db`, which
+runs the pgTAP suites over the checkout's migrations on the target the package sets. The ports, AppError and the message-key map belong to
 packages/core, and the catalogs that translate the keys to packages/i18n.
 
 ## Requirements
@@ -879,3 +880,322 @@ SHALL take the client as a `BackendClientType` and reach the SDK through it.
 - **WHEN** the auth gateway built over it reads the session
 - **THEN** it returns the neutral session mapped from the SDK's (SUPABASE-06)
 - **Test:** `packages/supabase/src/__tests__/supabaseAuth.adapter.test.ts` › "getSession maps the SDK session to IAuthSession"
+
+### Requirement: SUPABASE-31 — test:db runs the pgTAP suites over the checkout's migrations
+
+The supabase package's `test:db` SHALL apply, at the start of each pgTAP file's own transaction,
+every migration of the checkout whose version the target database's ledger
+(`supabase_migrations.schema_migrations`) lacks, in name order, so the file's `rollback` takes
+them with it and the database ends as it was. It SHALL apply each one through a PL/pgSQL
+`execute`, without a `begin` and a `commit` that wrap the whole file, and stop on the first that
+fails, naming it; it SHALL apply none when the ledger holds a file's version under another name or
+under none, and run nothing when two files share a version, naming both. Read with its comments,
+strings, quoted identifiers and dollar-quoted bodies blanked, split as the Postgres lexer splits
+them, a pgTAP file SHALL open with a plain `begin`,
+end with `rollback`, run no other statement that controls the transaction (a savepoint, its
+release and `rollback to` it excepted) and hold no psql meta-command; otherwise, or when it holds a quote, a `$` or a comment that
+reader cannot pair, test:db SHALL run nothing, naming the file. The bundle SHALL set
+`standard_conforming_strings` on, locally, right after each file's first `begin`, before the
+migrations, and test:db SHALL run nothing when a file's code, quoted identifiers and dollar
+bodies included, names that setting or `set_config`, runs `reset all`, or quotes an identifier
+with `U&"..."`.
+
+**Evidence:** `packages/supabase/src/pgTapBundle.constant.ts:3`, `packages/supabase/src/pgTapBundle.constant.ts:22-58`, `packages/supabase/src/pgTapBundle.helper.ts:33-38`, `packages/supabase/src/pgTapBundle.helper.ts:74-120`, `packages/supabase/src/pgTapBundle.helper.ts:137-140`, `packages/supabase/src/pgTapBundle.helper.ts:161-193`, `packages/supabase/src/pgTapBundle.helper.ts:197-200`, `packages/supabase/src/pgTapBundle.helper.ts:211-272`, `packages/supabase/src/pgTapBundle.helper.ts:282-295`, `packages/supabase/src/pgTapCode.constant.ts:7-27`, `packages/supabase/src/pgTapCode.helper.ts:201-227`, `packages/supabase/src/testDbRun.helper.ts:71`, `packages/supabase/docs/database.md:409`, `packages/supabase/docs/database.md:438`, `packages/supabase/docs/database.md:469`, `packages/supabase/docs/database.md:476`, `packages/supabase/docs/database.md:489`
+
+#### Scenario: the checkout's migrations, in order
+
+- **GIVEN** migration files out of name order
+- **WHEN** test:db reads them
+- **THEN** it lists them in name order, each with the version and the name the Supabase CLI records
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "lists the migrations in name order, with the version and the name the Supabase CLI records"
+
+#### Scenario: a migration wrapped in its own transaction
+
+- **GIVEN** a migration that opens with `begin;` and ends with `commit;`, with a `commit;` inside
+- **WHEN** test:db reads it
+- **THEN** the outer pair is removed and the inner `commit;` stays, for Postgres to refuse
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "drops the begin and commit that wrap a whole migration, and keeps a commit inside it"
+
+#### Scenario: a migration that only begins or only commits
+
+- **GIVEN** a migration that opens with `begin;` and does not commit, and one that commits only
+- **WHEN** test:db reads them
+- **THEN** each keeps its text
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "keeps the text of a migration that only begins or only commits"
+
+#### Scenario: a file the CLI does not read as a migration
+
+- **GIVEN** a `.sql` file of the migrations folder whose name is not `<version>_<name>.sql`
+- **WHEN** test:db reads the folder
+- **THEN** that file is not applied
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "leaves out a file the Supabase CLI does not read as a migration"
+
+#### Scenario: two files share a version
+
+- **GIVEN** two migration files with the same version
+- **WHEN** test:db reads the migrations folder
+- **THEN** it runs nothing, naming both files and the version
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses two migrations with the same version, naming both"
+
+#### Scenario: the migrations travel quoted
+
+- **GIVEN** migrations holding quotes, the block's own dollar tags, and one ending where a tag could close
+- **WHEN** the block that applies them is built
+- **THEN** it lists every one with its file, version and name, and quotes each text and the block with dollar tags none of the texts can end
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "lists every migration of the checkout, each text dollar-quoted with a tag none of them can end"
+
+#### Scenario: a version the database holds under another name
+
+- **GIVEN** a database whose ledger holds a file's version under another name
+- **WHEN** the block runs
+- **THEN** it raises, naming the file and both names, before it applies any migration
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "stops on a version the database holds under another name before it applies any migration"
+
+#### Scenario: a ledger row with no name
+
+- **GIVEN** a database whose ledger holds a file's version with no name
+- **WHEN** the block runs
+- **THEN** it raises as for another name, before it applies any migration
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "treats a ledger row with no name as a conflict"
+
+#### Scenario: a migration the ledger lacks
+
+- **GIVEN** a database whose ledger lacks the version of a file
+- **WHEN** the block runs
+- **THEN** it applies that file and skips every file whose version the ledger holds
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "applies a migration only when the database's ledger lacks its version"
+
+#### Scenario: a migration that fails
+
+- **GIVEN** a pending migration that Postgres refuses, such as one with a `commit;` inside
+- **WHEN** the block applies it through `execute`
+- **THEN** the file stops with an error that names the migration and Postgres's reason
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "runs each migration through a PL/pgSQL execute and names the one that fails"
+
+#### Scenario: a database with no ledger
+
+- **GIVEN** a database with no `supabase_migrations.schema_migrations`
+- **WHEN** the block runs
+- **THEN** it applies every migration of the checkout and reads no ledger
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "applies every migration when the database has no migration ledger"
+
+#### Scenario: the pgTAP file's transaction
+
+- **GIVEN** a pgTAP file that opens with `begin;` and ends with `rollback;`
+- **WHEN** test:db bundles it
+- **THEN** the block sits right after its `begin;` and the rest of the file is unchanged
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "puts the migrations inside each pgTAP file's transaction, right after its begin"
+
+#### Scenario: a pgTAP file outside a transaction
+
+- **GIVEN** a pgTAP file that does not open with `begin;`, or one that does not end with `rollback;`
+- **WHEN** test:db bundles the files
+- **THEN** it refuses, naming the file
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a pgTAP file that does not open with begin, naming it"
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a pgTAP file that does not end with rollback, naming it"
+
+#### Scenario: a rollback only in a comment
+
+- **GIVEN** a pgTAP file whose only `rollback;` sits in a comment after a `commit;`, with LF or CRLF line ends
+- **WHEN** test:db bundles the files
+- **THEN** it refuses, naming the file
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a pgTAP file whose rollback is only in a trailing comment, naming it"
+
+#### Scenario: a transaction controlled in between
+
+- **GIVEN** a pgTAP file that runs `commit`, `end`, `abort`, `rollback`, `begin`, `start transaction`, `prepare transaction`, `commit prepared` or `set transaction` between its first `begin;` and its last `rollback;`
+- **WHEN** test:db bundles the files
+- **THEN** it refuses, naming the file and the statement
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a pgTAP file that ends its transaction before its last rollback, naming it: %s"
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses $statement between the first begin and the last rollback, naming the file"
+
+#### Scenario: a savepoint and transaction words outside the code
+
+- **GIVEN** a pgTAP file with a savepoint, its release, `rollback to` it, and transaction words in comments, strings and a `do` body
+- **WHEN** test:db bundles the files
+- **THEN** it bundles the file
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "keeps savepoints, and transaction words inside comments, strings and bodies"
+
+#### Scenario: a psql meta-command
+
+- **GIVEN** a pgTAP file with `\i`, `\set` or `\gexec`
+- **WHEN** test:db bundles the files
+- **THEN** it refuses, naming the file
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a pgTAP file with a psql meta-command, naming it: %s"
+
+#### Scenario: an opening other than a plain begin
+
+- **GIVEN** a pgTAP file that opens with `begin isolation level serializable;` or `start transaction;`
+- **WHEN** test:db bundles the files
+- **THEN** it refuses, naming the file: conservative, since the block runs first
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses any opening other than a plain begin, naming the file: %s"
+
+#### Scenario: a commit after a form a simpler reader misreads
+
+- **GIVEN** a pgTAP file whose `commit;` follows an escape string with `\'`, `--`, `'` or `/*` inside a quoted identifier, a `$` inside identifiers, a `--` comment ended by a lone CR, or a non-ASCII dollar tag
+- **WHEN** test:db bundles the files
+- **THEN** it refuses, naming the file and the commit
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "refuses a commit hidden from a masker that misreads Postgres, naming the file: %s"
+
+#### Scenario: a string continued past a newline
+
+- **GIVEN** a pgTAP file with an escape string followed by whitespace that holds a newline, with or without a `--` comment before or after it, then `'\' '; commit;`
+- **WHEN** test:db bundles the files
+- **THEN** it reads one escape string, as Postgres does, sees the commit and refuses, naming the file; whitespace with no newline ends the string, and a plain string continued past a newline still bundles
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "refuses a commit after an escape string continued past a newline, naming the file: %s"
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "continues a string only past whitespace that holds a newline, as Postgres does: %s"
+
+#### Scenario: a file the reader cannot pair
+
+- **GIVEN** a pgTAP file with a string, an escape string, a quoted identifier, a dollar-quoted body or a nested comment that never closes, or a `$` that pairs with nothing
+- **WHEN** test:db bundles the files
+- **THEN** it refuses, naming the file
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "refuses a quote, a dollar sign or a comment it cannot pair, naming the file: %s"
+
+#### Scenario: what Postgres reads as one token
+
+- **GIVEN** a pgTAP file with a `commit;` inside a nested comment, and one with escape strings, doubled quotes, quoted identifiers, `a$b$`, `$1`, a non-ASCII dollar tag and a comment ended by CRLF
+- **WHEN** test:db bundles the files
+- **THEN** it bundles both
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "reads what Postgres reads as one token, nested comments included: %s"
+
+#### Scenario: the order check's reader stays as it was
+
+- **GIVEN** the order check's reader, `toSqlCode` over `SQL_NON_CODE_TOKEN_PATTERN`
+- **WHEN** it reads the six forms
+- **THEN** its pattern and its output on the six forms are what they were before the pgTAP reader
+- **Test:** `packages/supabase/src/__tests__/sqlCode.helper.test.ts` › "reads the forms the pgTAP check reads on its own exactly as before"
+
+#### Scenario: standard strings forced on
+
+- **GIVEN** a pgTAP file that opens with `begin;`
+- **WHEN** test:db bundles it
+- **THEN** the bundle holds `set local standard_conforming_strings = on;` once, after the `begin;` and before the migrations block and the file's own statements
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "forces standard_conforming_strings on right after the begin, before the migrations"
+
+#### Scenario: a file that could turn standard strings off
+
+- **GIVEN** a pgTAP file that sets `standard_conforming_strings`, in any case, calls `set_config`, plainly, through a quoted name or inside a `do` body, or runs `reset all`
+- **WHEN** test:db bundles the files
+- **THEN** it refuses, naming the file
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a pgTAP file that could turn standard_conforming_strings off, naming it: %s"
+
+#### Scenario: a mention in a comment or a string
+
+- **GIVEN** a pgTAP file that names the setting, `set_config` or `reset all` only in a comment or a string
+- **WHEN** test:db bundles the files
+- **THEN** it bundles the file
+- **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "keeps a pgTAP file that mentions the setting only in a comment or a string: %s"
+
+#### Scenario: a Unicode-escape identifier
+
+- **GIVEN** a pgTAP file that quotes an identifier with `U&"..."` or `u&"..."`, escaped (`U&"s\0065t_config"`), with a `UESCAPE` clause, or plain
+- **WHEN** test:db bundles the files
+- **THEN** it refuses, naming the file, while a `U&'...'` string and `U&` inside a comment, a string or a plain quoted identifier still bundle
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "refuses any U&"..." identifier, whose escapes could spell a refused name, naming the file: %s"
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "keeps U& in a string, a comment, a U& string or inside a quoted identifier: %s"
+
+#### Scenario: the reader's two views
+
+- **GIVEN** a pgTAP file
+- **WHEN** `toPgTapCode` reads it
+- **THEN** its code view blanks every comment, string, quoted identifier and dollar body, its searchable view only the comments and strings, both keep every offset, and an unclosed token or a stray `$` reads as nothing
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "blanks every comment, string, quoted identifier and dollar body, keeping each offset"
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "keeps the quoted identifiers and dollar bodies in the view a mention is searched in"
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "reads nothing when a token never closes or a $ pairs with nothing"
+
+#### Scenario: a change built at run time
+
+- **GIVEN** a pgTAP file that changes `standard_conforming_strings` without naming it, as `execute` of `'standard_' || 'conforming_strings'`, or a function of the migrations or the database that sets it
+- **WHEN** test:db bundles the files
+- **THEN** the reader could read a later string differently from Postgres
+- **Test:** Not covered — no reading of the file sees a name it builds at run time or a function it calls; the one remaining gap, on the owner's word
+
+### Requirement: SUPABASE-32 — The test:db target is configurable
+
+The supabase package's `test:db` SHALL read its target from `config.testDbTarget` of
+`packages/supabase/package.json`: `linked`, the default when the key is unset, runs the bundled
+suites with `supabase test db --linked`; `local` runs them with `supabase test db --local`; `off`
+runs no database test and exits 0; any other value, `null` included, runs nothing and exits 1,
+naming the key and the three. A
+run SHALL exit with the CLI's status and remove the bundle; with `--dry-run` it SHALL write the
+bundle and name the command without running it.
+
+**Evidence:** `packages/supabase/package.json:22`, `packages/supabase/package.json:24-26`, `packages/supabase/src/testDbRun.constant.ts:3-10`, `packages/supabase/src/testDbRun.constant.ts:17-22`, `packages/supabase/src/testDbRun.helper.ts:55-69`, `packages/supabase/src/testDbRun.helper.ts:74-95`, `scripts/supabase-test-db.mjs:63-65`, `scripts/supabase-test-db.mjs:70-73`
+
+#### Scenario: no target set
+
+- **GIVEN** a package.json whose config names no target
+- **WHEN** test:db runs
+- **THEN** it runs `supabase test db --linked` over the bundle, removes it and exits with the CLI's status
+- **Test:** `packages/supabase/src/__tests__/testDbRun.helper.test.ts` › "runs supabase test db --linked over the bundle when the config names no target"
+
+#### Scenario: the linked target
+
+- **GIVEN** the target `linked`
+- **WHEN** test:db runs
+- **THEN** it runs `supabase test db --linked` over the bundle
+- **Test:** `packages/supabase/src/__tests__/testDbRun.helper.test.ts` › "runs supabase test db --linked over the bundle for the linked target"
+
+#### Scenario: the local target
+
+- **GIVEN** the target `local`
+- **WHEN** test:db runs
+- **THEN** it runs `supabase test db --local` over the bundle
+- **Test:** `packages/supabase/src/__tests__/testDbRun.helper.test.ts` › "runs supabase test db --local over the bundle for the local target"
+
+#### Scenario: the off target
+
+- **GIVEN** the target `off`
+- **WHEN** test:db runs
+- **THEN** it reads no SQL file, writes no bundle, runs no CLI, says so and exits 0
+- **Test:** `packages/supabase/src/__tests__/testDbRun.helper.test.ts` › "runs no database test for the off target"
+
+#### Scenario: a target it does not know
+
+- **GIVEN** a target other than `linked`, `local` and `off`
+- **WHEN** test:db runs
+- **THEN** it runs nothing and exits 1, naming the value and the three targets
+- **Test:** `packages/supabase/src/__tests__/testDbRun.helper.test.ts` › "refuses a target it does not know, naming the ones it takes"
+
+#### Scenario: a null target
+
+- **GIVEN** `config.testDbTarget` set to `null`
+- **WHEN** test:db runs
+- **THEN** it runs nothing and exits 1, naming the key and the three targets
+- **Test:** `packages/supabase/src/__tests__/testDbRun.helper.test.ts` › "refuses a null target, naming the setting"
+
+#### Scenario: a dry run
+
+- **GIVEN** the flag `--dry-run`
+- **WHEN** test:db runs
+- **THEN** it writes the bundle, keeps it, names it and the command, runs no CLI and exits 0
+- **Test:** `packages/supabase/src/__tests__/testDbRun.helper.test.ts` › "writes the bundle and names the command without running it on a dry run"
+
+#### Scenario: a suite fails
+
+- **GIVEN** a CLI run that exits with a failing status
+- **WHEN** test:db runs
+- **THEN** it exits with that status and removes the bundle
+- **Test:** `packages/supabase/src/__tests__/testDbRun.helper.test.ts` › "fails with the exit status of the CLI when a suite fails"
+
+#### Scenario: the CLI cannot start
+
+- **GIVEN** a machine where the Supabase CLI cannot start
+- **WHEN** test:db runs
+- **THEN** it exits 1, naming the reason, and removes the bundle
+- **Test:** `packages/supabase/src/__tests__/testDbRun.helper.test.ts` › "fails when the Supabase CLI cannot start"
+
+#### Scenario: a pgTAP file it cannot bundle
+
+- **GIVEN** a pgTAP file that does not open with `begin;`
+- **WHEN** test:db runs
+- **THEN** it writes no bundle, runs no CLI and exits 1, naming the file
+- **Test:** `packages/supabase/src/__tests__/testDbRun.helper.test.ts` › "runs nothing when a pgTAP file cannot be bundled"
+
+#### Scenario: the local target on a real stack
+
+- **GIVEN** a downstream project with a running local Supabase stack
+- **WHEN** it runs test:db with the target `local`
+- **THEN** the suites run on that stack
+- **Test:** Not covered — the template runs no Docker and no local stack (`AGENTS.md`, Supabase workflow)

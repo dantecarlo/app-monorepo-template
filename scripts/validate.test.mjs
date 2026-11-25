@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// The companion of the gate registry (scripts/gate/registry.json) and of its
+// The companion of the gate registry (.agents/contracts/gates.json) and of its
 // runner, scripts/validate.mjs.
 //
 // CASES drive the registry gate through `gate.run` over synthetic contexts.
@@ -258,6 +258,14 @@ export const CASES = [
   },
   {
     context: listing({
+      outside: [away({}), away({})],
+      steps: [step({})]
+    }),
+    expected: 1,
+    name: 'a script listed outside twice is refused'
+  },
+  {
+    context: listing({
       outside: { 'verify:c': 'for CI' },
       scripts: { 'verify:a': 'node a.mjs' },
       steps: [step({})]
@@ -465,6 +473,27 @@ const blindedProblems = ({
 // ---------------------------------------------------------------------------
 
 const checks = [
+  {
+    name: 'the runner stops at a step killed by a signal and exits non-zero',
+    run: () => {
+      const { logged, result } = runInScratch({
+        steps: [
+          step({}),
+          step({
+            command: 'node -e "process.kill(process.pid, \'SIGKILL\')"',
+            id: 'killed'
+          }),
+          step({ id: 'verify:b', stage: 'repository' })
+        ]
+      })
+      assert.notEqual(result.status, 0)
+      assert.deepEqual(logged, ['pnpm verify:a'])
+      assert.match(
+        result.stderr,
+        /killed (was stopped by SIGKILL|failed with exit code \d+) \(step 2 of 3\)/u
+      )
+    }
+  },
   {
     name: 'pruning a capability drops every step and outside entry it owns and keeps the rest in order',
     run: () => {

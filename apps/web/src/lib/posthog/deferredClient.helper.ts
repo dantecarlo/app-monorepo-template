@@ -7,9 +7,10 @@ import type {
 /**
  * A client that loads on demand. Nothing is loading until `start`; while it
  * loads, every call is held in order, up to `limit`, the oldest dropped
- * first; once it loads, the held calls run in order and every later call
- * runs at once. A failed load drops the held calls and leaves nothing
- * loading. `stop` drops the held calls and every later call at once, and
+ * first; once it loads, the held calls run in order, each on its own, and
+ * every later call runs at once. A failed load drops the held calls and
+ * leaves nothing loading. `stop` drops the held calls and every later call
+ * at once, and
  * resolves to the client it forgot, or to the one a load it interrupted
  * brings, which is not kept and runs none of the dropped calls; to whoever
  * started that load it resolves to undefined.
@@ -30,12 +31,29 @@ export const createDeferredClient = <TClient>({
     if (held.length > limit) held.shift()
   }
 
+  // A held call that throws drops only itself: the calls after it still run
+  // and the start still resolves to the client. No one waits on a held call
+  // to hear of its failure.
+  const runHeld = ({
+    call,
+    client
+  }: {
+    call: DeferredCallType<TClient>
+    client: TClient
+  }): void => {
+    try {
+      call(client)
+    } catch {
+      // Dropped, as a call made while nothing loads is.
+    }
+  }
+
   const settle = (client: TClient | undefined): TClient | undefined => {
     state.loading = undefined
     state.loaded = undefined
     state.client = client
     const calls = held.splice(0)
-    if (client) calls.forEach((call) => call(client))
+    if (client) calls.forEach((call) => runHeld({ call, client }))
     return client
   }
 

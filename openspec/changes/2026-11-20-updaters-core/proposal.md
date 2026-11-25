@@ -7,7 +7,7 @@
 The template keeps several things current by hand or not at all. `pnpm mcp:docs` refreshes the
 MCP server docs only when someone runs it, and it cannot say "out of date" without writing: a run
 exits 0 whether it wrote or not, and 1 on a failure, so no scheduler can tell the three apart
-(`scripts/update-mcp-docs.mjs:52-53`). Nothing schedules it: F33 waits on the owner. The other
+(`scripts/update-mcp-docs.mjs:61-62` at `e31b6d9`). Nothing schedules it: F33 waits on the owner. The other
 things that drift (the vendored archify skill, the action SHAs `verify:workflow-pins` holds, the
 dependencies, the agent rules) have gates but no updater, and an updater written for each, with
 its own shape, would leave nothing to hold them to one safety rule: an updater that rewrites a
@@ -67,5 +67,5 @@ The owner's words, verbatim:
 
 ## Affected specs
 
-- `openspec/specs/harness/mcp/spec.md`: added MCP-09, MCP-10
+- `openspec/specs/harness/mcp/spec.md`: added MCP-13, MCP-14
 - `openspec/specs/harness/updaters/spec.md`: a new spec, added UPDATERS-01 to UPDATERS-09

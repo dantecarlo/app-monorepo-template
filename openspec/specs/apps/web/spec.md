@@ -4,9 +4,12 @@
 <!-- region sentry -->
 > **Governs:** `apps/web/src/lib/observability/createSentryObservability.adapter.ts`, `apps/web/next-sentry.config.ts`, `apps/web/instrumentation.ts`, `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`
 <!-- endregion sentry -->
+<!-- region supabase -->
+> **Governs:** `apps/web/src/lib/supabase`
+<!-- endregion supabase -->
 > **ID prefix:** `WEB`
 > **Derived from:** `docs/architecture/web.md`, `docs/architecture/shared.md`, `docs/infrastructure.md`, `docs/e2e.md`, `docs/code-standards.md`, `AGENTS.md`, `docs/observability.md`, `docs/manifest.md`, `docs/decisions/0001-pluggable-providers.md`
-> **Verified against the code:** 2026-11-19 at `dd38b99`
+> **Verified against the code:** 2026-11-20 at `0eee3fe`
 
 ## Purpose
 
@@ -69,7 +72,7 @@ boundary followed by the client items dashboard screen, inside the page's `main`
 The web app SHALL render, on the server, a summary card with the total, active, draft and archived
 item counts computed from the items service, labelled with the `items.summary` translation keys.
 
-**Evidence:** `apps/web/src/screens/ItemsSummary/ItemsSummary.screen.tsx:6-40`, `apps/web/src/services/ItemsSummary/itemsSummary.service.ts:24-31`, `apps/web/src/services/ItemsSummary/ItemsSummary.adapter.ts:8-15`
+**Evidence:** `apps/web/src/screens/ItemsSummary/ItemsSummary.screen.tsx:6-40`, `apps/web/src/services/ItemsSummary/itemsSummary.service.ts:24-30`, `apps/web/src/services/ItemsSummary/ItemsSummary.adapter.ts:8-15`
 
 #### Scenario: the counts follow the item statuses
 
@@ -394,7 +397,7 @@ and when it rejects it SHALL queue an error toast with the message resolved from
 no field error and leave the route unchanged. The sign-in result the screen keeps holds the user
 id and not the access token.
 
-**Evidence:** `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:45`, `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:69`, `apps/web/src/screens/Login/hooks/useSignIn.hook.ts:33-45`, `apps/web/src/services/Auth/auth.service.ts:19-21`, `apps/web/src/services/Auth/Auth.adapter.ts:10`, `apps/web/src/screens/Login/Login.constant.ts:24`, `apps/web/src/lib/query/useAppMutation.hook.ts:60`, `apps/web/src/lib/supabase/authGateway.adapter.ts:73-86`
+**Evidence:** `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:45`, `apps/web/src/screens/Login/hooks/useLoginForm.hook.ts:69`, `apps/web/src/screens/Login/hooks/useSignIn.hook.ts:33-45`, `apps/web/src/services/Auth/auth.service.ts:19-21`, `apps/web/src/services/Auth/Auth.adapter.ts:10`, `apps/web/src/screens/Login/Login.constant.ts:24`, `apps/web/src/lib/query/useAppMutation.hook.ts:60`, `apps/web/src/lib/auth/authGateway.adapter.ts:22-23`
 
 #### Scenario: the gateway accepts the credentials
 
@@ -658,15 +661,17 @@ unsubscribe from those changes on unmount.
 - **Test:** `apps/web/src/components/AuthProvider/__tests__/useAuthBootstrap.hook.test.ts` › "subscribes to auth state changes"
 - **Test:** `apps/web/src/components/AuthProvider/__tests__/useAuthBootstrap.hook.test.ts` › "calls unsubscribe on unmount"
 
+<!-- region supabase -->
 ### Requirement: WEB-20 — The auth gateway is a no-op without Supabase settings
 
-The web app SHALL give the auth provider and the auth service one gateway: a no-op gateway during
-server rendering and in a browser where `NEXT_PUBLIC_SUPABASE_URL` or
+The web app SHALL serve, from the Supabase part of its auth gateway (WEB-86), the no-op gateway
+during server rendering and in a browser where `NEXT_PUBLIC_SUPABASE_URL` or
 `NEXT_PUBLIC_SUPABASE_ANON_KEY` is unset, so the session resolves to none and a sign-in rejects
-with the not-configured failure (WEB-46); otherwise one Supabase auth gateway per browser, whose
-sign-in names its failures (WEB-46).
+with the not-configured failure (WEB-46), whose cause names both settings; otherwise one Supabase
+auth gateway per browser, whose sign-in names its failures (WEB-46).
 
-**Evidence:** `apps/web/src/lib/supabase/authGateway.adapter.ts:88-99`, `apps/web/src/lib/supabase/authGateway.adapter.ts:110-118`, `apps/web/src/app/SupabaseProviders.tsx:22`
+
+**Evidence:** `apps/web/src/lib/supabase/authGateway.adapter.ts:69-100`, `apps/web/src/lib/auth/authGateway.adapter.ts:11-23`, `apps/web/src/app/AuthProviders.tsx:22`
 
 #### Scenario: the Supabase settings are missing
 
@@ -674,6 +679,14 @@ sign-in names its failures (WEB-46).
 - **WHEN** the gateway is requested
 - **THEN** its session resolves to none, its sign-in rejects, and no Supabase gateway is created
 - **Test:** `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "returns a no-op gateway without the Supabase settings"
+
+#### Scenario: the rejection names the missing settings
+
+- **GIVEN** a browser with no Supabase URL or anon key
+- **WHEN** a sign-in is attempted through the gateway
+- **THEN** the cause of its rejection names `NEXT_PUBLIC_SUPABASE_URL` and
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- **Test:** `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "names the Supabase settings in the cause of a sign-in without them"
 
 #### Scenario: the Supabase settings are present
 
@@ -732,6 +745,7 @@ store for reading and writing the session cookies.
 - **WHEN** the server client is created twice
 - **THEN** the factory runs twice
 - **Test:** `apps/web/src/lib/supabase/__tests__/server.adapter.test.ts` › "returns a fresh client instance per call"
+<!-- endregion supabase -->
 
 ### Requirement: WEB-23 — Queries and mutations share fixed retry and freshness defaults
 
@@ -1410,6 +1424,7 @@ that no string segment of a key is a value the user typed or the data supplied, 
 - **THEN** both queries are invalidated
 - **Test:** `apps/web/src/lib/query/__tests__/queryKeys.constant.test.ts` › "invalidates every items query through the items all key"
 
+<!-- region supabase -->
 ### Requirement: WEB-46 — The auth gateway names each sign-in failure
 
 The web app SHALL reject a sign-in through the browser's auth gateway with an `AppError` that
@@ -1420,7 +1435,7 @@ its `auth.error` message key; and `NETWORK_ERROR` with `helper.error.network` wh
 be reached. Any other rejection SHALL pass through unchanged, and the auth service makes it the
 generic error (WEB-13).
 
-**Evidence:** `apps/web/src/lib/supabase/authGateway.adapter.ts:27-38`, `apps/web/src/lib/supabase/authGateway.adapter.ts:42-50`, `apps/web/src/lib/supabase/authGateway.adapter.ts:55-71`, `apps/web/src/lib/supabase/authGateway.adapter.ts:73-86`, `apps/web/src/lib/supabase/authGateway.adapter.ts:88-99`, `apps/web/src/lib/supabase/authGateway.constant.ts:6-11`, `apps/web/src/lib/supabase/authGateway.constant.ts:14-22`, `apps/web/src/lib/supabase/authGateway.constant.ts:28`, `apps/web/src/lib/supabase/authGateway.constant.ts:34-40`, `apps/web/src/services/Auth/auth.service.ts:21`
+**Evidence:** `apps/web/src/lib/supabase/authGateway.adapter.ts:23-67`, `apps/web/src/lib/supabase/authGateway.adapter.ts:69-71`, `apps/web/src/lib/auth/noopAuthGateway.helper.ts:10-44`, `apps/web/src/lib/auth/authGateway.constant.ts:6-22`, `apps/web/src/lib/supabase/authGateway.constant.ts:4-5`, `apps/web/src/lib/supabase/authGateway.constant.ts:11-23`, `apps/web/src/services/Auth/auth.service.ts:19`
 
 #### Scenario: the Supabase settings are missing
 
@@ -1449,13 +1464,7 @@ generic error (WEB-13).
 - **WHEN** a sign-in is attempted through the gateway
 - **THEN** it rejects with that same error
 - **Test:** `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "passes any other sign-in rejection through"
-
-#### Scenario: every failure has its message
-
-- **GIVEN** the message key of every failure the gateway names
-- **WHEN** every catalog is searched for it
-- **THEN** each catalog holds a value for every key
-- **Test:** `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "names a message every catalog holds for each sign-in failure"
+<!-- endregion supabase -->
 
 ### Requirement: WEB-47 — The busy labels come from the catalogs
 
@@ -1551,7 +1560,7 @@ US ingestion host. Without a key, and on the server, it SHALL never load the SDK
 observability call is a no-op and no request leaves the app; and a build without a key, or in
 `opt-in` mode, SHALL ship no `posthog-js` in the client chunks a page loads at start.
 
-**Evidence:** `apps/web/src/lib/posthog/posthogClient.constant.ts:4-11`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:20`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:32`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:48-71`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:79-95`
+**Evidence:** `apps/web/src/lib/posthog/posthogClient.constant.ts:4-11`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:21`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:33`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:49-72`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:80-102`
 
 #### Scenario: no key
 
@@ -1595,7 +1604,7 @@ The web app SHALL initialise PostHog, under every consent mode, with session rec
 autocapture off (form inputs included), console errors off, unhandled errors and rejections
 captured, and the URL scrub as its `before_send`.
 
-**Evidence:** `apps/web/src/lib/posthog/posthogClient.adapter.ts:48-71`, `apps/web/src/lib/posthog/posthogClient.constant.ts:15-19`, `apps/web/src/lib/posthog/posthogClient.constant.ts:40-47`
+**Evidence:** `apps/web/src/lib/posthog/posthogClient.adapter.ts:49-72`, `apps/web/src/lib/posthog/posthogClient.constant.ts:15-19`, `apps/web/src/lib/posthog/posthogClient.constant.ts:40-47`
 
 #### Scenario: recording and autocapture
 
@@ -1626,13 +1635,21 @@ captured, and the URL scrub as its `before_send`.
   rejections are captured, and the URL scrub is its `before_send`
 - **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "keeps the privacy defaults under every consent mode"
 
-### Requirement: WEB-52 — Every URL leaves without its query and fragment
+### Requirement: WEB-52 — Every URL leaves without its query, its fragment and a secret path segment
 
 The web app SHALL drop, before PostHog sends an event, the query string and the fragment of every
 URL, path and referrer property of the event and of the person, and of every page URL that keys
-heatmap data, merging the points of two URLs that scrub to the same key.
+heatmap data, merging the points of two URLs that scrub to the same key. It SHALL also replace with
+`:redacted` every segment of the path that reads as a secret: one that holds an `@` or `%40`, or
+one whose percent-decoded text has 16 or more characters, holds a digit and is not a slug, either
+a word slug, lowercase words and numbers of at most four digits joined by hyphens, or a slug of
+short word parts, two or more parts joined by hyphens or underscores, each of at most 11
+characters and each lowercase letters, digits, or one run of letters and one of digits, with one
+part at least a word of three or more letters; a part with an uppercase letter, or with letters and
+digits interleaved, refuses that slug. It SHALL keep the scheme and the host of a URL, and every
+other segment in its encoded form, so a route keeps its shape.
 
-**Evidence:** `apps/web/src/lib/posthog/scrubCaptureUrls.helper.ts:16-82`, `apps/web/src/lib/posthog/scrubCaptureUrls.constant.ts:4-13`
+**Evidence:** `apps/web/src/lib/posthog/scrubCaptureUrls.helper.ts:27-147`, `apps/web/src/lib/posthog/scrubCaptureUrls.constant.ts:4-51`
 
 #### Scenario: a page URL with a token
 
@@ -1640,6 +1657,44 @@ heatmap data, merging the points of two URLs that scrub to the same key.
 - **WHEN** it is scrubbed
 - **THEN** both are gone and the rest of the URL is kept
 - **Test:** `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "drops the query and the fragment of a page URL"
+
+#### Scenario: a secret in a path segment
+
+- **GIVEN** URLs and paths whose segments hold a reset token, an invite id, a hex token, a card
+  number and an email, plain and percent-encoded
+- **WHEN** they are scrubbed
+- **THEN** each of those segments reads `:redacted`, and the host and the other segments are kept
+- **Test:** `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "replaces a path segment that reads as a secret"
+
+#### Scenario: route names, slugs and short ids
+
+- **GIVEN** paths of route names, a long word slug with a year, a numeric id and a short id, and a
+  host that holds digits
+- **WHEN** they are scrubbed
+- **THEN** they are kept as they are
+- **Test:** `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "keeps route names, word slugs and short ids in the path"
+
+#### Scenario: an encoded segment
+
+- **GIVEN** segments that hold accented or other non-ASCII words, percent-encoded, and an encoded token
+- **WHEN** they are scrubbed
+- **THEN** the words are kept in their encoded form, and the token reads `:redacted`
+- **Test:** `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "reads a percent-encoded segment by its decoded text"
+
+#### Scenario: a slug of short parts
+
+- **GIVEN** lowercase slugs whose short parts are words, numbers or a run of each, joined by hyphens or underscores, an encoded accented word, a UUID and a card number joined by hyphens
+- **WHEN** they are scrubbed
+- **THEN** the slugs are kept, and the UUID and the card number read `:redacted`
+- **Test:** `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "keeps a slug of short parts that mix letters and digits"
+
+#### Scenario: a token shaped as a slug
+
+- **GIVEN** a nanoid, keys grouped with hyphens in mixed case or in upper case, lowercase hex groups,
+  groups of interleaved letters and digits, and a slug in mixed case
+- **WHEN** they are scrubbed
+- **THEN** each reads `:redacted`
+- **Test:** `apps/web/src/lib/posthog/__tests__/scrubCaptureUrls.helper.test.ts` › "redacts a token shaped as a slug of short parts"
 
 #### Scenario: an event and its person
 
@@ -1712,7 +1767,7 @@ when it names one, initialising PostHog in `granted` mode with the options it ha
 setting existed. It SHALL throw a configuration error that names the variable and the accepted
 values when, with a key set, the value names anything else, on the server too.
 
-**Evidence:** `apps/web/src/lib/posthog/posthogClient.constant.ts:24-35`, `apps/web/src/lib/posthog/resolveConsentMode.helper.ts:15-26`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:27-29`
+**Evidence:** `apps/web/src/lib/posthog/posthogClient.constant.ts:24-35`, `apps/web/src/lib/posthog/resolveConsentMode.helper.ts:15-26`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:28-30`
 
 #### Scenario: no setting
 
@@ -1755,7 +1810,7 @@ so it captures and stores nothing until it is opted in. In `memory` mode it SHAL
 PostHog with `persistence: 'memory'`, so it captures but keeps no cookie, local storage or session
 storage. Each mode adds nothing else to the `granted` options.
 
-**Evidence:** `apps/web/src/lib/posthog/posthogClient.constant.ts:40-47`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:57-67`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:89-95`, `apps/web/src/lib/posthog/grantRecord.adapter.ts:23-28`
+**Evidence:** `apps/web/src/lib/posthog/posthogClient.constant.ts:40-47`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:58-68`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:93-102`, `apps/web/src/lib/posthog/grantRecord.adapter.ts:23-28`
 
 #### Scenario: `opt-in` before a grant
 
@@ -1793,15 +1848,16 @@ mode with a key in the browser, `grant` SHALL load the SDK (WEB-50), opt it in w
 `$opt_in` event and then record the grant in the browser's local storage; `revoke` SHALL remove
 that record and stop the client at once, so every call made from then on is dropped (WEB-62), a
 call held by a load in flight included, and then opt out the SDK it loaded, or the one that load
-brings, and reset it with a new device id, which clears every value it stored and its stored
-choice, and a later grant SHALL opt the same SDK in again; when a revoke and a grant overlap a
-load, the later one SHALL decide; and `getStatus` SHALL read `denied` after a revoke on the same
-page, `granted` while the record holds a grant or after a grant on the same page, the browser
-blocking the record included, and `pending` otherwise. In `granted` and `memory` mode, without a key and on the server, `getStatus`
-SHALL read `not-required`, and `grant` and `revoke` SHALL load nothing and call nothing on
-PostHog.
+brings, pause its flags and reset it with a new device id, which clears every value it stored and
+its stored choice and, with the flags paused, requests no flags; a later grant SHALL opt the same
+SDK in again and, after a revoke paused them, resume the flags and reload them once; when a revoke
+and a grant overlap a load, the later one SHALL decide; and `getStatus` SHALL read `denied` after a
+revoke on the same page, `granted` while the record holds a grant or after a grant on the same
+page, the browser blocking the record included, and `pending` otherwise. In `granted` and `memory`
+mode, without a key and on the server, `getStatus` SHALL read `not-required`, and `grant` and
+`revoke` SHALL load nothing and call nothing on PostHog.
 
-**Evidence:** `apps/web/src/lib/observability/createPostHogConsent.adapter.ts:36-76`, `apps/web/src/lib/observability/createPostHogConsent.constant.ts:7-14`, `apps/web/src/lib/posthog/grantRecord.adapter.ts:23-43`, `apps/web/src/lib/posthog/grantRecord.constant.ts:4-6`, `apps/web/src/lib/observability/consent.adapter.ts:7`, `apps/web/src/lib/observability/index.ts:1`
+**Evidence:** `apps/web/src/lib/observability/createPostHogConsent.adapter.ts:40-92`, `apps/web/src/lib/observability/createPostHogConsent.constant.ts:8-26`, `apps/web/src/lib/posthog/grantRecord.adapter.ts:23-43`, `apps/web/src/lib/posthog/grantRecord.constant.ts:4-6`, `apps/web/src/lib/observability/consent.adapter.ts:7`, `apps/web/src/lib/observability/index.ts:1`
 
 #### Scenario: before a choice
 
@@ -1815,7 +1871,8 @@ PostHog.
 - **GIVEN** a key and the consent mode `opt-in`
 - **WHEN** consent is granted twice
 - **THEN** the SDK module is loaded and initialised once, PostHog is opted in with no opt-in
-  event, the grant is recorded and the status reads `granted`
+  event, its flags are left as the SDK loads them, the grant is recorded and the status reads
+  `granted`
 - **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "grant loads PostHog once, opts it in without an opt-in event and reads granted"
 
 #### Scenario: a grant from an earlier visit
@@ -1832,6 +1889,13 @@ PostHog.
 - **THEN** PostHog is opted out, then reset with a new device id, the record is gone, the error
   never reaches PostHog and the status reads `denied`
 - **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "revoke opts PostHog out, resets it with a new device id, stops it and reads denied"
+
+#### Scenario: no flags after a revoke
+
+- **GIVEN** a key, the consent mode `opt-in` and a grant
+- **WHEN** consent is revoked
+- **THEN** the flags are paused before the reset and are not reloaded
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a revoke pauses the flags before the reset, so it requests none"
 
 #### Scenario: a call during a revoke's load
 
@@ -1856,6 +1920,13 @@ PostHog.
 - **THEN** PostHog is opted in again, the SDK module was loaded and initialised once, and the
   status reads `granted`
 - **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "grants again after a revoke with the SDK it already loaded"
+
+#### Scenario: the flags after a grant that follows a revoke
+
+- **GIVEN** a key, the consent mode `opt-in`, a grant and a revoke
+- **WHEN** consent is granted again
+- **THEN** the flags are resumed after PostHog is opted in and reloaded once
+- **Test:** `apps/web/src/lib/observability/__tests__/createPostHogConsent.adapter.test.ts` › "a grant after a revoke resumes the flags and reloads them once"
 
 #### Scenario: a revoke and a grant during a load
 
@@ -2007,11 +2078,12 @@ language's catalog holds.
 The web app's PostHog observability adapter SHALL scrub every payload with `scrubPII` when it is
 called, and then: hand the call to the SDK at once while the SDK is loaded; while the SDK is
 loading, hold it in a queue of at most `POSTHOG_PENDING_CALLS_LIMIT` calls, dropping the oldest
-when the queue is full, and hand every held call to the SDK in order once it loads, or drop them
-all if it fails to load; and drop it while no load has started: without a key, on the server, in
-`opt-in` mode before a grant and after a revoke.
+when the queue is full, and hand every held call to the SDK in order once it loads, each on its
+own, so a held call that throws drops only itself and the start still resolves to the client, or
+drop them all if it fails to load; and drop it while no load has started: without a key, on the
+server, in `opt-in` mode before a grant and after a revoke.
 
-**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:29-73`, `apps/web/src/lib/posthog/deferredClient.helper.ts:17-78`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:39-40`, `apps/web/src/lib/posthog/posthogClient.constant.ts:51`
+**Evidence:** `apps/web/src/lib/observability/createPostHogObservability.adapter.ts:29-73`, `apps/web/src/lib/posthog/deferredClient.helper.ts:18-96`, `apps/web/src/lib/posthog/posthogClient.adapter.ts:40-41`, `apps/web/src/lib/posthog/posthogClient.constant.ts:51`
 
 #### Scenario: the SDK loading
 
@@ -2020,6 +2092,13 @@ all if it fails to load; and drop it while no load has started: without a key, o
   then loads
 - **THEN** the SDK receives each of them in the order they were made, with the email redacted
 - **Test:** `apps/web/src/lib/observability/__tests__/createPostHogObservability.adapter.test.ts` › "hands the calls made while PostHog loads to it in order, scrubbed"
+
+#### Scenario: a held call that throws
+
+- **GIVEN** a load in flight and three held calls, the second of which throws
+- **WHEN** the load ends
+- **THEN** the first and the third reach the client in order, and the start resolves to it
+- **Test:** `apps/web/src/lib/posthog/__tests__/deferredClient.helper.test.ts` › "runs each held call on its own when one throws"
 
 #### Scenario: a full queue
 
@@ -2488,6 +2567,7 @@ included; every other file, tests included, reaches them through `@/lib/routing`
   such an import (harness/dependency-seams SEAM-03) and `pnpm verify:dependency-seams` fails an
   allowlist entry or a violation for it (SEAM-07), both inside `pnpm validate`
 
+<!-- region supabase -->
 ### Requirement: WEB-80 — The Supabase clients are the opaque backend client
 
 The web app SHALL type the clients of `src/lib/supabase/` as the opaque `BackendClientType` of
@@ -2496,7 +2576,7 @@ packages/supabase (SUPABASE-30): `getSupabaseClient` of `client.adapter.ts` retu
 Supabase client or a Supabase generic; the browser's auth gateway SHALL be built over the very
 client `getSupabaseClient` creates (WEB-20).
 
-**Evidence:** `apps/web/src/lib/supabase/client.adapter.ts:21-23`, `apps/web/src/lib/supabase/server.adapter.ts:14`, `apps/web/src/lib/supabase/authGateway.adapter.ts:114-116`, `packages/supabase/src/backendClient.type.ts:9-11`
+**Evidence:** `apps/web/src/lib/supabase/client.adapter.ts:21-23`, `apps/web/src/lib/supabase/server.adapter.ts:14`, `apps/web/src/lib/supabase/authGateway.adapter.ts:96-98`, `packages/supabase/src/backendClient.type.ts:9-11`
 
 #### Scenario: the browser client's type
 
@@ -2519,6 +2599,7 @@ client `getSupabaseClient` creates (WEB-20).
 - **THEN** the Supabase auth gateway is created over the same client the browser client adapter
   created and returns
 - **Test:** `apps/web/src/lib/supabase/__tests__/authGateway.adapter.test.ts` › "hands the gateway the very client the browser client adapter creates"
+<!-- endregion supabase -->
 
 <!-- region sentry -->
 ### Requirement: WEB-81 — The Sentry adapter scrubs PII and stays silent without a DSN
@@ -2604,6 +2685,96 @@ its SDK replaced at its module.
 - **THEN** every case passes
 - **Test:** `apps/web/src/lib/observability/__tests__/createSentryObservability.adapter.test.ts` › "the observability port contract"
 <!-- endregion sentry -->
+
+### Requirement: WEB-85 — An opt-in start with no recorded grant removes what PostHog stored
+
+The web app SHALL, when its client module loads in the browser with a key in `opt-in` mode and no
+grant recorded by the consent API, remove every value `posthog-js` keeps for that key: each local
+and session storage key that starts with `ph_<key>_`, the consent key `__ph_opt_in_out_<key>`, and
+the cookies of those names on the host and on every parent domain of it, so what a project stored
+under `granted` before it switched to `opt-in` does not outlive the switch. It SHALL keep them when
+a grant is recorded, keep every value of another key or of the app, keep them in every other mode,
+and throw nothing when the browser blocks site data.
+
+**Evidence:** `apps/web/src/lib/posthog/posthogClient.adapter.ts:90-102`, `apps/web/src/lib/posthog/sdkStorage.adapter.ts:12-107`, `apps/web/src/lib/posthog/sdkStorage.constant.ts:1-31`, `apps/web/src/lib/posthog/grantRecord.adapter.ts:23-28`
+
+#### Scenario: a switch from `granted`
+
+- **GIVEN** a key, the consent mode `opt-in`, no recorded grant, the values `posthog-js` keeps for
+  that key in a cookie and in local and session storage, and values of another key and of the app
+- **WHEN** the client module loads in the browser
+- **THEN** the values of that key are gone and the others stay
+- **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "removes what PostHog stored before at an opt-in start with no grant"
+
+#### Scenario: a recorded grant
+
+- **GIVEN** a key, the consent mode `opt-in`, a recorded grant and the values `posthog-js` keeps
+- **WHEN** the client module loads in the browser
+- **THEN** they stay
+- **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "keeps what PostHog stored at an opt-in start after a grant"
+
+#### Scenario: a mode that asks no consent
+
+- **GIVEN** a key, the consent mode `granted` and the values `posthog-js` keeps
+- **WHEN** the client module loads in the browser
+- **THEN** they stay
+- **Test:** `apps/web/src/lib/posthog/__tests__/posthogClient.adapter.test.ts` › "keeps what PostHog stored outside opt-in mode"
+
+#### Scenario: a cookie on a parent domain
+
+- **GIVEN** a page on a subdomain and the `posthog-js` cookie set on its parent domain
+- **WHEN** the values of the key are removed
+- **THEN** the cookie is gone
+- **Test:** `apps/web/src/lib/posthog/__tests__/sdkStorage.adapter.test.ts` › "expires the cookie PostHog set on a parent domain"
+
+#### Scenario: blocked site data
+
+- **GIVEN** a browser that throws on reading its local and session storage
+- **WHEN** the values of the key are removed
+- **THEN** nothing throws
+- **Test:** `apps/web/src/lib/posthog/__tests__/sdkStorage.adapter.test.ts` › "throws nothing when the browser blocks site data"
+
+### Requirement: WEB-86 — The auth gateway comes from the backend the project keeps
+
+The web app SHALL hand the auth provider and the auth service the gateway
+`src/lib/auth/authGateway.adapter.ts` serves: the gateway of the first backend capability it
+lists, each listed inside that capability's region, or, when the project keeps none, a no-op
+gateway whose session is none and whose sign-in rejects with the `NOT_CONFIGURED` failure and the
+`auth.error.notConfigured` key. Every sign-in failure the app names SHALL have its `auth.error`
+message key in every catalog.
+
+**Evidence:** `apps/web/src/lib/auth/authGateway.adapter.ts:11-23`, `apps/web/src/lib/auth/noopAuthGateway.helper.ts:10-44`, `apps/web/src/lib/auth/authGateway.constant.ts:2-22`, `apps/web/src/services/Auth/auth.service.ts:7`, `apps/web/src/app/AuthProviders.tsx:22`
+
+#### Scenario: no backend is kept
+
+- **GIVEN** the no-op gateway
+- **WHEN** its session is read and a sign-in is attempted through it
+- **THEN** the session is none, and the sign-in rejects with the `NOT_CONFIGURED` failure and the
+  `auth.error.notConfigured` key
+- **Test:** `apps/web/src/lib/auth/__tests__/noopAuthGateway.helper.test.ts` › "has no session and rejects a sign-in with the not-configured failure"
+
+#### Scenario: the served gateway keeps the port
+
+- **GIVEN** the auth gateway adapter, whatever backend the project keeps
+- **WHEN** the gateway is requested
+- **THEN** it has every method of the `IAuthGateway` port
+- **Test:** `apps/web/src/lib/auth/__tests__/authGateway.adapter.test.ts` › "serves a gateway with every method of the auth gateway port"
+
+<!-- region supabase -->
+#### Scenario: the Supabase gateway is listed
+
+- **GIVEN** the `supabase` capability, whose region lists the Supabase part's gateway
+- **WHEN** the gateway is requested
+- **THEN** it is the gateway `src/lib/supabase/authGateway.adapter.ts` serves
+- **Test:** `apps/web/src/lib/auth/__tests__/authGateway.adapter.test.ts` › "serves the gateway the supabase capability builds"
+<!-- endregion supabase -->
+
+#### Scenario: every failure has its message
+
+- **GIVEN** the message key of every sign-in failure the app names
+- **WHEN** every catalog is searched for it
+- **THEN** each catalog holds a value for every key
+- **Test:** `apps/web/src/lib/auth/__tests__/authGateway.constant.test.ts` › "names a message every catalog holds for each sign-in failure"
 
 ## Open questions
 

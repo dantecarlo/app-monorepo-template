@@ -33,7 +33,7 @@ import {
 } from 'node:fs'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { delimiter, dirname, join, resolve } from 'node:path'
 import { after, before, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
@@ -43,6 +43,8 @@ import {
   DIVERGED,
   FETCH_SECONDS_VARIABLE,
   fetchSecondsFrom,
+  INSTALL_SECONDS_VARIABLE,
+  installSecondsFrom,
   LOCAL_CHANGES,
   NESTED_RUN_VARIABLE,
   NOT_COVERED,
@@ -51,6 +53,7 @@ import {
   reportLines
 } from './prune-worktrees.detect.mjs'
 import {
+  fetchFailureOf,
   removeIfStillClean,
   removeLeftover,
   removeWorktree
@@ -1428,6 +1431,100 @@ test('a fetch that outlasts its bound skips the prune and the fast-forward, says
   assert.notEqual(git({ args: ['rev-parse', 'HEAD'], cwd: main }), before)
 })
 
+// An ssh command that writes its pid to the file its first argument names
+// and never answers: git starts it, through a shell on Windows, and waits
+// on it, so the fetch is stopped at its bound with that tree below it.
+const STALLED_SSH_SOURCE =
+  "require('node:fs').writeFileSync(process.argv[2], String(process.pid)); " +
+  'setInterval(() => {}, 1000)'
+const SSH_BOUND_SECONDS = '3'
+const ENDED_WITHIN_MS = 10_000
+const POLL_MS = 100
+
+const isRunning = ({ pid }) => {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (error) {
+    return error.code === 'EPERM'
+  }
+}
+
+test(
+  'on Windows a fetch stopped at its bound ends the processes git started',
+  {
+    skip:
+      process.platform !== 'win32' &&
+      'on POSIX the bound still stops git alone, as before'
+  },
+  async () => {
+    const { main, paths } = mergedWorktrees({
+      branches: ['feat/stalled-ssh'],
+      hook: false
+    })
+    const scratch = scratchRoot({ prefix: 'prune-ssh-' })
+    const stall = join(scratch, 'stalled-ssh.cjs')
+    const pidFile = join(scratch, 'ssh.pid')
+    writeFileSync(stall, STALLED_SSH_SOURCE)
+    const quoted = (path) => `"${forward({ path })}"`
+    git({
+      args: [
+        'config',
+        'core.sshCommand',
+        [process.execPath, stall, pidFile].map(quoted).join(' ')
+      ],
+      cwd: main
+    })
+    git({ args: ['config', 'ssh.variant', 'simple'], cwd: main })
+    git({
+      args: ['remote', 'set-url', 'origin', `ssh://${LOOPBACK}/origin.git`],
+      cwd: main
+    })
+    let pid
+    try {
+      const run = spawnSync(process.execPath, [SCRIPT, '--quiet'], {
+        cwd: main,
+        encoding: 'utf8',
+        env: { ...gitFreeEnv(), [FETCH_SECONDS_VARIABLE]: SSH_BOUND_SECONDS },
+        timeout: STALL_GUARD_MS
+      })
+      assert.ok(existsSync(pidFile), `the ssh command never started: ${run.stderr}`)
+      pid = Number(readFileSync(pidFile, 'utf8'))
+      assert.equal(run.status, EXIT_OK, `${run.error ?? ''} ${run.stderr}`)
+      assert.match(run.stdout, /skipped: git fetch --prune origin did not finish/u)
+      assert.ok(existsSync(paths['feat/stalled-ssh']))
+      let waited = 0
+      while (isRunning({ pid }) && waited < ENDED_WITHIN_MS) {
+        await new Promise((done) => setTimeout(done, POLL_MS))
+        waited += POLL_MS
+      }
+      assert.equal(isRunning({ pid }), false, `ssh command ${pid} still runs`)
+    } finally {
+      if (pid !== undefined && isRunning({ pid })) process.kill(pid)
+    }
+  }
+)
+
+test('a fetch that fails with nothing on stderr names its error or its exit code, never undefined', () => {
+  const args = ['fetch', '--quiet', '--prune', 'origin']
+  const silent = fetchFailureOf({ args, cwd: '/r', run: { code: 128, stderr: '' } })
+  assert.equal(silent.message, 'git fetch --quiet --prune origin failed in /r: exited 128')
+  assert.equal(silent.status, 128)
+  const unstarted = fetchFailureOf({
+    args,
+    cwd: '/r',
+    run: { code: null, error: new Error('spawn git ENOENT'), stderr: '' }
+  })
+  assert.equal(unstarted.message, 'git fetch --quiet --prune origin failed in /r: spawn git ENOENT')
+  // git's own words win, as before.
+  const loud = fetchFailureOf({
+    args,
+    cwd: '/r',
+    run: { code: 1, stderr: 'fatal: no remote\n' }
+  })
+  assert.equal(loud.message, 'git fetch --quiet --prune origin failed in /r: fatal: no remote')
+})
+
 test('the fetch is bound to 30 s unless PRUNE_WORKTREES_FETCH_SECONDS names another positive number', () => {
   assert.equal(fetchSecondsFrom({ env: {} }), 30)
   assert.equal(
@@ -1677,6 +1774,287 @@ test('an .atl/ that holds anything besides the skill-registry files keeps the wo
   )
 })
 
+// A `pnpm` first on the path that records each call, its arguments and the
+// directory it ran in, writes `rewrite` to the lockfile of that directory
+// when given, as an install that resolves anew does, then exits with
+// `exit` after `waitMs`: a `.cmd` on Windows, which the pruner reaches
+// through cmd.exe, a shell script elsewhere. `env` is the pruner's
+// environment with that path first.
+const LOCKFILE = 'pnpm-lock.yaml'
+const LOCK_TEXT = 'lockfileVersion: 9.0\n'
+// The owner, 2026-11-25 (translated from Spanish): "Change to pnpm i".
+const INSTALL_ARGS = ['install']
+const RETRY = 'run `pnpm install`'
+const REWRITTEN_LOCK = 'lockfileVersion: 9.0\n# resolved again\n'
+const STALLED_INSTALL_MS = 60_000
+
+const fakePnpm = ({ exit = 0, rewrite, waitMs = 0 } = {}) => {
+  const bin = scratchRoot({ prefix: 'prune-fake-pnpm-' })
+  const log = join(bin, 'calls.log')
+  const recorder = join(bin, 'record.mjs')
+  writeFileSync(
+    recorder,
+    [
+      "import { appendFileSync, writeFileSync } from 'node:fs'",
+      `appendFileSync(${JSON.stringify(log)}, JSON.stringify({ args: process.argv.slice(2), cwd: process.cwd() }) + '\\n')`,
+      rewrite === undefined
+        ? ''
+        : `writeFileSync(${JSON.stringify(LOCKFILE)}, ${JSON.stringify(rewrite)})`,
+      `setTimeout(() => process.exit(${exit}), ${waitMs})`
+    ].join('\n')
+  )
+  if (process.platform === 'win32') {
+    writeFileSync(
+      join(bin, 'pnpm.cmd'),
+      `@"${process.execPath}" "${recorder}" %*\r\n`
+    )
+  } else {
+    writeFileSync(
+      join(bin, 'pnpm'),
+      `#!/bin/sh\nexec "${process.execPath}" "${recorder}" "$@"\n`,
+      { mode: 0o755 }
+    )
+  }
+  const env = gitFreeEnv()
+  const pathKey =
+    Object.keys(env).find((key) => key.toUpperCase() === 'PATH') ?? 'PATH'
+  env[pathKey] = [bin, env[pathKey]].join(delimiter)
+  return {
+    calls: () =>
+      existsSync(log)
+        ? readFileSync(log, 'utf8')
+            .split(/\r?\n/u)
+            .filter((line) => line !== '')
+            .map((line) => JSON.parse(line))
+        : [],
+    env
+  }
+}
+
+const ranLine = ({ main }) =>
+  `prune-worktrees: ${LOCKFILE} changed, so it ran pnpm install in ` +
+  forward({ path: main })
+
+const failedLine = ({ main, why }) =>
+  `prune-worktrees: ${LOCKFILE} changed and pnpm install ${why}; ` +
+  `${RETRY} in ${forward({ path: main })}`
+
+// The one line an install that rewrote the lockfile adds: never a
+// `git checkout --`, which in a checkout other worktrees share has wiped
+// other sessions' work.
+const rewroteLine = ({ main }) =>
+  `prune-worktrees: pnpm install rewrote ${LOCKFILE} in ` +
+  `${forward({ path: main })}; commit it on a branch, or run ` +
+  `\`git restore --source=HEAD -- ${LOCKFILE}\` (this discards the ` +
+  "install's lockfile change)"
+
+const linesOf = ({ run }) => run.stdout.trim().split(/\r?\n/u)
+
+test('a fast-forward that changes pnpm-lock.yaml runs pnpm install', () => {
+  const pnpm = fakePnpm()
+  const { head, main, run, tip } = behindMain({
+    env: pnpm.env,
+    push: { [LOCKFILE]: LOCK_TEXT }
+  })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.equal(run.stderr, '')
+  assert.equal(head, tip)
+  const calls = pnpm.calls()
+  assert.deepEqual(
+    calls.map(({ args }) => args),
+    [INSTALL_ARGS]
+  )
+  assert.equal(resolve(calls[0].cwd), resolve(main))
+  const lines = linesOf({ run })
+  assert.ok(lines.includes(ranLine({ main })), run.stdout)
+  assert.ok(
+    !lines.some((line) => line.includes('rewrote')),
+    `an install that left the lockfile said it rewrote it:\n${run.stdout}`
+  )
+  assert.match(lines.at(-1), /: removed 0, kept 1; by reason: /u)
+})
+
+test('an install that rewrites pnpm-lock.yaml says so in one line, under --quiet too, and the run exits 0', () => {
+  for (const args of [[], ['--quiet']]) {
+    const pnpm = fakePnpm({ rewrite: REWRITTEN_LOCK })
+    const { head, main, run, tip } = behindMain({
+      args,
+      env: pnpm.env,
+      push: { [LOCKFILE]: LOCK_TEXT }
+    })
+    assert.equal(run.status, EXIT_OK, run.stderr)
+    assert.equal(head, tip)
+    assert.equal(pnpm.calls().length, 1)
+    assert.equal(
+      readFileSync(join(main, LOCKFILE), 'utf8'),
+      REWRITTEN_LOCK,
+      'the run touched the lockfile the install wrote'
+    )
+    const lines = linesOf({ run })
+    assert.deepEqual(
+      lines.filter((line) => line.includes('rewrote')),
+      [rewroteLine({ main })]
+    )
+    assert.match(lines.at(-1), /: removed 0, kept 1; by reason: /u)
+  }
+})
+
+test('an install that fails or outlasts PRUNE_WORKTREES_INSTALL_SECONDS names the command to run, and the run exits 0', () => {
+  const failing = fakePnpm({ exit: 1 })
+  const failed = behindMain({
+    args: ['--quiet'],
+    env: failing.env,
+    push: { [LOCKFILE]: LOCK_TEXT }
+  })
+  assert.equal(failed.run.status, EXIT_OK, failed.run.stderr)
+  assert.equal(failed.head, failed.tip)
+  assert.equal(failing.calls().length, 1)
+  assert.deepEqual(linesOf({ run: failed.run }), [
+    `prune-worktrees: fast-forwarded the main checkout ${forward({ path: failed.main })} ` +
+      `by 1 commit to origin/${MAIN}`,
+    failedLine({ main: failed.main, why: 'exited 1' }),
+    `prune-worktrees: removed 0, kept 1; by reason: ${REASON.MAIN} 1`
+  ])
+
+  const stalled = fakePnpm({ waitMs: STALLED_INSTALL_MS })
+  const started = Date.now()
+  const stopped = behindMain({
+    args: ['--quiet'],
+    env: { ...stalled.env, [INSTALL_SECONDS_VARIABLE]: '1' },
+    push: { [LOCKFILE]: LOCK_TEXT }
+  })
+  assert.ok(
+    Date.now() - started < STALLED_INSTALL_MS,
+    'the run waited for the stalled install'
+  )
+  assert.equal(stopped.run.status, EXIT_OK, stopped.run.stderr)
+  assert.equal(stopped.head, stopped.tip)
+  assert.ok(
+    linesOf({ run: stopped.run }).includes(
+      failedLine({ main: stopped.main, why: 'did not finish within 1 s' })
+    ),
+    stopped.run.stdout
+  )
+})
+
+test('a dry run says it would install after a fast-forward that changes pnpm-lock.yaml, and installs nothing', () => {
+  const pnpm = fakePnpm()
+  const { before, head, main, run } = behindMain({
+    args: ['--dry-run'],
+    env: pnpm.env,
+    push: { [LOCKFILE]: LOCK_TEXT }
+  })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.equal(head, before)
+  assert.deepEqual(pnpm.calls(), [])
+  assert.ok(
+    linesOf({ run }).includes(
+      `prune-worktrees: ${LOCKFILE} changes with the fast-forward, so it ` +
+        'would run pnpm install in ' +
+        forward({ path: main })
+    ),
+    run.stdout
+  )
+  assert.match(linesOf({ run }).at(-1), /^prune-worktrees: not covered: /u)
+})
+
+test('under --quiet an install that succeeds prints no line of its own', () => {
+  const pnpm = fakePnpm()
+  const { main, run } = behindMain({
+    args: ['--quiet'],
+    env: pnpm.env,
+    push: { [LOCKFILE]: LOCK_TEXT }
+  })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.equal(pnpm.calls().length, 1)
+  assert.deepEqual(linesOf({ run }), [
+    `prune-worktrees: fast-forwarded the main checkout ${forward({ path: main })} ` +
+      `by 1 commit to origin/${MAIN}`,
+    `prune-worktrees: removed 0, kept 1; by reason: ${REASON.MAIN} 1`
+  ])
+})
+
+// The base behaviour, pinned: a fast-forward that leaves the lockfile as it
+// was installs nothing, and the real run and the dry run print exactly the
+// lines they printed before the install existed.
+test('a fast-forward that leaves pnpm-lock.yaml as it was installs nothing and prints what it printed before', () => {
+  const pnpm = fakePnpm()
+  const real = behindMain({ env: pnpm.env })
+  assert.equal(real.run.status, EXIT_OK, real.run.stderr)
+  assert.equal(real.head, real.tip)
+  assert.deepEqual(linesOf({ run: real.run }), [
+    `prune-worktrees: ${keptLine({ branch: MAIN, path: real.main, reason: REASON.MAIN })}`,
+    `prune-worktrees: fast-forwarded the main checkout ${forward({ path: real.main })} ` +
+      `by 1 commit to origin/${MAIN}`,
+    `prune-worktrees: removed 0, kept 1; by reason: ${REASON.MAIN} 1`
+  ])
+  const dry = behindMain({ args: ['--dry-run'], env: pnpm.env })
+  assert.equal(dry.run.status, EXIT_OK, dry.run.stderr)
+  assert.deepEqual(linesOf({ run: dry.run }), [
+    `prune-worktrees: ${keptLine({ branch: MAIN, path: dry.main, reason: REASON.MAIN })}`,
+    `prune-worktrees: would fast-forward the main checkout ${forward({ path: dry.main })} ` +
+      `by 1 commit to origin/${MAIN}`,
+    `prune-worktrees: would remove 0, kept 1; by reason: ${REASON.MAIN} 1`,
+    `prune-worktrees: not covered: ${NOT_COVERED}`
+  ])
+  assert.deepEqual(pnpm.calls(), [])
+})
+
+test('an invalid PRUNE_WORKTREES_INSTALL_SECONDS is read only when an install is due', () => {
+  const pnpm = fakePnpm()
+  for (const value of ['0', 'ten', '']) {
+    const { head, main, run, tip } = behindMain({
+      env: { ...pnpm.env, [INSTALL_SECONDS_VARIABLE]: value }
+    })
+    assert.equal(run.status, EXIT_OK, `${value}: ${run.stderr}`)
+    assert.equal(run.stderr, '', value)
+    assert.equal(head, tip, value)
+    assert.deepEqual(linesOf({ run }), [
+      `prune-worktrees: ${keptLine({ branch: MAIN, path: main, reason: REASON.MAIN })}`,
+      `prune-worktrees: fast-forwarded the main checkout ${forward({ path: main })} ` +
+        `by 1 commit to origin/${MAIN}`,
+      `prune-worktrees: removed 0, kept 1; by reason: ${REASON.MAIN} 1`
+    ])
+  }
+  const due = behindMain({
+    args: ['--quiet'],
+    env: { ...pnpm.env, [INSTALL_SECONDS_VARIABLE]: '0' },
+    push: { [LOCKFILE]: LOCK_TEXT }
+  })
+  assert.equal(due.run.status, EXIT_OK, due.run.stderr)
+  assert.equal(due.head, due.tip)
+  assert.ok(
+    linesOf({ run: due.run }).includes(
+      failedLine({
+        main: due.main,
+        why:
+          `was not run: ${INSTALL_SECONDS_VARIABLE} must be a positive ` +
+          'number of seconds, not "0"'
+      })
+    ),
+    due.run.stdout
+  )
+  assert.deepEqual(pnpm.calls(), [])
+})
+
+test('the install is bound to 120 s unless PRUNE_WORKTREES_INSTALL_SECONDS names another positive number', () => {
+  assert.equal(installSecondsFrom({ env: {} }), 120)
+  assert.equal(
+    installSecondsFrom({ env: { [INSTALL_SECONDS_VARIABLE]: '2.5' } }),
+    2.5
+  )
+  ;['', '0', 'ten'].forEach((value) =>
+    assert.throws(
+      () =>
+        installSecondsFrom({ env: { [INSTALL_SECONDS_VARIABLE]: value } }),
+      (error) =>
+        error.message.includes(INSTALL_SECONDS_VARIABLE) &&
+        error.message.includes(`"${value}"`),
+      value
+    )
+  )
+})
+
 test('the root package runs this suite from validate', () => {
   const { scripts } = JSON.parse(readFileSync(ROOT_PACKAGE, 'utf8'))
   assert.equal(
@@ -1687,9 +2065,15 @@ test('the root package runs this suite from validate', () => {
     scripts['worktrees:prune:test'],
     'node --test scripts/prune-worktrees.test.mjs'
   )
-  // validate runs the gate registry, so the suite is one of its steps.
+  // validate runs the gate registry, so the suite is one of its steps, and
+  // one the standard profile, the one CI runs, runs.
   const { steps } = JSON.parse(
     readFileSync(join(HERE, '..', '.agents/contracts/gates.json'), 'utf8')
   )
-  assert.ok(steps.some(({ id }) => id === 'worktrees:prune:test'))
+  assert.ok(
+    steps.some(
+      ({ id, profile }) =>
+        id === 'worktrees:prune:test' && profile === 'standard'
+    )
+  )
 })

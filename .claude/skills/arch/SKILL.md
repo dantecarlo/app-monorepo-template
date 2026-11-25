@@ -433,8 +433,10 @@ import { scrubPII, PII_KEYS, sanitizeQueryKey } from '@app/core'
   category and seam, held by `local/dependency-seam` (`docs/code-standards.md` §23).
 - `IBackendClientProvider` is the port for the database client, whose client is the opaque
   `BackendClientType` of `@app/supabase`: only that package's adapters unwrap it, so no app type
-  names the vendor's client. `IAuthGateway` is the port for authentication, which each app builds
-  in its `src/lib/supabase/authGateway.adapter.ts`.
+  names the vendor's client. `IAuthGateway` is the port for authentication, which each app serves
+  from `src/lib/auth/authGateway.adapter.ts`, its backend-neutral seam: it lists the gateway a
+  backend adapter builds (`src/lib/supabase/authGateway.adapter.ts` for Supabase) in that
+  backend's region, or serves a no-op gateway when the project keeps none.
 - `buildServiceError` / `AppError` are the standard error shapes for services.
 
 ---

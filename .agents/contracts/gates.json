@@ -23,6 +23,13 @@
       "cost": "seconds"
     },
     {
+      "id": "reap:test",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
       "id": "verify:agent-context:test",
       "capability": "core",
       "stage": "preflight",
@@ -31,6 +38,21 @@
     },
     {
       "id": "verify:agent-context",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "instant",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "verify:harness-config:test",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:harness-config",
       "capability": "core",
       "stage": "preflight",
       "profile": "standard",
@@ -354,6 +376,13 @@
     },
     {
       "id": "mcp:docs:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "mcp:launch:test",
       "capability": "core",
       "stage": "repository",
       "profile": "standard",

@@ -47,7 +47,7 @@ vi.mock('@/components/ui/Image/Image.component', () => ({
   )
 }))
 
-vi.mock('@/lib/supabase/authGateway.adapter', () => ({
+vi.mock('@/lib/auth/authGateway.adapter', () => ({
   getAuthGateway: () => ({ signIn: vi.fn() })
 }))
 
