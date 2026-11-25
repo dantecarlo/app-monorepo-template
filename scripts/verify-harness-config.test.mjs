@@ -51,7 +51,42 @@ const HEALTHY = {
   $schema: './contracts/harness-config.schema.json',
   backend: { databaseTests: 'linked', kind: 'supabase' },
   delivery: { mergePolicy: 'manual' },
+  identity: {
+    packageScope: '@app',
+    product: 'app-monorepo-template',
+    repository: 'dantecarlo/app-monorepo-template'
+  },
+  stack: {
+    architecture: 'Clean + Fractal',
+    monorepo: 'pnpm workspaces + Turborepo'
+  },
   workflow: { mode: 'sdd' }
+}
+
+// A config holding every block of the project's facts and every field each
+// declares, as a derived repository's would, under a name no project has.
+const EVERY_FACT = {
+  ...HEALTHY,
+  core: { directory: '.agents/core' },
+  identity: {
+    packageScope: '@acme',
+    product: 'Acme',
+    repository: 'acme-app'
+  },
+  skills: {
+    lock: 'skills-lock.json',
+    trees: ['.claude/skills', '.agents/skills'],
+    valueSources: ['packages/tokens/src/tokens.constant.ts'],
+    valueTerms: ['Inter']
+  },
+  stack: {
+    architecture: 'Clean + Fractal',
+    backend: 'Supabase',
+    mobile: 'Expo (React Native)',
+    monorepo: 'pnpm workspaces + Turborepo',
+    web: 'Next.js'
+  },
+  vocabulary: { forbiddenInCore: ['AcmePay', 'acme_admin'] }
 }
 
 // A copy of `value` with `edit` applied to it; the original stays whole.
@@ -81,8 +116,15 @@ const contextOf =
 const configWith = ({ edit }) =>
   contextOf({ config: edited({ edit, value: HEALTHY }) })
 
-const schemaWith = ({ edit }) =>
-  contextOf({ schema: edited({ edit, value: SCHEMA }) })
+const factsWith = ({ edit }) =>
+  contextOf({ config: edited({ edit, value: EVERY_FACT }) })
+
+// Edited when the case runs, so an edit of a section the schema lacks fails
+// its own case rather than the whole file.
+const schemaWith =
+  ({ edit }) =>
+  () =>
+    contextOf({ schema: edited({ edit, value: SCHEMA }) })()
 
 const mergePolicyOf = ({ schema }) =>
   schema.properties.delivery.properties.mergePolicy
@@ -279,11 +321,29 @@ export const CASES = [
   {
     context: schemaWith({
       edit: ({ copy }) => {
-        copy.properties.workflow.type = 'array'
+        copy.properties.workflow.type = 'integer'
       }
     }),
     expected: 1,
     name: 'a schema type the gate does not read is refused'
+  },
+  {
+    context: schemaWith({
+      edit: ({ copy }) => {
+        copy.properties.vocabulary.properties.forbiddenInCore.items = 'text'
+      }
+    }),
+    expected: 1,
+    name: 'a schema items that is not a schema is refused'
+  },
+  {
+    context: schemaWith({
+      edit: ({ copy }) => {
+        copy.properties.identity.properties.product.minLength = 1.5
+      }
+    }),
+    expected: 1,
+    name: 'a schema minLength that is not a whole number is refused'
   },
   {
     context: schemaWith({
@@ -406,6 +466,208 @@ export const CASES = [
     }),
     expected: 0,
     name: 'a key given once in each of two objects is no duplicate'
+  },
+  {
+    context: contextOf({ config: EVERY_FACT }),
+    expected: 0,
+    name: "a config holding every block of the project's facts passes"
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        for (const block of [
+          'core',
+          'identity',
+          'skills',
+          'stack',
+          'vocabulary'
+        ]) {
+          copy[block].$comment = `The ${block} block.`
+        }
+      }
+    }),
+    expected: 0,
+    name: "a comment in every block of the project's facts is accepted"
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        delete copy.identity
+      }
+    }),
+    expected: 1,
+    name: 'a missing identity is refused'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        delete copy.identity.packageScope
+      }
+    }),
+    expected: 1,
+    name: 'an identity with no package scope is refused'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        copy.identity.product = ''
+      }
+    }),
+    expected: 1,
+    name: 'a blank identity field is refused'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        copy.identity.repository = 42
+      }
+    }),
+    expected: 1,
+    name: 'an identity field that is not text is refused'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        copy.identity.slug = 'acme'
+      }
+    }),
+    expected: 1,
+    name: 'an identity key the schema does not declare is refused'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        copy.vocabulary.allowedInCore = ['Acme']
+      }
+    }),
+    expected: 1,
+    name: 'a vocabulary key the schema does not declare is refused'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        delete copy.vocabulary.forbiddenInCore
+      }
+    }),
+    expected: 1,
+    name: 'a vocabulary with no forbidden terms list is refused'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        copy.vocabulary.forbiddenInCore = 'AcmePay'
+      }
+    }),
+    expected: 1,
+    name: 'forbidden terms that are not a list are refused'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        copy.vocabulary.forbiddenInCore.push(42)
+      }
+    }),
+    expected: 1,
+    name: 'a forbidden term that is not text is refused'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        copy.vocabulary.forbiddenInCore.push('')
+      }
+    }),
+    expected: 1,
+    name: 'a blank forbidden term is refused'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        copy.stack.database = 'Postgres'
+      }
+    }),
+    expected: 1,
+    name: 'a stack key the schema does not declare is refused'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        copy.stack.web = ['Next.js']
+      }
+    }),
+    expected: 1,
+    name: 'a stack fact that is not text is refused'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        copy.stack = {}
+      }
+    }),
+    expected: 0,
+    name: 'a stack with no facts passes'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        copy.core.include = ['contracts']
+      }
+    }),
+    expected: 1,
+    name: 'a core key the schema does not declare is refused'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        delete copy.core.directory
+      }
+    }),
+    expected: 1,
+    name: 'a core with no directory is refused'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        copy.core.directory = ['.agents/core']
+      }
+    }),
+    expected: 1,
+    name: 'a core directory that is not text is refused'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        copy.skills.vendored = ['.agents/skills']
+      }
+    }),
+    expected: 1,
+    name: 'a skills key the schema does not declare is refused'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        delete copy.skills.lock
+      }
+    }),
+    expected: 1,
+    name: 'a skills block with no lock is refused'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        copy.skills.trees = '.claude/skills'
+      }
+    }),
+    expected: 1,
+    name: 'skill trees that are not a list are refused'
+  },
+  {
+    context: factsWith({
+      edit: ({ copy }) => {
+        copy.skills.valueSources = [{ path: 'tokens.ts' }]
+      }
+    }),
+    expected: 1,
+    name: 'a skill value source that is not text is refused'
   }
 ]
 
@@ -558,6 +820,82 @@ const checks = [
     }
   },
   {
+    name: 'a missing identity is named as missing',
+    run: () => {
+      const findings = findingsOf({
+        context: factsWith({
+          edit: ({ copy }) => {
+            delete copy.identity
+          }
+        })
+      })
+      assert.equal(findings.length, 1, JSON.stringify(findings))
+      const [finding] = findings
+      assert.equal(finding.kind, FINDING_KIND.required)
+      assert.equal(finding.path, HARNESS_CONFIG)
+      assert.match(finding.detail, /`identity` is missing/u)
+    }
+  },
+  {
+    name: 'a list item is named by its place in the list',
+    run: () => {
+      const findings = findingsOf({
+        context: factsWith({
+          edit: ({ copy }) => {
+            copy.vocabulary.forbiddenInCore = ['AcmePay', 42]
+          }
+        })
+      })
+      assert.equal(findings.length, 1, JSON.stringify(findings))
+      const [finding] = findings
+      assert.equal(finding.kind, FINDING_KIND.type)
+      assert.match(
+        finding.detail,
+        /`vocabulary\.forbiddenInCore\.1` is a number; it is text/u
+      )
+    }
+  },
+  {
+    name: 'a blank identity field is named with the length it owes',
+    run: () => {
+      const findings = findingsOf({
+        context: factsWith({
+          edit: ({ copy }) => {
+            copy.identity.product = ''
+          }
+        })
+      })
+      assert.equal(findings.length, 1, JSON.stringify(findings))
+      const [finding] = findings
+      assert.equal(finding.kind, FINDING_KIND.value)
+      assert.match(
+        finding.detail,
+        /`identity\.product` is ""; it is text of at least 1 character/u
+      )
+    }
+  },
+  {
+    name: 'a schema items the gate cannot read is named with where it sits',
+    run: () => {
+      const findings = findingsOf({
+        context: schemaWith({
+          edit: ({ copy }) => {
+            copy.properties.vocabulary.properties.forbiddenInCore.items =
+              'text'
+          }
+        })
+      })
+      assert.equal(findings.length, 1, JSON.stringify(findings))
+      const [finding] = findings
+      assert.equal(finding.kind, FINDING_KIND.keyword)
+      assert.equal(finding.path, HARNESS_CONFIG_SCHEMA)
+      assert.match(
+        finding.detail,
+        /#\/properties\/vocabulary\/properties\/forbiddenInCore gives `items` a value verify-harness-config cannot read/u
+      )
+    }
+  },
+  {
     name: 'a schema it cannot read is reported alone, and no setting is judged',
     run: () => {
       const findings = findingsOf({
@@ -631,7 +969,7 @@ const checks = [
       })
       assert.equal(result.status, PASSED, result.stderr)
       assert.match(result.stdout, /verify-harness-config: PASS/u)
-      assert.match(result.stdout, /4 setting\(s\)/u)
+      assert.match(result.stdout, /18 setting\(s\)/u)
       assert.match(result.stdout, /NOT covered: /u)
     }
   },

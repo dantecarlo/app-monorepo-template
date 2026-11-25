@@ -1,11 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$comment": "The contract of .agents/harness.config.json, the one file that holds this project's harness settings. pnpm verify:harness-config holds the file to it, reading only the keywords it knows (type, properties, required, additionalProperties, enum, const, if, then, else, and the annotations $schema, $comment, title, description and default) and refusing any other, so a rule written here is never skipped in silence. additionalProperties is true or false, never a schema, and every object outside an if, then or else sets it to false, so every key the file holds is one declared here; neither file gives a key twice in one object. A default is the value the template ships and the one a skill assumes when the file records none; each must be one of its own enum. See docs/harness.md section 3h.",
+  "$comment": "The contract of .agents/harness.config.json, the one file that holds this project's harness settings and facts. pnpm verify:harness-config holds the file to it, reading only the keywords it knows (type, properties, items, required, additionalProperties, enum, const, minLength, if, then, else, and the annotations $schema, $comment, title, description and default) and refusing any other, so a rule written here is never skipped in silence. additionalProperties is true or false, never a schema, and every object outside an if, then or else sets it to false, so every key the file holds is one declared here; neither file gives a key twice in one object. A default is the value the template ships and the one a skill assumes when the file records none; each must be one of its own enum. See docs/harness.md section 3h.",
   "title": "Harness config",
-  "description": "The project's harness settings: its workflow, its merge policy and its backend.",
+  "description": "The project's harness settings and facts: its identity, workflow, merge policy and backend, and, when it records them, its vocabulary, stack, portable core and skill trees.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["$schema", "workflow", "delivery", "backend"],
+  "required": ["$schema", "identity", "workflow", "delivery", "backend"],
   "properties": {
     "$schema": {
       "description": "The path of this contract, relative to .agents/, so an editor checks the file as it is typed.",
@@ -14,6 +14,33 @@
     "$comment": {
       "description": "A note for the reader of the file.",
       "type": "string"
+    },
+    "identity": {
+      "description": "The names of the project, the one block a derived repository rewrites to name itself: a gate that keeps a product's names out of a portable part of the harness reads its terms here.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["product", "repository", "packageScope"],
+      "properties": {
+        "$comment": {
+          "description": "A note for the reader of the section.",
+          "type": "string"
+        },
+        "product": {
+          "description": "The product's name, as people write it.",
+          "type": "string",
+          "minLength": 1
+        },
+        "repository": {
+          "description": "The repository's name on its host, with or without its owner.",
+          "type": "string",
+          "minLength": 1
+        },
+        "packageScope": {
+          "description": "The npm scope of the workspace packages, with its @ and no slash, such as @app.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
     },
     "workflow": {
       "description": "How a change is specified and recorded (decision 40).",
@@ -81,6 +108,119 @@
       "else": {
         "description": "the database-test mode is the supabase backend's only; the harness does not manage the tests of an own backend",
         "properties": { "databaseTests": false }
+      }
+    },
+    "vocabulary": {
+      "description": "Terms of the product, beyond its identity, that a portable part of the harness never names.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["forbiddenInCore"],
+      "properties": {
+        "$comment": {
+          "description": "A note for the reader of the section.",
+          "type": "string"
+        },
+        "forbiddenInCore": {
+          "description": "Proper nouns and unique identifiers only: a generic word that doubles as a domain term would fire on ordinary prose.",
+          "type": "array",
+          "items": {
+            "description": "One entry, non-blank text.",
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "stack": {
+      "description": "The stack the project shares with its sibling projects, which a portable part of the harness may name. Each fact is free text, and nothing reads them.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "$comment": {
+          "description": "A note for the reader of the section.",
+          "type": "string"
+        },
+        "monorepo": {
+          "description": "The workspace manager and the task runner.",
+          "type": "string"
+        },
+        "mobile": {
+          "description": "The mobile app's framework.",
+          "type": "string"
+        },
+        "web": {
+          "description": "The web app's framework.",
+          "type": "string"
+        },
+        "backend": {
+          "description": "The backend, as prose; the backend the harness manages is backend.kind.",
+          "type": "string"
+        },
+        "architecture": {
+          "description": "The architecture the code follows.",
+          "type": "string"
+        }
+      }
+    },
+    "core": {
+      "description": "The portable part of the harness, which names no product: the folder a product-name gate walks.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["directory"],
+      "properties": {
+        "$comment": {
+          "description": "A note for the reader of the section.",
+          "type": "string"
+        },
+        "directory": {
+          "description": "Its path, relative to the repository root.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "skills": {
+      "description": "Where the skills live, which of them are vendored, and the design values a first-party skill never copies.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trees", "lock", "valueSources", "valueTerms"],
+      "properties": {
+        "$comment": {
+          "description": "A note for the reader of the section.",
+          "type": "string"
+        },
+        "trees": {
+          "description": "The folders that hold one skill per folder, relative to the repository root.",
+          "type": "array",
+          "items": {
+            "description": "One entry, non-blank text.",
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "lock": {
+          "description": "The lock file whose entries name the vendored skills; a skill with no entry is first-party.",
+          "type": "string",
+          "minLength": 1
+        },
+        "valueSources": {
+          "description": "The files whose hex colours a first-party skill never copies.",
+          "type": "array",
+          "items": {
+            "description": "One entry, non-blank text.",
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "valueTerms": {
+          "description": "Design values, such as font families, that a first-party skill never copies.",
+          "type": "array",
+          "items": {
+            "description": "One entry, non-blank text.",
+            "type": "string",
+            "minLength": 1
+          }
+        }
       }
     }
   }

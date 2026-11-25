@@ -137,3 +137,49 @@ test('no template identity token is left', () => {
     })
   )
 })
+
+const HARNESS_CONFIG = '.agents/harness.config.json'
+// The three lines of the identity block that init rewrites.
+const IDENTITY_LINE = /^\s*"(?:packageScope|product|repository)":/u
+const LINE_FEED = '\n'
+const CARRIAGE_RETURN = '\r'
+
+test('the harness config names the renamed project', () => {
+  const { identity } = JSON.parse(
+    read({ file: HARNESS_CONFIG, root: copy })
+  )
+
+  assert.equal(identity.product, SLUG)
+  assert.equal(identity.packageScope, `@${SLUG}`)
+  assert.equal(identity.repository, SLUG)
+})
+
+test('the harness config keeps every other line byte for byte, and its line endings', () => {
+  const before = read({ file: HARNESS_CONFIG, root: REPO_ROOT }).split(
+    LINE_FEED
+  )
+  const after = read({ file: HARNESS_CONFIG, root: copy }).split(LINE_FEED)
+
+  assert.equal(after.length, before.length)
+  before.forEach((line, index) => {
+    if (IDENTITY_LINE.test(line)) {
+      assert.match(after[index], IDENTITY_LINE)
+      assert.equal(
+        after[index].endsWith(CARRIAGE_RETURN),
+        line.endsWith(CARRIAGE_RETURN)
+      )
+    } else {
+      assert.equal(after[index], line)
+    }
+  })
+})
+
+test('the renamed harness config passes verify:harness-config', () => {
+  assert.doesNotThrow(() =>
+    execFileSync(process.execPath, ['scripts/verify-harness-config.mjs'], {
+      cwd: copy,
+      env: gitFreeEnv(),
+      stdio: 'ignore'
+    })
+  )
+})
