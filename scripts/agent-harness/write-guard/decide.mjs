@@ -139,6 +139,21 @@ const findingOf = ({ actor, cwd, host, payload, policy, tool }) => {
   }
 }
 
+// The first opaque finding `finding` stands for whose words name a rule
+// path, with the rule they name: an unknown program is read by its own
+// words, anything else by the whole command. Each text is read once.
+const namedOpaque = ({ command, cwd, finding, host, policy }) => {
+  const read = new Set()
+  for (const one of finding.opaques ?? [finding]) {
+    const text = one.words?.join(' ') ?? command
+    if (read.has(text)) continue
+    read.add(text)
+    const named = namedRule({ cwd, host, policy, text })
+    if (named !== undefined) return { finding: one, named }
+  }
+  return undefined
+}
+
 const judge = ({ actor, host, payload, policy, tool }) => {
   if (actor.kind === ACTOR_KIND.unknown) throw new Error(actor.problem)
   assertPolicy({ policy })
@@ -159,21 +174,25 @@ const judge = ({ actor, host, payload, policy, tool }) => {
   ) {
     return deny({ reason: denyReason({ actor, finding, tool }) })
   }
-  const named =
+  const asked =
     finding.level === LEVEL.ask
-      ? finding.named
-      : namedRule({
+      ? { finding, named: finding.named }
+      : namedOpaque({
+          command,
           cwd: cwd ?? host.ownRoot,
+          finding,
           host,
-          policy,
-          // An unknown program is read by its own words, the rest of the
-          // command by what else it does.
-          text: finding.words?.join(' ') ?? command
+          policy
         })
-  if (finding.level === LEVEL.opaque && named === undefined)
-    return undefined
+  if (asked === undefined) return undefined
   return ask({
-    reason: askReason({ actor, command, finding, named, tool })
+    reason: askReason({
+      actor,
+      command,
+      finding: asked.finding,
+      named: asked.named,
+      tool
+    })
   })
 }
 

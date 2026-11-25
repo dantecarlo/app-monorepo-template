@@ -94,6 +94,39 @@ for (const [blocker, commands] of Object.entries(RECHECK)) {
   }
 }
 
+// The fail-open cases the native review found: an unknown program hid a
+// later opaque writer, and PowerShell bound a parameter the guard did not.
+const REVIEW = {
+  Bash: [
+    'someunknowntool docs/x.md; pnpm exec prettier --write AGENTS.md',
+    'someunknowntool docs/x.md && npx prettier --write AGENTS.md'
+  ],
+  PowerShell: [
+    'Copy-Item -Dest AGENTS.md docs\\x.md',
+    'Copy-Item -De AGENTS.md docs\\x.md',
+    'Copy-Item -Destination:AGENTS.md -Path docs\\x.md',
+    'Copy-Item -Path:docs\\x.md AGENTS.md',
+    'Copy-Item -LiteralPath:docs\\x.md AGENTS.md',
+    'Move-Item -Path:docs\\x.md AGENTS.md',
+    'Move-Item -Dest AGENTS.md docs\\x.md'
+  ]
+}
+
+for (const [tool, commands] of Object.entries(REVIEW)) {
+  for (const command of commands) {
+    test(`native review, ${tool}: ${command} asks the main session and refuses the validator`, () => {
+      assert.equal(
+        decisionOf({ agent: MAIN, command, host: ON_DISK, tool }),
+        'ask'
+      )
+      assert.equal(
+        decisionOf({ agent: 'validator', command, host: ON_DISK, tool }),
+        'deny'
+      )
+    })
+  }
+}
+
 test('B6d, PowerShell: a copy into the root asks by the source name, and refuses the validator', () => {
   const command = 'Copy-Item /tmp/AGENTS.md .'
   const tool = 'PowerShell'
@@ -120,7 +153,12 @@ for (const [command, tool = 'Bash'] of [
   ['cp -r /tmp/dir/.. docs/'],
   ['rsync -a src/ /tmp/b'],
   ['git init /tmp/x'],
-  ['Copy-Item /tmp/a.md .', 'PowerShell']
+  ['Copy-Item /tmp/a.md .', 'PowerShell'],
+  ['someunknowntool docs/x.md; pnpm exec prettier --write docs/y.md'],
+  ['someunknowntool docs/x.md; cat AGENTS.md'],
+  ['Copy-Item -Dest docs\\y.md AGENTS.md', 'PowerShell'],
+  ['Copy-Item -Path:AGENTS.md docs\\x.md', 'PowerShell'],
+  ['Copy-Item -Recurse:$true -Path:AGENTS.md docs\\x.md', 'PowerShell']
 ]) {
   test(`a neighbour asks the main session nothing: ${command}`, () => {
     assert.equal(

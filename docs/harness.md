@@ -523,7 +523,9 @@ nesting past 32 levels. It also covers, for the main session, a writer or an
 unlisted agent, one of the programs above. Such a command is refused to a
 policed agent. Anyone else is asked only when the command names a rule path:
 an unknown program by its own words, a value attached to a short option
-counted when it is a rule path, anything else by its whole text. Every
+counted when it is a rule path, anything else by its whole text. Each
+such finding in the command is read, so an unknown program does not hide a
+later one (`frob docs/x.md; npx prettier --write AGENTS.md` asks). Every
 word, split on the separators of Bash and PowerShell, on `=` and on a `:`
 past a drive, is read as a path against the folder the command runs in
 (`mentions.mjs`). Past 256 distinct words the guard does not read on, and
@@ -544,7 +546,11 @@ names a rule path. A write is `Set-Content`, `Out-File`, `Add-Content`,
 quotes; `2>&1` merges streams and a redirect to `$null` discards one, and
 neither writes a file. A command whose only writes are copies is read for
 rule paths in what they copy to alone, so a copy of a rule file elsewhere
-asks nothing. A copy or a move into a folder (`.`, `..`, a final separator
+asks nothing. A copy's or a move's source and destination are bound as
+PowerShell binds them: `-Path`, `-LiteralPath` and `-Destination` by full
+name, alias or any prefix (`-Dest`, `-LP`), with the value after a `:` or
+next, and otherwise by position. A prefix that could be `-Destination`
+(`-De`) is read as it. A copy or a move into a folder (`.`, `..`, a final separator
 or a folder on the disk) is also read for the name the file gets there, so
 `Copy-Item /tmp/AGENTS.md .` asks.
 

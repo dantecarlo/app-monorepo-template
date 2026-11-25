@@ -34,19 +34,27 @@ const RANK = { [LEVEL.ask]: 2, [LEVEL.deny]: 3, [LEVEL.opaque]: 1 }
 
 /**
  * The strongest finding `judge` returns over `items`: the first deny, at
- * once, else the first ask, else the first opaque one.
+ * once, else the first ask, else the first opaque one. An opaque result
+ * that stands for several carries them all as `opaques`, so the scan for a
+ * rule path reads the words of each, not only the first's.
  */
 export const strongestOf = ({ items, judge }) => {
   let best
+  const opaques = []
   for (const item of items) {
     const found = judge(item)
     if (found === undefined || found === null || found === false) continue
     if (found.level === LEVEL.deny) return found
+    if (found.level === LEVEL.opaque) {
+      opaques.push(...(found.opaques ?? [found]))
+    }
     if (best === undefined || RANK[found.level] > RANK[best.level]) {
       best = found
     }
   }
-  return best
+  return best?.level === LEVEL.opaque && opaques.length > 1
+    ? { ...best, opaques }
+    : best
 }
 
 export const firstOfChecks = ({ checks }) =>

@@ -146,7 +146,19 @@ for (const [command, asks] of [
   ['Copy-Item -Path docs\\x.md -Destination AGENTS.md', true],
   ['Copy-Item -Destination AGENTS.md -Path docs\\x.md', true],
   ['Copy-Item -Path docs\\x.md AGENTS.md', true],
-  ['Copy-Item AGENTS.md x.md; Set-Content AGENTS.md y', true]
+  ['Copy-Item AGENTS.md x.md; Set-Content AGENTS.md y', true],
+  ['Copy-Item -Dest AGENTS.md docs\\x.md', true],
+  ['Copy-Item -De AGENTS.md docs\\x.md', true],
+  ['Copy-Item -DESTINATION AGENTS.md docs\\x.md', true],
+  ['Copy-Item -Destination:AGENTS.md -Path docs\\x.md', true],
+  ['Copy-Item -Path:docs\\x.md AGENTS.md', true],
+  ['Copy-Item -LiteralPath:docs\\x.md AGENTS.md', true],
+  ['Copy-Item -LP docs\\x.md AGENTS.md', true],
+  ['Copy-Item -Pa docs\\x.md AGENTS.md', true],
+  ['Copy-Item -Dest docs\\y.md AGENTS.md', false],
+  ['Copy-Item -Path:AGENTS.md docs\\x.md', false],
+  ['Copy-Item -Recurse:$true -Path:AGENTS.md docs\\x.md', false],
+  ['Copy-Item -Filter *.md -Path AGENTS.md docs\\x.md', false]
 ]) {
   test(`a copy is judged by its destination: ${command}`, () => {
     const finding = judged({ command, kind: ACTOR_KIND.main })

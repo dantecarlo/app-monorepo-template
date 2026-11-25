@@ -53,6 +53,23 @@ test('strongestOf returns the first deny at once, else the first ask, else the f
   assert.equal(strongestOf({ items: [], judge }), undefined)
 })
 
+test('an opaque result carries every opaque finding it stands for, nested ones included', () => {
+  const first = { level: 'opaque', shape: 'frob', words: ['docs/x.md'] }
+  const second = { level: 'opaque', shape: 'pnpm exec prettier' }
+  const third = { level: 'opaque', shape: 'npx prettier' }
+  const inner = strongestOf({
+    items: [second, third],
+    judge: (one) => one
+  })
+  const outer = strongestOf({ items: [first, inner], judge: (one) => one })
+  assert.equal(outer.shape, 'frob')
+  assert.deepEqual(outer.opaques, [first, second, third])
+  assert.equal(
+    strongestOf({ items: [first], judge: (one) => one }).opaques,
+    undefined
+  )
+})
+
 test('who is policed, and the level of what the guard does not read', () => {
   for (const [kind, policed, level] of [
     [ACTOR_KIND.readOnly, true, 'deny'],

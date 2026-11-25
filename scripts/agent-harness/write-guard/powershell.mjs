@@ -10,9 +10,11 @@
 // Copy-Item, Move-Item, Remove-Item, Rename-Item, Clear-Content and
 // Tee-Object, by name, module-qualified, or by alias. A redirection is a
 // `>` outside quotes, with its stream (`2>`, `*>`) and `>>`; `2>&1` merges
-// streams and writes no file. A copy or a move into a folder (`.`, `..`, a
-// final separator, or a folder on the disk) is also judged by the name the
-// file gets there.
+// streams and writes no file. A copy's or a move's source and destination
+// are bound as PowerShell binds them: by a parameter's name, alias or any
+// prefix, with the value after a `:` or next, else by position. A copy or a
+// move into a folder (`.`, `..`, a final separator, or a folder on the
+// disk) is also judged by the name the file gets there.
 // ---------------------------------------------------------------------------
 
 import { namedRule } from './mentions.mjs'
@@ -117,52 +119,127 @@ const COPIES = new Set(['copy', 'copy-item', 'cp', 'cpi'])
 const MOVES = new Set(['mi', 'move', 'move-item', 'mv'])
 const CMDLETS_ANYWHERE = new RegExp(CMDLET.source, 'giu')
 const STATEMENT_END = /[;|\n]/u
-const TOKEN = /"[^"]*"|'[^']*'|\S+/gu
-const DESTINATION = /^-destination(?::(.*))?$/iu
-// Copy-Item's and Move-Item's parameters that take the next token as their
-// value.
-const COPY_VALUED = new Set([
-  '-credential',
-  '-exclude',
-  '-filter',
-  '-fromsession',
-  '-include',
-  '-literalpath',
-  '-path',
-  '-tosession'
-])
-const SOURCES = new Set(['-literalpath', '-path'])
+// A token: a run of quoted strings and other non-blank characters.
+const TOKEN = /(?:"[^"]*"|'[^']*'|[^\s'"])+/gu
 const QUOTED = /^(['"])(.*)\1$/su
 const TRAILING_SEPARATORS = /[\\/]+$/u
 const FOLDER_SPELLING = /^\.{1,2}$|[\\/]$/u
 
+// -- the parameters of Copy-Item and Move-Item, as PowerShell binds them ----
+const ROLE = Object.freeze({
+  destination: 'destination',
+  source: 'source',
+  switch: 'switch',
+  valued: 'valued'
+})
+// The cmdlets' own parameters and the common ones, by their full name.
+const PARAMETERS = {
+  confirm: ROLE.switch,
+  container: ROLE.switch,
+  credential: ROLE.valued,
+  debug: ROLE.switch,
+  destination: ROLE.destination,
+  erroraction: ROLE.valued,
+  errorvariable: ROLE.valued,
+  exclude: ROLE.valued,
+  filter: ROLE.valued,
+  force: ROLE.switch,
+  fromsession: ROLE.valued,
+  include: ROLE.valued,
+  informationaction: ROLE.valued,
+  informationvariable: ROLE.valued,
+  literalpath: ROLE.source,
+  outbuffer: ROLE.valued,
+  outvariable: ROLE.valued,
+  passthru: ROLE.switch,
+  path: ROLE.source,
+  pipelinevariable: ROLE.valued,
+  progressaction: ROLE.valued,
+  recurse: ROLE.switch,
+  tosession: ROLE.valued,
+  usetransaction: ROLE.switch,
+  verbose: ROLE.switch,
+  warningaction: ROLE.valued,
+  warningvariable: ROLE.valued,
+  whatif: ROLE.switch
+}
+const PARAMETER_ALIASES = {
+  cf: 'confirm',
+  db: 'debug',
+  ea: 'erroraction',
+  ev: 'errorvariable',
+  infa: 'informationaction',
+  iv: 'informationvariable',
+  lp: 'literalpath',
+  ob: 'outbuffer',
+  ov: 'outvariable',
+  proga: 'progressaction',
+  pspath: 'literalpath',
+  pv: 'pipelinevariable',
+  usetx: 'usetransaction',
+  vb: 'verbose',
+  wa: 'warningaction',
+  wi: 'whatif',
+  wv: 'warningvariable'
+}
+// `-Name`, `-Name:value` or `-Name:` with the value next.
+const PARAMETER = /^-([A-Za-z]+)(?::(.*))?$/su
+// Which role an ambiguous prefix is read as: one that could be
+// -Destination is read as it, and one that could be a source as a source,
+// so an ambiguous spelling is never read as a harmless one.
+const PREFIX_ORDER = [
+  ROLE.destination,
+  ROLE.source,
+  ROLE.valued,
+  ROLE.switch
+]
+
+// The role of the parameter `name` binds to: its full name, an alias, or
+// any prefix, as PowerShell matches them, case aside. An unknown name is
+// read as a switch.
+const roleOf = ({ name }) => {
+  const lower = name.toLowerCase()
+  const full = PARAMETER_ALIASES[lower] ?? lower
+  if (Object.hasOwn(PARAMETERS, full)) return PARAMETERS[full]
+  const roles = new Set(
+    Object.entries(PARAMETERS)
+      .filter(([parameter]) => parameter.startsWith(lower))
+      .map(([, role]) => role)
+  )
+  return PREFIX_ORDER.find((role) => roles.has(role)) ?? ROLE.switch
+}
+
 const unquoted = ({ token }) => token.replace(QUOTED, '$2')
 
-// The source and destination of one copy or move: -Path or -LiteralPath,
-// or the first positional token; -Destination's value, or the next
-// positional token.
+// The source and destination of one copy or move: -Path or -LiteralPath
+// and -Destination by name, each bound by a prefix or an alias, with its
+// value after a `:` or next; otherwise Path takes the first positional
+// token and Destination the next one left.
 const copyOf = ({ text }) => {
   const tokens = text.match(TOKEN) ?? []
   const positional = []
-  let source
-  let destination
+  const bound = {}
   for (let at = 0; at < tokens.length; at += 1) {
     const token = tokens[at]
-    const named = DESTINATION.exec(token)
-    const flag = token.toLowerCase()
-    if (named) {
-      destination = named[1] ?? tokens[at + 1]
-      if (named[1] === undefined) at += 1
-    } else if (COPY_VALUED.has(flag)) {
-      if (SOURCES.has(flag)) source = tokens[at + 1]
-      at += 1
-    } else if (!token.startsWith('-')) positional.push(token)
+    const parameter = PARAMETER.exec(token)
+    if (parameter === null) {
+      positional.push(token)
+      continue
+    }
+    const [, name, attached] = parameter
+    const role = roleOf({ name })
+    // A switch takes no next token, unless its `:` leaves the value there.
+    if (role === ROLE.switch) {
+      if (attached === '') at += 1
+      continue
+    }
+    const value = attached || tokens[at + 1]
+    if (!attached) at += 1
+    if (role !== ROLE.valued) bound[role] ??= value
   }
-  const sourceNamed = source !== undefined
-  return {
-    destination: destination ?? positional[sourceNamed ? 0 : 1],
-    source: source ?? positional[0]
-  }
+  const free = [...positional]
+  const source = bound.source ?? free.shift()
+  return { destination: bound.destination ?? free.shift(), source }
 }
 
 const isDirectory = ({ cwd, host, text }) => {
