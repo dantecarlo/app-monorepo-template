@@ -76,16 +76,25 @@ const clearDeadGuard = ({ fs, guard, now }) => {
   removeIfHolds({ fs, path: guard, text: seen })
 }
 
-const takeOver = ({ fs, now, path, text }) => {
+// The lock, created exclusively, or null when another run got there first.
+const createHeld = ({ fs, path, text }) =>
+  create({ fs, path, text }) ? heldAt({ fs, path, text }) : null
+
+// Under the guard, a lock that is gone is created again, never taken over,
+// and a stale one is removed only while it still holds the bytes this run
+// read: a lock created since then belongs to another run.
+const takeOver = ({ fs, now, path, seen, text }) => {
   const guard = `${path}${GUARD_SUFFIX}`
   if (!create({ fs, path: guard, text })) {
     clearDeadGuard({ fs, guard, now })
     return null
   }
   try {
-    if (!isStale({ fs, now, path })) return null
+    const current = readOrNull({ fs, path })
+    if (current === null) return createHeld({ fs, path, text })
+    if (current !== seen || !isStale({ fs, now, path })) return null
     fs.rmSync(path, { force: true })
-    return create({ fs, path, text }) ? heldAt({ fs, path, text }) : null
+    return createHeld({ fs, path, text })
   } finally {
     removeIfHolds({ fs, path: guard, text })
   }
@@ -93,9 +102,10 @@ const takeOver = ({ fs, now, path, text }) => {
 
 /**
  * The lock at `path`, as { release }, or null when another reaper holds it
- * or is taking it over. A lock older than 30 s is taken over under its
- * guard; any other failure to read or write it throws. `fs`, `now` and
- * `token` are injected by tests.
+ * or is taking it over. A lock that is gone by the time it is read is
+ * created again; one older than 30 s is taken over under its guard; any
+ * other failure to read or write it throws. `fs`, `now` and `token` are
+ * injected by tests.
  */
 export const takeLock = ({
   fs = NODE_FS,
@@ -105,6 +115,8 @@ export const takeLock = ({
 } = {}) => {
   const text = `${process.pid}\n${token()}\n`
   if (create({ fs, path, text })) return heldAt({ fs, path, text })
+  const seen = readOrNull({ fs, path })
+  if (seen === null) return createHeld({ fs, path, text })
   if (!isStale({ fs, now, path })) return null
-  return takeOver({ fs, now, path, text })
+  return takeOver({ fs, now, path, seen, text })
 }

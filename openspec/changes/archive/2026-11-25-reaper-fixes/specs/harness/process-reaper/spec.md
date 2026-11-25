@@ -4,6 +4,53 @@
 
 ## MODIFIED Requirements
 
+### Requirement: REAP-02 — An orphan is a process its parent no longer holds
+
+The reaper SHALL read a process as an orphan when its parent pid names no listed process, or
+names one that started after it (a pid reused); on POSIX also when its parent is pid 1 or the
+user's subreaper (`systemd --user`, a WSL `/init`); a parent whose start time, or whose child's,
+cannot be read holds its child. On POSIX the order of two start times and a process's age SHALL
+come from its elapsed time, which a clock change does not move, so that a child started in the
+hour a clock falls back never reads as older than its parent.
+
+**Evidence:** written at apply time, when the code exists.
+
+#### Scenario: a dead parent
+
+- **GIVEN** a listing where an npx MCP launcher's parent pid names no process
+- **WHEN** the reaper plans
+- **THEN** the launcher is a candidate
+- **Test:** `scripts/agent-harness/reaper/plan.test.mjs` › "an orphan of a family is a candidate with its whole tree"
+
+#### Scenario: a live parent
+
+- **GIVEN** a listing where the same launcher's parent is a live session
+- **WHEN** the reaper plans
+- **THEN** there is no candidate
+- **Test:** `scripts/agent-harness/reaper/plan.test.mjs` › "a process whose parent is alive is no candidate"
+
+#### Scenario: a reused parent pid
+
+- **GIVEN** a listing where the launcher's parent pid names a process that started after it
+- **WHEN** the reaper plans
+- **THEN** the launcher is a candidate, and that newer process is not part of its tree
+- **Test:** `scripts/agent-harness/reaper/plan.test.mjs` › "a parent pid reused by a process that started after its child makes the child an orphan"
+
+#### Scenario: reparented on POSIX
+
+- **GIVEN** a POSIX listing with one family process under pid 1 and one under `systemd --user`
+- **WHEN** the reaper plans
+- **THEN** both are candidates
+- **Test:** `scripts/agent-harness/reaper/plan.test.mjs` › "on POSIX a process under pid 1 or the user's subreaper is an orphan"
+
+#### Scenario: the hour the clock falls back
+
+- **GIVEN** a New York listing read at 07:00 UTC on 2026-11-01, where a session started at the
+  first 01:50 and its MCP server, 15 min later, at the second 01:05
+- **WHEN** the reaper lists and plans
+- **THEN** the session holds its server, and there is no candidate
+- **Test:** `scripts/agent-harness/reaper/clock-change.test.mjs` › "in the hour the clock falls back, a live child never reads as older than its parent"
+
 ### Requirement: REAP-03 — Only an orphan of a family is ended, by its executable and script
 
 The reaper SHALL match a family against a process's entry alone: its own executable path and,
@@ -13,8 +60,9 @@ command line. It SHALL end an orphan whose entry matches a family that is not a 
 with every process descended from it, and never an orphan outside every family. The families are
 one-shot runs: `turbo run dev` or `start`, the turbo daemon, `vitest` without `run`,
 `tsc --watch`, tsserver and the dev servers (`next dev`, `expo start`, metro) match none. A node
-process in watch mode, one whose flags before its script name `--watch`, `--watch-path <path>`,
-`--watch-path=<path>` or `--watch-preserve-output`, SHALL match no family, a wrapper included,
+process in watch mode, one whose flags before its script name `--watch`, `--watch=<value>`,
+`--watch-path <path>`, `--watch-path=<path>` or `--watch-preserve-output`, SHALL match no family,
+a wrapper included,
 `--watch-path` taking the next argument as its value; a candidate tree that holds one SHALL be
 kept, with its reason.
 
@@ -47,8 +95,8 @@ kept, with its reason.
 - **GIVEN** orphaned `turbo run dev`, `turbo run start`, the turbo daemon, `vitest --watch`, a bare
   `vitest`, `tsc --watch`, `tsc -w`, tsserver, `next dev`, `expo start`, metro,
   `esbuild --watch --serve`, and a tsc and a vitest run that node runs with `--watch`,
-  `--watch-path <path>`, `--watch-path=<path>` or `--watch-preserve-output`, beside one-shot runs
-  of each family
+  `--watch=true`, `--watch-path <path>`, `--watch-path=<path>` or `--watch-preserve-output`,
+  beside one-shot runs of each family
 - **WHEN** the reaper plans
 - **THEN** only the one-shot runs are candidates
 - **Test:** `scripts/agent-harness/reaper/plan.test.mjs` › "persistent and watch work is never a candidate, one-shot runs are"
@@ -72,24 +120,28 @@ kept, with its reason.
 
 #### Scenario: the entry of a process in watch mode
 
-- **GIVEN** node command lines with `--watch`, `--watch-path <path>`, `--watch-path=<path>` and
-  `--watch-preserve-output` before a tsc script, and one with `--watch` after its script
+- **GIVEN** node command lines with `--watch`, `--watch=true`, `--watch-path <path>`,
+  `--watch-path=<path>` and `--watch-preserve-output` before a tsc script, and one with `--watch`
+  after its script
 - **WHEN** the reaper reads each entry
-- **THEN** the first four read as watch mode with the tsc script, `--watch-path` taking the next
+- **THEN** the first five read as watch mode with the tsc script, `--watch-path` taking the next
   argument as its value, and the last does not
 - **Test:** `scripts/agent-harness/reaper/contract.test.mjs` › "a node process in watch mode reads as watch mode, and --watch-path takes the next argument as its value"
 
 ### Requirement: REAP-07 — A tree ends the way its platform ends one
 
 The reaper SHALL list processes with `Get-CimInstance Win32_Process` through `powershell` on
-Windows and `ps -eo pid=,ppid=,lstart=,rss=,args=` under `LC_ALL=C` on POSIX, reading each POSIX
-start time as the absolute local time its `lstart` names (`Wed Nov 25 12:03:39 2026`), so that it
-is the same in every listing, and one that does not parse as unreadable. It SHALL end a tree with
-`taskkill /PID <pid> /T /F` on Windows, pid by pid without `/T` when an older process names a pid
-of the tree as its parent, and on POSIX with SIGTERM to every pid of the tree, then, after 2 s, a
-second listing and SIGKILL only to each pid still listed with the start time the plan read; when
-that listing fails or the bound has run out, it SHALL send no SIGKILL and report each tree it
-signalled as not ended, with the reason.
+Windows and `ps -eo pid=,ppid=,etime=,lstart=,rss=,args=` under `LC_ALL=C` on POSIX. On POSIX it
+SHALL read a process's start time, for its age and its order against its parent, from its elapsed
+time, `etime`, which a clock change does not move, and its identity, the start time compared
+before a kill, from the absolute local time its `lstart` names (`Wed Nov 25 12:03:39 2026`), so
+that the identity is the same in every listing; a process whose `etime` or `lstart` does not
+parse has a start time the listing cannot read. It SHALL end a tree with `taskkill /PID <pid> /T /F`
+on Windows, pid by pid without `/T` when an older process names a pid of the tree as its parent,
+and on POSIX with SIGTERM to every pid of the tree, then, after 2 s, a second listing and SIGKILL
+only to each pid still listed with the identity the plan read; when that listing fails, returns no
+process or the bound has run out, it SHALL send no SIGKILL and report each tree it signalled as not
+ended, with the reason.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -110,11 +162,12 @@ signalled as not ended, with the reason.
 #### Scenario: the POSIX listing
 
 - **GIVEN** an injected spawn that answers fixed `ps` lines, one of them with a day of the month
-  padded by a space and one whose `lstart` does not parse
-- **WHEN** the reaper lists the processes twice
-- **THEN** `ps` ran with `lstart` under `LC_ALL=C`, each start time is the local time its
-  `lstart` names, the same in both listings, and the unparsed one is null
-- **Test:** `scripts/agent-harness/reaper/platform.test.mjs` › "on POSIX the listing is read from ps under LC_ALL=C, each start time from its lstart"
+  padded by a space, one whose `lstart` does not parse and one whose `etime` does not
+- **WHEN** the reaper lists the processes twice, 5 s apart
+- **THEN** `ps` ran with `etime` and `lstart` under `LC_ALL=C`; each start time is the clock of
+  its listing less its `etime`, 5 s later in the second; each identity is the local time its
+  `lstart` names, the same in both; and the two unparsed processes have no start time
+- **Test:** `scripts/agent-harness/reaper/platform.test.mjs` › "on POSIX the listing is read from ps under LC_ALL=C, the age from etime and the identity from lstart"
 
 #### Scenario: POSIX
 
@@ -122,7 +175,7 @@ signalled as not ended, with the reason.
   taken by the SIGKILL check
 - **WHEN** the reaper ends it
 - **THEN** every pid got SIGTERM, and after 2 s and a second listing only the survivor whose
-  start time held got SIGKILL
+  identity held got SIGKILL
 - **Test:** `scripts/agent-harness/reaper/platform.test.mjs` › "on POSIX a tree gets SIGTERM, then after 2 s SIGKILL only to each pid still listed with its start time"
 
 #### Scenario: the SIGKILL check cannot run
@@ -133,13 +186,22 @@ signalled as not ended, with the reason.
 - **THEN** it sends no SIGKILL and reports the tree as not ended, with the reason
 - **Test:** `scripts/agent-harness/reaper/platform.test.mjs` › "on POSIX no SIGKILL is sent when the listing before it fails or the bound has run out"
 
+#### Scenario: a second listing that returns no process
+
+- **GIVEN** a tree that got its SIGTERM, then a second listing that parses to no process
+- **WHEN** the reaper ends it
+- **THEN** it sends no SIGKILL and reports the tree as not ended, since the second listing returned
+  no process
+- **Test:** `scripts/agent-harness/reaper/platform.test.mjs` › "on POSIX a listing before SIGKILL that returns no process reports the tree as not ended"
+
 ### Requirement: REAP-11 — One killing reaper at a time
 
 A reaper run with `--kill` SHALL first create its lock file under the OS temp directory
 exclusively, with a token unique to that acquisition, and exit 0 at once, ending nothing and
-saying so, when another reaper holds it. A lock older than 30 s SHALL be taken over only under an
-exclusive guard file beside it, checked again under that guard, so that two runs that find the
-same stale lock never both take it. A guard older than 30 s, left by a reaper that died holding
+saying so, when another reaper holds it; a lock gone by the time the run reads it SHALL be created
+again, never taken over. A lock older than 30 s SHALL be taken over only under an exclusive guard
+file beside it, and removed under that guard only while it still holds the bytes the run read, so
+that two runs never both take it. A guard older than 30 s, left by a reaper that died holding
 it, SHALL be removed by the run that finds it only while it still holds what that run read, and
 that run takes nothing. The run SHALL release its lock however it ends, removing it only while it
 still holds its own token, and a dry run takes none.
@@ -167,6 +229,14 @@ still holds its own token, and a dry run takes none.
 - **WHEN** the first run goes on
 - **THEN** it takes nothing, and the lock still holds the second run's token
 - **Test:** `scripts/agent-harness/reaper/lock.test.mjs` › "two runs that find the same stale lock never both take it"
+
+#### Scenario: a lock released during a takeover
+
+- **GIVEN** a held lock its owner releases right after a run found it, and another run that
+  creates a fresh lock while that run goes on
+- **WHEN** the first run finishes
+- **THEN** at most one of the two holds the lock
+- **Test:** `scripts/agent-harness/reaper/lock.test.mjs` › "a lock released and re-created during a takeover is never held twice"
 
 #### Scenario: the release after a takeover
 

@@ -188,6 +188,7 @@ test('a node process in watch mode reads as watch mode, and --watch-path takes t
   }
   for (const flags of [
     '--watch',
+    '--watch=true',
     '--watch-path src',
     '--watch-path=src',
     '--watch-preserve-output',

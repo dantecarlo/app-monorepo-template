@@ -66,6 +66,46 @@ const racingFs = ({ onStat, path }) => {
   }
 }
 
+// The real fs, numbering every call; before call N it runs `steps[N]`.
+const steppedFs = ({ steps }) => {
+  let call = 0
+  const step = (name) => (...args) => {
+    call += 1
+    steps[call]?.()
+    return nodeFs[name](...args)
+  }
+  return {
+    ...nodeFs,
+    readFileSync: step('readFileSync'),
+    rmSync: step('rmSync'),
+    statSync: step('statSync'),
+    writeFileSync: step('writeFileSync')
+  }
+}
+
+test('a lock released and re-created during a takeover is never held twice', () => {
+  const path = freshLockPath()
+  const owner = takeLock({ path, token: tokenOf({ token: 'token-a' }) })
+  assert.notEqual(owner, null)
+  let other = null
+  // The owner releases right after this run found its lock, and another
+  // run creates a fresh one three calls later.
+  const fs = steppedFs({
+    steps: {
+      2: () => owner.release(),
+      5: () => {
+        other = takeLock({ path, token: tokenOf({ token: 'token-c' }) })
+      }
+    }
+  })
+  const first = takeLock({ fs, path, token: tokenOf({ token: 'token-b' }) })
+  assert.ok(first === null || other === null, 'two runs hold the lock at once')
+  if (first !== null) assert.match(read({ path }), /token-b/u)
+  if (other !== null) assert.match(read({ path }), /token-c/u)
+  const holder = first ?? other
+  holder?.release()
+})
+
 test('two runs that find the same stale lock never both take it', () => {
   const path = freshLockPath()
   writeStale({ path, text: '4242\n' })

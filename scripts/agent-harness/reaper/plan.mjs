@@ -3,7 +3,9 @@
 // decides which trees to end; it spawns, reads and signals nothing.
 //
 // A process is { bytes, command, name, pid, ppid, startMs }, `startMs` null
-// when the listing reads no start time. A parent HOLDS a child when the
+// when the listing reads no start time; on POSIX it comes from the elapsed
+// time, which a clock change does not move, so the order of two processes
+// and an age hold in the hour a clock repeats. A parent HOLDS a child when the
 // child's parent pid names it and it started no later than the child; a
 // newer process under that pid holds a reused pid, not the child. An ORPHAN
 // is a process no parent holds; on POSIX also one under pid 1 or the
@@ -50,9 +52,12 @@ const VALUE_FLAGS = new Set([
 ])
 const INLINE_FLAGS = new Set(['-c', '-e', '-p', '--eval', '--print'])
 const MODULE_FLAG = '-m'
-// node's watch mode: its flags before the script. `--watch-path` takes the
-// next argument as its value, or its value inline after `=`.
-const WATCH_FLAGS = new Set(['--watch', '--watch-preserve-output'])
+// node's watch mode: its flags before the script. `--watch=<value>` is
+// watch mode whatever its value, and `--watch-path` takes the next argument
+// as its value, or its value inline after `=`.
+const WATCH_FLAG = '--watch'
+const WATCH_FLAGS = new Set([WATCH_FLAG, '--watch-preserve-output'])
+const WATCH_INLINE = `${WATCH_FLAG}=`
 const WATCH_PATH_FLAG = '--watch-path'
 const WATCH_PATH_INLINE = `${WATCH_PATH_FLAG}=`
 // One argument of a command line: a double-quoted run, or a run of
@@ -74,7 +79,13 @@ const argumentsOf = ({ text }) =>
 
 // How many arguments a watch flag spans, or 0 when `token` is none.
 const watchSpan = ({ token }) => {
-  if (WATCH_FLAGS.has(token) || token.startsWith(WATCH_PATH_INLINE)) return 1
+  if (
+    WATCH_FLAGS.has(token) ||
+    token.startsWith(WATCH_INLINE) ||
+    token.startsWith(WATCH_PATH_INLINE)
+  ) {
+    return 1
+  }
   return token === WATCH_PATH_FLAG ? 2 : 0
 }
 

@@ -178,7 +178,7 @@ gate the run reaches is blinded by exactly one step, whose companion's exported
 | `pnpm agent-harness:projection-check` | Every projected agent file equals what its neutral source renders, and is committed (see 3e) |
 | `pnpm agent-harness:test`       | The projector's reader, adapters, hook projection, writer, checker and sync still behave |
 | `pnpm write-guard:test`         | The write guard decides every cell of its table, its errors and its switch-off, reads every Windows spelling of a path (or refuses what it cannot read) and every checkout that holds it, judges a 10,000-folder path in under a second, every checkout rule glob matches a file and every module the hook loads is a rule file, and the real hook answers a payload on stdin end to end, through a junction too (see 3f) |
-| `pnpm reap:test`               | The process reaper's core decides each rule over synthetic process tables (an orphan, a live parent, a reused pid, POSIX reparenting, unknown names, a family matched by executable and script and never by text in the arguments, persistent and watch work, node's watch flags, the wrappers, live Git for Windows shells and tmux, its own ancestry, the spared processes, the grace period); the adapter lists and ends on each platform through an injected spawn; the command's modes, lock, second listing, bound and exit codes; the lock's takeover under its guard, a dead guard and a release that leaves a later run's lock, with injected races and two real processes; the session hook's kill mode and its exit 0 on any failure; and `runBounded` ends a real child's tree on Windows (see 3g) |
+| `pnpm reap:test`               | The process reaper's core decides each rule over synthetic process tables (an orphan, a live parent, a reused pid, POSIX reparenting, the hour a clock falls back, unknown names, a family matched by executable and script and never by text in the arguments, persistent and watch work, node's watch flags, the wrappers, live Git for Windows shells and tmux, its own ancestry, the spared processes, the grace period); the adapter lists and ends on each platform through an injected spawn; the command's modes, lock, second listing, bound and exit codes; the lock's takeover under its guard, a dead guard and a release that leaves a later run's lock, with injected races and two real processes; the session hook's kill mode and its exit 0 on any failure; and `runBounded` ends a real child's tree on Windows (see 3g) |
 | `pnpm verify:agent-context:test` | The agent-context gate fails each defect it names, on synthetic entries and over a scratch tree |
 | `pnpm verify:agent-context`     | Every agent of `.agents/agents/` has an entry in `.agents/agent-context.json` whose `gradedBy` names the skills that grade it, each a folder of `.claude/skills/` holding a `SKILL.md`, whose `writes` is true or false, whose `surface`, if any, lists repository-relative folders beside `writes: true`, and which holds no other key; no entry names an agent that is gone (see 3e) |
 | `pnpm verify:harness-config:test` | The harness config gate fails each defect it names, a key given twice and an `additionalProperties` other than `false` among them, against the repository's schema, and over a scratch tree; the schema's merge policies are the ones the ticket skills name, `manual` the default |
@@ -450,7 +450,7 @@ priority 1 on 2026-11-20.
 | ------------------------------------------------ | ---------- |
 | `.agents/contracts/process-reaper.json`          | The families it may end, the processes it spares, the 60 s grace and the 8 s bound; a rule file |
 | `scripts/agent-harness/reaper/plan.mjs`          | The pure core: from the process list, as data, each process's entry and the trees to end and keep, each with its reason |
-| `scripts/agent-harness/reaper/platform.mjs`      | The adapter: it lists with `Get-CimInstance Win32_Process` on Windows and `ps -eo pid=,ppid=,lstart=,rss=,args=` under `LC_ALL=C` on POSIX, whose absolute `lstart` gives a process the same start time in every listing, and ends a tree with `taskkill /PID <pid> /T /F`, or SIGTERM, then after 2 s a second listing and SIGKILL only to each pid still listed with the start time the plan read, none when that listing fails or the bound has run out |
+| `scripts/agent-harness/reaper/platform.mjs`      | The adapter: it lists with `Get-CimInstance Win32_Process` on Windows and `ps -eo pid=,ppid=,etime=,lstart=,rss=,args=` under `LC_ALL=C` on POSIX: the age and the order against the parent come from `etime`, which a clock change does not move, and the identity alone from the absolute `lstart`, the same in every listing. It ends a tree with `taskkill /PID <pid> /T /F`, or SIGTERM, then after 2 s a second listing and SIGKILL only to each pid still listed with the identity the plan read, none when that listing fails, returns no process or the bound has run out |
 | `scripts/agent-harness/reaper/bounded-child.mjs` | `runBounded`: a child with a time bound, ended with its whole tree at the bound; the worktree pruner's fetch runs through it |
 | `scripts/agent-harness/reaper/lock.mjs`          | The lock that keeps one killing reaper at a time |
 | `scripts/agent-harness/reaper/reap.mjs`          | The command, `pnpm reap` and `pnpm reap:kill` |
@@ -478,7 +478,7 @@ the launcher holds about as much memory as the server.
 families are one-shot runs, so `turbo run dev` or `start`, the turbo daemon,
 `vitest` without `run`, `tsc --watch`, tsserver and the dev servers (`next dev`,
 `expo start`, metro) match none. Nor does a node process in watch mode, one whose
-flags before its script name `--watch`, `--watch-path <path>`,
+flags before its script name `--watch`, `--watch=<value>`, `--watch-path <path>`,
 `--watch-path=<path>` or `--watch-preserve-output`, a wrapper included, and a
 tree that holds one is kept. Its own ancestry. A tree that holds a process
 the contract spares: the shared MCP proxy, however it is launched (the
@@ -496,17 +496,18 @@ root pid, family, the wrapper it came through, age, process count and MB), one
 them; `--json` prints the plan as one JSON line and `--quiet` only the total
 line. A killing run first creates `atl-process-reaper.lock` in the OS temp
 directory, exclusively, with a token unique to that run; another reaper that
-finds it held prints so and exits 0 at once. A lock older than 30 s, left by a
+finds it held prints so and exits 0 at once, and a lock gone by the time it is
+read is created again, never taken over. A lock older than 30 s, left by a
 reaper that died, is taken over only under `atl-process-reaper.lock.guard`,
-created exclusively, and only if it is still stale under it, so two runs that
-find it stale never both take it; a guard older than 30 s, left by a reaper
+created exclusively, and removed under it only while it still holds the bytes
+the run read, so two runs that find it stale never both take it; a guard older than 30 s, left by a reaper
 that died holding it, is removed, only while it holds what that run read, and
 the next run takes the lock. A run removes the lock at its end only while it
 still holds its token, never one a later run took over.
 Right before its kills it lists the processes again and leaves every tree whose
 root pid is gone or now names a process that started at another time, since a
 tree kill follows a reused pid; of every other tree it ends only the pids still
-listed with the start time the plan read, so a pid-by-pid kill never names a
+listed with the identity the plan read, so a pid-by-pid kill never names a
 reused one. It exits 0 when it finished, with or without
 ends, and 1 on a failure: a listing that fails, a tree it could not end, an
 unknown option. It ends within 8 s: a run that reaches the bound ends no tree it
@@ -530,11 +531,10 @@ keeps the turbo or vitest below it, whose parent is still alive, and a Git for
 Windows shell is spared, so a tree a dead Git Bash leaves behind stays, except
 for a family process that becomes an orphan itself. A one-shot run that matches
 a family but should survive is added to the spare list, on the owner's word. On
-POSIX a process forked between the SIGTERM and the SIGKILL is not reached; a pid
-taken by a process that started in the same second as its earlier holder reads
-as the same process, since `lstart` counts whole seconds; and in the hour a
-clock change repeats, an
-age can read an hour off, though each process still reads one start time. And
+POSIX a process forked between the SIGTERM and the SIGKILL is not reached, and a
+pid taken by a process whose `lstart` reads the same as its earlier holder's
+reads as the same process: one that started in the same second, since `lstart`
+counts whole seconds, or in that second's repeat when the clock falls back. And
 the pruner's stopped fetch still signals git alone, as before. Codex, OpenCode
 and Copilot run no adapter, as for the write guard.
 

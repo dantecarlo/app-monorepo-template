@@ -279,6 +279,7 @@ test('persistent and watch work is never a candidate, one-shot runs are', () => 
     'C:\\r\\node_modules\\@esbuild\\win32-x64\\esbuild.exe --watch --serve',
     // node's own watch mode, its flags before the script.
     'node --watch C:\\r\\node_modules\\typescript\\bin\\tsc --noEmit',
+    'node --watch=true C:\\r\\node_modules\\typescript\\bin\\tsc --noEmit',
     'node --watch-path=src C:\\r\\node_modules\\typescript\\bin\\tsc --noEmit',
     'node --watch-path src C:\\r\\node_modules\\typescript\\bin\\tsc --noEmit',
     'node --watch-preserve-output C:\\r\\node_modules\\vitest\\vitest.mjs run'
