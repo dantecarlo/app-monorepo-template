@@ -301,6 +301,41 @@ with time.
 
 **Enforced by review.**
 
+### A force option is never used — LAW
+
+Applies to every agent, every command it runs, and every script, config or
+build file it writes. The owner decided it on 2026-11-25 (translated from
+Spanish): "force is never used for anything; that is how things break;
+record it as a law and tell the template too".
+
+**A force option overrides the refusal a tool raised to protect
+something.** That refusal is the finding: read why the tool refused and fix
+its cause, for example clean a worktree before `git worktree remove`. If the
+refusal looks wrong, say so and stop: the owner decides.
+
+**What this forbids**: `--force`, `--force-with-lease` and every `--force-*`
+on any tool; git's short force options (`-f`, `branch -D`, `-M` and `-C`,
+`checkout -B`, `switch -C` and `--discard-changes`); PowerShell's `-Force`;
+`taskkill /F`; and any script, config or build file that passes one.
+
+**The one registered exception**: `taskkill /T /F` and `taskkill /F /PID …`
+in `scripts/agent-harness/reaper/**` and
+`packages/tooling/src/process-tree.mjs`. On Windows a taskkill without `/F`
+only asks a console process to close, and those processes ignore the
+request; that code ends only process trees it has verified (orphan, family,
+identity) or the bounded child it started itself. Only the owner registers
+another, here.
+
+**Open with the owner**: whether `rm -f` and `rm -rf` (and `rmSync`'s
+`force: true`, the same in code) count; until the owner decides, they stay.
+
+**Enforced by** the no-force hook (`docs/harness.md` §3j,
+`pnpm no-force:test`): in Claude Code, a Bash or PowerShell command that
+passes a force option is refused, with a reason that names this LAW. It
+fails safe, and does not read a force in code or config, a short `-f`
+outside git and taskkill, `bash -c`, xargs or an alias, nor run in Codex,
+OpenCode or Copilot. Beyond that, review.
+
 ### Reply shape — LAW
 
 Applies to every reply addressed to a human in this repository. It does NOT
