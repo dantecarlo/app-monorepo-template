@@ -121,8 +121,11 @@ only what the document did not answer:
    policy and an `identity` holding the project's own product, repository and package scope, which
    the team confirms with the layer, never the template's: the key alone would make a file that
    fails the gate. Then run `pnpm verify:harness-config`.
-3. For a `gh` adapter, after the team confirms it: create each label once, `ticket:<state>` for
-   every state and `type:<type>` for every type, with `gh label create <label> --force`.
+3. For a `gh` adapter, after the team confirms it: make each label exist once, `ticket:<state>`
+   for every state and `type:<type>` for every type. Read them with
+   `gh label list --json name,color,description`, then `gh label create <label>` for each one
+   missing, and `gh label edit <label>` for one whose colour or description differs. Never
+   `--force` (the LAW "A force option is never used", `AGENTS.md`).
 4. Propose the row the project's `AGENTS.md` Key docs table gains for docs/process/ticket-flow.md,
    and the line each session's instructions gain naming the role it plays; write them on the
    team's yes.
