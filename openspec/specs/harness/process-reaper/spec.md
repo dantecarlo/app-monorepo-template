@@ -1,9 +1,9 @@
 # harness/process-reaper — living spec
 
-> **Governs:** `.agents/contracts/process-reaper.json`, `scripts/agent-harness/reaper/contract.mjs`, `scripts/agent-harness/reaper/plan.mjs`, `scripts/agent-harness/reaper/platform.mjs`, `scripts/agent-harness/reaper/bounded-child.mjs`, `scripts/agent-harness/reaper/lock.mjs`, `scripts/agent-harness/reaper/reap.mjs`, `scripts/agent-harness/reaper/session-start.mjs`
+> **Governs:** `.agents/contracts/process-reaper.json`, `scripts/agent-harness/reaper/contract.mjs`, `scripts/agent-harness/reaper/plan.mjs`, `scripts/agent-harness/reaper/platform.mjs`, `scripts/agent-harness/reaper/bounded-child.mjs`, `scripts/agent-harness/reaper/lock.mjs`, `scripts/agent-harness/reaper/reap.mjs`, `scripts/agent-harness/reaper/session-start.mjs`, `scripts/agent-harness/reaper/mcp-check.mjs`
 > **ID prefix:** `REAP`
 > **Derived from:** `docs/harness.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-20 at `bc6f966`
+> **Verified against the code:** 2026-11-25 at `98fe189`
 
 ## Purpose
 
@@ -15,7 +15,8 @@ owns the contract of the families it may end and the processes it spares, the pu
 decides which trees to end from the process list as data, the platform adapter that lists and
 ends them, `runBounded`, which ends a bounded child with its tree, the lock that keeps one
 killing reaper at a time, the command behind `pnpm reap` and `pnpm reap:kill`, and the Claude
-Code SessionStart hook that runs it at every session start. The hook projection that renders
+Code SessionStart hook that runs it at every session start, after naming the MCP servers whose
+pinned entry is not installed. The hook projection that renders
 `.agents/hooks.json` into `.claude/settings.json`, the worktree pruner whose fetch runs through
 `runBounded`, and `signalProcessTree` (packages/tooling, TOOLING-12) are not part of this unit.
 
@@ -352,7 +353,7 @@ a `SessionStart` hook without a matcher into `.claude/settings.json`, and still 
 `PreToolUse` hook with no matcher as `missing matcher`.
 
 **Evidence:** `.agents/hooks.json:11-16`, `.claude/settings.json:16-26`,
-`scripts/agent-harness/hooks-projection.mjs:28-66`, `scripts/agent-harness/reaper/session-start.mjs:33-99`
+`scripts/agent-harness/hooks-projection.mjs:28-66`, `scripts/agent-harness/reaper/session-start.mjs:39-127`
 
 #### Scenario: the committed hook
 
@@ -393,10 +394,17 @@ a `SessionStart` hook without a matcher into `.claude/settings.json`, and still 
 
 `runBounded` SHALL run a command with a time bound and, at the bound, end the child's whole tree
 with `signalProcessTree` (`taskkill /T /F` on Windows, the child's signal on POSIX), release its
-pipes and read as timed out; the worktree pruner's `git fetch --prune` runs through it, and a
-fetch that fails reports git's stderr, else the spawn's error, else its exit code.
+pipes and read as timed out. The worktree pruner's `git fetch --prune` runs through it, and a
+fetch that fails reports git's stderr, else the spawn's error, else its exit code; so does the
+`pnpm install --frozen-lockfile --offline` the pruner runs after a fast-forward that changed
+`pnpm-lock.yaml`, bounded by `PRUNE_WORKTREES_INSTALL_SECONDS` (120 s unless set), whose failure or
+timeout prints one line with the exact `pnpm install --frozen-lockfile` to run and leaves the
+run's exit code at 0.
 
-**Evidence:** `scripts/agent-harness/reaper/bounded-child.mjs:29-78`, `scripts/prune-worktrees.mjs:168-192`
+**Evidence:** `scripts/agent-harness/reaper/bounded-child.mjs:29-78`, `scripts/prune-worktrees.mjs:181-203`,
+`scripts/prune-worktrees.mjs:528-560`, `scripts/prune-worktrees.mjs:594-610`,
+`scripts/prune-worktrees.mjs:663-678`, `scripts/prune-worktrees.detect.mjs:47-113`,
+`scripts/prune-worktrees.detect.mjs:464-494`
 
 #### Scenario: the bound
 
@@ -425,6 +433,32 @@ fetch that fails reports git's stderr, else the spawn's error, else its exit cod
 - **WHEN** the pruner builds its error
 - **THEN** it names `exited 128` and the spawn's error, never `undefined`
 - **Test:** `scripts/prune-worktrees.test.mjs` › "a fetch that fails with nothing on stderr names its error or its exit code, never undefined"
+
+#### Scenario: an install after a fast-forward that changed the lockfile
+
+- **GIVEN** a main checkout one commit behind, whose next commit changes `pnpm-lock.yaml`, and a
+  `pnpm` on the path that records its arguments
+- **WHEN** the pruner runs
+- **THEN** it fast-forwards, runs `pnpm install --frozen-lockfile --offline` once in the main
+  checkout, says so and exits 0
+- **Test:** `scripts/prune-worktrees.test.mjs` › "a fast-forward that changes pnpm-lock.yaml runs pnpm install --frozen-lockfile --offline"
+
+#### Scenario: an install that fails or outlasts its bound
+
+- **GIVEN** the same checkout, and a `pnpm` that exits 1, then one that never ends under
+  `PRUNE_WORKTREES_INSTALL_SECONDS=1`
+- **WHEN** the pruner runs with `--quiet`
+- **THEN** it fast-forwards, prints one line with the exit code or the bound and
+  `pnpm install --frozen-lockfile`, and exits 0
+- **Test:** `scripts/prune-worktrees.test.mjs` › "an install that fails or outlasts PRUNE_WORKTREES_INSTALL_SECONDS names the command to run, and the run exits 0"
+
+#### Scenario: the install bound
+
+- **GIVEN** `PRUNE_WORKTREES_INSTALL_SECONDS` unset, `2.5`, empty, `0` and `ten`
+- **WHEN** the pruner reads it
+- **THEN** it bounds the install at 120 s and 2.5 s, and throws for the other three, naming the
+  variable and the value
+- **Test:** `scripts/prune-worktrees.test.mjs` › "the install is bound to 120 s unless PRUNE_WORKTREES_INSTALL_SECONDS names another positive number"
 
 ### Requirement: REAP-11 — One killing reaper at a time
 
@@ -473,3 +507,40 @@ pid.
 - **WHEN** the reaper runs with `--kill`
 - **THEN** it ends the other one only, prints the first as left with its reason and exits 0
 - **Test:** `scripts/agent-harness/reaper/reap.test.mjs` › "a candidate whose pid names another process by its kill is left, and the rest are ended"
+
+### Requirement: REAP-13 — A session starts by naming the MCP servers that cannot start
+
+The `SessionStart` hook `scripts/agent-harness/reaper/session-start.mjs` SHALL, before the reaper
+runs and inside the same budget, read the checkout's `.mcp.json` and MCP catalog and, for every
+`.mcp.json` server whose args start with `scripts/mcp/launch.mjs` and name a catalog server, check
+that `node_modules/<package>/<entry>` exists; when any is missing it prints one line naming those
+servers and `pnpm install --frozen-lockfile`. It prints nothing without a `.mcp.json` or when every
+entry is there, and a check that throws prints one line to stderr, the hook still exiting 0.
+
+**Evidence:** `scripts/agent-harness/reaper/mcp-check.mjs:43-79`,
+`scripts/agent-harness/reaper/session-start.mjs:49-66`,
+`scripts/agent-harness/reaper/session-start.mjs:83-91`
+
+#### Scenario: entries that are missing
+
+- **GIVEN** a `.mcp.json` with three launcher servers, one of them installed, a server that runs
+  `npx` and a remote URL, and the catalog of the three
+- **WHEN** the MCP check reads the tree
+- **THEN** it returns one line naming the two missing servers, in order, and
+  `pnpm install --frozen-lockfile`, and nothing about the other two servers
+- **Test:** `scripts/agent-harness/reaper/mcp-check.test.mjs` › "the MCP check names every launcher server whose entry is missing, and the install command"
+
+#### Scenario: nothing to say
+
+- **GIVEN** a tree with no `.mcp.json`, and one whose every launcher server is installed
+- **WHEN** the MCP check reads each
+- **THEN** it returns nothing for both
+- **Test:** `scripts/agent-harness/reaper/mcp-check.test.mjs` › "the MCP check says nothing without a .mcp.json, or when every entry is installed"
+
+#### Scenario: the hook prints the line
+
+- **GIVEN** a check that returns a line, one that returns nothing and one that throws
+- **WHEN** the session-start script runs each, with a reaper that ends nothing
+- **THEN** the first prints that line before the reaper's, the second prints only the reaper's,
+  the third prints one stderr line, and each returns 0
+- **Test:** `scripts/agent-harness/reaper/session-start.test.mjs` › "the session hook prints the MCP check's line first, and a check that throws costs one stderr line"

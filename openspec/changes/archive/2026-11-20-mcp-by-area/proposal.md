@@ -1,6 +1,6 @@
 # Proposal: start each session's MCP servers by area, through one launcher
 
-> **Status:** open
+> **Status:** archived — 2026-11-25
 
 ## Why
 

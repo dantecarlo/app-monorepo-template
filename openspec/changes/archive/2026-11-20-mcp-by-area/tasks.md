@@ -5,7 +5,7 @@
 - [x] T3 — the pruner runs `pnpm install --frozen-lockfile --offline` through `runBounded` after a fast-forward that changed `pnpm-lock.yaml`, bounded by `PRUNE_WORKTREES_INSTALL_SECONDS`; a dry run says it would, `--quiet` keeps only the failure line, and an unchanged lockfile installs nothing and prints what it printed · Requirements: REAP-10 · Commit: 4177e80
 - [x] T4 — the `SessionStart` hook names the launcher servers whose entry is not installed, through `scripts/agent-harness/reaper/mcp-check.mjs` · Requirements: REAP-13 · Commit: 5a48e0d
 - [x] T5 — `docs/mcp.md` (the area, the launcher, the Desktop environments, Codex and OpenCode not wired, the shared documentation servers through mcp-proxy), `docs/harness.md`, the §21 row, the global map, the manifest, and the F75 and parity-ledger rows of `docs/INIT_AND_HARNESS_PLAN.md` · Requirements: none · Commit: 3c84555
-- [ ] T6 — `verify-report.md`, then the archive into `openspec/specs/harness/mcp/spec.md` and `openspec/specs/harness/process-reaper/spec.md` and the folder moved to `openspec/changes/archive/2026-11-20-mcp-by-area/` · Requirements: MCP-01, MCP-02, MCP-03, MCP-06, MCP-10, MCP-11, MCP-12, REAP-10, REAP-13 · Commit: —
+- [x] T6 — `verify-report.md`, then the archive into `openspec/specs/harness/mcp/spec.md` and `openspec/specs/harness/process-reaper/spec.md` and the folder moved to `openspec/changes/archive/2026-11-20-mcp-by-area/` · Requirements: MCP-01, MCP-02, MCP-03, MCP-06, MCP-10, MCP-11, MCP-12, REAP-10, REAP-13 · Commit: 98fe189, and the archive that moves this folder
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of
