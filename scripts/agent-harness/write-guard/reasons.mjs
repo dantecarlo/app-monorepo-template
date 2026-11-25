@@ -97,6 +97,12 @@ const DENIED = {
   powershell: ({ actor }) =>
     `${whoIs({ actor })}: the PowerShell tool runs commands this hook does ` +
     'not read. Run the command through the Bash tool.',
+  program: ({ actor, finding, tool }) =>
+    `${whoIs({ actor })}: ${calls({ text: finding.shape, tool })} is a ` +
+    'program the write guard does not know to only read, and it names ' +
+    `\`${finding.token}\`, a path outside the OS temp dir. Use a known ` +
+    'reader, write under the OS temp dir, or report the change for the ' +
+    'caller to make.',
   'read-only': ({ actor, finding, tool }) =>
     denyReadOnly({
       actor,
@@ -136,6 +142,8 @@ const OPAQUE = {
     `runs code the write guard cannot follow (\`${finding.shape}\` ` +
     `${finding.why})`,
   powershell: ({ finding }) => `holds a write (\`${finding.write}\`)`,
+  program: ({ finding }) =>
+    `runs \`${finding.shape}\`, a program the write guard does not know`,
   shell: ({ finding }) =>
     `runs text the write guard does not read (\`${finding.shape}\`)`,
   tool: ({ finding }) => `runs \`${finding.shape}\`, which ${finding.why}`,

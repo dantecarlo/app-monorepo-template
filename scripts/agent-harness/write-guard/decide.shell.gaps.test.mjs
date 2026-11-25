@@ -374,3 +374,22 @@ cases({
   ],
   name: 'a read-only agent is still refused a package manager and an inner shell'
 })
+
+test('an unknown program is asked about by its own words, not the rest of the command', () => {
+  assert.equal(onDisk({ command: 'frobnicate docs/a.md; cat AGENTS.md' }), '—')
+  const { decision, reason } = shell({
+    agent: MAIN,
+    command: 'cat docs/a.md; frobnicate AGENTS.md',
+    host: ON_DISK
+  })
+  assert.equal(decision, 'ask')
+  assert.match(reason, /does not know/)
+  assert.match(reason, /names `AGENTS\.md`, a rule file/)
+})
+
+test('a read-only refusal of an unknown program names it and the path', () => {
+  const { reason } = shell({ command: 'frobnicate docs/a.md', host: ON_DISK })
+  assert.match(reason, /`frobnicate`/)
+  assert.match(reason, /docs\/a\.md/)
+  assert.match(reason, /does not know/)
+})

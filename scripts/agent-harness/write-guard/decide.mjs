@@ -66,6 +66,18 @@ const BASH = 'Bash'
 
 export const VERDICT = Object.freeze({ ask: 'ask', deny: 'deny' })
 
+// Well inside the hook's 10 s timeout: a hook that times out lets the call
+// through, so a call past this deadline is judged an error instead.
+const DEADLINE_MS = 5000
+
+// The host of one call: its cache of classified targets, and the deadline
+// paths.cachedClassify holds it to, read by its clock (`now`, Date.now on
+// the live host).
+const forOneCall = ({ host }) => {
+  const now = host.now ?? Date.now
+  return { ...host, cache: new Map(), deadline: now() + DEADLINE_MS, now }
+}
+
 const POLICED = [
   ACTOR_KIND.readOnly,
   ACTOR_KIND.surface,
@@ -154,7 +166,9 @@ const judge = ({ actor, host, payload, policy, tool }) => {
           cwd: cwd ?? host.ownRoot,
           host,
           policy,
-          text: command
+          // An unknown program is read by its own words, the rest of the
+          // command by what else it does.
+          text: finding.words?.join(' ') ?? command
         })
   if (finding.level === LEVEL.opaque && named === undefined)
     return undefined
@@ -181,7 +195,7 @@ export const decide = ({
   }
   const actor = actorFor({ agentContext, payload })
   try {
-    return judge({ actor, host, payload, policy, tool })
+    return judge({ actor, host: forOneCall({ host }), payload, policy, tool })
   } catch (error) {
     const denied = POLICED.includes(actor.kind)
     const reason = guardError({
