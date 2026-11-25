@@ -242,6 +242,32 @@ test('a candidate whose pid names another process by its kill is left, and the r
   assert.deepEqual(err, [])
 })
 
+test('a tree ended pid by pid leaves a pid that names another process by its kill', async () => {
+  // Pid 13, older than 11, names it as its parent, so tree 10 is ended pid
+  // by pid; between the plan and the kill, pid 12 ended and a new process
+  // took it.
+  const listing = [
+    ...LISTING,
+    cim({ ago: 3 * HOUR_MS, command: 'C:\\tool.exe', name: 'tool.exe', pid: 13, ppid: 11 })
+  ]
+  const relisting = listing.map((row) =>
+    row.ProcessId === 12 ? { ...row, CreationDate: `/Date(${NOW - 5000})/` } : row
+  )
+  const { err, kills, out, run } = harness({ listing, relisting })
+  assert.equal(await run({ argv: ['--kill'] }), EXIT_OK)
+  assert.deepEqual(kills(), [
+    { args: ['/PID', '80', '/T', '/F'], command: 'taskkill' },
+    { args: ['/F', '/PID', '10', '/PID', '11'], command: 'taskkill' }
+  ])
+  assert.deepEqual(out, [
+    'reap: ended pid 80, turbo, 1 h old, 1 process, 300 MB',
+    'reap: ended pid 10, npx-mcp via npx-cli.js, 1 h old, 3 processes, 175 MB',
+    'reap: kept pid 70, turbo: a process in it is younger than the grace period',
+    'reap: ended 2 trees, 475 MB'
+  ])
+  assert.deepEqual(err, [])
+})
+
 test('a run with nothing to end says so and exits 0', async () => {
   const { out, run } = harness({ listing: LISTING.slice(0, 3) })
   assert.equal(await run({ argv: ['--kill', '--quiet'] }), EXIT_OK)

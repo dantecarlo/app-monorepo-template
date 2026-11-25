@@ -3,7 +3,9 @@
 // decides which trees to end; it spawns, reads and signals nothing.
 //
 // A process is { bytes, command, name, pid, ppid, startMs }, `startMs` null
-// when the listing reads no start time. A parent HOLDS a child when the
+// when the listing reads no start time; on POSIX it is read in UTC, which
+// a clock change does not move, so the order of two processes and an age
+// hold in the hour a clock repeats. A parent HOLDS a child when the
 // child's parent pid names it and it started no later than the child; a
 // newer process under that pid holds a reused pid, not the child. An ORPHAN
 // is a process no parent holds; on POSIX also one under pid 1 or the
@@ -13,14 +15,15 @@
 // A process is matched by its ENTRY, never by text anywhere in its command
 // line: its own executable, and for an interpreter (node, python) the
 // script it runs, its first argument that is not a flag (`-m <module>` for
-// python), with the arguments after it. A candidate is an orphan whose
-// entry matches a family of the contract, with its whole descendant tree. A
+// python), with the arguments after it. A node process in watch mode, a
+// watch flag before its script, matches no family. A candidate is an orphan
+// whose entry matches a family of the contract, with its whole tree. A
 // wrapper family (a console, a POSIX shell, the npx launcher) makes an
 // orphan a candidate only when, its childless wrappers aside, it has one
 // child and that child is reapable. A candidate tree that holds the reaper
-// or one of its ancestors, a process the contract spares, or a process
-// younger than the grace period or of an unreadable age, is kept with its
-// reason.
+// or one of its ancestors, a process the contract spares, a process in
+// watch mode, or a process younger than the grace period or of an
+// unreadable age, is kept with its reason.
 // ---------------------------------------------------------------------------
 
 import { posix } from 'node:path'
@@ -49,6 +52,14 @@ const VALUE_FLAGS = new Set([
 ])
 const INLINE_FLAGS = new Set(['-c', '-e', '-p', '--eval', '--print'])
 const MODULE_FLAG = '-m'
+// node's watch mode: its flags before the script. `--watch=<value>` is
+// watch mode whatever its value, and `--watch-path` takes the next argument
+// as its value, or its value inline after `=`.
+const WATCH_FLAG = '--watch'
+const WATCH_FLAGS = new Set([WATCH_FLAG, '--watch-preserve-output'])
+const WATCH_INLINE = `${WATCH_FLAG}=`
+const WATCH_PATH_FLAG = '--watch-path'
+const WATCH_PATH_INLINE = `${WATCH_PATH_FLAG}=`
 // One argument of a command line: a double-quoted run, or a run of
 // anything but whitespace.
 const ARGUMENT = /"([^"]*)"|(\S+)/gu
@@ -57,6 +68,7 @@ export const KEPT = Object.freeze({
   AGELESS: 'a process in it has a start time the listing cannot read',
   ANCESTRY: 'it holds the reaper or one of its ancestors',
   SPARED: 'it holds a process the contract spares',
+  WATCH: 'a process in it runs in watch mode',
   YOUNG: 'a process in it is younger than the grace period'
 })
 
@@ -65,29 +77,48 @@ const normalized = ({ path }) => posix.normalize(path.replaceAll('\\', '/'))
 const argumentsOf = ({ text }) =>
   [...text.matchAll(ARGUMENT)].map(([, quoted, bare]) => quoted ?? bare)
 
-// Where an interpreter's script is among `rest`, and where its own
-// arguments start: inline code is no script.
+// How many arguments a watch flag spans, or 0 when `token` is none.
+const watchSpan = ({ token }) => {
+  if (
+    WATCH_FLAGS.has(token) ||
+    token.startsWith(WATCH_INLINE) ||
+    token.startsWith(WATCH_PATH_INLINE)
+  ) {
+    return 1
+  }
+  return token === WATCH_PATH_FLAG ? 2 : 0
+}
+
+// Where an interpreter's script is among `rest`, where its own arguments
+// start, and whether a flag before it runs it in watch mode: inline code is
+// no script.
 const scriptOf = ({ rest }) => {
   let at = 0
+  let watch = false
   while (at < rest.length) {
     const token = rest[at]
-    if (INLINE_FLAGS.has(token)) return { next: at + 2, script: null }
+    const span = watchSpan({ token })
+    if (INLINE_FLAGS.has(token)) return { next: at + 2, script: null, watch }
     if (token === MODULE_FLAG) {
-      return { next: at + 2, script: rest[at + 1] ?? null }
+      return { next: at + 2, script: rest[at + 1] ?? null, watch }
     }
-    if (VALUE_FLAGS.has(token)) at += 2
+    if (span > 0) {
+      watch = true
+      at += span
+    } else if (VALUE_FLAGS.has(token)) at += 2
     else if (token.startsWith('-')) at += 1
-    else return { next: at + 1, script: normalized({ path: token }) }
+    else return { next: at + 1, script: normalized({ path: token }), watch }
   }
-  return { next: rest.length, script: null }
+  return { next: rest.length, script: null, watch }
 }
 
 /**
  * The entry a family is matched by: `exe`, the executable path with forward
  * slashes; `script`, the script an interpreter runs, or null; `args`, the
- * arguments after the script (after the executable for anything else); and
- * `label`, the name a report gives it. A process whose listing reads no
- * command line is its name.
+ * arguments after the script (after the executable for anything else);
+ * `label`, the name a report gives it; and `watch`, whether a node watch
+ * flag before the script runs it in watch mode. A process whose listing
+ * reads no command line is its name.
  */
 export const entryOf = ({ process }) => {
   const text = process.command.trim()
@@ -95,14 +126,21 @@ export const entryOf = ({ process }) => {
   const exe = normalized({ path: parts[0] ?? process.name })
   const rest = parts.slice(1)
   if (!INTERPRETER.test(exe)) {
-    return { args: rest.join(' '), exe, label: posix.basename(exe), script: null }
+    return {
+      args: rest.join(' '),
+      exe,
+      label: posix.basename(exe),
+      script: null,
+      watch: false
+    }
   }
-  const { next, script } = scriptOf({ rest })
+  const { next, script, watch } = scriptOf({ rest })
   return {
     args: rest.slice(next).join(' '),
     exe,
     label: posix.basename(script ?? exe),
-    script
+    script,
+    watch
   }
 }
 
@@ -115,10 +153,15 @@ const matchesOne = ({ entry, rule }) =>
 const matchesAny = ({ entry, family }) =>
   family.match.some((rule) => matchesOne({ entry, rule }))
 
+// A family, a wrapper included, never matches a process in watch mode; a
+// spare entry still does.
+const matchesFamily = ({ entry, family }) =>
+  !entry.watch && matchesAny({ entry, family })
+
 /** The first family, a wrapper included, whose match the process's entry meets. */
 export const familyOf = ({ contract, entry, process }) => {
   const read = entry ?? entryOf({ process })
-  return contract.families.find((family) => matchesAny({ entry: read, family }))
+  return contract.families.find((family) => matchesFamily({ entry: read, family }))
 }
 
 /** The spare entry the process's entry meets, or undefined. */
@@ -171,14 +214,14 @@ const isWrapper = ({ families, index, process }) =>
   families.some(
     (family) =>
       family.wrapper &&
-      matchesAny({ entry: index.entries.get(process.pid), family })
+      matchesFamily({ entry: index.entries.get(process.pid), family })
   )
 
 const familyByEntry = ({ families, index, process }) =>
   families.find(
     (family) =>
       !family.wrapper &&
-      matchesAny({ entry: index.entries.get(process.pid), family })
+      matchesFamily({ entry: index.entries.get(process.pid), family })
   )
 
 // The family a process is reapable under, or undefined: a wrapper by what
@@ -231,6 +274,7 @@ const keptReason = ({ ancestry, contract, graceMs, index, now, tree }) => {
     .map(({ pid }) => spareOf({ contract, entry: index.entries.get(pid) }))
     .find(Boolean)
   if (spared) return `${KEPT.SPARED} (${spared.id})`
+  if (tree.some(({ pid }) => index.entries.get(pid).watch)) return KEPT.WATCH
   if (tree.some(({ startMs }) => startMs === null)) return KEPT.AGELESS
   return tree.some(({ startMs }) => now - startMs < graceMs)
     ? KEPT.YOUNG

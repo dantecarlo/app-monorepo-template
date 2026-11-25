@@ -276,7 +276,13 @@ test('persistent and watch work is never a candidate, one-shot runs are', () => 
     'node C:\\r\\node_modules\\next\\dist\\bin\\next dev',
     'node C:\\r\\node_modules\\expo\\bin\\cli start',
     'node C:\\r\\node_modules\\metro\\src\\cli.js serve',
-    'C:\\r\\node_modules\\@esbuild\\win32-x64\\esbuild.exe --watch --serve'
+    'C:\\r\\node_modules\\@esbuild\\win32-x64\\esbuild.exe --watch --serve',
+    // node's own watch mode, its flags before the script.
+    'node --watch C:\\r\\node_modules\\typescript\\bin\\tsc --noEmit',
+    'node --watch=true C:\\r\\node_modules\\typescript\\bin\\tsc --noEmit',
+    'node --watch-path=src C:\\r\\node_modules\\typescript\\bin\\tsc --noEmit',
+    'node --watch-path src C:\\r\\node_modules\\typescript\\bin\\tsc --noEmit',
+    'node --watch-preserve-output C:\\r\\node_modules\\vitest\\vitest.mjs run'
   ]
   const oneShot = [
     ['turbo', TURBO],
@@ -377,6 +383,20 @@ test('a tree that holds a process the contract spares is kept', () => {
     { family: 'turbo', pid: 95, reason: `${KEPT.SPARED} (mcp-proxy)` },
     { family: 'turbo', pid: 97, reason: `${KEPT.SPARED} (msys-runtime)` }
   ])
+})
+
+test('a tree that holds a node process in watch mode is kept, with its reason', () => {
+  const processes = [
+    ...SESSION,
+    proc({ command: TURBO, name: 'turbo.exe', pid: 80, ppid: 7 }),
+    proc({ command: 'node --watch-path src C:\\r\\apps\\api\\server.js', pid: 81, ppid: 80 }),
+    proc({ command: 'cmd.exe /d /s /c tsc', name: 'cmd.exe', pid: 90, ppid: 7 }),
+    proc({ command: 'node --watch C:\\r\\node_modules\\typescript\\bin\\tsc', pid: 91, ppid: 90 })
+  ]
+  const result = plan({ processes })
+  assert.deepEqual(result.candidates, [])
+  assert.deepEqual(result.kept, [{ family: 'turbo', pid: 80, reason: KEPT.WATCH }])
+  assert.match(KEPT.WATCH, /watch mode/u)
 })
 
 test('a tree with a process younger than the grace period is kept', () => {
