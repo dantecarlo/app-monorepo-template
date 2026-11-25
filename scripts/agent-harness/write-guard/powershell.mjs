@@ -10,12 +10,16 @@
 // Copy-Item, Move-Item, Remove-Item, Rename-Item, Clear-Content and
 // Tee-Object, by name, module-qualified, or by alias. A redirection is a
 // `>` outside quotes, with its stream (`2>`, `*>`) and `>>`; `2>&1` merges
-// streams and writes no file.
+// streams and writes no file. A copy or a move into a folder (`.`, `..`, a
+// final separator, or a folder on the disk) is also judged by the name the
+// file gets there.
 // ---------------------------------------------------------------------------
 
 import { namedRule } from './mentions.mjs'
+import { absolutePath } from './paths.mjs'
 import { ACTOR_KIND } from './policy.mjs'
 import { LEVEL } from './target.mjs'
+import { lastSegmentOf } from './writers.folders.mjs'
 
 const CMDLETS = [
   'Set-Content',
@@ -108,13 +112,15 @@ export const writeOf = ({ command }) =>
 
 const POLICED = [ACTOR_KIND.readOnly, ACTOR_KIND.surface]
 
-// -- a copy, by its destination ---------------------------------------------
+// -- a copy or a move, by its destination -----------------------------------
 const COPIES = new Set(['copy', 'copy-item', 'cp', 'cpi'])
+const MOVES = new Set(['mi', 'move', 'move-item', 'mv'])
 const CMDLETS_ANYWHERE = new RegExp(CMDLET.source, 'giu')
 const STATEMENT_END = /[;|\n]/u
 const TOKEN = /"[^"]*"|'[^']*'|\S+/gu
 const DESTINATION = /^-destination(?::(.*))?$/iu
-// Copy-Item's parameters that take the next token as their value.
+// Copy-Item's and Move-Item's parameters that take the next token as their
+// value.
 const COPY_VALUED = new Set([
   '-credential',
   '-exclude',
@@ -126,46 +132,96 @@ const COPY_VALUED = new Set([
   '-tosession'
 ])
 const SOURCES = new Set(['-literalpath', '-path'])
+const QUOTED = /^(['"])(.*)\1$/su
+const TRAILING_SEPARATORS = /[\\/]+$/u
+const FOLDER_SPELLING = /^\.{1,2}$|[\\/]$/u
 
-// The destination one copy writes: -Destination's value, or the second
-// positional token, or the first when -Path names the source.
-const destinationOf = ({ text }) => {
+const unquoted = ({ token }) => token.replace(QUOTED, '$2')
+
+// The source and destination of one copy or move: -Path or -LiteralPath,
+// or the first positional token; -Destination's value, or the next
+// positional token.
+const copyOf = ({ text }) => {
   const tokens = text.match(TOKEN) ?? []
   const positional = []
-  let source = false
+  let source
+  let destination
   for (let at = 0; at < tokens.length; at += 1) {
     const token = tokens[at]
     const named = DESTINATION.exec(token)
-    if (named) return named[1] ?? tokens[at + 1]
     const flag = token.toLowerCase()
-    if (COPY_VALUED.has(flag)) {
-      source = source || SOURCES.has(flag)
+    if (named) {
+      destination = named[1] ?? tokens[at + 1]
+      if (named[1] === undefined) at += 1
+    } else if (COPY_VALUED.has(flag)) {
+      if (SOURCES.has(flag)) source = tokens[at + 1]
       at += 1
     } else if (!token.startsWith('-')) positional.push(token)
   }
-  return source ? positional[0] : positional[1]
+  const sourceNamed = source !== undefined
+  return {
+    destination: destination ?? positional[sourceNamed ? 0 : 1],
+    source: source ?? positional[0]
+  }
+}
+
+const isDirectory = ({ cwd, host, text }) => {
+  try {
+    return (
+      host.isDirectory?.({ path: absolutePath({ cwd, host, text }) }) ===
+      true
+    )
+  } catch {
+    return false
+  }
+}
+
+// What a copy or move into a folder writes: the source's name in it, when
+// the destination is `.`, `..`, ends in a separator or is a folder on the
+// disk.
+const intoFolder = ({ copy, cwd, host }) => {
+  if (copy.source === undefined || copy.destination === undefined)
+    return []
+  const folder = unquoted({ token: copy.destination })
+  if (
+    !FOLDER_SPELLING.test(folder) &&
+    !isDirectory({ cwd, host, text: folder })
+  ) {
+    return []
+  }
+  const name = lastSegmentOf({ text: unquoted({ token: copy.source }) })
+  return name === '' || FOLDER_SPELLING.test(name)
+    ? []
+    : [`${folder.replace(TRAILING_SEPARATORS, '')}/${name}`]
 }
 
 /**
  * The text whose rule paths make `command` a write of one: the whole
  * command, or, when every write it holds is a copy, only what the copies
- * write to, since a copy of a rule file elsewhere edits none.
+ * write to, since a copy of a rule file elsewhere edits none. A copy or a
+ * move into a folder adds the name the file gets there.
  */
-const scannedText = ({ command }) => {
+const scannedText = ({ command, cwd, host }) => {
   const writes = [...command.matchAll(CMDLETS_ANYWHERE)]
+  const copies = writes.flatMap((match) => {
+    const cmdlet = match[1].toLowerCase()
+    if (!COPIES.has(cmdlet) && !MOVES.has(cmdlet)) return []
+    const rest = command.slice(match.index + match[0].length)
+    const end = rest.search(STATEMENT_END)
+    return [copyOf({ text: end < 0 ? rest : rest.slice(0, end) })]
+  })
+  const into = copies.flatMap((copy) => intoFolder({ copy, cwd, host }))
   const copiesOnly =
     writes.length > 0 &&
     writes.every((match) => COPIES.has(match[1].toLowerCase())) &&
     redirectOf({ command }) === undefined
-  if (!copiesOnly) return command
-  return writes
-    .map((match) => {
-      const rest = command.slice(match.index + match[0].length)
-      const end = rest.search(STATEMENT_END)
-      return destinationOf({ text: end < 0 ? rest : rest.slice(0, end) })
-    })
-    .filter((destination) => destination !== undefined)
-    .join(' ')
+  if (!copiesOnly) return [command, ...into].join(' ')
+  return [
+    ...copies
+      .map(({ destination }) => destination)
+      .filter((destination) => destination !== undefined),
+    ...into
+  ].join(' ')
 }
 
 /**
@@ -183,7 +239,7 @@ export const judgePowerShell = ({ actor, command, cwd, host, policy }) => {
     cwd,
     host,
     policy,
-    text: scannedText({ command })
+    text: scannedText({ command, cwd: cwd ?? undefined, host })
   })
   return named === undefined
     ? undefined

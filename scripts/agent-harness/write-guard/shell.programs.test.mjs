@@ -160,6 +160,10 @@ for (const [texts, writes] of [
   [['perl', '-e', 'system("ls")'], true],
   [['perl', '-e', 'print 1'], false],
   [['perl', '-e', 'open(F,"<x")'], false],
+  [['perl', '-MFile::Copy', '-e', 'copy("x","AGENTS.md")'], true],
+  [['perl', '-e', 'use File::Copy; move("x","AGENTS.md")'], true],
+  [['perl', '-e', '$^I=""; @ARGV=("AGENTS.md"); while(<>){print}'], true],
+  [['perl', '-e', 'print $x'], false],
   [['ruby', '-e', 'File.write("AGENTS.md", "x")'], true],
   [['ruby', '-e', 'FileUtils.rm("a")'], true],
   [['ruby', '-e', 'puts 1'], false]

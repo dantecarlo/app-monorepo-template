@@ -77,7 +77,9 @@ for (const command of [
   'make -C src',
   'frob *.md',
   `frob ${UNKNOWN}`,
-  'frob C:/Users/me/a.txt'
+  'frob C:/Users/me/a.txt',
+  'frob -oAGENTS.md',
+  'frob -o.agents/contracts/new.json'
 ]) {
   test(`an unknown program that names a path outside scratch is refused to a read-only agent: ${command}`, () => {
     const finding = judged({ command, kind: ACTOR_KIND.readOnly })
@@ -90,7 +92,9 @@ for (const command of [
   'frob --version',
   'docker ps',
   'frob /tmp/a.log',
-  'frob https://e.test/a'
+  'frob https://e.test/a',
+  'frob -Wall',
+  'frob -O2'
 ]) {
   test(`an unknown program that names no path outside scratch passes a read-only agent: ${command}`, () => {
     assert.equal(judged({ command, kind: ACTOR_KIND.readOnly }), undefined)
@@ -106,4 +110,17 @@ test('an unknown program is opaque for anyone else, with the words it names', ()
     [finding.kind, finding.level, finding.words],
     ['program', 'opaque', ['AGENTS.md', '-x']]
   )
+})
+
+test('an attached short value counts as a word only when it is a rule path', () => {
+  const finding = judged({
+    command: 'frob -oAGENTS.md -Wall -Idocs/a.md',
+    kind: ACTOR_KIND.main
+  })
+  assert.deepEqual(finding.words, [
+    '-oAGENTS.md',
+    '-Wall',
+    '-Idocs/a.md',
+    'AGENTS.md'
+  ])
 })

@@ -7,7 +7,9 @@
 // path outside the OS temp dir: a word with a separator, a glob, a word
 // built from what the guard cannot see, or the name of something that
 // exists. Anyone else gets an opaque finding carrying the program's words,
-// and decide asks only when one of them names a rule path. The readers are
+// and decide asks only when one of them names a rule path. A value attached
+// to a short option (`-oAGENTS.md`) counts as a word only when it is a rule
+// path, which a read-only agent is refused as it is. The readers are
 // the donor's workflow commands: the text tools, git's and pnpm's read forms
 // (judged elsewhere), and the shell's own builtins.
 // ---------------------------------------------------------------------------
@@ -21,7 +23,7 @@ import {
 } from './paths.mjs'
 import { ACTOR_KIND } from './policy.mjs'
 import { UNKNOWN } from './scan.mjs'
-import { FINDING_KIND, LEVEL } from './target.mjs'
+import { FINDING_KIND, LEVEL, ruleOf } from './target.mjs'
 
 export const READERS = new Set([
   ':',
@@ -132,6 +134,33 @@ export const pathWordsOf = ({ args }) =>
     return arg.text.startsWith('-') ? [] : [arg]
   })
 
+// `-oFILE`: a short option with its value attached.
+const ATTACHED = /^-[A-Za-z](.+)$/su
+
+// The values attached to short options (`-oAGENTS.md`) that are rule
+// paths. Only a rule path counts, so `-Wall` and `-O2` stay options.
+const attachedRules = ({ rest, state }) =>
+  rest.flatMap((arg) => {
+    const value = ATTACHED.exec(arg.text)?.[1]
+    if (value === undefined || value.includes(UNKNOWN)) return []
+    try {
+      const rule = ruleOf({
+        holds: true,
+        policy: state.policy,
+        where: cachedClassify({
+          cwd: state.cwd ?? undefined,
+          host: state.host,
+          text: value
+        })
+      })
+      return rule === undefined ? [] : [{ ...arg, text: value }]
+    } catch (error) {
+      if (isDeadline({ error })) throw error
+      // A value that is no path the guard can read names no rule.
+      return []
+    }
+  })
+
 // Whether a read-only agent's unknown program would write outside scratch
 // through `word`.
 const namesOutside = ({ state, word }) => {
@@ -160,17 +189,21 @@ const namesOutside = ({ state, word }) => {
  */
 export const unknownProgramVerdict = ({ args, rest, state }) => {
   const shape = args[0].raw
+  const attached = attachedRules({ rest, state })
   if (state.actor.kind !== ACTOR_KIND.readOnly) {
     return {
       kind: FINDING_KIND.program,
       level: LEVEL.opaque,
       shape,
-      words: rest.map(({ text }) => text)
+      words: [...rest, ...attached].map(({ text }) => text)
     }
   }
-  const named = pathWordsOf({ args: rest }).find((word) =>
-    namesOutside({ state, word })
-  )
+  // A rule path is never scratch, so an attached one is refused as it is.
+  const named =
+    attached[0] ??
+    pathWordsOf({ args: rest }).find((word) =>
+      namesOutside({ state, word })
+    )
   return named === undefined
     ? undefined
     : {

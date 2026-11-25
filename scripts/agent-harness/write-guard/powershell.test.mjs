@@ -153,3 +153,18 @@ for (const [command, asks] of [
     assert.equal(finding?.level === 'ask', asks)
   })
 }
+
+for (const [command, asks] of [
+  ['Copy-Item /tmp/AGENTS.md .', true],
+  ['Copy-Item -Path /tmp/AGENTS.md -Destination .\\', true],
+  ["Copy-Item '/tmp/AGENTS.md' '.'", true],
+  ['Move-Item /tmp/AGENTS.md .', true],
+  ['Copy-Item /tmp/a.md .', false],
+  ['Copy-Item AGENTS.md /tmp/', false],
+  ['Move-Item /tmp/a.md .', false]
+]) {
+  test(`a copy or move into a folder is judged by the name the file gets there: ${command}`, () => {
+    const finding = judged({ command, kind: ACTOR_KIND.main })
+    assert.equal(finding?.level === 'ask', asks)
+  })
+}

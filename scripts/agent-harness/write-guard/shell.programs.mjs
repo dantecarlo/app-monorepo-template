@@ -45,9 +45,11 @@ const SHELLS = new Set(['bash', 'dash', 'fish', 'ksh', 'sh', 'zsh'])
 const COMMAND_FLAG = /^-[a-zA-Z]*c[a-zA-Z]*$/u
 const NPX = new Set(['bunx', 'npx', 'pnpx'])
 const CODE_FLAG = /^-[^-]*[eE]$/u
-// The calls of perl and ruby code that write a file or start a process.
+// The calls of perl and ruby code that write a file or start a process:
+// for perl also File::Copy's copy and move, and `$^I`, which edits the
+// files it reads in place.
 const WRITING_CODE = {
-  perl: /\bopen\w*\s*\(?[^;)]*?['"][^'"]*(?:>|\+<|\|)|\b(?:chmod|chown|exec|link|mkdir|rename|rmdir|symlink|sysopen|system|truncate|unlink|utime)\b|\bqx\b|`/u,
+  perl: /\bopen\w*\s*\(?[^;)]*?['"][^'"]*(?:>|\+<|\|)|\b(?:chmod|chown|copy|exec|link|mkdir|move|rename|rmdir|symlink|sysopen|system|truncate|unlink|utime)\b|\$\^I|\bqx\b|`/u,
   ruby: /\b(?:File|IO)\.(?:binwrite|chmod|delete|link|new|open|popen|rename|symlink|truncate|unlink|write)\b|\bFileUtils\b|\bDir\.(?:delete|mkdir|rmdir|unlink)\b|\b(?:exec|spawn|system)\b|%x|`/u
 }
 
