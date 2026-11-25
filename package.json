@@ -29,6 +29,7 @@
     "knip": "knip --no-progress",
     "mcp:docs": "node scripts/update-mcp-docs.mjs",
     "mcp:docs:test": "node --test scripts/update-mcp-docs.test.mjs",
+    "mcp:launch:test": "node --test scripts/mcp/*.test.mjs",
     "lint": "turbo run lint",
     "lint:fix": "eslint . --fix",
     "prepare": "husky",

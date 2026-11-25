@@ -1,0 +1,16 @@
+# Tasks: 2026-11-20-mcp-by-area
+
+- [x] T1 — the catalog gives each server its `area` and `serverArgs` and runs it as `node scripts/mcp/launch.mjs <name>`; `scripts/mcp-docs.detect.mjs` refuses a missing or unknown area, server args that are not a list of words and args other than the launcher with the entry's name; `pnpm verify:mcp-docs` holds each `.mcp.json` catalog server and launcher entry to the launcher; the updater lists a launcher entry with its catalog package; the block refreshed · Requirements: MCP-01, MCP-02, MCP-03, MCP-06 · Commit: ae42d15
+- [x] T2 — `scripts/mcp/launch.mjs`: the area gate as a pure function, the in-process import with the server's argv, and exit 1 for an unknown name or a missing entry; `pnpm mcp:launch:test` in `pnpm validate` · Requirements: MCP-10, MCP-11, MCP-12 · Commit: da7ed6a
+- [x] T3 — the pruner runs `pnpm install --frozen-lockfile --offline` through `runBounded` after a fast-forward that changed `pnpm-lock.yaml`, bounded by `PRUNE_WORKTREES_INSTALL_SECONDS`; a dry run says it would, `--quiet` keeps only the failure line, and an unchanged lockfile installs nothing and prints what it printed · Requirements: REAP-10 · Commit: 4177e80
+- [x] T4 — the `SessionStart` hook names the launcher servers whose entry is not installed, through `scripts/agent-harness/reaper/mcp-check.mjs` · Requirements: REAP-13 · Commit: 5a48e0d
+- [x] T5 — `docs/mcp.md` (the area, the launcher, the Desktop environments, Codex and OpenCode not wired, the shared documentation servers through mcp-proxy), `docs/harness.md`, the §21 row, the global map, the manifest, and the F75 and parity-ledger rows of `docs/INIT_AND_HARNESS_PLAN.md` · Requirements: none · Commit: 3c84555
+- [x] T6 — `verify-report.md`, then the archive into `openspec/specs/harness/mcp/spec.md` and `openspec/specs/harness/process-reaper/spec.md` and the folder moved to `openspec/changes/archive/2026-11-20-mcp-by-area/` · Requirements: MCP-01, MCP-02, MCP-03, MCP-06, MCP-10, MCP-11, MCP-12, REAP-10, REAP-13 · Commit: 98fe189, and the archive that moves this folder
+- [x] T7 — the verifier's correction: a `.mcp.json` launcher entry passes string args after the name, which the launcher appends after `serverArgs` (expo's `--dev-server-url`); unknown `ATL_MCP_AREA` words named on stderr; a catalog `entry` must be a `.js`, `.mjs` or `.cjs` file; the session-start MCP check respects the area and runs inside the hook's budget; `PRUNE_WORKTREES_INSTALL_SECONDS` read only when an install is due · Requirements: MCP-01, MCP-06, MCP-10, MCP-11, REAP-10, REAP-13 · Commit: 2e1d1745
+- [x] T8 — the owner's change of 2026-11-25: the post-merge install runs a plain `pnpm install`, names `pnpm install` on a failure or a timeout, and prints one line when it rewrites `pnpm-lock.yaml`, offering to commit it on a branch or `git restore --source=HEAD -- pnpm-lock.yaml`, never `git checkout --` · Requirements: REAP-10 · Commit: b5140ef2
+
+<!--
+A task names every requirement it satisfies. When it is done, tick it and write the short sha of
+the commit that holds it: "- [x] T1 — … · Requirements: CORE-04 · Commit: 1a2b3c4".
+A task that touches no requirement (a migration of data, a doc) says "Requirements: none".
+-->

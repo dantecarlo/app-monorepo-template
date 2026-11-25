@@ -382,6 +382,13 @@
       "cost": "seconds"
     },
     {
+      "id": "mcp:launch:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
       "id": "verify:mcp-docs:test",
       "capability": "core",
       "stage": "repository",

@@ -2,15 +2,17 @@
 // ---------------------------------------------------------------------------
 // pnpm mcp:docs — refresh the generated block of docs/mcp.md from the npm
 // registry, and report the pin bumps the registry makes possible (decision
-// 61: every catalog server is pinned and launched with `node`).
+// 61: every catalog server is pinned and launched with `node
+// scripts/mcp/launch.mjs <name>`).
 //
 // It reads the catalog (.agents/contracts/mcp-servers.json) plus the
 // project's .mcp.json when one exists, asks the registry for each npm
 // package's `latest` dist-tag, the publish time of every release and the
 // bin file each release runs, and rewrites the block: per server, the
-// devDependency line, the direct command and the latest release. A server
-// whose command is neither `npx` nor `node node_modules/<package>/…` is
-// listed as "not on npm" and never requested.
+// devDependency line, the command a client runs and the latest release. A
+// server whose command is neither `npx`, `node node_modules/<package>/…`
+// nor the launcher with a catalog name is listed as "not on npm" and never
+// requested.
 //
 //   - A newer release of a catalog server's pinned major prints as
 //     `bump: … version <from> -> <to>, entry <from> -> <to>`, a planned
