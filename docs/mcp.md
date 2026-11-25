@@ -154,6 +154,8 @@ installs its pinned devDependency. Two pieces keep that from going unnoticed:
 
 ```bash
 pnpm mcp:docs          # asks the npm registry; the only command here that uses the network
+pnpm mcp:docs --check  # asks the same and writes nothing: exit 0 current, 2 out of date, 1 failed
+pnpm mcp:docs --json   # prints the run as one JSON document; combines with --check
 pnpm verify:mcp-docs   # offline, inside pnpm validate
 ```
 
@@ -186,6 +188,19 @@ command a client runs, and the latest release with its publish date.
 
 Run it after adding a server, after a bump, before a release, and whenever an agent's MCP tools
 behave differently than this doc says.
+
+**`pnpm mcp:docs --check`** asks the registry the same way and writes nothing. It exits 0 when the
+block is current, 2 when a run would rewrite it, and 1 on any failure the update exits 1 for. It
+prints the same server, `bump:`, `waits:` and `major:` lines, then `is current` or `out of date`,
+and no `review:` line, since it wrote nothing. A bump alone leaves the block current: the updater
+never writes the catalog. **`--json`** prints the run, or under `--check` the plan, as one JSON
+document on stdout and nothing else there: its `mode` (`update` or `check`), its `status`
+(`current`, `outdated`, `updated` or `failed`), one record per server with its package, its latest
+release, the latest the block held before and its change, the `bump:`, `waits:` and `major:`
+lines, the paths it wrote or would write, the `review` paths and the problems. Its exit code, what
+it writes and what it prints on stderr are those of the same run without `--json`. Both make
+`pnpm mcp:docs` an updater of `.agents/contracts/updaters.json`, which `pnpm updaters:run` turns
+into a pull request when the check exits 2 (see [harness.md](harness.md) § 3i).
 
 **`pnpm verify:mcp-docs`** fails when the block's servers, packages, capabilities, pinned versions
 or commands differ from the catalog plus `.mcp.json`, when the block differs from what the updater
