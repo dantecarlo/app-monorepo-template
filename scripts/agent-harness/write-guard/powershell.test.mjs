@@ -122,3 +122,34 @@ test('anyone else is asked when the command writes and names a rule path', () =>
     )
   }
 })
+
+for (const command of [
+  'Get-Content AGENTS.md 2>$null',
+  "'x' > $null",
+  "'x' >> $NULL",
+  'Get-ChildItem *> $null'
+]) {
+  test(`a redirect to $null writes no file: ${command}`, () => {
+    assert.equal(writeOf({ command }), undefined)
+  })
+}
+
+test('a redirect to $null beside a real write still finds the write', () => {
+  assert.equal(writeOf({ command: "'x' > $null; 'y' > a.txt" }), '>')
+})
+
+for (const [command, asks] of [
+  ['Copy-Item AGENTS.md $env:TEMP\\x.md', false],
+  ['Copy-Item -Path AGENTS.md -Destination docs\\x.md', false],
+  ['cp AGENTS.md docs\\x.md', false],
+  ['Copy-Item docs\\x.md AGENTS.md', true],
+  ['Copy-Item -Path docs\\x.md -Destination AGENTS.md', true],
+  ['Copy-Item -Destination AGENTS.md -Path docs\\x.md', true],
+  ['Copy-Item -Path docs\\x.md AGENTS.md', true],
+  ['Copy-Item AGENTS.md x.md; Set-Content AGENTS.md y', true]
+]) {
+  test(`a copy is judged by its destination: ${command}`, () => {
+    const finding = judged({ command, kind: ACTOR_KIND.main })
+    assert.equal(finding?.level === 'ask', asks)
+  })
+}
