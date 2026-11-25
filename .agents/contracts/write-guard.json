@@ -58,6 +58,10 @@
       "what": "the code of the write guard"
     },
     {
+      "glob": "scripts/agent-harness/no-force/**",
+      "what": "the code of the no-force hook, which holds the LAW that a force option is never used"
+    },
+    {
       "glob": "scripts/manifest.mjs",
       "what": "the glob reader of the write guard"
     },

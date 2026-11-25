@@ -161,6 +161,7 @@ for (const relative of [
   '.agents/hooks.json',
   '.agents/harness.config.json',
   'scripts/agent-harness/write-guard/decide.mjs',
+  'scripts/agent-harness/no-force/forms.mjs',
   'scripts/manifest.mjs',
   'scripts/manifest-owners.mjs',
   '.agents/agents/validator.agent.md',
@@ -211,6 +212,22 @@ test('every module the Claude Code hook loads is a rule file', () => {
     entry: 'scripts/agent-harness/write-guard/claude-hook.mjs'
   })
   assert.ok(loaded.includes('scripts/manifest.mjs'), loaded.join(', '))
+  assert.deepEqual(
+    loaded.filter(
+      (relative) => ruleFor({ policy, relative }) === undefined
+    ),
+    []
+  )
+})
+
+test('every module the no-force hook loads is a rule file', () => {
+  const loaded = modulesLoadedBy({
+    entry: 'scripts/agent-harness/no-force/claude-hook.mjs'
+  })
+  assert.ok(
+    loaded.includes('scripts/agent-harness/no-force/forms.mjs'),
+    loaded.join(', ')
+  )
   assert.deepEqual(
     loaded.filter(
       (relative) => ruleFor({ policy, relative }) === undefined
