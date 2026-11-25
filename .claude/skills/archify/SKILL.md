@@ -18,7 +18,7 @@ For a native diagram of a real codebase, read [Repository authoring](references/
 ## Choose the artifact
 
 - When the user asks to draw or visualize a system, flow, schema or history, use a native diagram and the Type router.
-- Use `explainer` when the user asks for the answer as a page: a page, one page, an explainer, something to share (“做成一页”, “用页面讲”, “answer with a page”). Without such a request, answer in text or draw the requested diagram. A page made on request ends its reply with the one-line mode offer under Output.
+- Use `explainer` when the user asks for the answer as a page: a page, one page, an explainer, something to share (“做成一页”, “用页面讲”, “answer with a page”). Without such a request, answer in text or draw the requested diagram.
 - A rules line in context changes this. `[archify explainer: proactive]`: also make a page, unasked, for an explanation, comparison, trade-off, decision, diagnosis, review or plan that needs a table, steps or several sections. `[archify explainer: always-on]`: every reply that reaches a conclusion also gets a compact page of at most four panels, delivered without opening it, its link closing the reply. `[archify explainer: on-demand]`: only when asked, and never offer a mode.
 - In every mode a page needs a conclusion with some structure behind it: chat, one-line answers, raw command output and text-only requests get none.
 - For `explainer`, read [Explainer authoring](references/explainer-authoring.md) for its conclusion, reasons, scope, board layout and optional native diagrams. Write the complete draft, then run `finalize explainer` for validation, atomic delivery and artifact checks. Use panel patch for local content revisions.
@@ -94,6 +94,13 @@ Never hand-edit the HTML.
   `scripts/build-diagrams.mjs` sets `ARCHIFY_UPDATE_CHECK_DISABLED=1` so the
   pipeline never starts the child. Upstream releases are tracked through
   `.claude/skills-lock.json`.
+- The explainer's proactive-mode offer was removed from the Output section,
+  with the two lines that pointed to it (Choose the artifact, and the reply
+  step of `references/explainer-authoring.md`). On acceptance it wrote a line
+  into the agent's global rules file (`~/.claude/CLAUDE.md` and the like), and
+  a vendored skill in this repository never edits a user's global
+  configuration. A `[archify explainer: ...]` line the user adds themselves
+  still selects the mode.
 - The 15 pre-rendered `examples/*.html` demos were dropped — about 12.5 MB of
   the 17.8 MB package, read by nothing at run time. Every `examples/*.json`
   specification and locale catalog the authoring path and `doctor` read is
@@ -189,5 +196,3 @@ Do not recap commands, repair rounds, hashes, quality profiles, or check lists; 
 Example: `Created [Checkout request timing](/abs/path/checkout-timing.html). Durations are illustrative, not measured.`
 
 For an explainer, reply in two or three lines: the conclusion and the page link. Mention gates only when one failed or writing warnings remain; do not paste the draft.
-
-After an explainer made on request, when no `[archify explainer: ...]` line is in context, end the reply with one optional line offering the proactive mode, once per conversation, for example: “需要的话，以后遇到解释、对比、排查这类问题，我可以主动做成这样的页面，要开启吗？” If the user accepts, add `[archify explainer: proactive] Make an Archify explainer page, unasked, for explanations, comparisons, decisions, diagnoses, reviews and plans that need a table, steps or several sections.` to the global rules file of the current agent (such as `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md` or `~/.config/devin/AGENTS.md`) and name the file; deleting the line turns it off. If the user declines, offer to add `[archify explainer: on-demand]` so the question does not return.

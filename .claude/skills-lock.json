@@ -6,9 +6,9 @@
       "source": "tt-a1i/archify",
       "sourceType": "github",
       "skillPath": "archify/SKILL.md",
-      "computedHash": "533f3af7e5652185892416e3f841738fac69f408156fda7e36bab9d4dd8f3ff5",
+      "computedHash": "03f02334039a0901a07bd1af49c20a8d904eff5abce70537a76da1c4d1466a40",
       "upstreamHash": "93434ad579983f4cff639c2b7230c311e0785cc48a25b66b1498e1802be7de91",
-      "localHash": "533f3af7e5652185892416e3f841738fac69f408156fda7e36bab9d4dd8f3ff5",
+      "localHash": "03f02334039a0901a07bd1af49c20a8d904eff5abce70537a76da1c4d1466a40",
       "adaptedAtVendor": true,
       "commit": "208acba",
       "commitDate": "2026-10-18",
@@ -30,6 +30,7 @@
       "adaptations": [
         "SKILL.md: removed `## Update awareness` and the two lines that pointed to it (Existing candidate handoff, Output); its trailing paragraph on reading authoring references first stays, now closing Native diagram authoring. In 3.2.0 `finalize` and `deliver` run a network update check in a child process; a vendored skill here must be complete from a fresh clone and deterministic on every run, so the checker and its child are trimmed and scripts/build-diagrams.mjs sets ARCHIFY_UPDATE_CHECK_DISABLED=1",
         "SKILL.md: added `## In this repository` before the Type router — the markdown-first rule, what it forbids, the pnpm docs:diagrams pipeline, where checked-in specs live (docs/diagrams/, not .archify/), the CLI path from the repository root and the adaptations",
+        "SKILL.md and references/explainer-authoring.md: removed the explainer proactive-mode offer — the Output paragraph and the two lines that pointed to it (Choose the artifact, and the explainer reply step). On acceptance it wrote a line into the agent global rules file (~/.claude/CLAUDE.md, ~/.codex/AGENTS.md and the like); a vendored skill here never edits a user global configuration. A [archify explainer: ...] line the user adds themselves still selects the mode. No other step of SKILL.md or its references writes outside the repository or reaches the network by default: brand capture runs only for an explicitly requested mark with a user-supplied URL, and --open and preview only on request",
         "renderers/shared/text-fit.mjs: adds nodeLabelRailReserve, availableNodeLabelWidth, fittedNodeLabelFontSize and requiredNodeLabelBoxWidth, a symmetric rail reserve of 2 x (SEMANTIC_SIGIL_FOOTPRINT 17 + 4) = 42px, or 2 x 24 = 48px with a brand mark (the stricter, never summed); existing exports are unchanged, so the other renderers behave as upstream",
         "renderers/architecture/render-architecture.mjs: the label font size comes from fittedNodeLabelFontSize, and validation replaces the brand-only brandTopRailProblem with architecture/component-label-sigil-rail, which rejects any label (branded or not) that cannot clear the rail at the 8px legible minimum and names the box width needed. Three upstream examples (web-app, production-deployment, brand-aware-delivery) now render some labels smaller; all five architecture examples still validate at showcase",
         "The renderer adaptations above are one recorded patch over 208acba (see patches): it names every patched file with its sha256 at the pinned commit and after the patch, and fileHashes holds the patched values. computedHash and localHash cover SKILL.md only"
@@ -50,7 +51,7 @@
       "lintExcludedBecause": "Vendored text is pinned to an upstream commit. Reformatting it would make every future update a conflict.",
       "fileHashes": {
         "LICENSE": "b799ab081703e7821ae5096d2c1abdf14bbdc75e8ea1c4045998c36ed6db9706",
-        "SKILL.md": "533f3af7e5652185892416e3f841738fac69f408156fda7e36bab9d4dd8f3ff5",
+        "SKILL.md": "03f02334039a0901a07bd1af49c20a8d904eff5abce70537a76da1c4d1466a40",
         "THIRD_PARTY_NOTICES.md": "ae6f236bd0aef72bad196099aa8687cccff6e01cc3a60e6c32bbad688266f678",
         "assets/JetBrainsMono-OFL.txt": "c1ab7c666206842a02b35b30770dac0d7a10156ed401c9defc3f02a754d89e90",
         "assets/template.html": "4fe243de7448f83d2123e987db5ec2539b662480a6e3ce3c90deb9e0c9ad11ef",
@@ -154,7 +155,7 @@
         "references/authoring-defaults.md": "11a2c60b31cb8a4bc19e83ff2e8351c1b5af93cfa091512e6d053a13288eaf6c",
         "references/brand-marks.md": "d6e1a6ceafd07e48f27caf01655ea642365a5416ed0543b4022ca62750b58f0f",
         "references/delivery-contract.md": "0e283a418871a19c7adcc493c461ae6180e9b233f14ad95a19a9c15e109d2415",
-        "references/explainer-authoring.md": "722c126f05192da499f75468e9c1b3001daa4a844894ebf45a854b6687a4af18",
+        "references/explainer-authoring.md": "adfa8adf53f682080683b237bcdc015667ac6c39bd9fed736b14b30c818f86fc",
         "references/repository-authoring.md": "c1648fc0c1b85a3a9bfbf3a8919dfa741ff0b5a55ea310d1fcacbf6ee837e139",
         "references/viewer-runtime.md": "7d35ef52a8f47e77e8ec827cea7c71219bf1aafa53b5ef72ad4f1e1437f882a4",
         "renderers/architecture/grid.mjs": "f6de99c32436feed3378b0ddef516bb4732ff27a89c543b50635d4d14a15a55a",
