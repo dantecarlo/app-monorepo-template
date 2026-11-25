@@ -109,7 +109,7 @@ test('the MCP check names every launcher server whose entry is missing, and the 
   })
 
   assert.equal(
-    mcpCheckLine({ root }),
+    mcpCheckLine({ env: {}, root }),
     'mcp-check: 2 MCP server(s) cannot start, their pinned entry not ' +
       'installed under node_modules: expo, metro; run ' +
       '`pnpm install --frozen-lockfile`'
@@ -117,9 +117,10 @@ test('the MCP check names every launcher server whose entry is missing, and the 
 })
 
 test('the MCP check says nothing without a .mcp.json, or when every entry is installed', () => {
-  assert.equal(mcpCheckLine({ root: treeOf({}) }), null)
+  assert.equal(mcpCheckLine({ env: {}, root: treeOf({}) }), null)
   assert.equal(
     mcpCheckLine({
+      env: {},
       root: treeOf({
         config: {
           mcpServers: {
@@ -131,5 +132,35 @@ test('the MCP check says nothing without a .mcp.json, or when every entry is ins
       })
     }),
     null
+  )
+})
+
+test('the MCP check leaves out a server whose area ATL_MCP_AREA holds off', () => {
+  const root = treeOf({
+    config: {
+      mcpServers: {
+        expo: launched({ name: 'expo' }),
+        metro: launched({ name: 'metro' }),
+        'next-devtools': launched({ name: 'next-devtools' })
+      }
+    }
+  })
+  const lineFor = ({ names }) =>
+    `mcp-check: ${names.length} MCP server(s) cannot start, their pinned ` +
+    `entry not installed under node_modules: ${names.join(', ')}; run ` +
+    '`pnpm install --frozen-lockfile`'
+
+  assert.equal(
+    mcpCheckLine({ env: { ATL_MCP_AREA: 'web' }, root }),
+    lineFor({ names: ['next-devtools'] })
+  )
+  assert.equal(
+    mcpCheckLine({ env: { ATL_MCP_AREA: 'mobile' }, root }),
+    lineFor({ names: ['expo', 'metro'] })
+  )
+  assert.equal(mcpCheckLine({ env: { ATL_MCP_AREA: 'none' }, root }), null)
+  assert.equal(
+    mcpCheckLine({ env: { ATL_MCP_AREA: '' }, root }),
+    lineFor({ names: ['expo', 'metro', 'next-devtools'] })
   )
 })

@@ -104,7 +104,10 @@ A fast-forward that changes `pnpm-lock.yaml` is followed by
 `cmd.exe` on Windows, where pnpm is a `.cmd`), offline because the fetch
 already ran and a hook must not download. It runs through `runBounded` and
 is stopped with its whole tree after 120 s or the seconds
-`PRUNE_WORKTREES_INSTALL_SECONDS` names, read as the fetch's bound is read.
+`PRUNE_WORKTREES_INSTALL_SECONDS` names, read as the fetch's bound is read
+but only when an install is due: a value that is not a positive number then
+skips the install with the failure line below, and a fast-forward that
+leaves the lockfile as it was never reads it.
 The pinned MCP entries the launcher imports (`docs/mcp.md`), and every other
 dependency, then match the lockfile the checkout holds. An install that
 fails or is stopped prints one line, under `--quiet` too, with its exit code
@@ -232,7 +235,7 @@ the pre-commit hook on staged files.
 | `verify:structure`    | Screen and component folders satisfy the block contract                                   |
 | `verify:security`     | The static security posture holds                                                         |
 | `verify:theme-sync`   | Every generated token output (the web `theme.css`, the NativeWind preset, the mobile `themeVars`, the `themeNames` the shared `tv` registers) equals its regeneration from `tokens.constant.ts`; `verify:theme-sync:test` plants a hand edit in each and an un-regenerated source change |
-| `verify:mcp-docs`     | The generated block of `docs/mcp.md` is what `pnpm mcp:docs` wrote and lists every server, package and capability of `.agents/contracts/mcp-servers.json` plus `.mcp.json`, with each server's exact pin and its launcher command `node scripts/mcp/launch.mjs <name>`; offline, and it refuses `npx`, a missing or inexact version, a missing area or one other than `web` or `mobile`, server args that are not a list of words, catalog args other than the launcher with the entry's own name, and a `.mcp.json` server named like a catalog server, or running the launcher, that does not run it with one catalog name. `verify:mcp-docs:test` plants each drift; `mcp:docs:test` drives the updater with an injected registry; `mcp:launch:test` runs the launcher as a process: the area gate, the pinned entry imported in the launcher's own process with its argv, and exit 1 for an unknown name or an entry that is not installed |
+| `verify:mcp-docs`     | The generated block of `docs/mcp.md` is what `pnpm mcp:docs` wrote and lists every server, package and capability of `.agents/contracts/mcp-servers.json` plus `.mcp.json`, with each server's exact pin and its launcher command `node scripts/mcp/launch.mjs <name>`; offline, and it refuses `npx`, a missing or inexact version, a missing area or one other than `web` or `mobile`, an entry that is not a `.js`, `.mjs` or `.cjs` file, server args that are not a list of words, catalog args other than the launcher with the entry's own name, and a `.mcp.json` server named like a catalog server, or running the launcher, that does not run it with one catalog name first or gives it an argument after the name that is not a string. `verify:mcp-docs:test` plants each drift; `mcp:docs:test` drives the updater with an injected registry; `mcp:launch:test` runs the launcher as a process: the area gate, an unknown word of `ATL_MCP_AREA` named on stderr, the pinned entry imported in the launcher's own process with its argv, the catalog's server args then the ones after the name, and exit 1 for an unknown name or an entry that is not installed |
 | `verify:ticket-branch:test` | `scripts/verify-ticket-branch.test.mjs` drives the branch check (below, 3d) with a valid ticket branch and pull request body and each refusal, under the default ticket identity and under example layers (a TASK-slug one among them), with each malformed block and flag, and as a process over a scratch working directory |
 | `verify:skills:test` | `scripts/verify-skills.test.mjs` holds the seven ticket skills of `.claude/skills/` to their sections (the shape of `new-skill`, every state, role and board operation of `ticket-flow`, Dropped among the states of its table and of the process template's, the role skills' opening and the contract tables they must not copy, the three templates, the ticket template's target version marked `**Version (required):**`, and both merge policies, `manual` and `low-risk`, named in `ticket-flow` rule 4, `refine-ticket`'s merge queue, `process-intake`'s mapping step and the process template, whose Policy line gives `manual`; the production branch: the process template's Branching model, whose Production branch line gives `production`, the default; the merge queue: `refine-ticket` has its § Merge queue, `qa-ticket`'s hand-off step names `<id> ready to merge, PR #<n>`, and `qa-ticket` holds no `Ready to merge → Done`; the ticket identity: `ticket-flow` names `branchTypes` and the `json ticket-identity` block, `process-intake`'s mapping step names the block, and the process template ships one that the branch check reads with no finding and whose fields are its defaults; QA's checkout: `qa-ticket`'s Step 2 adds its worktree with `--detach` and its Step 5 pushes with `git push origin HEAD:<branch>`; and the hotfix: `qa-ticket`'s hand-off step, `refine-ticket`'s release step and `ticket-flow`'s messages name `<id> ready to merge, hotfix`, and `release-ticket`'s Hotfix section says that QA leaves it at Ready to merge; and the board as the source: `ticket-flow`'s Board operations and the process template's Board adapter name the board the source of every open ticket, and the closed ticket catalog: `refine-ticket`'s § Record the closed tickets names `§ Closed Ticket Catalog` and one pull request per close or release, `po-ticket` names no `edits:`, since the PO does no repository work, and `refine-ticket`'s merge queue says that the architect brings the catalog pull request current itself and that each row it adds matches its board page in id, title, target version and closing pull request; and the drop: `ticket-flow` has its § Dropped, naming `Superseded by:`, and its messages name `<id> dropped`, which `po-ticket`'s Step 6 — Drop a ticket, `refine-ticket`'s § Drop a ticket, `dev-ticket`'s § Changes requested and `qa-ticket`'s Step 7 also name, and `refine-ticket`'s § Record the closed tickets names `### Dropped tickets`; and the later bring-current: `refine-ticket`'s merge queue brings a ticket's pull request current from a spare worktree of its own, never QA's or the dev's, names `--detach` and `git push origin HEAD:<branch>`, pushes in the background and says that a code conflict goes back to the dev session, none of `ticket-flow`, `refine-ticket` and `qa-ticket` names `<id> bring current`, and `qa-ticket` holds no `Ready to merge → Changes requested`), with synthetic cases and over the repository; it also runs the cases of `.claude/skills/general-plan/validate-general-plan.test.mjs` |
 | `docs:diagrams:check` | Every committed diagram matches its spec and the tokens                                   |
@@ -522,17 +525,18 @@ taskkill after 5 s (TOOLING-12).
 **The hook.** `.agents/hooks.json` runs `session-start.mjs` at every
 `SessionStart`, with no matcher (start, resume, clear and compaction) and a
 15 s hook timeout. It first runs the MCP check: for every `.mcp.json` server
-whose args start with `scripts/mcp/launch.mjs` and name a catalog server, it
-checks that the entry file `node_modules/<package>/<entry>` exists, and when
-any is missing it prints one line naming those servers and
-`pnpm install --frozen-lockfile` (`docs/mcp.md`). It reads `.mcp.json` and the
-catalog and stats one file per server, so it costs milliseconds of the same
-8 s budget, and with no `.mcp.json`, as in the template's own checkout, it
-prints nothing. Then it runs the reaper with `--kill --quiet`. Claude Code
-adds both lines to the session's context. It never blocks or fails the
+whose args start with `scripts/mcp/launch.mjs`, name a catalog server and
+whose area the session's `ATL_MCP_AREA` starts, it checks that the entry file
+`node_modules/<package>/<entry>` exists, and when any is missing it prints
+one line naming those servers and `pnpm install --frozen-lockfile`
+(`docs/mcp.md`). With no `.mcp.json`, as in the template's own checkout, it
+prints nothing. Then it runs the reaper with `--kill --quiet`. The check and
+the reaper share one budget, the reaper's 8 s bound plus a 1 s margin: a
+check that outlasts it prints one line and the reaper does not run. Claude
+Code adds the lines to the session's context. It never blocks or fails the
 session: the check and the reaper are each imported inside a `try`, and
-whatever goes wrong, a check that throws or a reaper that hangs included,
-prints one line to stderr and exits 0. Like the write guard it runs
+whatever goes wrong, a check that throws or hangs or a reaper that hangs
+included, prints one line to stderr and exits 0. Like the write guard it runs
 from the main checkout (`${CLAUDE_PROJECT_DIR}`). To switch it off, put
 `"disableAllHooks": true` in `.claude/settings.local.json`.
 

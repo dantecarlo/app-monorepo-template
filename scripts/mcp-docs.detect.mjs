@@ -151,6 +151,10 @@ const isLaunched = ({ args, name }) =>
   args[0] === LAUNCHER &&
   args[1] === name
 
+// The file the launcher imports: a JavaScript module, never a directory,
+// which `import()` refuses at run time (ERR_UNSUPPORTED_DIR_IMPORT).
+const ENTRY_FILE = /\.(?:c|m)?js$/u
+
 const isWordList = (value) =>
   value === undefined ||
   (Array.isArray(value) && value.every((arg) => isText(arg)))
@@ -177,6 +181,12 @@ const commandProblem = ({ entry, label }) => {
     return (
       `${MCP_CATALOG_PATH}: ${label} names the entry ${entry.entry}, which ` +
       'is not a relative path inside its package'
+    )
+  if (!ENTRY_FILE.test(entry.entry))
+    return (
+      `${MCP_CATALOG_PATH}: ${label} names the entry ${entry.entry}, which ` +
+      'is not a .js, .mjs or .cjs file: the launcher imports a file, never ' +
+      'a directory'
     )
   if (!isLaunched({ args: entry.args, name: entry.name }))
     return (
@@ -355,37 +365,47 @@ export const listServers = ({ catalog, config: runs }) => {
   return [...listed, ...extra].sort(byName)
 }
 
+// The arguments a .mcp.json entry gives after the server's name, which
+// the launcher appends after the catalog's serverArgs (expo-mcp's
+// `--dev-server-url <url>`), must all be strings.
+const extraArgsProblem = ({ runs, server }) =>
+  server.args.slice(2).every((arg) => typeof arg === 'string')
+    ? null
+    : `${runs}; every argument after the server's name is a string the ` +
+      'launcher passes on to the server'
+
 // Why one .mcp.json server named like a catalog server does not run as
-// one, or null.
+// one, or null: `node scripts/mcp/launch.mjs <its name>`, then string args.
 const catalogServerProblem = ({ runs, server }) =>
   NODE_COMMAND.test(baseOf(server.command ?? '')) &&
-  isLaunched({ args: server.args, name: server.name })
-    ? null
+  launchedNameOf({ args: server.args, command: server.command }) ===
+    server.name
+    ? extraArgsProblem({ runs, server })
     : `${runs}; a catalog server runs ` +
       `\`${launcherLineOf({ name: server.name })}\`, which starts it by ` +
       'its area (decision 61)'
 
-// Why one other .mcp.json server that runs the launcher gives it no catalog
-// name, or more than that name, or null.
+// Why one other .mcp.json server that runs the launcher gives it no
+// catalog name first, or an argument after it that is not a string, or
+// null.
 const launcherEntryProblem = ({ names, runs, server }) => {
+  if (server.launches === null)
+    return (
+      `${runs}; the launcher takes the name of one catalog server first, ` +
+      'and it has none'
+    )
   if (!names.has(server.launches))
     return (
-      `${runs}; the launcher takes the name of one catalog server, and ` +
-      `${server.launches ?? 'no name'} is none`
+      `${runs}; the launcher takes the name of one catalog server first, ` +
+      `and ${server.launches} is none`
     )
-  if (server.args.length > 2)
-    return (
-      `${runs}; the launcher takes the name of one catalog server and ` +
-      "nothing after it: a server's own arguments are its serverArgs in " +
-      'the catalog'
-    )
-  return null
+  return extraArgsProblem({ runs, server })
 }
 
 // Each .mcp.json server the launcher does not run as it must: one named
 // like a catalog server that is not `node scripts/mcp/launch.mjs <its
-// name>`, and one that runs the launcher with no catalog name, or with
-// more than that name.
+// name>`, one that runs the launcher with no catalog name, and one that
+// passes the launcher an argument after the name that is not a string.
 export const launcherProblems = ({ catalog, config }) => {
   const names = new Set(catalog.map(({ name }) => name))
   return config

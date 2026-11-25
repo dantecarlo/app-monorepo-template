@@ -8,7 +8,8 @@
 // by naming them: for every .mcp.json server whose args start with the
 // launcher and name a catalog server, this checks that its entry file
 // exists, and returns one line naming the missing ones and the install
-// command, or null. It reads .mcp.json and the catalog and stats one file
+// command, or null. A server whose area ATL_MCP_AREA holds off is left
+// out: the launcher would hold it whether or not it is installed. It reads .mcp.json and the catalog and stats one file
 // per server, nothing more, so it ends in milliseconds of the hook's
 // budget. With no .mcp.json, as in the template's own checkout, or one it
 // cannot read, it says nothing: verify:mcp-docs judges a malformed one.
@@ -24,7 +25,11 @@ import {
   parseCatalog,
   parseMcpConfig
 } from '../../mcp-docs.detect.mjs'
-import { INSTALL_COMMAND } from '../../mcp/launch.mjs'
+import {
+  AREA_VARIABLE,
+  INSTALL_COMMAND,
+  startsIn
+} from '../../mcp/launch.mjs'
 
 const LABEL = 'mcp-check'
 
@@ -38,9 +43,10 @@ const readText = ({ path }) => {
 
 /**
  * The names, in .mcp.json's order, of the servers of `root` that run the
- * launcher with a catalog name and whose entry file is not installed.
+ * launcher with a catalog name, that `env`'s ATL_MCP_AREA starts, and
+ * whose entry file is not installed.
  */
-export const missingServers = ({ root }) => {
+export const missingServers = ({ env, root }) => {
   const config = parseMcpConfig({
     text: readText({ path: join(root, MCP_CONFIG_PATH) })
   })
@@ -52,6 +58,12 @@ export const missingServers = ({ root }) => {
   )
   return config.servers
     .filter(({ launches }) => catalog.has(launches))
+    .filter(({ launches }) =>
+      startsIn({
+        area: catalog.get(launches).area,
+        value: env[AREA_VARIABLE]
+      })
+    )
     .filter(({ launches }) => {
       const server = catalog.get(launches)
       return !existsSync(
@@ -68,8 +80,8 @@ export const missingServers = ({ root }) => {
 }
 
 /** The one line a session starts with when servers cannot start, or null. */
-export const mcpCheckLine = ({ root }) => {
-  const missing = missingServers({ root })
+export const mcpCheckLine = ({ env = process.env, root }) => {
+  const missing = missingServers({ env, root })
   if (missing.length === 0) return null
   return (
     `${LABEL}: ${missing.length} MCP server(s) cannot start, their pinned ` +

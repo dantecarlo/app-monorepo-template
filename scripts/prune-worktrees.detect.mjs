@@ -461,12 +461,13 @@ const notCovered = ({ dryRun, install }) => {
 
 // The install's line, or null: a dry run's and a finished install's are
 // left out under `--quiet`, a failed one never is.
-const installLine = ({ install, main, quiet }) => {
+const installLine = ({ dryRun, install, main, quiet }) => {
   if (install === undefined) return null
   const where = `in ${main.path}`
   if (install.state === 'failed') {
+    const changed = dryRun ? 'changes with the fast-forward' : 'changed'
     return (
-      `${LABEL}: ${LOCKFILE} changed and ${INSTALL_LINE} ${install.why}; ` +
+      `${LABEL}: ${LOCKFILE} ${changed} and ${INSTALL_LINE} ${install.why}; ` +
       `run \`${RETRY_COMMAND}\` ${where}`
     )
   }
@@ -487,7 +488,7 @@ export const reportLines = ({ dryRun, install, main, quiet, results }) => [
     .map((result) => decisionLine({ dryRun, result })),
   ...[
     mainLine({ dryRun, main }),
-    installLine({ install, main, quiet })
+    installLine({ dryRun, install, main, quiet })
   ].filter((line) => line !== null),
   summaryLine({ dryRun, results }),
   ...notCovered({ dryRun, install })

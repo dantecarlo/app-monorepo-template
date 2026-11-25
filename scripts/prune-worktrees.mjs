@@ -48,8 +48,10 @@
 // PRUNE_WORKTREES_INSTALL_SECONDS names, so the pinned MCP entries and every
 // other dependency match the lockfile the checkout now holds; an install
 // that fails or is stopped prints one line with the `pnpm install
-// --frozen-lockfile` to run, and the run still exits 0. A fast-forward that
-// leaves the lockfile as it was installs nothing. A dry run says it would
+// --frozen-lockfile` to run, and the run still exits 0. The bound is read
+// only when an install is due: a value that is not a positive number then
+// skips the install with the same line, and a fast-forward that leaves the
+// lockfile as it was installs nothing and never reads it. A dry run says it would
 // install. `--quiet` prints the removals, the main checkout's line, an
 // install's failure and the summary line only.
 //
@@ -551,12 +553,19 @@ const installIn = async ({ root, seconds }) => {
 
 // The install a fast-forward that changed the lockfile makes: run after a
 // real one, `would` for a dry run that predicts one, and none otherwise.
-const installAfter = async ({ dryRun, main, root, seconds }) => {
+// Its bound is read from `env` only then; a bound that is not a positive
+// number is a failed install that never ran, which fails nothing else.
+const installAfter = async ({ dryRun, env, main, root }) => {
   if (!main.lockChanged) return undefined
-  if (dryRun) {
-    return main.detail === undefined ? { state: 'would' } : undefined
+  if (dryRun ? main.detail !== undefined : !main.moved) return undefined
+  let seconds
+  try {
+    seconds = installSecondsFrom({ env })
+  } catch (error) {
+    const verb = dryRun ? 'would not run' : 'was not run'
+    return { state: 'failed', why: `${verb}: ${error.message}` }
   }
-  return main.moved ? installIn({ root, seconds }) : undefined
+  return dryRun ? { state: 'would' } : installIn({ root, seconds })
 }
 
 // The main checkout brought to the default branch when it sits on it, by a
@@ -612,18 +621,13 @@ const forwardMain = ({ defaultBranch, dryRun, root, worktree }) => {
 // Every worktree of the repository `cwd` belongs to, each with the reason it
 // is kept (`kept: null` for one removed), and what became of the main
 // checkout, which is moved last, after every removal, with the install a
-// fast-forward that changed the lockfile made (bounded by `installSeconds`);
+// fast-forward that changed the lockfile made (its bound read from `env`);
 // or `timedOut` when the fetch outlasted `fetchSeconds`, before anything
 // was judged. A fetch, a
 // default branch or a list git cannot read throws before anything is
 // removed; a step that fails after the decisions returns its `error` with
 // the results gathered before it, every removal made included.
-const pruneWorktrees = async ({
-  cwd,
-  dryRun,
-  fetchSeconds,
-  installSeconds
-}) => {
+const pruneWorktrees = async ({ cwd, dryRun, env, fetchSeconds }) => {
   const current = samePath({
     path: git({ args: ['rev-parse', '--show-toplevel'], cwd })
   })
@@ -667,12 +671,7 @@ const pruneWorktrees = async ({
       worktree: worktrees[0]
     })
     return {
-      install: await installAfter({
-        dryRun,
-        main,
-        root,
-        seconds: installSeconds
-      }),
+      install: await installAfter({ dryRun, env, main, root }),
       main,
       results
     }
@@ -692,12 +691,11 @@ const main = async () => {
   try {
     const { dryRun, quiet } = optionsFrom({ argv: process.argv })
     const fetchSeconds = fetchSecondsFrom({ env: process.env })
-    const installSeconds = installSecondsFrom({ env: process.env })
     const outcome = await pruneWorktrees({
       cwd: process.cwd(),
       dryRun,
-      fetchSeconds,
-      installSeconds
+      env: process.env,
+      fetchSeconds
     })
     const lines = outcome.timedOut
       ? skippedLines({ dryRun, seconds: fetchSeconds })

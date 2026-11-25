@@ -120,6 +120,13 @@ const launched = ({ name }) => ({
   command: 'node'
 })
 
+// What expo-mcp needs after its name in .mcp.json: it exits 1 without a
+// dev server URL, which .mcp.json expands when the client starts it.
+const EXPO_DEV_SERVER = [
+  '--dev-server-url',
+  '${EXPO_DEV_SERVER_URL:-http://localhost:8081}'
+]
+
 // The row the updater writes for a server: a catalog server's pin and
 // command, or the `command` a .mcp.json server runs, with an old latest.
 const rowOf = (server) => ({
@@ -275,12 +282,43 @@ export const CASES = [
     context: walk({
       config: {
         mcpServers: {
-          docs: launched({ name: 'gone' }),
-          extra: { args: [LAUNCHER, 'expo', '--stdio'], command: 'node' }
+          expo: {
+            args: [LAUNCHER, 'expo', ...EXPO_DEV_SERVER],
+            command: 'node'
+          },
+          'next-devtools': launched({ name: 'next-devtools' })
         }
       },
       doc: docOf({
         rows: [
+          {
+            ...EXPO,
+            command: [commandOf(EXPO), ...EXPO_DEV_SERVER].join(' ')
+          },
+          NEXT
+        ].map(rowOf)
+      })
+    }),
+    expected: 0,
+    name: 'a .mcp.json catalog server that passes its own args after the name passes'
+  },
+  {
+    context: walk({
+      config: {
+        mcpServers: {
+          bare: { args: [LAUNCHER], command: 'node' },
+          docs: launched({ name: 'gone' }),
+          extra: { args: [LAUNCHER, 'expo', 42], command: 'node' }
+        }
+      },
+      doc: docOf({
+        rows: [
+          {
+            capability: PROJECT_CAPABILITY,
+            command: `node ${LAUNCHER}`,
+            name: 'bare',
+            packageName: null
+          },
           {
             capability: PROJECT_CAPABILITY,
             command: commandOf({ name: 'gone' }),
@@ -290,7 +328,7 @@ export const CASES = [
           EXPO,
           {
             capability: PROJECT_CAPABILITY,
-            command: `${commandOf({ name: 'expo' })} --stdio`,
+            command: `${commandOf({ name: 'expo' })} 42`,
             name: 'extra',
             packageName: 'expo-mcp'
           },
@@ -298,11 +336,12 @@ export const CASES = [
         ].map(rowOf)
       })
     }),
-    expected: 2,
+    expected: 3,
     name: 'a .mcp.json launcher entry that names no catalog server is refused',
     patterns: [
-      /^\.mcp\.json: docs runs node scripts\/mcp\/launch\.mjs gone; the launcher takes the name of one catalog server, and gone is none$/u,
-      /^\.mcp\.json: extra runs node scripts\/mcp\/launch\.mjs expo --stdio; the launcher takes the name of one catalog server and nothing after it: a server's own arguments are its serverArgs in the catalog$/u
+      /^\.mcp\.json: bare runs node scripts\/mcp\/launch\.mjs; the launcher takes the name of one catalog server first, and it has none$/u,
+      /^\.mcp\.json: docs runs node scripts\/mcp\/launch\.mjs gone; the launcher takes the name of one catalog server first, and gone is none$/u,
+      /^\.mcp\.json: extra runs node scripts\/mcp\/launch\.mjs expo 42; every argument after the server's name is a string the launcher passes on to the server$/u
     ]
   },
   {
@@ -492,6 +531,20 @@ export const CASES = [
     name: 'a catalog entry whose entry leaves its package is refused',
     patterns: [
       /expo names the entry \.\.\/other\/index\.js, which is not a relative path inside its package/u
+    ]
+  },
+  {
+    context: walk({
+      catalog: [
+        { ...EXPO, entry: 'dist' },
+        { ...NEXT, entry: 'bin/server' }
+      ]
+    }),
+    expected: 2,
+    name: 'a catalog entry whose entry is not a .js, .mjs or .cjs file is refused',
+    patterns: [
+      /mcp-servers\.json: expo names the entry dist, which is not a \.js, \.mjs or \.cjs file: the launcher imports a file, never a directory$/u,
+      /mcp-servers\.json: next-devtools names the entry bin\/server, which is not a \.js, \.mjs or \.cjs file: the launcher imports a file, never a directory$/u
     ]
   },
   {

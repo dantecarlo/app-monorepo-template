@@ -109,8 +109,8 @@ const envOf = ({ area, record }) => {
   return area === undefined ? env : { ...env, ATL_MCP_AREA: area }
 }
 
-const launch = ({ area, name, record = '', root }) =>
-  spawnSync(process.execPath, [join(root, LAUNCHER), name], {
+const launch = ({ area, extra = [], name, record = '', root }) =>
+  spawnSync(process.execPath, [join(root, LAUNCHER), name, ...extra], {
     cwd: root,
     encoding: 'utf8',
     env: envOf({ area, record }),
@@ -143,6 +143,49 @@ test('the area gate starts a server when ATL_MCP_AREA is unset, empty or names i
   )
 })
 
+test('the area gate holds every server for a list of unknown words, and starts all for separators alone', () => {
+  for (const value of ['desktop', 'we b', 'mobile;web'])
+    assert.equal(startsIn({ area: 'web', value }), false, value)
+  for (const value of [',', ' ', ' , '])
+    assert.equal(startsIn({ area: 'mobile', value }), true, value)
+})
+
+test('an unknown area in ATL_MCP_AREA is named on stderr with the valid ones, and the gate decides as before', () => {
+  const root = fixtureTree()
+  const record = join(root, 'record.json')
+  const unknown =
+    'mcp-launch: ATL_MCP_AREA names the unknown area(s) desktop, we b; ' +
+    'the areas are web, mobile and none'
+
+  const held = launch({
+    area: 'desktop,we b',
+    name: 'fixture',
+    record,
+    root
+  })
+
+  assert.equal(held.status, EXIT_OK, held.stderr)
+  assert.deepEqual(stderrLines({ run: held }), [
+    unknown,
+    'mcp-launch: fixture not started: its area is mobile, and ATL_MCP_AREA is desktop,we b'
+  ])
+  assert.equal(existsSync(record), false, 'the fixture entry ran')
+
+  const started = launch({
+    area: 'Mobile,desktop',
+    name: 'fixture',
+    record,
+    root
+  })
+
+  assert.equal(started.status, EXIT_OK, started.stderr)
+  assert.deepEqual(stderrLines({ run: started }), [
+    'mcp-launch: ATL_MCP_AREA names the unknown area(s) desktop; the areas ' +
+      'are web, mobile and none'
+  ])
+  assert.equal(JSON.parse(readFileSync(record, 'utf8')).pid, started.pid)
+})
+
 test('a server outside ATL_MCP_AREA exits 0 at once with one line naming it and its area', () => {
   const root = fixtureTree()
   const record = join(root, 'record.json')
@@ -161,7 +204,12 @@ test("the launcher imports the pinned entry in its own process with the server's
   const root = fixtureTree()
   const record = join(root, 'record.json')
 
-  const run = launch({ name: 'fixture', record, root })
+  const run = launch({
+    extra: ['--dev-server-url', 'http://localhost:8081'],
+    name: 'fixture',
+    record,
+    root
+  })
 
   assert.equal(run.status, EXIT_OK, run.stderr)
   assert.equal(run.stderr, '')
@@ -170,7 +218,9 @@ test("the launcher imports the pinned entry in its own process with the server's
     process.execPath,
     join(root, FIXTURE_ENTRY),
     'mcp',
-    '--stdio'
+    '--stdio',
+    '--dev-server-url',
+    'http://localhost:8081'
   ])
   assert.equal(seen.pid, run.pid, 'the entry ran in another process')
 })

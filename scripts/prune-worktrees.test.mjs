@@ -1955,6 +1955,43 @@ test('a fast-forward that leaves pnpm-lock.yaml as it was installs nothing and p
   assert.deepEqual(pnpm.calls(), [])
 })
 
+test('an invalid PRUNE_WORKTREES_INSTALL_SECONDS is read only when an install is due', () => {
+  const pnpm = fakePnpm()
+  for (const value of ['0', 'ten', '']) {
+    const { head, main, run, tip } = behindMain({
+      env: { ...pnpm.env, [INSTALL_SECONDS_VARIABLE]: value }
+    })
+    assert.equal(run.status, EXIT_OK, `${value}: ${run.stderr}`)
+    assert.equal(run.stderr, '', value)
+    assert.equal(head, tip, value)
+    assert.deepEqual(linesOf({ run }), [
+      `prune-worktrees: ${keptLine({ branch: MAIN, path: main, reason: REASON.MAIN })}`,
+      `prune-worktrees: fast-forwarded the main checkout ${forward({ path: main })} ` +
+        `by 1 commit to origin/${MAIN}`,
+      `prune-worktrees: removed 0, kept 1; by reason: ${REASON.MAIN} 1`
+    ])
+  }
+  const due = behindMain({
+    args: ['--quiet'],
+    env: { ...pnpm.env, [INSTALL_SECONDS_VARIABLE]: '0' },
+    push: { [LOCKFILE]: LOCK_TEXT }
+  })
+  assert.equal(due.run.status, EXIT_OK, due.run.stderr)
+  assert.equal(due.head, due.tip)
+  assert.ok(
+    linesOf({ run: due.run }).includes(
+      failedLine({
+        main: due.main,
+        why:
+          `was not run: ${INSTALL_SECONDS_VARIABLE} must be a positive ` +
+          'number of seconds, not "0"'
+      })
+    ),
+    due.run.stdout
+  )
+  assert.deepEqual(pnpm.calls(), [])
+})
+
 test('the install is bound to 120 s unless PRUNE_WORKTREES_INSTALL_SECONDS names another positive number', () => {
   assert.equal(installSecondsFrom({ env: {} }), 120)
   assert.equal(

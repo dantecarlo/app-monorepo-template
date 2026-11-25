@@ -29,9 +29,26 @@ below names this doc when a server's pin changes.
 Every catalog command is `node scripts/mcp/launch.mjs <name>`, and the project installs
 `<package>@<version>` as an exact root devDependency. The launcher reads the server's catalog
 entry and imports `node_modules/<package>/<entry>` in its own process, with `process.argv` set to
-the node binary, that file and the entry's `serverArgs` (`mcp` for shadcn). A client starts one
-process per server, and nothing is fetched from the network when it does (decision 61, which
-replaced the unpinned `npx -y <package>` of decision 55 on 2026-11-20).
+the node binary, that file, the entry's `serverArgs` (`mcp` for shadcn), then the arguments the
+project's `.mcp.json` gives after the name. A client starts one process per server, and nothing is
+fetched from the network when it does (decision 61, which replaced the unpinned `npx -y <package>`
+of decision 55 on 2026-11-20).
+
+A project passes what only it knows after the name. expo-mcp 0.2.4 exits 1 without the URL of the
+Expo dev server, so a project that runs `expo` gives it in `.mcp.json`, which expands the variable
+when the client starts the server:
+
+```json
+"expo": {
+  "command": "node",
+  "args": [
+    "scripts/mcp/launch.mjs",
+    "expo",
+    "--dev-server-url",
+    "${EXPO_DEV_SERVER_URL:-http://localhost:8081}"
+  ]
+}
+```
 
 - **The cost of `npx`.** On Windows an `npx -y` server runs as four processes: `cmd.exe`, its
   `conhost`, the npx-cli launcher and the server itself. Measured on 2026-11-20 with nine sessions
@@ -45,12 +62,12 @@ replaced the unpinned `npx -y <package>` of decision 55 on 2026-11-20).
 
 `pnpm verify:mcp-docs` refuses a catalog entry that runs `npx`, runs a command other than `node`,
 has no `area` or one other than `web` or `mobile`, has no exact `version` (a range, `latest` or a
-tag), names an `entry` outside its package, has `serverArgs` that are not a list of non-empty
-strings, or whose args are not `scripts/mcp/launch.mjs <its own name>`. In a project's
-`.mcp.json` it refuses a server named like a catalog server that does not run
-`node scripts/mcp/launch.mjs <its name>`, and a server that runs the launcher with a name the
-catalog does not hold, or with anything after that name: a server's own arguments live in the
-catalog's `serverArgs`.
+tag), names an `entry` outside its package or one that is not a `.js`, `.mjs` or `.cjs` file
+(the launcher imports a file, and `import()` refuses a directory), has `serverArgs` that are not a
+list of non-empty strings, or whose args are not `scripts/mcp/launch.mjs <its own name>`. In a
+project's `.mcp.json` it refuses a server named like a catalog server that does not run
+`node scripts/mcp/launch.mjs <its name>`, a server that runs the launcher with no name or with a
+name the catalog does not hold, and an argument after the name that is not a string.
 
 ## Each session starts the servers of its area
 
@@ -70,8 +87,11 @@ environment:
 A server outside the list exits 0 at once, starting nothing, and writes one line to stderr naming
 the server, its area and the list (`mcp-launch: expo not started: its area is mobile, and
 ATL_MCP_AREA is web`). The client marks it failed once and goes on: nothing retries and nothing
-blocks. A name the catalog does not hold exits 1 and names `pnpm verify:mcp-docs`; an entry that
-is not installed exits 1 and names `pnpm install --frozen-lockfile`.
+blocks. A word of the list that is neither `web`, `mobile` nor `none` (`desktop`, `we b`,
+`mobile;web`) adds one stderr line naming it and the valid words, and the launcher decides as it
+would without it, so a list of unknown words starts nothing. A name the catalog does not hold
+exits 1 and names `pnpm verify:mcp-docs`; an entry that is not installed exits 1 and names
+`pnpm install --frozen-lockfile`.
 
 **One saved Desktop environment per area.** Every role session of a project starts from one main
 checkout, so a per-worktree `.claude/settings.local.json` cannot tell the sessions apart: the area
@@ -126,7 +146,9 @@ installs its pinned devDependency. Two pieces keep that from going unnoticed:
   fast-forward of the main checkout that changes `pnpm-lock.yaml`, and prints the
   `pnpm install --frozen-lockfile` to run when that install fails (`docs/harness.md`, Layer 2);
 - every Claude Code session starts by naming, in one line, the `.mcp.json` servers that run the
-  launcher and whose entry is not installed, with the same command (`docs/harness.md` § 3g).
+  launcher, that the session's `ATL_MCP_AREA` starts, and whose entry is not installed, with the
+  same command (`docs/harness.md` § 3g). A server its area holds off is left out: the launcher
+  would hold it anyway.
 
 ## Keeping this doc current
 
