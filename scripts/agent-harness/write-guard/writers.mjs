@@ -430,7 +430,12 @@ export const FILE_WRITERS = {
   sort: ({ args }) => {
     const out = parseOptions({
       args,
-      long: ['--buffer-size', '--key', '--output', '--temporary-directory'],
+      long: [
+        '--buffer-size',
+        '--key',
+        '--output',
+        '--temporary-directory'
+      ],
       short: 'kostST'
     }).value({ long: '--output', short: 'o' })
     return out ? [out] : []

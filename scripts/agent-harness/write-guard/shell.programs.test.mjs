@@ -134,11 +134,15 @@ for (const texts of [
 }
 
 test('an inner shell whose text the guard cannot see is opaque', () => {
-  const args = [literal({ text: 'bash' }), literal({ text: '-c' }), {
-    raw: '"$CMD"',
-    text: `${UNKNOWN}`,
-    unknown: ['$CMD']
-  }]
+  const args = [
+    literal({ text: 'bash' }),
+    literal({ text: '-c' }),
+    {
+      raw: '"$CMD"',
+      text: `${UNKNOWN}`,
+      unknown: ['$CMD']
+    }
+  ]
   const finding = programVerdict({
     args,
     command: { redirects: [], words: [] },
@@ -178,8 +182,10 @@ test('npx running a JS tool in its read-only form is no finding for the main ses
   assert.equal(judged({ kind: ACTOR_KIND.main, texts }), undefined)
   assert.equal(judged({ kind: ACTOR_KIND.readOnly, texts })?.level, 'deny')
   assert.equal(
-    judged({ kind: ACTOR_KIND.main, texts: ['npx', 'prettier', '--write', 'a'] })
-      ?.level,
+    judged({
+      kind: ACTOR_KIND.main,
+      texts: ['npx', 'prettier', '--write', 'a']
+    })?.level,
     'opaque'
   )
   assert.equal(

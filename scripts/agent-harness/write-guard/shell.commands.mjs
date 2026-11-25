@@ -7,12 +7,12 @@
 //
 // A wrapper (`timeout`, `env`, `sudo`, ...) is read through to the command
 // it runs; `find -exec`, `fd -x` and `xargs` run their inner command on the
-// paths they find; `git -C` moves the folder git runs in. A surface agent
-// is held to its surface for the commands that write its own files
-// (SURFACE_WRITERS), redirects, find, and `git add` and `git commit`; its
-// other programs are its workflow, as in the donor. The programs whose
-// writes the guard does not read are shell.programs.mjs's, and what the
-// parts share is shell.findings.mjs's.
+// paths they find. A surface agent is held to its surface for the commands
+// that write its own files (SURFACE_WRITERS), redirects and find; its other
+// programs are its workflow, as in the donor. git is shell.git.mjs's, the
+// programs whose writes the guard does not read are shell.programs.mjs's, a
+// program it does not know is readers.mjs's, and what the parts share is
+// shell.findings.mjs's.
 //
 // Ported from the judging half of Certifipago's
 // .claude/scripts/enforce-agent-writes.mjs.
@@ -20,11 +20,9 @@
 
 import { optionValue, splitArgs } from './expansion.mjs'
 import { GLOB_MODE } from './globs.mjs'
-import { namedRule } from './mentions.mjs'
 import { READERS, unknownProgramVerdict } from './readers.mjs'
 import { SAFE, UNKNOWN } from './scan.mjs'
 import {
-  changedDirectory,
   firstOfChecks,
   isPoliced,
   isReadOnly,
@@ -33,15 +31,10 @@ import {
   strongestOf,
   targetFinding
 } from './shell.findings.mjs'
+import { gitVerdict } from './shell.git.mjs'
 import { isKnownProgram, programVerdict } from './shell.programs.mjs'
-import { FINDING_KIND, LEVEL } from './target.mjs'
+import { FINDING_KIND } from './target.mjs'
 import { CWD, FILE_WRITERS, SURFACE_WRITERS } from './writers.mjs'
-import {
-  gitFileTargets,
-  gitTreeTargets,
-  gitWrite,
-  rewritesTree
-} from './writers.git.mjs'
 
 const MAX_WRAPPERS = 8
 
@@ -108,12 +101,12 @@ const innerCommand = ({ args, placeholder, state }) =>
       arg.text === '{}'
         ? { ...placeholder, raw: arg.raw }
         : /\{[^}]*\}/.test(arg.text)
-        ? {
-            ...arg,
-            text: arg.text.replace(BRACES, placeholder.text),
-            unknown: [...arg.unknown, ...placeholder.unknown]
-          }
-        : arg
+          ? {
+              ...arg,
+              text: arg.text.replace(BRACES, placeholder.text),
+              unknown: [...arg.unknown, ...placeholder.unknown]
+            }
+          : arg
     ),
     command: { redirects: [], words: [] },
     producer: undefined,
@@ -157,7 +150,11 @@ const findPatterns = ({ args, roots }) =>
     return FIND_PATHS.test(arg.text)
       ? [
           {
-            glob: { disk: false, mode: GLOB_MODE.findPath, pattern: value.text },
+            glob: {
+              disk: false,
+              mode: GLOB_MODE.findPath,
+              pattern: value.text
+            },
             raw: `-path ${value.raw}`,
             text: value.text,
             unknown: value.unknown
@@ -309,153 +306,6 @@ const xargsVerdict = ({ args, state }) => {
     command: { redirects: [], words: [] },
     producer: undefined,
     state
-  })
-}
-
-const GIT_VALUED = new Set([
-  '--config-env',
-  '--git-dir',
-  '--namespace',
-  '--work-tree',
-  '-c'
-])
-
-const COMMIT_VALUED = [
-  '--author',
-  '--cleanup',
-  '--date',
-  '--file',
-  '--fixup',
-  '--message',
-  '--squash',
-  '--template',
-  '-C',
-  '-F',
-  '-c',
-  '-m',
-  '-t'
-]
-
-// A surface agent stages and commits only its own files.
-const surfaceGitVerdict = ({ rest, state, sub }) => {
-  const texts = rest.map(({ text }) => text)
-  const outside = ({ shape }) => ({
-    kind: FINDING_KIND.surface,
-    level: LEVEL.deny,
-    shape
-  })
-  const judge =
-    ({ via }) =>
-    (target) =>
-      targetFinding({ contained: true, state, target, via })
-  if (sub === 'add') {
-    const { operands } = splitArgs({ args: rest, valued: ['--chmod'] })
-    // With no pathspec, `-A`, `-u` and `.` alike stage the whole tree.
-    if (
-      operands.length === 0 ||
-      texts.some((text) => text.startsWith('--pathspec-from-file'))
-    ) {
-      return outside({ shape: `git add ${texts.join(' ')}`.trim() })
-    }
-    return strongestOf({
-      items: operands,
-      judge: judge({ via: 'git add' })
-    })
-  }
-  if (sub === 'commit') {
-    if (
-      texts.some((text) => /^-[a-zA-Z]*a[a-zA-Z]*$|^--all$/.test(text))
-    ) {
-      return outside({ shape: 'git commit -a' })
-    }
-    return strongestOf({
-      items: splitArgs({ args: rest, valued: COMMIT_VALUED }).operands,
-      judge: judge({ via: 'git commit' })
-    })
-  }
-  return undefined
-}
-
-// A git subcommand that rewrites the working tree and names a rule path:
-// asked of anyone the guard does not police, refused to a surface agent. A
-// read-only agent is refused every git write already.
-const treeRewriteVerdict = ({ rest, state, sub }) => {
-  if (isReadOnly({ state }) || !rewritesTree({ rest, sub })) return undefined
-  const named = namedRule({
-    cwd: state.cwd ?? undefined,
-    host: state.host,
-    policy: state.policy,
-    text: rest.map(({ text }) => text).join(' ')
-  })
-  if (named?.rule === undefined) return undefined
-  return {
-    kind: FINDING_KIND.rule,
-    level: isSurface({ state }) ? LEVEL.deny : LEVEL.ask,
-    rule: named.rule,
-    shape: `git ${sub} ${named.token}`
-  }
-}
-
-const gitVerdict = ({ args, state }) => {
-  let skip = -1
-  let at = args.length
-  let cwd = state.cwd
-  for (const [k, arg] of args.entries()) {
-    if (k <= skip) continue
-    if (!arg.text.startsWith('-')) {
-      at = k
-      break
-    }
-    if (arg.text === '-C' && args[k + 1]) {
-      cwd = changedDirectory({
-        cwd,
-        host: state.host,
-        text: args[k + 1].text
-      })
-      skip = k + 1
-    } else if (GIT_VALUED.has(arg.text)) skip = k + 1
-  }
-  const sub = args[at]?.text
-  const rest = args.slice(at + 1)
-  const scoped = { ...state, cwd }
-  return firstOfChecks({
-    checks: [
-      () => {
-        const changing = isReadOnly({ state })
-          ? gitWrite({ rest, sub })
-          : undefined
-        return changing === undefined
-          ? undefined
-          : { kind: 'git', level: LEVEL.deny, shape: `git ${changing}` }
-      },
-      () =>
-        isSurface({ state })
-          ? surfaceGitVerdict({ rest, state: scoped, sub })
-          : undefined,
-      () => treeRewriteVerdict({ rest, state: scoped, sub }),
-      () =>
-        strongestOf({
-          items: gitTreeTargets({ rest, sub }),
-          judge: (target) =>
-            targetFinding({
-              contained: false,
-              state: scoped,
-              target,
-              via: `git ${sub}`
-            })
-        }),
-      () =>
-        strongestOf({
-          items: gitFileTargets({ rest, sub }),
-          judge: (target) =>
-            targetFinding({
-              contained: isReadOnly({ state }),
-              state: scoped,
-              target,
-              via: `git ${sub} -o`
-            })
-        })
-    ]
   })
 }
 

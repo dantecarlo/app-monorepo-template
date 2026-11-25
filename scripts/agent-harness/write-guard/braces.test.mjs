@@ -20,7 +20,9 @@ const texts = ({ text }) => {
   const found = braceExpand({ word: wordOf({ text }) })
   return found.overflow
     ? 'overflow'
-    : found.words.map((word) => word.parts.map((part) => part.lit ?? '?').join(''))
+    : found.words.map((word) =>
+        word.parts.map((part) => part.lit ?? '?').join('')
+      )
 }
 
 for (const [text, words] of [
@@ -50,8 +52,14 @@ test('quoted braces are not expanded', () => {
 
 test('a brace expansion past the bound cannot be read', () => {
   assert.equal(texts({ text: `{1..${MAX_BRACE_WORDS + 1}}` }), 'overflow')
-  assert.equal(texts({ text: '{a,b}{c,d}{e,f}{g,h}{i,j}{k,l}{m,n}{o,p}{q,r}' }), 'overflow')
-  assert.equal(texts({ text: `{1..${MAX_BRACE_WORDS}}` }).length, MAX_BRACE_WORDS)
+  assert.equal(
+    texts({ text: '{a,b}{c,d}{e,f}{g,h}{i,j}{k,l}{m,n}{o,p}{q,r}' }),
+    'overflow'
+  )
+  assert.equal(
+    texts({ text: `{1..${MAX_BRACE_WORDS}}` }).length,
+    MAX_BRACE_WORDS
+  )
 })
 
 test('the parts around the braces are kept', () => {

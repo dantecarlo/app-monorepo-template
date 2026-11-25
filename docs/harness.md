@@ -370,7 +370,7 @@ runtime:
 | -------------------------------------- | ---------------------------------------------------------------------------- |
 | `.agents/contracts/write-guard.json`   | The policy: the rule-file globs, each with what it guards, and the switch-off variable |
 | `.agents/agent-context.json`           | `writes` and `surface` of each agent (3e)                                    |
-| `scripts/agent-harness/write-guard/`   | The engine: `paths.mjs`, `policy.mjs`, `target.mjs` (one path, by actor), `decide.mjs` and `reasons.mjs`; the Bash reader, ported from Certifipago (`scan`, `continuations`, `tokenizer`, `tokenizer.case`, `expansion`); the writers (`writers`, `writers.git`, `writers.tools`, `inline-code`); the Bash judge (`shell`, `shell.commands`, `shell.programs`, `shell.findings`, `mentions`); `powershell.mjs`; and the Claude Code adapter, `claude-hook.mjs`. Each has its test |
+| `scripts/agent-harness/write-guard/`   | The engine: `paths.mjs`, `policy.mjs`, `target.mjs` (one path, by actor), `decide.mjs` and `reasons.mjs`; the Bash reader, ported from Certifipago (`scan`, `continuations`, `tokenizer`, `tokenizer.case`, `expansion`), with `braces` and `globs`; the writers (`writers`, `writers.editors`, `writers.git`, `writers.tools`, `inline-code`, `readers`); the Bash judge (`shell`, `shell.commands`, `shell.git`, `shell.programs`, `shell.findings`, `mentions`); `powershell.mjs`; and the Claude Code adapter, `claude-hook.mjs`. Each has its test |
 | `.agents/hooks.json`                   | The neutral hook source: name, event, matcher (`Bash\|PowerShell\|Edit\|Write\|NotebookEdit`), script, timeout |
 | `.claude/settings.json`                | Generated from it by `pnpm agent-harness:generate` (3e); never edited by hand |
 

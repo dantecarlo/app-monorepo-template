@@ -360,7 +360,10 @@ test('cachedClassify reads one target from the disk once per call', () => {
   }
   const first = cachedClassify({ cwd: REPO, host, text: 'docs/a.md' })
   const probes = walks
-  assert.deepEqual(cachedClassify({ cwd: REPO, host, text: 'docs/a.md' }), first)
+  assert.deepEqual(
+    cachedClassify({ cwd: REPO, host, text: 'docs/a.md' }),
+    first
+  )
   assert.equal(walks, probes)
 })
 
@@ -376,7 +379,10 @@ test('the live host globs, tells a folder and tells what exists', () => {
   const host = liveHost({ environment: {}, ownRoot: REPO })
   assert.equal(host.isDirectory({ path: tmpdir() }), true)
   assert.equal(host.exists({ path: tmpdir() }), true)
-  assert.equal(host.exists({ path: `${tmpdir()}/write-guard-no-such` }), false)
+  assert.equal(
+    host.exists({ path: `${tmpdir()}/write-guard-no-such` }),
+    false
+  )
   assert.ok(Array.isArray(host.glob({ cwd: tmpdir(), pattern: '*' })))
   assert.equal(host.glob({ cwd: tmpdir(), pattern: '**/*' }), undefined)
 })

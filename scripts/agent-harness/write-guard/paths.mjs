@@ -401,7 +401,8 @@ export const DEADLINE_PROBLEM =
 
 // Whether `error` is the deadline's, which no caller may swallow: a hook
 // that runs on past its timeout lets the call through.
-export const isDeadline = ({ error }) => error?.message === DEADLINE_PROBLEM
+export const isDeadline = ({ error }) =>
+  error?.message === DEADLINE_PROBLEM
 
 /**
  * `classify`, read once per target for one call when `host.cache` is a

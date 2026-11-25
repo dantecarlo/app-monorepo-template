@@ -56,7 +56,11 @@ for (const [a, b] of [
 
 test('a find path pattern lets * cross folders, a bash glob does not', () => {
   assert.equal(
-    meet({ a: '*/skills/*', b: '.claude/skills/**', mode: GLOB_MODE.findPath }),
+    meet({
+      a: '*/skills/*',
+      b: '.claude/skills/**',
+      mode: GLOB_MODE.findPath
+    }),
     true
   )
   assert.equal(meet({ a: '*/skills/*', b: '.claude/skills/sdd/x' }), false)
@@ -84,7 +88,10 @@ test('the literal head of a glob is the folder before its first wildcard', () =>
     dir: '.claude/skills',
     rest: '*/SKILL.md'
   })
-  assert.deepEqual(literalHead({ pattern: '*.md' }), { dir: '', rest: '*.md' })
+  assert.deepEqual(literalHead({ pattern: '*.md' }), {
+    dir: '',
+    rest: '*.md'
+  })
   assert.deepEqual(literalHead({ pattern: '/tmp/x/*.log' }), {
     dir: '/tmp/x',
     rest: '*.log'
@@ -134,7 +141,10 @@ test('a recursive pattern names a .git only when its own last segment could be o
       host: HOST,
       mode: GLOB_MODE.findName,
       pattern,
-      policy: { ...POLICY, ruleFiles: [{ glob: 'AGENTS.md', what: 'the LAWs' }] }
+      policy: {
+        ...POLICY,
+        ruleFiles: [{ glob: 'AGENTS.md', what: 'the LAWs' }]
+      }
     })?.glob
   assert.equal(rule({ pattern: 'docs/**/AGENTS.md' }), undefined)
   assert.equal(rule({ pattern: 'docs/**/*.orig' }), undefined)

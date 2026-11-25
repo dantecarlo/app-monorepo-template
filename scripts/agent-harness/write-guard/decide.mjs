@@ -195,7 +195,13 @@ export const decide = ({
   }
   const actor = actorFor({ agentContext, payload })
   try {
-    return judge({ actor, host: forOneCall({ host }), payload, policy, tool })
+    return judge({
+      actor,
+      host: forOneCall({ host }),
+      payload,
+      policy,
+      tool
+    })
   } catch (error) {
     const denied = POLICED.includes(actor.kind)
     const reason = guardError({

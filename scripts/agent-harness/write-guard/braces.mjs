@@ -47,7 +47,11 @@ const sequenceOf = ({ body }) => {
 // The first brace group of `text` that expands: where it starts and ends,
 // and its items (or overflow).
 const groupOf = ({ text }) => {
-  for (let open = text.indexOf('{'); open >= 0; open = text.indexOf('{', open + 1)) {
+  for (
+    let open = text.indexOf('{');
+    open >= 0;
+    open = text.indexOf('{', open + 1)
+  ) {
     let depth = 0
     const commas = []
     for (let i = open; i < text.length; i += 1) {
@@ -66,7 +70,8 @@ const groupOf = ({ text }) => {
           return { end: i, items, start: open }
         }
         const sequence = sequenceOf({ body })
-        if (sequence !== undefined) return { end: i, start: open, ...sequence }
+        if (sequence !== undefined)
+          return { end: i, start: open, ...sequence }
         break
       }
     }
@@ -87,7 +92,8 @@ export const braceExpand = ({ word }) => {
   while (pending.length > 0) {
     const next = pending.pop()
     const at = next.parts.findIndex(
-      (part) => expandable({ part }) && groupOf({ text: part.lit }) !== undefined
+      (part) =>
+        expandable({ part }) && groupOf({ text: part.lit }) !== undefined
     )
     if (at < 0) {
       done.push(next)

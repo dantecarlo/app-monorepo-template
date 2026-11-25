@@ -94,8 +94,11 @@ const reportTarget = ({ rest, state }) => {
 const isScratch = ({ state, text }) => {
   try {
     return (
-      cachedClassify({ cwd: state.cwd ?? undefined, host: state.host, text })
-        .kind === TARGET_KIND.scratch
+      cachedClassify({
+        cwd: state.cwd ?? undefined,
+        host: state.host,
+        text
+      }).kind === TARGET_KIND.scratch
     )
   } catch (error) {
     if (isDeadline({ error })) throw error
@@ -233,7 +236,8 @@ export const programVerdict = ({
       script === undefined ? stdinCode({ command, producer }) : undefined
     if (fed === undefined) return undefined
     const shape = `${name} reading commands from stdin`
-    if (readOnly || fed.text === null) return { kind: 'shell', level, shape }
+    if (readOnly || fed.text === null)
+      return { kind: 'shell', level, shape }
     return state.judgeText({ command: fed.text })
   }
   if (name === 'eval') {

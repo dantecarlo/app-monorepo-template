@@ -17,12 +17,7 @@
 // and the caller asks: the cap keeps the hook inside its timeout.
 // ---------------------------------------------------------------------------
 
-import {
-  expandGlob,
-  GLOB_MODE,
-  hasGlob,
-  patternRule
-} from './globs.mjs'
+import { expandGlob, GLOB_MODE, hasGlob, patternRule } from './globs.mjs'
 import { cachedClassify, isDeadline } from './paths.mjs'
 import { ruleOf } from './target.mjs'
 
@@ -64,7 +59,13 @@ const globRule = ({ cwd, host, piece, policy }) => {
   const pattern = piece.replaceAll(BACKSLASH, '/')
   const matches = expandGlob({ cwd, host, pattern })
   if (matches === undefined) {
-    return patternRule({ cwd, host, mode: GLOB_MODE.bash, pattern, policy })
+    return patternRule({
+      cwd,
+      host,
+      mode: GLOB_MODE.bash,
+      pattern,
+      policy
+    })
   }
   return matches.reduce(
     (found, match) =>

@@ -147,7 +147,9 @@ export const heldFoldersOf = ({ glob }) => {
   const below = folderBelowOf({ glob })
   if (below === '') return []
   const segments = below.split('/')
-  return segments.map((_, at) => segments.slice(0, at + 1).join('/')).reverse()
+  return segments
+    .map((_, at) => segments.slice(0, at + 1).join('/'))
+    .reverse()
 }
 
 const heldBy = ({ globs, relative }) => {

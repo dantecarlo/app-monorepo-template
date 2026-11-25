@@ -170,16 +170,26 @@ export const parseOptions = ({ args, long = [], short = '' }) => {
   }
   const values = ({ long: names, short: chars }) => [
     ...options
-      .filter(({ flag, value }) => value && asList({ value: names }).includes(flag))
+      .filter(
+        ({ flag, value }) =>
+          value && asList({ value: names }).includes(flag)
+      )
       .map(({ value }) => value),
     ...letters
-      .filter(({ letter, value }) => value && asList({ value: chars }).includes(letter))
+      .filter(
+        ({ letter, value }) =>
+          value && asList({ value: chars }).includes(letter)
+      )
       .map(({ value }) => value)
   ]
   return {
     has: ({ long: names, short: chars }) =>
-      options.some(({ flag }) => asList({ value: names }).includes(flag)) ||
-      letters.some(({ letter }) => asList({ value: chars }).includes(letter)),
+      options.some(({ flag }) =>
+        asList({ value: names }).includes(flag)
+      ) ||
+      letters.some(({ letter }) =>
+        asList({ value: chars }).includes(letter)
+      ),
     letters,
     operands,
     options,
@@ -238,8 +248,7 @@ const beforeNul = ({ text }) => {
 // unquoted literal keeps its wildcards.
 const partValue = ({ index, part, state }) => {
   if ('lit' in part) {
-    const home =
-      index === 0 && !part.quoted && /^~(?=\/|$)/.test(part.lit)
+    const home = index === 0 && !part.quoted && /^~(?=\/|$)/.test(part.lit)
     const text = home ? homeOf({ state }) + part.lit.slice(1) : part.lit
     return {
       ...known({ text }),
@@ -253,7 +262,9 @@ const partValue = ({ index, part, state }) => {
   const value = part.overflow
     ? {
         text: UNKNOWN,
-        unknown: [`a brace expansion of more than ${MAX_BRACE_WORDS} words`]
+        unknown: [
+          `a brace expansion of more than ${MAX_BRACE_WORDS} words`
+        ]
       }
     : 'safe' in part
       ? known({ text: SAFE })

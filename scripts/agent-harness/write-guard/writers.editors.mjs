@@ -45,7 +45,10 @@ const awkTargets = ({ args }) => {
     .values({ long: '--include', short: 'i' })
     .some(({ text }) => AWK_INPLACE.test(text))
   if (!inplace) return []
-  const files = parsed.has({ long: ['--file', '--source'], short: ['f', 'e'] })
+  const files = parsed.has({
+    long: ['--file', '--source'],
+    short: ['f', 'e']
+  })
     ? parsed.operands
     : parsed.operands.slice(1)
   return files.filter(({ text }) => !VAR_ASSIGNMENT.test(text))
@@ -80,7 +83,12 @@ const optionTarget = ({ args, flag, long, short, valued }) => {
 const yqTargets = ({ args }) => {
   const parsed = parseOptions({
     args,
-    long: ['--expression', '--indent', '--input-format', '--output-format'],
+    long: [
+      '--expression',
+      '--indent',
+      '--input-format',
+      '--output-format'
+    ],
     short: 'Iop'
   })
   if (!parsed.has({ long: ['--inplace'], short: ['i'] })) return []

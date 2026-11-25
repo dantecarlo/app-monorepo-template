@@ -450,7 +450,9 @@ test('heldFoldersOf lists every folder below which a glob matches', () => {
     '.claude/skills',
     '.claude'
   ])
-  assert.deepEqual(heldFoldersOf({ glob: 'scripts/verify-*' }), ['scripts'])
+  assert.deepEqual(heldFoldersOf({ glob: 'scripts/verify-*' }), [
+    'scripts'
+  ])
   assert.deepEqual(heldFoldersOf({ glob: 'AGENTS.md' }), [])
   assert.deepEqual(heldFoldersOf({ glob: '**/*allowlist*.json' }), [])
 })

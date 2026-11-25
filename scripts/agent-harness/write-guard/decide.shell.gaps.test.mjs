@@ -82,8 +82,14 @@ test('a glob with more matches than the guard expands is judged as a pattern', (
     glob: () =>
       Array.from({ length: 500 }, (_, n) => `c:/work/repo/docs/f${n}.md`)
   }
-  assert.equal(decisionOf({ agent: MAIN, command: 'rm docs/*', host: many }), '—')
-  assert.equal(decisionOf({ agent: MAIN, command: 'rm *', host: many }), 'ask')
+  assert.equal(
+    decisionOf({ agent: MAIN, command: 'rm docs/*', host: many }),
+    '—'
+  )
+  assert.equal(
+    decisionOf({ agent: MAIN, command: 'rm *', host: many }),
+    'ask'
+  )
 })
 
 // -- 2. brace expansion ------------------------------------------------------------
@@ -115,8 +121,14 @@ cases({
   name: 'a brace expansion that writes no rule file asks nothing'
 })
 test('a brace expansion past the bound depends on what the guard cannot read', () => {
-  assert.equal(onDisk({ agent: 'validator', command: 'touch /tmp/{1..9999}' }), 'deny')
-  assert.equal(onDisk({ agent: MAIN, command: 'touch /tmp/{1..9999}' }), '—')
+  assert.equal(
+    onDisk({ agent: 'validator', command: 'touch /tmp/{1..9999}' }),
+    'deny'
+  )
+  assert.equal(
+    onDisk({ agent: MAIN, command: 'touch /tmp/{1..9999}' }),
+    '—'
+  )
 })
 
 // -- 3. writers the guard did not know, and programs it does not know -----------
@@ -287,7 +299,10 @@ cases({
   name: 'a file written into a folder by a name no rule names asks nothing'
 })
 test('a read-only write into the checkout root says it is inside the repository', () => {
-  const { decision, reason } = shell({ command: 'rm -rf .', host: ON_DISK })
+  const { decision, reason } = shell({
+    command: 'rm -rf .',
+    host: ON_DISK
+  })
   assert.equal(decision, 'deny')
   assert.match(reason, /inside the repository/)
 })
@@ -302,13 +317,26 @@ const clock = ({ step }) => {
 }
 
 test('a command past the deadline asks the main session and refuses a policed agent, never waving it through', () => {
-  const command = Array.from({ length: 40 }, (_, n) => `echo x > docs/f${n}.md`).join('; ')
+  const command = Array.from(
+    { length: 40 },
+    (_, n) => `echo x > docs/f${n}.md`
+  ).join('; ')
   const slow = { ...ON_DISK, now: clock({ step: 1000 }) }
   const main = shell({ agent: MAIN, command, host: slow })
   assert.equal(main?.decision, 'ask')
   assert.match(main.reason, /deadline/)
-  assert.equal(shell({ agent: 'validator', command, host: slow })?.decision, 'deny')
-  assert.equal(shell({ agent: MAIN, command: 'echo x > docs/a.md', host: { ...ON_DISK, now: clock({ step: 1 }) } }), undefined)
+  assert.equal(
+    shell({ agent: 'validator', command, host: slow })?.decision,
+    'deny'
+  )
+  assert.equal(
+    shell({
+      agent: MAIN,
+      command: 'echo x > docs/a.md',
+      host: { ...ON_DISK, now: clock({ step: 1 }) }
+    }),
+    undefined
+  )
 })
 
 test('a target written many times is read from the disk once', () => {
@@ -320,7 +348,10 @@ test('a target written many times is read from the disk once', () => {
       return ON_DISK.isCheckout(call)
     }
   }
-  const command = Array.from({ length: 200 }, () => 'echo x >> docs/log.md').join('; ')
+  const command = Array.from(
+    { length: 200 },
+    () => 'echo x >> docs/log.md'
+  ).join('; ')
   assert.equal(decisionOf({ agent: MAIN, command, host: counted }), '—')
   assert.ok(probes < 20, `${probes} probes`)
 })
@@ -351,7 +382,11 @@ cases({
     [MAIN, 'Get-Content AGENTS.md 2>$null', 'PowerShell'],
     [MAIN, "'x' > $null; Get-Content AGENTS.md", 'PowerShell'],
     [MAIN, 'Copy-Item AGENTS.md $env:TEMP\\x.md', 'PowerShell'],
-    [MAIN, 'Copy-Item -Path AGENTS.md -Destination docs\\x.md', 'PowerShell']
+    [
+      MAIN,
+      'Copy-Item -Path AGENTS.md -Destination docs\\x.md',
+      'PowerShell'
+    ]
   ],
   name: 'a command that writes no rule file asks nothing'
 })
@@ -361,7 +396,11 @@ cases({
     [MAIN, "bash -c 'echo x > AGENTS.md'"],
     [MAIN, 'npx prettier --write AGENTS.md'],
     [MAIN, 'Copy-Item docs\\x.md AGENTS.md', 'PowerShell'],
-    [MAIN, 'Copy-Item -Path docs\\x.md -Destination AGENTS.md', 'PowerShell'],
+    [
+      MAIN,
+      'Copy-Item -Path docs\\x.md -Destination AGENTS.md',
+      'PowerShell'
+    ],
     [MAIN, 'Get-Content x 2>$null; Set-Content AGENTS.md x', 'PowerShell']
   ],
   name: 'the same commands writing a rule file still ask'
@@ -376,7 +415,10 @@ cases({
 })
 
 test('an unknown program is asked about by its own words, not the rest of the command', () => {
-  assert.equal(onDisk({ command: 'frobnicate docs/a.md; cat AGENTS.md' }), '—')
+  assert.equal(
+    onDisk({ command: 'frobnicate docs/a.md; cat AGENTS.md' }),
+    '—'
+  )
   const { decision, reason } = shell({
     agent: MAIN,
     command: 'cat docs/a.md; frobnicate AGENTS.md',
@@ -388,7 +430,10 @@ test('an unknown program is asked about by its own words, not the rest of the co
 })
 
 test('a read-only refusal of an unknown program names it and the path', () => {
-  const { reason } = shell({ command: 'frobnicate docs/a.md', host: ON_DISK })
+  const { reason } = shell({
+    command: 'frobnicate docs/a.md',
+    host: ON_DISK
+  })
   assert.match(reason, /`frobnicate`/)
   assert.match(reason, /docs\/a\.md/)
   assert.match(reason, /does not know/)

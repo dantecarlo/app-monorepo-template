@@ -89,7 +89,14 @@ const SCRATCH_KINDS = [TARGET_KIND.scratch, TARGET_KIND.sink]
 
 // A glob the guard cannot expand, judged by its literal folder and by the
 // rule it could name.
-const patternFinding = ({ contained, mode, pattern, state, target, via }) => {
+const patternFinding = ({
+  contained,
+  mode,
+  pattern,
+  state,
+  target,
+  via
+}) => {
   const { cwd, host, policy } = state
   const { dir, rest } = literalHead({ pattern })
   const climbs = rest.split(SEPARATOR).includes(PARENT)
@@ -100,14 +107,23 @@ const patternFinding = ({ contained, mode, pattern, state, target, via }) => {
   })
   if (SCRATCH_KINDS.includes(where.kind) && !climbs) return undefined
   const shape = `${via} ${target.raw}`.trim()
-  const rule = patternRule({ cwd: cwd ?? undefined, host, mode, pattern, policy })
+  const rule = patternRule({
+    cwd: cwd ?? undefined,
+    host,
+    mode,
+    pattern,
+    policy
+  })
   if (isReadOnly({ state })) {
     return rule === undefined
       ? {
           kind: FINDING_KIND.readOnly,
           level: LEVEL.deny,
           shape,
-          where: where.kind === TARGET_KIND.repo ? TARGET_KIND.repo : TARGET_KIND.outside
+          where:
+            where.kind === TARGET_KIND.repo
+              ? TARGET_KIND.repo
+              : TARGET_KIND.outside
         }
       : { kind: FINDING_KIND.rule, level: LEVEL.deny, rule, shape }
   }

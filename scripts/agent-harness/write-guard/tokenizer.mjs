@@ -182,7 +182,10 @@ export const createParser = ({ depth = 0, source }) => {
       ANSI_BODY.lastIndex = i + 2
       const match = ANSI_BODY.exec(s)
       if (!match) unreadable({ problem: 'an unterminated quote' })
-      parts.push({ lit: decodeAnsi({ text: match?.[1] ?? '' }), quoted: true })
+      parts.push({
+        lit: decodeAnsi({ text: match?.[1] ?? '' }),
+        quoted: true
+      })
       i = ANSI_BODY.lastIndex
     } else {
       const name = /^(?:[A-Za-z_]\w*|[\d@*#?$!-])/.exec(s.slice(i + 1))

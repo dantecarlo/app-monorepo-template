@@ -63,7 +63,8 @@ const isStar = ({ token }) => token?.star === true
 export const tokensOf = ({ glob, mode }) => {
   const tokens = []
   const manifest = mode === GLOB_MODE.manifest
-  const crossing = mode === GLOB_MODE.manifest || mode === GLOB_MODE.findName
+  const crossing =
+    mode === GLOB_MODE.manifest || mode === GLOB_MODE.findName
   const dotless = mode === GLOB_MODE.bash || mode === GLOB_MODE.findName
   const starts = () => {
     const last = tokens.at(-1)
@@ -108,7 +109,8 @@ const isWild = ({ token }) => isStar({ token }) || token === GLOBSTAR
 // Whether one character can be read by both tokens; `fresh` says the
 // token has read nothing yet, so a no-dot one cannot read a dot.
 const share = ({ a, b, freshA, freshB }) => {
-  if (a.char !== undefined && b.char !== undefined) return a.char === b.char
+  if (a.char !== undefined && b.char !== undefined)
+    return a.char === b.char
   const char = a.char ?? b.char
   if (char === undefined) return true
   const [other, fresh] = a.char === undefined ? [a, freshA] : [b, freshB]
@@ -154,12 +156,7 @@ export const globsIntersect = ({ a, b }) => {
     ) {
       const stayA = isWild({ token: x })
       const stayB = isWild({ token: y })
-      queue.push([
-        stayA ? i : i + 1,
-        stayB ? j : j + 1,
-        !stayA,
-        !stayB
-      ])
+      queue.push([stayA ? i : i + 1, stayB ? j : j + 1, !stayA, !stayB])
     }
   }
   return false
@@ -217,7 +214,8 @@ const ruleMet = ({ home, mode, policy, relative }) => {
 export const patternRule = ({ cwd, host, mode, pattern, policy }) => {
   const { dir, rest } = literalHead({ pattern })
   const where = cachedClassify({ cwd, host, text: dir === '' ? '.' : dir })
-  const joined = ({ base }) => (base === '' ? rest : `${base}${SEPARATOR}${rest}`)
+  const joined = ({ base }) =>
+    base === '' ? rest : `${base}${SEPARATOR}${rest}`
   const inRoots = (where.roots ?? []).reduce(
     (found, { relative }) =>
       found ??

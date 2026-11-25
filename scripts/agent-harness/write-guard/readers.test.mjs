@@ -34,7 +34,25 @@ const judged = ({ command, kind }) => {
 }
 
 test('the readers are the donor workflow commands that only read', () => {
-  for (const name of ['cat', 'grep', 'rg', 'head', 'ls', 'wc', 'jq', 'bat', 'diff', 'echo', 'cut', 'tr', 'sort', 'uniq', 'date', 'test', '[']) {
+  for (const name of [
+    'cat',
+    'grep',
+    'rg',
+    'head',
+    'ls',
+    'wc',
+    'jq',
+    'bat',
+    'diff',
+    'echo',
+    'cut',
+    'tr',
+    'sort',
+    'uniq',
+    'date',
+    'test',
+    '['
+  ]) {
     assert.ok(READERS.has(name), name)
   }
   for (const name of ['make', 'docker', 'source', 'vim', 'dos2unix']) {
@@ -45,8 +63,8 @@ test('the readers are the donor workflow commands that only read', () => {
 test('the words that may name a path are the operands and the values of long options', () => {
   assert.deepEqual(
     pathWordsOf({
-      args: ['-v', 'a.md', '--out=b.md', '--flag', `${UNKNOWN}x`].map((text) =>
-        literal({ text })
+      args: ['-v', 'a.md', '--out=b.md', '--flag', `${UNKNOWN}x`].map(
+        (text) => literal({ text })
       )
     }).map(({ text }) => text),
     ['a.md', 'b.md', `${UNKNOWN}x`]
@@ -68,14 +86,22 @@ for (const command of [
   })
 }
 
-for (const command of ['frob --version', 'docker ps', 'frob /tmp/a.log', 'frob https://e.test/a']) {
+for (const command of [
+  'frob --version',
+  'docker ps',
+  'frob /tmp/a.log',
+  'frob https://e.test/a'
+]) {
   test(`an unknown program that names no path outside scratch passes a read-only agent: ${command}`, () => {
     assert.equal(judged({ command, kind: ACTOR_KIND.readOnly }), undefined)
   })
 }
 
 test('an unknown program is opaque for anyone else, with the words it names', () => {
-  const finding = judged({ command: 'frob AGENTS.md -x', kind: ACTOR_KIND.main })
+  const finding = judged({
+    command: 'frob AGENTS.md -x',
+    kind: ACTOR_KIND.main
+  })
   assert.deepEqual(
     [finding.kind, finding.level, finding.words],
     ['program', 'opaque', ['AGENTS.md', '-x']]

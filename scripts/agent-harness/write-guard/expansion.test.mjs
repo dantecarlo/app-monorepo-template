@@ -181,7 +181,10 @@ test('a word ends at its first NUL, as Bash reads it', () => {
   assert.equal(
     expand({
       state: stateFor(),
-      word: { parts: [{ lit: 'AGENTS.md\u0000.txt', quoted: false }], raw: 'x' }
+      word: {
+        parts: [{ lit: 'AGENTS.md\u0000.txt', quoted: false }],
+        raw: 'x'
+      }
     }).text,
     'AGENTS.md'
   )
