@@ -82,6 +82,22 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | Port contract suite       | `packages/tooling/src/observability-port-contract.mjs`                           | `.mjs`         | `runObservabilityPortContract`: the cases every observability adapter passes, through the caller's `test` and a harness                    |
 | Prune boundary            | `packages/tooling/src/prune-boundary.mjs`                                        | `.mjs`         | `findPruneLeaks`: what a prune leaves dangling (imports, paths, plugins, env keys, spec citations, registry); its test holds the `sentry`, `mobile-expo` and `web-next` prunes to every check, the `supabase` prune to every check but two lint-rule cases, and the registry after seven prunes |
 
+<!-- region supabase -->
+
+The `supabase` capability's pgTAP runner, `pnpm --filter @app/supabase test:db`, runs the suites
+over the checkout's migrations on the target `config.testDbTarget` of
+`packages/supabase/package.json` names (`packages/supabase/docs/database.md` § 9):
+
+| Thing               | Path                                            | Suffix       | What it holds                                                                                       |
+| ------------------- | ----------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------- |
+| test:db runner      | `scripts/supabase-test-db.mjs`                  | `.mjs`       | Wires Node's files and processes into `runTestDb`; `--dry-run` writes the bundle and runs nothing    |
+| test:db run         | `packages/supabase/src/testDbRun.helper.ts`     | `.helper.ts` | `runTestDb`: the target (linked, local or off), the bundle, `supabase test db`, the exit status      |
+| test:db targets     | `packages/supabase/src/testDbRun.constant.ts`   | `.constant.ts` | `TEST_DB_TARGET`, the default and the CLI flag of each target                                     |
+| pgTAP bundle        | `packages/supabase/src/pgTapBundle.helper.ts`   | `.helper.ts` | Each pgTAP file with `standard_conforming_strings` forced on and a `do` block after its `begin;` that applies the migrations the ledger lacks |
+| pgTAP reader        | `packages/supabase/src/pgTapCode.helper.ts`     | `.helper.ts` | `toPgTapCode`: a pgTAP file split as the Postgres lexer splits it, for the bundle's checks          |
+
+<!-- endregion supabase -->
+
 Each package exposes its public surface through a barrel: `packages/core/src/index.ts`,
 `packages/i18n/src/index.ts`, `packages/tokens/src/index.ts`, `packages/cloudflare/src/index.ts`.
 
@@ -513,6 +529,10 @@ only — enforced by ESLint and by `node scripts/verify-maps.mjs`.
 | Agent context           | `.agents/agent-context.json` | The skills that grade each agent (`gradedBy`), and what it may write (`writes`, `surface`) |
 | Agent context gate      | `scripts/verify-agent-context.mjs` | Every agent has a `gradedBy` naming skills that exist and a `writes`, any `surface` is well formed, and no entry outlives its agent (`pnpm verify:agent-context`) |
 | Agent context tests     | `scripts/verify-agent-context.test.mjs` | Synthetic entries for each refusal, plus runs over a scratch tree and the repository (`pnpm verify:agent-context:test`) |
+| Harness config          | `.agents/harness.config.json` | The project's harness settings: `workflow.mode`, `delivery.mergePolicy` (read by the architect's merge queue) and `backend` |
+| Harness config schema   | `.agents/contracts/harness-config.schema.json` | Every section, setting, allowed value and default of the harness config |
+| Harness config gate     | `scripts/verify-harness-config.mjs` | The harness config holds only what its schema declares and allows, and neither file gives a key twice in one object; the schema uses only keywords the gate reads, `additionalProperties` only as `true` or `false`, and closes every object with `additionalProperties: false` (`pnpm verify:harness-config`) |
+| Harness config tests    | `scripts/verify-harness-config.test.mjs` | A case for each refusal against the repository's schema, a key given twice, a non-boolean `additionalProperties` and an open object among them, runs over a scratch tree and the repository, and the schema's merge policies held to the ticket skills' (`pnpm verify:harness-config:test`) |
 | Gate helpers            | `scripts/gate/gate.mjs`, `scripts/gate/cases.mjs`, `scripts/gate/scratch.mjs`                                                                                                             | `defineGate`, `reportGate`, `blindGate`, the companion-test contract and `withScratchTree`    |
 | Hook-safe git env       | `scripts/git-free-env.mjs`                                                                                                                                                                | Drops every `GIT_*` variable before a script runs git (`pnpm git-free-env:test`)              |
 | Worktree pruner         | `scripts/prune-worktrees.mjs`, `.husky/post-merge` | Removes merged worktrees nothing in them would be lost from, then fast-forwards the main checkout and installs when that changes `pnpm-lock.yaml` (`pnpm worktrees:prune`, run by `post-merge`) |

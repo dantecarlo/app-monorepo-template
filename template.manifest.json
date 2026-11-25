@@ -5,9 +5,11 @@
     ".agents/agents/**",
     ".agents/contracts/dependencies.json",
     ".agents/contracts/gates.json",
+    ".agents/contracts/harness-config.schema.json",
     ".agents/contracts/mcp-servers.json",
     ".agents/contracts/process-reaper.json",
     ".agents/contracts/write-guard.json",
+    ".agents/harness.config.json",
     ".agents/hooks.json",
     ".agents/projection-manifest.json",
     ".claude/agents/**",
@@ -117,6 +119,8 @@
     "scripts/verify-allowlist-freshness.test.mjs",
     "scripts/verify-dependency-seams.mjs",
     "scripts/verify-dependency-seams.test.mjs",
+    "scripts/verify-harness-config.mjs",
+    "scripts/verify-harness-config.test.mjs",
     "scripts/verify-instruction-entry.mjs",
     "scripts/verify-instruction-entry.test.mjs",
     "scripts/verify-manifest-coverage.mjs",
@@ -315,7 +319,8 @@
       "group": "backend",
       "claims": [
         "openspec/specs/packages/supabase/spec.md",
-        "packages/supabase/**"
+        "packages/supabase/**",
+        "scripts/supabase-test-db.mjs"
       ],
       "onAbsent": [
         {
@@ -358,6 +363,25 @@
           "file": "apps/mobile/package.json",
           "name": "@supabase/supabase-js",
           "scope": "dependencies"
+        },
+        {
+          "verb": "patch-json",
+          "file": ".agents/harness.config.json",
+          "op": "set",
+          "path": "backend.kind",
+          "value": "none"
+        },
+        {
+          "verb": "patch-json",
+          "file": ".agents/harness.config.json",
+          "op": "unset",
+          "path": "backend.databaseTests"
+        },
+        {
+          "verb": "patch-json",
+          "file": "knip.json",
+          "op": "unset",
+          "path": "ignoreBinaries"
         }
       ]
     },
@@ -586,6 +610,13 @@
           "file": "package.json",
           "op": "unset",
           "path": "scripts.report:spec-drift:test"
+        },
+        {
+          "verb": "patch-json",
+          "file": ".agents/harness.config.json",
+          "op": "set",
+          "path": "workflow.mode",
+          "value": "odd"
         },
         {
           "paths": ["openspec/specs/**"],

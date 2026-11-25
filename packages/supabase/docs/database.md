@@ -389,23 +389,155 @@ silently overwrite hand-tuned values in production.
 
 ## 9. pgTAP workflow
 
+Everything in this section belongs to the `supabase` capability. A project with
+its own backend, or none, has no `packages/supabase`, so it has none of it.
+
 ### Running the tests
 
 ```bash
 pnpm --filter @app/supabase test:db
-# expands to: supabase test db --linked
+# runs scripts/supabase-test-db.mjs: supabase test db --linked over a bundle of supabase/tests/
 ```
 
-This runs against the linked Supabase Cloud project, with `.env` loaded in
-the shell (see the README), and it needs Docker: Supabase CLI 2.109.1 first
-runs `create extension if not exists pgtap with schema extensions` on the
-target, then runs `pg_prove` in the `supabase/pg_prove:3.36` Docker container
-for every target, `--linked` included. There is still no local Supabase stack.
+`test:db` runs `scripts/supabase-test-db.mjs`, which wires Node into
+`runTestDb` (`src/testDbRun.helper.ts`). It copies every file of
+`supabase/tests/` into a fresh folder of the system's temporary directory, with
+a `do` block right after the file's opening `begin;` (`bundlePgTapFiles`,
+`src/pgTapBundle.helper.ts`), runs `supabase test db` over that folder from the
+package, removes the folder, and exits with the CLI's status.
+
+### The branch's own migrations
+
+The block lists every migration of `supabase/migrations/` in name order, with
+the version and the name the Supabase CLI records, each text dollar-quoted
+with a tag no migration can end. Inside the pgTAP file's own transaction, it
+reads the database's ledger, `supabase_migrations.schema_migrations`, and
+applies through a PL/pgSQL `execute` each migration whose version the ledger
+lacks. The file's `rollback;` takes them with it, so a branch's tests run over
+the branch's schema without anyone pushing its migrations, and the database
+ends as it was.
+
+- A `begin;` first and a `commit;` last that wrap a whole migration are
+  removed first. Postgres itself refuses a `commit`, `rollback` or `end` left
+  inside one, wherever it sits ("EXECUTE of transaction commands is not
+  implemented"). A statement Postgres refuses inside a transaction (`create
+  index concurrently`, `vacuum`) fails the same way, and so does using an enum
+  value that the same transaction added.
+- The first migration that fails stops the file, with an error that names it.
+- When the ledger holds a file's version under another name, as after a
+  renumbering, or under no name at all, the file stops before any migration is
+  applied, naming it.
+- The versions the ledger holds that the checkout has no file for are listed as
+  a notice.
+- With no ledger at all, on a project nothing was ever pushed to, every
+  migration is applied.
+- A file whose name is not `<version>_<name>.sql` is left out, as `db push`
+  leaves it out. Two files that share a version stop the run, both named: the
+  ledger records one.
+
+Before anything reaches the database, `test:db` reads each pgTAP file with its
+comments, strings, quoted identifiers and dollar-quoted bodies blanked, by a
+reader of its own in `src/pgTapCode.helper.ts` that splits them as the
+Postgres lexer does: a `--` comment ends at `\n` or `\r`; `/* */` comments nest;
+a double-quoted identifier doubles its `"`; a string doubles its `'`, and an
+escape string (`E'...'`) also escapes with a backslash; a string continues past
+whitespace that holds a newline, `--` comments included before and after it,
+into the next `'`, in the same mode, so a continued escape string keeps its
+backslash escapes, while whitespace with no newline ends it; a dollar quote's tag
+takes letters, digits, `_` and non-ASCII characters, never a leading digit, and
+a `$` right after an identifier character belongs to the identifier (`a$b$`).
+The order check keeps its own reader (`src/sqlCode.helper.ts`). It stops the
+run, naming the file, unless:
+
+- its first statement is a plain `begin;` (`begin transaction;` and
+  `begin work;` too). An opening with options, such as `begin isolation level
+  serializable;`, or `start transaction;`, is refused as well: conservative,
+  since the block runs before any of the file's own statements;
+- its last statement is `rollback;`, with nothing but comments after it;
+- no statement in between controls the transaction: `commit`, `end`, `abort`,
+  `rollback`, `begin`, `start transaction`, `prepare transaction`,
+  `commit prepared`, `rollback prepared` or `set transaction`. A `savepoint`,
+  its `release` and `rollback to` a savepoint keep the transaction, and stay
+  allowed: `release` names a savepoint only, the file's `begin;` is none, and a
+  name no savepoint holds is an error that aborts the transaction;
+- it holds no psql meta-command: psql reads a backslash outside quotes as one
+  (`\i`, `\set`, `\gexec`), and `\i` could pull in a file that commits;
+- nothing in its code, quoted identifiers and dollar-quoted bodies included,
+  names `standard_conforming_strings` (in any case) or calls `set_config`, and
+  no statement is `reset all`. A mention inside a comment or a string stays
+  allowed;
+- it quotes no identifier with `U&"..."` (`u&` too): its `\XXXX` escapes, or
+  the escape character a `UESCAPE` clause sets, could spell `set_config` or the
+  setting where the search above cannot see it. Every such identifier is
+  refused, not decoded: a decoder that misread an escape would let a refused
+  name through. `U&'...'` strings, and `U&` inside a comment, a string or a
+  plain quoted identifier, stay allowed.
+
+The reader reads a plain string as Postgres does with
+`standard_conforming_strings` on, where a backslash is a plain character. With
+it off, `'it\'s'` is one string to Postgres and two to the reader, which could
+hide a statement after it. So the bundle sets it right after the file's first
+`begin;`, before the migrations block, whatever the database's or the role's
+default: `set local standard_conforming_strings = on;`. The last check above
+keeps the file from turning it off again.
+
+A file the reader cannot split fails closed: a quote, a quoted identifier, a
+dollar-quoted body or a comment that never closes, or a `$` that starts none of
+them and is neither part of an identifier nor a parameter (`$1`), stops the run,
+naming the file. Every file here keeps that shape (see Test file structure).
+
+Not covered, the one remaining gap: a change of `standard_conforming_strings` the
+file does not name, as a statement built at run time (`'standard_' ||
+'conforming_strings'` run through `execute` in a `do` block) or a function the
+migrations or the database already hold that sets it.
+
+### The target
+
+`config.testDbTarget` of `packages/supabase/package.json` says where the
+suites run:
+
+| Value    | What `test:db` does                                                                                                                                       |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `linked` | The default, also when the key is unset: `supabase test db --linked`, on the linked Supabase Cloud project                                                |
+| `local`  | `supabase test db --local`, on a local Supabase stack, for a downstream project that chose Docker and the local stack; this template never runs it        |
+| `off`    | No database test: it says so and exits 0. For a project that keeps Supabase and runs no database tests                                                    |
+
+Any other value, `null` included, runs nothing and exits 1, naming the key and
+the three. `/init` will ask
+for it (Stage 6, decision 54) and can set the key with the manifest's
+`patch-json` verb.
+
+### A live run
+
+Both targets need Docker: Supabase CLI 2.109.1 first runs `create extension if
+not exists pgtap with schema extensions` on the target, then runs `pg_prove` in
+the `supabase/pg_prove:3.36` Docker container for every target, `--linked`
+included. For `linked`, the owner, or a CI job with Docker, runs from a checkout
+whose `packages/supabase/.env` holds the project's credentials (the CLI does not
+read it on its own):
+
+```bash
+cd packages/supabase
+set -a; source .env; set +a
+supabase link --project-ref "$SUPABASE_PROJECT_REF"   # once per checkout
+pnpm test:db --dry-run   # writes the bundle and prints the command; runs nothing
+pnpm test:db
+```
+
+The dry run keeps its bundle in the temporary directory, to read the SQL that
+would run; a run removes it. The bundle sits outside `supabase/tests/` and the
+CLI still reaches it: its own code (`legacy.test.db` of CLI 2.109.1, read
+offline) bind-mounts every path argument read-only into the `pg_prove`
+container, at the same path without its drive letter, and runs `pg_prove -r`
+over it. No live run has confirmed it yet.
 
 **DB tests are intentionally NOT part of `pnpm validate`.** The validation
 gate (`ATL_TEMPLATE_SELF=1 pnpm validate`) is offline: it needs no database
 and no Docker. `AGENTS.md` forbids an agent to start Docker, so a person or a
-CI job with Docker runs `test:db`.
+CI job with Docker runs `test:db`. What `pnpm validate` checks offline is the
+bundle and the runner (`src/__tests__/pgTapBundle.helper.test.ts`,
+`src/__tests__/testDbRun.helper.test.ts`) against fakes; that the bundle's SQL
+runs on Postgres, and both targets' live runs, no gate covers.
 
 ### JWT impersonation pattern
 
@@ -439,6 +571,12 @@ Every test file:
 3. Calls `select plan(N)` with the exact assertion count
 4. Runs structural assertions, then behavioral assertions via impersonation
 5. Ends with `select * from finish(); rollback;`
+
+`test:db` refuses a file that does not open with a plain `begin;`, does not end
+with `rollback;`, controls its transaction in between or holds a psql
+meta-command, since the checkout's migrations run inside that transaction (see
+The branch's own migrations); `src/__tests__/pgTapBundle.helper.test.ts` bundles
+every file here offline, in every `pnpm validate`.
 
 To prove that a policy or a privilege blocks a write, write with no `WHERE`:
 an `UPDATE` whose `WHERE` names a column also applies the `SELECT` policy,

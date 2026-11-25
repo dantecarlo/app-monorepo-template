@@ -1,0 +1,17 @@
+{
+  "$schema": "./contracts/harness-config.schema.json",
+  "$comment": "The project's harness settings, one file. pnpm verify:harness-config holds it to .agents/contracts/harness-config.schema.json: an unknown key, a value the schema does not allow, or a missing setting fails the gate. See docs/harness.md section 3h.",
+  "workflow": {
+    "$comment": "Decision 40. Read by /init (Stage 6), which asks it; the template runs sdd, as AGENTS.md § Spec-driven changes says. The sdd prune of template.manifest.json sets odd.",
+    "mode": "sdd"
+  },
+  "delivery": {
+    "$comment": "Decision 38. Read by the architect's merge queue (.claude/skills/ticket-flow/SKILL.md rule 4, .claude/skills/refine-ticket/SKILL.md § Merge queue) and written by process-intake. The template ships manual.",
+    "mergePolicy": "manual"
+  },
+  "backend": {
+    "$comment": "kind: supabase, own (the project's own backend, which the harness does not manage) or none. databaseTests applies to supabase only, and nothing reads it yet: F57 keeps its own setting in packages/supabase/package.json, which moves here once both have merged. The supabase prune of template.manifest.json sets none.",
+    "kind": "supabase",
+    "databaseTests": "linked"
+  }
+}
