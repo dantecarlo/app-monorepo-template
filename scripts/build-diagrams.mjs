@@ -30,7 +30,7 @@ import {
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, relative, resolve } from 'node:path'
+import { basename, dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -42,6 +42,7 @@ const ARCHIFY = resolve(
 )
 
 const CHECK_ONLY = process.argv.includes('--check')
+const UPDATE_CHECK_DISABLED = 'ARCHIFY_UPDATE_CHECK_DISABLED'
 
 // The bridge between the renderer's variables and packages/tokens. Keep this
 // table small: a variable that is not listed keeps the renderer's own value,
@@ -127,43 +128,53 @@ for (const name of specs) {
     before = null
   }
 
-  // A check renders beside the committed file, never over it: a check that
-  // writes would quietly repair the drift it is meant to report.
-  const scratch = CHECK_ONLY
-    ? mkdtempSync(join(tmpdir(), 'diagram-'))
-    : null
-  const renderPath = scratch ? join(scratch, 'out.html') : outPath
+  // Every render lands in a scratch directory, never beside the spec:
+  //   - a check that wrote over the committed file would quietly repair the
+  //     drift it is meant to report;
+  //   - `deliver` also writes a `<stem>.delivery.json` receipt beside its
+  //     HTML, and a `.json` left in docs/diagrams would be read as a spec on
+  //     the next run. Only the repainted HTML leaves the scratch directory.
+  // The scratch file keeps the committed basename, so nothing the renderer
+  // derives from the output name differs between a render and a check.
+  const scratch = mkdtempSync(join(tmpdir(), 'diagram-'))
+  const renderPath = join(scratch, basename(outPath))
 
-  execFileSync(
-    process.execPath,
-    [
-      ARCHIFY,
-      'deliver',
-      typeOf({ spec }),
-      specPath,
-      renderPath,
-      '--quality',
-      'showcase'
-    ],
-    { cwd: REPO_ROOT, stdio: CHECK_ONLY ? 'pipe' : 'inherit' }
-  )
+  try {
+    execFileSync(
+      process.execPath,
+      [
+        ARCHIFY,
+        'deliver',
+        typeOf({ spec }),
+        specPath,
+        renderPath,
+        '--quality',
+        'showcase'
+      ],
+      {
+        cwd: REPO_ROOT,
+        // The vendored skill never reaches the network (see its
+        // `## In this repository`): this keeps `deliver` from starting its
+        // update check at all.
+        env: { ...process.env, [UPDATE_CHECK_DISABLED]: '1' },
+        stdio: CHECK_ONLY ? 'pipe' : 'inherit'
+      }
+    )
 
-  const painted = repaint({
-    html: readFileSync(renderPath, 'utf8'),
-    tokens
-  })
+    const painted = repaint({
+      html: readFileSync(renderPath, 'utf8'),
+      tokens
+    })
+    if (!CHECK_ONLY) writeFileSync(outPath, painted)
 
-  if (scratch) {
+    // Compare line-ending agnostic: with core.autocrlf a Windows checkout
+    // holds the committed file as CRLF while the renderer emits LF.
+    const normalize = (text) => (text ?? '').replace(/\r\n/g, '\n')
+    if (CHECK_ONLY && normalize(before) !== normalize(painted)) {
+      stale.push(outPath)
+    }
+  } finally {
     rmSync(scratch, { force: true, recursive: true })
-  } else {
-    writeFileSync(outPath, painted)
-  }
-
-  // Compare line-ending agnostic: with core.autocrlf a Windows checkout holds
-  // the committed file as CRLF while the renderer emits LF.
-  const normalize = (text) => (text ?? '').replace(/\r\n/g, '\n')
-  if (CHECK_ONLY && normalize(before) !== normalize(painted)) {
-    stale.push(outPath)
   }
 }
 

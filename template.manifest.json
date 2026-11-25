@@ -541,9 +541,16 @@
       "claims": [
         ".claude/skills/archify/**",
         "docs/diagrams/**",
+        "scripts/archify-vendor.test.mjs",
         "scripts/build-diagrams.mjs"
       ],
       "onAbsent": [
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.archify-vendor:test"
+        },
         {
           "verb": "patch-json",
           "file": "package.json",

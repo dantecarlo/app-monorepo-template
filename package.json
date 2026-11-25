@@ -8,6 +8,7 @@
   "scripts": {
     "agent-harness:generate": "node scripts/agent-harness/generate.mjs",
     "agent-harness:projection-check": "node scripts/agent-harness/check.mjs",
+    "archify-vendor:test": "node --test scripts/archify-vendor.test.mjs",
     "agent-harness:sync": "node scripts/agent-harness/sync.mjs",
     "agent-harness:test": "node --test scripts/agent-harness/*.test.mjs",
     "write-guard:test": "node --test scripts/agent-harness/write-guard/*.test.mjs",
