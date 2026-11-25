@@ -499,7 +499,9 @@ directory, exclusively; another reaper that finds it held prints so and exits 0
 at once, and a lock older than 30 s, left by a reaper that died, is taken over.
 Right before its kills it lists the processes again and leaves every tree whose
 root pid is gone or now names a process that started at another time, since a
-tree kill follows a reused pid. It exits 0 when it finished, with or without
+tree kill follows a reused pid; of every other tree it ends only the pids still
+listed with the start time the plan read, so a pid-by-pid kill never names a
+reused one. It exits 0 when it finished, with or without
 ends, and 1 on a failure: a listing that fails, a tree it could not end, an
 unknown option. It ends within 8 s: a run that reaches the bound ends no tree it
 had not already decided on, says so and exits 1. `signalProcessTree` stops a

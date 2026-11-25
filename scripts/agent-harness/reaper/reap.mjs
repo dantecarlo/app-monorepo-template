@@ -20,7 +20,8 @@
 // at once when another reaper holds it. Right before the kills it lists the
 // processes again, and leaves, with its reason, every tree whose root pid
 // is gone or now names a process that started at another time: a tree
-// kill would follow a reused pid.
+// kill would follow a reused pid. Of every other tree it ends only the pids
+// still listed with the start time the plan read.
 //
 // Usage:
 //   node scripts/agent-harness/reaper/reap.mjs            (pnpm reap)
@@ -187,21 +188,39 @@ const listingFailure = ({ contract, error, when }) =>
       `${contract.boundSeconds} s bound, so nothing was ended`
     : `${LABEL}: ${error.message}; nothing was ended`
 
-// The candidates whose root pid still names the process the plan read, and
-// the ones whose pid is gone or names a process that started at another
-// time, from a listing read again right before the kills.
-const sortByIdentity = ({ candidates, processes }) => {
-  const now = new Map(processes.map((process) => [process.pid, process]))
-  const same = ({ pid, startMs }) => now.get(pid)?.startMs === startMs
+// From a listing read again right before the kills: the candidates whose
+// root pid still names the process the plan read, each cut to the pids
+// still listed with the start time the plan read and carrying those start
+// times as `starts`, and the ones whose root pid is gone or names a process
+// that started at another time.
+const sortByIdentity = ({ before, candidates, processes }) => {
+  const planned = new Map(before.map(({ pid, startMs }) => [pid, startMs]))
+  const now = new Map(processes.map(({ pid, startMs }) => [pid, startMs]))
+  const held = ({ pid }) => now.has(pid) && now.get(pid) === planned.get(pid)
   return {
-    changed: candidates.filter((candidate) => !same(candidate)),
-    unchanged: candidates.filter((candidate) => same(candidate))
+    changed: candidates.filter((candidate) => !held(candidate)),
+    unchanged: candidates.filter(held).map((candidate) => {
+      const pids = candidate.pids.filter((pid) => held({ pid }))
+      return {
+        ...candidate,
+        pids,
+        starts: new Map(pids.map((pid) => [pid, planned.get(pid)]))
+      }
+    })
   }
 }
 
 // The kill phase, under the lock: the second listing, then the kills of the
-// trees whose identity held.
-const killPlanned = async ({ contract, options, plan, run, stderr, stdout }) => {
+// trees whose identity held, `processes` being the listing the plan read.
+const killPlanned = async ({
+  contract,
+  options,
+  plan,
+  processes,
+  run,
+  stderr,
+  stdout
+}) => {
   const report = ({ changed = [], results = [] } = {}) =>
     reportKill({ changed, contract, options, plan, results, stderr, stdout })
   if (plan.candidates.length === 0 || run.remainingMs() <= 0) return report()
@@ -217,6 +236,7 @@ const killPlanned = async ({ contract, options, plan, run, stderr, stdout }) => 
     return EXIT.FAILED
   }
   const { changed, unchanged } = sortByIdentity({
+    before: processes,
     candidates: plan.candidates,
     processes: again
   })
@@ -295,7 +315,15 @@ export const runReaper = async ({
       reportDryRun({ contract, options, plan, stdout })
       return EXIT.OK
     }
-    return await killPlanned({ contract, options, plan, run, stderr, stdout })
+    return await killPlanned({
+      contract,
+      options,
+      plan,
+      processes,
+      run,
+      stderr,
+      stdout
+    })
   } finally {
     lock?.release()
   }
