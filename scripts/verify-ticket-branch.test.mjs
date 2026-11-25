@@ -10,8 +10,8 @@
 // under when the case needs them: no layer judges under the defaults. The
 // checks then run the check as a process, as a project's CI would, over a
 // scratch working directory in the OS temp directory that `withScratchTree`
-// removes, and read the template's own `validate` script, which runs this
-// test and never the check.
+// removes, and read the template's own gate registry, which `validate` runs:
+// it runs this test and never the check.
 //
 // Usage:
 //   node --test scripts/verify-ticket-branch.test.mjs
@@ -25,6 +25,7 @@ import { fileURLToPath } from 'node:url'
 
 import { registerCases, runCases } from './gate/cases.mjs'
 import { blindGate } from './gate/gate.mjs'
+import { planRun, PROFILES, REGISTRY_FILE } from './gate/registry.mjs'
 import { withScratchTree } from './gate/scratch.mjs'
 import {
   BRANCH_SHAPE,
@@ -36,6 +37,10 @@ import {
 const HERE = dirname(fileURLToPath(import.meta.url))
 const CHECK = join(HERE, 'verify-ticket-branch.mjs')
 const PACKAGE_JSON = join(HERE, '..', 'package.json')
+const GATE_REGISTRY = join(HERE, '..', REGISTRY_FILE)
+// The profile `pnpm validate` runs, and the one that runs every step.
+const [DEFAULT_PROFILE] = PROFILES
+const EVERY_PROFILE = PROFILES.at(-1)
 const FAILED = 1
 const PASSED = 0
 // Where a project keeps its layer, which the check reads by default.
@@ -628,13 +633,20 @@ const checks = [
     name: "the template's validate runs the tests and not the check",
     run: () => {
       const { scripts } = JSON.parse(readFileSync(PACKAGE_JSON, 'utf8'))
-      const steps = scripts.validate.split('&&').map((step) => step.trim())
+      const registry = JSON.parse(readFileSync(GATE_REGISTRY, 'utf8'))
+      const commands = ({ profile }) =>
+        planRun({ profile, registry }).map(({ command }) => command)
+      assert.equal(scripts.validate, 'node scripts/validate.mjs')
       assert.ok(
-        steps.includes('pnpm verify:ticket-branch:test'),
+        commands({ profile: DEFAULT_PROFILE }).includes(
+          'pnpm verify:ticket-branch:test'
+        ),
         'validate does not run pnpm verify:ticket-branch:test'
       )
       assert.ok(
-        !steps.includes('pnpm verify:ticket-branch'),
+        !commands({ profile: EVERY_PROFILE }).includes(
+          'pnpm verify:ticket-branch'
+        ),
         'validate runs pnpm verify:ticket-branch, which fails on every ' +
           'branch of the template: they carry no ticket id'
       )

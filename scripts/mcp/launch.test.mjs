@@ -239,5 +239,16 @@ test('the root package runs this suite from validate', () => {
     scripts['mcp:launch:test'],
     'node --test scripts/mcp/*.test.mjs'
   )
-  assert.match(scripts.validate, /pnpm mcp:launch:test &&/u)
+  // validate runs the gate registry, so the suite is one of its steps, and
+  // one the standard profile, the one CI runs, runs.
+  const { steps } = JSON.parse(
+    readFileSync(join(REPO_ROOT, '.agents/contracts/gates.json'), 'utf8')
+  )
+  assert.ok(
+    steps.some(
+      ({ id, profile }) =>
+        id === 'mcp:launch:test' && profile === 'standard'
+    ),
+    'no standard step of .agents/contracts/gates.json runs mcp:launch:test'
+  )
 })

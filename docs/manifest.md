@@ -70,6 +70,27 @@ per entry on 2026-11-19.
   owner the manifest does not declare; `verify:dependency-seams` refuses an
   owner that is not text.
 
+The steps of the gate registry, `.agents/contracts/gates.json`, have owners
+the same way: each names a `capability`, a capability id or `core`, and an
+absent capability takes every step it owns, so its gates leave `pnpm validate`
+by data (`docs/harness.md` § The gate registry).
+
+- **Which owner.** The capability whose prune deletes the step's files or
+  unsets its script: `sdd` owns `verify:specs`, `report:spec-drift` and their
+  tests, `english-artifacts` owns `verify:english` and its test, `diagrams`
+  owns `docs:diagrams:check`, `i18n` the `@app/i18n` test, and
+  `design-tokens` `verify:theme-sync` and its test, whose gate imports the
+  token generator. Otherwise `core`.
+- **The gate.** `scripts/validate.mjs` refuses a step whose capability the
+  manifest does not declare, and a step whose script the root `package.json`
+  does not define, which is what a prune that unsets a script but keeps its
+  step leaves. Every `verify:*` and `*:test` script is a step or an entry of
+  the registry's `outside` list, which has an owner too (`mobile-expo` for
+  `verify:expo`), so a prune that unsets a gate script must also take its step
+  or entry: `design-tokens` unsets the theme-sync scripts for that reason.
+  `pnpm validate:test` prunes every capability and proves the registry left
+  runs.
+
 ### Regions: the lines a capability owns in a file it does not claim
 
 A capability often adds a few lines to a file another owner keeps: a key in an
@@ -261,11 +282,12 @@ expecting the gate to see them.
 
 ## Known gaps
 
-`scripts.validate` in `package.json` is a single long `&&` chain, so
-`patch-json` cannot surgically remove one step from it. Until that chain is
-restructured into discrete keys, a capability cannot declaratively drop its own
-validation step. This blocks the init executor and is tracked as harvest work
-(blocker B2).
+Blocker B2 is closed: `scripts.validate` was a single `&&` chain that
+`patch-json` could not cut one step from. It now runs the gate registry, and a
+capability drops its own validation steps by owning them (§ Registry entries
+have owners too). The executor that applies a prune does not exist yet
+(P5–P7); `pruneRegistry` in `scripts/gate/registry.mjs` is the rule it will
+apply.
 
 ### `onAbsent` holes (blocker B4)
 
@@ -282,9 +304,9 @@ injected adapter (blocker B4); a delete-only executor cannot close it.
 | `design-tokens`       | every app requires it; `scripts/verify-theme-sync.mjs` imports its generator, and the seam of the core `node:*` entry names `packages/tokens/scripts/**` |
 | `e2e-playwright`      | `scripts.smoke:mobile-web` and the CI `mobile-web` job still call Playwright                                                                        |
 | `web-next`            | `verify-security-static` still reads `apps/web`, and the global map's web rows go stale |
-| `diagrams`            | `pnpm validate` still calls `docs:diagrams:check` (B2); the global map rows for `docs/diagrams/` and `build-diagrams` fail `verify:maps`            |
-| `sdd`                 | `pnpm validate` still calls `verify:specs`, `report:spec-drift` and their tests (B2); the global map rows for them and the skill fail `verify:maps` |
-| `english-artifacts`   | `pnpm validate` still calls `verify:english` and its test (B2); the global map rows for the gate fail `verify:maps`                                 |
+| `diagrams`            | The global map rows for `docs/diagrams/` and `build-diagrams` fail `verify:maps`                                                                    |
+| `sdd`                 | The global map rows for its gates and the skill fail `verify:maps`                                                                                  |
+| `english-artifacts`   | The global map rows for the gate fail `verify:maps`                                                                                                 |
 | any with a spec       | its spec under `openspec/specs/` goes, and its row in the `openspec/README.md` § 2.1 table stays                                                    |
 | `template-maintainer` | Never selected, so always absent: the global map rows for the plans, `docs/audits/` and the downstream-projects list, and the plan citations in code-standards, go stale; `verify:skill-neutrality` then forbids nothing and says so |
 

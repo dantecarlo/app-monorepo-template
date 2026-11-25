@@ -61,7 +61,7 @@ testing:
 validation_gate:
   command: 'ATL_TEMPLATE_SELF=1 pnpm validate'
   composition:
-    - 'enumerated only in the root package.json validate script (the manifest gates first, then turbo run lint typecheck test build format:check, the verify:* gates, knip)'
+    - 'enumerated only in the gate registry .agents/contracts/gates.json, which pnpm validate (scripts/validate.mjs) runs in order (the manifest gates first, then turbo run lint typecheck test build format:check, the verify:* gates, knip)'
 
 conventions:
   - Arrow functions only — no function keyword
