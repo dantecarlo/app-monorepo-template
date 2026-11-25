@@ -35,6 +35,7 @@ import {
   SKILLS_ROOT,
   STATES_TABLE_HEADER
 } from './verify-skills.mjs'
+import { HARNESS_CONFIG } from './verify-harness-config.mjs'
 import { DEFAULT_IDENTITY, IDENTITY_INFO } from './verify-ticket-branch.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -57,7 +58,6 @@ const QA_DECIDE_STEP = '## Step 5 — Decide'
 const QA_HANDOFF_STEP = '## Step 6 — Hand it to the architect'
 const MERGE_QUEUE = '## Merge queue'
 const INTAKE_MAPPING_STEP = '## Step 3 — Map it onto the core'
-const MANUAL_NAMED = 'It names `manual`.'
 const LOW_RISK_NAMED = 'It names `low-risk`.'
 const NAMES_NOTHING = 'It names nothing.'
 const DETACH = '--detach'
@@ -69,7 +69,25 @@ const DONE_MOVE = 'Ready to merge → Done'
 const VERSION_REQUIRED_NAMED = 'It names **Version (required):**.'
 const HOTFIX_LEFT_NAMED = 'It names QA leaves it at Ready to merge.'
 const POLICY_FIELD = '- **Policy:**'
-const POLICY_LINE = `${POLICY_FIELD} \`manual\``
+// The merge policy is read from the harness config: the four sections that
+// name both policies name the file, and the template's Policy line names the
+// setting rather than recording a policy of its own.
+const CONFIG_NAMED = `It names \`${HARNESS_CONFIG}\`.`
+// The two sections that read the policy fail closed, and read it from the
+// default branch, so a pull request cannot change its own policy. The
+// fail-closed clause names both policies, so a section that drops one of
+// them drops the clause with it.
+const LOW_RISK = 'low-risk'
+const MANUAL = 'manual'
+const FAIL_CLOSED =
+  'value other than `low-risk`, a missing file, or a file that does not parse means `manual`'
+const FAIL_CLOSED_NAMED = `It names ${FAIL_CLOSED}.`
+const DEFAULT_BRANCH_COPY =
+  "the default branch's copy, never from the pull request's own branch"
+const DEFAULT_BRANCH_COPY_NAMED = `It names ${DEFAULT_BRANCH_COPY}.`
+const POLICY_DROPPED = `does not name \`${LOW_RISK}\``
+const ANY_POLICY_LINE = /^- \*\*Policy:\*\* .*$/mu
+const POLICY_RECORDED = `${POLICY_FIELD} \`manual\``
 const PRODUCTION_FIELD = '- **Production branch:**'
 const PRODUCTION_LINE = `${PRODUCTION_FIELD} \`production\``
 const IDENTITY = '## Ticket identity'
@@ -251,6 +269,13 @@ const append =
   ({ lines }) =>
   ({ text }) =>
     [text, ...lines].join('\n')
+
+// Every mention of one merge policy gone from a file, the fail-closed
+// clause's included.
+const withoutPolicy =
+  ({ policy }) =>
+  ({ text }) =>
+    text.replaceAll(`\`${policy}\``, 'nothing')
 
 const SKILL = ({ folder }) => `${folder}/${SKILL_FILE}`
 
@@ -523,41 +548,85 @@ export const CASES = [
     expected: 1,
     name: 'a refine-ticket without its release step is refused'
   },
+  // The policy and the fail-closed clause, which names it: two findings.
   {
     context: skills({
       edits: {
-        [SKILL({ folder: CONTRACT })]: replace({
-          from: LOW_RISK_NAMED,
-          to: NAMES_NOTHING
-        })
+        [SKILL({ folder: CONTRACT })]: withoutPolicy({ policy: LOW_RISK })
       }
     }),
-    expected: 1,
+    expected: 2,
     name: 'a ticket-flow whose rules name no low-risk merge policy is refused'
   },
   {
     context: skills({
       edits: {
-        [SKILL({ folder: 'refine-ticket' })]: replace({
-          from: MANUAL_NAMED,
-          to: NAMES_NOTHING
+        [SKILL({ folder: 'refine-ticket' })]: withoutPolicy({
+          policy: MANUAL
         })
       }
     }),
-    expected: 1,
+    expected: 2,
     name: 'a refine-ticket whose merge queue names no manual merge policy is refused'
   },
   {
     context: skills({
       edits: {
-        [SKILL({ folder: 'refine-ticket' })]: replace({
-          from: LOW_RISK_NAMED,
+        [SKILL({ folder: 'refine-ticket' })]: withoutPolicy({
+          policy: LOW_RISK
+        })
+      }
+    }),
+    expected: 2,
+    name: 'a refine-ticket whose merge queue names no low-risk merge policy is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: CONTRACT })]: replace({
+          from: FAIL_CLOSED_NAMED,
           to: NAMES_NOTHING
         })
       }
     }),
     expected: 1,
-    name: 'a refine-ticket whose merge queue names no low-risk merge policy is refused'
+    name: 'a ticket-flow whose rules do not fail closed to manual is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: CONTRACT })]: replace({
+          from: DEFAULT_BRANCH_COPY_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: "a ticket-flow whose rules do not read the policy from the default branch's copy is refused"
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'refine-ticket' })]: replace({
+          from: FAIL_CLOSED_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a refine-ticket whose merge queue does not fail closed to manual is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'refine-ticket' })]: replace({
+          from: DEFAULT_BRANCH_COPY_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: "a refine-ticket whose merge queue does not read the policy from the default branch's copy is refused"
   },
   {
     context: skills({
@@ -604,6 +673,42 @@ export const CASES = [
     }),
     expected: 1,
     name: 'a process-intake whose mapping step names no low-risk merge policy is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: CONTRACT })]: replace({
+          from: CONFIG_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a ticket-flow whose rules never name the harness config is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'refine-ticket' })]: replace({
+          from: CONFIG_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a refine-ticket whose merge queue never names the harness config is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: INTAKE })]: replace({
+          from: CONFIG_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a process-intake whose mapping step never names the harness config is refused'
   },
   {
     context: skills({
@@ -1176,15 +1281,16 @@ const checks = [
       const findings = gate.run(
         skills({
           edits: {
-            [SKILL({ folder: CONTRACT })]: replace({
-              from: LOW_RISK_NAMED,
-              to: NAMES_NOTHING
-            })
+            [SKILL({ folder: CONTRACT })]: withoutPolicy({ policy: LOW_RISK })
           }
         })()
       )
-      assert.equal(findings.length, 1, JSON.stringify(findings))
-      const [finding] = findings
+      // The fail-closed clause names the policy, so it goes with it.
+      assert.equal(findings.length, 2, JSON.stringify(findings))
+      const finding = findings.find(({ detail }) =>
+        detail.endsWith(POLICY_DROPPED)
+      )
+      assert.ok(finding, `no finding names the policy: ${JSON.stringify(findings)}`)
       assert.equal(finding.kind, FINDING_KIND.mention)
       assert.equal(finding.folder, CONTRACT)
       assert.ok(
@@ -1202,14 +1308,14 @@ const checks = [
     }
   },
   {
-    name: 'a process template whose merge policy does not default to manual is refused',
+    name: 'a process template whose merge policy records a policy, not the harness config, is refused',
     run: () => {
       const findings = gate.run(
         skills({
           edits: {
             [`${INTAKE}/${PROCESS_TEMPLATE}`]: replace({
-              from: POLICY_LINE,
-              to: `${POLICY_FIELD} \`low-risk\``
+              from: ANY_POLICY_LINE,
+              to: POLICY_RECORDED
             })
           }
         })()
@@ -1227,8 +1333,8 @@ const checks = [
         `the finding does not name the line: ${finding.detail}`
       )
       assert.ok(
-        finding.detail.includes('`manual`'),
-        `the finding does not name the default it owes: ${finding.detail}`
+        finding.detail.includes(`\`${HARNESS_CONFIG}\``),
+        `the finding does not name the setting it owes: ${finding.detail}`
       )
     }
   },

@@ -43,6 +43,10 @@ export default defineConfig({
         __dirname,
         './src/test/mocks/expo-blur.ts'
       ),
+      'expo-file-system': path.resolve(
+        __dirname,
+        './src/test/mocks/expo-file-system.ts'
+      ),
       'expo-linear-gradient': path.resolve(
         __dirname,
         './src/test/mocks/expo-linear-gradient.ts'

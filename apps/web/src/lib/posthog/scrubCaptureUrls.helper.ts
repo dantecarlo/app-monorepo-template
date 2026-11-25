@@ -1,7 +1,18 @@
 import {
   CAPTURE_URL_PROPERTY_PATTERN,
+  DIGIT_PATTERN,
+  EMAIL_SEGMENT_PATTERN,
   HEATMAP_DATA_PROPERTY,
-  URL_SUFFIX_PATTERN
+  PATH_SEGMENT_SEPARATOR,
+  REDACTED_SEGMENT,
+  SECRET_SEGMENT_MIN_LENGTH,
+  SLUG_PART_MAX_LENGTH,
+  SLUG_PART_PATTERN,
+  SLUG_PART_SEPARATOR,
+  SLUG_WORD_PATTERN,
+  URL_ORIGIN_PATTERN,
+  URL_SUFFIX_PATTERN,
+  WORD_SLUG_PATTERN
 } from '@/lib/posthog/scrubCaptureUrls.constant'
 import type {
   CapturePropertiesType,
@@ -9,12 +20,66 @@ import type {
   IScrubHeatmapDataParams,
   IScrubPropertiesParams,
   IScrubPropertyParams,
+  IScrubSegmentParams,
   IScrubUrlParams
 } from '@/lib/posthog/scrubCaptureUrls.type'
 
-/** Drops the query string and the fragment of a URL or a path. */
-export const scrubUrl = ({ value }: IScrubUrlParams): string =>
-  value.replace(URL_SUFFIX_PATTERN, '')
+// The text a segment spells: every `%C3` of an accented word holds a digit.
+// A segment that is not valid percent-encoding reads as it is.
+const decodeSegment = ({ segment }: IScrubSegmentParams): string => {
+  try {
+    return decodeURIComponent(segment)
+  } catch {
+    return segment
+  }
+}
+
+// A slug of short word parts: no mixed case, no letters and digits
+// interleaved in a part, and one word of three letters at least.
+const isShortPartSlug = ({ text }: { text: string }): boolean => {
+  const parts = text.split(SLUG_PART_SEPARATOR)
+  return (
+    parts.length > 1 &&
+    parts.every(
+      (part) =>
+        part.length <= SLUG_PART_MAX_LENGTH && SLUG_PART_PATTERN.test(part)
+    ) &&
+    parts.some((part) => SLUG_WORD_PATTERN.test(part))
+  )
+}
+
+// An email, or a segment whose decoded text is long, holds a digit and is
+// not a slug.
+const isSecretSegment = ({ segment }: IScrubSegmentParams): boolean => {
+  if (EMAIL_SEGMENT_PATTERN.test(segment)) return true
+  const text = decodeSegment({ segment })
+  return (
+    text.length >= SECRET_SEGMENT_MIN_LENGTH &&
+    DIGIT_PATTERN.test(text) &&
+    !WORD_SLUG_PATTERN.test(text) &&
+    !isShortPartSlug({ text })
+  )
+}
+
+const scrubPath = ({ value }: IScrubUrlParams): string =>
+  value
+    .split(PATH_SEGMENT_SEPARATOR)
+    .map((segment) =>
+      isSecretSegment({ segment }) ? REDACTED_SEGMENT : segment
+    )
+    .join(PATH_SEGMENT_SEPARATOR)
+
+/**
+ * Drops the query string and the fragment of a URL or a path, and replaces
+ * every path segment that reads as a secret with `:redacted`, judged by its
+ * decoded text. The scheme and the host of a URL are kept, and so is every
+ * other segment, in its encoded form.
+ */
+export const scrubUrl = ({ value }: IScrubUrlParams): string => {
+  const url = value.replace(URL_SUFFIX_PATTERN, '')
+  const [origin = ''] = URL_ORIGIN_PATTERN.exec(url) ?? []
+  return `${origin}${scrubPath({ value: url.slice(origin.length) })}`
+}
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -60,9 +125,9 @@ const scrubProperties = ({
 
 /**
  * The `before_send` of the PostHog client. Every URL the SDK attaches to an
- * event, its person or its heatmap leaves without its query string and its
- * fragment. An event an earlier hook dropped stays dropped. The SDK calls
- * it with the event alone.
+ * event, its person or its heatmap leaves without its query string, its
+ * fragment and every path segment that reads as a secret. An event an
+ * earlier hook dropped stays dropped. The SDK calls it with the event alone.
  */
 export const scrubCaptureUrls = <TEvent extends ICaptureEvent>(
   event: TEvent | null

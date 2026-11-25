@@ -1,5 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreBinaries": ["supabase"],
   "workspaces": {
     ".": {
       "entry": [
@@ -64,7 +65,11 @@
       ],
       "project": ["src/**/*.{ts,tsx}"],
       "metro": false,
-      "ignoreDependencies": ["@supabase/supabase-js"]
+      "ignoreDependencies": [
+        "@supabase/supabase-js",
+        "expo-updates",
+        "expo-system-ui"
+      ]
     },
     "packages/core": {
       "project": ["src/**/*.ts"]
@@ -73,8 +78,7 @@
       "project": ["src/**/*.ts"]
     },
     "packages/supabase": {
-      "project": ["src/**/*.ts"],
-      "ignoreBinaries": ["supabase"]
+      "project": ["src/**/*.ts"]
     },
     "packages/tokens": {
       "project": ["src/**/*.ts"]
@@ -88,7 +92,6 @@
     }
   },
   "ignoreExportsUsedInFile": true,
-  "ignoreDependencies": ["expo-updates", "expo-system-ui"],
   "rules": {
     "duplicates": "off",
     "files": "error",

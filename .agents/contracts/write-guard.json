@@ -1,5 +1,5 @@
 {
-  "$comment": "The write guard's policy, read by scripts/agent-harness/write-guard/ and enforced, today, by the Claude Code hook generated from .agents/hooks.json into .claude/settings.json. A rule file is a path, relative to the root of any checkout that holds it, that a glob of ruleFiles matches: ** crosses folders, * stays inside one, letter case is ignored (the glob reader of scripts/manifest.mjs). A glob that starts ~/ is read against the path relative to the user's home folder instead. A .git file or folder below a checkout root is a rule path too, set in the engine, not here. Before a rule file is edited the guard asks the human, and it refuses a read-only agent (writes: false in .agents/agent-context.json), because the LAW 'A rule is not edited to fit the work' (AGENTS.md) lets a rule change only when the owner asks for that change. The list is F66's base list plus every file that could switch the guard off quietly. switchOff names the variable that silences the guard for a session launched with it; disableAllHooks: true in the git-ignored .claude/settings.local.json is the other way out. See docs/harness.md section 3f.",
+  "$comment": "The write guard's policy, read by scripts/agent-harness/write-guard/ and enforced, today, by the Claude Code hook generated from .agents/hooks.json into .claude/settings.json. A rule file is a path, relative to the root of any checkout that holds it, that a glob of ruleFiles matches: ** crosses folders, * stays inside one, letter case is ignored (the glob reader of scripts/manifest.mjs). A glob that starts ~/ is read against the path relative to the user's home folder instead. A .git file or folder below a checkout root is a rule path too, set in the engine, not here. Before a rule file is edited the guard asks the human, and it refuses a read-only agent (writes: false in .agents/agent-context.json), because the LAW 'A rule is not edited to fit the work' (AGENTS.md) lets a rule change only when the owner asks for that change. The list is F66's base list plus every file that could switch the guard off quietly, and .agents/harness.config.json, whose delivery.mergePolicy: low-risk grants an agent merge authority. switchOff names the variable that silences the guard for a session launched with it; disableAllHooks: true in the git-ignored .claude/settings.local.json is the other way out. See docs/harness.md section 3f.",
   "switchOff": {
     "value": "off",
     "variable": "ATL_WRITE_GUARD"
@@ -48,6 +48,10 @@
     {
       "glob": ".agents/hooks.json",
       "what": "the hook source of the write guard"
+    },
+    {
+      "glob": ".agents/harness.config.json",
+      "what": "the harness settings, whose delivery.mergePolicy: low-risk lets an agent merge without asking"
     },
     {
       "glob": "scripts/agent-harness/write-guard/**",

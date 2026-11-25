@@ -1,0 +1,457 @@
+{
+  "$comment": "The gate registry: the steps pnpm validate runs, in order (scripts/validate.mjs). A step runs the root package.json script its id names, as pnpm <id>, unless it carries a command. capability is the owner whose prune removes the step: core, never pruned, or a capability of template.manifest.json; an absent capability takes every step it owns. stage is preflight, workspace or repository, run in that order. profile is the lowest quality profile that runs the step: standard, or strict only. cost is what one run takes: instant, seconds or minutes. blind, exported-cases, marks the one step that blinds a gate: scripts/validate.test.mjs re-runs the exported CASES of its companion against blindGate, and they must fail. Every root script named verify:* or *:test is a step, or an entry of outside, which names the script, the capability whose prune removes the entry and the reason pnpm validate does not run it. Removing a step removes a gate, so this contract is a rule file the write guard asks about. See docs/harness.md section 3.",
+  "steps": [
+    {
+      "id": "agent-harness:projection-check",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "instant"
+    },
+    {
+      "id": "agent-harness:test",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "write-guard:test",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "reap:test",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:agent-context:test",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:agent-context",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "instant",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "verify:harness-config:test",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:harness-config",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "instant",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "verify:manifest",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "instant"
+    },
+    {
+      "id": "verify:manifest:coverage",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "instant"
+    },
+    {
+      "id": "verify:manifest:test",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "validate:test",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "seconds",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "verify:lint-rules:test",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:allowlist-freshness:test",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:allowlist-freshness",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "seconds",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "verify:dependency-seams:test",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:dependency-seams",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "seconds",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "turbo",
+      "command": "turbo run lint typecheck test build format:check",
+      "capability": "core",
+      "stage": "workspace",
+      "profile": "standard",
+      "cost": "minutes"
+    },
+    {
+      "id": "verify:tests:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:tests",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "instant",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "tests:into-blocks:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:specs:test",
+      "capability": "sdd",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:specs",
+      "capability": "sdd",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "instant",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "git-free-env:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "hook-git-dir:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "worktrees:prune:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "report:spec-drift:test",
+      "capability": "sdd",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "report:spec-drift",
+      "capability": "sdd",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:english:test",
+      "capability": "english-artifacts",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:english",
+      "capability": "english-artifacts",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "verify:instruction-entry:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:instruction-entry",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "instant",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "verify:unicode-safety:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:unicode-safety",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "verify:workflow-pins:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:workflow-pins",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "instant",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "verify:skill-frontmatter:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:skill-frontmatter",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "instant",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "verify:skill-neutrality:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:skill-neutrality",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "instant",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "verify:router-coverage:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:router-coverage",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "instant",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "codex-budget:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:maps",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "check:identity",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "instant"
+    },
+    {
+      "id": "init-project:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:pairing",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "instant"
+    },
+    {
+      "id": "verify:structure",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "instant"
+    },
+    {
+      "id": "verify:security",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "instant"
+    },
+    {
+      "id": "verify:theme-sync:test",
+      "capability": "design-tokens",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:theme-sync",
+      "capability": "design-tokens",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "instant",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "mcp:docs:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "mcp:launch:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:mcp-docs:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:mcp-docs",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "instant",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "verify:ticket-branch:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "verify:skills:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "docs:diagrams:check",
+      "capability": "diagrams",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "i18n:test",
+      "command": "pnpm --filter @app/i18n test",
+      "capability": "i18n",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "knip",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    }
+  ],
+  "outside": [
+    {
+      "script": "verify:ticket-branch",
+      "capability": "core",
+      "reason": "the template's own branches carry no ticket id, so it fails on every one of them; a project that adopts the ticket flow runs it in its CI, and validate runs its suite (TICKET-09)"
+    },
+    {
+      "script": "verify:expo",
+      "capability": "mobile-expo",
+      "reason": "it runs expo-doctor and expo install --check through npx, which reach the network, and the gate is offline"
+    }
+  ]
+}
