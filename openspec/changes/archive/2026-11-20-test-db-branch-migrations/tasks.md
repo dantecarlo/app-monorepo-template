@@ -7,3 +7,4 @@
 - [x] T5 — The second correction: a reader of its own for the pgTAP check, splitting SQL as the Postgres lexer does and failing closed on what it cannot pair; the order check's reader pinned unchanged · Requirements: SUPABASE-31 · Commit: fb4785c
 - [x] T6 — On the owner's word ("Imitate Postgres"): a pgTAP string continues past whitespace that holds a newline, in the same mode, as scan.l continues it · Requirements: SUPABASE-31 · Commit: ec25a89
 - [x] T7 — On the owner's word ("Force it and refuse mentions"): `standard_conforming_strings` set on after each file's `begin;`, a file that names it, calls `set_config` or runs `reset all` refused, the reader in its own module · Requirements: SUPABASE-31 · Commit: 4f29212
+- [x] T8 — After the native reviews: every `U&"..."` identifier refused; interior transaction control found refused since 27f01c9, `release savepoint` kept allowed · Requirements: SUPABASE-31 · Commit: 6cdbbaa

@@ -35,6 +35,8 @@
 | SUPABASE-31 | standard strings forced on | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "forces standard_conforming_strings on right after the begin, before the migrations" | green |
 | SUPABASE-31 | a file that could turn standard strings off | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "refuses a pgTAP file that could turn standard_conforming_strings off, naming it: %s" | green |
 | SUPABASE-31 | a mention in a comment or a string | `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "keeps a pgTAP file that mentions the setting only in a comment or a string: %s" | green |
+| SUPABASE-31 | a Unicode-escape identifier | `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "refuses any U&"..." identifier, whose escapes could spell a refused name, naming the file: %s" | green |
+| SUPABASE-31 | a Unicode-escape identifier | `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "keeps U& in a string, a comment, a U& string or inside a quoted identifier: %s" | green |
 | SUPABASE-31 | the reader's two views | `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "blanks every comment, string, quoted identifier and dollar body, keeping each offset" | green |
 | SUPABASE-31 | the reader's two views | `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "keeps the quoted identifiers and dollar bodies in the view a mention is searched in" | green |
 | SUPABASE-31 | the reader's two views | `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "reads nothing when a token never closes or a $ pairs with nothing" | green |
@@ -152,6 +154,30 @@ The one remaining gap, not covered on the owner's word: a change of the setting 
 not name, as `execute` of a name built at run time or a function the migrations or the database
 hold.
 
+## After the native reviews, 2026-11-25
+
+Five native reviews approved the change; two findings touched its safety premise.
+
+- **Interior transaction control** (`R1-rollback-guard-end-only`, `R3-interior-commit-unchecked`,
+  at `pgTapBundle.helper.ts:192-196`): those lines are the end-only `TRAILING_ROLLBACK_PATTERN`
+  check of the first work-unit commit, `51c1ad2`. Since `27f01c9` the check reads the code view
+  and refuses `commit`, `end`, `abort`, a `rollback` before the last, `begin`,
+  `start transaction`, `prepare transaction`, `commit prepared`, `rollback prepared` and
+  `set transaction` between the first `begin;` and the last `rollback;`; the scenario "a
+  transaction controlled in between" names its tests. A probe at `29862ad` refused every listed
+  form and `commit and chain`, `end work`, `abort transaction`, `rollback work` and
+  `begin isolation level serializable` mid-file, so no test could be seen red and no code
+  changed. `release savepoint` stays allowed: it names a savepoint only, the file's `begin;` is
+  none, and a name no savepoint holds is an error that aborts the transaction, so it cannot
+  commit what the bundle applied.
+- **Unicode-escape identifiers** (`R1-unicode-identifier-bypass`, `R3-uescape-identifier-bypass`,
+  at `pgTapBundle.constant.ts:34-35`): `U&"s\0065t_config"`, or a name with a `UESCAPE`
+  clause, spelled a refused name the search could not see. The fix, at `6cdbbaa`, refuses every
+  `U&"..."` identifier rather than decoding it, since a decoder that misread an escape would
+  fail open. Seen red before it: 3 tests (the escaped `set_config`, the `UESCAPE` form and a
+  plain `u&"plain"`), each "expected [Function] to throw an error". Four pins passed before and
+  after: a `U&'...'` string, and `U&` in a string, a comment and a plain quoted identifier.
+
 ## Gate
 
 - `pnpm validate`: not run by this change's writer: its brief keeps the shared machine to single test files
@@ -159,7 +185,8 @@ hold.
 - `pnpm --filter @app/supabase test`: exit 0, 2026-11-20, 11 files and 61 tests; after the
   correction, 11 files and 82 tests; after the second, 11 files and 98 tests;
   after the third, 11 files and 105 tests;
-  after the fourth, 12 files and 118 tests.
+  after the fourth, 12 files and 118 tests;
+  after the fifth, 12 files and 125 tests.
 - `eslint` on every changed source and `tsc --noEmit` of `@app/supabase`: exit 0, 2026-11-20.
 - `verify:specs`, `verify:english`, `verify:tests`, `verify:manifest`, `verify:manifest:coverage`,
   `verify:maps`, `verify:dependency-seams`: exit 0, 2026-11-20.

@@ -3,7 +3,7 @@
 > **Governs:** `packages/supabase/src`, `packages/supabase/supabase/migrations`, `packages/supabase/supabase/config.toml`, `packages/supabase/package.json`, `scripts/supabase-test-db.mjs`
 > **ID prefix:** `SUPABASE`
 > **Derived from:** `packages/supabase/docs/database.md`, `AGENTS.md`, `docs/code-standards.md`
-> **Verified against the code:** 2026-11-20 at `4f29212`
+> **Verified against the code:** 2026-11-25 at `6cdbbaa`
 
 ## Purpose
 
@@ -897,9 +897,10 @@ release and `rollback to` it excepted) and hold no psql meta-command; otherwise,
 reader cannot pair, test:db SHALL run nothing, naming the file. The bundle SHALL set
 `standard_conforming_strings` on, locally, right after each file's first `begin`, before the
 migrations, and test:db SHALL run nothing when a file's code, quoted identifiers and dollar
-bodies included, names that setting or `set_config`, or runs `reset all`.
+bodies included, names that setting or `set_config`, runs `reset all`, or quotes an identifier
+with `U&"..."`.
 
-**Evidence:** `packages/supabase/src/pgTapBundle.constant.ts:3`, `packages/supabase/src/pgTapBundle.constant.ts:22-55`, `packages/supabase/src/pgTapBundle.helper.ts:32-37`, `packages/supabase/src/pgTapBundle.helper.ts:73-119`, `packages/supabase/src/pgTapBundle.helper.ts:136-139`, `packages/supabase/src/pgTapBundle.helper.ts:160-192`, `packages/supabase/src/pgTapBundle.helper.ts:196-199`, `packages/supabase/src/pgTapBundle.helper.ts:210-265`, `packages/supabase/src/pgTapBundle.helper.ts:275-288`, `packages/supabase/src/pgTapCode.constant.ts:7-27`, `packages/supabase/src/pgTapCode.helper.ts:201-227`, `packages/supabase/src/testDbRun.helper.ts:71`, `packages/supabase/docs/database.md:409`, `packages/supabase/docs/database.md:438`, `packages/supabase/docs/database.md:469`, `packages/supabase/docs/database.md:482`
+**Evidence:** `packages/supabase/src/pgTapBundle.constant.ts:3`, `packages/supabase/src/pgTapBundle.constant.ts:22-58`, `packages/supabase/src/pgTapBundle.helper.ts:33-38`, `packages/supabase/src/pgTapBundle.helper.ts:74-120`, `packages/supabase/src/pgTapBundle.helper.ts:137-140`, `packages/supabase/src/pgTapBundle.helper.ts:161-193`, `packages/supabase/src/pgTapBundle.helper.ts:197-200`, `packages/supabase/src/pgTapBundle.helper.ts:211-272`, `packages/supabase/src/pgTapBundle.helper.ts:282-295`, `packages/supabase/src/pgTapCode.constant.ts:7-27`, `packages/supabase/src/pgTapCode.helper.ts:201-227`, `packages/supabase/src/testDbRun.helper.ts:71`, `packages/supabase/docs/database.md:409`, `packages/supabase/docs/database.md:438`, `packages/supabase/docs/database.md:469`, `packages/supabase/docs/database.md:476`, `packages/supabase/docs/database.md:489`
 
 #### Scenario: the checkout's migrations, in order
 
@@ -1085,6 +1086,14 @@ bodies included, names that setting or `set_config`, or runs `reset all`.
 - **WHEN** test:db bundles the files
 - **THEN** it bundles the file
 - **Test:** `packages/supabase/src/__tests__/pgTapBundle.helper.test.ts` › "keeps a pgTAP file that mentions the setting only in a comment or a string: %s"
+
+#### Scenario: a Unicode-escape identifier
+
+- **GIVEN** a pgTAP file that quotes an identifier with `U&"..."` or `u&"..."`, escaped (`U&"s\0065t_config"`), with a `UESCAPE` clause, or plain
+- **WHEN** test:db bundles the files
+- **THEN** it refuses, naming the file, while a `U&'...'` string and `U&` inside a comment, a string or a plain quoted identifier still bundle
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "refuses any U&"..." identifier, whose escapes could spell a refused name, naming the file: %s"
+- **Test:** `packages/supabase/src/__tests__/pgTapCode.helper.test.ts` › "keeps U& in a string, a comment, a U& string or inside a quoted identifier: %s"
 
 #### Scenario: the reader's two views
 
