@@ -42,8 +42,20 @@
 // (`git read-tree -m -u --dry-run`) against a refreshed copy of the index,
 // so it names a local commit or an untracked file the fast-forward would
 // overwrite, never a file whose timestamp alone changed, and takes no lock
-// in the main checkout. `--quiet` prints the
-// removals, the main checkout's line and the summary line only.
+// in the main checkout. A fast-forward that changes pnpm-lock.yaml then runs
+// `pnpm install` in the main checkout, through `runBounded` and stopped with
+// its tree after 120 s or the seconds PRUNE_WORKTREES_INSTALL_SECONDS names,
+// so the pinned MCP entries and every other dependency follow the lockfile
+// the checkout now holds; an install that fails or is stopped prints one
+// line with the `pnpm install` to run, and the run still exits 0. An install
+// that rewrites pnpm-lock.yaml, as a plain `pnpm install` may, adds one line
+// saying so: commit it on a branch, or discard it with `git restore
+// --source=HEAD -- pnpm-lock.yaml`. The bound is read
+// only when an install is due: a value that is not a positive number then
+// skips the install with the same line, and a fast-forward that leaves the
+// lockfile as it was installs nothing and never reads it. A dry run says it would
+// install. `--quiet` prints the removals, the main checkout's line, an
+// install's failure and the summary line only.
 //
 // `.husky/post-merge` runs it with `--quiet` after a local merge or pull.
 // This file runs git and touches the disk; every decision it takes from
@@ -64,6 +76,7 @@
 //   node scripts/prune-worktrees.mjs
 //   node scripts/prune-worktrees.mjs --dry-run
 //   node scripts/prune-worktrees.mjs --quiet
+//   PRUNE_WORKTREES_INSTALL_SECONDS=300 node scripts/prune-worktrees.mjs
 // ---------------------------------------------------------------------------
 
 import { execFileSync } from 'node:child_process'
@@ -89,10 +102,14 @@ import {
   failureLine,
   fetchSecondsFrom,
   hiddenOf,
+  installCommandOf,
+  installOutcomeOf,
+  installSecondsFrom,
   isSkillRegistry,
   listDetail,
   LOCAL_CHANGES,
   localChangesOf,
+  LOCKFILE,
   NESTED_RUN_VARIABLE,
   optionsFrom,
   parseBranchNames,
@@ -510,6 +527,68 @@ const predictedRefusal = ({ ref, root }) => {
   }
 }
 
+// `git diff --quiet` exits 1 when the files it compares differ.
+const DIFFERS = 1
+
+// Whether the lockfile differs between HEAD in `root` and `ref`, the commit
+// a fast-forward moves it to.
+const lockfileChanges = ({ ref, root }) =>
+  git({
+    args: ['diff', '--name-only', 'HEAD', ref, '--', LOCKFILE],
+    cwd: root
+  }) !== ''
+
+// Whether the install left the lockfile of `root` other than HEAD holds
+// (`git diff --quiet -- pnpm-lock.yaml`). A diff git cannot run reads as
+// no rewrite: the install never fails the run.
+const lockfileRewritten = ({ root }) => {
+  try {
+    git({ args: ['diff', '--quiet', '--', LOCKFILE], cwd: root })
+    return false
+  } catch (error) {
+    return error.status === DIFFERS
+  }
+}
+
+// `pnpm install` in `root`, stopped after `seconds` with every process it
+// started: `installed`, or `failed` with why, and `rewrote` when it left
+// the lockfile changed. It never throws: a failed install never fails the
+// run.
+const installIn = async ({ root, seconds }) => {
+  const { args, command } = installCommandOf({
+    comspec: process.env.ComSpec,
+    platform: process.platform
+  })
+  const run = await runBounded({
+    args,
+    command,
+    cwd: root,
+    env: gitEnv(),
+    timeoutMs: Math.ceil(seconds * MS_PER_SECOND)
+  })
+  return {
+    ...installOutcomeOf({ run, seconds }),
+    rewrote: lockfileRewritten({ root })
+  }
+}
+
+// The install a fast-forward that changed the lockfile makes: run after a
+// real one, `would` for a dry run that predicts one, and none otherwise.
+// Its bound is read from `env` only then; a bound that is not a positive
+// number is a failed install that never ran, which fails nothing else.
+const installAfter = async ({ dryRun, env, main, root }) => {
+  if (!main.lockChanged) return undefined
+  if (dryRun ? main.detail !== undefined : !main.moved) return undefined
+  let seconds
+  try {
+    seconds = installSecondsFrom({ env })
+  } catch (error) {
+    const verb = dryRun ? 'would not run' : 'was not run'
+    return { state: 'failed', why: `${verb}: ${error.message}` }
+  }
+  return dryRun ? { state: 'would' } : installIn({ root, seconds })
+}
+
 // The main checkout brought to the default branch when it sits on it, by a
 // fast-forward. Any tracked local change blocks it before git is asked, a
 // dry run included, and git refuses whatever else would be lost, a local
@@ -542,10 +621,11 @@ const forwardMain = ({ defaultBranch, dryRun, root, worktree }) => {
       moved: false
     }
   }
+  const lockChanged = lockfileChanges({ ref: defaultBranch.ref, root })
   if (dryRun) {
     const refusal = predictedRefusal({ ref: defaultBranch.ref, root })
     return refusal === undefined
-      ? { ...at, behind, moved: false }
+      ? { ...at, behind, lockChanged, moved: false }
       : { ...at, behind, detail: refusal, moved: false }
   }
   try {
@@ -553,7 +633,7 @@ const forwardMain = ({ defaultBranch, dryRun, root, worktree }) => {
       args: ['merge', '--ff-only', '--quiet', defaultBranch.ref],
       cwd: root
     })
-    return { ...at, behind, moved: true }
+    return { ...at, behind, lockChanged, moved: true }
   } catch (error) {
     return { ...at, behind, detail: refusalOf({ error }), moved: false }
   }
@@ -561,12 +641,14 @@ const forwardMain = ({ defaultBranch, dryRun, root, worktree }) => {
 
 // Every worktree of the repository `cwd` belongs to, each with the reason it
 // is kept (`kept: null` for one removed), and what became of the main
-// checkout, which is moved last, after every removal; or `timedOut` when the
-// fetch outlasted `fetchSeconds`, before anything was judged. A fetch, a
+// checkout, which is moved last, after every removal, with the install a
+// fast-forward that changed the lockfile made (its bound read from `env`);
+// or `timedOut` when the fetch outlasted `fetchSeconds`, before anything
+// was judged. A fetch, a
 // default branch or a list git cannot read throws before anything is
 // removed; a step that fails after the decisions returns its `error` with
 // the results gathered before it, every removal made included.
-const pruneWorktrees = async ({ cwd, dryRun, fetchSeconds }) => {
+const pruneWorktrees = async ({ cwd, dryRun, env, fetchSeconds }) => {
   const current = samePath({
     path: git({ args: ['rev-parse', '--show-toplevel'], cwd })
   })
@@ -603,13 +685,15 @@ const pruneWorktrees = async ({ cwd, dryRun, fetchSeconds }) => {
       )
     )
     if (!dryRun) git({ args: ['worktree', 'prune'], cwd: root })
+    const main = forwardMain({
+      defaultBranch,
+      dryRun,
+      root,
+      worktree: worktrees[0]
+    })
     return {
-      main: forwardMain({
-        defaultBranch,
-        dryRun,
-        root,
-        worktree: worktrees[0]
-      }),
+      install: await installAfter({ dryRun, env, main, root }),
+      main,
       results
     }
   } catch (error) {
@@ -631,12 +715,14 @@ const main = async () => {
     const outcome = await pruneWorktrees({
       cwd: process.cwd(),
       dryRun,
+      env: process.env,
       fetchSeconds
     })
     const lines = outcome.timedOut
       ? skippedLines({ dryRun, seconds: fetchSeconds })
       : reportLines({
           dryRun,
+          install: outcome.install,
           main: outcome.main,
           quiet,
           results: outcome.results
