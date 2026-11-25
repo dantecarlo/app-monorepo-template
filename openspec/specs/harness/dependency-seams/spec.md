@@ -3,7 +3,7 @@
 > **Governs:** `.agents/contracts/dependencies.json`, `eslint-dependency-seam-allowlist.json`, `eslint-local-rules/dependency-seam.detect.mjs`, `eslint-local-rules/wrapped-import.detect.mjs`, `scripts/dependency-seams.detect.mjs`, `scripts/eslint-config.detect.mjs`, `scripts/verify-dependency-seams.mjs`, `eslint.config.mjs`, `eslint.rules.mjs`
 > **ID prefix:** `SEAM`
 > **Derived from:** `docs/code-standards.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-19 at `b3e7919`
+> **Verified against the code:** 2026-11-20 at `bdd39a8`
 
 ## Purpose
 
@@ -259,7 +259,7 @@ admits, the unit being the file named by the test's stem in the folder that hold
 
 #### Scenario: a test of a unit inside the seam
 
-- **GIVEN** `apps/web/src/lib/query/__tests__/useAppQuery.hook.test.ts` importing
+- **GIVEN** a test under an app's `src/lib/query/__tests__/` importing
   `@tanstack/react-query`, whose seam is `apps/*/src/lib/query/**`
 - **WHEN** ESLint lints it
 - **THEN** nothing is reported
@@ -274,14 +274,14 @@ admits, the unit being the file named by the test's stem in the folder that hold
 
 #### Scenario: test infrastructure
 
-- **GIVEN** `apps/web/src/test/setup.ts` importing `zustand`
+- **GIVEN** a file of an app's test infrastructure, under its `src/test/`, importing `zustand`
 - **WHEN** ESLint lints it
 - **THEN** nothing is reported
 - **Test:** `eslint-local-rules/dependency-seam.cases.mjs` › "test infrastructure under src/test passes any registered package"
 
 #### Scenario: an unregistered package in test infrastructure
 
-- **GIVEN** `apps/web/src/test/setup.ts` importing `left-pad`
+- **GIVEN** a file of an app's test infrastructure, under its `src/test/`, importing `left-pad`
 - **WHEN** ESLint lints it
 - **THEN** it is reported as unregistered
 - **Test:** `eslint-local-rules/dependency-seam.cases.mjs` › "an unregistered package is refused in test infrastructure too"
@@ -440,7 +440,7 @@ pair.
 
 #### Scenario: a config file ESLint skips
 
-- **GIVEN** `apps/mobile/metro.config.js`, which ESLint ignores, requiring `nativewind/metro`
+- **GIVEN** an app's `metro.config.js`, which ESLint ignores, requiring `nativewind/metro`
   while the seam of `nativewind` does not list it
 - **WHEN** `pnpm verify:dependency-seams` runs
 - **THEN** it fails, naming the file and the package
@@ -856,7 +856,7 @@ this shape as a malformed registry, judging nothing else against it, and SHALL f
 migration that no entry of `eslint-dependency-seam-allowlist.json` names, as stale, to be closed by
 removing it; while the allowlist cannot be read, it SHALL call no migration stale.
 
-**Evidence:** `.agents/contracts/dependencies.json:670`,
+**Evidence:** `.agents/contracts/dependencies.json:677`,
 `eslint-local-rules/dependency-seam.detect.mjs:155-166`,
 `eslint-local-rules/dependency-seam.detect.mjs:183`, `scripts/dependency-seams.detect.mjs:49-55`,
 `scripts/dependency-seams.detect.mjs:146-181`, `scripts/dependency-seams.detect.mjs:195`,

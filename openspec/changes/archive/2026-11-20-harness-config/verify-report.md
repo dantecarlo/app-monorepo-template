@@ -104,7 +104,7 @@ advisories. Each was fixed test first where a runner reaches it (task T4).
 | 3 | The skills did not say what a missing, broken or unknown setting means, nor which copy of the file is read, so a pull request could change its own policy | `ticket-flow` rule 4 and `refine-ticket` § Merge queue say that a value other than `low-risk`, a missing file, or a file that does not parse means `manual`, and that the policy is read from the default branch's copy, never from the pull request's own branch; `verify-skills` requires both phrases in both sections | `17b43ad` |
 | 4 | `process-intake`, in a project with no config, wrote the key alone: a file that fails the gate | Step 4 writes the whole template file with the chosen policy, then runs `pnpm verify:harness-config` | `344f28c` |
 | 5 | An object of the schema could leave out `additionalProperties` and let an undeclared key through | every object outside an `if`, `then` or `else` sets `additionalProperties` to `false` | `277eada` |
-| 6 | The record did not hold items 1 to 5 | TICKET-20 and TICKET-25, with their evidence lines, in this delta and the living spec; this section; T4; `docs/harness.md` 3g and the rows of `verify:harness-config`, `:test` and `verify:skills:test` | the record's commit |
+| 6 | The record did not hold items 1 to 5 | TICKET-20 and TICKET-25, with their evidence lines, in this delta and the living spec; this section; T4; `docs/harness.md` 3h and the rows of `verify:harness-config`, `:test` and `verify:skills:test` | the record's commit |
 
 **RED before GREEN.**
 

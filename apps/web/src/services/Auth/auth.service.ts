@@ -4,7 +4,7 @@ import {
   type ISignInWithPasswordParams
 } from '@app/core'
 
-import { getAuthGateway } from '@/lib/supabase/authGateway.adapter'
+import { getAuthGateway } from '@/lib/auth/authGateway.adapter'
 
 /**
  * Signs in with an email and a password through the auth gateway port.

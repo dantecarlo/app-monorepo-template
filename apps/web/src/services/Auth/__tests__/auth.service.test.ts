@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const { mockSignIn } = vi.hoisted(() => ({ mockSignIn: vi.fn() }))
 
-vi.mock('@/lib/supabase/authGateway.adapter', () => ({
+vi.mock('@/lib/auth/authGateway.adapter', () => ({
   getAuthGateway: () => ({ signIn: mockSignIn })
 }))
 

@@ -6,9 +6,8 @@
 > [screen-map.template.md](screen-map.template.md), filled once per screen.
 >
 > Binding rules: [../code-standards.md](../code-standards.md). Layer model:
-> [../architecture/shared.md](../architecture/shared.md),
-> [../architecture/web.md](../architecture/web.md),
-> [../architecture/mobile.md](../architecture/mobile.md).
+> [../architecture/shared.md](../architecture/shared.md), and each app's own
+> doc beside it in [../architecture/](../architecture/).
 >
 > This file is gated: `node scripts/verify-maps.mjs` fails if any path
 > referenced below no longer exists. Update the map when you move things.
@@ -38,7 +37,7 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | Design tokens             | `packages/tokens/src/tokens.constant.ts`                                         | `.constant.ts` | Colors, spacing, type scale — the design source of truth                                                                                   |
 | Token generator           | `packages/tokens/scripts/generate.mjs`                                           | `.mjs`         | Writes every token output from the source (`pnpm --filter @app/tokens generate`); tested by `packages/tokens/scripts/__tests__/generate.test.ts` |
 | Web theme (generated)     | `packages/tokens/theme.css`                                                      | `.css`         | Both themes' `--c-*` colours, `@theme` and the scales in `@theme inline`; `apps/web/src/app/globals.css` imports it as `@app/tokens/theme.css` |
-| Tailwind preset (generated) | `packages/tokens/tailwind-preset.cjs`                                          | `.cjs`         | The NativeWind preset `apps/mobile/tailwind.config.js` loads: the dark colours and the scales |
+| Tailwind preset (generated) | `packages/tokens/tailwind-preset.cjs`                                          | `.cjs`         | The NativeWind preset the mobile Tailwind config loads: the dark colours and the scales |
 | Theme variables (generated) | `packages/tokens/src/themeVars.constant.ts`                                    | `.constant.ts` | The `--c-*` value of every themed colour per theme, for NativeWind's `vars()` |
 | Theme names (generated)   | `packages/tokens/src/themeNames.constant.ts`                                     | `.constant.ts` | The name of every token utility the web theme declares, per Tailwind namespace; the web's shared `tv` registers it with tailwind-merge |
 | Preset test               | `packages/tokens/__tests__/tailwind-preset.test.ts`                              | `.test.ts`     | The preset reads each themed colour from its --c- variable and resolves to the dark colours under the dark variables; every scale as a CSS length, the font stacks and the shadows |
@@ -68,15 +67,6 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | i18n constants            | `packages/i18n/src/locales/i18n.constant.ts`                                     | `.constant.ts` | Locale codes + default-locale constant                                                                                                     |
 | i18n resources            | `packages/i18n/src/locales/resources.constant.ts`                                | `.constant.ts` | Catalog registry consumed by each app's i18n adapter                                                                                       |
 | i18n translator type      | `packages/i18n/src/translator/appTranslator.type.ts`                             | `.type.ts`     | IAppTranslator (t, has, locale) both apps implement in lib/i18n; TranslationKeyType, a path to a message of the English catalog            |
-| Backend client            | `packages/supabase/src/client.adapter.ts`                                        | `.adapter.ts`  | Browser/native Supabase client factory; satisfies `IBackendClientProvider<BackendClientType>`, the client wrapped opaque                   |
-| Backend server client     | `packages/supabase/src/server.adapter.ts`                                        | `.adapter.ts`  | Cookie-aware SSR client factory; propagates session to RLS via @supabase/ssr; returns `BackendClientType`                                  |
-| Backend client type       | `packages/supabase/src/backendClient.type.ts`                                    | `.type.ts`     | `BackendClientType`: the branded, opaque client the factories hand out; names no Supabase type |
-| Backend client wrapper    | `packages/supabase/src/backendClient.adapter.ts`                                 | `.adapter.ts`  | `toBackendClient` and `fromBackendClient`: the one place the opaque client and the SDK client meet |
-| Supabase error mapper     | `packages/supabase/src/mapSupabaseError.adapter.ts`                              | `.adapter.ts`  | `IServiceErrorMapper` implementation — maps Postgrest errors to `ServiceErrorCodeType`                                                     |
-| Supabase error builder    | `packages/supabase/src/buildSupabaseServiceError.helper.ts`                      | `.helper.ts`   | Wired default: `buildServiceError` + `mapSupabaseError`; use in services                                                                   |
-| Supabase auth gateway     | `packages/supabase/src/supabaseAuth.adapter.ts`                                  | `.adapter.ts`  | `createSupabaseAuthGateway` — implements `IAuthGateway` over a `BackendClientType`, unwrapped once                                         |
-| Backend types             | `packages/supabase/src/types.ts`                                                 | `.ts`          | Generated DB types + typed exports                                                                                                         |
-| DB conventions doc        | `packages/supabase/docs/database.md`                                             | `.md`          | Postgres/Supabase conventions: migrations, schemas, RLS, RBAC, audit, pgTAP                                                                |
 | Cloudflare constants      | `packages/cloudflare/src/cloudflare.constant.ts`                                 | `.constant.ts` | Turnstile siteverify URL + field names, x-cf-origin-secret header (no magic strings)                                                       |
 | Turnstile adapter         | `packages/cloudflare/src/createTurnstileBotProtection.adapter.ts`                | `.adapter.ts`  | `createTurnstileBotProtection` — implements `IBotProtectionPort`; plain fetch siteverify; degrades to success without TURNSTILE_SECRET_KEY |
 | Origin-guard adapter      | `packages/cloudflare/src/createCloudflareOriginGuard.adapter.ts`                 | `.adapter.ts`  | `createCloudflareOriginGuard` — implements `IOriginGuardPort`; header compare; passes through without CF_ORIGIN_SECRET                     |
@@ -90,14 +80,42 @@ Framework-agnostic, shared by BOTH apps. Pure values / logic / contracts —
 | Shuffled test order       | `packages/tooling/src/vitest-sequence.mjs`                                       | `.mjs`         | `testSequence`: the seed from the commit or `VITEST_SEQUENCE_SEED`                                                                         |
 | Process-tree kill         | `packages/tooling/src/process-tree.mjs`                                          | `.mjs`         | `signalProcessTree`: ends a child with every process it started                                                                            |
 | Port contract suite       | `packages/tooling/src/observability-port-contract.mjs`                           | `.mjs`         | `runObservabilityPortContract`: the cases every observability adapter passes, through the caller's `test` and a harness                    |
-| Prune boundary            | `packages/tooling/src/prune-boundary.mjs`                                        | `.mjs`         | `findPruneLeaks`: what a prune leaves dangling (imports, paths, plugins, env keys, spec citations, registry); its test checks `sentry`, and the registry for `mobile-expo` and `supabase` |
+| Prune boundary            | `packages/tooling/src/prune-boundary.mjs`                                        | `.mjs`         | `findPruneLeaks`: what a prune leaves dangling (imports, paths, plugins, env keys, spec citations, registry); its test holds the `sentry`, `mobile-expo` and `web-next` prunes to every check, the `supabase` prune to every check but two lint-rule cases, and the registry after seven prunes |
 
 Each package exposes its public surface through a barrel: `packages/core/src/index.ts`,
-`packages/i18n/src/index.ts`, `packages/supabase/src/index.ts`, `packages/tokens/src/index.ts`,
-`packages/cloudflare/src/index.ts`.
+`packages/i18n/src/index.ts`, `packages/tokens/src/index.ts`, `packages/cloudflare/src/index.ts`.
 
-**Pluggable providers.** PostHog (observability; Sentry the optional capability), Cloudflare (bot-protection +
-origin-guard), and Supabase (backend) are the DEFAULT adapters, each behind a
+<!-- region supabase -->
+
+The `supabase` capability adds the backend package, its barrel `packages/supabase/src/index.ts`
+and each app's wiring of it (sections 2 and 3):
+
+| Thing                     | Path                                                                             | Suffix         | What it holds                                                                                                                              |
+| ------------------------- | -------------------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Backend client            | `packages/supabase/src/client.adapter.ts`                                        | `.adapter.ts`  | Browser/native Supabase client factory; satisfies `IBackendClientProvider<BackendClientType>`, the client wrapped opaque                   |
+| Backend server client     | `packages/supabase/src/server.adapter.ts`                                        | `.adapter.ts`  | Cookie-aware SSR client factory; propagates session to RLS via @supabase/ssr; returns `BackendClientType`                                  |
+| Backend client type       | `packages/supabase/src/backendClient.type.ts`                                    | `.type.ts`     | `BackendClientType`: the branded, opaque client the factories hand out; names no Supabase type |
+| Backend client wrapper    | `packages/supabase/src/backendClient.adapter.ts`                                 | `.adapter.ts`  | `toBackendClient` and `fromBackendClient`: the one place the opaque client and the SDK client meet |
+| Supabase error mapper     | `packages/supabase/src/mapSupabaseError.adapter.ts`                              | `.adapter.ts`  | `IServiceErrorMapper` implementation — maps Postgrest errors to `ServiceErrorCodeType`                                                     |
+| Supabase error builder    | `packages/supabase/src/buildSupabaseServiceError.helper.ts`                      | `.helper.ts`   | Wired default: `buildServiceError` + `mapSupabaseError`; use in services                                                                   |
+| Supabase auth gateway     | `packages/supabase/src/supabaseAuth.adapter.ts`                                  | `.adapter.ts`  | `createSupabaseAuthGateway` — implements `IAuthGateway` over a `BackendClientType`, unwrapped once                                         |
+| Backend types             | `packages/supabase/src/types.ts`                                                 | `.ts`          | Generated DB types + typed exports                                                                                                         |
+| DB conventions doc        | `packages/supabase/docs/database.md`                                             | `.md`          | Postgres/Supabase conventions: migrations, schemas, RLS, RBAC, audit, pgTAP                                                                |
+
+**Backend provider swap.** `@app/core` defines the ports; `@app/supabase` is the
+wired default adapter. To replace Supabase: (1) implement `IAuthGateway`,
+`IBackendClientProvider`, and `IServiceErrorMapper` in a new adapter package;
+(2) build each app's gateway in a folder of its own and list it in the app's
+`src/lib/auth/authGateway.adapter.ts`; (3) keep service signatures unchanged —
+the service seam is the only place the client is touched. RLS policies, SQL
+migrations, and `supabase/config.toml` are adapter-owned and must be reproduced
+in the replacement package.
+
+<!-- endregion supabase -->
+
+
+**Pluggable providers.** Each provider (observability, bot-protection and
+origin-guard, backend) is the DEFAULT adapter of its capability, behind a
 `@app/core` port and swappable via a one-line composition-root edit. See
 [../decisions/0001-pluggable-providers.md](../decisions/0001-pluggable-providers.md).
 
@@ -107,13 +125,6 @@ only inside the seam `.agents/contracts/dependencies.json` names for it (a `ui/`
 `local/wrapped-import` and `pnpm verify:dependency-seams`, and wrapped through the `lib` skill.
 See [../decisions/0002-every-library-behind-an-adapter.md](../decisions/0002-every-library-behind-an-adapter.md).
 
-**Backend provider swap.** `@app/core` defines the ports; `@app/supabase` is the
-wired default adapter. To replace Supabase: (1) implement `IAuthGateway`,
-`IBackendClientProvider`, and `IServiceErrorMapper` in a new adapter package;
-(2) repoint each app's `src/lib/supabase/*.adapter.ts` to the new package;
-(3) keep service signatures unchanged — the service seam is the only place the
-client is touched. RLS policies, SQL migrations, and `supabase/config.toml`
-are adapter-owned and must be reproduced in the replacement package.
 
 **Rule of thumb**: imports React / RN / DOM or a UI lib → it does NOT belong
 here (it goes per-app, sections 2–3). Pure logic / values / contracts → here.
@@ -156,7 +167,7 @@ the `@/*` alias. UI here is DOM / shadcn / Tailwind.
 | Observability root       | `apps/web/src/lib/observability/observability.adapter.ts`                    | `.adapter.ts`      | Composition root — one-line swap; DEFAULT binds `createPostHogObservability()`                                                                                                                                                                                                                                                                    |
 | PostHog adapter (web)    | `apps/web/src/lib/observability/createPostHogObservability.adapter.ts`       | `.adapter.ts`      | DEFAULT `IObservabilityPort`: exception, log record, exception step and identify/reset, each through scrubPII; no-op without a client                                                                                                                                                                                                             |
 | PostHog client (web)     | `apps/web/src/lib/posthog/posthogClient.adapter.ts`                          | `.adapter.ts`      | The one PostHog client and the only `posthog-js` import; browser only, inert without NEXT_PUBLIC_POSTHOG_KEY; privacy defaults; the options of the consent mode                                                                                                                                                                                   |
-| PostHog URL scrub        | `apps/web/src/lib/posthog/scrubCaptureUrls.helper.ts`                        | `.helper.ts`       | `before_send`: every URL property of an event, its person and its heatmap leaves without its query and fragment                                                                                                                                                                                                                                   |
+| PostHog URL scrub        | `apps/web/src/lib/posthog/scrubCaptureUrls.helper.ts`                        | `.helper.ts`       | `before_send`: every URL property of an event, its person and its heatmap leaves without its query and fragment, and with every path segment that reads as a secret replaced by `:redacted`                                                                                                                                                                                                                                   |
 | Consent mode (web)       | `apps/web/src/lib/posthog/resolveConsentMode.helper.ts`                      | `.helper.ts`       | Reads NEXT_PUBLIC_POSTHOG_CONSENT: `granted` when absent, `opt-in` or `memory`; throws on any other value                                                                                                                                                                                                                                         |
 | Consent root (web)       | `apps/web/src/lib/observability/consent.adapter.ts`                          | `.adapter.ts`      | Consent composition root — binds `createPostHogConsent()`; the observability barrel exports it as `consent`                                                                                                                                                                                                                                       |
 | PostHog consent (web)    | `apps/web/src/lib/observability/createPostHogConsent.adapter.ts`             | `.adapter.ts`      | `IConsentPort` over the PostHog client: opt-in mode grants, revokes and reads the choice; `not-required` in every other mode                                                                                                                                                                                                                      |
@@ -186,10 +197,9 @@ the `@/*` alias. UI here is DOM / shadcn / Tailwind.
 | Router test double       | `apps/web/src/test/routing.helper.ts`                                        | `.helper.ts`       | createRoutingDouble: the module a test hands to vi.mock('@/lib/routing'), a router of spies                                                                                                                                                                                                                                                       |
 | Cache policy adapter     | `apps/web/src/lib/cache/cachePolicy.adapter.ts`                              | `.adapter.ts`      | applyCachePolicy({ life, tags }): sets a 'use cache' function's life profile and tags; the only `next/cache` import                                                                                                                                                                                                                              |
 | Cache-life profiles      | `apps/web/src/lib/cache/cachePolicy.constant.ts`                             | `.constant.ts`     | CacheLifeEnum, the seven profiles Next ships; a profile configured in next.config.ts adds its member here                                                                                                                                                                                                                                         |
-| Supabase client wiring   | `apps/web/src/lib/supabase/client.adapter.ts`                                | `.adapter.ts`      | App-local client adapter over `@app/supabase`; `getSupabaseClient` returns the opaque `BackendClientType`                                                                                                                                                                                                                                         |
-| Supabase server wiring   | `apps/web/src/lib/supabase/server.adapter.ts`                                | `.adapter.ts`      | App-local server adapter over `@app/supabase`; resolves to the opaque `BackendClientType`                                                                                                                                                                                                                                                         |
-| Auth gateway wiring      | `apps/web/src/lib/supabase/authGateway.adapter.ts`                           | `.adapter.ts`      | The browser's one auth gateway, shared by the auth provider and the auth service; a no-op on the server or without the Supabase settings                                                                                                                                                                                                          |
-| Auth gateway constants   | `apps/web/src/lib/supabase/authGateway.constant.ts`                          | `.constant.ts`     | SignInFailureEnum, the auth.error message key of each failure, the Supabase Auth codes and unreachable-error name it maps, and the no-op gateway's rejection cause                                                                                                                                                                                |
+| Auth gateway             | `apps/web/src/lib/auth/authGateway.adapter.ts`                               | `.adapter.ts`      | The browser's one auth gateway, shared by the auth provider and the auth service: the one a backend capability lists in its region, or the no-op one |
+| No-op auth gateway       | `apps/web/src/lib/auth/noopAuthGateway.helper.ts`                            | `.helper.ts`       | createNoopAuthGateway: no session, and a sign-in that rejects with the not-configured failure; toSignInFailure |
+| Sign-in failures         | `apps/web/src/lib/auth/authGateway.constant.ts`                              | `.constant.ts`     | SignInFailureEnum, the auth.error message key of each failure, and the no-op gateway's rejection cause |
 | Auth store               | `apps/web/src/stores/auth.store.ts`                                          | `.store.ts`        | Session+status slice through createAppStore; depends on IAuthSession (port), no SDK; exports selectSession/selectAuthStatus/useSession                                                                                                                                                                                                                           |
 | Global stores            | `apps/web/src/stores/ui.store.ts`, `apps/web/src/stores/toast.store.ts`      | `.store.ts`        | Cross-screen slices through createAppStore                                                                                                                                                                                                                                                                                                                       |
 | Auth provider            | `apps/web/src/components/AuthProvider/AuthProvider.component.tsx`            | `.component.tsx`   | Mounts auth bootstrap; takes IAuthGateway via prop (gateway injected at wiring)                                                                                                                                                                                                                                                                   |
@@ -226,6 +236,19 @@ the `@/*` alias. UI here is DOM / shadcn / Tailwind.
 | Route tree               | `apps/web/src/app`                                                           | Next App Router    | RSC pages, layout, providers                                                                                                                                                                                                                                                                                                                      |
 | Test infra               | `apps/web/src/test`                                                          | (no suffix)        | Vitest setup, MSW mocks, test helper, createQueryWrapper of query.helper.tsx (harness, not a unit); each unit's test sits in its own folder's `__tests__/`                                                                                                                                                                                                                                 |
 
+<!-- region supabase -->
+
+The `supabase` capability adds the app's wiring of `@app/supabase`:
+
+| Thing                    | Path                                                                         | Suffix             | What it holds                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------ | ---------------------------------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Supabase client wiring   | `apps/web/src/lib/supabase/client.adapter.ts`                                | `.adapter.ts`      | App-local client adapter over `@app/supabase`; `getSupabaseClient` returns the opaque `BackendClientType`                                                                                                                                                                                                                                         |
+| Supabase server wiring   | `apps/web/src/lib/supabase/server.adapter.ts`                                | `.adapter.ts`      | App-local server adapter over `@app/supabase`; resolves to the opaque `BackendClientType`                                                                                                                                                                                                                                                         |
+| Auth gateway wiring      | `apps/web/src/lib/supabase/authGateway.adapter.ts`                           | `.adapter.ts`      | The Supabase part of the auth gateway, which lib/auth lists; a no-op on the server or without the Supabase settings                                                                                                                                                                                                          |
+| Auth gateway constants   | `apps/web/src/lib/supabase/authGateway.constant.ts`                          | `.constant.ts`     | The sign-in failure of each Supabase Auth code, and the name of the unreachable error                                                                                                                                                                                |
+
+<!-- endregion supabase -->
+
 <!-- region sentry -->
 
 The optional `sentry` capability adds its adapter beside the observability root, and its
@@ -246,6 +269,7 @@ one screen it stays screen-local.
 
 ---
 
+<!-- region mobile-expo -->
 ## 3. Per-app shared globals — Mobile (`apps/mobile/src/`)
 
 Same shape as web, but UI is React Native / NativeWind. Imported via `@/*`.
@@ -308,8 +332,8 @@ Same shape as web, but UI is React Native / NativeWind. Imported via `@/*`.
 | App bootstrap hook            | `apps/mobile/src/lib/bootstrap/useAppBootstrap.hook.ts`                         | `.hook.ts`       | useAppBootstrap: loads APP_FONTS, hides the splash once they load or one fails, and tells the root layout when it may render |
 | App fonts                     | `apps/mobile/src/lib/bootstrap/useAppBootstrap.constant.ts`                     | `.constant.ts`   | APP_FONTS: the Inter and Montserrat faces the app renders its text in; with the hook, the only font-package imports |
 | Safe-area provider            | `apps/mobile/src/lib/bootstrap/AppSafeAreaProvider.component.tsx`               | `.component.tsx` | AppSafeAreaProvider: the root's safe area; with `ui/AuthShell`, the only `react-native-safe-area-context` import |
-| Supabase client wiring        | `apps/mobile/src/lib/supabase/client.adapter.ts`                                | `.adapter.ts`    | App-local client adapter over `@app/supabase`; the client is the opaque `BackendClientType`                                                                                                                                                                                                                                                       |
-| Auth gateway wiring (mobile)  | `apps/mobile/src/lib/supabase/authGateway.adapter.ts`                           | `.adapter.ts`    | The app's one auth gateway over its client, which the root layout hands the auth provider |
+| Auth gateway (mobile)         | `apps/mobile/src/lib/auth/authGateway.adapter.ts`                               | `.adapter.ts`    | The app's one auth gateway, which the root layout hands the auth provider: the one a backend capability lists in its region, or the no-op one |
+| No-op auth gateway (mobile)   | `apps/mobile/src/lib/auth/noopAuthGateway.helper.ts`                            | `.helper.ts`     | createNoopAuthGateway: no session, and a sign-in that rejects |
 | Auth store                    | `apps/mobile/src/stores/auth.store.ts`                                          | `.store.ts`      | Session+status slice through createAppStore; depends on IAuthSession (port), no SDK                                                                                                                                                                                                                                                                              |
 | Global stores                 | `apps/mobile/src/stores/ui.store.ts`, `apps/mobile/src/stores/toast.store.ts`   | `.store.ts`      | Cross-screen slices through createAppStore                                                                                                                                                                                                                                                                                                                       |
 | Auth provider                 | `apps/mobile/src/components/AuthProvider/AuthProvider.component.tsx`            | `.component.tsx` | Mounts auth bootstrap; takes IAuthGateway via prop                                                                                                                                                                                                                                                                                                |
@@ -342,19 +366,14 @@ Same shape as web, but UI is React Native / NativeWind. Imported via `@/*`.
 | Route tree                    | `apps/mobile/src/app`                                                           | Expo Router      | `_layout.tsx` (boots through `src/lib/bootstrap`, imports project modules only), `index.tsx`, file-based routes                                                                                                                                                                                                                                                                                                     |
 | Test infra                    | `apps/mobile/src/test`                                                          | (no suffix)      | Vitest setup + mocks, createQueryWrapper of query.helper.tsx (harness, not a unit); each unit's test sits in its own folder's `__tests__/`, a route test as `<route>.route.test.tsx`                                                                                                                                                                                                      |
 
-<!-- region sentry -->
-
-The optional `sentry` capability adds its adapter beside the observability root:
-
-| Thing                   | Path                                                                     | Suffix        | What it holds                                                                                                        |
-| ----------------------- | ------------------------------------------------------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Sentry adapter (mobile) | `apps/mobile/src/lib/observability/createSentryObservability.adapter.ts` | `.adapter.ts` | `IObservabilityPort` over `@sentry/react-native`; module-scope init; scrubPII; no-ops without EXPO_PUBLIC_SENTRY_DSN |
-
-<!-- endregion sentry -->
-
 The same reserved-by-convention folders apply (`constants/`, `hooks/`,
 `components/`, `validation/`): add them per app only once a thing is shared by
 more than one screen.
+
+The rows an optional capability adds to the mobile app, its backend wiring and its
+error-monitoring adapter, sit in that capability's region of
+[../architecture/mobile.md](../architecture/mobile.md).
+<!-- endregion mobile-expo -->
 
 ---
 
@@ -369,8 +388,15 @@ fetching, layout, and local members. Their internals are mapped per screen by
 | Web    | `apps/web/src/screens`    | `apps/web/src/screens/ItemsDashboard`    |
 | Web    | `apps/web/src/screens`    | `apps/web/src/screens/ItemsSummary`      |
 | Web    | `apps/web/src/screens`    | `apps/web/src/screens/Login`             |
+
+<!-- region mobile-expo -->
+
+| App    | Screens root              | Example screen                           |
+| ------ | ------------------------- | ---------------------------------------- |
 | Mobile | `apps/mobile/src/screens` | `apps/mobile/src/screens/ItemsDashboard` |
 | Mobile | `apps/mobile/src/screens` | `apps/mobile/src/screens/Login`          |
+
+<!-- endregion mobile-expo -->
 
 Data flow inside every screen: **screen → hook → service → adapter**. A screen
 never calls `fetch` directly and never holds business logic in the view.
@@ -385,10 +411,18 @@ never calls `fetch` directly and never holds business logic in the view.
 | Web theme       | `packages/tokens/theme.css`                                                           | Generated; both themes, `@theme` and `@theme inline` |
 | Tailwind preset | `packages/tokens/tailwind-preset.cjs`                                                 | Generated; mobile NativeWind only                 |
 | Web Tailwind    | `apps/web/src/app/globals.css`                                                        | Imports the generated theme; no JS config; keeps the hand-written glass card, body and utilities |
-| Mobile Tailwind | `apps/mobile/tailwind.config.js`                                                      | Extends the generated preset                      |
-| Layout classes | `apps/web/src/helpers/layout.style.ts`, `apps/mobile/src/helpers/layout.style.ts` | Positioning only; every look lives in a component block (`local/style-positions-only`) |
+| Layout classes | `apps/web/src/helpers/layout.style.ts` | Positioning only; every look lives in a component block (`local/style-positions-only`) |
 | Web variants    | `apps/web/src/components/ui/variants.helper.ts`                               | The one `tv` every web ui style file builds with; registers every token name of `@app/tokens` (`themeNames`) with tailwind-merge; `VariantUnionsType`, the variants a `tv` config takes, which each block's constant test holds its unions to |
 | Web fonts       | `apps/web/src/app/fonts/`                                                             | Inter and Montserrat, self-hosted through `next/font/local`: one Latin variable woff2 per family, with its OFL text |
+<!-- region mobile-expo -->
+
+| Concern         | Where                                                                                 | Notes                                             |
+| --------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Mobile Tailwind | `apps/mobile/tailwind.config.js`                                                      | Extends the generated preset                      |
+| Layout classes | `apps/mobile/src/helpers/layout.style.ts` | Positioning only; every look lives in a component block (`local/style-positions-only`) |
+
+<!-- endregion mobile-expo -->
+
 Inline literals (numbers/strings) belong in `*.constant.ts` or `*.style.ts`
 only — enforced by ESLint and by `node scripts/verify-maps.mjs`.
 
@@ -398,7 +432,10 @@ only — enforced by ESLint and by `node scripts/verify-maps.mjs`.
 
 | Thing                   | Path                                                                                                                                                                                      | What it does                                                                                  |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Deterministic gate      | `package.json`                                                                                                                                                                            | `pnpm validate` → `turbo run lint typecheck test build format:check` + verify scripts         |
+| Deterministic gate      | `scripts/validate.mjs`                                                                                                                                                                    | `pnpm validate`: runs the gate registry in order, stops at the first failing step with its exit code (`--list`, `--profile`) |
+| Gate registry           | `.agents/contracts/gates.json`                                                                                                                                                            | Every step of `pnpm validate`, with the capability whose prune removes it, its stage, profile, cost and blind |
+| Gate registry engine    | `scripts/gate/registry.mjs`                                                                                                                                                               | Pure judging, pruning and planning of the registry                                            |
+| Gate registry tests     | `scripts/validate.test.mjs`                                                                                                                                                               | The registry gate's cases, the runner as a process, every capability's prune, every gate blinded (`pnpm validate:test`) |
 | Agent router            | `AGENTS.md`                                                                                                                                                                               | The instruction file every runtime reads: the LAWs and the Router from a task to its skill    |
 | Harness doc             | `docs/harness.md`                                                                                                                                                                         | Every gate, the four layers, and how to add one                                               |
 | Diagram specs           | `docs/diagrams/`                                                                                                                                                                          | Checked-in diagram data; HTML is generated by `pnpm docs:diagrams`                            |
@@ -429,7 +466,6 @@ only — enforced by ESLint and by `node scripts/verify-maps.mjs`.
 | Dependency registry     | `.agents/contracts/dependencies.json` | Every package or subpath the workspace declares or imports, with its category, its seam (the files that may import it, §23) and its owner, the capability whose prune removes it |
 | Dependency seam gate    | `scripts/verify-dependency-seams.mjs`, `scripts/verify-dependency-seams.test.mjs`, `scripts/dependency-seams.detect.mjs`, `eslint-dependency-seam-allowlist.json` | Every `package.json` dependency registered, no stale entry, every seam glob matching a file, the configs ESLint ignores inside their seams, and the frozen allowlist only shrinking, each entry under a migration the registry declares open (`pnpm verify:dependency-seams`, `:test`) |
 | Web render smoke        | `scripts/smoke-web-render.mjs`                                                                                                                                                            | Probes a started `next start` for HTTP 200 and a marker (`pnpm smoke:web`)                    |
-| Mobile export smoke     | `scripts/assert-expo-export.mjs`                                                                                                                                                          | Asserts the Expo export holds an iOS and an Android bundle (`pnpm smoke:mobile`)              |
 | Project rename          | `scripts/init-project.mjs`                                                                                                                                                                | Rewrites `@app/*`, `app-monorepo-template`, and bundle ID to a real project slug              |
 | Identity guard          | `scripts/check-identity.mjs`                                                                                                                                                              | Fails if template-default identity is still present; wired into `pnpm validate`               |
 | SDD operating model     | `openspec/README.md`                                                                                                                                                                      | When a change needs a spec, the lifecycle of a large change, and what checks each rule        |
@@ -464,18 +500,22 @@ only — enforced by ESLint and by `node scripts/verify-maps.mjs`.
 | Adapter tests           | `scripts/agent-harness/adapters.test.mjs`, `scripts/agent-harness/expressiveness.test.mjs`                                                                                                | Each runtime's format; every schema field carried or declared (`pnpm agent-harness:test`)     |
 | Projection tests        | `scripts/agent-harness/projection-generation.test.mjs`, `scripts/agent-harness/sync.test.mjs`                                                                                             | Reader, writer, checker (scratch git runs included) and sync (`pnpm agent-harness:test`)      |
 | Hook projection         | `scripts/agent-harness/hooks-projection.mjs`, `scripts/agent-harness/hooks-projection.test.mjs`, `.agents/hooks.json` | Reads the neutral hook source and renders `.claude/settings.json`, which projection-check guards (`pnpm agent-harness:test`) |
-| Claude Code settings    | `.claude/settings.json` | Generated: the PreToolUse hook that runs the write guard on Edit, Write and NotebookEdit |
+| Claude Code settings    | `.claude/settings.json` | Generated: the PreToolUse hook that runs the write guard on Edit, Write and NotebookEdit, and the SessionStart hook that runs the process reaper |
 | Write guard policy      | `.agents/contracts/write-guard.json` | The rule-file globs and the switch-off variable, `ATL_WRITE_GUARD=off` |
 | Write guard engine      | `scripts/agent-harness/write-guard/paths.mjs`, `scripts/agent-harness/write-guard/policy.mjs`, `scripts/agent-harness/write-guard/decide.mjs` | One decision for every runtime: deny, ask or nothing for a file-tool call, by actor and target |
 | Write guard hook        | `scripts/agent-harness/write-guard/claude-hook.mjs` | The Claude Code adapter: a PreToolUse payload on stdin, a `permissionDecision` on stdout |
 | Write guard tests       | `scripts/agent-harness/write-guard/paths.test.mjs`, `scripts/agent-harness/write-guard/policy.test.mjs`, `scripts/agent-harness/write-guard/decide.test.mjs`, `scripts/agent-harness/write-guard/decide.paths.test.mjs`, `scripts/agent-harness/write-guard/decide.fixtures.mjs`, `scripts/agent-harness/write-guard/claude-hook.test.mjs` | Every cell of the decision table, every Windows spelling of a path, a planted `.git`, the user-level settings, errors, the switch-off, the timing of a deep path, the committed policy, and the real hook end to end, a junction included (`pnpm write-guard:test`) |
+| Process reaper contract | `.agents/contracts/process-reaper.json` | The one-shot families of orphaned processes the reaper may end, matched by executable and script, the processes it spares, the grace period and the time bound |
+| Process reaper engine   | `scripts/agent-harness/reaper/contract.mjs`, `scripts/agent-harness/reaper/plan.mjs`, `scripts/agent-harness/reaper/platform.mjs`, `scripts/agent-harness/reaper/bounded-child.mjs`, `scripts/agent-harness/reaper/lock.mjs` | Reads the contract, decides from the process list which orphan trees to end, lists and ends them on each platform, one killing reaper at a time; `runBounded` ends a bounded child with its tree |
+| Process reaper command  | `scripts/agent-harness/reaper/reap.mjs`, `scripts/agent-harness/reaper/session-start.mjs` | `pnpm reap` (dry run) and `pnpm reap:kill`, and the Claude Code SessionStart hook that runs it, quiet, at every session start |
+| Process reaper tests    | `scripts/agent-harness/reaper/contract.test.mjs`, `scripts/agent-harness/reaper/plan.test.mjs`, `scripts/agent-harness/reaper/platform.test.mjs`, `scripts/agent-harness/reaper/bounded-child.test.mjs`, `scripts/agent-harness/reaper/reap.test.mjs`, `scripts/agent-harness/reaper/session-start.test.mjs` | Every rule over synthetic process tables, each platform through an injected spawn, the bound and the exit codes, the hook's exit 0, and a real tree ended on Windows (`pnpm reap:test`) |
 | Agent context           | `.agents/agent-context.json` | The skills that grade each agent (`gradedBy`), and what it may write (`writes`, `surface`) |
 | Agent context gate      | `scripts/verify-agent-context.mjs` | Every agent has a `gradedBy` naming skills that exist and a `writes`, any `surface` is well formed, and no entry outlives its agent (`pnpm verify:agent-context`) |
 | Agent context tests     | `scripts/verify-agent-context.test.mjs` | Synthetic entries for each refusal, plus runs over a scratch tree and the repository (`pnpm verify:agent-context:test`) |
 | Harness config          | `.agents/harness.config.json` | The project's harness settings: `workflow.mode`, `delivery.mergePolicy` (read by the architect's merge queue) and `backend` |
 | Harness config schema   | `.agents/contracts/harness-config.schema.json` | Every section, setting, allowed value and default of the harness config |
-| Harness config gate     | `scripts/verify-harness-config.mjs` | The harness config holds only what its schema declares and allows, and the schema only keywords the gate reads (`pnpm verify:harness-config`) |
-| Harness config tests    | `scripts/verify-harness-config.test.mjs` | A case for each refusal against the repository's schema, runs over a scratch tree and the repository, and the schema's merge policies held to the ticket skills' (`pnpm verify:harness-config:test`) |
+| Harness config gate     | `scripts/verify-harness-config.mjs` | The harness config holds only what its schema declares and allows, and neither file gives a key twice in one object; the schema uses only keywords the gate reads, `additionalProperties` only as `true` or `false`, and closes every object with `additionalProperties: false` (`pnpm verify:harness-config`) |
+| Harness config tests    | `scripts/verify-harness-config.test.mjs` | A case for each refusal against the repository's schema, a key given twice, a non-boolean `additionalProperties` and an open object among them, runs over a scratch tree and the repository, and the schema's merge policies held to the ticket skills' (`pnpm verify:harness-config:test`) |
 | Gate helpers            | `scripts/gate/gate.mjs`, `scripts/gate/cases.mjs`, `scripts/gate/scratch.mjs`                                                                                                             | `defineGate`, `reportGate`, `blindGate`, the companion-test contract and `withScratchTree`    |
 | Hook-safe git env       | `scripts/git-free-env.mjs`                                                                                                                                                                | Drops every `GIT_*` variable before a script runs git (`pnpm git-free-env:test`)              |
 | Worktree pruner         | `scripts/prune-worktrees.mjs`, `.husky/post-merge` | Removes merged worktrees nothing in them would be lost from, then fast-forwards the main checkout (`pnpm worktrees:prune`, run by `post-merge`) |
@@ -507,7 +547,7 @@ only — enforced by ESLint and by `node scripts/verify-maps.mjs`.
 | SDD steward subagent    | `.agents/agents/sdd-steward.agent.md` | Neutral source of the agent that runs one SDD change, or one sync, in one context; graded by the `sdd` skill; its projections are generated |
 | Image posture doc       | `docs/images.md`                                                                                                                                                                          | Image cost/hotlink/scrape protection — edge cache, signed URLs, WAF rules, bot mode           |
 | Code standards          | `docs/code-standards.md`                                                                                                                                                                  | Every binding coding rule and the §21 rule-to-validation ledger                               |
-| Architecture docs       | `docs/architecture/shared.md`, `docs/architecture/web.md`, `docs/architecture/mobile.md`                                                                                                  | The sharing model and the per-app fractal structure                                           |
+| Architecture docs       | `docs/architecture/shared.md` and each app's doc beside it                                                                                                  | The sharing model and the per-app fractal structure                                           |
 | Decision records        | `docs/decisions/`                                                                                                                                                                         | ADRs: `0001-pluggable-providers.md` and `0002-every-library-behind-an-adapter.md`             |
 | Screen map template     | `docs/maps/screen-map.template.md`                                                                                                                                                        | Starting point for a per-screen map                                                           |
 | E2E and responsive docs | `docs/e2e.md`, `docs/responsive.md`                                                                                                                                                       | The Playwright harness and the responsive viewport matrix                                     |
@@ -515,6 +555,14 @@ only — enforced by ESLint and by `node scripts/verify-maps.mjs`.
 | Observability doc       | `docs/observability.md`                                                                                                                                                                   | Error and event reporting through the observability port                                      |
 | Shared memory doc       | `docs/memory.md`                                                                                                                                                                          | Loading and contributing the shared Engram memory                                             |
 | Propagation doc         | `docs/propagation.md`                                                                                                                                                                     | Selective sync of template improvements into derived projects                                 |
+
+<!-- region mobile-expo -->
+
+| Thing                   | Path                                                                                                                                                                                      | What it does                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Mobile export smoke     | `scripts/assert-expo-export.mjs`                                                                                                                                                          | Asserts the Expo export holds an iOS and an Android bundle (`pnpm smoke:mobile`)              |
+
+<!-- endregion mobile-expo -->
 
 ---
 

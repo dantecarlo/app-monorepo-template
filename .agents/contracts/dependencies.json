@@ -289,6 +289,13 @@
       "note": "The default observability adapter (F.7)."
     },
     {
+      "name": "expo-file-system",
+      "category": "vendor",
+      "owner": "mobile-expo",
+      "seam": ["apps/mobile/src/lib/posthog/sdkStorage.adapter.ts"],
+      "note": "Removes the files posthog-react-native keeps in the document directory under granted, at every opt-in launch (F54); nothing else reads or writes the file system."
+    },
+    {
       "name": "@supabase/supabase-js",
       "category": "vendor",
       "owner": "supabase",
@@ -312,7 +319,7 @@
     {
       "name": "@app/cloudflare",
       "category": "vendor-package",
-      "owner": "cloudflare",
+      "owner": "web-next",
       "seam": ["apps/web/src/lib/{bot-protection,origin-guard}/**"]
     },
     {

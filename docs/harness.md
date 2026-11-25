@@ -47,28 +47,57 @@ commit messages of a pull request again, its default ignores aside (Layer 4).
 `post-merge` runs after a local `git merge` or `git pull`, in whichever
 worktree ran it, and is the only hook that changes other checkouts.
 `pnpm worktrees:prune` runs the same pruner by hand, and `--dry-run` prints
-what it would remove and move, touching nothing. After `git fetch --prune
-origin` it removes a linked worktree only when its branch's upstream is
-gone, its HEAD is in the default branch (the one `origin/HEAD` names),
+what it would remove and move, touching nothing. It starts with `git fetch
+--prune origin`, stopped after 30 s or the seconds
+`PRUNE_WORKTREES_FETCH_SECONDS` names, rounded up to whole milliseconds
+(any value that is not a positive number fails the run before it touches
+anything); a fetch stopped there is ended with every process it started
+(`taskkill /T /F` on Windows, section 3g), skips the prune and the fast-forward, prints one line that says so, under
+`--quiet` too, and exits 0, so a stalled remote holds a merge or a pull for
+that long at most. After the fetch it removes a linked worktree only when
+its branch's upstream is gone, its HEAD is in the default branch (the one
+`origin/HEAD` names),
 `git status` shows nothing modified or untracked and no ignored file outside
 what an install, a build or the next session writes again (`node_modules/`,
-the build outputs at a root, `.husky/_/`), and `git ls-files -v` marks no
-file skip-worktree or assume-unchanged, edits `git status` cannot see; an
-env file and anything under `.atl/` keep it. It never removes the main
-checkout, the worktree it runs in, a locked worktree, one under
+the build outputs at a root, `.husky/_/`, and an `.atl/` that holds only
+the two files the skill-registry skill writes again, `skill-registry.md`
+and `.skill-registry.cache.json`), and `git ls-files -v` marks no file
+skip-worktree or assume-unchanged, edits `git status` cannot see; an env
+file and anything else under `.atl/`, told apart by name, keep it. Those
+reads run again just before each removal, so a change made while it
+removes the others, an ignored file nothing rebuilds included, keeps that
+worktree. It never removes the main checkout, the worktree it runs in, a
+locked worktree, one under
 `.claude/worktrees/` or one holding another worktree, and it deletes the
 branch only while its tip is the commit it judged. Last, it fast-forwards
 the main checkout with `git merge --ff-only` when that checkout is on the
 default branch. Any tracked local change there, staged or not, a
 line-ending-only one included, blocks it, and so does whatever git refuses
 (a local commit, an untracked file the merge would overwrite); the checkout
-then stays and a line says how far behind it is and why. The fast-forward
-fires that checkout's own `post-merge`; the pruner runs it with
+then stays and a line says how far behind it is and why. A dry run predicts
+that refusal without moving anything: a HEAD that is not an ancestor of the
+default branch, and whatever a dry run of the checkout
+(`git read-tree -m -u --dry-run`) refuses, as an untracked file it would
+overwrite, make it say "would leave" where it would otherwise say "would
+fast-forward". That dry checkout runs against a copy of the index in a
+scratch directory, refreshed first as `git merge --ff-only` refreshes it,
+so a file whose timestamp alone changed is no refusal, and the main
+checkout's own index and its `index.lock` are left alone. A run that fails before it removes anything exits 1 and
+says nothing was removed; one that fails after a removal, at the
+fast-forward say, still prints its report, the removals and the summary,
+then git's message and how many worktrees it removed before it failed,
+and exits 1. The fast-forward fires that checkout's own `post-merge`;
+the pruner runs it with
 `PRUNE_WORKTREES_RUNNING` set, and a run that finds it set exits at once,
 so the rest of that hook still runs. A dry run ends with what the pruner
 does not cover: it still runs `git fetch --prune`, a worktree another
 process holds as its current directory on Windows is emptied and
-unregistered, and the merge waits for the prune.
+unregistered, the merge waits for the prune, on Windows a fetch stopped at
+its bound ends without git's own cleanup (its remote helper is ended with it
+since the process reaper's change, though the printed line still says it runs
+on: F74), and an ignored file written in
+the moment between the last check and git's own removal goes with the
+worktree.
 `core.hooksPath` stays the relative `.husky/_` husky writes at repository
 level, so each worktree runs the hooks of its own checkout. Never set it per
 worktree or as an absolute path: git 2.55 copied an absolute per-worktree
@@ -89,22 +118,75 @@ ATL_TEMPLATE_SELF=1 pnpm validate
 **Nothing is done until this exits 0.** Check the exit code, not the tail of a
 pipe: `pnpm validate | tail` reports the exit status of `tail`, which is always 0. Use `pnpm validate > log 2>&1; echo $?`.
 
-The chain runs in cost order:
+### The gate registry
 
-### 3a. Instant gates — they run first
+`pnpm validate` runs `scripts/validate.mjs`, which runs the steps of the gate
+registry, `.agents/contracts/gates.json`, in order: `pnpm <id>` for each step,
+or the step's own `command`. The first step that fails stops the run, and the
+runner exits with that step's exit code, as the `&&` chain it replaced did. A
+registry the runner refuses, or a registry, root `package.json` or
+`template.manifest.json` it cannot read, runs no step and exits 1.
+
+```bash
+pnpm validate --list             # every step with its fields; runs none
+pnpm validate --profile strict   # also the strict-only steps (none today)
+```
+
+| Field        | Holds                                                                                          |
+| ------------ | ---------------------------------------------------------------------------------------------- |
+| `id`         | The root `package.json` script the step runs, unless it carries a `command`                    |
+| `capability` | The owner whose prune removes the step: `core`, never pruned, or a capability of the manifest  |
+| `stage`      | `preflight`, `workspace` or `repository` (3a, 3b, 3c); a stage never runs before the one above |
+| `profile`    | The lowest quality profile that runs it: `standard` (the default) or `strict`                  |
+| `cost`       | `instant`, `seconds` or `minutes`, declared; the run prints the measured time beside it        |
+| `blind`      | `exported-cases`, on the one step that blinds a `defineGate` gate                              |
+
+**Every gate script is registered.** Each root script named `verify:*` or
+`*:test` is a step, or an entry of the registry's `outside` list, which names
+the script, the capability whose prune removes the entry, and the reason
+`pnpm validate` does not run it: `verify:ticket-branch` (the template's own
+branches carry no ticket id) and `verify:expo` (it reaches the network). The
+runner refuses an unregistered one, and a stale or doubled entry, before any
+step runs, so a gate added to `package.json` cannot silently stay out of the
+gate.
+
+**A capability's prune removes its gates by data.** An absent capability takes
+every step it owns, as it takes the dependency-registry entries it owns
+([manifest.md](manifest.md) § Registry entries have owners too); nothing edits
+a command chain. The registry is a contract, so the write guard asks before
+anyone edits it (3f): removing a step removes a gate.
+
+`pnpm validate:test` (`scripts/validate.test.mjs`, a preflight step) proves the
+registry and its runner: the registry gate refuses each defect it names; the
+runner, run as a process over scratch trees with a fake `pnpm`, runs the steps
+in order, stops at the first failure with its exit code, and refuses what it
+cannot read; the `sdd` prune drops its four steps and keeps the rest in order;
+every capability's prune, with the scripts it unsets, leaves a registry the
+pruned `package.json` runs and no step running a file it removes; and every
+gate the run reaches is blinded by exactly one step, whose companion's exported
+`CASES` fail against `blindGate`, run as a git hook would run them.
+
+> **Pending merge.** The harness-config branch (unit 4.1b) adds
+> `verify:harness-config` to the old chain. It gets its registry entry when the
+> two branches meet; until it does, the runner refuses the merged tree, naming
+> the script.
+
+### 3a. Preflight — the instant gates run first
 
 | Gate                            | Proves                                                    |
 | ------------------------------- | --------------------------------------------------------- |
 | `pnpm agent-harness:projection-check` | Every projected agent file equals what its neutral source renders, and is committed (see 3e) |
 | `pnpm agent-harness:test`       | The projector's reader, adapters, hook projection, writer, checker and sync still behave |
 | `pnpm write-guard:test`         | The write guard decides every cell of its table, its errors and its switch-off, reads every Windows spelling of a path (or refuses what it cannot read) and every checkout that holds it, judges a 10,000-folder path in under a second, every checkout rule glob matches a file and every module the hook loads is a rule file, and the real hook answers a payload on stdin end to end, through a junction too (see 3f) |
+| `pnpm reap:test`               | The process reaper's core decides each rule over synthetic process tables (an orphan, a live parent, a reused pid, POSIX reparenting, unknown names, a family matched by executable and script and never by text in the arguments, persistent and watch work, the wrappers, live Git for Windows shells and tmux, its own ancestry, the spared processes, the grace period); the adapter lists and ends on each platform through an injected spawn; the command's modes, lock, second listing, bound and exit codes; the session hook's kill mode and its exit 0 on any failure; and `runBounded` ends a real child's tree on Windows (see 3g) |
 | `pnpm verify:agent-context:test` | The agent-context gate fails each defect it names, on synthetic entries and over a scratch tree |
 | `pnpm verify:agent-context`     | Every agent of `.agents/agents/` has an entry in `.agents/agent-context.json` whose `gradedBy` names the skills that grade it, each a folder of `.claude/skills/` holding a `SKILL.md`, whose `writes` is true or false, whose `surface`, if any, lists repository-relative folders beside `writes: true`, and which holds no other key; no entry names an agent that is gone (see 3e) |
 | `pnpm verify:harness-config:test` | The harness config gate fails each defect it names, a key given twice and an `additionalProperties` other than `false` among them, against the repository's schema, and over a scratch tree; the schema's merge policies are the ones the ticket skills name, `manual` the default |
-| `pnpm verify:harness-config`    | `.agents/harness.config.json` holds only the sections and settings `.agents/contracts/harness-config.schema.json` declares, each a value it allows and every required one there, the database-test mode under a `supabase` backend only, and neither file gives a key twice in one object; the schema uses only the keywords the gate reads, `additionalProperties` only as `true` or `false`, and sets it to `false` on every object outside a conditional branch (see 3g) |
+| `pnpm verify:harness-config`    | `.agents/harness.config.json` holds only the sections and settings `.agents/contracts/harness-config.schema.json` declares, each a value it allows and every required one there, the database-test mode under a `supabase` backend only, and neither file gives a key twice in one object; the schema uses only the keywords the gate reads, `additionalProperties` only as `true` or `false`, and sets it to `false` on every object outside a conditional branch (see 3h) |
 | `pnpm verify:manifest`          | `template.manifest.json` is well formed                   |
 | `pnpm verify:manifest:coverage` | Every tracked file has exactly one owner, no stale claims |
 | `pnpm verify:manifest:test`     | The pure engine behind both still behaves                 |
+| `pnpm validate:test`            | The gate registry and its runner hold, its prunes leave a runnable registry, and every gate it runs is blinded (above) |
 | `pnpm verify:lint-rules:test`   | The local ESLint rules still report what they must        |
 | `pnpm verify:allowlist-freshness:test` | The styling allowlist gate fails a stale entry and an unlisted violation |
 | `pnpm verify:allowlist-freshness` | Every entry of `eslint-style-positioning-allowlist.json` still breaks its rule, and every violation in the `src/` of every app is listed; prints the live count |
@@ -112,17 +194,17 @@ The chain runs in cost order:
 | `pnpm verify:dependency-seams` | Every `package.json` dependency is in `.agents/contracts/dependencies.json` and every entry is declared; a `package.json` it cannot read fails, naming it; every seam glob matches a file; the configs ESLint ignores import inside their seams; every entry of `eslint-dependency-seam-allowlist.json` is still a violation under a migration the registry declares open, every open migration is named by an entry, and every violation is listed; prints the live counts, and none against a registry it refuses |
 
 Structural drift fails here, before anything expensive builds. See
-[manifest.md](manifest.md). The projection check is step 1 of the chain: an agent
+[manifest.md](manifest.md). The projection check is step 1 of the registry: an agent
 file edited by hand fails before anything else runs.
 
-### 3b. Turbo — lint, typecheck, test, build
+### 3b. Workspace — turbo: lint, typecheck, test, build
 
 `turbo run lint typecheck test build format:check` across every workspace.
 `format:check` has no workspace task yet, so it runs nothing: formatting is
 enforced by the `prettier/prettier` ESLint rule on workspace TS/TSX, and by
 the pre-commit hook on staged files.
 
-### 3c. The verify scripts
+### 3c. Repository — the verify scripts
 
 | Gate                  | Proves                                                                                    |
 | --------------------- | ----------------------------------------------------------------------------------------- |
@@ -132,7 +214,7 @@ the pre-commit hook on staged files.
 | `verify:structure`    | Screen and component folders satisfy the block contract                                   |
 | `verify:security`     | The static security posture holds                                                         |
 | `verify:theme-sync`   | Every generated token output (the web `theme.css`, the NativeWind preset, the mobile `themeVars`, the `themeNames` the shared `tv` registers) equals its regeneration from `tokens.constant.ts`; `verify:theme-sync:test` plants a hand edit in each and an un-regenerated source change |
-| `verify:mcp-docs`     | The generated block of `docs/mcp.md` is what `pnpm mcp:docs` wrote and lists every server, package and capability of `.agents/contracts/mcp-servers.json` plus `.mcp.json`; offline, and it never judges a version. `verify:mcp-docs:test` plants each drift; `mcp:docs:test` drives the updater with an injected registry |
+| `verify:mcp-docs`     | The generated block of `docs/mcp.md` is what `pnpm mcp:docs` wrote and lists every server, package and capability of `.agents/contracts/mcp-servers.json` plus `.mcp.json`, with each server's exact pin and its direct `node` command; offline, and it refuses `npx`, a missing or inexact version and a first argument that does not name the entry. `verify:mcp-docs:test` plants each drift; `mcp:docs:test` drives the updater with an injected registry |
 | `verify:ticket-branch:test` | `scripts/verify-ticket-branch.test.mjs` drives the branch check (below, 3d) with a valid ticket branch and pull request body and each refusal, under the default ticket identity and under example layers (a TASK-slug one among them), with each malformed block and flag, and as a process over a scratch working directory |
 | `verify:skills:test` | `scripts/verify-skills.test.mjs` holds the seven ticket skills of `.claude/skills/` to their sections (the shape of `new-skill`, every state, role and board operation of `ticket-flow`, Dropped among the states of its table and of the process template's, the role skills' opening and the contract tables they must not copy, the three templates, the ticket template's target version marked `**Version (required):**`, and both merge policies, `manual` and `low-risk`, named in `ticket-flow` rule 4, `refine-ticket`'s merge queue, `process-intake`'s mapping step and the process template, each beside `.agents/harness.config.json`, where the project records its own, and the process template's Policy line names `delivery.mergePolicy` in it; the policy read fail closed: `ticket-flow` rule 4 and `refine-ticket`'s merge queue say that a value other than `low-risk`, a missing file, or a file that does not parse means `manual`, and that the policy is read from the default branch's copy, never from the pull request's own branch; the production branch: the process template's Branching model, whose Production branch line gives `production`, the default; the merge queue: `refine-ticket` has its § Merge queue, `qa-ticket`'s hand-off step names `<id> ready to merge, PR #<n>`, and `qa-ticket` holds no `Ready to merge → Done`; the ticket identity: `ticket-flow` names `branchTypes` and the `json ticket-identity` block, `process-intake`'s mapping step names the block, and the process template ships one that the branch check reads with no finding and whose fields are its defaults; QA's checkout: `qa-ticket`'s Step 2 adds its worktree with `--detach` and its Step 5 pushes with `git push origin HEAD:<branch>`; and the hotfix: `qa-ticket`'s hand-off step, `refine-ticket`'s release step and `ticket-flow`'s messages name `<id> ready to merge, hotfix`, and `release-ticket`'s Hotfix section says that QA leaves it at Ready to merge; and the board as the source: `ticket-flow`'s Board operations and the process template's Board adapter name the board the source of every open ticket, and the closed ticket catalog: `refine-ticket`'s § Record the closed tickets names `§ Closed Ticket Catalog` and one pull request per close or release, `po-ticket` names no `edits:`, since the PO does no repository work, and `refine-ticket`'s merge queue says that the architect brings the catalog pull request current itself and that each row it adds matches its board page in id, title, target version and closing pull request; and the drop: `ticket-flow` has its § Dropped, naming `Superseded by:`, and its messages name `<id> dropped`, which `po-ticket`'s Step 6 — Drop a ticket, `refine-ticket`'s § Drop a ticket, `dev-ticket`'s § Changes requested and `qa-ticket`'s Step 7 also name, and `refine-ticket`'s § Record the closed tickets names `### Dropped tickets`; and the later bring-current: `refine-ticket`'s merge queue brings a ticket's pull request current from a spare worktree of its own, never QA's or the dev's, names `--detach` and `git push origin HEAD:<branch>`, pushes in the background and says that a code conflict goes back to the dev session, none of `ticket-flow`, `refine-ticket` and `qa-ticket` names `<id> bring current`, and `qa-ticket` holds no `Ready to merge → Changes requested`), with synthetic cases and over the repository; it also runs the cases of `.claude/skills/general-plan/validate-general-plan.test.mjs` |
 | `docs:diagrams:check` | Every committed diagram matches its spec and the tokens                                   |
@@ -145,7 +227,7 @@ the pre-commit hook on staged files.
 | `verify:skill-frontmatter` | Every `.claude/skills/*/SKILL.md` has a frontmatter that parses, a `name` that is its folder, and a description of at most 1,024 characters once parsed (the line break a `>` block keeps counted) that holds `USE WHEN:` and `DO NOT USE:`; a skill `.claude/skills-lock.json` lists (archify) is vendored and gets the parse, name and length checks only. `verify:skill-frontmatter:test` plants each refusal, both quoting styles and both block styles |
 | `verify:skill-neutrality` | No file under `.claude/skills/` (a `SKILL.md`, a template, a reference or a script, a vendored skill included) names a downstream project: a name `.agents/contracts/downstream-projects.json` declares for one, matched as a whole word in any letter case, so a product name also catches the package scope, slug and bundle id built from it, and a name inside a longer word does not. A downstream project's core-purity gate refuses a first-party skill that names a product, so a template skill that names one is refused on sync. The list names donor products, so it is `template-maintainer` material and never ships: a derived project finds it absent and the gate forbids nothing, saying so in its denominator, while the template, run with `ATL_TEMPLATE_SELF=1`, fails without it; a list that does not parse, declares no project, or gives a project no name fails too. A new downstream project is one entry of that list. `verify:skill-neutrality:test` plants each refusal with synthetic names and runs the gate over a scratch tree |
 | `git-free-env:test`, `hook-git-dir:test` | `gitFreeEnv()` drops every `GIT_*` variable, in any case, from the environment a script hands to git or to a child; `withHookGitDir` runs a flow with `GIT_DIR` and `GIT_INDEX_FILE` naming a decoy repository, as a git hook exports them, reports whether anything under the decoy changed, and puts both variables back and removes the decoy however the flow ends. Every suite that spawns git runs one end-to-end case under it and asserts the decoy is left alone; `init-project:test` takes its whole copy under it |
-| `worktrees:prune:test` | `scripts/prune-worktrees.test.mjs` drives the pruner (Layer 2) over a scratch origin, its clone and one linked worktree per case, `--dry-run` first: the merged clean worktree goes and its branch with it; every reason to keep one is seen kept and printed, an ignored file nothing rebuilds, an env file, a file under `.atl/`, a lock, an edit hidden by `--skip-worktree` or `--assume-unchanged` and a file that differs only in its line endings among them; a branch whose tip moved after it was judged stays; a dry run removes and moves nothing, states the real run's decisions and ends with what is not covered; the main checkout is fast-forwarded to `origin/HEAD`'s branch, whatever its name, and is left, with the reason, over any tracked local change, staged, line-ending-only or in a file the fast-forward does not touch, and over git's refusal, named by its first line that is not a hint and the files it lists; the worktree the command runs in survives the `post-merge` that fast-forward fires; an unset `origin/HEAD` exits 1 naming `git remote set-head origin --auto`; and the real `.husky/post-merge`, run by `git hook run`, prunes and exits 0 even when the pruner fails |
+| `worktrees:prune:test` | `scripts/prune-worktrees.test.mjs` drives the pruner (Layer 2) over a scratch origin, its clone and one linked worktree per case, `--dry-run` first: the merged clean worktree goes and its branch with it; every reason to keep one is seen kept and printed, an ignored file nothing rebuilds, an env file, a file under `.atl/`, a note beside the two skill-registry files in `.atl/`, a lock, an edit hidden by `--skip-worktree` or `--assume-unchanged` and a file that differs only in its line endings among them; a branch whose tip moved after it was judged stays; an `.atl/` that holds only those two files goes with its worktree; an ignored file nothing rebuilds, written after the decision, keeps the worktree at the check just before its removal, and a worktree still clean there goes with its branch; a dry run removes and moves nothing, states the real run's decisions and ends with what is not covered; the main checkout is fast-forwarded to `origin/HEAD`'s branch, whatever its name, and is left, with the reason, over any tracked local change, staged, line-ending-only or in a file the fast-forward does not touch, and over git's refusal, named by its first line that is not a hint and the files it lists; a dry run says it would leave a main checkout that diverged, and one with an untracked file the fast-forward would overwrite, with git's refusal, and touches neither, while a file whose timestamp alone changed and an `index.lock` already in the main checkout leave its "would fast-forward" as it was; the worktree the command runs in survives the `post-merge` that fast-forward fires; an unset `origin/HEAD` exits 1 naming `git remote set-head origin --auto`; a step that fails after a removal exits 1 and still reports the removal, never "nothing was removed"; a fetch from a remote that never answers is stopped at `PRUNE_WORKTREES_FETCH_SECONDS`, and the run says so, removes and moves nothing and exits 0, where the same repositories with a remote that answers are pruned and moved; on Windows a fetch stopped at its bound ends the ssh command git started; the bound is 30 s, a value that is not a positive number throws, naming it, and one that is no whole number of milliseconds is rounded up; and the real `.husky/post-merge`, run by `git hook run`, prunes and exits 0 even when the pruner fails |
 | `verify:router-coverage` | Every "Load skill" cell of the Router tables of `AGENTS.md` (its `## Router` section) names, in backticks, a skill with a `.claude/skills/<name>/SKILL.md`, and every skill, read as `verify:skill-frontmatter` reads them, has a row; every "Validated by" cell is `review` or cites, in backticks, only scripts the root `package.json` defines, the text outside the backticks (`lint` (jsx-a11y)) explaining them; a Router table missing either column, a Router with no table and an `AGENTS.md` with no Router fail too. An `/init` prune that drops a skill leaves its row dead and fails this gate until Stage 6 removes the row. `verify:router-coverage:test` plants each refusal and runs the gate over a scratch tree |
 | `codex-budget:test`   | The generated `.codex/config.toml` sets `project_doc_max_bytes` above every table header, and `AGENTS.md`, counted with CRLF endings, fits it: Codex drops what is past the budget |
 | `check:identity`      | The template's default identity is gone (skipped on self)                                 |
@@ -212,7 +294,7 @@ runtime reads, and `scripts/agent-harness/` holds the projector:
 | `.codex/agents/<name>.toml`, `.codex/config.toml` | Codex; the config also holds the `AGENTS.md` budget |
 | `.opencode/agents/<name>.md`, `opencode.json` | OpenCode |
 | `.github/agents/<name>.agent.md`    | Copilot     |
-| `.claude/settings.json`             | Claude Code: the hooks of `.agents/hooks.json` (3f) |
+| `.claude/settings.json`             | Claude Code: the hooks of `.agents/hooks.json` (3f, 3g) |
 | `.agents/projection-manifest.json`  | none: the sha256 of every output |
 
 To change an agent, edit its source, run `pnpm agent-harness:generate` (or
@@ -271,7 +353,7 @@ reader it uses, and `scripts/manifest-owners.mjs`), `.husky/**`,
 `.github/workflows/**`, and the user-level `~/.claude/settings.json` and
 `~/.claude/settings.local.json`, where `disableAllHooks` switches every hook
 off; and `.agents/harness.config.json`, whose `delivery.mergePolicy: low-risk` lets
-an agent merge without asking (3g). `package.json` is not one. A glob reads as
+an agent merge without asking (3h). `package.json` is not one. A glob reads as
 the manifest's do, with letter
 case ignored, against the path relative to EVERY checkout that holds the file,
 so a rule file of a sibling worktree, or of a clone under the temp dir, is one
@@ -355,7 +437,93 @@ declares a surface yet. User-level settings moved by `CLAUDE_CONFIG_DIR`, and
 the managed settings an administrator installs, are not read. Nor why a rule
 changed, which review reads.
 
-### 3g. The harness config
+### 3g. The process reaper
+
+On Windows a killed parent does not take its children with it. A Claude Code
+session that crashes or is restarted, a background shell the harness stops, or
+a stopped `pnpm validate` leaves its MCP servers, turbo, the vitest workers,
+esbuild and `git-remote-https` running with a dead parent, and over a day they
+fill the machine's memory. The reaper ends them; the owner asked for it as
+priority 1 on 2026-11-20.
+
+| Piece                                            | What it is |
+| ------------------------------------------------ | ---------- |
+| `.agents/contracts/process-reaper.json`          | The families it may end, the processes it spares, the 60 s grace and the 8 s bound; a rule file |
+| `scripts/agent-harness/reaper/plan.mjs`          | The pure core: from the process list, as data, each process's entry and the trees to end and keep, each with its reason |
+| `scripts/agent-harness/reaper/platform.mjs`      | The adapter: it lists with `Get-CimInstance Win32_Process` on Windows and `ps` on POSIX, and ends a tree with `taskkill /PID <pid> /T /F`, or SIGTERM then SIGKILL after 2 s |
+| `scripts/agent-harness/reaper/bounded-child.mjs` | `runBounded`: a child with a time bound, ended with its whole tree at the bound; the worktree pruner's fetch runs through it |
+| `scripts/agent-harness/reaper/lock.mjs`          | The lock that keeps one killing reaper at a time |
+| `scripts/agent-harness/reaper/reap.mjs`          | The command, `pnpm reap` and `pnpm reap:kill` |
+| `scripts/agent-harness/reaper/session-start.mjs` | The Claude Code `SessionStart` hook |
+
+**What it ends.** An orphan: a process whose parent pid names no live process,
+or names one that started after it (the pid was reused); on POSIX also one
+under pid 1 or the user's subreaper (`systemd --user`, a WSL `/init`). A family
+matches a process's entry alone, never text anywhere in its command line: its
+own executable and, for node or python, the script it runs, its first argument
+that is not a flag, with the arguments after it. It ends an orphan only when
+that entry matches a family, and then with its whole descendant tree: an MCP
+server npx started from its cache, the known MCP server entrypoints (context7,
+codegraph serve --mcp, shadcn mcp, next-devtools, metro, expo-mcp,
+react-native-docs, lottiefiles, scrapling), a one-shot vitest run and its
+workers, a one-shot turbo run, the esbuild service, a one-shot tsc, jest workers
+and `git-remote-https`. A wrapper, a console (`cmd.exe`, `conhost.exe`,
+powershell, pwsh), a POSIX shell (`sh`, `bash`, `env`, `timeout`) or the npx
+launcher, is read only by what it wraps and goes only with the one reapable
+process it wraps, its childless consoles aside. Each `npx -y <pkg>` server is
+four processes, `cmd.exe`, `conhost.exe`, the npx launcher and the server, and
+the launcher holds about as much memory as the server.
+
+**What it never ends.** Persistent and watch work, without the owner's word: the
+families are one-shot runs, so `turbo run dev` or `start`, the turbo daemon,
+`vitest` without `run`, `tsc --watch`, tsserver and the dev servers (`next dev`,
+`expo start`, metro) match none. Its own ancestry. A tree that holds a process
+the contract spares: the shared MCP proxy, however it is launched (the
+`mcp-proxy` executable, `python -m mcp_proxy`, a node `mcp-proxy` script), which
+runs detached by design; every Git for Windows (MSYS) process, whose runtime
+reports a parent already gone while it still works, so a live `sh.exe` or
+`bash.exe` would read as an orphan; and tmux or screen, servers detached by
+design. A tree that holds a process younger than 60 s, or one whose start time
+the listing cannot read. And anything outside the families. Every tree it keeps
+is printed with its reason.
+
+**The commands.** `pnpm reap` is a dry run: one line per tree it would end (its
+root pid, family, the wrapper it came through, age, process count and MB), one
+`kept` line per tree it keeps and why, then the total MB. `pnpm reap:kill` ends
+them; `--json` prints the plan as one JSON line and `--quiet` only the total
+line. A killing run first creates `atl-process-reaper.lock` in the OS temp
+directory, exclusively; another reaper that finds it held prints so and exits 0
+at once, and a lock older than 30 s, left by a reaper that died, is taken over.
+Right before its kills it lists the processes again and leaves every tree whose
+root pid is gone or now names a process that started at another time, since a
+tree kill follows a reused pid. It exits 0 when it finished, with or without
+ends, and 1 on a failure: a listing that fails, a tree it could not end, an
+unknown option. It ends within 8 s: a run that reaches the bound ends no tree it
+had not already decided on, says so and exits 1. `signalProcessTree` stops a
+taskkill after 5 s (TOOLING-12).
+
+**The hook.** `.agents/hooks.json` runs `session-start.mjs` at every
+`SessionStart`, with no matcher (start, resume, clear and compaction) and a
+15 s hook timeout: the reaper with `--kill --quiet`, whose total line Claude
+Code adds to the session's context. It never blocks or fails the session: the
+reaper is imported inside a `try`, and whatever goes wrong, a reaper that hangs
+included, prints one line to stderr and exits 0. Like the write guard it runs
+from the main checkout (`${CLAUDE_PROJECT_DIR}`). To switch it off, put
+`"disableAllHooks": true` in `.claude/settings.local.json`.
+
+**Not covered:** an orphan whose parent pid was reused by a process that does
+not read as newer than it, such as one whose start time the listing cannot
+read, stays; a runaway that still has its parent is out of scope, however much
+memory it holds; and so is an orphan outside the families: an orphaned `pnpm`
+keeps the turbo or vitest below it, whose parent is still alive, and a Git for
+Windows shell is spared, so a tree a dead Git Bash leaves behind stays, except
+for a family process that becomes an orphan itself. A one-shot run that matches
+a family but should survive is added to the spare list, on the owner's word. On
+POSIX a process forked between the SIGTERM and the SIGKILL is not reached, and
+the pruner's stopped fetch still signals git alone, as before. Codex, OpenCode
+and Copilot run no adapter, as for the write guard.
+
+### 3h. The harness config
 
 `.agents/harness.config.json` holds the project's harness settings, one file,
 and `.agents/contracts/harness-config.schema.json` is their contract: every
@@ -490,7 +658,12 @@ which is worse than not having it.
    wiring bug, not a finding. Prove the glob before trusting the count.
 6. **Prove it fires.** Plant a violation on purpose and watch it fail. A gate
    that is silently unwired reports zero exactly like a gate that passes.
-7. **Wire it into `pnpm validate`.**
+7. **Register it in `.agents/contracts/gates.json`**, never in a command
+   chain: a step at its place in its stage, with the capability whose prune
+   removes it, its profile and its cost, and `blind: "exported-cases"` on the
+   one step that runs a `defineGate` gate, whose companion exports `CASES`
+   and registers its tests only as the entry point (`registerCases`).
+   `pnpm validate --list` shows where it runs.
 8. **Document it** — this file, its §21 row in `docs/code-standards.md`, and
    `docs/maps/global-map.md`.
 

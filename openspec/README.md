@@ -56,6 +56,7 @@ requirements in several specs, each linking to its neighbour by ID.
 | [harness/mcp](specs/harness/mcp/spec.md) | `MCP` |
 | [harness/dependency-seams](specs/harness/dependency-seams/spec.md) | `SEAM` |
 | [harness/ticket-flow](specs/harness/ticket-flow/spec.md) | `TICKET` |
+| [harness/process-reaper](specs/harness/process-reaper/spec.md) | `REAP` |
 
 Each spec's header is the one place that states what it governs, in its `Governs` lines (§ 2.2);
 this table names the spec and its prefix only, so the two cannot drift apart.
@@ -67,8 +68,9 @@ spec, in a region the capability owns (§ 2.2).
 Not specified yet: the rest of the agent harness and the validation gates, whose rules
 [docs/code-standards.md](../docs/code-standards.md) § 21 maps one by one to the check that backs
 each. The MCP catalog, its updater and its gate (harness/mcp) are the first harness unit with a
-spec, the ticket flow's skills and checks (harness/ticket-flow) the second, and the dependency
-registry with its rule and gate (harness/dependency-seams) the third.
+spec, the ticket flow's skills and checks (harness/ticket-flow) the second, the dependency
+registry with its rule and gate (harness/dependency-seams) the third, and the process reaper with
+its contract, its command and its session hook (harness/process-reaper) the fourth.
 
 ### 2.2 What a spec holds
 

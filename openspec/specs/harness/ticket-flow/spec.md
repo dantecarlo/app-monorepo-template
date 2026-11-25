@@ -488,13 +488,13 @@ each flag that replaced a field) and what it does not cover.
 The template's `pnpm validate` SHALL run `pnpm verify:ticket-branch:test` and never
 `pnpm verify:ticket-branch`, as the template's own branches carry no ticket id.
 
-**Evidence:** `package.json:44`, `package.json:74`
+**Evidence:** `package.json:47`, `.agents/contracts/gates.json:400`, `package.json:79`
 
-#### Scenario: the validate script
+#### Scenario: the steps validate runs
 
-- **GIVEN** the root `package.json`
-- **WHEN** its `validate` script is read
-- **THEN** it runs `verify:ticket-branch:test` and does not run `verify:ticket-branch` alone
+- **GIVEN** the root `package.json`, whose `validate` script runs the gate registry `.agents/contracts/gates.json`
+- **WHEN** the steps the registry runs are read, under the default profile and under every profile
+- **THEN** they run `verify:ticket-branch:test` and never `verify:ticket-branch` alone
 - **Test:** `scripts/verify-ticket-branch.test.mjs` › "the template's validate runs the tests and not the check"
 
 ### Requirement: TICKET-10 — A ticket enters Ready for dev only when nothing blocks it
