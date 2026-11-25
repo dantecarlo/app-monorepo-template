@@ -42,6 +42,8 @@ for (const command of [
   'config --get user.email',
   'config user.name',
   'config get user.name',
+  'config --file x a.b',
+  'config -f x --get a.b',
   'reflog -5',
   'symbolic-ref HEAD',
   'remote -v',
@@ -78,6 +80,9 @@ for (const [command, write] of [
   ['init', 'init'],
   ['config user.name x', 'config'],
   ['config --unset user.name', 'config'],
+  ['config --file x a.b c', 'config'],
+  ['merge-file AGENTS.md a b', 'merge-file'],
+  ['clone https://e.test/r.git', 'clone'],
   ['notes add -m x', 'notes add'],
   ['update-ref refs/heads/x HEAD', 'update-ref'],
   ['reflog expire --all', 'reflog'],
@@ -97,6 +102,15 @@ for (const [command, targets] of [
   ['format-patch -1', ['.']],
   ['format-patch -o out -1', ['out']],
   ['bundle create b.bundle HEAD', ['b.bundle']],
+  ['log --output=AGENTS.md', ['AGENTS.md']],
+  ['log --output AGENTS.md', ['AGENTS.md']],
+  ['show --output=AGENTS.md', ['AGENTS.md']],
+  ['whatchanged --output=AGENTS.md', ['AGENTS.md']],
+  ['range-diff --output=AGENTS.md a b', ['AGENTS.md']],
+  ['diff-files --output=AGENTS.md', ['AGENTS.md']],
+  ['diff-index --output=AGENTS.md HEAD', ['AGENTS.md']],
+  ['diff-tree --output=AGENTS.md a b', ['AGENTS.md']],
+  ['log --oneline -5', []],
   ['status', []]
 ]) {
   test(`a git file write names its file: git ${command}`, () => {
@@ -120,7 +134,30 @@ for (const [command, targets] of [
   ['mv AGENTS.md docs/a.md', ['AGENTS.md', 'docs/a.md']],
   ['clean -f knip.json', ['knip.json']],
   ['add AGENTS.md', []],
-  ['commit -m x AGENTS.md', []]
+  ['commit -m x AGENTS.md', []],
+  ['merge-file AGENTS.md a b', ['AGENTS.md']],
+  ['merge-file -L x -L y AGENTS.md a b', ['AGENTS.md']],
+  ['merge-file -p AGENTS.md a b', []],
+  ['config --file AGENTS.md a.b c', ['AGENTS.md']],
+  ['config -f AGENTS.md --unset a.b', ['AGENTS.md']],
+  ['config --file=AGENTS.md a.b c', ['AGENTS.md']],
+  ['config --file AGENTS.md a.b', []],
+  ['config --file AGENTS.md --get a.b', []],
+  ['config a.b c', []],
+  ['init .claude/skills/x', ['.claude/skills/x']],
+  ['init -b main .claude/skills/x', ['.claude/skills/x']],
+  ['init', []],
+  ['clone https://e.test/r.git .claude/skills/x', ['.claude/skills/x']],
+  [
+    'clone -b main https://e.test/r.git .claude/skills/x',
+    ['.claude/skills/x']
+  ],
+  ['clone https://e.test/r.git', ['./r']],
+  ['worktree add .claude/skills/x', ['.claude/skills/x']],
+  ['worktree add -b topic .claude/skills/x main', ['.claude/skills/x']],
+  ['worktree move a .claude/skills/x', ['.claude/skills/x']],
+  ['worktree remove .claude/skills/x', ['.claude/skills/x']],
+  ['worktree list', []]
 ]) {
   test(`a git tree write names the files it rewrites: git ${command}`, () => {
     assert.deepEqual(
