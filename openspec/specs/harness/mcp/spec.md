@@ -3,7 +3,7 @@
 > **Governs:** `.agents/contracts/mcp-servers.json`, `scripts/mcp-docs.detect.mjs`, `scripts/update-mcp-docs.mjs`, `scripts/verify-mcp-docs.mjs`, `scripts/mcp/launch.mjs`
 > **ID prefix:** `MCP`
 > **Derived from:** `docs/mcp.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-25 at `2e1d1745`
+> **Verified against the code:** 2026-11-25 at `8a918d49`
 
 ## Purpose
 
