@@ -9,9 +9,11 @@
 // synthetic one, judged under the write guard's real policy, so a rule path
 // is one the guard itself would ask about.
 //
-// No case starts git, gh or an updater: the last case reads every call the
-// suite recorded and proves none merges, approves, enables auto-merge,
-// pushes the default branch or sets ATL_WRITE_GUARD. Two process cases run
+// No case starts git, gh or an updater: the last two cases read every call
+// the suite recorded and prove none merges a pull request, approves,
+// enables auto-merge, pushes the default branch, sets ATL_WRITE_GUARD or
+// passes a force option, which the no-force hook's own reader (forms.mjs)
+// judges, or a `+` refspec. Two process cases run
 // the runner over a scratch tree in the OS temp directory, which
 // `withScratchTree` removes, on paths that start nothing.
 //
@@ -26,6 +28,7 @@ import { dirname, join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
+import { forceOf } from '../agent-harness/no-force/forms.mjs'
 import { POLICY_FILE } from '../agent-harness/write-guard/policy.mjs'
 import { withScratchTree } from '../gate/scratch.mjs'
 import { UPDATERS_FILE } from '../verify-updaters.mjs'
@@ -97,13 +100,18 @@ const porcelainOf = ({ paths }) =>
  * updater's command to its check's exit code; `updates` maps it to what
  * its update writes, its exit code and its stdout; `verifies` maps a
  * verify command to its exit code; `pulls` are the numbers of the open pull
- * requests from updates/<id>, by id.
+ * requests from updates/<id>, by id; `remote` the ids whose updates/<id>
+ * the remote holds; `conflicts` the paths a merge conflicts in; `labels`
+ * the labels `gh label list` returns.
  */
 const fakeOf = ({
   branch = BASE,
   checks = {},
+  conflicts = [],
   dirty = [],
+  labels = [],
   pulls = {},
+  remote = [],
   updates = {},
   verifies = {}
 } = {}) => {
@@ -133,11 +141,26 @@ const fakeOf = ({
     if (args[0] === 'status') return ok(porcelainOf({ paths: state.changes }))
     if (args[0] === 'rev-parse') return ok(`${branch}\n`)
     if (args[0] === 'commit') state.changes = []
+    if (args[0] === 'ls-remote') {
+      const ref = args.at(-1)
+      const held = remote.includes(ref.replace('refs/heads/updates/', ''))
+      return ok(held ? `0123abc\t${ref}\n` : '')
+    }
+    if (args[0] === 'merge' && args[1] !== '--abort' && conflicts.length > 0)
+      return {
+        status: FAILED,
+        stderr: `CONFLICT (content): Merge conflict in ${conflicts[0]}`,
+        stdout: ''
+      }
+    if (args[0] === 'diff')
+      return ok(conflicts.map((path) => `${path}\n`).join(''))
     return ok()
   }
   const gh = ({ args, env }) => {
     record({ call: { args, tool: 'gh' }, env })
     if (args[0] === 'repo') return ok(`${BASE}\n`)
+    if (args[0] === 'label' && args[1] === 'list')
+      return ok(JSON.stringify(labels))
     if (args[0] === 'pr' && args[1] === 'list') {
       const id = args[args.indexOf('--head') + 1].replace('updates/', '')
       return ok(
@@ -208,16 +231,31 @@ const PREPARE = [
   'git rev-parse --abbrev-ref HEAD',
   'gh repo view --json defaultBranchRef --jq .defaultBranchRef.name'
 ]
+const lookUp = ({ id }) => [
+  `git fetch origin refs/heads/${BASE}:refs/remotes/origin/${BASE}`,
+  `git ls-remote --heads origin refs/heads/updates/${id}`
+]
 const switchTo = ({ id }) => [
-  `git fetch origin +refs/heads/${BASE}:refs/remotes/origin/${BASE}`,
-  `git checkout -B updates/${id} origin/${BASE}`
+  ...lookUp({ id }),
+  `git checkout --detach origin/${BASE}`
+]
+const mergeInto = ({ id }) => [
+  ...lookUp({ id }),
+  `git fetch origin refs/heads/updates/${id}:refs/remotes/origin/updates/${id}`,
+  `git checkout --detach origin/updates/${id}`,
+  `git merge --no-edit origin/${BASE}`
 ]
 const commitAndPush = ({ id }) => [
   'git add --all',
   `git commit --message chore(updates): run the ${id} updater --message ${BODY}`,
-  `git push --force origin HEAD:refs/heads/updates/${id}`,
+  `git push origin HEAD:refs/heads/updates/${id}`,
   `gh pr list --head updates/${id} --state open --json number`
 ]
+const LABEL_DESCRIPTION =
+  'An updater proposes a rule change; the owner decides it'
+const LABEL_LIST = `gh label list --search ${RULE_PROPOSAL_LABEL} --json name,color,description`
+const LABEL_CREATE = `gh label create ${RULE_PROPOSAL_LABEL} --color b60205 --description ${LABEL_DESCRIPTION}`
+const LABEL_EDIT = `gh label edit ${RULE_PROPOSAL_LABEL} --color b60205 --description ${LABEL_DESCRIPTION}`
 
 test('a current updater runs its check and nothing else', () => {
   const fake = fakeOf()
@@ -414,9 +452,10 @@ test('a diff that touches a rule path opens a draft labelled rule-proposal that 
   const result = runWith({ fake, where: 'ci' })
 
   assert.equal(result.code, PASSED, result.errors.join('\n'))
-  assert.deepEqual(linesOf({ fake }).slice(-4), [
+  assert.deepEqual(linesOf({ fake }).slice(-5), [
     'gh pr list --head updates/mcp-docs --state open --json number',
-    `gh label create ${RULE_PROPOSAL_LABEL} --color b60205 --description An updater proposes a rule change; the owner decides it --force`,
+    LABEL_LIST,
+    LABEL_CREATE,
     `gh pr create --base ${BASE} --head updates/mcp-docs --title chore(updates): run the mcp-docs updater --body ${BODY} --draft --label ${RULE_PROPOSAL_LABEL}`,
     `git checkout ${BASE}`
   ])
@@ -464,8 +503,9 @@ test('an open pull request that becomes a rule proposal is labelled and turned i
   const result = runWith({ fake, where: 'ci' })
 
   assert.equal(result.code, PASSED, result.errors.join('\n'))
-  assert.deepEqual(linesOf({ fake }).slice(-4), [
-    `gh label create ${RULE_PROPOSAL_LABEL} --color b60205 --description An updater proposes a rule change; the owner decides it --force`,
+  assert.deepEqual(linesOf({ fake }).slice(-5), [
+    LABEL_LIST,
+    LABEL_CREATE,
     `gh pr edit 7 --title chore(updates): run the mcp-docs updater --body ${BODY} --add-label ${RULE_PROPOSAL_LABEL}`,
     'gh pr ready 7 --undo',
     `git checkout ${BASE}`
@@ -519,8 +559,98 @@ test('a failing verify command commits nothing and opens nothing', () => {
   ])
   assert.match(
     result.errors.join('\n'),
-    /mcp-docs: `pnpm verify:mcp-docs` exited 1: drift; nothing was committed and no pull request opened; the tree is left on updates\/mcp-docs/u
+    /mcp-docs: `pnpm verify:mcp-docs` exited 1: drift; nothing was committed and no pull request opened; the tree is left detached where the update of updates\/mcp-docs ran/u
   )
+})
+
+test('an existing updates/<id> gets the default branch merged in and the update on top, pushed without force', () => {
+  const fake = fakeOf({
+    checks: { 'pnpm mcp:docs': OUTDATED },
+    pulls: { 'mcp-docs': [7] },
+    remote: ['mcp-docs'],
+    updates: { 'pnpm mcp:docs': { writes: ['docs/mcp.md'] } }
+  })
+
+  const result = runWith({ fake, where: 'ci' })
+
+  assert.equal(result.code, PASSED, result.errors.join('\n'))
+  assert.deepEqual(linesOf({ fake }), [
+    'sh pnpm mcp:docs --check',
+    ...PREPARE,
+    ...mergeInto({ id: 'mcp-docs' }),
+    'sh pnpm mcp:docs',
+    STATUS,
+    'sh pnpm verify:mcp-docs',
+    ...commitAndPush({ id: 'mcp-docs' }),
+    `gh pr edit 7 --title chore(updates): run the mcp-docs updater --body ${BODY}`,
+    `git checkout ${BASE}`
+  ])
+  const commit = callNamed({ fake, tool: 'git', words: ['commit'] })
+  assert.match(
+    valueAfter({ call: commit, flag: '--message', nth: 1 }),
+    /on updates\/mcp-docs, with main\smerged in\./u
+  )
+})
+
+test('a merge that conflicts opens nothing, names the branch and the conflict, and exits 1', () => {
+  const fake = fakeOf({
+    checks: { 'pnpm mcp:docs': OUTDATED },
+    conflicts: ['docs/mcp.md'],
+    remote: ['mcp-docs'],
+    updates: { 'pnpm mcp:docs': { writes: ['docs/mcp.md'] } }
+  })
+
+  const result = runWith({
+    context: contextOf({ updaters: [MCP_DOCS, SKILLS] }),
+    fake,
+    where: 'ci'
+  })
+
+  assert.equal(result.code, FAILED)
+  assert.deepEqual(linesOf({ fake }), [
+    'sh pnpm mcp:docs --check',
+    ...PREPARE,
+    ...mergeInto({ id: 'mcp-docs' }),
+    'git diff --name-only --diff-filter=U',
+    'git merge --abort',
+    `git checkout ${BASE}`,
+    'sh pnpm skills:sync --check'
+  ])
+  assert.deepEqual(result.errors, [
+    'updaters: mcp-docs: origin/main does not merge into updates/mcp-docs, a conflict in ' +
+      'docs/mcp.md; the merge was aborted, nothing was committed and no pull request opened'
+  ])
+})
+
+test('a rule-proposal label whose colour or description differs is edited, and a current one is left', () => {
+  const edited = fakeOf({
+    checks: { 'pnpm skills:sync': OUTDATED },
+    labels: [
+      { color: 'FFFFFF', description: 'old', name: RULE_PROPOSAL_LABEL },
+      { color: 'b60205', description: '', name: `${RULE_PROPOSAL_LABEL}-old` }
+    ],
+    updates: { 'pnpm skills:sync': { writes: ['docs/skills.md'] } }
+  })
+  const current = fakeOf({
+    checks: { 'pnpm skills:sync': OUTDATED },
+    labels: [
+      {
+        color: 'B60205',
+        description: LABEL_DESCRIPTION,
+        name: RULE_PROPOSAL_LABEL
+      }
+    ],
+    updates: { 'pnpm skills:sync': { writes: ['docs/skills.md'] } }
+  })
+
+  const context = contextOf({ updaters: [SKILLS] })
+  runWith({ context, fake: edited, where: 'ci' })
+  runWith({ context, fake: current, where: 'ci' })
+
+  const labelLines = ({ fake }) =>
+    linesOf({ fake }).filter((line) => line.startsWith('gh label'))
+  assert.deepEqual(labelLines({ fake: edited }), [LABEL_LIST, LABEL_EDIT])
+  assert.deepEqual(labelLines({ fake: current }), [LABEL_LIST])
 })
 
 test('a dry run prints the plan and runs no git or gh', () => {
@@ -532,9 +662,10 @@ test('a dry run prints the plan and runs no git or gh', () => {
   assert.deepEqual(linesOf({ fake }), ['sh pnpm mcp:docs --check'])
   assert.ok(
     result.out.includes(
-      'updaters: [dry run] mcp-docs would rebuild updates/mcp-docs from the default branch, ' +
-        'run pnpm mcp:docs, then pnpm verify:mcp-docs, commit "chore(updates): run the mcp-docs updater", ' +
-        'push updates/mcp-docs and open or update one pull request, ready for review, or a draft ' +
+      'updaters: [dry run] mcp-docs would merge the default branch into updates/mcp-docs, or ' +
+        'start it from the default branch, run pnpm mcp:docs, then pnpm verify:mcp-docs, commit ' +
+        '"chore(updates): run the mcp-docs updater", push updates/mcp-docs without force and open ' +
+        'or update one pull request, ready for review, or a draft ' +
         `labelled ${RULE_PROPOSAL_LABEL} if its diff touches a rule path`
     ),
     result.out
@@ -600,10 +731,29 @@ test('no run merges, approves, enables auto-merge, pushes the default branch or 
         !(args[0] === 'push' && args.some((arg) => arg.endsWith(BASE))),
         args.join(' ')
       )
-      assert.ok(args[0] !== 'merge', args.join(' '))
+      // A merge only ever brings the default branch into the detached
+      // update, or aborts that merge.
+      assert.ok(
+        args[0] !== 'merge' ||
+          args[1] === '--abort' ||
+          args.at(-1) === `origin/${BASE}`,
+        args.join(' ')
+      )
     })
   everyCall.forEach(({ env }) => {
     assert.equal(env, ENV)
     assert.ok(!Object.hasOwn(env, 'ATL_WRITE_GUARD'))
+  })
+})
+
+test('no call of any run passes a force option or a + refspec', () => {
+  assert.ok(
+    everyCall.some(({ args }) => args?.[0] === 'merge'),
+    'the suite merged nothing to judge'
+  )
+  everyCall.forEach(({ args, command, tool }) => {
+    const words = tool === 'sh' ? command.split(' ') : [tool, ...args]
+    assert.equal(forceOf({ words }), undefined, words.join(' '))
+    assert.ok(!words.some((word) => word.startsWith('+')), words.join(' '))
   })
 })

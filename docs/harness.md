@@ -832,6 +832,7 @@ updater that runs periodically".
 | `.agents/contracts/updaters.json`  | The registry: one entry per updater. A contract, so the write guard asks before an edit (3f) |
 | `scripts/verify-updaters.mjs`      | `pnpm verify:updaters`, the gate that holds the registry, inside `pnpm validate` |
 | `scripts/updaters/run.mjs`         | `pnpm updaters:run`, the runner, never inside `pnpm validate`               |
+| `scripts/updaters/branch.mjs`, `label.mjs`, `steps.mjs` | Where an update starts (the remote's `updates/<id>` with the default branch merged in, or the default branch), the `rule-proposal` label made current, and the steps they share; no call passes a force option |
 
 **The entry.** Each declares every key, and no other:
 
@@ -879,16 +880,22 @@ holds `--where` (`local` by default), or the one `--only` names:
 
 1. It runs `<command> --check`. Exit 0: current, nothing more. Exit 1 or any other: failed, no
    pull request, and the run goes on to the next updater, then exits 1.
-2. Exit 2: on a working tree with no change, it rebuilds `updates/<id>` from the default branch
-   (the one `gh repo view` names), runs `<command>`, then each `verify` command. An update that
-   changes nothing commits nothing.
-3. It commits with a Conventional Commit that carries no attribution, force-pushes to
-   `updates/<id>` alone (the updater owns that branch: each run rebuilds it, so a commit pushed
-   there by hand is replaced), and opens one pull request from it with `gh pr create`, or edits
-   the open one (`gh pr list --head updates/<id>`, then `gh pr edit`). Then it returns to the ref
-   it started on.
-4. A failed update, verify command, git or gh step stops the run there and exits 1, and names
-   the branch the tree is left on, for a person to read.
+2. Exit 2: on a working tree with no change, it starts detached from `updates/<id>` as the
+   remote holds it, with the default branch (the one `gh repo view` names) merged in by a normal
+   merge, or from the default branch when the remote holds no `updates/<id>`
+   (`scripts/updaters/branch.mjs`). It runs `<command>`, then each `verify` command. An update
+   that changes nothing commits nothing. A merge that conflicts opens nothing: the merge is
+   aborted, the tree returns to its ref, one line names the branch and the conflicting paths,
+   and the run goes on to the next updater, then exits 1.
+3. It commits with a Conventional Commit that carries no attribution, pushes it on top of
+   `updates/<id>` alone with no force option, so the branch is appended to and never rewritten
+   and a commit pushed there by hand stays, and opens one pull request from it with
+   `gh pr create`, or edits the open one (`gh pr list --head updates/<id>`, then `gh pr edit`).
+   The `rule-proposal` label is read with `gh label list`, then created when it is missing or
+   edited when its colour or description differs (`scripts/updaters/label.mjs`). Then it returns
+   to the ref it started on.
+4. A failed update, verify command, git or gh step stops the run there and exits 1, and says
+   the tree is left detached where the update ran, for a person to read.
 
 `--dry-run` runs the checks and prints what each out-of-date updater would do, and runs no git
 and no gh. The runner never merges, approves or enables auto-merge, never pushes to the default
