@@ -116,7 +116,10 @@ only what the document did not answer:
 
 1. Show the filled layer and ask the team to confirm it. Write nothing before the yes.
 2. Write docs/process/ticket-flow.md, and the merge policy as `delivery.mergePolicy` in
-   `.agents/harness.config.json`.
+   `.agents/harness.config.json`. When that file is absent, write the whole template file, every
+   section and setting `.agents/contracts/harness-config.schema.json` requires, with the chosen
+   policy: the key alone would make a file that fails the gate. Then run
+   `pnpm verify:harness-config`.
 3. For a `gh` adapter, after the team confirms it: create each label once, `ticket:<state>` for
    every state and `type:<type>` for every type, with `gh label create <label> --force`.
 4. Propose the row the project's `AGENTS.md` Key docs table gains for docs/process/ticket-flow.md,
@@ -136,7 +139,7 @@ emits:
   - docs/process/ticket-flow.md
 edits:
   - AGENTS.md # the Key docs row and the role of each session, on the team's yes
-  - .agents/harness.config.json # delivery.mergePolicy only, on the team's yes
+  - .agents/harness.config.json # delivery.mergePolicy, on the team's yes; the whole template file when absent
 validated_by: review
 done_when: the team confirmed docs/process/ticket-flow.md, and it names a board adapter
 ```
