@@ -16,7 +16,8 @@ import {
   STATEMENT_END,
   TAG_COUNTER_SEPARATOR,
   TRAILING_COMMIT_PATTERN,
-  TRANSACTION_CONTROL
+  TRANSACTION_CONTROL,
+  UNICODE_IDENTIFIER
 } from '#src/pgTapBundle.constant'
 import type {
   IBranchMigration,
@@ -228,6 +229,12 @@ const toOpeningEnd = ({ name, sql }: ISqlFile): number => {
   }
   if (STANDARD_STRINGS_MENTION.test(searchable)) {
     throw refuse({ reason: standardStrings })
+  }
+  if (UNICODE_IDENTIFIER.test(searchable)) {
+    throw refuse({
+      reason:
+        'quotes an identifier with U&"...", whose escapes could spell a name test:db refuses'
+    })
   }
 
   const statements = code

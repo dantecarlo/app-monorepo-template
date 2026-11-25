@@ -34,6 +34,9 @@ export const FORCED_STANDARD_STRINGS =
 export const STANDARD_STRINGS_MENTION =
   /standard_conforming_strings|\bset_config\b/i
 export const RESET_ALL = /^reset\s+all\b/i
+// A `U&"..."` identifier: its `\XXXX` escapes, or the escape character `UESCAPE` sets,
+// could spell a refused name the searches above never see, so every one is refused.
+export const UNICODE_IDENTIFIER = /\b[Uu]&"/
 
 // The statements that would end, split or reshape the transaction that holds the
 // migrations, most specific first. A savepoint, its release and `rollback to` a savepoint

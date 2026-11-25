@@ -121,6 +121,51 @@ describe('bundlePgTapFiles over what the reader splits', () => {
   )
 
   test.each([
+    "select U&\"s\\0065t_config\"('a', 'b', true);",
+    'select 1 as U&"standard!005fconforming_strings" UESCAPE \'!\';',
+    'select 1 as u&"plain";'
+  ])(
+    'refuses any U&"..." identifier, whose escapes could spell a refused name, naming the file: %s',
+    (statement) => {
+      expect(() =>
+        bundlePgTapFiles({
+          migrations: [BASE],
+          tests: [
+            {
+              name: 'escaped.test.sql',
+              sql: `begin;\n${statement}\nrollback;\n`
+            }
+          ]
+        })
+      ).toThrow(
+        'test:db ran nothing: escaped.test.sql quotes an identifier with U&"...", whose escapes could spell a name test:db refuses'
+      )
+    }
+  )
+
+  test.each([
+    "select U&'d\\0061ta';",
+    'select ok(true, \'U&"set_config"\');',
+    '-- U&"set_config"\nselect 1;',
+    'select 1 as "U&x";'
+  ])(
+    'keeps U& in a string, a comment, a U& string or inside a quoted identifier: %s',
+    (statement) => {
+      expect(
+        bundlePgTapFiles({
+          migrations: [BASE],
+          tests: [
+            {
+              name: 'unescaped.test.sql',
+              sql: `begin;\n${statement}\nrollback;\n`
+            }
+          ]
+        }).map(({ name }) => name)
+      ).toEqual(['unescaped.test.sql'])
+    }
+  )
+
+  test.each([
     'begin;\n/* outer /* inner */ commit; */\nselect 1;\nrollback;\n',
     "begin;\nselect E'it\\'s', 'it''s', \"a--b\", \"x\"\"y\", a$b$, $1, $\u00e9$ ; $\u00e9$;\nselect 1; -- done\r\nrollback;\n"
   ])(

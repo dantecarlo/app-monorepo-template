@@ -458,13 +458,20 @@ run, naming the file, unless:
   `rollback`, `begin`, `start transaction`, `prepare transaction`,
   `commit prepared`, `rollback prepared` or `set transaction`. A `savepoint`,
   its `release` and `rollback to` a savepoint keep the transaction, and stay
-  allowed;
+  allowed: `release` names a savepoint only, the file's `begin;` is none, and a
+  name no savepoint holds is an error that aborts the transaction;
 - it holds no psql meta-command: psql reads a backslash outside quotes as one
   (`\i`, `\set`, `\gexec`), and `\i` could pull in a file that commits;
 - nothing in its code, quoted identifiers and dollar-quoted bodies included,
   names `standard_conforming_strings` (in any case) or calls `set_config`, and
   no statement is `reset all`. A mention inside a comment or a string stays
-  allowed.
+  allowed;
+- it quotes no identifier with `U&"..."` (`u&` too): its `\XXXX` escapes, or
+  the escape character a `UESCAPE` clause sets, could spell `set_config` or the
+  setting where the search above cannot see it. Every such identifier is
+  refused, not decoded: a decoder that misread an escape would let a refused
+  name through. `U&'...'` strings, and `U&` inside a comment, a string or a
+  plain quoted identifier, stay allowed.
 
 The reader reads a plain string as Postgres does with
 `standard_conforming_strings` on, where a backslash is a plain character. With
