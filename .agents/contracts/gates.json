@@ -420,6 +420,13 @@
       "blind": "exported-cases"
     },
     {
+      "id": "archify-vendor:test",
+      "capability": "diagrams",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
       "id": "docs:diagrams:check",
       "capability": "diagrams",
       "stage": "repository",

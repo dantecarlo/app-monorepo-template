@@ -93,7 +93,10 @@ Never hand-edit the HTML.
   are trimmed, so a receipt's `update` reads `unavailable`, and
   `scripts/build-diagrams.mjs` sets `ARCHIFY_UPDATE_CHECK_DISABLED=1` so the
   pipeline never starts the child. Upstream releases are tracked through
-  `.claude/skills-lock.json`.
+  `.claude/skills-lock.json`. The removed step's guardrail stays: never
+  install, update or re-vendor archify on your own initiative. A new upstream
+  release reaches this repository only when the owner asks for it, as a
+  reviewed change that updates `.claude/skills-lock.json`.
 - The explainer's proactive-mode offer was removed from the Output section,
   with the two lines that pointed to it (Choose the artifact, and the reply
   step of `references/explainer-authoring.md`). On acceptance it wrote a line
