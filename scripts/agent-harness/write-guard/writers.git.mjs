@@ -14,7 +14,7 @@
 // ---------------------------------------------------------------------------
 
 import { optionValue, splitArgs } from './expansion.mjs'
-import { CWD } from './writers.mjs'
+import { CWD } from './writers.folders.mjs'
 
 const GIT_READS = new Set([
   'annotate',

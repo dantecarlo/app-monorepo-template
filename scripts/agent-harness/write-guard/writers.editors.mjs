@@ -5,16 +5,8 @@
 // place, scp, zip, gpg and patch. writers.mjs merges them into FILE_WRITERS.
 // ---------------------------------------------------------------------------
 
-import { literal, parseOptions } from './expansion.mjs'
-
-// The folder a command writes into when it names none.
-const HERE = literal({ text: '.' })
-
-// `host:path` and `user@host:path` name another machine; `C:\` is a drive.
-const REMOTE = /^[^/\\]+:/u
-const DRIVE = /^[a-zA-Z]:[\\/]/u
-export const isRemote = ({ target }) =>
-  REMOTE.test(target.text) && !DRIVE.test(target.text)
+import { parseOptions } from './expansion.mjs'
+import { CWD, transferTargets } from './writers.folders.mjs'
 
 const VAR_ASSIGNMENT = /^[A-Za-z_]\w*=/u
 const AWK_INPLACE = /^inplace(?:\.awk)?$/u
@@ -67,12 +59,21 @@ const editorTargets = ({ args }) => {
   ]
 }
 
-const OPENSSL_OUTPUTS = new Set(['-out', '-keyout'])
+// openssl reads `-out FILE`, `--out FILE`, `-out=FILE` and `--out=FILE`
+// alike, and its other outputs the same way: `-keyout`, `-certout`,
+// `-reqout`, `-respout`, `-sess_out` and the folder `-outdir`.
+const OPENSSL_OUTPUT =
+  /^--?(?:certout|keyout|out|outdir|reqout|respout|sess_out)(?:=(.*))?$/su
 
 const opensslTargets = ({ args }) =>
-  args.flatMap((arg, at) =>
-    OPENSSL_OUTPUTS.has(arg.text) && args[at + 1] ? [args[at + 1]] : []
-  )
+  args.flatMap((arg, at) => {
+    const match = OPENSSL_OUTPUT.exec(arg.text)
+    if (match === null) return []
+    if (match[1] !== undefined) {
+      return match[1] === '' ? [] : [{ ...arg, text: match[1] }]
+    }
+    return args[at + 1] ? [args[at + 1]] : []
+  })
 
 const optionTarget = ({ args, flag, long, short, valued }) => {
   const parsed = parseOptions({ args, long, short: valued })
@@ -96,13 +97,11 @@ const yqTargets = ({ args }) => {
   return parsed.operands.slice(skip)
 }
 
-const scpTargets = ({ args }) => {
-  const parsed = parseOptions({ args, short: 'cFiJloPS' })
-  const target = parsed.operands.at(-1)
-  return parsed.operands.length > 1 && !isRemote({ target })
-    ? [target]
-    : []
-}
+const scpTargets = ({ args, state }) =>
+  transferTargets({
+    operands: parseOptions({ args, short: 'cFiJloPS' }).operands,
+    state
+  })
 
 const patchTargets = ({ args }) => {
   const parsed = parseOptions({
@@ -126,7 +125,7 @@ const patchTargets = ({ args }) => {
   const patched = out
     ? [out]
     : original === undefined
-      ? [dir ?? HERE]
+      ? [dir ?? CWD]
       : [
           dir
             ? { ...original, text: `${dir.text}/${original.text}` }

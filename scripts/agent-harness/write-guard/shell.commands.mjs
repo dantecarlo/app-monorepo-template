@@ -34,7 +34,8 @@ import {
 import { gitVerdict } from './shell.git.mjs'
 import { isKnownProgram, programVerdict } from './shell.programs.mjs'
 import { FINDING_KIND } from './target.mjs'
-import { CWD, FILE_WRITERS, SURFACE_WRITERS } from './writers.mjs'
+import { CWD } from './writers.folders.mjs'
+import { FILE_WRITERS, SURFACE_WRITERS } from './writers.mjs'
 
 const MAX_WRAPPERS = 8
 

@@ -20,95 +20,17 @@ import {
   literal,
   mktempTarget,
   operandsOf,
-  optionValue,
-  parseOptions,
-  splitArgs
+  parseOptions
 } from './expansion.mjs'
-import { absolutePath } from './paths.mjs'
-import { SAFE, UNKNOWN } from './scan.mjs'
-import { EDITOR_WRITERS, isRemote } from './writers.editors.mjs'
-
-// The folder a command writes into when it names none.
-export const CWD = literal({ text: '.' })
-
-const lastOrTarget = ({ args, valued = [] }) => {
-  const { operands, options } = splitArgs({
-    args,
-    valued: ['-t', '--target-directory', ...valued]
-  })
-  const target = optionValue({
-    flags: ['-t', '--target-directory'],
-    options
-  })
-  if (target) return [target]
-  return operands.length > 1 ? [operands.at(-1)] : []
-}
-
-const TRAILING_SEPARATORS = /[\\/]+$/u
-const LAST_SEGMENT = /^.*[\\/]/su
-const FOLDER_NAMES = new Set(['.', '..'])
-
-// The name a path gets when it is copied or moved into a folder: its last
-// segment, or SAFE when it is built from what the guard cannot see, since a
-// name holds no separator.
-const nameOf = ({ path }) =>
-  path.text.includes(UNKNOWN)
-    ? SAFE
-    : path.text.replace(TRAILING_SEPARATORS, '').replace(LAST_SEGMENT, '')
-
-/** The word for `name`, a relative path, below the folder `dir`. */
-export const under = ({ dir, name }) => {
-  const base = dir.text.replace(TRAILING_SEPARATORS, '')
-  return {
-    raw: `${dir.raw.replace(TRAILING_SEPARATORS, '')}/${name}`,
-    text: `${base}/${name}`,
-    unknown: dir.unknown
-  }
-}
-
-// Whether a destination is a folder: `.`, `..`, one that ends in a
-// separator, or one the disk says is a folder.
-const isFolder = ({ state, target }) => {
-  if (
-    FOLDER_NAMES.has(target.text) ||
-    TRAILING_SEPARATORS.test(target.text)
-  ) {
-    return true
-  }
-  try {
-    return (
-      state.host?.isDirectory?.({
-        path: absolutePath({
-          cwd: state.cwd ?? undefined,
-          host: state.host,
-          text: target.text
-        })
-      }) === true
-    )
-  } catch {
-    return false
-  }
-}
-
-// cp, mv and install: into a folder, each source by its name there. mv
-// also writes, by removing it, every source.
-const copyTargets = ({ args, move, short, state }) => {
-  const parsed = parseOptions({
-    args,
-    long: ['--suffix', '--target-directory'],
-    short
-  })
-  const dir = parsed.value({ long: '--target-directory', short: 't' })
-  const { operands } = parsed
-  const sources = dir ? operands : operands.slice(0, -1)
-  const dest = dir ?? operands.at(-1)
-  if (dest === undefined || (!dir && operands.length < 2)) return []
-  const written =
-    dir || sources.length > 1 || isFolder({ state, target: dest })
-      ? sources.map((path) => under({ dir: dest, name: nameOf({ path }) }))
-      : [dest]
-  return move ? [...sources, ...written] : written
-}
+import { SAFE } from './scan.mjs'
+import { EDITOR_WRITERS } from './writers.editors.mjs'
+import {
+  copyTargets,
+  CWD,
+  lastSegmentOf,
+  transferTargets,
+  under
+} from './writers.folders.mjs'
 
 const URL_TAIL = /[?#].*$/su
 const URL_HEAD = /^[a-z][a-z0-9+.-]*:\/\/[^/]*/iu
@@ -117,7 +39,7 @@ const URL_HEAD = /^[a-z][a-z0-9+.-]*:\/\/[^/]*/iu
 // undefined when it has none.
 const urlName = ({ url }) => {
   const path = url.text.replace(URL_TAIL, '').replace(URL_HEAD, '')
-  const name = path.replace(LAST_SEGMENT, '')
+  const name = lastSegmentOf({ text: path })
   return name === '' ? undefined : name
 }
 
@@ -402,10 +324,8 @@ export const FILE_WRITERS = {
     args.some(({ text }) => text === '-d')
       ? operandsOf({ args, valued: ['-m', '-o', '-g'] })
       : copyTargets({ args, move: false, short: 'gmoSt', state }),
-  ln: ({ args }) => {
-    const targets = lastOrTarget({ args })
-    return targets.length > 0 ? targets : [CWD]
-  },
+  ln: ({ args, state }) =>
+    copyTargets({ args, move: false, short: 'St', single: true, state }),
   mkdir: ({ args }) => operandsOf({ args, valued: ['-m', '--mode'] }),
   mkfifo: ({ args }) => operandsOf({ args, valued: ['-m'] }),
   mktemp: ({ args, state }) => [
@@ -416,10 +336,11 @@ export const FILE_WRITERS = {
   perl: perlTargets,
   rm: ({ args }) => operandsOf({ args }),
   rmdir: ({ args }) => operandsOf({ args }),
-  rsync: ({ args }) =>
-    operandsOf({ args, valued: ['-e', '--rsh'] })
-      .slice(-1)
-      .filter((target) => !isRemote({ target })),
+  rsync: ({ args, state }) =>
+    transferTargets({
+      operands: operandsOf({ args, valued: ['-e', '--rsh'] }),
+      state
+    }),
   sd: ({ args }) =>
     args.some(({ text }) => text === '-p' || text === '--preview')
       ? []
