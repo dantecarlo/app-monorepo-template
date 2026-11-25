@@ -370,7 +370,7 @@ runtime:
 | -------------------------------------- | ---------------------------------------------------------------------------- |
 | `.agents/contracts/write-guard.json`   | The policy: the rule-file globs, each with what it guards, and the switch-off variable |
 | `.agents/agent-context.json`           | `writes` and `surface` of each agent (3e)                                    |
-| `scripts/agent-harness/write-guard/`   | The engine: `paths.mjs`, `policy.mjs`, `target.mjs` (one path, by actor), `decide.mjs` and `reasons.mjs`; the Bash reader, ported from Certifipago (`scan`, `continuations`, `tokenizer`, `tokenizer.case`, `expansion`), with `braces` and `globs`; the writers (`writers`, `writers.editors`, `writers.git`, `writers.tools`, `inline-code`, `readers`); the Bash judge (`shell`, `shell.commands`, `shell.git`, `shell.programs`, `shell.findings`, `mentions`); `powershell.mjs`; and the Claude Code adapter, `claude-hook.mjs`. Each has its test |
+| `scripts/agent-harness/write-guard/`   | The engine: `paths.mjs`, `policy.mjs`, `target.mjs` (one path, by actor), `decide.mjs` and `reasons.mjs`; the Bash reader, ported from Certifipago (`scan`, `continuations`, `tokenizer`, `tokenizer.case`, `expansion`), with `braces` and `globs`; the writers (`writers`, `writers.editors`, `writers.folders`, `writers.git`, `writers.tools`, `inline-code`, `readers`); the Bash judge (`shell`, `shell.commands`, `shell.git`, `shell.programs`, `shell.findings`, `mentions`); `powershell.mjs`; and the Claude Code adapter, `claude-hook.mjs`. Each has its test |
 | `.agents/hooks.json`                   | The neutral hook source: name, event, matcher (`Bash\|PowerShell\|Edit\|Write\|NotebookEdit`), script, timeout |
 | `.claude/settings.json`                | Generated from it by `pnpm agent-harness:generate` (3e); never edited by hand |
 
@@ -444,7 +444,8 @@ A Bash command is read by a shell parser ported from Certifipago's guard, not
 by a pattern. Line continuations go first, where Bash drops them; then come
 quotes, substitutions (`$(…)`, backticks, `$(( ))`), here-docs, groups,
 pipelines, loops and `case`. A word is expanded as Bash expands it: braces
-first (`AGENTS.md{,.bak}` is two words), `$'…'` decoded, a NUL ending the
+first (`AGENTS.md{,.bak}` is two words, and the empty word `{AGENTS.md,}`
+leaves is dropped), `$'…'` decoded, a NUL ending the
 word, and a backslash-escaped character read as quoted. A variable resolves
 only from an assignment earlier in the same command, since Bash calls share
 no shell state. `$TEMP`, `$TMP` and `$TMPDIR` are the OS temp dir, and
@@ -459,15 +460,27 @@ spelling:
   the rest of `writers.mjs`, short options read in clusters (`wget -qO`,
   `curl -fsSLo`);
 - the writers of `writers.editors.mjs`: `dos2unix`, `awk -i inplace`, `vi`,
-  `vim`, `nvim`, `ex`, `ed`, `openssl -out`, `iconv -o`, `sponge`, `yq -i`,
-  `scp`, `zip`, `gpg -o` and `patch`'s named file;
-- a file written into a folder, by the name it gets there: what `cp`, `mv`
-  and `install` put into a folder (the checkout root included), the members
-  `tar -x` and `unzip` extract, the name `curl -O` and `wget` give a
-  download, and what `find -name` or `-path` matches with `-delete` or
-  `-exec`;
-- `git archive -o`, `git diff --output` and `git format-patch`;
-- the pathspecs of `git checkout`, `restore`, `rm`, `mv` and `clean`;
+  `vim`, `nvim`, `ex`, `ed`, `openssl -out` and its other outputs
+  (`-keyout`, `-outdir`, …, spelled with one dash or two, the value
+  attached with `=` or not), `iconv -o`, `sponge`, `yq -i`, `scp`, `zip`,
+  `gpg -o` and `patch`'s named file;
+- a file written into a folder, by the name it gets there
+  (`writers.folders.mjs`): what `cp`, `mv`, `install`, `ln`, `rsync` and
+  `scp` put into a folder (the checkout root included, and `ln -s` with one
+  operand), the members `tar -x` and `unzip` extract, the name `curl -O` and
+  `wget` give a download, and what `find -name` or `-path` matches with
+  `-delete` or `-exec`. A glob source is each match by its name, or, when
+  the guard cannot expand it, a pattern of the folder and the glob's last
+  segment. `-T` writes the destination itself, and a source ending in `.`
+  or `..` (or, for `rsync`, a separator) pours its contents in, so the
+  folder itself is judged;
+- `git archive -o`, the `--output` of `git diff`, `diff-files`,
+  `diff-index`, `diff-tree`, `log`, `show`, `whatchanged` and `range-diff`,
+  and `git format-patch`;
+- the pathspecs of `git checkout`, `restore`, `rm`, `mv` and `clean`, the
+  file `git merge-file` merges into and `git config --file` writes, and the
+  folder `git init`, `git clone` and `git worktree add`, `move` or `remove`
+  make or delete;
 - the inner command of `find -exec`, `fd -x` and `xargs`;
 - the literal paths `node -e` and `python -c` code writes, and the commands
   that code starts.
@@ -486,10 +499,11 @@ a package manager; a pnpm or JS-tool form outside the read-only ones
 (`pnpm verify:*`, `<name>:test`, `test`, `lint`, `vitest run`,
 `prettier --check`, …); an inner shell (`bash -c`, `eval`, `cmd /c`,
 `powershell -Command`); inline code built at run time, or perl or ruby code
-that writes or starts a process; a target that depends on a variable the
-command never sets; and a program the guard does not know (`readers.mjs`
-lists the ones it knows only read) when an argument names a path outside
-the OS temp dir. A surface agent is held to its surface for the commands
+that writes or starts a process (for perl also `File::Copy`'s `copy` and
+`move`, and `$^I`); a target that depends on a variable the command never
+sets; and a program the guard does not know (`readers.mjs` lists the ones
+it knows only read) when an argument names a path outside the OS temp dir,
+or a value attached to a short option (`-oAGENTS.md`) is a rule path. A surface agent is held to its surface for the commands
 that write its own files (`cp`, `mv`, `rm`, `tee`, `sed -i`, …), redirects,
 `find`, and `git add` and `git commit`, and refused a git subcommand that
 rewrites the tree and names a rule path; its other programs are its
@@ -508,7 +522,8 @@ quote, a here-doc with no end, a line continuation that splits `$(`,
 nesting past 32 levels. It also covers, for the main session, a writer or an
 unlisted agent, one of the programs above. Such a command is refused to a
 policed agent. Anyone else is asked only when the command names a rule path:
-an unknown program by its own words, anything else by its whole text. Every
+an unknown program by its own words, a value attached to a short option
+counted when it is a rule path, anything else by its whole text. Every
 word, split on the separators of Bash and PowerShell, on `=` and on a `:`
 past a drive, is read as a path against the folder the command runs in
 (`mentions.mjs`). Past 256 distinct words the guard does not read on, and
@@ -529,7 +544,9 @@ names a rule path. A write is `Set-Content`, `Out-File`, `Add-Content`,
 quotes; `2>&1` merges streams and a redirect to `$null` discards one, and
 neither writes a file. A command whose only writes are copies is read for
 rule paths in what they copy to alone, so a copy of a rule file elsewhere
-asks nothing.
+asks nothing. A copy or a move into a folder (`.`, `..`, a final separator
+or a folder on the disk) is also read for the name the file gets there, so
+`Copy-Item /tmp/AGENTS.md .` asks.
 
 Every reason names the rule, the file and how to proceed; a rule file cites the
 LAW. Stdin that is not a JSON payload prints nothing, and a hook that crashes,
@@ -565,10 +582,12 @@ is generated.
   when its text names a rule path, so a path built from a variable set outside
   it, from `$(cat list)` or by gluing words, passes unasked.
 - **The root and commands that name no path.** A folder holds rule files only
-  below the root, so `rm -rf .` and `git checkout -- .` ask nothing. So do
-  `git reset --hard`, `git stash`, `git checkout <branch>`, `git merge`,
-  `git apply fix.patch` and `patch -p1 < fix.patch` when they name no rule
-  path, though they may rewrite rule files.
+  below the root, so `rm -rf .` and `git checkout -- .` ask nothing, and
+  neither do `cp -r /tmp/dir/. .` and `rsync -a /tmp/dir/ .`, whose names
+  the guard cannot see. So do `git reset --hard`, `git stash`,
+  `git checkout <branch>`, `git merge`, `git apply fix.patch` and
+  `patch -p1 < fix.patch` when they name no rule path, though they may
+  rewrite rule files.
 - **A pattern that could name a rule file.** A glob the guard cannot expand
   asks when it could match one, whether or not such a file exists; in a
   PowerShell command it is read with Bash's rule that a leading `*` skips a
@@ -576,12 +595,22 @@ is generated.
 - **What an unknown program writes on its own.** A read-only agent is refused
   one only when an argument names a path outside the OS temp dir, and anyone
   else is asked only when its words name a rule path, so one that writes
-  where none of its arguments points passes.
+  where none of its arguments points passes. A value attached to a short
+  option counts only when it is itself a rule path, so `-o.claude/*` and
+  `-DX=AGENTS.md` are not read as one.
+- **Perl and ruby writes the guard does not list.** Their code is read for
+  a list of calls, so a module's own way to write (`File::Copy`'s `cp` and
+  `mv` aliases, `Path::Tiny`'s `spew`) passes unasked.
+- **Git beyond the subcommands above.** The `--output` of another
+  subcommand (`git stash show`), a git alias, `--separate-git-dir` and a
+  `git -c` setting that runs a program are not read.
 - **A known reader's own way to write.** The programs `readers.mjs` lists are
   read as readers, so `awk '{print > "AGENTS.md"}'` is not read as a write.
 - **PowerShell beyond its write cmdlets.** `Set-ItemProperty`, the `Export-`
   cmdlets, .NET calls (`[IO.File]::WriteAllText`) and a rule path built at run
-  time are not read.
+  time are not read. A copy or a move into a folder is read by the name of
+  its one source, so several sources (`-Path a,b`) and the members of a
+  folder copied with `-Recurse` are not read one by one.
 - **A `:` in a Bash target.** It is read as an NTFS stream, though Git Bash
   maps it to another character, so a read-only agent's `$S/a:test.log` is
   refused.
