@@ -450,7 +450,7 @@ priority 1 on 2026-11-20.
 | ------------------------------------------------ | ---------- |
 | `.agents/contracts/process-reaper.json`          | The families it may end, the processes it spares, the 60 s grace and the 8 s bound; a rule file |
 | `scripts/agent-harness/reaper/plan.mjs`          | The pure core: from the process list, as data, each process's entry and the trees to end and keep, each with its reason |
-| `scripts/agent-harness/reaper/platform.mjs`      | The adapter: it lists with `Get-CimInstance Win32_Process` on Windows and `ps` on POSIX, and ends a tree with `taskkill /PID <pid> /T /F`, or SIGTERM then SIGKILL after 2 s |
+| `scripts/agent-harness/reaper/platform.mjs`      | The adapter: it lists with `Get-CimInstance Win32_Process` on Windows and `ps -eo pid=,ppid=,lstart=,rss=,args=` under `LC_ALL=C` on POSIX, whose absolute `lstart` gives a process the same start time in every listing, and ends a tree with `taskkill /PID <pid> /T /F`, or SIGTERM then SIGKILL after 2 s |
 | `scripts/agent-harness/reaper/bounded-child.mjs` | `runBounded`: a child with a time bound, ended with its whole tree at the bound; the worktree pruner's fetch runs through it |
 | `scripts/agent-harness/reaper/lock.mjs`          | The lock that keeps one killing reaper at a time |
 | `scripts/agent-harness/reaper/reap.mjs`          | The command, `pnpm reap` and `pnpm reap:kill` |

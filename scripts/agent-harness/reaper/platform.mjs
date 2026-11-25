@@ -8,7 +8,8 @@
 // process outside the tree names one of its pids as its parent (it was
 // started by an earlier holder of that pid), the tree is ended pid by pid,
 // `taskkill /F /PID <a> /PID <b>…` with no `/T`, so the platform's own tree
-// walk cannot reach that stranger. POSIX lists with `ps` and ends a tree
+// walk cannot reach that stranger. POSIX lists with `ps` under the C
+// locale, each start time read from its absolute `lstart`, and ends a tree
 // with SIGTERM to each of its pids, then, after 2 s, SIGKILL to each that
 // still runs; one wait serves every tree.
 // ---------------------------------------------------------------------------
@@ -18,10 +19,8 @@ import { basename } from 'node:path'
 import { runBounded } from './bounded-child.mjs'
 
 const WINDOWS = 'win32'
-const MS_PER_SECOND = 1000
 const BYTES_PER_KB = 1024
 const KILL_WAIT_MS = 2000
-const SECONDS = Object.freeze({ day: 86_400, hour: 3600, minute: 60 })
 // taskkill's exit code when no process has the pid: it already ended.
 const TASKKILL_NOT_FOUND = 128
 const NO_SUCH_PROCESS = 'ESRCH'
@@ -32,8 +31,11 @@ const CIM_SCRIPT =
   'Get-CimInstance Win32_Process | Select ProcessId,ParentProcessId,Name,' +
   'CommandLine,CreationDate,WorkingSetSize | ConvertTo-Json -Compress'
 
+// `lstart` is the absolute start time, so it reads the same in every
+// listing; under the C locale it is always `Wed Nov 25 12:03:39 2026`.
+const POSIX_LOCALE = 'C'
 const LISTING = Object.freeze({
-  posix: { args: ['-eo', 'pid=,ppid=,etime=,rss=,args='], command: 'ps' },
+  posix: { args: ['-eo', 'pid=,ppid=,lstart=,rss=,args='], command: 'ps' },
   windows: {
     args: ['-NoProfile', '-NonInteractive', '-Command', CIM_SCRIPT],
     command: 'powershell'
@@ -42,8 +44,25 @@ const LISTING = Object.freeze({
 
 // PowerShell 5.1 writes a date as "/Date(<ms>)/", PowerShell 7 as ISO text.
 const DOTNET_DATE = /^\/Date\((-?\d+)\)\/$/u
-const PS_LINE = /^\s*(\d+)\s+(\d+)\s+([\d:-]+)\s+(\d+)\s+(.*)$/u
-const ETIME = /^(?:(?:(\d+)-)?(\d+):)?(\d+):(\d+)$/u
+// pid, ppid, the five words of lstart, rss, then the command line.
+const PS_LINE =
+  /^\s*(\d+)\s+(\d+)\s+(\S+\s+\S+\s+\d+\s+[\d:]+\s+\d+)\s+(\d+)\s+(.*)$/u
+const LSTART =
+  /^(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat)\s+([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d{2}):(\d{2}):(\d{2})\s+(\d{4})$/u
+const MONTHS = Object.freeze([
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec'
+])
 
 const startOf = ({ value }) => {
   if (typeof value !== 'string') return null
@@ -66,34 +85,37 @@ const parseWindows = ({ text }) => {
   }))
 }
 
-const elapsedSecondsOf = ({ etime }) => {
-  const match = ETIME.exec(etime)
+// The epoch milliseconds of an lstart, read as the local time `ps` printed
+// it in, or null when it is not one.
+const lstartMs = ({ lstart }) => {
+  const match = LSTART.exec(lstart)
   if (!match) return null
-  const [, days = '0', hours = '0', minutes, seconds] = match
-  return (
-    Number(days) * SECONDS.day +
-    Number(hours) * SECONDS.hour +
-    Number(minutes) * SECONDS.minute +
+  const [, month, day, hours, minutes, seconds, year] = match
+  const monthIndex = MONTHS.indexOf(month)
+  if (monthIndex < 0) return null
+  return new Date(
+    Number(year),
+    monthIndex,
+    Number(day),
+    Number(hours),
+    Number(minutes),
     Number(seconds)
-  )
+  ).getTime()
 }
 
-const parsePosix = ({ now, text }) =>
+const parsePosix = ({ text }) =>
   text
     .split('\n')
     .map((line) => PS_LINE.exec(line))
     .filter(Boolean)
-    .map(([, pid, ppid, etime, rss, args]) => {
-      const elapsed = elapsedSecondsOf({ etime })
-      return {
-        bytes: Number(rss) * BYTES_PER_KB,
-        command: args.trim(),
-        name: basename(args.trim().split(/\s+/u)[0] ?? ''),
-        pid: Number(pid),
-        ppid: Number(ppid),
-        startMs: elapsed === null ? null : now - elapsed * MS_PER_SECOND
-      }
-    })
+    .map(([, pid, ppid, lstart, rss, args]) => ({
+      bytes: Number(rss) * BYTES_PER_KB,
+      command: args.trim(),
+      name: basename(args.trim().split(/\s+/u)[0] ?? ''),
+      pid: Number(pid),
+      ppid: Number(ppid),
+      startMs: lstartMs({ lstart })
+    }))
 
 const failureOf = ({ command, run }) =>
   `${command} exited ${run.code}: ${run.stderr.trim() || 'no output'}`
@@ -104,9 +126,10 @@ const failureOf = ({ command, run }) =>
  * what it cannot read throws, naming the command.
  */
 export const listProcesses = async ({ platform, spawn, timeoutMs }) => {
-  const { args, command } =
-    platform === WINDOWS ? LISTING.windows : LISTING.posix
-  const run = await runBounded({ args, command, spawn, timeoutMs })
+  const windows = platform === WINDOWS
+  const { args, command } = windows ? LISTING.windows : LISTING.posix
+  const env = windows ? undefined : { ...process.env, LC_ALL: POSIX_LOCALE }
+  const run = await runBounded({ args, command, env, spawn, timeoutMs })
   if (run.timedOut) {
     throw Object.assign(new Error(`${command} outlasted its bound`), {
       timedOut: true
@@ -115,9 +138,9 @@ export const listProcesses = async ({ platform, spawn, timeoutMs }) => {
   if (run.error) throw new Error(`${command} did not start: ${run.error.message}`)
   if (run.code !== 0) throw new Error(failureOf({ command, run }))
   try {
-    return platform === WINDOWS
+    return windows
       ? parseWindows({ text: run.stdout })
-      : parsePosix({ now: Date.now(), text: run.stdout })
+      : parsePosix({ text: run.stdout })
   } catch (error) {
     throw new Error(`${command} printed a listing that does not parse: ${error.message}`)
   }

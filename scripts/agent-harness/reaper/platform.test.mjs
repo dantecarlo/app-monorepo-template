@@ -24,11 +24,14 @@ const BYTES_PER_KB = 1024
 const NOT_FOUND = 128
 
 // A spawn that answers each command from `answers` (by command name) with
-// { code, stdout, stderr }, and records every call.
+// { code, stdout, stderr }, and records every call and the LC_ALL it ran
+// under.
 const fakeSpawn = ({ answers }) => {
   const calls = []
-  const spawn = (command, args) => {
+  const locales = []
+  const spawn = (command, args, options) => {
     calls.push({ args, command })
+    locales.push(options?.env?.LC_ALL)
     const child = Object.assign(new EventEmitter(), {
       pid: undefined,
       stderr: new PassThrough(),
@@ -42,7 +45,7 @@ const fakeSpawn = ({ answers }) => {
     })
     return child
   }
-  return { calls, spawn }
+  return { calls, locales, spawn }
 }
 
 const cim = ({ pid, ppid, name, command, startMs, bytes }) => ({
@@ -123,31 +126,38 @@ test('a single process, and a start time PowerShell 7 writes as a date, are read
   assert.equal(process.startMs, NOW - HOUR_MS)
 })
 
-test('on POSIX the listing is read from ps and a tree gets SIGTERM, then SIGKILL after 2 s', async () => {
+test('on POSIX the listing is read from ps under LC_ALL=C, each start time from its lstart', async () => {
+  // Fixed lines: a day of the month padded by a space, and one lstart that
+  // names no month.
   const ps = [
-    '    1     0 9-01:02:03  2048 /sbin/init',
-    '   10     1    01:00:00  4096 npm exec -y metro-mcp',
-    '   11    10       02:05   100 sh -c metro-mcp',
-    '   12    11       00:59     1 node /u/.npm/_npx/1a2b/node_modules/.bin/metro-mcp'
+    '    1     0 Mon Nov 16 11:58:03 2026  2048 /sbin/init',
+    '   10     1 Wed Nov 25 11:03:39 2026  4096 npm exec -y metro-mcp',
+    '   11    10 Thu Nov  5 09:00:00 2026   100 sh -c metro-mcp',
+    '   12    11 Wed Xyz 25 12:00:00 2026     1 node /u/.npm/_npx/1a2b/node_modules/.bin/metro-mcp'
   ].join('\n')
-  const { calls, spawn } = fakeSpawn({ answers: { ps: { stdout: `${ps}\n` } } })
-  const before = Date.now()
-  const processes = await listProcesses({ platform: 'linux', spawn, timeoutMs: BOUND_MS })
-  assert.deepEqual(calls[0], { args: ['-eo', 'pid=,ppid=,etime=,rss=,args='], command: 'ps' })
-  assert.deepEqual(
-    processes.map(({ bytes, command, name, pid, ppid }) => ({ bytes, command, name, pid, ppid })),
-    [
-      { bytes: 2048 * BYTES_PER_KB, command: '/sbin/init', name: 'init', pid: 1, ppid: 0 },
-      { bytes: 4096 * BYTES_PER_KB, command: 'npm exec -y metro-mcp', name: 'npm', pid: 10, ppid: 1 },
-      { bytes: 100 * BYTES_PER_KB, command: 'sh -c metro-mcp', name: 'sh', pid: 11, ppid: 10 },
-      { bytes: BYTES_PER_KB, command: 'node /u/.npm/_npx/1a2b/node_modules/.bin/metro-mcp', name: 'node', pid: 12, ppid: 11 }
-    ]
-  )
-  // 9-01:02:03 and 01:00:00 elapsed, read against the clock of the call.
-  const age = ({ pid }) => before - processes.find((one) => one.pid === pid).startMs
-  assert.ok(Math.abs(age({ pid: 1 }) - (9 * 86_400 + 3723) * 1000) < BOUND_MS)
-  assert.ok(Math.abs(age({ pid: 10 }) - HOUR_MS) < BOUND_MS)
+  const { calls, locales, spawn } = fakeSpawn({ answers: { ps: { stdout: `${ps}\n` } } })
+  const first = await listProcesses({ platform: 'linux', spawn, timeoutMs: BOUND_MS })
+  const second = await listProcesses({ platform: 'darwin', spawn, timeoutMs: BOUND_MS })
+  assert.deepEqual(calls, [
+    { args: ['-eo', 'pid=,ppid=,lstart=,rss=,args='], command: 'ps' },
+    { args: ['-eo', 'pid=,ppid=,lstart=,rss=,args='], command: 'ps' }
+  ])
+  assert.deepEqual(locales, ['C', 'C'])
+  // lstart is the local time of the machine that lists.
+  const local = ({ day, hour, minute, second: at }) =>
+    new Date(2026, 10, day, hour, minute, at).getTime()
+  assert.deepEqual(first, [
+    { bytes: 2048 * BYTES_PER_KB, command: '/sbin/init', name: 'init', pid: 1, ppid: 0, startMs: local({ day: 16, hour: 11, minute: 58, second: 3 }) },
+    { bytes: 4096 * BYTES_PER_KB, command: 'npm exec -y metro-mcp', name: 'npm', pid: 10, ppid: 1, startMs: local({ day: 25, hour: 11, minute: 3, second: 39 }) },
+    { bytes: 100 * BYTES_PER_KB, command: 'sh -c metro-mcp', name: 'sh', pid: 11, ppid: 10, startMs: local({ day: 5, hour: 9, minute: 0, second: 0 }) },
+    { bytes: BYTES_PER_KB, command: 'node /u/.npm/_npx/1a2b/node_modules/.bin/metro-mcp', name: 'node', pid: 12, ppid: 11, startMs: null }
+  ])
+  // A later listing reads the same start times: the identity check holds.
+  assert.deepEqual(second, first)
+})
 
+test('on POSIX the listing is read from ps and a tree gets SIGTERM, then SIGKILL after 2 s', async () => {
+  const { spawn } = fakeSpawn({ answers: {} })
   // Pid 12 survives its SIGTERM.
   const signals = []
   const alive = new Set([10, 11, 12])
