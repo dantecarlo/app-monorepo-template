@@ -181,8 +181,8 @@ gate the run reaches is blinded by exactly one step, whose companion's exported
 | `pnpm reap:test`               | The process reaper's core decides each rule over synthetic process tables (an orphan, a live parent, a reused pid, POSIX reparenting, unknown names, a family matched by executable and script and never by text in the arguments, persistent and watch work, the wrappers, live Git for Windows shells and tmux, its own ancestry, the spared processes, the grace period); the adapter lists and ends on each platform through an injected spawn; the command's modes, lock, second listing, bound and exit codes; the session hook's kill mode and its exit 0 on any failure; and `runBounded` ends a real child's tree on Windows (see 3g) |
 | `pnpm verify:agent-context:test` | The agent-context gate fails each defect it names, on synthetic entries and over a scratch tree |
 | `pnpm verify:agent-context`     | Every agent of `.agents/agents/` has an entry in `.agents/agent-context.json` whose `gradedBy` names the skills that grade it, each a folder of `.claude/skills/` holding a `SKILL.md`, whose `writes` is true or false, whose `surface`, if any, lists repository-relative folders beside `writes: true`, and which holds no other key; no entry names an agent that is gone (see 3e) |
-| `pnpm verify:harness-config:test` | The harness config gate fails each defect it names, a key given twice and an `additionalProperties` other than `false` among them, against the repository's schema, and over a scratch tree; the schema's merge policies are the ones the ticket skills name, `manual` the default |
-| `pnpm verify:harness-config`    | `.agents/harness.config.json` holds only the sections and settings `.agents/contracts/harness-config.schema.json` declares, each a value it allows and every required one there, the database-test mode under a `supabase` backend only, and neither file gives a key twice in one object; the schema uses only the keywords the gate reads, `additionalProperties` only as `true` or `false`, and sets it to `false` on every object outside a conditional branch (see 3h) |
+| `pnpm verify:harness-config:test` | The harness config gate fails each defect it names, a key given twice, an `additionalProperties` other than `false`, a missing `identity` and an undeclared key, a value of another type and a blank value in each block of the project's facts among them, against the repository's schema, and over a scratch tree; a config holding every block passes; the schema's merge policies are the ones the ticket skills name, `manual` the default |
+| `pnpm verify:harness-config`    | `.agents/harness.config.json` holds only the sections and settings `.agents/contracts/harness-config.schema.json` declares, each a value it allows, every list item one its `items` allows, no text shorter than its `minLength`, and every required one there, `identity` among them, the database-test mode under a `supabase` backend only, and neither file gives a key twice in one object; the schema uses only the keywords the gate reads, `additionalProperties` only as `true` or `false`, and sets it to `false` on every object outside a conditional branch (see 3h) |
 | `pnpm verify:manifest`          | `template.manifest.json` is well formed                   |
 | `pnpm verify:manifest:coverage` | Every tracked file has exactly one owner, no stale claims |
 | `pnpm verify:manifest:test`     | The pure engine behind both still behaves                 |
@@ -525,11 +525,12 @@ and Copilot run no adapter, as for the write guard.
 
 ### 3h. The harness config
 
-`.agents/harness.config.json` holds the project's harness settings, one file,
-and `.agents/contracts/harness-config.schema.json` is their contract: every
-section, setting, allowed value and default. The template ships the defaults.
-Both are rule files of the write guard (3f): `delivery.mergePolicy: low-risk`
-lets an agent merge without asking, so only the owner changes it.
+`.agents/harness.config.json` holds the project's harness settings and its
+facts, one file, and `.agents/contracts/harness-config.schema.json` is their
+contract: every section, setting, allowed value and default. The template ships
+the defaults. Both are rule files of the write guard (3f):
+`delivery.mergePolicy: low-risk` lets an agent merge without asking, so only
+the owner changes it.
 
 | Setting                  | Values                                | Read by |
 | ------------------------ | ------------------------------------- | ------- |
@@ -538,15 +539,32 @@ lets an agent merge without asking, so only the owner changes it.
 | `backend.kind`           | `supabase` (default), `own`, `none`   | nothing yet; the `supabase` prune sets `none`. `own` is a backend of the project's, which the harness does not manage |
 | `backend.databaseTests`  | `linked` (default), `local`, `off`; under `supabase` only | nothing yet: F57 keeps its own setting in `packages/supabase/package.json`, which moves here once both have merged |
 
+The project's facts follow (decision 13), in the blocks a derived project's
+product-name gate, `verify:core-purity` where one runs, reads: a derived
+repository names itself by rewriting `identity` alone. Every config holds
+`identity`; the other blocks are optional, and a block present holds every
+field it marks required. Each block takes its own `$comment`.
+
+| Fact                     | Value                                 | Read by |
+| ------------------------ | ------------------------------------- | ------- |
+| `identity.product`, `identity.repository`, `identity.packageScope` | required, non-blank text; the template's are `app-monorepo-template`, `dantecarlo/app-monorepo-template` and `@app` | nothing in the template yet; a product-name gate forbids each in the portable core. `pnpm run init` renames the template's slug in the first two, and leaves `@app` and the repository's owner (F76) |
+| `vocabulary.forbiddenInCore` | required in its block: a list of non-blank text | nothing in the template; a product-name gate forbids each beside `identity` |
+| `stack.monorepo`, `stack.mobile`, `stack.web`, `stack.backend`, `stack.architecture` | optional text | nothing. The template records `monorepo` and `architecture` only: the `web-next` and `mobile-expo` prunes remove an app, and `backend.kind` holds the backend |
+| `core.directory`         | required in its block: non-blank text | nothing in the template, which has no portable core of its own; a product-name gate walks it. Never `packages/core/src`, the domain, which names its product |
+| `skills.trees`, `skills.lock`, `skills.valueSources`, `skills.valueTerms` | required in their block: `lock` non-blank text, the rest lists of non-blank text | nothing in the template; a product-name gate reads them over the first-party skills |
+
 `pnpm verify:harness-config` holds the file to the schema, and validates by
 it rather than restating its rules, so a new setting or value is a change to
 the schema alone. A missing or unparsable file, a key the schema does not
-declare, a value it does not allow, a missing setting and a database-test mode
-under a backend other than `supabase` each fail it. It reads only the JSON
-Schema keywords it knows (`type`, `properties`, `required`,
-`additionalProperties`, `enum`, `const`, `if`, `then`, `else`, and the
-annotations), and refuses any other in the schema, as it refuses a default
-outside its own values: a rule it skipped would pass every config. It reads
+declare, a value it does not allow, a list item it does not allow, a blank
+value where it asks for text, a missing setting and a database-test mode
+under a backend other than `supabase` each fail it; a finding about a list
+item names its place, as `vocabulary.forbiddenInCore.1`. It reads only the
+JSON Schema keywords it knows (`type`, with `array`, `object` and `string`,
+`properties`, `items`, `required`, `additionalProperties`, `enum`, `const`,
+`minLength`, `if`, `then`, `else`, and the annotations), and refuses any other
+in the schema, as it refuses a default outside its own values: a rule it
+skipped would pass every config. It reads
 `additionalProperties` only as `true` or `false`, never as a schema, and every
 object of the schema outside an `if`, `then` or `else` sets it to `false`, so
 every key the file holds is one the schema declares. A key given twice in one
@@ -566,13 +584,16 @@ other than `low-risk`, a missing file, or a file that does not parse means
 pull request's own branch, which could otherwise change its own policy, and
 `verify:skills:test` holds both to say so. In a project with no
 `.agents/harness.config.json`, `process-intake` writes the whole template file
-with the chosen policy, then runs `pnpm verify:harness-config`: the key alone
-would make a file that fails the gate.
+with the chosen policy and the project's own `identity`, never the
+template's, then runs `pnpm verify:harness-config`: the key alone would make a
+file that fails the gate.
 
 **Not covered:** whether a setting is the right one for the project; whether
 the tree agrees with the file (a `supabase` backend with no
-`packages/supabase`); and anything that reads `workflow.mode` or `backend`,
-which nothing does yet.
+`packages/supabase`, a `core.directory` or a skill tree that does not exist);
+whether `identity` names this project rather than the template it came from;
+and anything that reads `workflow.mode`, `backend` or the facts, which nothing
+in the template does yet.
 
 ---
 

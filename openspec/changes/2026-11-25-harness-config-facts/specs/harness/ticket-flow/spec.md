@@ -7,8 +7,8 @@
 ### Requirement: TICKET-34 — The harness config names the project, in the blocks a derived repository rewrites
 
 `.agents/contracts/harness-config.schema.json` SHALL declare, beside `workflow`, `delivery` and
-`backend`, the project's facts with the block and field names of Certifipago's
-`.agents/harness.config.json`: `identity` (`product`, `repository`, `packageScope`), which every
+`backend`, the project's facts in the blocks a derived project's product-name gate reads:
+`identity` (`product`, `repository`, `packageScope`), which every
 config SHALL hold, and `vocabulary` (`forbiddenInCore`), `stack` (`monorepo`, `mobile`, `web`,
 `backend`, `architecture`), `core` (`directory`) and `skills` (`trees`, `lock`, `valueSources`,
 `valueTerms`), which a config MAY hold. Every field of `identity`, `vocabulary`, `core` and
