@@ -316,7 +316,9 @@ refusal looks wrong, say so and stop: the owner decides.
 **What this forbids**: `--force`, `--force-with-lease` and every `--force-*`
 on any tool; git's short force options (`-f`, `branch -D`, `-M` and `-C`,
 `checkout -B`, `switch -C` and `--discard-changes`); PowerShell's `-Force`;
-`taskkill /F`; and any script, config or build file that passes one.
+`taskkill /F`; and any script, config or build file that passes one. A tool
+setting whose name merely starts with `force` and that overrides no refusal,
+such as Chromium's `--force-device-scale-factor`, is not a force option.
 
 **The one registered exception**: `taskkill /T /F` and `taskkill /F /PID …`
 in `scripts/agent-harness/reaper/**` and
@@ -326,8 +328,9 @@ request; that code ends only process trees it has verified (orphan, family,
 identity) or the bounded child it started itself. Only the owner registers
 another, here.
 
-**Open with the owner**: whether `rm -f` and `rm -rf` (and `rmSync`'s
-`force: true`, the same in code) count; until the owner decides, they stay.
+**Outside this LAW, by the owner's ruling of 2026-11-25**: `rm -f`, `rm -rf`
+and `rmSync`'s `force: true`, whose `-f` only stops a missing file from being
+an error and overrides nothing a tool protects.
 
 **Enforced by** the no-force hook (`docs/harness.md` §3j,
 `pnpm no-force:test`): in Claude Code, a Bash or PowerShell command that

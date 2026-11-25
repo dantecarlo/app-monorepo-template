@@ -32,6 +32,13 @@ for (const [command, option, program] of [
   ['Remove-Item -Recurse -Force dist', '-Force', 'remove-item'],
   ['Stop-Process -Id 4 -Force:$true', '-Force:$true', 'stop-process'],
   ['tool -force', '-force', 'tool'],
+  // Not a force option by the LAW's text, which decides code; typed, the
+  // hook stays conservative and refuses it.
+  [
+    'chromium --force-device-scale-factor=1',
+    '--force-device-scale-factor=1',
+    'chromium'
+  ],
   ['tool --force=true', '--force=true', 'tool']
 ]) {
   test(`the long form in \`${command}\` is a force option`, () => {

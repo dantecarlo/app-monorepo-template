@@ -977,8 +977,14 @@ the call runs. The write guard, which guards the rule files, fails the other way
 `packages/tooling/src/process-tree.mjs`, which a tool call never types, so the hook exempts
 nothing.
 
+**What is not a force option.** A tool setting whose name merely starts with `force` and that
+overrides no refusal, such as Chromium's `--force-device-scale-factor` in the vendored archify,
+is not one; the hook still refuses it when typed, since it stays conservative and the LAW decides
+the code. By the owner's ruling of 2026-11-25, `rm -f`, `rm -rf` and `rmSync`'s `force: true`
+are outside the LAW, since their `-f` only stops a missing file from being an error.
+
 **Not covered:** a force option in code or config (a script, a config or a build file), which
-review reads; a short `-f` outside git and taskkill (`rm -f` is an open question with the owner);
+review reads; a short `-f` outside git and taskkill;
 a git letter outside the table (`rebase -f`, `submodule -f`, `worktree add -B`); a `+refspec`
 push; `bash -c`, `cmd /c`, xargs, an alias and a variable's value; a PowerShell splat or an
 abbreviated `-Fo`; and Codex, OpenCode and Copilot, which run no adapter yet.
