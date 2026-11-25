@@ -45,6 +45,8 @@
     "tests:into-blocks": "node scripts/move-tests-into-blocks.mjs",
     "tests:into-blocks:test": "node --test scripts/move-tests-into-blocks.test.mjs",
     "typecheck": "turbo run typecheck",
+    "updaters:run": "node scripts/updaters/run.mjs",
+    "updaters:run:test": "node --test scripts/updaters/run.test.mjs",
     "validate": "node scripts/validate.mjs",
     "validate:test": "node --test scripts/validate.test.mjs",
     "verify:agent-context": "node scripts/verify-agent-context.mjs",
