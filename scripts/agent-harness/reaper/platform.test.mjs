@@ -24,11 +24,16 @@ const BYTES_PER_KB = 1024
 const NOT_FOUND = 128
 
 // A spawn that answers each command from `answers` (by command name) with
-// { code, stdout, stderr }, and records every call.
+// { code, stdout, stderr }, and records every call and the LC_ALL and TZ
+// it ran under.
 const fakeSpawn = ({ answers }) => {
   const calls = []
-  const spawn = (command, args) => {
+  const locales = []
+  const zones = []
+  const spawn = (command, args, options) => {
     calls.push({ args, command })
+    locales.push(options?.env?.LC_ALL)
+    zones.push(options?.env?.TZ)
     const child = Object.assign(new EventEmitter(), {
       pid: undefined,
       stderr: new PassThrough(),
@@ -42,7 +47,7 @@ const fakeSpawn = ({ answers }) => {
     })
     return child
   }
-  return { calls, spawn }
+  return { calls, locales, spawn, zones }
 }
 
 const cim = ({ pid, ppid, name, command, startMs, bytes }) => ({
@@ -123,60 +128,172 @@ test('a single process, and a start time PowerShell 7 writes as a date, are read
   assert.equal(process.startMs, NOW - HOUR_MS)
 })
 
-test('on POSIX the listing is read from ps and a tree gets SIGTERM, then SIGKILL after 2 s', async () => {
+test('on POSIX the listing is read from ps under LC_ALL=C, each start time from its lstart read as UTC', async () => {
+  // Fixed lines: a day of the month padded by a space, and one lstart that
+  // names no month.
   const ps = [
-    '    1     0 9-01:02:03  2048 /sbin/init',
-    '   10     1    01:00:00  4096 npm exec -y metro-mcp',
-    '   11    10       02:05   100 sh -c metro-mcp',
-    '   12    11       00:59     1 node /u/.npm/_npx/1a2b/node_modules/.bin/metro-mcp'
+    '    1     0 Mon Nov 16 11:58:03 2026  2048 /sbin/init',
+    '   10     1 Wed Nov 25 11:03:39 2026  4096 npm exec -y metro-mcp',
+    '   11    10 Thu Nov  5 09:00:00 2026   100 sh -c metro-mcp',
+    '   12    11 Wed Xyz 25 12:00:00 2026     1 node /u/.npm/_npx/1a2b/node_modules/.bin/metro-mcp'
   ].join('\n')
-  const { calls, spawn } = fakeSpawn({ answers: { ps: { stdout: `${ps}\n` } } })
-  const before = Date.now()
-  const processes = await listProcesses({ platform: 'linux', spawn, timeoutMs: BOUND_MS })
-  assert.deepEqual(calls[0], { args: ['-eo', 'pid=,ppid=,etime=,rss=,args='], command: 'ps' })
-  assert.deepEqual(
-    processes.map(({ bytes, command, name, pid, ppid }) => ({ bytes, command, name, pid, ppid })),
-    [
-      { bytes: 2048 * BYTES_PER_KB, command: '/sbin/init', name: 'init', pid: 1, ppid: 0 },
-      { bytes: 4096 * BYTES_PER_KB, command: 'npm exec -y metro-mcp', name: 'npm', pid: 10, ppid: 1 },
-      { bytes: 100 * BYTES_PER_KB, command: 'sh -c metro-mcp', name: 'sh', pid: 11, ppid: 10 },
-      { bytes: BYTES_PER_KB, command: 'node /u/.npm/_npx/1a2b/node_modules/.bin/metro-mcp', name: 'node', pid: 12, ppid: 11 }
-    ]
-  )
-  // 9-01:02:03 and 01:00:00 elapsed, read against the clock of the call.
-  const age = ({ pid }) => before - processes.find((one) => one.pid === pid).startMs
-  assert.ok(Math.abs(age({ pid: 1 }) - (9 * 86_400 + 3723) * 1000) < BOUND_MS)
-  assert.ok(Math.abs(age({ pid: 10 }) - HOUR_MS) < BOUND_MS)
+  const { calls, locales, spawn } = fakeSpawn({ answers: { ps: { stdout: `${ps}\n` } } })
+  const first = await listProcesses({ platform: 'linux', spawn, timeoutMs: BOUND_MS })
+  const second = await listProcesses({ platform: 'darwin', spawn, timeoutMs: BOUND_MS })
+  assert.deepEqual(calls, [
+    { args: ['-eo', 'pid=,ppid=,lstart=,rss=,args='], command: 'ps' },
+    { args: ['-eo', 'pid=,ppid=,lstart=,rss=,args='], command: 'ps' }
+  ])
+  assert.deepEqual(locales, ['C', 'C'])
+  // ps prints lstart in UTC, so each one reads as that UTC time, whatever
+  // the time zone the reaper runs in.
+  const utc = ({ day, hour, minute, second: at }) => Date.UTC(2026, 10, day, hour, minute, at)
+  assert.deepEqual(first, [
+    { bytes: 2048 * BYTES_PER_KB, command: '/sbin/init', name: 'init', pid: 1, ppid: 0, startMs: utc({ day: 16, hour: 11, minute: 58, second: 3 }) },
+    { bytes: 4096 * BYTES_PER_KB, command: 'npm exec -y metro-mcp', name: 'npm', pid: 10, ppid: 1, startMs: utc({ day: 25, hour: 11, minute: 3, second: 39 }) },
+    { bytes: 100 * BYTES_PER_KB, command: 'sh -c metro-mcp', name: 'sh', pid: 11, ppid: 10, startMs: utc({ day: 5, hour: 9, minute: 0, second: 0 }) },
+    { bytes: BYTES_PER_KB, command: 'node /u/.npm/_npx/1a2b/node_modules/.bin/metro-mcp', name: 'node', pid: 12, ppid: 11, startMs: null }
+  ])
+  // A later listing reads the same start times: the identity check holds.
+  assert.deepEqual(second, first)
+})
 
-  // Pid 12 survives its SIGTERM.
-  const signals = []
-  const alive = new Set([10, 11, 12])
-  const signal = (pid, name) => {
-    signals.push([pid, name])
-    if (!alive.has(pid)) throw Object.assign(new Error('no such process'), { code: 'ESRCH' })
-    if (name === 'SIGTERM' && pid !== 12) alive.delete(pid)
-    if (name === 'SIGKILL') alive.delete(pid)
+test('on POSIX ps runs with TZ=UTC in its env, so every lstart it prints is UTC', async () => {
+  const posix = fakeSpawn({ answers: { ps: { stdout: '' } } })
+  await listProcesses({ platform: 'linux', spawn: posix.spawn, timeoutMs: BOUND_MS })
+  assert.deepEqual(posix.zones, ['UTC'])
+  assert.deepEqual(posix.locales, ['C'])
+  // Windows reads a UTC start time already, and lists under its own env.
+  const windows = fakeSpawn({ answers: { powershell: { stdout: '[]' } } })
+  await listProcesses({ platform: 'win32', spawn: windows.spawn, timeoutMs: BOUND_MS })
+  assert.deepEqual(windows.zones, [undefined])
+})
+
+// A POSIX tree of three pids, each with the start time the plan read.
+const TREE_STARTS = new Map([
+  [10, Date.UTC(2026, 10, 25, 10, 0, 0)],
+  [11, Date.UTC(2026, 10, 25, 10, 0, 1)],
+  [12, Date.UTC(2026, 10, 25, 10, 0, 2)]
+])
+const POSIX_CANDIDATE = { ...CANDIDATE, starts: TREE_STARTS }
+
+// A signal that records every call, ends each pid of `dies` at its SIGTERM
+// and any pid at its SIGKILL, and refuses a pid that is gone.
+const fakeSignal = ({ alive, dies, events }) => (pid, name) => {
+  events.push([pid, name])
+  if (!alive.has(pid)) throw Object.assign(new Error('no such process'), { code: 'ESRCH' })
+  if (name === 'SIGKILL' || (name === 'SIGTERM' && dies.includes(pid))) alive.delete(pid)
+}
+
+test('on POSIX a tree gets SIGTERM, then after 2 s SIGKILL only to each pid still listed with its start time', async () => {
+  // Pid 10 ends at its SIGTERM; pid 11 survives it; pid 12 ends and a newer
+  // process takes the pid before the check, so a probe would find it alive.
+  const ps = [
+    '   11     1 Wed Nov 25 10:00:01 2026   100 node /r/node_modules/typescript/bin/tsc',
+    '   12     1 Wed Nov 25 11:59:58 2026   100 /usr/bin/vim notes.md'
+  ].join('\n')
+  const events = []
+  const { calls, spawn: answer } = fakeSpawn({ answers: { ps: { stdout: `${ps}\n` } } })
+  const spawn = (...args) => {
+    events.push(['spawn', args[0]])
+    return answer(...args)
   }
-  const waits = []
   const results = await endTrees({
-    candidates: [CANDIDATE],
+    candidates: [POSIX_CANDIDATE],
     remainingMs: () => BOUND_MS,
     platform: 'linux',
-    signal,
-    sleep: async (ms) => waits.push(ms),
+    signal: fakeSignal({ alive: new Set([11, 12]), dies: [10], events }),
+    sleep: async (ms) => events.push(['sleep', ms]),
     spawn
   })
-  assert.deepEqual(signals, [
+  assert.deepEqual(events, [
     [10, 'SIGTERM'],
     [11, 'SIGTERM'],
     [12, 'SIGTERM'],
-    [10, 0],
-    [11, 0],
-    [12, 0],
-    [12, 'SIGKILL']
+    ['sleep', KILL_WAIT_MS],
+    ['spawn', 'ps'],
+    [11, 'SIGKILL']
   ])
-  assert.deepEqual(waits, [KILL_WAIT_MS])
+  assert.deepEqual(calls, [{ args: ['-eo', 'pid=,ppid=,lstart=,rss=,args='], command: 'ps' }])
   assert.deepEqual(results, [{ ended: true, pid: 10 }])
+})
+
+test('on POSIX a listing before SIGKILL that returns no process reports the tree as not ended', async () => {
+  // A listing that parses to nothing would read every pid as gone.
+  const empty = fakeSpawn({ answers: { ps: { stdout: 'ps: no process matched\n' } } })
+  const events = []
+  assert.deepEqual(
+    await endTrees({
+      candidates: [POSIX_CANDIDATE],
+      remainingMs: () => BOUND_MS,
+      platform: 'linux',
+      signal: fakeSignal({ alive: new Set([10, 11, 12]), dies: [], events }),
+      sleep: async () => {},
+      spawn: empty.spawn
+    }),
+    [
+      {
+        detail:
+          'sent SIGTERM, but the second listing returned no process, so it sent no SIGKILL',
+        ended: false,
+        pid: 10
+      }
+    ]
+  )
+  assert.deepEqual(events, [[10, 'SIGTERM'], [11, 'SIGTERM'], [12, 'SIGTERM']])
+})
+
+test('on POSIX no SIGKILL is sent when the listing before it fails or the bound has run out', async () => {
+  const failing = fakeSpawn({ answers: { ps: { code: 1, stderr: 'ps: cannot read /proc' } } })
+  const failed = []
+  assert.deepEqual(
+    await endTrees({
+      candidates: [POSIX_CANDIDATE],
+      remainingMs: () => BOUND_MS,
+      platform: 'linux',
+      signal: fakeSignal({ alive: new Set([10, 11, 12]), dies: [], events: failed }),
+      sleep: async () => {},
+      spawn: failing.spawn
+    }),
+    [
+      {
+        detail:
+          'sent SIGTERM, but listing the processes again failed: ps exited 1: ' +
+          'ps: cannot read /proc, so it sent no SIGKILL',
+        ended: false,
+        pid: 10
+      }
+    ]
+  )
+  assert.deepEqual(failed, [[10, 'SIGTERM'], [11, 'SIGTERM'], [12, 'SIGTERM']])
+
+  // The 2 s wait spends what was left of the bound.
+  const clock = { left: BOUND_MS }
+  const late = fakeSpawn({ answers: { ps: { stdout: '' } } })
+  const spent = []
+  assert.deepEqual(
+    await endTrees({
+      candidates: [POSIX_CANDIDATE],
+      remainingMs: () => clock.left,
+      platform: 'linux',
+      signal: fakeSignal({ alive: new Set([10, 11, 12]), dies: [], events: spent }),
+      sleep: async () => {
+        clock.left = 0
+      },
+      spawn: late.spawn
+    }),
+    [
+      {
+        detail:
+          'sent SIGTERM, but the bound ran out before it could list the processes ' +
+          'again, so it sent no SIGKILL',
+        ended: false,
+        pid: 10
+      }
+    ]
+  )
+  assert.deepEqual(late.calls, [])
+  assert.deepEqual(spent, [[10, 'SIGTERM'], [11, 'SIGTERM'], [12, 'SIGTERM']])
 })
 
 test('a listing that exits non-zero throws, naming the command and what it printed', async () => {

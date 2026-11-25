@@ -210,7 +210,7 @@ gate the run reaches is blinded by exactly one step, whose companion's exported
 | `pnpm agent-harness:projection-check` | Every projected agent file equals what its neutral source renders, and is committed (see 3e) |
 | `pnpm agent-harness:test`       | The projector's reader, adapters, hook projection, writer, checker and sync still behave |
 | `pnpm write-guard:test`         | The write guard decides every cell of its table, its errors and its switch-off, for the file tools, Bash and PowerShell; it reads every Windows spelling of a path (or refuses what it cannot read) and every checkout that holds it, and judges a 10,000-folder path and a pathological 30-item list in under a second. Every Bash case of Certifipago's guard is ported, every checkout rule glob matches a file, every module the hook loads is a rule file, and the real hook answers a payload on stdin end to end, through a junction too (see 3f) |
-| `pnpm reap:test`               | The process reaper's core decides each rule over synthetic process tables (an orphan, a live parent, a reused pid, POSIX reparenting, unknown names, a family matched by executable and script and never by text in the arguments, persistent and watch work, the wrappers, live Git for Windows shells and tmux, its own ancestry, the spared processes, the grace period); the adapter lists and ends on each platform through an injected spawn; the command's modes, lock, second listing, bound and exit codes; the session hook's kill mode, its MCP check's line and its exit 0 on any failure; the MCP check over scratch trees; and `runBounded` ends a real child's tree on Windows (see 3g) |
+| `pnpm reap:test`               | The process reaper's core decides each rule over synthetic process tables (an orphan, a live parent, a reused pid, POSIX reparenting, the hour a clock falls back, unknown names, a family matched by executable and script and never by text in the arguments, persistent and watch work, node's watch flags, the wrappers, live Git for Windows shells and tmux, its own ancestry, the spared processes, the grace period); the adapter lists and ends on each platform through an injected spawn; the command's modes, lock, second listing, bound and exit codes; the lock's takeover under its guard, a dead guard and a release that leaves a later run's lock, with injected races and two real processes; the session hook's kill mode, its MCP check's line and its exit 0 on any failure; the MCP check over scratch trees; and `runBounded` ends a real child's tree on Windows (see 3g) |
 | `pnpm verify:agent-context:test` | The agent-context gate fails each defect it names, on synthetic entries and over a scratch tree |
 | `pnpm verify:agent-context`     | Every agent of `.agents/agents/` has an entry in `.agents/agent-context.json` whose `gradedBy` names the skills that grade it, each a folder of `.claude/skills/` holding a `SKILL.md`, whose `writes` is true or false, whose `surface`, if any, lists repository-relative folders beside `writes: true`, and which holds no other key; no entry names an agent that is gone (see 3e) |
 | `pnpm verify:harness-config:test` | The harness config gate fails each defect it names, a key given twice, an `additionalProperties` other than `false`, a missing `identity` and an undeclared key, a value of another type and a blank value in each block of the project's facts among them, against the repository's schema, and over a scratch tree; a config holding every block passes; the schema's merge policies are the ones the ticket skills name, `manual` the default |
@@ -247,6 +247,7 @@ the pre-commit hook on staged files.
 | `verify:security`     | The static security posture holds                                                         |
 | `verify:theme-sync`   | Every generated token output (the web `theme.css`, the NativeWind preset, the mobile `themeVars`, the `themeNames` the shared `tv` registers) equals its regeneration from `tokens.constant.ts`; `verify:theme-sync:test` plants a hand edit in each and an un-regenerated source change |
 | `verify:mcp-docs`     | The generated block of `docs/mcp.md` is what `pnpm mcp:docs` wrote and lists every server, package and capability of `.agents/contracts/mcp-servers.json` plus `.mcp.json`, with each server's exact pin and its launcher command `node scripts/mcp/launch.mjs <name>`; offline, and it refuses `npx`, a missing or inexact version, a missing area or one other than `web` or `mobile`, an entry that is not a `.js`, `.mjs` or `.cjs` file, server args that are not a list of words, catalog args other than the launcher with the entry's own name, and a `.mcp.json` server named like a catalog server, or running the launcher, that does not run it with one catalog name first or gives it an argument after the name that is not a string. `verify:mcp-docs:test` plants each drift; `mcp:docs:test` drives the updater with an injected registry; `mcp:launch:test` runs the launcher as a process: the area gate, an unknown word of `ATL_MCP_AREA` named on stderr, the pinned entry imported in the launcher's own process with its argv, the catalog's server args then the ones after the name, and exit 1 for an unknown name or an entry that is not installed |
+| `verify:updaters`    | Every entry of `.agents/contracts/updaters.json` declares exactly its eight keys, a kebab-case id no other entry has, `pnpm <script>` commands of root scripts, a `runsIn` of `ci` and `local`, and `proposal: true` when its `writes` holds a rule file by the write guard's own `ruleFor`, or a wildcard (3i). `verify:updaters:test` plants each refusal under the real policy and under synthetic ones; `updaters:run:test` drives the runner against fake `git`, `gh` and shell |
 | `verify:ticket-branch:test` | `scripts/verify-ticket-branch.test.mjs` drives the branch check (below, 3d) with a valid ticket branch and pull request body and each refusal, under the default ticket identity and under example layers (a TASK-slug one among them), with each malformed block and flag, and as a process over a scratch working directory |
 | `verify:skills:test` | `scripts/verify-skills.test.mjs` holds the seven ticket skills of `.claude/skills/` to their sections (the shape of `new-skill`, every state, role and board operation of `ticket-flow`, Dropped among the states of its table and of the process template's, the role skills' opening and the contract tables they must not copy, the three templates, the ticket template's target version marked `**Version (required):**`, and both merge policies, `manual` and `low-risk`, named in `ticket-flow` rule 4, `refine-ticket`'s merge queue, `process-intake`'s mapping step and the process template, each beside `.agents/harness.config.json`, where the project records its own, and the process template's Policy line names `delivery.mergePolicy` in it; the policy read fail closed: `ticket-flow` rule 4 and `refine-ticket`'s merge queue say that a value other than `low-risk`, a missing file, or a file that does not parse means `manual`, and that the policy is read from the default branch's copy, never from the pull request's own branch; the production branch: the process template's Branching model, whose Production branch line gives `production`, the default; the merge queue: `refine-ticket` has its § Merge queue, `qa-ticket`'s hand-off step names `<id> ready to merge, PR #<n>`, and `qa-ticket` holds no `Ready to merge → Done`; the ticket identity: `ticket-flow` names `branchTypes` and the `json ticket-identity` block, `process-intake`'s mapping step names the block, and the process template ships one that the branch check reads with no finding and whose fields are its defaults; QA's checkout: `qa-ticket`'s Step 2 adds its worktree with `--detach` and its Step 5 pushes with `git push origin HEAD:<branch>`; and the hotfix: `qa-ticket`'s hand-off step, `refine-ticket`'s release step and `ticket-flow`'s messages name `<id> ready to merge, hotfix`, and `release-ticket`'s Hotfix section says that QA leaves it at Ready to merge; and the board as the source: `ticket-flow`'s Board operations and the process template's Board adapter name the board the source of every open ticket, and the closed ticket catalog: `refine-ticket`'s § Record the closed tickets names `§ Closed Ticket Catalog` and one pull request per close or release, `po-ticket` names no `edits:`, since the PO does no repository work, and `refine-ticket`'s merge queue says that the architect brings the catalog pull request current itself and that each row it adds matches its board page in id, title, target version and closing pull request; and the drop: `ticket-flow` has its § Dropped, naming `Superseded by:`, and its messages name `<id> dropped`, which `po-ticket`'s Step 6 — Drop a ticket, `refine-ticket`'s § Drop a ticket, `dev-ticket`'s § Changes requested and `qa-ticket`'s Step 7 also name, and `refine-ticket`'s § Record the closed tickets names `### Dropped tickets`; and the later bring-current: `refine-ticket`'s merge queue brings a ticket's pull request current from a spare worktree of its own, never QA's or the dev's, names `--detach` and `git push origin HEAD:<branch>`, pushes in the background and says that a code conflict goes back to the dev session, none of `ticket-flow`, `refine-ticket` and `qa-ticket` names `<id> bring current`, and `qa-ticket` holds no `Ready to merge → Changes requested`), with synthetic cases and over the repository; it also runs the cases of `.claude/skills/general-plan/validate-general-plan.test.mjs` |
 | `docs:diagrams:check` | Every committed diagram matches its spec and the tokens                                   |
@@ -279,6 +280,8 @@ pnpm smoke:mobile  # expo export + a Hermes bundle assertion
 `pnpm mcp:docs` is not in `pnpm validate` either: it asks the npm registry for the
 latest release of each MCP server and rewrites the generated block of
 [mcp.md](mcp.md). The gate only checks that block offline (`verify:mcp-docs`).
+`pnpm updaters:run`, which runs it and every other updater, opens pull requests, so it is
+not in `pnpm validate` either; its suite is (3i).
 
 `pnpm verify:ticket-branch` is not in `pnpm validate` either, and nothing in the
 template runs it: the template's own branches carry no ticket id. It is the pure
@@ -645,7 +648,7 @@ priority 1 on 2026-11-20.
 | ------------------------------------------------ | ---------- |
 | `.agents/contracts/process-reaper.json`          | The families it may end, the processes it spares, the 60 s grace and the 8 s bound; a rule file |
 | `scripts/agent-harness/reaper/plan.mjs`          | The pure core: from the process list, as data, each process's entry and the trees to end and keep, each with its reason |
-| `scripts/agent-harness/reaper/platform.mjs`      | The adapter: it lists with `Get-CimInstance Win32_Process` on Windows and `ps` on POSIX, and ends a tree with `taskkill /PID <pid> /T /F`, or SIGTERM then SIGKILL after 2 s |
+| `scripts/agent-harness/reaper/platform.mjs`      | The adapter: it lists with `Get-CimInstance Win32_Process` on Windows and `ps -eo pid=,ppid=,lstart=,rss=,args=` under `LC_ALL=C` and `TZ=UTC` on POSIX: each absolute `lstart` is a UTC time, the same in every listing and never repeated when a clock falls back, and gives a process its age, its order against its parent and its identity. It ends a tree with `taskkill /PID <pid> /T /F`, or SIGTERM, then after 2 s a second listing and SIGKILL only to each pid still listed with the start time the plan read, none when that listing fails, returns no process or the bound has run out |
 | `scripts/agent-harness/reaper/bounded-child.mjs` | `runBounded`: a child with a time bound, ended with its whole tree at the bound; the worktree pruner's fetch runs through it |
 | `scripts/agent-harness/reaper/lock.mjs`          | The lock that keeps one killing reaper at a time |
 | `scripts/agent-harness/reaper/reap.mjs`          | The command, `pnpm reap` and `pnpm reap:kill` |
@@ -673,7 +676,10 @@ the launcher holds about as much memory as the server.
 **What it never ends.** Persistent and watch work, without the owner's word: the
 families are one-shot runs, so `turbo run dev` or `start`, the turbo daemon,
 `vitest` without `run`, `tsc --watch`, tsserver and the dev servers (`next dev`,
-`expo start`, metro) match none. Its own ancestry. A tree that holds a process
+`expo start`, metro) match none. Nor does a node process in watch mode, one whose
+flags before its script name `--watch`, `--watch=<value>`, `--watch-path <path>`,
+`--watch-path=<path>` or `--watch-preserve-output`, a wrapper included, and a
+tree that holds one is kept. Its own ancestry. A tree that holds a process
 the contract spares: the shared MCP proxy, however it is launched (the
 `mcp-proxy` executable, `python -m mcp_proxy`, a node `mcp-proxy` script), which
 runs detached by design; every Git for Windows (MSYS) process, whose runtime
@@ -688,11 +694,20 @@ root pid, family, the wrapper it came through, age, process count and MB), one
 `kept` line per tree it keeps and why, then the total MB. `pnpm reap:kill` ends
 them; `--json` prints the plan as one JSON line and `--quiet` only the total
 line. A killing run first creates `atl-process-reaper.lock` in the OS temp
-directory, exclusively; another reaper that finds it held prints so and exits 0
-at once, and a lock older than 30 s, left by a reaper that died, is taken over.
+directory, exclusively, with a token unique to that run; another reaper that
+finds it held prints so and exits 0 at once, and a lock gone by the time it is
+read is created again, never taken over. A lock older than 30 s, left by a
+reaper that died, is taken over only under `atl-process-reaper.lock.guard`,
+created exclusively, and removed under it only while it still holds the bytes
+the run read, so two runs that find it stale never both take it; a guard older than 30 s, left by a reaper
+that died holding it, is removed, only while it holds what that run read, and
+the next run takes the lock. A run removes the lock at its end only while it
+still holds its token, never one a later run took over.
 Right before its kills it lists the processes again and leaves every tree whose
 root pid is gone or now names a process that started at another time, since a
-tree kill follows a reused pid. It exits 0 when it finished, with or without
+tree kill follows a reused pid; of every other tree it ends only the pids still
+listed with the start time the plan read, so a pid-by-pid kill never names a
+reused one. It exits 0 when it finished, with or without
 ends, and 1 on a failure: a listing that fails, a tree it could not end, an
 unknown option. It ends within 8 s: a run that reaches the bound ends no tree it
 had not already decided on, says so and exits 1. `signalProcessTree` stops a
@@ -724,7 +739,9 @@ keeps the turbo or vitest below it, whose parent is still alive, and a Git for
 Windows shell is spared, so a tree a dead Git Bash leaves behind stays, except
 for a family process that becomes an orphan itself. A one-shot run that matches
 a family but should survive is added to the spare list, on the owner's word. On
-POSIX a process forked between the SIGTERM and the SIGKILL is not reached, and
+POSIX a process forked between the SIGTERM and the SIGKILL is not reached, and a
+pid taken by a process that started in the same second as its earlier holder
+reads as the same process, since `lstart` counts whole seconds. And
 the pruner's stopped fetch still signals git alone, as before. Codex, OpenCode
 and Copilot run no adapter, as for the write guard.
 
@@ -799,6 +816,113 @@ the tree agrees with the file (a `supabase` backend with no
 whether `identity` names this project rather than the template it came from;
 and anything that reads `workflow.mode`, `backend` or the facts, which nothing
 in the template does yet.
+
+### 3i. The periodic updaters
+
+An updater keeps something current that drifts on its own: a doc that follows MCP releases
+today, and the action pins, the dependencies, the vendored skills and the rules later. Every
+updater has one shape, written once in `.agents/contracts/updaters.json`, and one runner turns
+the one that is out of date into a pull request a person merges. The owner asked for it on
+2026-11-20 (translated from Spanish): "But we also need a policy updater, and also a skill
+updater that runs periodically".
+
+| Piece                              | What it is                                                                 |
+| ---------------------------------- | -------------------------------------------------------------------------- |
+| `.agents/contracts/updaters.json`  | The registry: one entry per updater. A contract, so the write guard asks before an edit (3f) |
+| `scripts/verify-updaters.mjs`      | `pnpm verify:updaters`, the gate that holds the registry, inside `pnpm validate` |
+| `scripts/updaters/run.mjs`         | `pnpm updaters:run`, the runner, never inside `pnpm validate`               |
+
+**The entry.** Each declares every key, and no other:
+
+| Key        | Holds                                                                                   |
+| ---------- | --------------------------------------------------------------------------------------- |
+| `id`       | Kebab-case and unique; its pull request comes from the branch `updates/<id>`            |
+| `command`  | `pnpm <script>` of a root script, with no argument                                       |
+| `runsIn`   | Where it runs: `ci`, `local` or both                                                     |
+| `network`  | The hosts it reaches                                                                     |
+| `secrets`  | The variables it reads                                                                   |
+| `writes`   | The repository paths it may write, with forward slashes                                  |
+| `proposal` | `true` when its pull request proposes a rule change                                      |
+| `verify`   | The `pnpm <script>` commands its change must pass                                        |
+
+**The command's contract.** `<command> --check` asks what the run would ask and writes nothing:
+it exits **0** when current, **2** when out of date and **1** on a failure, which writes nothing
+and opens nothing. `--json` prints the run as one JSON document. The command without a flag
+updates, and exits 0 or 1. Its planner is pure, its network calls go through an injected
+`fetch`, it writes nothing when nothing moved, and it names what a person should re-read as
+`review: <path>`. `pnpm mcp:docs` is the first ([mcp.md](mcp.md)).
+
+**The rule-proposal rule.** An updater that rewrites a rule file would edit a rule to fit the
+work, which the LAW "A rule is not edited to fit the work" (`AGENTS.md`) forbids unless the
+owner decides it. So:
+
+- `pnpm verify:updaters` refuses an entry whose `writes` holds a path the write guard classifies
+  as a rule file while `proposal` is not true. It asks the write guard's own `ruleFor`
+  (`scripts/agent-harness/write-guard/policy.mjs`) over the guard's own policy
+  (`.agents/contracts/write-guard.json`), never a list of its own, so a glob added to the policy
+  reaches the updaters at once. A path with a wildcard cannot be classified, so it counts as a
+  rule path.
+- Whatever `proposal` says, the runner classifies the diff it got with the same `ruleFor`. A
+  pull request whose updater declares `proposal: true`, or whose diff touches a rule path, opens
+  as a draft labelled `rule-proposal`, and its body quotes the LAW. The owner approves the rule
+  change in words, or closes it.
+
+**The runner.**
+
+```bash
+pnpm updaters:run [--only <id>] [--where ci|local] [--dry-run]
+```
+
+It refuses a registry the gate refuses before it runs anything. For each updater whose `runsIn`
+holds `--where` (`local` by default), or the one `--only` names:
+
+1. It runs `<command> --check`. Exit 0: current, nothing more. Exit 1 or any other: failed, no
+   pull request, and the run goes on to the next updater, then exits 1.
+2. Exit 2: on a working tree with no change, it rebuilds `updates/<id>` from the default branch
+   (the one `gh repo view` names), runs `<command>`, then each `verify` command. An update that
+   changes nothing commits nothing.
+3. It commits with a Conventional Commit that carries no attribution, force-pushes to
+   `updates/<id>` alone (the updater owns that branch: each run rebuilds it, so a commit pushed
+   there by hand is replaced), and opens one pull request from it with `gh pr create`, or edits
+   the open one (`gh pr list --head updates/<id>`, then `gh pr edit`). Then it returns to the ref
+   it started on.
+4. A failed update, verify command, git or gh step stops the run there and exits 1, and names
+   the branch the tree is left on, for a person to read.
+
+`--dry-run` runs the checks and prints what each out-of-date updater would do, and runs no git
+and no gh. The runner never merges, approves or enables auto-merge, never pushes to the default
+branch, and never sets `ATL_WRITE_GUARD`: it hands git, gh and every updater the environment it
+was given. It runs no third-party action. `git`, `gh` and the shell are passed in, so
+`updaters:run:test` drives every path against fakes and asserts each call in order.
+
+**What the later slices add.** This is slice 1 of nine (F73). Decided by the owner:
+
+1. **The schedule** (slice 2, which closes F33): `.github/workflows/updaters.yml`, on
+   `schedule` and `workflow_dispatch`, runs every updater weekly, on Monday at 06:00 UTC, plus a
+   daily audit for high and critical advisories only. Its pull requests are opened with a
+   **GitHub App** installed on the template, the memory mirror and Certifipago: short-lived
+   tokens with per-permission scopes. The owner installs it; slice 2 needs it before it merges.
+2. **No model key in CI.** CI holds no LLM key: it only detects and proposes. A pull request of
+   the agent-rules updater carries the raw excerpts, and a model drafts the rule edits in a
+   local session.
+3. **The action pins** (slice 3): the SHAs `verify:workflow-pins` holds, moved to their newer
+   releases.
+4. **The dependencies and advisories** (slice 4). The owner prefers updating the dependencies
+   over locking them, and the post-merge install is a plain `pnpm install`. pnpm's
+   `minimumReleaseAge` is honoured everywhere: never `minimumReleaseAgeExclude`, never
+   `pnpm audit --fix`.
+5. **The skills, part a** (slice 5): `skills-drift` brought over from Certifipago, and the
+   adaptations of a vendored `SKILL.md` recorded as a patch.
+6. **The skills, part b** (slice 6): the re-vendor engine. archify moves to 3.2.0, which is MIT,
+   in a change of its own vendored now with its locale catalogs allowlisted; the engine expects
+   the licence the lock records for an entry.
+7. **The agent-rules watcher** (slice 7), **the shared rules** (slice 8) and **a local doctor**
+   (slice 9), each with its parity-ledger row.
+
+**Not covered:** whether an updater writes only what its `writes` declares, which the runner
+reads from the diff it got and review reads in the pull request; whether a command keeps the
+contract, which its own suite proves; whether `network` and `secrets` name every host and
+variable it reaches; and the schedule and its token, which slice 2 adds.
 
 ---
 

@@ -149,27 +149,58 @@ test('the entry of a process is its executable and its script, the flags before 
       args: 'run --reporter dot',
       exe: 'C:/nodejs/node.exe',
       label: 'vitest.mjs',
-      script: 'C:/r/node_modules/vitest/vitest.mjs'
+      script: 'C:/r/node_modules/vitest/vitest.mjs',
+      watch: false
     }
   )
   assert.deepEqual(entryOf({ process: processOf({ command: 'python -m mcp_proxy --port 1', name: 'python' }) }), {
     args: '--port 1',
     exe: 'python',
     label: 'mcp_proxy',
-    script: 'mcp_proxy'
+    script: 'mcp_proxy',
+    watch: false
   })
   assert.deepEqual(entryOf({ process: processOf({ command: 'node -e "setInterval(() => {}, 1)"' }) }).script, null)
   assert.deepEqual(entryOf({ process: { command: '', name: 'cmd.exe' } }), {
     args: '',
     exe: 'cmd.exe',
     label: 'cmd.exe',
-    script: null
+    script: null,
+    watch: false
   })
   assert.deepEqual(entryOf({ process: processOf({ command: 'git remote-https origin https://x/a.git', name: 'git.exe' }) }), {
     args: 'remote-https origin https://x/a.git',
     exe: 'git',
     label: 'git',
-    script: null
+    script: null,
+    watch: false
+  })
+})
+
+test('a node process in watch mode reads as watch mode, and --watch-path takes the next argument as its value', () => {
+  const TSC = 'C:\\r\\node_modules\\typescript\\bin\\tsc'
+  const watched = {
+    args: '-p .',
+    exe: 'node',
+    label: 'tsc',
+    script: 'C:/r/node_modules/typescript/bin/tsc',
+    watch: true
+  }
+  for (const flags of [
+    '--watch',
+    '--watch=true',
+    '--watch-path src',
+    '--watch-path=src',
+    '--watch-preserve-output',
+    '--max-old-space-size=4096 --watch-path "C:\\r\\src" --watch-preserve-output'
+  ]) {
+    assert.deepEqual(entryOf({ process: processOf({ command: `node ${flags} ${TSC} -p .` }) }), watched, flags)
+  }
+  // After the script, --watch is the script's own argument, read by its family.
+  assert.deepEqual(entryOf({ process: processOf({ command: `node ${TSC} --watch` }) }), {
+    ...watched,
+    args: '--watch',
+    watch: false
   })
 })
 

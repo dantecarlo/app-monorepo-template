@@ -8,6 +8,7 @@
     ".agents/contracts/harness-config.schema.json",
     ".agents/contracts/mcp-servers.json",
     ".agents/contracts/process-reaper.json",
+    ".agents/contracts/updaters.json",
     ".agents/contracts/write-guard.json",
     ".agents/harness.config.json",
     ".agents/hooks.json",
@@ -111,6 +112,7 @@
     "scripts/prune-worktrees.test.mjs",
     "scripts/update-mcp-docs.mjs",
     "scripts/update-mcp-docs.test.mjs",
+    "scripts/updaters/**",
     "scripts/validate.mjs",
     "scripts/validate.test.mjs",
     "scripts/verify-agent-context.mjs",
@@ -147,6 +149,8 @@
     "scripts/verify-ticket-branch.test.mjs",
     "scripts/verify-unicode-safety.mjs",
     "scripts/verify-unicode-safety.test.mjs",
+    "scripts/verify-updaters.mjs",
+    "scripts/verify-updaters.test.mjs",
     "scripts/verify-workflow-pins.mjs",
     "scripts/verify-workflow-pins.test.mjs",
     "template.manifest.json",
@@ -537,9 +541,16 @@
       "claims": [
         ".claude/skills/archify/**",
         "docs/diagrams/**",
+        "scripts/archify-vendor.test.mjs",
         "scripts/build-diagrams.mjs"
       ],
       "onAbsent": [
+        {
+          "verb": "patch-json",
+          "file": "package.json",
+          "op": "unset",
+          "path": "scripts.archify-vendor:test"
+        },
         {
           "verb": "patch-json",
           "file": "package.json",
@@ -572,6 +583,7 @@
         "openspec/specs/harness/mcp/spec.md",
         "openspec/specs/harness/process-reaper/spec.md",
         "openspec/specs/harness/ticket-flow/spec.md",
+        "openspec/specs/harness/updaters/spec.md",
         "openspec/specs/packages/core/spec.md",
         "openspec/specs/packages/tooling/spec.md",
         "openspec/templates/**",

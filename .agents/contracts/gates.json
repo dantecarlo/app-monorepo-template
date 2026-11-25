@@ -404,6 +404,28 @@
       "blind": "exported-cases"
     },
     {
+      "id": "verify:updaters:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:updaters",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "instant",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "updaters:run:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
       "id": "verify:ticket-branch:test",
       "capability": "core",
       "stage": "repository",
@@ -418,6 +440,13 @@
       "profile": "standard",
       "cost": "seconds",
       "blind": "exported-cases"
+    },
+    {
+      "id": "archify-vendor:test",
+      "capability": "diagrams",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
     },
     {
       "id": "docs:diagrams:check",
