@@ -9,13 +9,13 @@
 // started by an earlier holder of that pid), the tree is ended pid by pid,
 // `taskkill /F /PID <a> /PID <b>…` with no `/T`, so the platform's own tree
 // walk cannot reach that stranger. POSIX lists with `ps` under the C
-// locale. A process's age and its order against its parent come from its
-// elapsed time, `etime`, which a clock change does not move; its absolute
-// `lstart` only names it across listings, as `identityMs`, since a wall
-// clock reads one hour twice when it falls back. A tree ends with SIGTERM to
-// each of its pids, then, after 2 s, a second listing and SIGKILL only to
-// each pid still listed with the identity the plan read, never to a pid a
-// newer process took; one wait and one listing serve every tree. When that
+// locale and TZ=UTC, so each absolute `lstart` is a UTC time: the same in
+// every listing and never repeated when a clock falls back, it gives a
+// process its age, its order against its parent and its identity. A tree
+// ends with SIGTERM to each of its pids, then, after 2 s, a second listing
+// and SIGKILL only to each pid still listed with the start time the plan
+// read, never to a pid a newer process took; one wait and one listing serve
+// every tree. When that
 // listing fails, returns no process or the bound has run out, it sends no
 // SIGKILL and reports each tree as not ended.
 // ---------------------------------------------------------------------------
@@ -25,10 +25,8 @@ import { basename } from 'node:path'
 import { runBounded } from './bounded-child.mjs'
 
 const WINDOWS = 'win32'
-const MS_PER_SECOND = 1000
 const BYTES_PER_KB = 1024
 const KILL_WAIT_MS = 2000
-const SECONDS = Object.freeze({ day: 86_400, hour: 3600, minute: 60 })
 // taskkill's exit code when no process has the pid: it already ended.
 const TASKKILL_NOT_FOUND = 128
 const NO_SUCH_PROCESS = 'ESRCH'
@@ -38,13 +36,11 @@ const CIM_SCRIPT =
   'Get-CimInstance Win32_Process | Select ProcessId,ParentProcessId,Name,' +
   'CommandLine,CreationDate,WorkingSetSize | ConvertTo-Json -Compress'
 
-// `etime` is the time since the start, `[[dd-]hh:]mm:ss`, which every
-// POSIX ps prints; `lstart` is the absolute start time, which reads the same
-// in every listing and, under the C locale, is always
-// `Wed Nov 25 12:03:39 2026`.
-const POSIX_LOCALE = 'C'
+// `lstart` is the absolute start time; under the C locale it is always
+// `Wed Nov 25 12:03:39 2026`, and under TZ=UTC it is a UTC time.
+const POSIX_ENV = Object.freeze({ LC_ALL: 'C', TZ: 'UTC' })
 const LISTING = Object.freeze({
-  posix: { args: ['-eo', 'pid=,ppid=,etime=,lstart=,rss=,args='], command: 'ps' },
+  posix: { args: ['-eo', 'pid=,ppid=,lstart=,rss=,args='], command: 'ps' },
   windows: {
     args: ['-NoProfile', '-NonInteractive', '-Command', CIM_SCRIPT],
     command: 'powershell'
@@ -53,10 +49,9 @@ const LISTING = Object.freeze({
 
 // PowerShell 5.1 writes a date as "/Date(<ms>)/", PowerShell 7 as ISO text.
 const DOTNET_DATE = /^\/Date\((-?\d+)\)\/$/u
-// pid, ppid, etime, the five words of lstart, rss, then the command line.
+// pid, ppid, the five words of lstart, rss, then the command line.
 const PS_LINE =
-  /^\s*(\d+)\s+(\d+)\s+(\S+)\s+(\S+\s+\S+\s+\d+\s+[\d:]+\s+\d+)\s+(\d+)\s+(.*)$/u
-const ETIME = /^(?:(?:(\d+)-)?(\d+):)?(\d+):(\d+)$/u
+  /^\s*(\d+)\s+(\d+)\s+(\S+\s+\S+\s+\d+\s+[\d:]+\s+\d+)\s+(\d+)\s+(.*)$/u
 const LSTART =
   /^(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat)\s+([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d{2}):(\d{2}):(\d{2})\s+(\d{4})$/u
 const MONTHS = Object.freeze([
@@ -73,10 +68,6 @@ const MONTHS = Object.freeze([
   'Nov',
   'Dec'
 ])
-
-// A Windows start time is absolute and in UTC: it is both the age and the
-// identity.
-const identified = ({ startMs }) => ({ identityMs: startMs, startMs })
 
 const startOf = ({ value }) => {
   if (typeof value !== 'string') return null
@@ -95,84 +86,54 @@ const parseWindows = ({ text }) => {
     name: String(row.Name ?? ''),
     pid: Number(row.ProcessId),
     ppid: Number(row.ParentProcessId),
-    ...identified({ startMs: startOf({ value: row.CreationDate }) })
+    startMs: startOf({ value: row.CreationDate })
   }))
 }
 
-// The epoch milliseconds of an lstart, read as the local time `ps` printed
-// it in, or null when it is not one.
+// The epoch milliseconds of an lstart `ps` printed under TZ=UTC, or null
+// when it is not one.
 const lstartMs = ({ lstart }) => {
   const match = LSTART.exec(lstart)
   if (!match) return null
   const [, month, day, hours, minutes, seconds, year] = match
   const monthIndex = MONTHS.indexOf(month)
   if (monthIndex < 0) return null
-  return new Date(
+  return Date.UTC(
     Number(year),
     monthIndex,
     Number(day),
     Number(hours),
     Number(minutes),
     Number(seconds)
-  ).getTime()
-}
-
-const elapsedSecondsOf = ({ etime }) => {
-  const match = ETIME.exec(etime)
-  if (!match) return null
-  const [, days = '0', hours = '0', minutes, seconds] = match
-  return (
-    Number(days) * SECONDS.day +
-    Number(hours) * SECONDS.hour +
-    Number(minutes) * SECONDS.minute +
-    Number(seconds)
   )
 }
 
-// The start time, read against `now` from the elapsed time, and the
-// identity from lstart; a process either one cannot be read for has a start
-// time the listing cannot read.
-const parsePosix = ({ now, text }) =>
+const parsePosix = ({ text }) =>
   text
     .split('\n')
     .map((line) => PS_LINE.exec(line))
     .filter(Boolean)
-    .map(([, pid, ppid, etime, lstart, rss, args]) => {
-      const elapsed = elapsedSecondsOf({ etime })
-      const identityMs = lstartMs({ lstart })
-      return {
-        bytes: Number(rss) * BYTES_PER_KB,
-        command: args.trim(),
-        identityMs,
-        name: basename(args.trim().split(/\s+/u)[0] ?? ''),
-        pid: Number(pid),
-        ppid: Number(ppid),
-        startMs:
-          elapsed === null || identityMs === null
-            ? null
-            : now - elapsed * MS_PER_SECOND
-      }
-    })
+    .map(([, pid, ppid, lstart, rss, args]) => ({
+      bytes: Number(rss) * BYTES_PER_KB,
+      command: args.trim(),
+      name: basename(args.trim().split(/\s+/u)[0] ?? ''),
+      pid: Number(pid),
+      ppid: Number(ppid),
+      startMs: lstartMs({ lstart })
+    }))
 
 const failureOf = ({ command, run }) =>
   `${command} exited ${run.code}: ${run.stderr.trim() || 'no output'}`
 
 /**
- * Every process of the machine, as plan.mjs reads them, each with the
- * `identityMs` that names it across listings. `now` is the clock a POSIX
- * elapsed time is read against. A listing that outlasts `timeoutMs` throws
- * with `timedOut`; one that fails or prints what it cannot read throws,
- * naming the command.
+ * Every process of the machine, as plan.mjs reads them. A listing that
+ * outlasts `timeoutMs` throws with `timedOut`; one that fails or prints
+ * what it cannot read throws, naming the command.
  */
-export const listProcesses = async ({
-  now = Date.now,
-  platform,
-  spawn,
-  timeoutMs
-}) => {
+export const listProcesses = async ({ platform, spawn, timeoutMs }) => {
   const windows = platform === WINDOWS
   const { args, command } = windows ? LISTING.windows : LISTING.posix
-  const env = windows ? undefined : { ...process.env, LC_ALL: POSIX_LOCALE }
+  const env = windows ? undefined : { ...process.env, ...POSIX_ENV }
   const run = await runBounded({ args, command, env, spawn, timeoutMs })
   if (run.timedOut) {
     throw Object.assign(new Error(`${command} outlasted its bound`), {
@@ -184,7 +145,7 @@ export const listProcesses = async ({
   try {
     return windows
       ? parseWindows({ text: run.stdout })
-      : parsePosix({ now: now(), text: run.stdout })
+      : parsePosix({ text: run.stdout })
   } catch (error) {
     throw new Error(`${command} printed a listing that does not parse: ${error.message}`)
   }
@@ -237,7 +198,7 @@ const send = ({ name, pid, signal }) => {
   }
 }
 
-// The identity of every pid listed again before the SIGKILL, or the
+// The start time of every pid listed again before the SIGKILL, or the
 // problem that kept the listing from being read: one that parses to no
 // process would read every pid as gone.
 const relisted = async ({ platform, remainingMs, spawn }) => {
@@ -251,14 +212,14 @@ const relisted = async ({ platform, remainingMs, spawn }) => {
       return { problem: 'the second listing returned no process' }
     }
     return {
-      starts: new Map(processes.map(({ identityMs, pid }) => [pid, identityMs]))
+      starts: new Map(processes.map(({ pid, startMs }) => [pid, startMs]))
     }
   } catch (error) {
     return { problem: `listing the processes again failed: ${error.message}` }
   }
 }
 
-// Whether `pid` is still listed with the identity the plan read: a pid a
+// Whether `pid` is still listed with the start time the plan read: a pid a
 // newer process took is not.
 const stillHeld = ({ candidate, listed, pid }) => {
   const planned = candidate.starts?.get(pid)
@@ -317,8 +278,8 @@ const defaultSleep = (ms) => new Promise((done) => setTimeout(done, ms))
 /**
  * Ends each candidate tree, in order, while `remainingMs()` is positive;
  * a tree the bound did not reach is left out of the results. A candidate
- * names its `pids` and, in `starts`, the `identityMs` the plan read for
- * each; on POSIX only a pid still listed with that identity gets the
+ * names its `pids` and, in `starts`, the start time the plan read for
+ * each; on POSIX only a pid still listed with that start time gets the
  * SIGKILL.
  * Each result is { ended, pid } with the reason in `detail` when it was not
  * ended.

@@ -190,13 +190,13 @@ const listingFailure = ({ contract, error, when }) =>
 
 // From a listing read again right before the kills: the candidates whose
 // root pid still names the process the plan read, each cut to the pids
-// still listed with the identity the plan read (`identityMs`, the start
-// time that names a process across listings) and carrying those identities
-// as `starts`, and the ones whose root pid is gone or names a process that
-// started at another time. An identity the listing cannot read never holds.
+// still listed with the start time the plan read and carrying those start
+// times as `starts`, and the ones whose root pid is gone or names a process
+// that started at another time. A start time the listing cannot read never
+// holds.
 const sortByIdentity = ({ before, candidates, processes }) => {
-  const planned = new Map(before.map(({ identityMs, pid }) => [pid, identityMs]))
-  const now = new Map(processes.map(({ identityMs, pid }) => [pid, identityMs]))
+  const planned = new Map(before.map(({ pid, startMs }) => [pid, startMs]))
+  const now = new Map(processes.map(({ pid, startMs }) => [pid, startMs]))
   const held = ({ pid }) =>
     typeof planned.get(pid) === 'number' && now.get(pid) === planned.get(pid)
   return {
@@ -229,7 +229,6 @@ const killPlanned = async ({
   let again
   try {
     again = await listProcesses({
-      now: run.now,
       platform: run.platform,
       spawn: run.spawn,
       timeoutMs: Math.max(MIN_TIMEOUT_MS, run.remainingMs())
@@ -296,7 +295,6 @@ export const runReaper = async ({
   try {
     const deadline = clock() + contract.boundSeconds * MS_PER_SECOND
     const run = {
-      now: clock,
       platform,
       remainingMs: () => deadline - clock(),
       signal,
@@ -306,7 +304,6 @@ export const runReaper = async ({
     let processes
     try {
       processes = await listProcesses({
-        now: clock,
         platform,
         spawn,
         timeoutMs: Math.max(MIN_TIMEOUT_MS, run.remainingMs())

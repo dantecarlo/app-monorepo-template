@@ -103,11 +103,17 @@ green.
     gave no candidate.
   - Red: `clock-change.test.mjs`, in New York at 07:00 UTC on 2026-11-01. Its `ps` prints the
     columns it is asked for. Pid 200, the server, was an npx-mcp candidate, 6900 s old.
-  - Fixed (REAP-02, REAP-07): age and parent order on POSIX come from `etime`, which a clock
-    change does not move. `lstart` only names a process across listings, as `identityMs`, which
-    the re-read and the SIGKILL check compare.
-  - The listing reads `etime`, not `etimes`: macOS `ps` has no `etimes` keyword, and every
-    POSIX `ps` prints `etime`.
+  - Fixed first (REAP-02, REAP-07, `4a1777a6`): age and parent order on POSIX came from `etime`,
+    and `lstart` only named a process across listings, as `identityMs`.
+  - Simplified after the merge, for parity with the downstream port: `ps` runs under `TZ=UTC`
+    beside `LC_ALL=C`, and each `lstart` is read as a UTC time. That one field never repeats
+    when a clock falls back, so it gives the age, the order against the parent and the identity.
+    The `etime` column and `identityMs` are gone, since nothing else read them.
+  - Red for the simplification: the new test found no `TZ` in the environment `ps` ran under,
+    and the listing test found the `etime` column and local start times. `clock-change.test.mjs`
+    now shows the session at 05:50 UTC and its server at 06:10 UTC, the first 01:50 and the
+    second 01:10 in New York. Each reads at its UTC time, and there is no candidate. It failed on
+    the `etime` code, whose start times came from the live clock.
 - **A1, a lock held twice with no slow reaper.** The base had it too.
   - The cause: a lock gone between the failed create and the stat read as stale, and the takeover
     removed whatever lock was there by then.
@@ -128,3 +134,9 @@ green.
 - **Checks at `4a1777a6`.** `pnpm reap:test`, `pnpm agent-harness:test`, `pnpm verify:specs`,
   `pnpm verify:english` and eslint on the changed scripts pass. `pnpm reap`, a dry run, has no
   tree to end. `pnpm validate` was not run here, as the brief says.
+- **Checks after the merge of `origin/main` (`9d033880`) and the simplification.**
+  - `pnpm reap:test`: 116 of 116 pass, also under UTC, New York and Kolkata time zones.
+  - `pnpm mcp:launch:test`: 10 of 10 pass. `scripts/prune-worktrees.test.mjs`: 89 of 89.
+    `scripts/validate.test.mjs`: 42 of 42. `pnpm agent-harness:test`: 88 of 88.
+  - `pnpm verify:specs`, `pnpm verify:english`, `pnpm knip` and eslint pass. `pnpm reap`, a
+    dry run, has no tree to end.

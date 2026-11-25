@@ -482,7 +482,7 @@ priority 1 on 2026-11-20.
 | ------------------------------------------------ | ---------- |
 | `.agents/contracts/process-reaper.json`          | The families it may end, the processes it spares, the 60 s grace and the 8 s bound; a rule file |
 | `scripts/agent-harness/reaper/plan.mjs`          | The pure core: from the process list, as data, each process's entry and the trees to end and keep, each with its reason |
-| `scripts/agent-harness/reaper/platform.mjs`      | The adapter: it lists with `Get-CimInstance Win32_Process` on Windows and `ps -eo pid=,ppid=,etime=,lstart=,rss=,args=` under `LC_ALL=C` on POSIX: the age and the order against the parent come from `etime`, which a clock change does not move, and the identity alone from the absolute `lstart`, the same in every listing. It ends a tree with `taskkill /PID <pid> /T /F`, or SIGTERM, then after 2 s a second listing and SIGKILL only to each pid still listed with the identity the plan read, none when that listing fails, returns no process or the bound has run out |
+| `scripts/agent-harness/reaper/platform.mjs`      | The adapter: it lists with `Get-CimInstance Win32_Process` on Windows and `ps -eo pid=,ppid=,lstart=,rss=,args=` under `LC_ALL=C` and `TZ=UTC` on POSIX: each absolute `lstart` is a UTC time, the same in every listing and never repeated when a clock falls back, and gives a process its age, its order against its parent and its identity. It ends a tree with `taskkill /PID <pid> /T /F`, or SIGTERM, then after 2 s a second listing and SIGKILL only to each pid still listed with the start time the plan read, none when that listing fails, returns no process or the bound has run out |
 | `scripts/agent-harness/reaper/bounded-child.mjs` | `runBounded`: a child with a time bound, ended with its whole tree at the bound; the worktree pruner's fetch runs through it |
 | `scripts/agent-harness/reaper/lock.mjs`          | The lock that keeps one killing reaper at a time |
 | `scripts/agent-harness/reaper/reap.mjs`          | The command, `pnpm reap` and `pnpm reap:kill` |
@@ -540,7 +540,7 @@ still holds its token, never one a later run took over.
 Right before its kills it lists the processes again and leaves every tree whose
 root pid is gone or now names a process that started at another time, since a
 tree kill follows a reused pid; of every other tree it ends only the pids still
-listed with the identity the plan read, so a pid-by-pid kill never names a
+listed with the start time the plan read, so a pid-by-pid kill never names a
 reused one. It exits 0 when it finished, with or without
 ends, and 1 on a failure: a listing that fails, a tree it could not end, an
 unknown option. It ends within 8 s: a run that reaches the bound ends no tree it
@@ -574,9 +574,8 @@ Windows shell is spared, so a tree a dead Git Bash leaves behind stays, except
 for a family process that becomes an orphan itself. A one-shot run that matches
 a family but should survive is added to the spare list, on the owner's word. On
 POSIX a process forked between the SIGTERM and the SIGKILL is not reached, and a
-pid taken by a process whose `lstart` reads the same as its earlier holder's
-reads as the same process: one that started in the same second, since `lstart`
-counts whole seconds, or in that second's repeat when the clock falls back. And
+pid taken by a process that started in the same second as its earlier holder
+reads as the same process, since `lstart` counts whole seconds. And
 the pruner's stopped fetch still signals git alone, as before. Codex, OpenCode
 and Copilot run no adapter, as for the write guard.
 

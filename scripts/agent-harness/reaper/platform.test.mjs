@@ -24,14 +24,16 @@ const BYTES_PER_KB = 1024
 const NOT_FOUND = 128
 
 // A spawn that answers each command from `answers` (by command name) with
-// { code, stdout, stderr }, and records every call and the LC_ALL it ran
-// under.
+// { code, stdout, stderr }, and records every call and the LC_ALL and TZ
+// it ran under.
 const fakeSpawn = ({ answers }) => {
   const calls = []
   const locales = []
+  const zones = []
   const spawn = (command, args, options) => {
     calls.push({ args, command })
     locales.push(options?.env?.LC_ALL)
+    zones.push(options?.env?.TZ)
     const child = Object.assign(new EventEmitter(), {
       pid: undefined,
       stderr: new PassThrough(),
@@ -45,7 +47,7 @@ const fakeSpawn = ({ answers }) => {
     })
     return child
   }
-  return { calls, locales, spawn }
+  return { calls, locales, spawn, zones }
 }
 
 const cim = ({ pid, ppid, name, command, startMs, bytes }) => ({
@@ -69,8 +71,8 @@ test('on Windows the listing is read from Get-CimInstance and a tree ends with t
   })
   const processes = await listProcesses({ platform: 'win32', spawn, timeoutMs: BOUND_MS })
   assert.deepEqual(processes, [
-    { bytes: 2048, command: 'npx-cli.js -y next-devtools-mcp', identityMs: NOW - HOUR_MS, name: 'node.exe', pid: 10, ppid: 7, startMs: NOW - HOUR_MS },
-    { bytes: 0, command: '', identityMs: null, name: 'System', pid: 4, ppid: 0, startMs: null }
+    { bytes: 2048, command: 'npx-cli.js -y next-devtools-mcp', name: 'node.exe', pid: 10, ppid: 7, startMs: NOW - HOUR_MS },
+    { bytes: 0, command: '', name: 'System', pid: 4, ppid: 0, startMs: null }
   ])
   assert.equal(calls[0].command, 'powershell')
   assert.ok(calls[0].args.includes('-NoProfile'))
@@ -126,53 +128,52 @@ test('a single process, and a start time PowerShell 7 writes as a date, are read
   assert.equal(process.startMs, NOW - HOUR_MS)
 })
 
-test('on POSIX the listing is read from ps under LC_ALL=C, the age from etime and the identity from lstart', async () => {
-  // Fixed lines: a day of the month padded by a space, one lstart that names
-  // no month and one etime that is no time.
+test('on POSIX the listing is read from ps under LC_ALL=C, each start time from its lstart read as UTC', async () => {
+  // Fixed lines: a day of the month padded by a space, and one lstart that
+  // names no month.
   const ps = [
-    '    1     0 9-01:02:03 Mon Nov 16 11:58:03 2026  2048 /sbin/init',
-    '   10     1   01:00:00 Wed Nov 25 11:03:39 2026  4096 npm exec -y metro-mcp',
-    '   11    10      02:05 Thu Nov  5 09:00:00 2026   100 sh -c metro-mcp',
-    '   12    11      00:59 Wed Xyz 25 12:00:00 2026     1 node /u/.npm/_npx/1a2b/node_modules/.bin/metro-mcp',
-    '   13    11      xx:59 Wed Nov 25 12:00:00 2026     1 node /u/x.js'
+    '    1     0 Mon Nov 16 11:58:03 2026  2048 /sbin/init',
+    '   10     1 Wed Nov 25 11:03:39 2026  4096 npm exec -y metro-mcp',
+    '   11    10 Thu Nov  5 09:00:00 2026   100 sh -c metro-mcp',
+    '   12    11 Wed Xyz 25 12:00:00 2026     1 node /u/.npm/_npx/1a2b/node_modules/.bin/metro-mcp'
   ].join('\n')
   const { calls, locales, spawn } = fakeSpawn({ answers: { ps: { stdout: `${ps}\n` } } })
-  const first = await listProcesses({ now: () => NOW, platform: 'linux', spawn, timeoutMs: BOUND_MS })
-  const LATER_MS = 5000
-  const second = await listProcesses({ now: () => NOW + LATER_MS, platform: 'darwin', spawn, timeoutMs: BOUND_MS })
+  const first = await listProcesses({ platform: 'linux', spawn, timeoutMs: BOUND_MS })
+  const second = await listProcesses({ platform: 'darwin', spawn, timeoutMs: BOUND_MS })
   assert.deepEqual(calls, [
-    { args: ['-eo', 'pid=,ppid=,etime=,lstart=,rss=,args='], command: 'ps' },
-    { args: ['-eo', 'pid=,ppid=,etime=,lstart=,rss=,args='], command: 'ps' }
+    { args: ['-eo', 'pid=,ppid=,lstart=,rss=,args='], command: 'ps' },
+    { args: ['-eo', 'pid=,ppid=,lstart=,rss=,args='], command: 'ps' }
   ])
   assert.deepEqual(locales, ['C', 'C'])
-  // lstart is the local time of the machine that lists; etime is the time
-  // since the start, read against the clock of the listing.
-  const local = ({ day, hour, minute, second: at }) =>
-    new Date(2026, 10, day, hour, minute, at).getTime()
-  const ago = ({ seconds }) => NOW - seconds * 1000
+  // ps prints lstart in UTC, so each one reads as that UTC time, whatever
+  // the time zone the reaper runs in.
+  const utc = ({ day, hour, minute, second: at }) => Date.UTC(2026, 10, day, hour, minute, at)
   assert.deepEqual(first, [
-    { bytes: 2048 * BYTES_PER_KB, command: '/sbin/init', identityMs: local({ day: 16, hour: 11, minute: 58, second: 3 }), name: 'init', pid: 1, ppid: 0, startMs: ago({ seconds: 9 * 86_400 + 3723 }) },
-    { bytes: 4096 * BYTES_PER_KB, command: 'npm exec -y metro-mcp', identityMs: local({ day: 25, hour: 11, minute: 3, second: 39 }), name: 'npm', pid: 10, ppid: 1, startMs: ago({ seconds: 3600 }) },
-    { bytes: 100 * BYTES_PER_KB, command: 'sh -c metro-mcp', identityMs: local({ day: 5, hour: 9, minute: 0, second: 0 }), name: 'sh', pid: 11, ppid: 10, startMs: ago({ seconds: 125 }) },
-    { bytes: BYTES_PER_KB, command: 'node /u/.npm/_npx/1a2b/node_modules/.bin/metro-mcp', identityMs: null, name: 'node', pid: 12, ppid: 11, startMs: null },
-    { bytes: BYTES_PER_KB, command: 'node /u/x.js', identityMs: local({ day: 25, hour: 12, minute: 0, second: 0 }), name: 'node', pid: 13, ppid: 11, startMs: null }
+    { bytes: 2048 * BYTES_PER_KB, command: '/sbin/init', name: 'init', pid: 1, ppid: 0, startMs: utc({ day: 16, hour: 11, minute: 58, second: 3 }) },
+    { bytes: 4096 * BYTES_PER_KB, command: 'npm exec -y metro-mcp', name: 'npm', pid: 10, ppid: 1, startMs: utc({ day: 25, hour: 11, minute: 3, second: 39 }) },
+    { bytes: 100 * BYTES_PER_KB, command: 'sh -c metro-mcp', name: 'sh', pid: 11, ppid: 10, startMs: utc({ day: 5, hour: 9, minute: 0, second: 0 }) },
+    { bytes: BYTES_PER_KB, command: 'node /u/.npm/_npx/1a2b/node_modules/.bin/metro-mcp', name: 'node', pid: 12, ppid: 11, startMs: null }
   ])
-  // A later listing moves the age with its clock, never the identity.
-  assert.deepEqual(
-    second.map(({ identityMs }) => identityMs),
-    first.map(({ identityMs }) => identityMs)
-  )
-  assert.deepEqual(
-    second.map(({ startMs }) => startMs),
-    first.map(({ startMs }) => (startMs === null ? null : startMs + LATER_MS))
-  )
+  // A later listing reads the same start times: the identity check holds.
+  assert.deepEqual(second, first)
+})
+
+test('on POSIX ps runs with TZ=UTC in its env, so every lstart it prints is UTC', async () => {
+  const posix = fakeSpawn({ answers: { ps: { stdout: '' } } })
+  await listProcesses({ platform: 'linux', spawn: posix.spawn, timeoutMs: BOUND_MS })
+  assert.deepEqual(posix.zones, ['UTC'])
+  assert.deepEqual(posix.locales, ['C'])
+  // Windows reads a UTC start time already, and lists under its own env.
+  const windows = fakeSpawn({ answers: { powershell: { stdout: '[]' } } })
+  await listProcesses({ platform: 'win32', spawn: windows.spawn, timeoutMs: BOUND_MS })
+  assert.deepEqual(windows.zones, [undefined])
 })
 
 // A POSIX tree of three pids, each with the start time the plan read.
 const TREE_STARTS = new Map([
-  [10, new Date(2026, 10, 25, 10, 0, 0).getTime()],
-  [11, new Date(2026, 10, 25, 10, 0, 1).getTime()],
-  [12, new Date(2026, 10, 25, 10, 0, 2).getTime()]
+  [10, Date.UTC(2026, 10, 25, 10, 0, 0)],
+  [11, Date.UTC(2026, 10, 25, 10, 0, 1)],
+  [12, Date.UTC(2026, 10, 25, 10, 0, 2)]
 ])
 const POSIX_CANDIDATE = { ...CANDIDATE, starts: TREE_STARTS }
 
@@ -188,8 +189,8 @@ test('on POSIX a tree gets SIGTERM, then after 2 s SIGKILL only to each pid stil
   // Pid 10 ends at its SIGTERM; pid 11 survives it; pid 12 ends and a newer
   // process takes the pid before the check, so a probe would find it alive.
   const ps = [
-    '   11     1   01:59:59 Wed Nov 25 10:00:01 2026   100 node /r/node_modules/typescript/bin/tsc',
-    '   12     1      00:02 Wed Nov 25 11:59:58 2026   100 /usr/bin/vim notes.md'
+    '   11     1 Wed Nov 25 10:00:01 2026   100 node /r/node_modules/typescript/bin/tsc',
+    '   12     1 Wed Nov 25 11:59:58 2026   100 /usr/bin/vim notes.md'
   ].join('\n')
   const events = []
   const { calls, spawn: answer } = fakeSpawn({ answers: { ps: { stdout: `${ps}\n` } } })
@@ -213,7 +214,7 @@ test('on POSIX a tree gets SIGTERM, then after 2 s SIGKILL only to each pid stil
     ['spawn', 'ps'],
     [11, 'SIGKILL']
   ])
-  assert.deepEqual(calls, [{ args: ['-eo', 'pid=,ppid=,etime=,lstart=,rss=,args='], command: 'ps' }])
+  assert.deepEqual(calls, [{ args: ['-eo', 'pid=,ppid=,lstart=,rss=,args='], command: 'ps' }])
   assert.deepEqual(results, [{ ended: true, pid: 10 }])
 })
 

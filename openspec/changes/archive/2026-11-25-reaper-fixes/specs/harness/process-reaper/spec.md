@@ -9,9 +9,9 @@
 The reaper SHALL read a process as an orphan when its parent pid names no listed process, or
 names one that started after it (a pid reused); on POSIX also when its parent is pid 1 or the
 user's subreaper (`systemd --user`, a WSL `/init`); a parent whose start time, or whose child's,
-cannot be read holds its child. On POSIX the order of two start times and a process's age SHALL
-come from its elapsed time, which a clock change does not move, so that a child started in the
-hour a clock falls back never reads as older than its parent.
+cannot be read holds its child. On POSIX every start time SHALL be read in UTC, `ps` running under
+`TZ=UTC`, which a clock change does not move, so that a child started in the hour a clock falls
+back never reads as older than its parent.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -45,10 +45,11 @@ hour a clock falls back never reads as older than its parent.
 
 #### Scenario: the hour the clock falls back
 
-- **GIVEN** a New York listing read at 07:00 UTC on 2026-11-01, where a session started at the
-  first 01:50 and its MCP server, 15 min later, at the second 01:05
+- **GIVEN** a New York machine at 07:00 UTC on 2026-11-01, where a session started at 05:50 UTC,
+  the first 01:50, and its MCP server at 06:10 UTC, the second 01:10
 - **WHEN** the reaper lists and plans
-- **THEN** the session holds its server, and there is no candidate
+- **THEN** each start time reads at its UTC time, the session holds its server, and there is no
+  candidate
 - **Test:** `scripts/agent-harness/reaper/clock-change.test.mjs` › "in the hour the clock falls back, a live child never reads as older than its parent"
 
 ### Requirement: REAP-03 — Only an orphan of a family is ended, by its executable and script
@@ -131,17 +132,16 @@ kept, with its reason.
 ### Requirement: REAP-07 — A tree ends the way its platform ends one
 
 The reaper SHALL list processes with `Get-CimInstance Win32_Process` through `powershell` on
-Windows and `ps -eo pid=,ppid=,etime=,lstart=,rss=,args=` under `LC_ALL=C` on POSIX. On POSIX it
-SHALL read a process's start time, for its age and its order against its parent, from its elapsed
-time, `etime`, which a clock change does not move, and its identity, the start time compared
-before a kill, from the absolute local time its `lstart` names (`Wed Nov 25 12:03:39 2026`), so
-that the identity is the same in every listing; a process whose `etime` or `lstart` does not
-parse has a start time the listing cannot read. It SHALL end a tree with `taskkill /PID <pid> /T /F`
-on Windows, pid by pid without `/T` when an older process names a pid of the tree as its parent,
-and on POSIX with SIGTERM to every pid of the tree, then, after 2 s, a second listing and SIGKILL
-only to each pid still listed with the identity the plan read; when that listing fails, returns no
-process or the bound has run out, it SHALL send no SIGKILL and report each tree it signalled as not
-ended, with the reason.
+Windows and `ps -eo pid=,ppid=,lstart=,rss=,args=` under `LC_ALL=C` and `TZ=UTC` on POSIX,
+reading each POSIX start time as the UTC time its `lstart` names (`Wed Nov 25 12:03:39 2026`), so
+that it is the same in every listing and never repeats when a clock falls back, and one that does
+not parse as unreadable; that one start time gives a process its age, its order against its parent
+and its identity. It SHALL end a tree with `taskkill /PID <pid> /T /F` on Windows, pid by pid
+without `/T` when an older process names a pid of the tree as its parent, and on POSIX with SIGTERM
+to every pid of the tree, then, after 2 s, a second listing and SIGKILL only to each pid still
+listed with the start time the plan read; when that listing fails, returns no process or the bound
+has run out, it SHALL send no SIGKILL and report each tree it signalled as not ended, with the
+reason.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -162,12 +162,18 @@ ended, with the reason.
 #### Scenario: the POSIX listing
 
 - **GIVEN** an injected spawn that answers fixed `ps` lines, one of them with a day of the month
-  padded by a space, one whose `lstart` does not parse and one whose `etime` does not
-- **WHEN** the reaper lists the processes twice, 5 s apart
-- **THEN** `ps` ran with `etime` and `lstart` under `LC_ALL=C`; each start time is the clock of
-  its listing less its `etime`, 5 s later in the second; each identity is the local time its
-  `lstart` names, the same in both; and the two unparsed processes have no start time
-- **Test:** `scripts/agent-harness/reaper/platform.test.mjs` › "on POSIX the listing is read from ps under LC_ALL=C, the age from etime and the identity from lstart"
+  padded by a space and one whose `lstart` does not parse
+- **WHEN** the reaper lists the processes twice
+- **THEN** `ps` ran with `lstart` under `LC_ALL=C`, each start time is the UTC time its `lstart`
+  names, the same in both listings, and the unparsed one is null
+- **Test:** `scripts/agent-harness/reaper/platform.test.mjs` › "on POSIX the listing is read from ps under LC_ALL=C, each start time from its lstart read as UTC"
+
+#### Scenario: ps runs in UTC
+
+- **GIVEN** an injected spawn that records the environment of each command
+- **WHEN** the reaper lists the processes on POSIX, then on Windows
+- **THEN** `ps` ran with `TZ=UTC` and `LC_ALL=C`, and powershell under its own environment
+- **Test:** `scripts/agent-harness/reaper/platform.test.mjs` › "on POSIX ps runs with TZ=UTC in its env, so every lstart it prints is UTC"
 
 #### Scenario: POSIX
 
@@ -175,7 +181,7 @@ ended, with the reason.
   taken by the SIGKILL check
 - **WHEN** the reaper ends it
 - **THEN** every pid got SIGTERM, and after 2 s and a second listing only the survivor whose
-  identity held got SIGKILL
+  start time held got SIGKILL
 - **Test:** `scripts/agent-harness/reaper/platform.test.mjs` › "on POSIX a tree gets SIGTERM, then after 2 s SIGKILL only to each pid still listed with its start time"
 
 #### Scenario: the SIGKILL check cannot run

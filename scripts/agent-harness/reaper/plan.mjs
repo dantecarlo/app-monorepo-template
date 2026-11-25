@@ -3,9 +3,9 @@
 // decides which trees to end; it spawns, reads and signals nothing.
 //
 // A process is { bytes, command, name, pid, ppid, startMs }, `startMs` null
-// when the listing reads no start time; on POSIX it comes from the elapsed
-// time, which a clock change does not move, so the order of two processes
-// and an age hold in the hour a clock repeats. A parent HOLDS a child when the
+// when the listing reads no start time; on POSIX it is read in UTC, which
+// a clock change does not move, so the order of two processes and an age
+// hold in the hour a clock repeats. A parent HOLDS a child when the
 // child's parent pid names it and it started no later than the child; a
 // newer process under that pid holds a reused pid, not the child. An ORPHAN
 // is a process no parent holds; on POSIX also one under pid 1 or the
