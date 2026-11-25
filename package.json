@@ -12,6 +12,7 @@
     "agent-harness:sync": "node scripts/agent-harness/sync.mjs",
     "agent-harness:test": "node --test scripts/agent-harness/*.test.mjs",
     "write-guard:test": "node --test scripts/agent-harness/write-guard/*.test.mjs",
+    "no-force:test": "node --test scripts/agent-harness/no-force/*.test.mjs",
     "reap": "node scripts/agent-harness/reaper/reap.mjs",
     "reap:kill": "node scripts/agent-harness/reaper/reap.mjs --kill",
     "reap:test": "node --test scripts/agent-harness/reaper/*.test.mjs",
