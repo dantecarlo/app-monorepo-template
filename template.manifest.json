@@ -314,7 +314,8 @@
       "group": "backend",
       "claims": [
         "openspec/specs/packages/supabase/spec.md",
-        "packages/supabase/**"
+        "packages/supabase/**",
+        "scripts/supabase-test-db.mjs"
       ],
       "onAbsent": [
         {
@@ -357,6 +358,12 @@
           "file": "apps/mobile/package.json",
           "name": "@supabase/supabase-js",
           "scope": "dependencies"
+        },
+        {
+          "verb": "patch-json",
+          "file": "knip.json",
+          "op": "unset",
+          "path": "ignoreBinaries"
         }
       ]
     },
