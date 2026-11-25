@@ -1,6 +1,6 @@
 # Proposal: the project's facts in the harness config
 
-> **Status:** open
+> **Status:** archived — 2026-11-25
 
 ## Why
 
