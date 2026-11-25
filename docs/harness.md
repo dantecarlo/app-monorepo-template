@@ -178,7 +178,7 @@ gate the run reaches is blinded by exactly one step, whose companion's exported
 | `pnpm agent-harness:projection-check` | Every projected agent file equals what its neutral source renders, and is committed (see 3e) |
 | `pnpm agent-harness:test`       | The projector's reader, adapters, hook projection, writer, checker and sync still behave |
 | `pnpm write-guard:test`         | The write guard decides every cell of its table, its errors and its switch-off, reads every Windows spelling of a path (or refuses what it cannot read) and every checkout that holds it, judges a 10,000-folder path in under a second, every checkout rule glob matches a file and every module the hook loads is a rule file, and the real hook answers a payload on stdin end to end, through a junction too (see 3f) |
-| `pnpm reap:test`               | The process reaper's core decides each rule over synthetic process tables (an orphan, a live parent, a reused pid, POSIX reparenting, unknown names, a family matched by executable and script and never by text in the arguments, persistent and watch work, the wrappers, live Git for Windows shells and tmux, its own ancestry, the spared processes, the grace period); the adapter lists and ends on each platform through an injected spawn; the command's modes, lock, second listing, bound and exit codes; the session hook's kill mode and its exit 0 on any failure; and `runBounded` ends a real child's tree on Windows (see 3g) |
+| `pnpm reap:test`               | The process reaper's core decides each rule over synthetic process tables (an orphan, a live parent, a reused pid, POSIX reparenting, unknown names, a family matched by executable and script and never by text in the arguments, persistent and watch work, node's watch flags, the wrappers, live Git for Windows shells and tmux, its own ancestry, the spared processes, the grace period); the adapter lists and ends on each platform through an injected spawn; the command's modes, lock, second listing, bound and exit codes; the session hook's kill mode and its exit 0 on any failure; and `runBounded` ends a real child's tree on Windows (see 3g) |
 | `pnpm verify:agent-context:test` | The agent-context gate fails each defect it names, on synthetic entries and over a scratch tree |
 | `pnpm verify:agent-context`     | Every agent of `.agents/agents/` has an entry in `.agents/agent-context.json` whose `gradedBy` names the skills that grade it, each a folder of `.claude/skills/` holding a `SKILL.md`, whose `writes` is true or false, whose `surface`, if any, lists repository-relative folders beside `writes: true`, and which holds no other key; no entry names an agent that is gone (see 3e) |
 | `pnpm verify:harness-config:test` | The harness config gate fails each defect it names, a key given twice and an `additionalProperties` other than `false` among them, against the repository's schema, and over a scratch tree; the schema's merge policies are the ones the ticket skills name, `manual` the default |
@@ -477,7 +477,10 @@ the launcher holds about as much memory as the server.
 **What it never ends.** Persistent and watch work, without the owner's word: the
 families are one-shot runs, so `turbo run dev` or `start`, the turbo daemon,
 `vitest` without `run`, `tsc --watch`, tsserver and the dev servers (`next dev`,
-`expo start`, metro) match none. Its own ancestry. A tree that holds a process
+`expo start`, metro) match none. Nor does a node process in watch mode, one whose
+flags before its script name `--watch`, `--watch-path <path>`,
+`--watch-path=<path>` or `--watch-preserve-output`, a wrapper included, and a
+tree that holds one is kept. Its own ancestry. A tree that holds a process
 the contract spares: the shared MCP proxy, however it is launched (the
 `mcp-proxy` executable, `python -m mcp_proxy`, a node `mcp-proxy` script), which
 runs detached by design; every Git for Windows (MSYS) process, whose runtime
