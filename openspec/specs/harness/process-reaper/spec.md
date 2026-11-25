@@ -3,7 +3,7 @@
 > **Governs:** `.agents/contracts/process-reaper.json`, `scripts/agent-harness/reaper/contract.mjs`, `scripts/agent-harness/reaper/plan.mjs`, `scripts/agent-harness/reaper/platform.mjs`, `scripts/agent-harness/reaper/bounded-child.mjs`, `scripts/agent-harness/reaper/lock.mjs`, `scripts/agent-harness/reaper/reap.mjs`, `scripts/agent-harness/reaper/session-start.mjs`, `scripts/agent-harness/reaper/mcp-check.mjs`
 > **ID prefix:** `REAP`
 > **Derived from:** `docs/harness.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-25 at `2e1d1745`
+> **Verified against the code:** 2026-11-25 at `b5140ef2`
 
 ## Purpose
 
