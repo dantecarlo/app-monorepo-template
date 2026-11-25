@@ -217,9 +217,12 @@ session may fill a dev role; exactly one QA session fills each dev area's QA rol
    deleted as soon as it finishes, and none is left idle. No session duplicates another session
    that already exists for a job.
 4. **Merges follow the merge policy; the irreversible stays the owner's.** The project records
-   it in `.agents/harness.config.json`, as `delivery.mergePolicy`; with none recorded, it is
-   `manual`. The architect applies it, in its
-   merge queue (`refine-ticket` § Merge queue); QA asks the owner nothing and merges nothing.
+   it in `.agents/harness.config.json`, as `delivery.mergePolicy`, and it is read from
+   the default branch's copy, never from the pull request's own branch, which could otherwise
+   change its own policy. It fails closed: a missing setting, any
+   value other than `low-risk`, a missing file, or a file that does not parse means `manual`.
+   The architect applies it, in its merge queue (`refine-ticket` § Merge queue); QA asks the
+   owner nothing and merges nothing.
    - **`manual`, the default**, keeps a human in the loop: the architect asks the owner before
      every merge.
    - **`low-risk`** lets the architect merge, without asking, a pull request that meets every

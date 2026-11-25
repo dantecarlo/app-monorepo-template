@@ -173,6 +173,11 @@ request current once, before Ready to merge; every later bring-current is the ar
      and check it again from the first row; nothing goes to the PO, and the owner is asked
      nothing until every row matches.
 
+   Read `delivery.mergePolicy` of `.agents/harness.config.json` before every merge, from
+   the default branch's copy, never from the pull request's own branch, which could otherwise
+   change its own policy. It fails closed: a missing setting, any
+   value other than `low-risk`, a missing file, or a file that does not parse means `manual`.
+
    For a ticket's pull request, and for the closed ticket catalog pull request once its board
    check passes:
 

@@ -60,7 +60,12 @@
 //     fields are its defaults, so the contract, the template and the check
 //     agree;
 //   - every section above that names both merge policies also names
-//     .agents/harness.config.json, where the project records its own.
+//     .agents/harness.config.json, where the project records its own; and
+//     the two that read it, ticket-flow's rules and refine-ticket's merge
+//     queue, fail closed (a value other than `low-risk`, a missing file, or
+//     a file that does not parse means `manual`) and read it from the
+//     default branch's copy, never from the pull request's own branch,
+//     which could otherwise change its own policy.
 //
 // `run` is pure: it decides on the files `collectContext` gathers, so a case
 // drives it from synthetic skills.
@@ -312,6 +317,19 @@ const policyMentions = ({ heading }) => [
   { heading, text: codeOf({ text: HARNESS_CONFIG }) }
 ]
 
+// The two sections that read the policy, the contract's rule and the
+// architect's merge queue, fail closed: anything but `low-risk` is `manual`.
+// They read the file from the default branch, since a pull request could
+// otherwise change its own policy.
+const POLICY_FAILS_CLOSED =
+  'value other than `low-risk`, a missing file, or a file that does not parse means `manual`'
+const POLICY_FROM_DEFAULT_BRANCH =
+  "the default branch's copy, never from the pull request's own branch"
+const policyReadMentions = ({ heading }) => [
+  { heading, text: POLICY_FAILS_CLOSED },
+  { heading, text: POLICY_FROM_DEFAULT_BRANCH }
+]
+
 // What the template's Policy line gives: where the policy is read, since the
 // project layer records no policy of its own.
 const MERGE_POLICY_SOURCE =
@@ -388,6 +406,7 @@ export const SKILL_CONTRACTS = [
       hotfixMention({ heading: MESSAGES_HEADING }),
       droppedMention({ heading: MESSAGES_HEADING }),
       ...policyMentions({ heading: RULES_HEADING }),
+      ...policyReadMentions({ heading: RULES_HEADING }),
       ...identityMentions({ heading: IDENTITY_HEADING })
     ],
     tables: [
@@ -428,6 +447,7 @@ export const SKILL_CONTRACTS = [
     ],
     mentions: [
       ...policyMentions({ heading: MERGE_QUEUE }),
+      ...policyReadMentions({ heading: MERGE_QUEUE }),
       { heading: MERGE_QUEUE, text: CATALOG_CURRENT },
       { heading: MERGE_QUEUE, text: CATALOG_BOARD_CHECK },
       { heading: MERGE_QUEUE, text: SPARE_WORKTREE },
@@ -914,7 +934,10 @@ export const gate = defineGate({
     `section holding one ${IDENTITY_INFO} block that verify-ticket-branch ` +
     'reads with no finding and whose fields are its defaults; and every ' +
     'section that names both merge policies also names ' +
-    `${HARNESS_CONFIG}, where the project records its own.`,
+    `${HARNESS_CONFIG}, where the project records its own, and ` +
+    "ticket-flow's rules and refine-ticket's merge queue, which read it, " +
+    `say that a ${POLICY_FAILS_CLOSED} and that the policy is read from ` +
+    `${POLICY_FROM_DEFAULT_BRANCH}.`,
   id: 'verify-skills',
   notCovered:
     'whether a procedure says what an agent should do, which only the ' +
