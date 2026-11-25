@@ -14,6 +14,7 @@ import { test } from 'node:test'
 
 import { literal } from './expansion.mjs'
 import { ACTOR_KIND } from './policy.mjs'
+import { UNKNOWN } from './scan.mjs'
 import { programVerdict } from './shell.programs.mjs'
 
 const stateFor = ({ kind, judgeText = () => undefined }) => ({
@@ -47,8 +48,6 @@ const judged = ({ texts, kind, judgeText }) => {
 }
 
 for (const [texts, kind, shape] of [
-  [['bash', '-c', 'ls'], 'shell', 'bash -c'],
-  [['eval', 'ls'], 'shell', 'eval'],
   [['npm', 'install'], 'tool', 'npm install'],
   [['pnpm', 'build'], 'tool', 'pnpm build'],
   [['codegraph', 'init'], 'tool', 'codegraph init']
@@ -111,4 +110,80 @@ test('a command inline code starts is judged as Bash, and a deny of it names the
     texts
   })
   assert.equal(asked.level, 'ask')
+})
+
+// -- inner shells, inline perl and ruby, npx ------------------------------------
+for (const texts of [
+  ['bash', '-c', 'ls'],
+  ['sh', '-lc', 'ls'],
+  ['eval', 'ls']
+]) {
+  test(`an inner shell is refused to a read-only agent and judged as Bash for anyone else: ${texts.join(' ')}`, () => {
+    const denied = judged({ kind: ACTOR_KIND.readOnly, texts })
+    assert.deepEqual([denied.kind, denied.level], ['shell', 'deny'])
+    const seen = []
+    const judgeText = ({ command }) => {
+      seen.push(command)
+      return { kind: 'rule', level: 'ask' }
+    }
+    for (const kind of [ACTOR_KIND.main, ACTOR_KIND.surface]) {
+      assert.equal(judged({ judgeText, kind, texts })?.level, 'ask')
+    }
+    assert.deepEqual(seen, ['ls', 'ls'])
+  })
+}
+
+test('an inner shell whose text the guard cannot see is opaque', () => {
+  const args = [literal({ text: 'bash' }), literal({ text: '-c' }), {
+    raw: '"$CMD"',
+    text: `${UNKNOWN}`,
+    unknown: ['$CMD']
+  }]
+  const finding = programVerdict({
+    args,
+    command: { redirects: [], words: [] },
+    name: 'bash',
+    producer: undefined,
+    rest: args.slice(1),
+    state: stateFor({ kind: ACTOR_KIND.main })
+  })
+  assert.deepEqual([finding.kind, finding.level], ['shell', 'opaque'])
+})
+
+for (const [texts, writes] of [
+  [['perl', '-e', 'open(F,">AGENTS.md")'], true],
+  [['perl', '-ne', 'unlink $_'], true],
+  [['perl', '-e', 'system("ls")'], true],
+  [['perl', '-e', 'print 1'], false],
+  [['perl', '-e', 'open(F,"<x")'], false],
+  [['ruby', '-e', 'File.write("AGENTS.md", "x")'], true],
+  [['ruby', '-e', 'FileUtils.rm("a")'], true],
+  [['ruby', '-e', 'puts 1'], false]
+]) {
+  test(`perl and ruby code is read for writes: ${texts.join(' ')}`, () => {
+    const denied = judged({ kind: ACTOR_KIND.readOnly, texts })
+    const opaque = judged({ kind: ACTOR_KIND.main, texts })
+    if (writes) {
+      assert.deepEqual([denied?.kind, denied?.level], ['code', 'deny'])
+      assert.equal(opaque?.level, 'opaque')
+    } else {
+      assert.equal(denied, undefined)
+      assert.equal(opaque, undefined)
+    }
+  })
+}
+
+test('npx running a JS tool in its read-only form is no finding for the main session, a package manager for a read-only agent', () => {
+  const texts = ['npx', 'prettier', '--check', 'AGENTS.md']
+  assert.equal(judged({ kind: ACTOR_KIND.main, texts }), undefined)
+  assert.equal(judged({ kind: ACTOR_KIND.readOnly, texts })?.level, 'deny')
+  assert.equal(
+    judged({ kind: ACTOR_KIND.main, texts: ['npx', 'prettier', '--write', 'a'] })
+      ?.level,
+    'opaque'
+  )
+  assert.equal(
+    judged({ kind: ACTOR_KIND.main, texts: ['npx', 'create-x'] })?.level,
+    'opaque'
+  )
 })

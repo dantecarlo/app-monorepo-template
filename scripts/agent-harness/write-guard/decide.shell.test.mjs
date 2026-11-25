@@ -111,7 +111,10 @@ for (const command of [
   'cd .claude && echo x > settings.json',
   'for f in AGENTS.md README.md; do echo x > $f; done',
   'echo x > $(echo AGENTS.md)',
-  'S=.claude/skills; echo x > $S/new/SKILL.md'
+  'S=.claude/skills; echo x > $S/new/SKILL.md',
+  // An inner shell's text is judged as Bash.
+  "bash -c 'echo x > AGENTS.md'",
+  'eval "echo x > .claude/skills/a/SKILL.md"'
 ]) {
   test(`the main session is asked before a rule file: ${command}`, () => {
     assert.equal(decisionOf({ agent: MAIN, command }), 'ask')
@@ -164,8 +167,6 @@ for (const command of [
 
 // -- what the guard cannot read asks when it names a rule path ------------------
 for (const command of [
-  "bash -c 'echo x > AGENTS.md'",
-  'eval "echo x > .claude/skills/a/SKILL.md"',
   'cp AGENTS.md $BACKUP',
   '$EDITOR AGENTS.md',
   'pnpm exec prettier --write AGENTS.md',

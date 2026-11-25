@@ -4,7 +4,10 @@
 // python code, package managers, the JS tools in a writing form, codegraph's
 // lifecycle commands and `gh pr checkout`. A read-only agent is refused each
 // one; for anyone else it is opaque, and decide asks only when the command
-// names a rule path. Inline code is read (inline-code.mjs): the commands it
+// names a rule path. The text of an inner shell (`bash -c`, `eval`, a
+// here-doc fed to `sh`) is judged as a Bash command of its own for anyone
+// but a read-only agent; perl and ruby code is read for the calls that write
+// or start a process. Inline code is read (inline-code.mjs): the commands it
 // starts are judged as Bash commands and the paths it writes as targets.
 //
 // Ported from the read-only half of Certifipago's
@@ -19,6 +22,7 @@ import {
   stdinCode
 } from './inline-code.mjs'
 import { cachedClassify, isDeadline, TARGET_KIND } from './paths.mjs'
+import { UNKNOWN } from './scan.mjs'
 import {
   firstOfChecks,
   isReadOnly,
@@ -38,6 +42,39 @@ import {
 
 const SHAPE_WORDS = 3
 const SHELLS = new Set(['bash', 'dash', 'fish', 'ksh', 'sh', 'zsh'])
+const COMMAND_FLAG = /^-[a-zA-Z]*c[a-zA-Z]*$/u
+const NPX = new Set(['bunx', 'npx', 'pnpx'])
+const CODE_FLAG = /^-[^-]*[eE]$/u
+// The calls of perl and ruby code that write a file or start a process.
+const WRITING_CODE = {
+  perl: /\bopen\w*\s*\(?[^;)]*?['"][^'"]*(?:>|\+<|\|)|\b(?:chmod|chown|exec|link|mkdir|rename|rmdir|symlink|sysopen|system|truncate|unlink|utime)\b|\bqx\b|`/u,
+  ruby: /\b(?:File|IO)\.(?:binwrite|chmod|delete|link|new|open|popen|rename|symlink|truncate|unlink|write)\b|\bFileUtils\b|\bDir\.(?:delete|mkdir|rmdir|unlink)\b|\b(?:exec|spawn|system)\b|%x|`/u
+}
+
+// The text an inner shell runs, judged as a Bash command of its own; one
+// built from what the guard cannot see is opaque.
+const innerShell = ({ shape, state, word }) => {
+  if (word === undefined) return undefined
+  if (word.text.includes(UNKNOWN) || word.unknown.length > 0) {
+    return { kind: 'shell', level: LEVEL.opaque, shape }
+  }
+  return state.judgeText({ command: word.text })
+}
+
+// perl -e and ruby -e: the code, read for the calls that write.
+const scriptVerdict = ({ language, rest, state }) => {
+  const code = rest
+    .filter((_, at) => CODE_FLAG.test(rest[at - 1]?.text ?? ''))
+    .map(({ text }) => text)
+    .join('\n')
+  if (code === '' || !WRITING_CODE[language].test(code)) return undefined
+  return {
+    kind: 'code',
+    level: opaqueLevel({ state }),
+    shape: `${language} -e`,
+    why: 'may write files or start a process'
+  }
+}
 
 // `eslint -o`, `vitest --outputFile`: a report file is a write like any
 // other.
@@ -182,21 +219,37 @@ export const programVerdict = ({
 }) => {
   const texts = rest.map(({ text }) => text)
   const level = opaqueLevel({ state })
+  const readOnly = isReadOnly({ state })
   if (SHELLS.has(name)) {
-    if (texts.some((text) => /^-[a-zA-Z]*c[a-zA-Z]*$/.test(text))) {
-      return { kind: 'shell', level, shape: `${name} -c` }
+    const flag = texts.findIndex((text) => COMMAND_FLAG.test(text))
+    if (flag >= 0) {
+      const shape = `${name} -c`
+      return readOnly
+        ? { kind: 'shell', level, shape }
+        : innerShell({ shape, state, word: rest[flag + 1] })
     }
     const script = texts.find((text) => !text.startsWith('-'))
-    return script === undefined &&
-      stdinCode({ command, producer }) !== undefined
-      ? {
-          kind: 'shell',
-          level,
-          shape: `${name} reading commands from stdin`
-        }
-      : undefined
+    const fed =
+      script === undefined ? stdinCode({ command, producer }) : undefined
+    if (fed === undefined) return undefined
+    const shape = `${name} reading commands from stdin`
+    if (readOnly || fed.text === null) return { kind: 'shell', level, shape }
+    return state.judgeText({ command: fed.text })
   }
-  if (name === 'eval') return { kind: 'shell', level, shape: 'eval' }
+  if (name === 'eval') {
+    if (readOnly) return { kind: 'shell', level, shape: 'eval' }
+    return innerShell({
+      shape: 'eval',
+      state,
+      word: {
+        text: texts.join(' '),
+        unknown: rest.flatMap(({ unknown }) => unknown)
+      }
+    })
+  }
+  if (name === 'perl' || name === 'ruby') {
+    return scriptVerdict({ language: name, rest, state })
+  }
   if (name === 'cmd' && texts.some((text) => /^\/+[ck]$/i.test(text))) {
     return { kind: 'shell', level, shape: 'cmd /c' }
   }
@@ -218,6 +271,16 @@ export const programVerdict = ({
     .slice(0, SHAPE_WORDS)
     .map(({ raw }) => raw)
     .join(' ')
+  const tool = rest[0]?.text
+  if (!readOnly && NPX.has(name) && JS_TOOLS.has(tool)) {
+    const why = toolWrite({ name: tool, rest: rest.slice(1) })
+    return firstOfChecks({
+      checks: [
+        () => (why ? { kind: 'tool', level, shape, why } : undefined),
+        () => reportTarget({ rest: rest.slice(1), state })
+      ]
+    })
+  }
   if (PACKAGE_MANAGERS.has(name)) {
     return { kind: 'tool', level, shape, why: 'runs a package manager' }
   }

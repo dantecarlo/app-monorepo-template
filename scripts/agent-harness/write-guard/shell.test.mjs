@@ -63,7 +63,7 @@ test('the first finding of the strongest level is the one returned', () => {
 })
 
 test('a command the guard cannot read is opaque for the main session, with its shape', () => {
-  const finding = judged({ command: "bash -c 'ls'" })
+  const finding = judged({ command: 'bash -c "$CMD"' })
   assert.deepEqual([finding.level, finding.kind], ['opaque', 'shell'])
   assert.equal(finding.shape, 'bash -c')
 })
