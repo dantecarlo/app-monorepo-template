@@ -3,7 +3,7 @@
 > **Governs:** `.agents/contracts/mcp-servers.json`, `scripts/mcp-docs.detect.mjs`, `scripts/update-mcp-docs.mjs`, `scripts/verify-mcp-docs.mjs`, `scripts/mcp/launch.mjs`
 > **ID prefix:** `MCP`
 > **Derived from:** `docs/mcp.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-25 at `98fe189`
+> **Verified against the code:** 2026-11-25 at `2e1d1745`
 
 ## Purpose
 
@@ -26,13 +26,14 @@ gate helpers of the other harness scripts are not part of this unit.
 The MCP catalog `.agents/contracts/mcp-servers.json` SHALL hold one entry per MCP server, with
 its name, its `area` (`web` or `mobile`, no other value), the capability that selects it, its npm
 package, an exact `version` (never a range, `latest` or a tag), the `entry` bin file as a relative
-path inside the package, the server's own arguments as `serverArgs` when it takes any (a list of
-non-empty strings), the command `node`, never `npx`, with args exactly
-`scripts/mcp/launch.mjs <name>`, and the repository docs that describe it, each of which exists.
+path inside the package that ends in `.js`, `.mjs` or `.cjs` (a file the launcher can import, never
+a directory), the server's own arguments as `serverArgs` when it takes any (a list of non-empty
+strings), the command `node`, never `npx`, with args exactly `scripts/mcp/launch.mjs <name>`, and
+the repository docs that describe it, each of which exists.
 
 **Evidence:** `.agents/contracts/mcp-servers.json:2`, `scripts/mcp-docs.detect.mjs:16-22`,
-`scripts/mcp-docs.detect.mjs:148-187`, `scripts/mcp-docs.detect.mjs:189-211`,
-`scripts/mcp-docs.detect.mjs:215-256`, `scripts/verify-mcp-docs.mjs:60-68`
+`scripts/mcp-docs.detect.mjs:148-197`, `scripts/mcp-docs.detect.mjs:199-221`,
+`scripts/mcp-docs.detect.mjs:225-266`, `scripts/verify-mcp-docs.mjs:60-68`
 
 #### Scenario: an entry runs npx
 
@@ -83,6 +84,13 @@ non-empty strings), the command `node`, never `npx`, with args exactly
 - **WHEN** `pnpm verify:mcp-docs` runs
 - **THEN** it fails, naming the entry
 - **Test:** `scripts/verify-mcp-docs.test.mjs` › "a catalog entry whose entry leaves its package is refused"
+
+#### Scenario: an entry that is not a JavaScript file
+
+- **GIVEN** catalog entries whose `entry` is `dist` and `bin/server`
+- **WHEN** `pnpm verify:mcp-docs` runs
+- **THEN** it fails once per entry, naming each and `.js, .mjs or .cjs`
+- **Test:** `scripts/verify-mcp-docs.test.mjs` › "a catalog entry whose entry is not a .js, .mjs or .cjs file is refused"
 
 #### Scenario: a command other than node
 
@@ -138,7 +146,7 @@ command runs through `npx`, through `node node_modules/<package>/…` or through
 server whose command is none of them as `not on npm`, with no version and no registry request.
 
 **Evidence:** `scripts/mcp-docs.detect.mjs:108-129`, `scripts/mcp-docs.detect.mjs:262-297`,
-`scripts/mcp-docs.detect.mjs:305-355`, `scripts/update-mcp-docs.mjs:238`
+`scripts/mcp-docs.detect.mjs:315-365`, `scripts/update-mcp-docs.mjs:238`
 
 #### Scenario: a project adds a server of its own
 
@@ -181,8 +189,8 @@ for a catalog server) and its latest release, and print each catalog doc of a se
 version changed, or that is new in the block, as `review: <path>`, never rewriting that doc.
 
 **Evidence:** `scripts/update-mcp-docs.mjs:135-149`, `scripts/update-mcp-docs.mjs:275-287`,
-`scripts/mcp-docs.detect.mjs:409-424`, `scripts/mcp-docs.detect.mjs:527-539`,
-`scripts/mcp-docs.detect.mjs:577-578`
+`scripts/mcp-docs.detect.mjs:429-444`, `scripts/mcp-docs.detect.mjs:547-559`,
+`scripts/mcp-docs.detect.mjs:597-598`
 
 #### Scenario: one pin changed
 
@@ -199,7 +207,7 @@ version changed, or that is new in the block, as `review: <path>`, never rewriti
 `pnpm mcp:docs` SHALL leave `docs/mcp.md` unwritten when every server's pinned version, command,
 latest version, package and capability match the block, whatever the date of the run.
 
-**Evidence:** `scripts/mcp-docs.detect.mjs:543-545`, `scripts/mcp-docs.detect.mjs:579`,
+**Evidence:** `scripts/mcp-docs.detect.mjs:563-565`, `scripts/mcp-docs.detect.mjs:599`,
 `scripts/update-mcp-docs.mjs:324-328`
 
 #### Scenario: a second run on a later day
@@ -238,12 +246,14 @@ request fails or the doc has no generated block, naming the server or the missin
 `pnpm verify:mcp-docs` SHALL fail when the servers, packages, capabilities, pinned versions or
 commands of the generated block differ from those of the catalog plus .mcp.json; when .mcp.json
 does not parse or has no `mcpServers` object; when a .mcp.json server named like a catalog server
-does not run `node scripts/mcp/launch.mjs <its name>`; and when a .mcp.json server that runs the
-launcher names no catalog server, or passes it more than that name.
+does not run `node scripts/mcp/launch.mjs <its name>`; when a .mcp.json server that runs the
+launcher gives it no catalog name first; and when an argument after the name is not a string. A
+string after the name passes: the launcher appends it after the catalog's `serverArgs`, as
+expo-mcp's `--dev-server-url <url>`.
 
 **Evidence:** `scripts/verify-mcp-docs.mjs:51-56`, `scripts/verify-mcp-docs.mjs:70-98`,
-`scripts/verify-mcp-docs.mjs:143-166`, `scripts/mcp-docs.detect.mjs:262-297`,
-`scripts/mcp-docs.detect.mjs:358-401`
+`scripts/verify-mcp-docs.mjs:143-166`, `scripts/mcp-docs.detect.mjs:272-307`,
+`scripts/mcp-docs.detect.mjs:368-421`
 
 #### Scenario: a server added to the catalog
 
@@ -282,6 +292,14 @@ launcher names no catalog server, or passes it more than that name.
 - **THEN** it passes
 - **Test:** `scripts/verify-mcp-docs.test.mjs` › "a .mcp.json catalog server that runs the launcher passes"
 
+#### Scenario: a catalog server of .mcp.json with its own args after the name
+
+- **GIVEN** a .mcp.json whose `expo` runs the launcher with `expo`, then `--dev-server-url` and
+  `${EXPO_DEV_SERVER_URL:-http://localhost:8081}`, listed by the block
+- **WHEN** `pnpm verify:mcp-docs` runs
+- **THEN** it passes
+- **Test:** `scripts/verify-mcp-docs.test.mjs` › "a .mcp.json catalog server that passes its own args after the name passes"
+
 #### Scenario: a catalog server of .mcp.json outside the launcher
 
 - **GIVEN** a .mcp.json whose `expo` runs `npx -y expo-mcp`, and whose `next-devtools` runs the
@@ -291,10 +309,10 @@ launcher names no catalog server, or passes it more than that name.
   owes
 - **Test:** `scripts/verify-mcp-docs.test.mjs` › "a .mcp.json catalog server that does not run the launcher is refused"
 
-#### Scenario: a launcher entry that names no catalog server
+#### Scenario: a launcher entry with no catalog name, or an argument that is not a string
 
-- **GIVEN** a .mcp.json server `docs` that runs `node scripts/mcp/launch.mjs gone`, and one that
-  runs the launcher with a catalog name and one more argument
+- **GIVEN** a .mcp.json server `bare` that runs the launcher with no name, `docs` that runs
+  `node scripts/mcp/launch.mjs gone`, and `extra` that runs it with `expo` then the number `42`
 - **WHEN** `pnpm verify:mcp-docs` runs
 - **THEN** it fails once per server, naming each and what the launcher was given
 - **Test:** `scripts/verify-mcp-docs.test.mjs` › "a .mcp.json launcher entry that names no catalog server is refused"
@@ -337,8 +355,8 @@ launcher names no catalog server, or passes it more than that name.
 a value or a line edited by hand, a digest that does not match the block's lines, or a marker that
 is gone.
 
-**Evidence:** `scripts/verify-mcp-docs.mjs:100-122`, `scripts/mcp-docs.detect.mjs:403-407`,
-`scripts/mcp-docs.detect.mjs:445-452`
+**Evidence:** `scripts/verify-mcp-docs.mjs:100-122`, `scripts/mcp-docs.detect.mjs:423-427`,
+`scripts/mcp-docs.detect.mjs:465-472`
 
 #### Scenario: a version typed by hand
 
@@ -375,7 +393,7 @@ request, never judges whether a pin is the latest release, and passes whatever l
 the block records.
 
 **Evidence:** `scripts/verify-mcp-docs.mjs:31-45`, `scripts/mcp-docs.detect.mjs:70`,
-`scripts/mcp-docs.detect.mjs:499-500`
+`scripts/mcp-docs.detect.mjs:519-520`
 
 #### Scenario: an old version the updater wrote
 
@@ -454,9 +472,11 @@ newer major as `major:`, never as a bump; and never write the catalog.
 `scripts/mcp/launch.mjs <name>` SHALL start the catalog server `<name>` when `ATL_MCP_AREA` is
 unset or empty, or when that comma list (`web`, `mobile`, `web,mobile`, `none`) names the
 server's area; otherwise it SHALL exit 0 at once, starting nothing and writing one line to stderr
-that names the server, its area and the list.
+that names the server, its area and the list. A word of the list that is neither `web`, `mobile`
+nor `none` SHALL add one stderr line naming the unknown words and the valid ones, the gate
+deciding as it would without it.
 
-**Evidence:** `scripts/mcp/launch.mjs:51-64`, `scripts/mcp/launch.mjs:103-110`
+**Evidence:** `scripts/mcp/launch.mjs:61-81`, `scripts/mcp/launch.mjs:122-136`
 
 #### Scenario: the gate as a function
 
@@ -465,6 +485,22 @@ that names the server, its area and the list.
 - **WHEN** the area gate reads each
 - **THEN** it starts the server for the first five and holds it for `mobile` and `none`
 - **Test:** `scripts/mcp/launch.test.mjs` › "the area gate starts a server when ATL_MCP_AREA is unset, empty or names its area, and holds it otherwise"
+
+#### Scenario: unknown words and separators alone
+
+- **GIVEN** `ATL_MCP_AREA` set to `desktop`, `we b` and `mobile;web`, then to `,`, ` ` and ` , `
+- **WHEN** the area gate reads each, for a web server and then a mobile one
+- **THEN** it holds the server for the first three and starts it for the last three
+- **Test:** `scripts/mcp/launch.test.mjs` › "the area gate holds every server for a list of unknown words, and starts all for separators alone"
+
+#### Scenario: an unknown word in the list
+
+- **GIVEN** a catalog whose fixture server has the area `mobile`, and `ATL_MCP_AREA` set to
+  `desktop,we b`, then to `Mobile,desktop`
+- **WHEN** `node scripts/mcp/launch.mjs <name>` runs as a process for each
+- **THEN** both exit 0 with a line naming the unknown words and `web, mobile and none`; the first
+  also prints the line that holds the server and runs no entry, and the second starts it
+- **Test:** `scripts/mcp/launch.test.mjs` › "an unknown area in ATL_MCP_AREA is named on stderr with the valid ones, and the gate decides as before"
 
 #### Scenario: a server outside the session's area
 
@@ -477,20 +513,23 @@ that names the server, its area and the list.
 ### Requirement: MCP-11 — The launcher runs the pinned entry in its own process
 
 When it starts a server, `scripts/mcp/launch.mjs` SHALL set `process.argv` to
-`[process.execPath, <absolute entry>, ...serverArgs]`, where the entry is
-`<root>/node_modules/<package>/<entry>` of the catalog, and import that file in the same process,
-never spawning another.
+`[process.execPath, <absolute entry>, ...serverArgs, ...the arguments after the name]`, where the
+entry is `<root>/node_modules/<package>/<entry>` of the catalog and the arguments after the name
+are the ones the project's `.mcp.json` gives the launcher, and import that file in the same
+process, never spawning another.
 
-**Evidence:** `scripts/mcp/launch.mjs:67-71`, `scripts/mcp/launch.mjs:111-122`,
-`scripts/mcp-docs.detect.mjs:119-120`
+**Evidence:** `scripts/mcp/launch.mjs:84-88`, `scripts/mcp/launch.mjs:137-148`,
+`scripts/mcp/launch.mjs:151-157`, `scripts/mcp-docs.detect.mjs:119-120`
 
 #### Scenario: the fixture entry records what it ran with
 
 - **GIVEN** a catalog whose fixture server has `serverArgs` `["mcp", "--stdio"]`, and an installed
   fixture entry that records its argv and its pid
-- **WHEN** `node scripts/mcp/launch.mjs <name>` runs as a process with `ATL_MCP_AREA` unset
-- **THEN** the entry saw `[process.execPath, <its absolute path>, "mcp", "--stdio"]`, its pid is
-  the launcher's own, and the launcher exits 0
+- **WHEN** `node scripts/mcp/launch.mjs <name> --dev-server-url http://localhost:8081` runs as a
+  process with `ATL_MCP_AREA` unset
+- **THEN** the entry saw `[process.execPath, <its absolute path>, "mcp", "--stdio",
+  "--dev-server-url", "http://localhost:8081"]`, its pid is the launcher's own, and the launcher
+  exits 0
 - **Test:** `scripts/mcp/launch.test.mjs` › "the launcher imports the pinned entry in its own process with the server's argv"
 
 #### Scenario: every real catalog entry

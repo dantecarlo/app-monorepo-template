@@ -10,11 +10,14 @@ at the archive.
 ### Requirement: REAP-13 — A session starts by naming the MCP servers that cannot start
 
 The `SessionStart` hook `scripts/agent-harness/reaper/session-start.mjs` SHALL, before the reaper
-runs and inside the same budget, read the checkout's `.mcp.json` and MCP catalog and, for every
-`.mcp.json` server whose args start with `scripts/mcp/launch.mjs` and name a catalog server, check
-that `node_modules/<package>/<entry>` exists; when any is missing it prints one line naming those
-servers and `pnpm install --frozen-lockfile`. It prints nothing without a `.mcp.json` or when every
-entry is there, and a check that throws prints one line to stderr, the hook still exiting 0.
+runs, read the checkout's `.mcp.json` and MCP catalog and, for every `.mcp.json` server whose args
+start with `scripts/mcp/launch.mjs`, name a catalog server and whose area the session's
+`ATL_MCP_AREA` starts, check that `node_modules/<package>/<entry>` exists; when any is missing it
+prints one line naming those servers and `pnpm install --frozen-lockfile`. It prints nothing
+without a `.mcp.json` or when every such entry is there. The check and the reaper share one
+budget, the reaper's bound plus its margin: a check that outlasts it prints one stderr line and
+the reaper does not run, and a check that throws prints one stderr line, the hook exiting 0
+either way.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -34,6 +37,14 @@ entry is there, and a check that throws prints one line to stderr, the hook stil
 - **THEN** it returns nothing for both
 - **Test:** `scripts/agent-harness/reaper/mcp-check.test.mjs` › "the MCP check says nothing without a .mcp.json, or when every entry is installed"
 
+#### Scenario: a server its area holds off
+
+- **GIVEN** three missing launcher servers, two of the area `mobile` and one of `web`, and
+  `ATL_MCP_AREA` set to `web`, `mobile`, `none` and empty
+- **WHEN** the MCP check reads the tree under each
+- **THEN** it names the web one, the two mobile ones, nothing, and all three
+- **Test:** `scripts/agent-harness/reaper/mcp-check.test.mjs` › "the MCP check leaves out a server whose area ATL_MCP_AREA holds off"
+
 #### Scenario: the hook prints the line
 
 - **GIVEN** a check that returns a line, one that returns nothing and one that throws
@@ -41,6 +52,15 @@ entry is there, and a check that throws prints one line to stderr, the hook stil
 - **THEN** the first prints that line before the reaper's, the second prints only the reaper's,
   the third prints one stderr line, and each returns 0
 - **Test:** `scripts/agent-harness/reaper/session-start.test.mjs` › "the session hook prints the MCP check's line first, and a check that throws costs one stderr line"
+
+#### Scenario: a check that hangs
+
+- **GIVEN** a check whose promise never settles, and a short budget
+- **WHEN** the session-start script runs, in the test's process and then in a process of its own
+- **THEN** it prints one stderr line saying the check outlasted the budget, runs no reaper, and
+  returns 0, and the process exits 0, never Node's unsettled-await exit 13
+- **Test:** `scripts/agent-harness/reaper/session-start.test.mjs` › "a hung MCP check ends within the hook's budget, and the hook exits 0"
+- **Test:** `scripts/agent-harness/reaper/session-start.test.mjs` › "a hung MCP check still lets the hook process exit 0 with its one line"
 
 ## MODIFIED Requirements
 
@@ -51,9 +71,10 @@ with `signalProcessTree` (`taskkill /T /F` on Windows, the child's signal on POS
 pipes and read as timed out. The worktree pruner's `git fetch --prune` runs through it, and a
 fetch that fails reports git's stderr, else the spawn's error, else its exit code; so does the
 `pnpm install --frozen-lockfile --offline` the pruner runs after a fast-forward that changed
-`pnpm-lock.yaml`, bounded by `PRUNE_WORKTREES_INSTALL_SECONDS` (120 s unless set), whose failure or
-timeout prints one line with the exact `pnpm install --frozen-lockfile` to run and leaves the
-run's exit code at 0.
+`pnpm-lock.yaml`, bounded by `PRUNE_WORKTREES_INSTALL_SECONDS` (120 s unless set), which is read
+only when such an install is due. An install that fails or times out, or a bound that is not a
+positive number when one is due, prints one line with the exact `pnpm install --frozen-lockfile`
+to run and leaves the run's exit code at 0.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -110,3 +131,13 @@ run's exit code at 0.
 - **THEN** it bounds the install at 120 s and 2.5 s, and throws for the other three, naming the
   variable and the value
 - **Test:** `scripts/prune-worktrees.test.mjs` › "the install is bound to 120 s unless PRUNE_WORKTREES_INSTALL_SECONDS names another positive number"
+
+#### Scenario: a bound that is not a number, read only when an install is due
+
+- **GIVEN** `PRUNE_WORKTREES_INSTALL_SECONDS` set to `0`, `ten` and empty over a fast-forward that
+  leaves `pnpm-lock.yaml` as it was, then to `0` over one that changes it
+- **WHEN** the pruner runs each
+- **THEN** the first three fast-forward, print exactly the lines a run without the install prints
+  and exit 0; the last fast-forwards, runs no `pnpm`, prints the line naming the variable and
+  `pnpm install --frozen-lockfile`, and exits 0
+- **Test:** `scripts/prune-worktrees.test.mjs` › "an invalid PRUNE_WORKTREES_INSTALL_SECONDS is read only when an install is due"

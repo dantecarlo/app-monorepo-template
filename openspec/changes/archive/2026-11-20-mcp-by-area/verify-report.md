@@ -99,3 +99,24 @@ starts a server whose area ATL_MCP_AREA names", all green.
 - The shared documentation servers through mcp-proxy: documented only; nothing here runs it.
 - The install after a fast-forward was run against a recording `pnpm`, never a real
   `pnpm install --frozen-lockfile --offline`.
+
+## The verifier's correction
+
+The independent verifier of `e644a66f` found no blocker, one real limitation and five advisories,
+fixed in `2e1d1745`, each test seen red for its stated reason first:
+
+| Requirement | Finding | Test | RED before the fix | Result |
+| ----------- | ------- | ---- | ------------------ | ------ |
+| MCP-06 | expo-mcp 0.2.4 exits 1 without `--dev-server-url`, and the gate refused args after the name | `scripts/verify-mcp-docs.test.mjs` › "a .mcp.json catalog server that passes its own args after the name passes" | refused: "a catalog server runs `node scripts/mcp/launch.mjs expo`" | green |
+| MCP-06 | no name, a wrong name and a non-string arg still refused | `scripts/verify-mcp-docs.test.mjs` › "a .mcp.json launcher entry that names no catalog server is refused" | "no name is none", and `42` accepted | green |
+| MCP-11 | the launcher appends the args after the name | `scripts/mcp/launch.test.mjs` › "the launcher imports the pinned entry in its own process with the server's argv" | argv ended at `--stdio` | green |
+| MCP-10 | unknown words of `ATL_MCP_AREA` are named | `scripts/mcp/launch.test.mjs` › "an unknown area in ATL_MCP_AREA is named on stderr with the valid ones, and the gate decides as before" | no line naming them | green |
+| MCP-10 | the verifier's probe | `scripts/mcp/launch.test.mjs` › "the area gate holds every server for a list of unknown words, and starts all for separators alone" | green from the start: it pins the behaviour | green |
+| MCP-01 | an `entry` naming a directory failed only at run time | `scripts/verify-mcp-docs.test.mjs` › "a catalog entry whose entry is not a .js, .mjs or .cjs file is refused" | 0 findings, 2 expected | green |
+| REAP-10 | a bad install bound aborted the whole prune | `scripts/prune-worktrees.test.mjs` › "an invalid PRUNE_WORKTREES_INSTALL_SECONDS is read only when an install is due" | exit 1, "must be a positive number of seconds, not \"0\" — nothing was removed." | green |
+| REAP-13 | the check ran outside the budget | `scripts/agent-harness/reaper/session-start.test.mjs` › "a hung MCP check ends within the hook's budget, and the hook exits 0" | timed out at 10 s | green |
+| REAP-13 | the same, in a process of its own | `scripts/agent-harness/reaper/session-start.test.mjs` › "a hung MCP check still lets the hook process exit 0 with its one line" | no exit 0 | green |
+| REAP-13 | the check reported servers the area holds off | `scripts/agent-harness/reaper/mcp-check.test.mjs` › "the MCP check leaves out a server whose area ATL_MCP_AREA holds off" | named expo and metro under `web` | green |
+
+At `2e1d1745`: `pnpm mcp:launch:test` 10 of 10, `pnpm verify:mcp-docs:test` 44 of 44,
+`node --test scripts/prune-worktrees.test.mjs` 88 of 88, `pnpm reap:test` 102 of 102.

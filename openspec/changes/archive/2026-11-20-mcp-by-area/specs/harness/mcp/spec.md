@@ -11,7 +11,9 @@ The living spec's header gains `scripts/mcp/launch.mjs` in its `Governs` line at
 `scripts/mcp/launch.mjs <name>` SHALL start the catalog server `<name>` when `ATL_MCP_AREA` is
 unset or empty, or when that comma list (`web`, `mobile`, `web,mobile`, `none`) names the
 server's area; otherwise it SHALL exit 0 at once, starting nothing and writing one line to stderr
-that names the server, its area and the list.
+that names the server, its area and the list. A word of the list that is neither `web`, `mobile`
+nor `none` SHALL add one stderr line naming the unknown words and the valid ones, the gate
+deciding as it would without it.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -22,6 +24,22 @@ that names the server, its area and the list.
 - **WHEN** the area gate reads each
 - **THEN** it starts the server for the first five and holds it for `mobile` and `none`
 - **Test:** `scripts/mcp/launch.test.mjs` › "the area gate starts a server when ATL_MCP_AREA is unset, empty or names its area, and holds it otherwise"
+
+#### Scenario: unknown words and separators alone
+
+- **GIVEN** `ATL_MCP_AREA` set to `desktop`, `we b` and `mobile;web`, then to `,`, ` ` and ` , `
+- **WHEN** the area gate reads each, for a web server and then a mobile one
+- **THEN** it holds the server for the first three and starts it for the last three
+- **Test:** `scripts/mcp/launch.test.mjs` › "the area gate holds every server for a list of unknown words, and starts all for separators alone"
+
+#### Scenario: an unknown word in the list
+
+- **GIVEN** a catalog whose fixture server has the area `mobile`, and `ATL_MCP_AREA` set to
+  `desktop,we b`, then to `Mobile,desktop`
+- **WHEN** `node scripts/mcp/launch.mjs <name>` runs as a process for each
+- **THEN** both exit 0 with a line naming the unknown words and `web, mobile and none`; the first
+  also prints the line that holds the server and runs no entry, and the second starts it
+- **Test:** `scripts/mcp/launch.test.mjs` › "an unknown area in ATL_MCP_AREA is named on stderr with the valid ones, and the gate decides as before"
 
 #### Scenario: a server outside the session's area
 
@@ -34,9 +52,10 @@ that names the server, its area and the list.
 ### Requirement: MCP-11 — The launcher runs the pinned entry in its own process
 
 When it starts a server, `scripts/mcp/launch.mjs` SHALL set `process.argv` to
-`[process.execPath, <absolute entry>, ...serverArgs]`, where the entry is
-`<root>/node_modules/<package>/<entry>` of the catalog, and import that file in the same process,
-never spawning another.
+`[process.execPath, <absolute entry>, ...serverArgs, ...the arguments after the name]`, where the
+entry is `<root>/node_modules/<package>/<entry>` of the catalog and the arguments after the name
+are the ones the project's `.mcp.json` gives the launcher, and import that file in the same
+process, never spawning another.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -44,9 +63,11 @@ never spawning another.
 
 - **GIVEN** a catalog whose fixture server has `serverArgs` `["mcp", "--stdio"]`, and an installed
   fixture entry that records its argv and its pid
-- **WHEN** `node scripts/mcp/launch.mjs <name>` runs as a process with `ATL_MCP_AREA` unset
-- **THEN** the entry saw `[process.execPath, <its absolute path>, "mcp", "--stdio"]`, its pid is
-  the launcher's own, and the launcher exits 0
+- **WHEN** `node scripts/mcp/launch.mjs <name> --dev-server-url http://localhost:8081` runs as a
+  process with `ATL_MCP_AREA` unset
+- **THEN** the entry saw `[process.execPath, <its absolute path>, "mcp", "--stdio",
+  "--dev-server-url", "http://localhost:8081"]`, its pid is the launcher's own, and the launcher
+  exits 0
 - **Test:** `scripts/mcp/launch.test.mjs` › "the launcher imports the pinned entry in its own process with the server's argv"
 
 #### Scenario: every real catalog entry
@@ -94,9 +115,10 @@ installed, naming the server, the missing path and `pnpm install --frozen-lockfi
 The MCP catalog `.agents/contracts/mcp-servers.json` SHALL hold one entry per MCP server, with
 its name, its `area` (`web` or `mobile`, no other value), the capability that selects it, its npm
 package, an exact `version` (never a range, `latest` or a tag), the `entry` bin file as a relative
-path inside the package, the server's own arguments as `serverArgs` when it takes any (a list of
-non-empty strings), the command `node`, never `npx`, with args exactly
-`scripts/mcp/launch.mjs <name>`, and the repository docs that describe it, each of which exists.
+path inside the package that ends in `.js`, `.mjs` or `.cjs` (a file the launcher can import, never
+a directory), the server's own arguments as `serverArgs` when it takes any (a list of non-empty
+strings), the command `node`, never `npx`, with args exactly `scripts/mcp/launch.mjs <name>`, and
+the repository docs that describe it, each of which exists.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -149,6 +171,13 @@ non-empty strings), the command `node`, never `npx`, with args exactly
 - **WHEN** `pnpm verify:mcp-docs` runs
 - **THEN** it fails, naming the entry
 - **Test:** `scripts/verify-mcp-docs.test.mjs` › "a catalog entry whose entry leaves its package is refused"
+
+#### Scenario: an entry that is not a JavaScript file
+
+- **GIVEN** catalog entries whose `entry` is `dist` and `bin/server`
+- **WHEN** `pnpm verify:mcp-docs` runs
+- **THEN** it fails once per entry, naming each and `.js, .mjs or .cjs`
+- **Test:** `scripts/verify-mcp-docs.test.mjs` › "a catalog entry whose entry is not a .js, .mjs or .cjs file is refused"
 
 #### Scenario: a command other than node
 
@@ -262,8 +291,10 @@ version changed, or that is new in the block, as `review: <path>`, never rewriti
 `pnpm verify:mcp-docs` SHALL fail when the servers, packages, capabilities, pinned versions or
 commands of the generated block differ from those of the catalog plus .mcp.json; when .mcp.json
 does not parse or has no `mcpServers` object; when a .mcp.json server named like a catalog server
-does not run `node scripts/mcp/launch.mjs <its name>`; and when a .mcp.json server that runs the
-launcher names no catalog server, or passes it more than that name.
+does not run `node scripts/mcp/launch.mjs <its name>`; when a .mcp.json server that runs the
+launcher gives it no catalog name first; and when an argument after the name is not a string. A
+string after the name passes: the launcher appends it after the catalog's `serverArgs`, as
+expo-mcp's `--dev-server-url <url>`.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -304,6 +335,14 @@ launcher names no catalog server, or passes it more than that name.
 - **THEN** it passes
 - **Test:** `scripts/verify-mcp-docs.test.mjs` › "a .mcp.json catalog server that runs the launcher passes"
 
+#### Scenario: a catalog server of .mcp.json with its own args after the name
+
+- **GIVEN** a .mcp.json whose `expo` runs the launcher with `expo`, then `--dev-server-url` and
+  `${EXPO_DEV_SERVER_URL:-http://localhost:8081}`, listed by the block
+- **WHEN** `pnpm verify:mcp-docs` runs
+- **THEN** it passes
+- **Test:** `scripts/verify-mcp-docs.test.mjs` › "a .mcp.json catalog server that passes its own args after the name passes"
+
 #### Scenario: a catalog server of .mcp.json outside the launcher
 
 - **GIVEN** a .mcp.json whose `expo` runs `npx -y expo-mcp`, and whose `next-devtools` runs the
@@ -313,10 +352,10 @@ launcher names no catalog server, or passes it more than that name.
   owes
 - **Test:** `scripts/verify-mcp-docs.test.mjs` › "a .mcp.json catalog server that does not run the launcher is refused"
 
-#### Scenario: a launcher entry that names no catalog server
+#### Scenario: a launcher entry with no catalog name, or an argument that is not a string
 
-- **GIVEN** a .mcp.json server `docs` that runs `node scripts/mcp/launch.mjs gone`, and one that
-  runs the launcher with a catalog name and one more argument
+- **GIVEN** a .mcp.json server `bare` that runs the launcher with no name, `docs` that runs
+  `node scripts/mcp/launch.mjs gone`, and `extra` that runs it with `expo` then the number `42`
 - **WHEN** `pnpm verify:mcp-docs` runs
 - **THEN** it fails once per server, naming each and what the launcher was given
 - **Test:** `scripts/verify-mcp-docs.test.mjs` › "a .mcp.json launcher entry that names no catalog server is refused"
