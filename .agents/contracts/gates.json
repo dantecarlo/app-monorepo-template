@@ -45,6 +45,21 @@
       "blind": "exported-cases"
     },
     {
+      "id": "verify:harness-config:test",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:harness-config",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "instant",
+      "blind": "exported-cases"
+    },
+    {
       "id": "verify:manifest",
       "capability": "core",
       "stage": "preflight",

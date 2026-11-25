@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "The contract of .agents/harness.config.json, the one file that holds this project's harness settings. pnpm verify:harness-config holds the file to it, reading only the keywords it knows (type, properties, required, additionalProperties, enum, const, if, then, else, and the annotations $schema, $comment, title, description and default) and refusing any other, so a rule written here is never skipped in silence. additionalProperties is true or false, never a schema, and every object outside an if, then or else sets it to false, so every key the file holds is one declared here; neither file gives a key twice in one object. A default is the value the template ships and the one a skill assumes when the file records none; each must be one of its own enum. See docs/harness.md section 3h.",
+  "title": "Harness config",
+  "description": "The project's harness settings: its workflow, its merge policy and its backend.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "workflow", "delivery", "backend"],
+  "properties": {
+    "$schema": {
+      "description": "The path of this contract, relative to .agents/, so an editor checks the file as it is typed.",
+      "const": "./contracts/harness-config.schema.json"
+    },
+    "$comment": {
+      "description": "A note for the reader of the file.",
+      "type": "string"
+    },
+    "workflow": {
+      "description": "How a change is specified and recorded (decision 40).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "$comment": {
+          "description": "A note for the reader of the section.",
+          "type": "string"
+        },
+        "mode": {
+          "description": "sdd: OpenSpec in the repository, chosen by size (openspec/README.md). odd: the feature-document workflow, its document committed.",
+          "enum": ["sdd", "odd"],
+          "default": "sdd"
+        }
+      }
+    },
+    "delivery": {
+      "description": "Who may merge a pull request into the default branch (decision 38).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mergePolicy"],
+      "properties": {
+        "$comment": {
+          "description": "A note for the reader of the section.",
+          "type": "string"
+        },
+        "mergePolicy": {
+          "description": "manual: the architect asks the owner before every merge. low-risk: the architect may merge, without asking, a pull request that meets every condition of ticket-flow rule 4.",
+          "enum": ["manual", "low-risk"],
+          "default": "manual"
+        }
+      }
+    },
+    "backend": {
+      "description": "The backend the project runs, and how its database tests run.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "$comment": {
+          "description": "A note for the reader of the section.",
+          "type": "string"
+        },
+        "kind": {
+          "description": "supabase: packages/supabase, the harness's own. own: a backend of the project's, which the harness does not manage. none: no backend.",
+          "enum": ["supabase", "own", "none"],
+          "default": "supabase"
+        },
+        "databaseTests": {
+          "description": "linked: the pgTAP tests run against the linked Supabase project. local: against a local Supabase stack. off: no database tests run.",
+          "enum": ["linked", "local", "off"],
+          "default": "linked"
+        }
+      },
+      "if": {
+        "required": ["kind"],
+        "properties": { "kind": { "const": "supabase" } }
+      },
+      "then": {
+        "description": "a supabase backend names how its database tests run",
+        "required": ["databaseTests"]
+      },
+      "else": {
+        "description": "the database-test mode is the supabase backend's only; the harness does not manage the tests of an own backend",
+        "properties": { "databaseTests": false }
+      }
+    }
+  }
+}

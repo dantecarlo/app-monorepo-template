@@ -181,6 +181,8 @@ gate the run reaches is blinded by exactly one step, whose companion's exported
 | `pnpm reap:test`               | The process reaper's core decides each rule over synthetic process tables (an orphan, a live parent, a reused pid, POSIX reparenting, unknown names, a family matched by executable and script and never by text in the arguments, persistent and watch work, the wrappers, live Git for Windows shells and tmux, its own ancestry, the spared processes, the grace period); the adapter lists and ends on each platform through an injected spawn; the command's modes, lock, second listing, bound and exit codes; the session hook's kill mode and its exit 0 on any failure; and `runBounded` ends a real child's tree on Windows (see 3g) |
 | `pnpm verify:agent-context:test` | The agent-context gate fails each defect it names, on synthetic entries and over a scratch tree |
 | `pnpm verify:agent-context`     | Every agent of `.agents/agents/` has an entry in `.agents/agent-context.json` whose `gradedBy` names the skills that grade it, each a folder of `.claude/skills/` holding a `SKILL.md`, whose `writes` is true or false, whose `surface`, if any, lists repository-relative folders beside `writes: true`, and which holds no other key; no entry names an agent that is gone (see 3e) |
+| `pnpm verify:harness-config:test` | The harness config gate fails each defect it names, a key given twice and an `additionalProperties` other than `false` among them, against the repository's schema, and over a scratch tree; the schema's merge policies are the ones the ticket skills name, `manual` the default |
+| `pnpm verify:harness-config`    | `.agents/harness.config.json` holds only the sections and settings `.agents/contracts/harness-config.schema.json` declares, each a value it allows and every required one there, the database-test mode under a `supabase` backend only, and neither file gives a key twice in one object; the schema uses only the keywords the gate reads, `additionalProperties` only as `true` or `false`, and sets it to `false` on every object outside a conditional branch (see 3h) |
 | `pnpm verify:manifest`          | `template.manifest.json` is well formed                   |
 | `pnpm verify:manifest:coverage` | Every tracked file has exactly one owner, no stale claims |
 | `pnpm verify:manifest:test`     | The pure engine behind both still behaves                 |
@@ -214,7 +216,7 @@ the pre-commit hook on staged files.
 | `verify:theme-sync`   | Every generated token output (the web `theme.css`, the NativeWind preset, the mobile `themeVars`, the `themeNames` the shared `tv` registers) equals its regeneration from `tokens.constant.ts`; `verify:theme-sync:test` plants a hand edit in each and an un-regenerated source change |
 | `verify:mcp-docs`     | The generated block of `docs/mcp.md` is what `pnpm mcp:docs` wrote and lists every server, package and capability of `.agents/contracts/mcp-servers.json` plus `.mcp.json`, with each server's exact pin and its direct `node` command; offline, and it refuses `npx`, a missing or inexact version and a first argument that does not name the entry. `verify:mcp-docs:test` plants each drift; `mcp:docs:test` drives the updater with an injected registry |
 | `verify:ticket-branch:test` | `scripts/verify-ticket-branch.test.mjs` drives the branch check (below, 3d) with a valid ticket branch and pull request body and each refusal, under the default ticket identity and under example layers (a TASK-slug one among them), with each malformed block and flag, and as a process over a scratch working directory |
-| `verify:skills:test` | `scripts/verify-skills.test.mjs` holds the seven ticket skills of `.claude/skills/` to their sections (the shape of `new-skill`, every state, role and board operation of `ticket-flow`, Dropped among the states of its table and of the process template's, the role skills' opening and the contract tables they must not copy, the three templates, the ticket template's target version marked `**Version (required):**`, and both merge policies, `manual` and `low-risk`, named in `ticket-flow` rule 4, `refine-ticket`'s merge queue, `process-intake`'s mapping step and the process template, whose Policy line gives `manual`; the production branch: the process template's Branching model, whose Production branch line gives `production`, the default; the merge queue: `refine-ticket` has its § Merge queue, `qa-ticket`'s hand-off step names `<id> ready to merge, PR #<n>`, and `qa-ticket` holds no `Ready to merge → Done`; the ticket identity: `ticket-flow` names `branchTypes` and the `json ticket-identity` block, `process-intake`'s mapping step names the block, and the process template ships one that the branch check reads with no finding and whose fields are its defaults; QA's checkout: `qa-ticket`'s Step 2 adds its worktree with `--detach` and its Step 5 pushes with `git push origin HEAD:<branch>`; and the hotfix: `qa-ticket`'s hand-off step, `refine-ticket`'s release step and `ticket-flow`'s messages name `<id> ready to merge, hotfix`, and `release-ticket`'s Hotfix section says that QA leaves it at Ready to merge; and the board as the source: `ticket-flow`'s Board operations and the process template's Board adapter name the board the source of every open ticket, and the closed ticket catalog: `refine-ticket`'s § Record the closed tickets names `§ Closed Ticket Catalog` and one pull request per close or release, `po-ticket` names no `edits:`, since the PO does no repository work, and `refine-ticket`'s merge queue says that the architect brings the catalog pull request current itself and that each row it adds matches its board page in id, title, target version and closing pull request; and the drop: `ticket-flow` has its § Dropped, naming `Superseded by:`, and its messages name `<id> dropped`, which `po-ticket`'s Step 6 — Drop a ticket, `refine-ticket`'s § Drop a ticket, `dev-ticket`'s § Changes requested and `qa-ticket`'s Step 7 also name, and `refine-ticket`'s § Record the closed tickets names `### Dropped tickets`; and the later bring-current: `refine-ticket`'s merge queue brings a ticket's pull request current from a spare worktree of its own, never QA's or the dev's, names `--detach` and `git push origin HEAD:<branch>`, pushes in the background and says that a code conflict goes back to the dev session, none of `ticket-flow`, `refine-ticket` and `qa-ticket` names `<id> bring current`, and `qa-ticket` holds no `Ready to merge → Changes requested`), with synthetic cases and over the repository; it also runs the cases of `.claude/skills/general-plan/validate-general-plan.test.mjs` |
+| `verify:skills:test` | `scripts/verify-skills.test.mjs` holds the seven ticket skills of `.claude/skills/` to their sections (the shape of `new-skill`, every state, role and board operation of `ticket-flow`, Dropped among the states of its table and of the process template's, the role skills' opening and the contract tables they must not copy, the three templates, the ticket template's target version marked `**Version (required):**`, and both merge policies, `manual` and `low-risk`, named in `ticket-flow` rule 4, `refine-ticket`'s merge queue, `process-intake`'s mapping step and the process template, each beside `.agents/harness.config.json`, where the project records its own, and the process template's Policy line names `delivery.mergePolicy` in it; the policy read fail closed: `ticket-flow` rule 4 and `refine-ticket`'s merge queue say that a value other than `low-risk`, a missing file, or a file that does not parse means `manual`, and that the policy is read from the default branch's copy, never from the pull request's own branch; the production branch: the process template's Branching model, whose Production branch line gives `production`, the default; the merge queue: `refine-ticket` has its § Merge queue, `qa-ticket`'s hand-off step names `<id> ready to merge, PR #<n>`, and `qa-ticket` holds no `Ready to merge → Done`; the ticket identity: `ticket-flow` names `branchTypes` and the `json ticket-identity` block, `process-intake`'s mapping step names the block, and the process template ships one that the branch check reads with no finding and whose fields are its defaults; QA's checkout: `qa-ticket`'s Step 2 adds its worktree with `--detach` and its Step 5 pushes with `git push origin HEAD:<branch>`; and the hotfix: `qa-ticket`'s hand-off step, `refine-ticket`'s release step and `ticket-flow`'s messages name `<id> ready to merge, hotfix`, and `release-ticket`'s Hotfix section says that QA leaves it at Ready to merge; and the board as the source: `ticket-flow`'s Board operations and the process template's Board adapter name the board the source of every open ticket, and the closed ticket catalog: `refine-ticket`'s § Record the closed tickets names `§ Closed Ticket Catalog` and one pull request per close or release, `po-ticket` names no `edits:`, since the PO does no repository work, and `refine-ticket`'s merge queue says that the architect brings the catalog pull request current itself and that each row it adds matches its board page in id, title, target version and closing pull request; and the drop: `ticket-flow` has its § Dropped, naming `Superseded by:`, and its messages name `<id> dropped`, which `po-ticket`'s Step 6 — Drop a ticket, `refine-ticket`'s § Drop a ticket, `dev-ticket`'s § Changes requested and `qa-ticket`'s Step 7 also name, and `refine-ticket`'s § Record the closed tickets names `### Dropped tickets`; and the later bring-current: `refine-ticket`'s merge queue brings a ticket's pull request current from a spare worktree of its own, never QA's or the dev's, names `--detach` and `git push origin HEAD:<branch>`, pushes in the background and says that a code conflict goes back to the dev session, none of `ticket-flow`, `refine-ticket` and `qa-ticket` names `<id> bring current`, and `qa-ticket` holds no `Ready to merge → Changes requested`), with synthetic cases and over the repository; it also runs the cases of `.claude/skills/general-plan/validate-general-plan.test.mjs` |
 | `docs:diagrams:check` | Every committed diagram matches its spec and the tokens                                   |
 | `verify:specs`        | Every living spec and change has its shape, and every test a scenario names exists        |
 | `report:spec-drift`   | Lists the living specs whose governed code moved past their verified commit; never blocks |
@@ -350,7 +352,9 @@ guard's code and the modules it loads (`scripts/manifest.mjs`, whose glob
 reader it uses, and `scripts/manifest-owners.mjs`), `.husky/**`,
 `.github/workflows/**`, and the user-level `~/.claude/settings.json` and
 `~/.claude/settings.local.json`, where `disableAllHooks` switches every hook
-off. `package.json` is not one. A glob reads as the manifest's do, with letter
+off; and `.agents/harness.config.json`, whose `delivery.mergePolicy: low-risk` lets
+an agent merge without asking (3h). `package.json` is not one. A glob reads as
+the manifest's do, with letter
 case ignored, against the path relative to EVERY checkout that holds the file,
 so a rule file of a sibling worktree, or of a clone under the temp dir, is one
 too, and a `.git` planted inside a checkout cannot hide one. A glob that starts
@@ -518,6 +522,57 @@ a family but should survive is added to the spare list, on the owner's word. On
 POSIX a process forked between the SIGTERM and the SIGKILL is not reached, and
 the pruner's stopped fetch still signals git alone, as before. Codex, OpenCode
 and Copilot run no adapter, as for the write guard.
+
+### 3h. The harness config
+
+`.agents/harness.config.json` holds the project's harness settings, one file,
+and `.agents/contracts/harness-config.schema.json` is their contract: every
+section, setting, allowed value and default. The template ships the defaults.
+Both are rule files of the write guard (3f): `delivery.mergePolicy: low-risk`
+lets an agent merge without asking, so only the owner changes it.
+
+| Setting                  | Values                                | Read by |
+| ------------------------ | ------------------------------------- | ------- |
+| `workflow.mode`          | `sdd` (default), `odd` (decision 40)  | nothing yet; `/init` section 8 asks it. The `sdd` prune sets `odd` |
+| `delivery.mergePolicy`   | `manual` (default), `low-risk` (decision 38) | the architect's merge queue: `ticket-flow` rule 4 and `refine-ticket` § Merge queue; `process-intake` writes it |
+| `backend.kind`           | `supabase` (default), `own`, `none`   | nothing yet; the `supabase` prune sets `none`. `own` is a backend of the project's, which the harness does not manage |
+| `backend.databaseTests`  | `linked` (default), `local`, `off`; under `supabase` only | nothing yet: F57 keeps its own setting in `packages/supabase/package.json`, which moves here once both have merged |
+
+`pnpm verify:harness-config` holds the file to the schema, and validates by
+it rather than restating its rules, so a new setting or value is a change to
+the schema alone. A missing or unparsable file, a key the schema does not
+declare, a value it does not allow, a missing setting and a database-test mode
+under a backend other than `supabase` each fail it. It reads only the JSON
+Schema keywords it knows (`type`, `properties`, `required`,
+`additionalProperties`, `enum`, `const`, `if`, `then`, `else`, and the
+annotations), and refuses any other in the schema, as it refuses a default
+outside its own values: a rule it skipped would pass every config. It reads
+`additionalProperties` only as `true` or `false`, never as a schema, and every
+object of the schema outside an `if`, `then` or `else` sets it to `false`, so
+every key the file holds is one the schema declares. A key given twice in one
+object, in either file, fails it too: `JSON.parse` keeps the last value, while
+a reader may act on the first.
+
+The project layer of the ticket flow, docs/process/ticket-flow.md, records no
+merge policy of its own: its `Policy` line names `delivery.mergePolicy`, and
+`verify:skills:test` holds the template to it. A project that wrote its policy
+in that line before moves the value here when it takes this change; until it
+does, the architect reads `manual`, the stricter policy.
+
+The two sections that read the policy, `ticket-flow` rule 4 and
+`refine-ticket` § Merge queue, fail closed: a missing setting, any value
+other than `low-risk`, a missing file, or a file that does not parse means
+`manual`. Both read the file from the default branch's copy, never from the
+pull request's own branch, which could otherwise change its own policy, and
+`verify:skills:test` holds both to say so. In a project with no
+`.agents/harness.config.json`, `process-intake` writes the whole template file
+with the chosen policy, then runs `pnpm verify:harness-config`: the key alone
+would make a file that fails the gate.
+
+**Not covered:** whether a setting is the right one for the project; whether
+the tree agrees with the file (a `supabase` backend with no
+`packages/supabase`); and anything that reads `workflow.mode` or `backend`,
+which nothing does yet.
 
 ---
 

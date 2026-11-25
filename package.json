@@ -48,6 +48,8 @@
     "validate:test": "node --test scripts/validate.test.mjs",
     "verify:agent-context": "node scripts/verify-agent-context.mjs",
     "verify:agent-context:test": "node --test scripts/verify-agent-context.test.mjs",
+    "verify:harness-config": "node scripts/verify-harness-config.mjs",
+    "verify:harness-config:test": "node --test scripts/verify-harness-config.test.mjs",
     "verify:allowlist-freshness": "node scripts/verify-allowlist-freshness.mjs",
     "verify:allowlist-freshness:test": "node --test scripts/verify-allowlist-freshness.test.mjs",
     "verify:dependency-seams": "node scripts/verify-dependency-seams.mjs",
