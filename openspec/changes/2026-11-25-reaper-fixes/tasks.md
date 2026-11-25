@@ -1,0 +1,14 @@
+# Tasks: 2026-11-25-reaper-fixes
+
+- [ ] T1 — Watch mode: `plan.mjs` reads node's `--watch`, `--watch-path <p>`, `--watch-path=<p>` and `--watch-preserve-output` before the script as watch mode, matches it to no family and keeps a tree that holds one; cases in `plan.test.mjs` and `contract.test.mjs`; `docs/harness.md` § 3g · Requirements: REAP-03 · Commit: —
+- [ ] T2 — The POSIX listing: `platform.mjs` lists with `lstart` under `LC_ALL=C` and parses it to an absolute start time, `etime` dropped; cases in `platform.test.mjs`; `docs/harness.md` § 3g · Requirements: REAP-07 · Commit: —
+- [ ] T3 — The re-read keeps its verified pids: `reap.mjs` `sortByIdentity` keeps, of each tree whose root held, the pids whose start time held, and hands them to `endTrees` with `starts`; a Windows case in `reap.test.mjs` · Requirements: REAP-12 · Commit: —
+- [ ] T4 — The POSIX SIGKILL: `platform.mjs` `endOnPosix` lists again after the 2 s wait and sends SIGKILL only to the pids whose start time held, and none when that listing fails or the bound has run out; cases in `platform.test.mjs`; `docs/harness.md` § 3g · Requirements: REAP-07 · Commit: —
+- [ ] T5 — The lock: `lock.mjs` writes a unique token, takes a stale lock under an exclusive guard, removes a stale guard only while it holds what it read, and releases only its own token; `lock.test.mjs`, with one real two-process case; `docs/harness.md` § 3g · Requirements: REAP-11 · Commit: —
+- [ ] T6 — `verify-report.md`, then the archive: the deltas merged into `openspec/specs/harness/process-reaper/spec.md`, the evidence lines this change moved refreshed, and the folder moved to `openspec/changes/archive/2026-11-25-reaper-fixes/` · Requirements: REAP-03, REAP-07, REAP-11, REAP-12 · Commit: —
+
+<!--
+A task names every requirement it satisfies. When it is done, tick it and write the short sha of
+the commit that holds it: "- [x] T1 — … · Requirements: CORE-04 · Commit: 1a2b3c4".
+A task that touches no requirement (a migration of data, a doc) says "Requirements: none".
+-->
