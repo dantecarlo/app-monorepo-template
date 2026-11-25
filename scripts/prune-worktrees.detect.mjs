@@ -80,12 +80,13 @@ export const installSecondsFrom = ({ env }) =>
   })
 
 // The lockfile whose change, in a fast-forward, makes the run install; the
-// install it runs, offline since the fetch already ran and a hook must not
-// download; and the command a person runs when that install fails.
+// install it runs, a plain `pnpm install` that may resolve again and so
+// rewrite the lockfile (the owner, 2026-11-25, translated from Spanish:
+// "Change to pnpm i"); and the command a person runs when it fails.
 export const LOCKFILE = 'pnpm-lock.yaml'
-const INSTALL_ARGS = ['install', '--frozen-lockfile', '--offline']
+const INSTALL_ARGS = ['install']
 const INSTALL_LINE = `pnpm ${INSTALL_ARGS.join(' ')}`
-const RETRY_COMMAND = 'pnpm install --frozen-lockfile'
+const RETRY_COMMAND = INSTALL_LINE
 
 // The command and arguments that run the install: through cmd.exe on
 // Windows, where pnpm is a `.cmd` only a shell starts, and `pnpm` itself
@@ -478,17 +479,30 @@ const installLine = ({ dryRun, install, main, quiet }) => {
     : `${LABEL}: ${LOCKFILE} changed, so it ran ${INSTALL_LINE} ${where}`
 }
 
+// The line an install that rewrote the lockfile in the main checkout adds,
+// under `--quiet` too, or null. It never offers `git checkout --`, which in
+// a checkout other worktrees share has wiped other sessions' work.
+const rewroteLine = ({ install, main }) =>
+  install?.rewrote
+    ? `${LABEL}: ${INSTALL_LINE} rewrote ${LOCKFILE} in ${main.path}; ` +
+      'commit it on a branch, or run ' +
+      `\`git restore --source=HEAD -- ${LOCKFILE}\` (this discards the ` +
+      "install's lockfile change)"
+    : null
+
 // One line per worktree, a kept one left out under `--quiet`, the main
 // checkout's line when it was behind or off the default branch, the
-// install's line after a fast-forward that changed the lockfile, the
-// summary line, and for a dry run what it does not cover.
+// install's line after a fast-forward that changed the lockfile and the
+// line of an install that rewrote it, the summary line, and for a dry run
+// what it does not cover.
 export const reportLines = ({ dryRun, install, main, quiet, results }) => [
   ...results
     .filter((result) => !quiet || !result.kept)
     .map((result) => decisionLine({ dryRun, result })),
   ...[
     mainLine({ dryRun, main }),
-    installLine({ dryRun, install, main, quiet })
+    installLine({ dryRun, install, main, quiet }),
+    rewroteLine({ install, main })
   ].filter((line) => line !== null),
   summaryLine({ dryRun, results }),
   ...notCovered({ dryRun, install })

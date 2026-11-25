@@ -43,12 +43,14 @@
 // so it names a local commit or an untracked file the fast-forward would
 // overwrite, never a file whose timestamp alone changed, and takes no lock
 // in the main checkout. A fast-forward that changes pnpm-lock.yaml then runs
-// `pnpm install --frozen-lockfile --offline` in the main checkout, through
-// `runBounded` and stopped with its tree after 120 s or the seconds
-// PRUNE_WORKTREES_INSTALL_SECONDS names, so the pinned MCP entries and every
-// other dependency match the lockfile the checkout now holds; an install
-// that fails or is stopped prints one line with the `pnpm install
-// --frozen-lockfile` to run, and the run still exits 0. The bound is read
+// `pnpm install` in the main checkout, through `runBounded` and stopped with
+// its tree after 120 s or the seconds PRUNE_WORKTREES_INSTALL_SECONDS names,
+// so the pinned MCP entries and every other dependency follow the lockfile
+// the checkout now holds; an install that fails or is stopped prints one
+// line with the `pnpm install` to run, and the run still exits 0. An install
+// that rewrites pnpm-lock.yaml, as a plain `pnpm install` may, adds one line
+// saying so: commit it on a branch, or discard it with `git restore
+// --source=HEAD -- pnpm-lock.yaml`. The bound is read
 // only when an install is due: a value that is not a positive number then
 // skips the install with the same line, and a fast-forward that leaves the
 // lockfile as it was installs nothing and never reads it. A dry run says it would
@@ -525,6 +527,9 @@ const predictedRefusal = ({ ref, root }) => {
   }
 }
 
+// `git diff --quiet` exits 1 when the files it compares differ.
+const DIFFERS = 1
+
 // Whether the lockfile differs between HEAD in `root` and `ref`, the commit
 // a fast-forward moves it to.
 const lockfileChanges = ({ ref, root }) =>
@@ -533,9 +538,22 @@ const lockfileChanges = ({ ref, root }) =>
     cwd: root
   }) !== ''
 
-// `pnpm install --frozen-lockfile --offline` in `root`, stopped after
-// `seconds` with every process it started: `installed`, or `failed` with
-// why. It never throws: a failed install never fails the run.
+// Whether the install left the lockfile of `root` other than HEAD holds
+// (`git diff --quiet -- pnpm-lock.yaml`). A diff git cannot run reads as
+// no rewrite: the install never fails the run.
+const lockfileRewritten = ({ root }) => {
+  try {
+    git({ args: ['diff', '--quiet', '--', LOCKFILE], cwd: root })
+    return false
+  } catch (error) {
+    return error.status === DIFFERS
+  }
+}
+
+// `pnpm install` in `root`, stopped after `seconds` with every process it
+// started: `installed`, or `failed` with why, and `rewrote` when it left
+// the lockfile changed. It never throws: a failed install never fails the
+// run.
 const installIn = async ({ root, seconds }) => {
   const { args, command } = installCommandOf({
     comspec: process.env.ComSpec,
@@ -548,7 +566,10 @@ const installIn = async ({ root, seconds }) => {
     env: gitEnv(),
     timeoutMs: Math.ceil(seconds * MS_PER_SECOND)
   })
-  return installOutcomeOf({ run, seconds })
+  return {
+    ...installOutcomeOf({ run, seconds }),
+    rewrote: lockfileRewritten({ root })
+  }
 }
 
 // The install a fast-forward that changed the lockfile makes: run after a

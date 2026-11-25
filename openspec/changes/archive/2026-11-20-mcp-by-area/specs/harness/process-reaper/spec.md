@@ -70,11 +70,14 @@ either way.
 with `signalProcessTree` (`taskkill /T /F` on Windows, the child's signal on POSIX), release its
 pipes and read as timed out. The worktree pruner's `git fetch --prune` runs through it, and a
 fetch that fails reports git's stderr, else the spawn's error, else its exit code; so does the
-`pnpm install --frozen-lockfile --offline` the pruner runs after a fast-forward that changed
+plain `pnpm install` the pruner runs in the main checkout after a fast-forward that changed
 `pnpm-lock.yaml`, bounded by `PRUNE_WORKTREES_INSTALL_SECONDS` (120 s unless set), which is read
 only when such an install is due. An install that fails or times out, or a bound that is not a
-positive number when one is due, prints one line with the exact `pnpm install --frozen-lockfile`
-to run and leaves the run's exit code at 0.
+positive number when one is due, prints one line with the `pnpm install` to run and leaves the
+run's exit code at 0. An install that leaves `pnpm-lock.yaml` changed, by
+`git diff --quiet -- pnpm-lock.yaml`, prints one line offering to commit it on a branch or to run
+`git restore --source=HEAD -- pnpm-lock.yaml`, which discards the install's lockfile change, and
+never `git checkout --`.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -111,17 +114,26 @@ to run and leaves the run's exit code at 0.
 - **GIVEN** a main checkout one commit behind, whose next commit changes `pnpm-lock.yaml`, and a
   `pnpm` on the path that records its arguments
 - **WHEN** the pruner runs
-- **THEN** it fast-forwards, runs `pnpm install --frozen-lockfile --offline` once in the main
-  checkout, says so and exits 0
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a fast-forward that changes pnpm-lock.yaml runs pnpm install --frozen-lockfile --offline"
+- **THEN** it fast-forwards, runs `pnpm install` once in the main checkout, with no other
+  argument, says so, prints no rewrite line and exits 0
+- **Test:** `scripts/prune-worktrees.test.mjs` › "a fast-forward that changes pnpm-lock.yaml runs pnpm install"
+
+#### Scenario: an install that rewrites the lockfile
+
+- **GIVEN** the same checkout, and a `pnpm` that rewrites `pnpm-lock.yaml`
+- **WHEN** the pruner runs, and again with `--quiet`
+- **THEN** each run leaves the rewritten lockfile as it is, prints exactly one line naming it, the
+  choice to commit it on a branch and `git restore --source=HEAD -- pnpm-lock.yaml` with "this
+  discards the install's lockfile change", and exits 0
+- **Test:** `scripts/prune-worktrees.test.mjs` › "an install that rewrites pnpm-lock.yaml says so in one line, under --quiet too, and the run exits 0"
 
 #### Scenario: an install that fails or outlasts its bound
 
 - **GIVEN** the same checkout, and a `pnpm` that exits 1, then one that never ends under
   `PRUNE_WORKTREES_INSTALL_SECONDS=1`
 - **WHEN** the pruner runs with `--quiet`
-- **THEN** it fast-forwards, prints one line with the exit code or the bound and
-  `pnpm install --frozen-lockfile`, and exits 0
+- **THEN** it fast-forwards, prints one line with the exit code or the bound and the
+  `pnpm install` to run in the main checkout, and exits 0
 - **Test:** `scripts/prune-worktrees.test.mjs` › "an install that fails or outlasts PRUNE_WORKTREES_INSTALL_SECONDS names the command to run, and the run exits 0"
 
 #### Scenario: the install bound
@@ -139,5 +151,5 @@ to run and leaves the run's exit code at 0.
 - **WHEN** the pruner runs each
 - **THEN** the first three fast-forward, print exactly the lines a run without the install prints
   and exit 0; the last fast-forwards, runs no `pnpm`, prints the line naming the variable and
-  `pnpm install --frozen-lockfile`, and exits 0
+  `pnpm install`, and exits 0
 - **Test:** `scripts/prune-worktrees.test.mjs` › "an invalid PRUNE_WORKTREES_INSTALL_SECONDS is read only when an install is due"

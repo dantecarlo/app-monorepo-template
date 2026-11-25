@@ -1775,24 +1775,31 @@ test('an .atl/ that holds anything besides the skill-registry files keeps the wo
 })
 
 // A `pnpm` first on the path that records each call, its arguments and the
-// directory it ran in, then exits with `exit` after `waitMs`: a `.cmd` on
-// Windows, which the pruner reaches through cmd.exe, a shell script
-// elsewhere. `env` is the pruner's environment with that path first.
+// directory it ran in, writes `rewrite` to the lockfile of that directory
+// when given, as an install that resolves anew does, then exits with
+// `exit` after `waitMs`: a `.cmd` on Windows, which the pruner reaches
+// through cmd.exe, a shell script elsewhere. `env` is the pruner's
+// environment with that path first.
 const LOCKFILE = 'pnpm-lock.yaml'
 const LOCK_TEXT = 'lockfileVersion: 9.0\n'
-const INSTALL_ARGS = ['install', '--frozen-lockfile', '--offline']
-const RETRY = 'run `pnpm install --frozen-lockfile`'
+// The owner, 2026-11-25 (translated from Spanish): "Change to pnpm i".
+const INSTALL_ARGS = ['install']
+const RETRY = 'run `pnpm install`'
+const REWRITTEN_LOCK = 'lockfileVersion: 9.0\n# resolved again\n'
 const STALLED_INSTALL_MS = 60_000
 
-const fakePnpm = ({ exit = 0, waitMs = 0 } = {}) => {
+const fakePnpm = ({ exit = 0, rewrite, waitMs = 0 } = {}) => {
   const bin = scratchRoot({ prefix: 'prune-fake-pnpm-' })
   const log = join(bin, 'calls.log')
   const recorder = join(bin, 'record.mjs')
   writeFileSync(
     recorder,
     [
-      "import { appendFileSync } from 'node:fs'",
+      "import { appendFileSync, writeFileSync } from 'node:fs'",
       `appendFileSync(${JSON.stringify(log)}, JSON.stringify({ args: process.argv.slice(2), cwd: process.cwd() }) + '\\n')`,
+      rewrite === undefined
+        ? ''
+        : `writeFileSync(${JSON.stringify(LOCKFILE)}, ${JSON.stringify(rewrite)})`,
       `setTimeout(() => process.exit(${exit}), ${waitMs})`
     ].join('\n')
   )
@@ -1825,16 +1832,25 @@ const fakePnpm = ({ exit = 0, waitMs = 0 } = {}) => {
 }
 
 const ranLine = ({ main }) =>
-  `prune-worktrees: ${LOCKFILE} changed, so it ran pnpm install ` +
-  `--frozen-lockfile --offline in ${forward({ path: main })}`
+  `prune-worktrees: ${LOCKFILE} changed, so it ran pnpm install in ` +
+  forward({ path: main })
 
 const failedLine = ({ main, why }) =>
-  `prune-worktrees: ${LOCKFILE} changed and pnpm install ` +
-  `--frozen-lockfile --offline ${why}; ${RETRY} in ${forward({ path: main })}`
+  `prune-worktrees: ${LOCKFILE} changed and pnpm install ${why}; ` +
+  `${RETRY} in ${forward({ path: main })}`
+
+// The one line an install that rewrote the lockfile adds: never a
+// `git checkout --`, which in a checkout other worktrees share has wiped
+// other sessions' work.
+const rewroteLine = ({ main }) =>
+  `prune-worktrees: pnpm install rewrote ${LOCKFILE} in ` +
+  `${forward({ path: main })}; commit it on a branch, or run ` +
+  `\`git restore --source=HEAD -- ${LOCKFILE}\` (this discards the ` +
+  "install's lockfile change)"
 
 const linesOf = ({ run }) => run.stdout.trim().split(/\r?\n/u)
 
-test('a fast-forward that changes pnpm-lock.yaml runs pnpm install --frozen-lockfile --offline', () => {
+test('a fast-forward that changes pnpm-lock.yaml runs pnpm install', () => {
   const pnpm = fakePnpm()
   const { head, main, run, tip } = behindMain({
     env: pnpm.env,
@@ -1851,7 +1867,36 @@ test('a fast-forward that changes pnpm-lock.yaml runs pnpm install --frozen-lock
   assert.equal(resolve(calls[0].cwd), resolve(main))
   const lines = linesOf({ run })
   assert.ok(lines.includes(ranLine({ main })), run.stdout)
+  assert.ok(
+    !lines.some((line) => line.includes('rewrote')),
+    `an install that left the lockfile said it rewrote it:\n${run.stdout}`
+  )
   assert.match(lines.at(-1), /: removed 0, kept 1; by reason: /u)
+})
+
+test('an install that rewrites pnpm-lock.yaml says so in one line, under --quiet too, and the run exits 0', () => {
+  for (const args of [[], ['--quiet']]) {
+    const pnpm = fakePnpm({ rewrite: REWRITTEN_LOCK })
+    const { head, main, run, tip } = behindMain({
+      args,
+      env: pnpm.env,
+      push: { [LOCKFILE]: LOCK_TEXT }
+    })
+    assert.equal(run.status, EXIT_OK, run.stderr)
+    assert.equal(head, tip)
+    assert.equal(pnpm.calls().length, 1)
+    assert.equal(
+      readFileSync(join(main, LOCKFILE), 'utf8'),
+      REWRITTEN_LOCK,
+      'the run touched the lockfile the install wrote'
+    )
+    const lines = linesOf({ run })
+    assert.deepEqual(
+      lines.filter((line) => line.includes('rewrote')),
+      [rewroteLine({ main })]
+    )
+    assert.match(lines.at(-1), /: removed 0, kept 1; by reason: /u)
+  }
 })
 
 test('an install that fails or outlasts PRUNE_WORKTREES_INSTALL_SECONDS names the command to run, and the run exits 0', () => {
@@ -1905,7 +1950,7 @@ test('a dry run says it would install after a fast-forward that changes pnpm-loc
   assert.ok(
     linesOf({ run }).includes(
       `prune-worktrees: ${LOCKFILE} changes with the fast-forward, so it ` +
-        'would run pnpm install --frozen-lockfile --offline in ' +
+        'would run pnpm install in ' +
         forward({ path: main })
     ),
     run.stdout

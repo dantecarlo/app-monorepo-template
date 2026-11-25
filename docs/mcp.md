@@ -142,9 +142,9 @@ spares it however it is launched (`docs/harness.md` § 3g).
 The launcher imports a file under `node_modules`, so a server cannot start until the project
 installs its pinned devDependency. Two pieces keep that from going unnoticed:
 
-- the worktree pruner runs `pnpm install --frozen-lockfile --offline` after a post-merge
-  fast-forward of the main checkout that changes `pnpm-lock.yaml`, and prints the
-  `pnpm install --frozen-lockfile` to run when that install fails (`docs/harness.md`, Layer 2);
+- the worktree pruner runs `pnpm install` after a post-merge fast-forward of the main checkout
+  that changes `pnpm-lock.yaml`, prints the `pnpm install` to run when that install fails, and
+  says so when the install rewrites the lockfile (`docs/harness.md`, Layer 2);
 - every Claude Code session starts by naming, in one line, the `.mcp.json` servers that run the
   launcher, that the session's `ATL_MCP_AREA` starts, and whose entry is not installed, with the
   same command (`docs/harness.md` § 3g). A server its area holds off is left out: the launcher

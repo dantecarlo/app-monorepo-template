@@ -120,3 +120,24 @@ fixed in `2e1d1745`, each test seen red for its stated reason first:
 
 At `2e1d1745`: `pnpm mcp:launch:test` 10 of 10, `pnpm verify:mcp-docs:test` 44 of 44,
 `node --test scripts/prune-worktrees.test.mjs` 88 of 88, `pnpm reap:test` 102 of 102.
+
+### The owner's change to the install, 2026-11-25
+
+The owner, 2026-11-25 (translated from Spanish): "run only pnpm i, not the lockfile one, because
+it will always be a constant increment of everything, and if we leave it locked it could be a
+security error in the future; I prefer to prevent that over something getting misconfigured by
+the dependencies, which in the end we can fix". Asked whether the post-merge install keeps
+`--frozen-lockfile`: "Change to pnpm i". Later the same day, through the coordinator: the line an
+install that rewrites the lockfile prints offers no `git checkout --`, which in a checkout other
+worktrees share has wiped other sessions' work, but committing it on a branch, or
+`git restore --source=HEAD -- pnpm-lock.yaml` with "this discards the install's lockfile change".
+
+| Requirement | Rule | Test | RED before the change | Result |
+| ----------- | ---- | ---- | --------------------- | ------ |
+| REAP-10 | a plain `pnpm install`, no other argument | `scripts/prune-worktrees.test.mjs` › "a fast-forward that changes pnpm-lock.yaml runs pnpm install" | the call held `--frozen-lockfile` and `--offline` | green |
+| REAP-10 | a failure or a timeout names `pnpm install` | `scripts/prune-worktrees.test.mjs` › "an install that fails or outlasts PRUNE_WORKTREES_INSTALL_SECONDS names the command to run, and the run exits 0" | the line named `pnpm install --frozen-lockfile` | green |
+| REAP-10 | an install that rewrites the lockfile says so, once, under `--quiet` too | `scripts/prune-worktrees.test.mjs` › "an install that rewrites pnpm-lock.yaml says so in one line, under --quiet too, and the run exits 0" | no such line | green |
+| REAP-10 | an invalid bound, when an install is due, names `pnpm install` | `scripts/prune-worktrees.test.mjs` › "an invalid PRUNE_WORKTREES_INSTALL_SECONDS is read only when an install is due" | the line named `pnpm install --frozen-lockfile` | green |
+| REAP-10 | an unchanged lockfile prints what the base printed | `scripts/prune-worktrees.test.mjs` › "a fast-forward that leaves pnpm-lock.yaml as it was installs nothing and prints what it printed before" | green from the start: it pins the base | green |
+
+`node --test scripts/prune-worktrees.test.mjs`: 89 of 89.
