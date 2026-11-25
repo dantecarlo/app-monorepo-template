@@ -443,44 +443,82 @@ path 10,000 folders deep is judged in milliseconds.
 A Bash command is read by a shell parser ported from Certifipago's guard, not
 by a pattern. Line continuations go first, where Bash drops them; then come
 quotes, substitutions (`$(…)`, backticks, `$(( ))`), here-docs, groups,
-pipelines, loops and `case`. A variable resolves only from an assignment
-earlier in the same command, since Bash calls share no shell state. `$TEMP`,
-`$TMP` and `$TMPDIR` are the OS temp dir, and `$HOME` and `~` the home folder.
-`cd` moves the folder relative paths resolve against, and a loop variable is
-judged item by item. Every path the command writes is judged as a file tool's
-target, through the same reading of its spelling:
+pipelines, loops and `case`. A word is expanded as Bash expands it: braces
+first (`AGENTS.md{,.bak}` is two words), `$'…'` decoded, a NUL ending the
+word, and a backslash-escaped character read as quoted. A variable resolves
+only from an assignment earlier in the same command, since Bash calls share
+no shell state. `$TEMP`, `$TMP` and `$TMPDIR` are the OS temp dir, and
+`$HOME` and `~` the home folder. `cd` moves the folder relative paths resolve
+against, and a loop variable is judged item by item. Every path the command
+writes is judged as a file tool's target, through the same reading of its
+spelling:
 
 - redirects (`>`, `>>`, `2>`, `&>`, `>|`);
 - `tee`, `cp`, `mv`, `rm`, `mkdir`, `touch`, `ln`, `chmod`, `sed -i`,
-  `perl -i`, `sd`, `dd of=`, `sort -o`, `tar -x` and `-c`, `unzip`,
-  `curl -o`, `wget` and the rest of `writers.mjs`;
+  `perl -i`, `sd`, `dd of=`, `sort -o`, `tar`, `unzip`, `curl`, `wget` and
+  the rest of `writers.mjs`, short options read in clusters (`wget -qO`,
+  `curl -fsSLo`);
+- the writers of `writers.editors.mjs`: `dos2unix`, `awk -i inplace`, `vi`,
+  `vim`, `nvim`, `ex`, `ed`, `openssl -out`, `iconv -o`, `sponge`, `yq -i`,
+  `scp`, `zip`, `gpg -o` and `patch`'s named file;
+- a file written into a folder, by the name it gets there: what `cp`, `mv`
+  and `install` put into a folder (the checkout root included), the members
+  `tar -x` and `unzip` extract, the name `curl -O` and `wget` give a
+  download, and what `find -name` or `-path` matches with `-delete` or
+  `-exec`;
 - `git archive -o`, `git diff --output` and `git format-patch`;
 - the pathspecs of `git checkout`, `restore`, `rm`, `mv` and `clean`;
 - the inner command of `find -exec`, `fd -x` and `xargs`;
 - the literal paths `node -e` and `python -c` code writes, and the commands
   that code starts.
 
+A target with an unquoted wildcard is what it matches on the disk, each match
+judged. When the guard cannot expand it, because it holds `**`, more than two
+wildcard folders, or more than 64 matches, it is judged as a pattern
+(`globs.mjs`): a read-only agent is refused it unless its folder is scratch,
+and anyone else is asked when it could name a rule file, a folder that holds
+one, or a `.git`, by the intersection of the two globs. A find pattern is
+judged the same way, against its own root.
+
 A read-only agent is also refused the programs whose writes the guard does
 not read: a git subcommand that changes the tree, index, history or branches;
 a package manager; a pnpm or JS-tool form outside the read-only ones
 (`pnpm verify:*`, `<name>:test`, `test`, `lint`, `vitest run`,
 `prettier --check`, …); an inner shell (`bash -c`, `eval`, `cmd /c`,
-`powershell -Command`); inline code built at run time; and a target that
-depends on a variable the command never sets. A surface agent is held to its
-surface for the commands that write its own files (`cp`, `mv`, `rm`, `tee`,
-`sed -i`, …), redirects, `find`, and `git add` and `git commit`; its other
-programs are its workflow, as in the donor.
+`powershell -Command`); inline code built at run time, or perl or ruby code
+that writes or starts a process; a target that depends on a variable the
+command never sets; and a program the guard does not know (`readers.mjs`
+lists the ones it knows only read) when an argument names a path outside
+the OS temp dir. A surface agent is held to its surface for the commands
+that write its own files (`cp`, `mv`, `rm`, `tee`, `sed -i`, …), redirects,
+`find`, and `git add` and `git commit`, and refused a git subcommand that
+rewrites the tree and names a rule path; its other programs are its
+workflow, as in the donor.
+
+For anyone but a read-only agent, an inner shell's text (`bash -c`, `sh -c`,
+`eval`, a here-doc fed to a shell) is judged as a Bash command of its own,
+and `npx` running a JS tool's read-only form is a read. A git subcommand
+that rewrites the working tree (`checkout`, `checkout-index`, `restore`,
+`stash`, `reset --hard`, `apply`, `merge`, …) asks when it names a rule
+path; one that keeps to the index, the history or the branches (`add`,
+`commit`, `tag`, `push`) asks nothing.
 
 A command the guard cannot read is one it cannot parse: an unterminated
 quote, a here-doc with no end, a line continuation that splits `$(`,
 nesting past 32 levels. It also covers, for the main session, a writer or an
 unlisted agent, one of the programs above. Such a command is refused to a
-policed agent. Anyone else is asked only when the command names a rule path
-somewhere in its text: every word, split on the separators of Bash and
-PowerShell, on `=` and on a `:` past a drive, is read as a path against the
-folder the command runs in (`mentions.mjs`). Past 256 distinct words the
-guard does not read on, and asks. A 30-item list of the shape that made a
-backtracking pattern take seconds is judged in well under a second.
+policed agent. Anyone else is asked only when the command names a rule path:
+an unknown program by its own words, anything else by its whole text. Every
+word, split on the separators of Bash and PowerShell, on `=` and on a `:`
+past a drive, is read as a path against the folder the command runs in
+(`mentions.mjs`). Past 256 distinct words the guard does not read on, and
+asks. A 30-item list of the shape that made a backtracking pattern take
+seconds is judged in well under a second.
+
+Each call reads a target from the disk once and has 5 s to finish: past
+that it is a guard error, refused to a policed agent and asked of anyone
+else, since a hook that runs past its 10 s timeout lets the call through. On
+the verifier's probes the hook judges 4,000 writes in about 2 s.
 
 The PowerShell tool is not parsed. A read-only or surface agent is refused it
 and told to use Bash. Anyone else is asked when the command holds a write and
@@ -488,7 +526,10 @@ names a rule path. A write is `Set-Content`, `Out-File`, `Add-Content`,
 `New-Item`, `Copy-Item`, `Move-Item`, `Remove-Item`, `Rename-Item`,
 `Clear-Content` or `Tee-Object`, by name, module-qualified or by alias
 (`sc`, `ni`, `cp`, `rm`, `del`, `ren`, `md`, …), or a `>` or `>>` outside
-quotes (`2>&1` merges streams and writes no file).
+quotes; `2>&1` merges streams and a redirect to `$null` discards one, and
+neither writes a file. A command whose only writes are copies is read for
+rule paths in what they copy to alone, so a copy of a rule file elsewhere
+asks nothing.
 
 Every reason names the rule, the file and how to proceed; a rule file cites the
 LAW. Stdin that is not a JSON payload prints nothing, and a hook that crashes,
@@ -526,7 +567,18 @@ is generated.
 - **The root and commands that name no path.** A folder holds rule files only
   below the root, so `rm -rf .` and `git checkout -- .` ask nothing. So do
   `git reset --hard`, `git stash`, `git checkout <branch>`, `git merge`,
-  `git apply` and `patch`, which rewrite rule files without naming them.
+  `git apply fix.patch` and `patch -p1 < fix.patch` when they name no rule
+  path, though they may rewrite rule files.
+- **A pattern that could name a rule file.** A glob the guard cannot expand
+  asks when it could match one, whether or not such a file exists; in a
+  PowerShell command it is read with Bash's rule that a leading `*` skips a
+  dotfile.
+- **What an unknown program writes on its own.** A read-only agent is refused
+  one only when an argument names a path outside the OS temp dir, and anyone
+  else is asked only when its words name a rule path, so one that writes
+  where none of its arguments points passes.
+- **A known reader's own way to write.** The programs `readers.mjs` lists are
+  read as readers, so `awk '{print > "AGENTS.md"}'` is not read as a write.
 - **PowerShell beyond its write cmdlets.** `Set-ItemProperty`, the `Export-`
   cmdlets, .NET calls (`[IO.File]::WriteAllText`) and a rule path built at run
   time are not read.
