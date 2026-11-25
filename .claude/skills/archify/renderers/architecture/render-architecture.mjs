@@ -6,8 +6,8 @@ import { animateAttr, focusEdgeAttrs, focusNodeAttrs, focusNodeTitle, loadDiagra
 import { componentBox, boundaryBox, connectionPath } from '../shared/layout-report.mjs';
 import { rendererFailure, throwDiagnosticProblems } from '../shared/diagnostics.mjs';
 import { legendFootprint, relationshipLegendObstacles, resolveLegend, renderLegend as renderResolvedLegend } from '../shared/legend.mjs';
-import { availableNodeTextWidth, fittedNodeFontSize, minimumNodeTextWidth } from '../shared/text-fit.mjs';
-import { brandLabelFitWidth, brandMetadataFor, brandTopRailProblem, renderBrandMark } from '../shared/brand-marks.mjs';
+import { availableNodeLabelWidth, availableNodeTextWidth, fittedNodeFontSize, fittedNodeLabelFontSize, minimumNodeTextWidth, requiredNodeLabelBoxWidth } from '../shared/text-fit.mjs';
+import { brandMarkFor, brandMetadataFor, renderBrandMark } from '../shared/brand-marks.mjs';
 import { minimumReadableSourceTextPx } from '../shared/desktop-readability.mjs';
 import { translateMessage as i18nText } from '../shared/i18n.mjs';
 import { gridLayout, resolveComponentPos, validateGridPlacement } from './grid.mjs';
@@ -579,8 +579,27 @@ function validateArchitecture() {
       });
       problems.push(message);
     }
-    const brandRailProblem = brandTopRailProblem(c, c.width, 8, 'Component');
-    if (brandRailProblem) problems.push(brandRailProblem);
+    // The centered label shares its rail with the semantic sigil (and the
+    // brand mark, when present): reject a label that cannot clear that rail at
+    // the 8px legible minimum, naming the box width it needs.
+    const hasBrand = Boolean(brandMarkFor(c));
+    const railAvailableW = availableNodeLabelWidth(c.width, hasBrand);
+    const railRequiredW = minimumNodeTextWidth(c.label, 8);
+    if (railRequiredW > railAvailableW) {
+      const rail = hasBrand ? 'semantic sigil and brand mark' : 'semantic sigil';
+      const requiredBoxW = requiredNodeLabelBoxWidth(c.label, 8, hasBrand);
+      const message = `Component "${c.id}" (${c.width}px) leaves ${Math.max(0, railAvailableW)}px for its label beside its ${rail}, but "${c.label}" needs ~${Math.ceil(railRequiredW)}px at the 8px legible minimum — widen it to at least ${requiredBoxW}px or shorten the label.`;
+      diagnostics.push({
+        code: 'architecture/component-label-sigil-rail', severity: 'error', message,
+        subject: { diagramType: 'architecture', nodeId: c.id },
+        evidence: { text: c.label, minimumFontPx: 8, requiredWidthPx: Math.ceil(railRequiredW), availableWidthPx: Math.max(0, railAvailableW), requiredBoxWidthPx: requiredBoxW },
+        supportedFixes: [
+          `widen component "${c.id}" to at least ${requiredBoxW}px`,
+          `or shorten component "${c.id}" label "${c.label}" while preserving its meaning`,
+        ],
+      });
+      problems.push(message);
+    }
     // sublabel and tag render as single unwrapped <text> elements; shrink-to-fit
     // handles the ordinary case, this rejects what it cannot rescue.
     const availableTextW = availableNodeTextWidth(c.width);
@@ -1093,7 +1112,7 @@ function renderComponent(c) {
     ? `\n        <text data-detail="fine" x="${cx}" y="${c.y + c.height - 8}" class="${accent}" font-size="${fittedNodeFontSize(c.tag, c.width, componentTextFit.tagPreferred, componentTextFit.tagMinimum)}" text-anchor="middle">${esc(c.tag)}</text>`
     : '';
   const brand = renderBrandMark(c, { x: c.x + c.width - 22, y: c.y + 6 });
-  const labelFontSize = fittedNodeFontSize(c.label, brandLabelFitWidth(c, c.width), 11, 8);
+  const labelFontSize = fittedNodeLabelFontSize(c.label, c.width, 11, 8, Boolean(brandMarkFor(c)));
   const passport = { kind: c.type, sublabel: c.sublabel, tag: c.tag, context: componentContext(c), ...brandMetadataFor(c) };
   return `        <g ${focusNodeAttrs(c.id, c.label, passport, arch.meta.locale)}>
           ${focusNodeTitle(c.label, passport)}

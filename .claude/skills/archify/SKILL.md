@@ -27,8 +27,6 @@ For a native diagram of a real codebase, read [Repository authoring](references/
 
 When the user supplies a frozen candidate, run `finalize` first as one CLI invocation. Its passing receipt completes the automated gates; follow any visual review recommendation under Delivery before claiming visual quality. For repair, follow step 5.
 
-`finalize` includes a bounded update check in its delivery receipt; see Update awareness.
-
 ## Native diagram authoring
 
 Use this path for ordinary generation. Read branch references only when their stated trigger applies.
@@ -48,11 +46,69 @@ Use this path for ordinary generation. Read branch references only when their st
 
 5. A non-zero exit is never success. Read compact stdout or `evidence.summaryReceipt`, then [repair the failed gate](references/delivery-contract.md#failed-finalize-and-candidate-repair), including its repair limit. Preserve requested meaning and source evidence. For several tangled Architecture routes, read [Architecture layout repair](references/architecture-layout-repair.md); for measured field or geometry failures, read [Authoring contract](references/authoring-contract.md). Edit the connected neighborhood and rerun the complete `finalize` command from step 4. Once a run has reached `browser-check`, the output path owns that evidence: give every later run its own `--out-dir <folder>/review-<n>`.
 
-## Update awareness
-
-`finalize` and standalone `deliver` include `update` in their receipts. Do not run a separate check for the same delivery. If `update.noticeRequired` is true, read `references/update-awareness.md` and keep one compact update notice in your final response to the user, even after a quality gate fails. For a task with several diagrams, mention the update once in the final response. Snooze or ignore a reminder only when the user explicitly asks; never install or update on your own initiative.
-
 Before the first candidate, use the authoring references and relevant repository source, not Archify implementation or tests. Inspect Archify implementation if diagnostics remain unactionable after focused repairs.
+
+## In this repository
+
+Vendored from [tt-a1i/archify](https://github.com/tt-a1i/archify) v3.2.0 (MIT)
+and adapted. Provenance, the upstream commit, every trim and every adaptation
+are recorded in `.claude/skills-lock.json`.
+
+Render every checked-in diagram with the project tokens applied:
+
+```bash
+pnpm docs:diagrams          # render + repaint with @app/tokens
+pnpm docs:diagrams:check    # fail if a committed diagram is stale
+```
+
+From the repository root, `bin/archify.mjs` in the commands of this skill is
+`.claude/skills/archify/bin/archify.mjs`. Check the skill itself from its own
+directory: `cd .claude/skills/archify && node bin/archify.mjs doctor`.
+
+**The rule this skill serves: documentation this repository generates ships
+its archify HTML counterpart alongside it.** The diagram is a counterpart,
+never a replacement — the `.md` stays the authority for its own subject, and
+the HTML shows the topology that prose reads poorly.
+
+**What that forbids**: a diagram asserting a fact its source document does not;
+a diagram of a subject that already has a single owner elsewhere, since a second
+picture of the architecture is a second authority for it; and treating a
+committed diagram as current because it exists — nothing here watches the `.md`,
+so a doc that moves leaves its counterpart stale until someone re-authors the
+JSON.
+
+**Two files, not one.** The typed JSON specification is the source and is
+committed under `docs/diagrams/` beside the document it serves, not in an
+`.archify/` work folder; the HTML is generated from it by
+`scripts/build-diagrams.mjs`, which also repaints it with the design tokens.
+Never hand-edit the HTML.
+
+**Adapted from upstream, and why:**
+
+- The `## Update awareness` step was removed, with the lines that pointed to
+  it. In 3.2.0 `finalize` and `deliver` run a network update check in a child
+  process, and a vendored skill in this repository never reaches the network:
+  a fresh clone is complete and every run is deterministic. The checker
+  (`scripts/check-update.mjs`) and its child (`scripts/delivery-update-child.mjs`)
+  are trimmed, so a receipt's `update` reads `unavailable`, and
+  `scripts/build-diagrams.mjs` sets `ARCHIFY_UPDATE_CHECK_DISABLED=1` so the
+  pipeline never starts the child. Upstream releases are tracked through
+  `.claude/skills-lock.json`.
+- The 15 pre-rendered `examples/*.html` demos were dropped — about 12.5 MB of
+  the 17.8 MB package, read by nothing at run time. Every `examples/*.json`
+  specification and locale catalog the authoring path and `doctor` read is
+  present.
+- `scripts/render-examples.mjs` is **kept**, unlike the donor repository's copy:
+  `node bin/archify.mjs doctor` checks the example renderer and reports the skill
+  as not ready without it. A vendored skill whose own health check fails cannot
+  be verified after an update.
+- Architecture node labels reserve the semantic sigil. The architecture
+  renderer centers the label and draws the sigil in the top-left corner, and in
+  a short box the two met while validation passed; label fitting and render-time
+  shrinking now keep the label out of that rail, and validation names the box
+  width a label needs. Workflow, data-flow and lifecycle use upstream's own
+  label layout, and the sequence header row sits below the sigil, so neither
+  needs it.
 
 
 ## Type router
@@ -128,7 +184,7 @@ Reply in the user's language, as briefly as the result allows; the diagram carri
 - State anything that changes how the diagram should be read: the abstraction level or deliberately omitted parts when a reader might expect them, illustrative rather than measured values, missing source evidence, or requested content dropped or merged during repair.
 - For several diagrams, report completion once with a link to an existing overview or compact per-diagram links, not a directory path.
 
-Do not recap commands, repair rounds, hashes, quality profiles, or check lists; they stay in the receipts. If asked whether the diagram was verified, answer in one line, such as “Automated checks passed; not visually reviewed.” Give receipt links and details only for reproducibility or troubleshooting. Disclose requested visual review that could not run, and claim visual inspection only when performed. Keep the required update notice under Update awareness.
+Do not recap commands, repair rounds, hashes, quality profiles, or check lists; they stay in the receipts. If asked whether the diagram was verified, answer in one line, such as “Automated checks passed; not visually reviewed.” Give receipt links and details only for reproducibility or troubleshooting. Disclose requested visual review that could not run, and claim visual inspection only when performed.
 
 Example: `Created [Checkout request timing](/abs/path/checkout-timing.html). Durations are illustrative, not measured.`
 

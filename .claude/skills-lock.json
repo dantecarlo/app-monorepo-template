@@ -6,10 +6,10 @@
       "source": "tt-a1i/archify",
       "sourceType": "github",
       "skillPath": "archify/SKILL.md",
-      "computedHash": "93434ad579983f4cff639c2b7230c311e0785cc48a25b66b1498e1802be7de91",
+      "computedHash": "533f3af7e5652185892416e3f841738fac69f408156fda7e36bab9d4dd8f3ff5",
       "upstreamHash": "93434ad579983f4cff639c2b7230c311e0785cc48a25b66b1498e1802be7de91",
-      "localHash": "93434ad579983f4cff639c2b7230c311e0785cc48a25b66b1498e1802be7de91",
-      "adaptedAtVendor": false,
+      "localHash": "533f3af7e5652185892416e3f841738fac69f408156fda7e36bab9d4dd8f3ff5",
+      "adaptedAtVendor": true,
       "commit": "208acba",
       "commitDate": "2026-10-18",
       "release": "v3.2.0 (annotated tag object e62275b6373fa63436e195635835c313ce028b21, published 2026-10-19)",
@@ -27,7 +27,13 @@
       ],
       "upstreamOf": "Cocoon-AI/architecture-diagram-generator (MIT, v1.0)",
       "path": ".claude/skills/archify",
-      "adaptations": [],
+      "adaptations": [
+        "SKILL.md: removed `## Update awareness` and the two lines that pointed to it (Existing candidate handoff, Output); its trailing paragraph on reading authoring references first stays, now closing Native diagram authoring. In 3.2.0 `finalize` and `deliver` run a network update check in a child process; a vendored skill here must be complete from a fresh clone and deterministic on every run, so the checker and its child are trimmed and scripts/build-diagrams.mjs sets ARCHIFY_UPDATE_CHECK_DISABLED=1",
+        "SKILL.md: added `## In this repository` before the Type router — the markdown-first rule, what it forbids, the pnpm docs:diagrams pipeline, where checked-in specs live (docs/diagrams/, not .archify/), the CLI path from the repository root and the adaptations",
+        "renderers/shared/text-fit.mjs: adds nodeLabelRailReserve, availableNodeLabelWidth, fittedNodeLabelFontSize and requiredNodeLabelBoxWidth, a symmetric rail reserve of 2 x (SEMANTIC_SIGIL_FOOTPRINT 17 + 4) = 42px, or 2 x 24 = 48px with a brand mark (the stricter, never summed); existing exports are unchanged, so the other renderers behave as upstream",
+        "renderers/architecture/render-architecture.mjs: the label font size comes from fittedNodeLabelFontSize, and validation replaces the brand-only brandTopRailProblem with architecture/component-label-sigil-rail, which rejects any label (branded or not) that cannot clear the rail at the 8px legible minimum and names the box width needed. Three upstream examples (web-app, production-deployment, brand-aware-delivery) now render some labels smaller; all five architecture examples still validate at showcase",
+        "The renderer adaptations above are one recorded patch over 208acba (see patches): it names every patched file with its sha256 at the pinned commit and after the patch, and fileHashes holds the patched values. computedHash and localHash cover SKILL.md only"
+      ],
       "trimmed": [
         "test/ and every other path outside upstream archify/ — the upstream repository, not the skill package",
         "examples/*.html — the 15 pre-rendered demos, about 12.5 MB of the 17.8 MB package, read by nothing at run time; every examples/*.json specification and examples/locales/*.json catalog is kept because the authoring path and `doctor` read them",
@@ -44,7 +50,7 @@
       "lintExcludedBecause": "Vendored text is pinned to an upstream commit. Reformatting it would make every future update a conflict.",
       "fileHashes": {
         "LICENSE": "b799ab081703e7821ae5096d2c1abdf14bbdc75e8ea1c4045998c36ed6db9706",
-        "SKILL.md": "93434ad579983f4cff639c2b7230c311e0785cc48a25b66b1498e1802be7de91",
+        "SKILL.md": "533f3af7e5652185892416e3f841738fac69f408156fda7e36bab9d4dd8f3ff5",
         "THIRD_PARTY_NOTICES.md": "ae6f236bd0aef72bad196099aa8687cccff6e01cc3a60e6c32bbad688266f678",
         "assets/JetBrainsMono-OFL.txt": "c1ab7c666206842a02b35b30770dac0d7a10156ed401c9defc3f02a754d89e90",
         "assets/template.html": "4fe243de7448f83d2123e987db5ec2539b662480a6e3ce3c90deb9e0c9ad11ef",
@@ -153,7 +159,7 @@
         "references/viewer-runtime.md": "7d35ef52a8f47e77e8ec827cea7c71219bf1aafa53b5ef72ad4f1e1437f882a4",
         "renderers/architecture/grid.mjs": "f6de99c32436feed3378b0ddef516bb4732ff27a89c543b50635d4d14a15a55a",
         "renderers/architecture/labels.mjs": "3a0066a987d8ad20121d0f7261d8bcfd3659443a335ea5e47938e7779ae12d31",
-        "renderers/architecture/render-architecture.mjs": "50bf6f0748446ba99c4236e29e2e39755d5a2b8894fb598f104f7b3107063ca3",
+        "renderers/architecture/render-architecture.mjs": "e1d8872eeefd6352e950f7d8bf4051b6498a6f0bcd12a857867bc5c10b139262",
         "renderers/architecture/routing.mjs": "908ddaf85caaa2d5d4a17c0544489ad9500614914c64a1d2ee2b96c4cc9ad4b3",
         "renderers/class/README.md": "33074161e184a98dbb2b65d0ee308779b216a3c97dda4dfaa2bd6e2fb2e9f526",
         "renderers/class/render-class.mjs": "e4943c1e91062aba7c72715e4887165f03908de03a1c99dc71f296bb0d1214cf",
@@ -194,7 +200,7 @@
         "renderers/shared/sidecar-path.mjs": "c23cac8bcc265a74e2920c58d0968d1ffa06c1328bdd9cfd07755d4df2f22974",
         "renderers/shared/spatial-grid.mjs": "e728bf6a729972f95ae09e368ea370490d10ff94d49debe2fab2e9bac923ee1a",
         "renderers/shared/svg-path-analysis.mjs": "4c498ef5ba090a2d658c2ce3d80145f4cc63da9462f547b621206250096957c5",
-        "renderers/shared/text-fit.mjs": "ebd499072ef4fe31c9aabf45a01c204a9c2c142d45f087c3240673f90f477038",
+        "renderers/shared/text-fit.mjs": "0dd671fdf2cc1c6e48f973a391f4d25699419f1e7ea27f2f9c0c8ec5c8ae96a0",
         "renderers/shared/utils.mjs": "d0e8692b8acdc6993578c5d4aeb67065effdf5bf4cf2cd127bf561c677af38f5",
         "renderers/shared/validator.mjs": "f5cf5b9aa3623a456e9a07f0c5f08fe09a0a67d3ba356e32937c3287c75c3bc9",
         "renderers/timeline/README.md": "377cb185f8ddfca2a0349d122e736a6fc832d5c8e0555039f0e0bcc4f5038c86",
@@ -225,7 +231,25 @@
         "scripts/render-examples.mjs": "c2c99c4153cf21f0526cf3f041c1d81716017be182d404173f8961fa494e8c8c",
         "skill-release.json": "1ea25551e0359e547267d40e83812ffd1a7bdf7398826b65f2a2fcf1a11ba596"
       },
-      "patches": []
+      "patches": [
+        {
+          "files": {
+            "renderers/architecture/render-architecture.mjs": {
+              "patched": "e1d8872eeefd6352e950f7d8bf4051b6498a6f0bcd12a857867bc5c10b139262",
+              "pinned": "50bf6f0748446ba99c4236e29e2e39755d5a2b8894fb598f104f7b3107063ca3"
+            },
+            "renderers/shared/text-fit.mjs": {
+              "patched": "0dd671fdf2cc1c6e48f973a391f4d25699419f1e7ea27f2f9c0c8ec5c8ae96a0",
+              "pinned": "ebd499072ef4fe31c9aabf45a01c204a9c2c142d45f087c3240673f90f477038"
+            }
+          },
+          "id": "semantic-sigil-label-reserve",
+          "summary": "Architecture node labels reserve the semantic sigil in label fitting and render-time shrinking; validation names the box width a label needs. Ported from the 2.17 patch to the one renderer 3.2.0 leaves exposed. Details in adaptations.",
+          "droppedFor": "workflow, data-flow and lifecycle: upstream 05bc389a (2026-09-21, Refs #199, #220) places their labels with nodeLabelLayout, which shifts a label away from a corner icon or moves it below the decoration rail; the two bundled examples the 2.17 patch re-fitted are therefore taken unchanged. sequence: the participant label row sits at y + 36, below the sigil box (y + 6 to y + 17), so the two cannot meet",
+          "measuredWith": "the renderer width model (textUnits x font x 0.6, glyph top 0.8 em) over the 15 bundled architecture, sequence, workflow, data-flow and lifecycle examples rendered by 3.2.0: 0 of 136 labels meet their sigil; a valid showcase architecture with a 130 x 40 box labelled Payments Gateway: 2 of 10 labels met their sigil before the patch and 0 after",
+          "upstreamReport": "pending: not yet filed with tt-a1i/archify"
+        }
+      ]
     }
   }
 }

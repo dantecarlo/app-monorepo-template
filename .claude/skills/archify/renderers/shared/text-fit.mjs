@@ -48,6 +48,42 @@ export function availableNodeTextWidth(width) {
   return width - nodeTextFit.horizontalPadding;
 }
 
+// Centered label rail for renderers that draw the label at a fixed centered
+// x and do not use nodeLabelLayout (architecture). The label shares its rail
+// with the semantic sigil in one top corner and, when present, the brand mark
+// in the other; because the label is centered, clearing one corner costs the
+// same room on the other side, so the reservation is symmetric: the sigil
+// footprint plus a 4px gap on each side (2 x (6 + 11 + 4) = 42px), or the
+// brand mark rail (22px badge inset plus a 2px gap, 2 x 24 = 48px), whichever
+// is stricter, never both.
+const SIGIL_LABEL_GAP = 4;
+const BRAND_MARK_RAIL_SIDE = 24;
+
+export function nodeLabelRailReserve(hasBrand = false) {
+  const sigilSide = SEMANTIC_SIGIL_FOOTPRINT + SIGIL_LABEL_GAP;
+  return 2 * Math.max(sigilSide, hasBrand ? BRAND_MARK_RAIL_SIDE : 0);
+}
+
+// Px a centered label may occupy inside a box of `width` without entering the
+// sigil (or brand mark) rail.
+export function availableNodeLabelWidth(width, hasBrand = false) {
+  return width - nodeLabelRailReserve(hasBrand);
+}
+
+// Label counterpart of fittedNodeFontSize: shrinks toward `minimum` inside the
+// rail-aware room instead of the padded box width.
+export function fittedNodeLabelFontSize(text, width, preferred, minimum, hasBrand = false) {
+  const units = Math.max(1, textUnits(text));
+  const available = Math.max(1, availableNodeLabelWidth(width, hasBrand));
+  const fitted = Math.min(preferred, available / (units * nodeTextFit.widthFactor));
+  return Math.max(minimum, Math.floor(fitted * 10) / 10);
+}
+
+// Smallest box width whose rail-aware room fits `text` at its legible minimum.
+export function requiredNodeLabelBoxWidth(text, minimum, hasBrand = false) {
+  return Math.ceil(minimumNodeTextWidth(text, minimum) + nodeLabelRailReserve(hasBrand));
+}
+
 // Adapted from Souptik Chakraborty's #220: shift only labels which reach a
 // corner icon. Unlike the original hard gate, a narrow valid node uses a
 // separate text row; its authored bounds and acceptance remain unchanged.
