@@ -104,7 +104,8 @@ stack (`AGENTS.md`, Supabase workflow — Cloud only).
 ## Common workflows
 
 The CLI does not read `.env` on its own: load it in the shell first. Every
-script targets the linked project.
+script targets the linked project, and `test:db` the one `config.testDbTarget`
+names (linked by default).
 
 ```bash
 cd packages/supabase
@@ -121,18 +122,34 @@ pnpm db:push
 # CLI succeeds: a failed run leaves src/types.ts as it was and exits 1)
 pnpm gen:types
 
-# Run the pgTAP tests on the linked project (needs Docker, see below)
+# Run the pgTAP tests on the linked project, over this checkout's migrations
+# (needs Docker, see below); --dry-run writes the bundle and runs nothing
+pnpm test:db --dry-run
 pnpm test:db
 ```
 
-`test:db` (`supabase test db --linked`) first runs `create extension if not
-exists pgtap with schema extensions` on the linked project, then runs
-`pg_prove` in the `supabase/pg_prove:3.36` Docker container against it (CLI
-2.109.1 does so for every target, `--linked` included), and drops `pgtap`
-again when it was not installed before. Each test file runs in a transaction
-it rolls back. Because it needs Docker and a project, it is not part of the
+`test:db` (`scripts/supabase-test-db.mjs`) copies every pgTAP file into a
+temporary bundle, with a `do` block right after its `begin;` that applies every
+migration of the checkout the database's ledger lacks, inside the file's own
+transaction: its `rollback;` takes them with it, so a branch tests its own
+migrations and the project keeps only what was pushed to it. It refuses, before
+anything reaches the database, a pgTAP file that does not open with a plain
+`begin;` and end with `rollback;`, that controls its transaction in between, or
+that holds a psql meta-command. It then runs
+`supabase test db` over the bundle, which first runs `create extension if not
+exists pgtap with schema extensions` on the target, then runs `pg_prove` in the
+`supabase/pg_prove:3.36` Docker container against it (CLI 2.109.1 does so for
+every target, `--linked` included), and drops `pgtap` again when it was not
+installed before. Because it needs Docker and a project, it is not part of the
 offline `pnpm validate` gate, and since `AGENTS.md` forbids an agent to start
 Docker, a person or a CI job with Docker runs it.
+
+`config.testDbTarget` in this package's `package.json` sets the target:
+`linked` (the default, also when unset), `local` (`supabase test db --local`,
+for a downstream project that chose Docker and a local stack; this template
+never runs it) or `off` (a project that keeps Supabase and runs no database
+tests). Any other value, `null` included, exits 1. `docs/database.md` § 9 has the rules. A project
+with its own backend has no `packages/supabase`, and none of this.
 
 There is no reset script: `supabase db reset --linked` rebuilds the linked
 project's database from the local migrations, and its data is lost. Run it by
@@ -150,6 +167,9 @@ hand, and only on a disposable development project.
   check of the migrations; `src/__tests__/findMigrationOrderViolations.helper.test.ts` runs it
   over the migrations, and `src/__tests__/supabaseSql.test.ts` checks the pgTAP files, in
   `pnpm validate` (`src/test/sqlFiles.ts` reads the files)
+- `src/pgTapBundle.helper.ts`, `src/testDbRun.helper.ts` — `test:db`: the bundle of the
+  pgTAP files with the checkout's migrations, and the run on the target `config.testDbTarget`
+  names; `scripts/supabase-test-db.mjs`, at the repository root, wires Node into them
 - `supabase/config.toml` — CLI config (the API schemas and search path)
 - `supabase/migrations/` — SQL migrations, applied in number order; conventions in `docs/database.md`
 - `supabase/tests/` — pgTAP tests, run by `test:db`
