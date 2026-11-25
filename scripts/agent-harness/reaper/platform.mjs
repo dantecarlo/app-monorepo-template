@@ -10,8 +10,11 @@
 // `taskkill /F /PID <a> /PID <b>…` with no `/T`, so the platform's own tree
 // walk cannot reach that stranger. POSIX lists with `ps` under the C
 // locale, each start time read from its absolute `lstart`, and ends a tree
-// with SIGTERM to each of its pids, then, after 2 s, SIGKILL to each that
-// still runs; one wait serves every tree.
+// with SIGTERM to each of its pids, then, after 2 s, lists again and sends
+// SIGKILL only to each pid still listed with the start time the plan read,
+// never to a pid a newer process took; one wait and one listing serve
+// every tree. When that listing fails or the bound has run out, it sends
+// no SIGKILL and reports each tree as not ended.
 // ---------------------------------------------------------------------------
 
 import { basename } from 'node:path'
@@ -24,7 +27,6 @@ const KILL_WAIT_MS = 2000
 // taskkill's exit code when no process has the pid: it already ended.
 const TASKKILL_NOT_FOUND = 128
 const NO_SUCH_PROCESS = 'ESRCH'
-const PROBE = 0
 
 const CIM_SCRIPT =
   '[Console]::OutputEncoding = [Text.Encoding]::UTF8; ' +
@@ -193,7 +195,38 @@ const send = ({ name, pid, signal }) => {
   }
 }
 
-const endOnPosix = async ({ candidates, remainingMs, signal, sleep }) => {
+// The start time of every pid listed again before the SIGKILL, or the
+// problem that kept the listing from being read.
+const relisted = async ({ platform, remainingMs, spawn }) => {
+  const timeoutMs = remainingMs()
+  if (timeoutMs <= 0) {
+    return { problem: 'the bound ran out before it could list the processes again' }
+  }
+  try {
+    const processes = await listProcesses({ platform, spawn, timeoutMs })
+    return { starts: new Map(processes.map(({ pid, startMs }) => [pid, startMs])) }
+  } catch (error) {
+    return { problem: `listing the processes again failed: ${error.message}` }
+  }
+}
+
+// Whether `pid` is still listed with the start time the plan read: a pid a
+// newer process took is not.
+const stillHeld = ({ candidate, listed, pid }) => {
+  const planned = candidate.starts?.get(pid)
+  return (
+    typeof planned === 'number' && listed.has(pid) && listed.get(pid) === planned
+  )
+}
+
+const endOnPosix = async ({
+  candidates,
+  platform,
+  remainingMs,
+  signal,
+  sleep,
+  spawn
+}) => {
   const failures = new Map()
   const attempt = ({ candidate, name, pid }) => {
     try {
@@ -209,13 +242,21 @@ const endOnPosix = async ({ candidates, remainingMs, signal, sleep }) => {
     )
   )
   await sleep(Math.max(0, Math.min(KILL_WAIT_MS, remainingMs())))
-  candidates.forEach((candidate) =>
-    candidate.pids.forEach((pid) => {
-      if (attempt({ candidate, name: PROBE, pid })) {
-        attempt({ candidate, name: 'SIGKILL', pid })
+  const check = await relisted({ platform, remainingMs, spawn })
+  candidates.forEach((candidate) => {
+    if (check.problem) {
+      if (!failures.has(candidate.pid)) {
+        failures.set(
+          candidate.pid,
+          `sent SIGTERM, but ${check.problem}, so it sent no SIGKILL`
+        )
       }
-    })
-  )
+      return
+    }
+    candidate.pids
+      .filter((pid) => stillHeld({ candidate, listed: check.starts, pid }))
+      .forEach((pid) => attempt({ candidate, name: 'SIGKILL', pid }))
+  })
   return candidates.map(({ pid }) =>
     failures.has(pid)
       ? { detail: failures.get(pid), ended: false, pid }
@@ -227,8 +268,11 @@ const defaultSleep = (ms) => new Promise((done) => setTimeout(done, ms))
 
 /**
  * Ends each candidate tree, in order, while `remainingMs()` is positive;
- * a tree the bound did not reach is left out of the results. Each result
- * is { ended, pid } with the reason in `detail` when it was not ended.
+ * a tree the bound did not reach is left out of the results. A candidate
+ * names its `pids` and, in `starts`, the start time the plan read for each;
+ * on POSIX only a pid still listed with that start time gets the SIGKILL.
+ * Each result is { ended, pid } with the reason in `detail` when it was not
+ * ended.
  */
 export const endTrees = ({
   candidates,
@@ -240,4 +284,4 @@ export const endTrees = ({
 }) =>
   platform === WINDOWS
     ? endOnWindows({ candidates, remainingMs, spawn })
-    : endOnPosix({ candidates, remainingMs, signal, sleep })
+    : endOnPosix({ candidates, platform, remainingMs, signal, sleep, spawn })

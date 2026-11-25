@@ -156,37 +156,106 @@ test('on POSIX the listing is read from ps under LC_ALL=C, each start time from 
   assert.deepEqual(second, first)
 })
 
-test('on POSIX the listing is read from ps and a tree gets SIGTERM, then SIGKILL after 2 s', async () => {
-  const { spawn } = fakeSpawn({ answers: {} })
-  // Pid 12 survives its SIGTERM.
-  const signals = []
-  const alive = new Set([10, 11, 12])
-  const signal = (pid, name) => {
-    signals.push([pid, name])
-    if (!alive.has(pid)) throw Object.assign(new Error('no such process'), { code: 'ESRCH' })
-    if (name === 'SIGTERM' && pid !== 12) alive.delete(pid)
-    if (name === 'SIGKILL') alive.delete(pid)
+// A POSIX tree of three pids, each with the start time the plan read.
+const TREE_STARTS = new Map([
+  [10, new Date(2026, 10, 25, 10, 0, 0).getTime()],
+  [11, new Date(2026, 10, 25, 10, 0, 1).getTime()],
+  [12, new Date(2026, 10, 25, 10, 0, 2).getTime()]
+])
+const POSIX_CANDIDATE = { ...CANDIDATE, starts: TREE_STARTS }
+
+// A signal that records every call, ends each pid of `dies` at its SIGTERM
+// and any pid at its SIGKILL, and refuses a pid that is gone.
+const fakeSignal = ({ alive, dies, events }) => (pid, name) => {
+  events.push([pid, name])
+  if (!alive.has(pid)) throw Object.assign(new Error('no such process'), { code: 'ESRCH' })
+  if (name === 'SIGKILL' || (name === 'SIGTERM' && dies.includes(pid))) alive.delete(pid)
+}
+
+test('on POSIX a tree gets SIGTERM, then after 2 s SIGKILL only to each pid still listed with its start time', async () => {
+  // Pid 10 ends at its SIGTERM; pid 11 survives it; pid 12 ends and a newer
+  // process takes the pid before the check, so a probe would find it alive.
+  const ps = [
+    '   11     1 Wed Nov 25 10:00:01 2026   100 node /r/node_modules/typescript/bin/tsc',
+    '   12     1 Wed Nov 25 11:59:58 2026   100 /usr/bin/vim notes.md'
+  ].join('\n')
+  const events = []
+  const { calls, spawn: answer } = fakeSpawn({ answers: { ps: { stdout: `${ps}\n` } } })
+  const spawn = (...args) => {
+    events.push(['spawn', args[0]])
+    return answer(...args)
   }
-  const waits = []
   const results = await endTrees({
-    candidates: [CANDIDATE],
+    candidates: [POSIX_CANDIDATE],
     remainingMs: () => BOUND_MS,
     platform: 'linux',
-    signal,
-    sleep: async (ms) => waits.push(ms),
+    signal: fakeSignal({ alive: new Set([11, 12]), dies: [10], events }),
+    sleep: async (ms) => events.push(['sleep', ms]),
     spawn
   })
-  assert.deepEqual(signals, [
+  assert.deepEqual(events, [
     [10, 'SIGTERM'],
     [11, 'SIGTERM'],
     [12, 'SIGTERM'],
-    [10, 0],
-    [11, 0],
-    [12, 0],
-    [12, 'SIGKILL']
+    ['sleep', KILL_WAIT_MS],
+    ['spawn', 'ps'],
+    [11, 'SIGKILL']
   ])
-  assert.deepEqual(waits, [KILL_WAIT_MS])
+  assert.deepEqual(calls, [{ args: ['-eo', 'pid=,ppid=,lstart=,rss=,args='], command: 'ps' }])
   assert.deepEqual(results, [{ ended: true, pid: 10 }])
+})
+
+test('on POSIX no SIGKILL is sent when the listing before it fails or the bound has run out', async () => {
+  const failing = fakeSpawn({ answers: { ps: { code: 1, stderr: 'ps: cannot read /proc' } } })
+  const failed = []
+  assert.deepEqual(
+    await endTrees({
+      candidates: [POSIX_CANDIDATE],
+      remainingMs: () => BOUND_MS,
+      platform: 'linux',
+      signal: fakeSignal({ alive: new Set([10, 11, 12]), dies: [], events: failed }),
+      sleep: async () => {},
+      spawn: failing.spawn
+    }),
+    [
+      {
+        detail:
+          'sent SIGTERM, but listing the processes again failed: ps exited 1: ' +
+          'ps: cannot read /proc, so it sent no SIGKILL',
+        ended: false,
+        pid: 10
+      }
+    ]
+  )
+  assert.deepEqual(failed, [[10, 'SIGTERM'], [11, 'SIGTERM'], [12, 'SIGTERM']])
+
+  // The 2 s wait spends what was left of the bound.
+  const clock = { left: BOUND_MS }
+  const late = fakeSpawn({ answers: { ps: { stdout: '' } } })
+  const spent = []
+  assert.deepEqual(
+    await endTrees({
+      candidates: [POSIX_CANDIDATE],
+      remainingMs: () => clock.left,
+      platform: 'linux',
+      signal: fakeSignal({ alive: new Set([10, 11, 12]), dies: [], events: spent }),
+      sleep: async () => {
+        clock.left = 0
+      },
+      spawn: late.spawn
+    }),
+    [
+      {
+        detail:
+          'sent SIGTERM, but the bound ran out before it could list the processes ' +
+          'again, so it sent no SIGKILL',
+        ended: false,
+        pid: 10
+      }
+    ]
+  )
+  assert.deepEqual(late.calls, [])
+  assert.deepEqual(spent, [[10, 'SIGTERM'], [11, 'SIGTERM'], [12, 'SIGTERM']])
 })
 
 test('a listing that exits non-zero throws, naming the command and what it printed', async () => {
