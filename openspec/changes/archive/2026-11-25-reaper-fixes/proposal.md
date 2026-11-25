@@ -1,6 +1,6 @@
 # Proposal: the reaper reads node's watch flags, a POSIX start time that holds, and a lock that is its own
 
-> **Status:** open
+> **Status:** archived — 2026-11-25
 
 ## Why
 

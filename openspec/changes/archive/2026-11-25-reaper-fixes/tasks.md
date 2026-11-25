@@ -5,7 +5,7 @@
 - [x] T3 — The re-read keeps its verified pids: `reap.mjs` `sortByIdentity` keeps, of each tree whose root held, the pids whose start time held, and hands them to `endTrees` with `starts`; a Windows case in `reap.test.mjs` · Requirements: REAP-12 · Commit: b53fbb86
 - [x] T4 — The POSIX SIGKILL: `platform.mjs` `endOnPosix` lists again after the 2 s wait and sends SIGKILL only to the pids whose start time held, and none when that listing fails or the bound has run out; cases in `platform.test.mjs`; `docs/harness.md` § 3g · Requirements: REAP-07 · Commit: cc3f9134
 - [x] T5 — The lock: `lock.mjs` writes a unique token, takes a stale lock under an exclusive guard, removes a stale guard only while it holds what it read, and releases only its own token; `lock.test.mjs`, with one real two-process case; `docs/harness.md` § 3g · Requirements: REAP-11 · Commit: c559cd82
-- [ ] T6 — `verify-report.md`, then the archive: the deltas merged into `openspec/specs/harness/process-reaper/spec.md`, the evidence lines this change moved refreshed, and the folder moved to `openspec/changes/archive/2026-11-25-reaper-fixes/` · Requirements: REAP-03, REAP-07, REAP-11, REAP-12 · Commit: —
+- [x] T6 — `verify-report.md`, then the archive: the deltas merged into `openspec/specs/harness/process-reaper/spec.md`, the evidence lines this change moved refreshed, and the folder moved to `openspec/changes/archive/2026-11-25-reaper-fixes/` · Requirements: REAP-03, REAP-07, REAP-11, REAP-12 · Commit: ab260731, and the archive that moves this folder
 
 <!--
 A task names every requirement it satisfies. When it is done, tick it and write the short sha of
