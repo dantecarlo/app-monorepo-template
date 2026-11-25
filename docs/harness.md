@@ -178,7 +178,7 @@ gate the run reaches is blinded by exactly one step, whose companion's exported
 | `pnpm agent-harness:projection-check` | Every projected agent file equals what its neutral source renders, and is committed (see 3e) |
 | `pnpm agent-harness:test`       | The projector's reader, adapters, hook projection, writer, checker and sync still behave |
 | `pnpm write-guard:test`         | The write guard decides every cell of its table, its errors and its switch-off, reads every Windows spelling of a path (or refuses what it cannot read) and every checkout that holds it, judges a 10,000-folder path in under a second, every checkout rule glob matches a file and every module the hook loads is a rule file, and the real hook answers a payload on stdin end to end, through a junction too (see 3f) |
-| `pnpm reap:test`               | The process reaper's core decides each rule over synthetic process tables (an orphan, a live parent, a reused pid, POSIX reparenting, unknown names, a family matched by executable and script and never by text in the arguments, persistent and watch work, node's watch flags, the wrappers, live Git for Windows shells and tmux, its own ancestry, the spared processes, the grace period); the adapter lists and ends on each platform through an injected spawn; the command's modes, lock, second listing, bound and exit codes; the session hook's kill mode and its exit 0 on any failure; and `runBounded` ends a real child's tree on Windows (see 3g) |
+| `pnpm reap:test`               | The process reaper's core decides each rule over synthetic process tables (an orphan, a live parent, a reused pid, POSIX reparenting, unknown names, a family matched by executable and script and never by text in the arguments, persistent and watch work, node's watch flags, the wrappers, live Git for Windows shells and tmux, its own ancestry, the spared processes, the grace period); the adapter lists and ends on each platform through an injected spawn; the command's modes, lock, second listing, bound and exit codes; the lock's takeover under its guard, a dead guard and a release that leaves a later run's lock, with injected races and two real processes; the session hook's kill mode and its exit 0 on any failure; and `runBounded` ends a real child's tree on Windows (see 3g) |
 | `pnpm verify:agent-context:test` | The agent-context gate fails each defect it names, on synthetic entries and over a scratch tree |
 | `pnpm verify:agent-context`     | Every agent of `.agents/agents/` has an entry in `.agents/agent-context.json` whose `gradedBy` names the skills that grade it, each a folder of `.claude/skills/` holding a `SKILL.md`, whose `writes` is true or false, whose `surface`, if any, lists repository-relative folders beside `writes: true`, and which holds no other key; no entry names an agent that is gone (see 3e) |
 | `pnpm verify:harness-config:test` | The harness config gate fails each defect it names, a key given twice and an `additionalProperties` other than `false` among them, against the repository's schema, and over a scratch tree; the schema's merge policies are the ones the ticket skills name, `manual` the default |
@@ -495,8 +495,14 @@ root pid, family, the wrapper it came through, age, process count and MB), one
 `kept` line per tree it keeps and why, then the total MB. `pnpm reap:kill` ends
 them; `--json` prints the plan as one JSON line and `--quiet` only the total
 line. A killing run first creates `atl-process-reaper.lock` in the OS temp
-directory, exclusively; another reaper that finds it held prints so and exits 0
-at once, and a lock older than 30 s, left by a reaper that died, is taken over.
+directory, exclusively, with a token unique to that run; another reaper that
+finds it held prints so and exits 0 at once. A lock older than 30 s, left by a
+reaper that died, is taken over only under `atl-process-reaper.lock.guard`,
+created exclusively, and only if it is still stale under it, so two runs that
+find it stale never both take it; a guard older than 30 s, left by a reaper
+that died holding it, is removed, only while it holds what that run read, and
+the next run takes the lock. A run removes the lock at its end only while it
+still holds its token, never one a later run took over.
 Right before its kills it lists the processes again and leaves every tree whose
 root pid is gone or now names a process that started at another time, since a
 tree kill follows a reused pid; of every other tree it ends only the pids still
