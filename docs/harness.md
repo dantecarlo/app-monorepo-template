@@ -541,7 +541,7 @@ taskkill after 5 s (TOOLING-12).
 whose args start with `scripts/mcp/launch.mjs`, name a catalog server and
 whose area the session's `ATL_MCP_AREA` starts, it checks that the entry file
 `node_modules/<package>/<entry>` exists, and when any is missing it prints
-one line naming those servers and `pnpm install --frozen-lockfile`
+one line naming those servers and `pnpm install`
 (`docs/mcp.md`). With no `.mcp.json`, as in the template's own checkout, it
 prints nothing. Then it runs the reaper with `--kill --quiet`. The check and
 the reaper share one budget, the reaper's 8 s bound plus a 1 s margin: a

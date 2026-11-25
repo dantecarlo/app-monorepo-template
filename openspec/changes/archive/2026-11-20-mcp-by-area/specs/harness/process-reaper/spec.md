@@ -13,7 +13,7 @@ The `SessionStart` hook `scripts/agent-harness/reaper/session-start.mjs` SHALL, 
 runs, read the checkout's `.mcp.json` and MCP catalog and, for every `.mcp.json` server whose args
 start with `scripts/mcp/launch.mjs`, name a catalog server and whose area the session's
 `ATL_MCP_AREA` starts, check that `node_modules/<package>/<entry>` exists; when any is missing it
-prints one line naming those servers and `pnpm install --frozen-lockfile`. It prints nothing
+prints one line naming those servers and `pnpm install`. It prints nothing
 without a `.mcp.json` or when every such entry is there. The check and the reaper share one
 budget, the reaper's bound plus its margin: a check that outlasts it prints one stderr line and
 the reaper does not run, and a check that throws prints one stderr line, the hook exiting 0
@@ -26,8 +26,8 @@ either way.
 - **GIVEN** a `.mcp.json` with three launcher servers, one of them installed, a server that runs
   `npx` and a remote URL, and the catalog of the three
 - **WHEN** the MCP check reads the tree
-- **THEN** it returns one line naming the two missing servers, in order, and
-  `pnpm install --frozen-lockfile`, and nothing about the other two servers
+- **THEN** it returns one line naming the two missing servers, in order, and `pnpm install`,
+  and nothing about the other two servers
 - **Test:** `scripts/agent-harness/reaper/mcp-check.test.mjs` › "the MCP check names every launcher server whose entry is missing, and the install command"
 
 #### Scenario: nothing to say

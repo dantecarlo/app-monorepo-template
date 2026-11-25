@@ -88,7 +88,7 @@ process, never spawning another.
 
 `scripts/mcp/launch.mjs <name>` SHALL exit 1, starting nothing, when `<name>` is not a valid
 server of the catalog, naming it and `pnpm verify:mcp-docs`, and when its entry file is not
-installed, naming the server, the missing path and `pnpm install --frozen-lockfile`.
+installed, naming the server, the missing path and `pnpm install`.
 
 **Evidence:** written at apply time, when the code exists.
 
@@ -104,9 +104,8 @@ installed, naming the server, the missing path and `pnpm install --frozen-lockfi
 - **GIVEN** the committed catalog, in a checkout that installed none of its servers
 - **WHEN** `node scripts/mcp/launch.mjs <name>` runs as a process for each catalog server, with
   `ATL_MCP_AREA` unset
-- **THEN** each exits 1 and its stderr names the server, its entry path and
-  `pnpm install --frozen-lockfile`
-- **Test:** `scripts/mcp/launch.test.mjs` › "a server whose entry is not installed exits 1, naming it and pnpm install --frozen-lockfile"
+- **THEN** each exits 1 and its stderr names the server, its entry path and `pnpm install`
+- **Test:** `scripts/mcp/launch.test.mjs` › "a server whose entry is not installed exits 1, naming it and pnpm install"
 
 ## MODIFIED Requirements
 

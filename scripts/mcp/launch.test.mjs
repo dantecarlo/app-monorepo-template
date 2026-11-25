@@ -266,7 +266,7 @@ test('an unknown server name exits 1, naming it and the command to run', () => {
   ])
 })
 
-test('a server whose entry is not installed exits 1, naming it and pnpm install --frozen-lockfile', () => {
+test('a server whose entry is not installed exits 1, naming it and pnpm install', () => {
   const root = treeOf({
     catalog: readFileSync(join(REPO_ROOT, CATALOG), 'utf8')
   })
@@ -276,7 +276,7 @@ test('a server whose entry is not installed exits 1, naming it and pnpm install 
     assert.deepEqual(stderrLines({ run }), [
       `mcp-launch: ${server.name} cannot start: ` +
         `node_modules/${server.packageName}/${server.entry} is not ` +
-        'installed; run `pnpm install --frozen-lockfile`'
+        'installed; run `pnpm install`'
     ])
   })
 })

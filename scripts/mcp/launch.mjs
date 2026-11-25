@@ -47,7 +47,8 @@ import {
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const LABEL = 'mcp-launch'
 export const AREA_VARIABLE = 'ATL_MCP_AREA'
-export const INSTALL_COMMAND = 'pnpm install --frozen-lockfile'
+// The owner, 2026-11-25 (translated from Spanish): "Change to pnpm i".
+export const INSTALL_COMMAND = 'pnpm install'
 const CHECK_COMMAND = 'pnpm verify:mcp-docs'
 const AREA_SEPARATOR = ','
 // The word that starts no catalog server, besides the areas themselves.

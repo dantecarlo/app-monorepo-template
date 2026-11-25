@@ -112,7 +112,7 @@ test('the MCP check names every launcher server whose entry is missing, and the 
     mcpCheckLine({ env: {}, root }),
     'mcp-check: 2 MCP server(s) cannot start, their pinned entry not ' +
       'installed under node_modules: expo, metro; run ' +
-      '`pnpm install --frozen-lockfile`'
+      '`pnpm install`'
   )
 })
 
@@ -148,7 +148,7 @@ test('the MCP check leaves out a server whose area ATL_MCP_AREA holds off', () =
   const lineFor = ({ names }) =>
     `mcp-check: ${names.length} MCP server(s) cannot start, their pinned ` +
     `entry not installed under node_modules: ${names.join(', ')}; run ` +
-    '`pnpm install --frozen-lockfile`'
+    '`pnpm install`'
 
   assert.equal(
     mcpCheckLine({ env: { ATL_MCP_AREA: 'web' }, root }),

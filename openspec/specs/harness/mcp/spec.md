@@ -476,7 +476,7 @@ that names the server, its area and the list. A word of the list that is neither
 nor `none` SHALL add one stderr line naming the unknown words and the valid ones, the gate
 deciding as it would without it.
 
-**Evidence:** `scripts/mcp/launch.mjs:61-81`, `scripts/mcp/launch.mjs:122-136`
+**Evidence:** `scripts/mcp/launch.mjs:62-82`, `scripts/mcp/launch.mjs:123-137`
 
 #### Scenario: the gate as a function
 
@@ -518,8 +518,8 @@ entry is `<root>/node_modules/<package>/<entry>` of the catalog and the argument
 are the ones the project's `.mcp.json` gives the launcher, and import that file in the same
 process, never spawning another.
 
-**Evidence:** `scripts/mcp/launch.mjs:84-88`, `scripts/mcp/launch.mjs:137-148`,
-`scripts/mcp/launch.mjs:151-157`, `scripts/mcp-docs.detect.mjs:119-120`
+**Evidence:** `scripts/mcp/launch.mjs:85-89`, `scripts/mcp/launch.mjs:138-149`,
+`scripts/mcp/launch.mjs:152-158`, `scripts/mcp-docs.detect.mjs:119-120`
 
 #### Scenario: the fixture entry records what it ran with
 
@@ -550,9 +550,10 @@ process, never spawning another.
 
 `scripts/mcp/launch.mjs <name>` SHALL exit 1, starting nothing, when `<name>` is not a valid
 server of the catalog, naming it and `pnpm verify:mcp-docs`, and when its entry file is not
-installed, naming the server, the missing path and `pnpm install --frozen-lockfile`.
+installed, naming the server, the missing path and `pnpm install`.
 
-**Evidence:** `scripts/mcp/launch.mjs:93-102`, `scripts/mcp/launch.mjs:111-119`
+**Evidence:** `scripts/mcp/launch.mjs:51`, `scripts/mcp/launch.mjs:115-122`,
+`scripts/mcp/launch.mjs:138-146`
 
 #### Scenario: an unknown name
 
@@ -566,6 +567,5 @@ installed, naming the server, the missing path and `pnpm install --frozen-lockfi
 - **GIVEN** the committed catalog, in a checkout that installed none of its servers
 - **WHEN** `node scripts/mcp/launch.mjs <name>` runs as a process for each catalog server, with
   `ATL_MCP_AREA` unset
-- **THEN** each exits 1 and its stderr names the server, its entry path and
-  `pnpm install --frozen-lockfile`
-- **Test:** `scripts/mcp/launch.test.mjs` › "a server whose entry is not installed exits 1, naming it and pnpm install --frozen-lockfile"
+- **THEN** each exits 1 and its stderr names the server, its entry path and `pnpm install`
+- **Test:** `scripts/mcp/launch.test.mjs` › "a server whose entry is not installed exits 1, naming it and pnpm install"

@@ -55,7 +55,7 @@ Every test ran green at `3c84555`: `pnpm verify:mcp-docs:test` 42 of 42 (36 befo
 | MCP-11 | every real catalog entry | `scripts/mcp/launch.test.mjs` › "every catalog server resolves to its entry file inside its package" | green |
 | MCP-11 | a real server starts | Not covered | not run |
 | MCP-12 | an unknown name | `scripts/mcp/launch.test.mjs` › "an unknown server name exits 1, naming it and the command to run" | green |
-| MCP-12 | an entry that is not installed | `scripts/mcp/launch.test.mjs` › "a server whose entry is not installed exits 1, naming it and pnpm install --frozen-lockfile" | green |
+| MCP-12 | an entry that is not installed | `scripts/mcp/launch.test.mjs` › "a server whose entry is not installed exits 1, naming it and pnpm install" | green |
 | REAP-10 | the bound | `scripts/agent-harness/reaper/bounded-child.test.mjs` › "a child that outlasts its bound has its tree ended and reads as timed out" | green |
 | REAP-10 | a real tree on Windows | `scripts/agent-harness/reaper/bounded-child.test.mjs` › "on Windows a child stopped at its bound takes the process it started with it" | green |
 | REAP-10 | the pruner's fetch on Windows | `scripts/prune-worktrees.test.mjs` › "on Windows a fetch stopped at its bound ends the processes git started" | green |

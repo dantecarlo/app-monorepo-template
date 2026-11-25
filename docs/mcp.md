@@ -91,7 +91,7 @@ blocks. A word of the list that is neither `web`, `mobile` nor `none` (`desktop`
 `mobile;web`) adds one stderr line naming it and the valid words, and the launcher decides as it
 would without it, so a list of unknown words starts nothing. A name the catalog does not hold
 exits 1 and names `pnpm verify:mcp-docs`; an entry that is not installed exits 1 and names
-`pnpm install --frozen-lockfile`.
+`pnpm install`.
 
 **One saved Desktop environment per area.** Every role session of a project starts from one main
 checkout, so a per-worktree `.claude/settings.local.json` cannot tell the sessions apart: the area
