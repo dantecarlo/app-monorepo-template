@@ -7,6 +7,8 @@ Implements the `@app/core` ports (`IAuthGateway`, `IBackendClientProvider`,
 
 Apps depend on the **port types** from `@app/core` for type safety and import
 the concrete factories from this package in their `src/lib` adapter layer.
+No app declares a Supabase SDK: `@supabase/supabase-js` and `@supabase/ssr` are
+this package's dependencies alone, and only its `src/*.adapter.ts` import them.
 To swap providers, implement the same ports in a new adapter package and
 update `src/lib/supabase/*.adapter.ts` in each app to point at it.
 

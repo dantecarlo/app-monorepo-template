@@ -657,6 +657,13 @@
       "seam": []
     },
     {
+      "name": "expo-system-ui",
+      "category": "peer",
+      "owner": "mobile-expo",
+      "seam": [],
+      "note": "Applies apps/mobile/app.json's userInterfaceStyle on Android, where Expo needs it installed; no file imports it."
+    },
+    {
       "name": "react-native-screens",
       "category": "peer",
       "owner": "mobile-expo",

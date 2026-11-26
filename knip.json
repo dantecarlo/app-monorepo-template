@@ -34,8 +34,7 @@
         "src/helpers/*.style.ts",
         "src/validation/*.schema.ts"
       ],
-      "project": ["src/**/*.{ts,tsx}"],
-      "ignoreDependencies": ["@supabase/ssr", "@supabase/supabase-js"]
+      "project": ["src/**/*.{ts,tsx}"]
     },
     "apps/mobile": {
       "entry": [
@@ -53,8 +52,7 @@
         "src/validation/*.schema.ts"
       ],
       "project": ["src/**/*.{ts,tsx}"],
-      "metro": false,
-      "ignoreDependencies": ["@supabase/supabase-js", "expo-system-ui"]
+      "metro": false
     },
     "packages/core": {
       "project": ["src/**/*.ts"]
