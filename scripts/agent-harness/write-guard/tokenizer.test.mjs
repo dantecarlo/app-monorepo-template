@@ -175,6 +175,30 @@ test('an array assignment is one word', () => {
   )
 })
 
+// An array's elements are words, so its `)` is the one that closes it and
+// a substitution inside it is a command the judges read.
+test("an array's elements are words: a quoted ) stays inside, and a substitution is read", () => {
+  const source = "a=(\"x\" ')' $(ls b) `ls c`) echo"
+  const [command] = parse({ source })
+  assert.deepEqual(
+    command.words.map((word) => word.raw),
+    ["a=(\"x\" ')' $(ls b) `ls c`)", 'echo']
+  )
+  assert.deepEqual(commandsOf({ script: parse({ source }) }), [
+    "a=(\"x\" ')' $(ls b) `ls c`) echo",
+    'ls b',
+    'ls c'
+  ])
+})
+
+test('an array spans lines and skips its comments', () => {
+  const [command] = parse({ source: 'a=(\n  one # the first )\n  two\n) echo' })
+  assert.deepEqual(
+    command.words.map((word) => word.raw),
+    ['a=(\n  one # the first )\n  two\n)', 'echo']
+  )
+})
+
 test('a comment is skipped', () => {
   assert.deepEqual(
     commandsOf({ script: parse({ source: 'ls # > a.log\ntouch b' }) }),
@@ -198,7 +222,10 @@ for (const [source, problem, bashRefuses] of [
   ['ls )', /an unbalanced \)/, true],
   ['echo >', /a > with no target/, false],
   ['rm !(keep', /an unterminated extended glob/, false],
-  ['[[ $x =~ (a ]]', /an unterminated regex/, false]
+  ['[[ $x =~ (a ]]', /an unterminated regex/, false],
+  ['a=( x', /an unterminated array/, false],
+  ['a=( x; y )', /an unexpected ; in an array/, false],
+  ['ls @("a)|b)', /an unterminated quote in an extended glob/, false]
 ]) {
   test(`what cannot be read throws, naming why: ${JSON.stringify(source)}`, () => {
     const error = problemOf({ source })

@@ -136,7 +136,11 @@ for (const command of [
   '(( 1 )) && touch AGENTS.md',
   '[[ $b =~ ^(main|master)$ ]] && echo x > AGENTS.md',
   '[[ a < b && -n x ]] && touch .claude/skills/sdd/SKILL.md',
-  'shopt -s extglob\nrm AGENTS.md !(keep)'
+  'shopt -s extglob\nrm AGENTS.md !(keep)',
+  // An array's elements are read: a substitution in one runs, and the
+  // variable names no path the guard can trust.
+  'a=( $(touch AGENTS.md) )',
+  'a=(AGENTS.md); echo x > "$a"'
 ]) {
   test(`the main session is asked before a rule file: ${command}`, () => {
     assert.equal(decisionOf({ agent: MAIN, command }), 'ask')

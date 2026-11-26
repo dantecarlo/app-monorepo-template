@@ -6,6 +6,7 @@
 //   script  = [{ type: 'cmd', words, redirects, op } | { type: 'group', ... }]
 //   word    = { parts, raw }   part = { lit, quoted } | { param, op, alt }
 //                                   | { sub } | { safe, subs } | { process, sub }
+//                                   | { array, subs }
 //
 // `op` is the operator FOLLOWING the item: `|` means it feeds the next one.
 // A here-doc's body lands on its redirect once the line that opens it ends.
@@ -111,6 +112,10 @@ const operatorWord = ({ text }) => ({
 })
 
 const WORD_END = /[\s;&|<>()]/
+// The name and `=` (or `+=`) before the `(` of an array assignment.
+const ARRAY_ASSIGNMENT = /^[A-Za-z_]\w*\+?=$/
+// What separates the elements of an array: blanks and newlines.
+const ARRAY_BLANKS = /(?:\s|\\\n)*/y
 const BLANKS = /(?:[ \t\r]|\\\n)*/y
 const PLAIN_WORD = /[^\s;&|<>()\\'"$`]+/y
 const PLAIN_DOUBLE = /[^"\\$`]+/y
@@ -343,6 +348,15 @@ export const createParser = ({ depth = 0, source }) => {
     flush()
   }
 
+  // Where the `quote` opened before `from` closes, past escaped ones inside
+  // double quotes; -1 when it never does.
+  const closingQuote = ({ from, quote }) => {
+    if (quote === "'") return s.indexOf("'", from)
+    let at = from
+    while (at < s.length && s[at] !== '"') at += s[at] === '\\' ? 2 : 1
+    return at < s.length ? at : -1
+  }
+
   // The `(…)` of an extended glob at the cursor, nested ones included.
   const extglobGroup = () => {
     const start = i
@@ -355,6 +369,19 @@ export const createParser = ({ depth = 0, source }) => {
         if (c === '`' || (c === '$' && s[i + 1] === '(')) {
           unreadable({ problem: 'a substitution inside an extended glob' })
         }
+        if (c === '\\') {
+          i += 2
+          return true
+        }
+        if (c === "'" || c === '"') {
+          // A quoted `)` or `|` is text of the pattern, not its syntax.
+          const end = closingQuote({ from: i + 1, quote: c })
+          if (end < 0) {
+            unreadable({ problem: 'an unterminated quote in an extended glob' })
+          }
+          i = end + 1
+          return true
+        }
         if (c === '(') depth += 1
         if (c === ')') depth -= 1
         i += 1
@@ -363,6 +390,43 @@ export const createParser = ({ depth = 0, source }) => {
     })
     if (depth > 0) unreadable({ problem: 'an unterminated extended glob' })
     return s.slice(start, i)
+  }
+
+  // The elements of an array assignment, from past its `(` to past the `)`
+  // that closes it, each read as a word: a quote or a substitution in one
+  // counts, and a comment or a newline between them is skipped. A variable
+  // that holds an array names no path, so the part carries only the
+  // scripts its elements run. What a list would hold there, an operator or
+  // a redirect, is unreadable.
+  const arrayElements = () => {
+    const subs = []
+    repeat({
+      bound: s.length,
+      step: () => {
+        sticky({ pattern: ARRAY_BLANKS })
+        if (i >= s.length) unreadable({ problem: 'an unterminated array' })
+        if (s[i] === ')') {
+          i += 1
+          return false
+        }
+        if (atComment()) {
+          skipComment()
+          return true
+        }
+        const before = i
+        const word = parseWord()
+        if (i === before) {
+          unreadable({ problem: `an unexpected ${s[i]} in an array` })
+        }
+        subs.push(
+          ...word.parts.flatMap((part) =>
+            'sub' in part ? [part.sub] : (part.subs ?? [])
+          )
+        )
+        return true
+      }
+    })
+    return { array: true, subs }
   }
 
   const parseWord = () => {
@@ -381,12 +445,11 @@ export const createParser = ({ depth = 0, source }) => {
         if (c === '(' && EXTGLOB_OPENER.test(text)) {
           // An extended glob, `!(a|b)`: kept in its word as a literal.
           text += extglobGroup()
-        } else if (c === '(' && /^[A-Za-z_]\w*\+?=$/.test(text)) {
-          // An array assignment, `a=(1 2)`: kept as one opaque literal.
-          const end = s.indexOf(')', i)
-          if (end < 0) unreadable({ problem: 'an unterminated array' })
-          text += s.slice(i, end + 1)
-          i = end + 1
+        } else if (c === '(' && ARRAY_ASSIGNMENT.test(text)) {
+          // An array assignment, `a=(1 "$(x)")`: its elements are words.
+          flush()
+          i += 1
+          parts.push(arrayElements())
         } else if (WORD_END.test(c)) {
           return false
         } else if (c === '\\') {

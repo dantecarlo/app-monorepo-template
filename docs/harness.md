@@ -996,8 +996,11 @@ A letter that takes a value ends its cluster and takes the next word (`git tag -
 substitution is judged, in PowerShell a script block and a subexpression too. The shared
 tokenizer (3f) reads an arithmetic command (`(( … ))`, `for ((i=0;i<3;i++))`), whose
 substitutions still run, a `[[ … ]]` condition with its operators and the regex after `=~`
-(`^(main|master)$`), and an extended glob (`!(keep)`, `*.@(js|ts)`) whether or not
-`shopt -s extglob` is on. So is the command a wrapper runs, in its own language, as the outer one
+(`^(main|master)$`), an extended glob (`!(keep)`, `*.@(js|ts)`) whether or not
+`shopt -s extglob` is on, a quoted `)` inside it included (`@("a)"|b)`), and an array's elements
+as words (`files=( $(git ls-files) )`), so its substitutions are judged and the `)` that closes
+it is the real one; a variable that holds an array names no path the write guard trusts. So is
+the command a wrapper runs, in its own language, as the outer one
 is: `eval`, an inner shell's `-c` (`sh`, `dash`, `zsh`, `bash -lc`), a here-doc or a pipe of
 `cat`, `echo` or `printf` fed to a shell, `find -exec`, `fd -x` and `xargs` (the write guard's own
 readers of them), the text `trap` runs on a signal (`trap 'rm -rf x' EXIT`), PowerShell's
@@ -1043,7 +1046,8 @@ are read; a short `-f` outside git, `rm` and taskkill; a git letter outside the 
 (`rebase -f`, `submodule -f`, `worktree add -B`); a `+refspec` push; `cmd /c`, `watch`, `ssh`,
 and git's short letters behind `pnpm exec` or `npx`; an alias and a variable's value (`$CMD`, or
 a hooks path set through the `GIT_CONFIG_*` variables); a here-string fed to a shell, whose
-quotes are read with its text; a PowerShell splat, a `||` chain in PowerShell, and a .NET call
+quotes are read with its text; a PowerShell splat, a `||` chain in PowerShell, a failure
+PowerShell swallows with a success exit (`if ($LASTEXITCODE) { exit 0 }`), and a .NET call
 split across lines; and Codex, OpenCode and Copilot, which run no adapter yet.
 
 ---

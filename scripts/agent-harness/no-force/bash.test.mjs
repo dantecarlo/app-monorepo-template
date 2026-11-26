@@ -104,6 +104,18 @@ for (const [command, option, program] of [
   ['[[ ( -n a ) && -z "" ]] && git push -f', '-f', 'git push'],
   ['[[ "a b" =~ (a b) ]] || git branch -D old', '-D', 'git branch'],
   ['rm -rf *.@(js|ts)', '-rf', 'rm'],
+  // An array's elements are words: a quote or a substitution in one counts,
+  // and the `)` that closes it is the real one.
+  ['files=( $(git ls-files) ); rm -rf x', '-rf', 'rm'],
+  ['local a=( $(ls) ); git push --force', '--force', 'git push'],
+  ['a=( "$(ls)" ); rm -rf x', '-rf', 'rm'],
+  ['a=( $((1+2)) ); rm -rf x', '-rf', 'rm'],
+  ['declare -A m=( [k]="$(date)" ); rm -rf x', '-rf', 'rm'],
+  ["a=(\"x\" ')'); rm -rf x", '-rf', 'rm'],
+  ['a=( $(git push --force) )', '--force', 'git push'],
+  ['a=( `git push -f` )', '-f', 'git push'],
+  // A quoted `)` inside an extended glob does not close it.
+  ['[[ $x == @("a)"|b) ]] && rm -rf x', '-rf', 'rm'],
   // A trap's text runs later, as a command of its own.
   ["trap 'rm -rf x' EXIT", '-rf', 'rm'],
   ['trap "git push --force" INT TERM', '--force', 'git push'],
@@ -164,7 +176,11 @@ for (const command of [
   'test "$1" = --force',
   "trap '' INT",
   'trap - EXIT',
-  'npm test || exit'
+  'npm test || exit',
+  'a=( $(git ls-files) ); echo x',
+  "a=(\"x\" ')' 'y z'); echo \"${a[@]}\"",
+  'a=(\n  one # the first\n  two\n); echo "${a[1]}"',
+  '[[ $x == @("a)"|b) ]] && echo y'
 ]) {
   test(`\`${command}\` passes no force option`, () => {
     assert.equal(bashForce({ command }), undefined)

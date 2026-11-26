@@ -54,6 +54,7 @@ test('the hook denies a force option, naming the LAW', () => {
 
 for (const command of [
   'for ((i=0;i<3;i++)); do rm -rf x$i; done',
+  'files=( $(git ls-files) ); rm -rf x',
   'git push --force <<EOF',
   'ls apps/(group)/x.tsx && git push -f'
 ]) {
