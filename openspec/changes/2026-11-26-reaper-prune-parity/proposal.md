@@ -43,25 +43,31 @@ Certifipago commits: `e4be74468`, `75a94b364`, `4cc61efe3`, `7a99f4fc9` and the 
   ended (no process runs with the pid it names) or after an hour, with an injected
   `holderRunning`. REAP-03 reads inline code with its value attached as no script and reads
   `--watch-preserve-output` as no watch mode, so the watch flags are `--watch`,
-  `--watch=<value>`, `--watch-path <path>` and `--watch-path=<path>`. A test pins that the
-  `usr/bin` entry of the spare list spares a Git for Windows executable that no shell entry
-  names (no requirement changes: REAP-05 already states it).
-- **harness/process-reaper, the pruner.** Five new requirements:
-  - REAP-14: a worktree git no longer lists counts as removed; its leftover folder is removed
+  `--watch=<value>`, `--watch-path <path>` and `--watch-path=<path>`. REAP-10 is narrowed to
+  `runBounded` itself: its pruner scenarios and the install move to the pruner's spec. A test
+  pins that the `usr/bin` entry of the spare list spares a Git for Windows executable that no
+  shell entry names (no requirement changes: REAP-05 already states it).
+- **harness/worktree-pruner, a living spec of its own (prefix `PRUNE`).** It governs
+  `scripts/prune-worktrees.mjs`, `scripts/prune-worktrees.detect.mjs` (the pure half of the same
+  unit: every decision taken from what git printed) and `.husky/post-merge`. It states the
+  pruner's existing behaviour, written from the code with its evidence and its tests
+  (PRUNE-01 to PRUNE-05, PRUNE-09 to PRUNE-11 and PRUNE-15), and the ported behaviour:
+  - PRUNE-06: a worktree git no longer lists counts as removed; its leftover folder is removed
     through `removePath` in four tries and a residue is named.
-  - REAP-15: each removal is announced before it starts, and a run that fails after one does not
+  - PRUNE-07: each removal is announced before it starts, and a run that fails after one does not
     say nothing was removed.
-  - REAP-16: the kept worktrees are listed by the age of their last commit.
-  - REAP-17: one real prune at a time, under the reaper's lock in the git common directory.
-  - REAP-18 and REAP-19: orphan folders under the worktree root are judged and finished, and
+  - PRUNE-08: the kept worktrees are listed by the age of their last commit.
+  - PRUNE-12: one real prune at a time, under the reaper's lock in the git common directory.
+  - PRUNE-13 and PRUNE-14: orphan folders under the worktree root are judged and finished, and
     only by a run given `--finish-orphans` until one such run leaves none behind and writes a
     marker.
 - **Docs.** `docs/harness.md` (Layer 2 and section 3g), the two enforcement rows of
   `docs/code-standards.md` section 21 and a row of the parity ledger in
   `docs/INIT_AND_HARNESS_PLAN.md` say what the code now does. The owner's mapping of the
   downstream rule-enforcement document to section 21 is the authority to edit those two rows.
-- **At archive.** The living spec's `Governs` line and Purpose name the pruner, whose code
-  REAP-10 already cites and these requirements now govern (Q1).
+- **At archive.** The new living spec gets its row in `openspec/README.md` section 2.1 and its
+  claim in `template.manifest.json`, as the reaper's did. The reaper spec keeps its Purpose, which
+  says the pruner is not part of that unit.
 
 ## Out of scope
 
@@ -75,7 +81,7 @@ Certifipago commits: `e4be74468`, `75a94b364`, `4cc61efe3`, `7a99f4fc9` and the 
   the pruner with no time bound (Q2).
 - The downstream review folder (.codex-review) and its delivery process document, Certifipago-only.
 - The fetch bound. The template already runs `git fetch --prune` through `runBounded`, for 30 s
-  or `PRUNE_WORKTREES_FETCH_SECONDS` (REAP-10); the downstream 20 s exists to fit its 50 s hook
+  or `PRUNE_WORKTREES_FETCH_SECONDS` (PRUNE-02); the downstream 20 s exists to fit its 50 s hook
   budget, and a fetch that outlasts its bound skips the run with exit 0 here, where downstream
   it fails the run (Q3).
 - The downstream hard-wired `origin/master`: the template reads the default branch from
@@ -88,22 +94,20 @@ Certifipago commits: `e4be74468`, `75a94b364`, `4cc61efe3`, `7a99f4fc9` and the 
 
 ## Open questions
 
-- **Q1.** The living spec's `Governs` line lists the reaper files only and its Purpose says the
-  pruner "is not part of this unit", yet REAP-10 already cites the pruner. Five new
-  requirements govern `scripts/prune-worktrees.mjs` and `scripts/prune-worktrees.detect.mjs`.
-  Proposed: at archive, add both paths to `Governs` and say in the Purpose that the unit owns the
-  pruner's removal, its orphan folders and its lock. The alternative is a unit of its own
-  (harness/worktree-pruner, prefix `PRUNE`), which moves REAP-10's pruner half too. Which?
-- **Q2.** Only the half of "the prune hook timeout" that needs no hook is ported (the announce
-  line and the failure line of REAP-15). Confirm the template needs no budget around
-  `.husky/post-merge`, since git does not time a post-merge hook.
-- **Q3.** Keep the template's fetch (30 s by default, a stalled fetch skips the prune and exits
-  0) rather than the downstream's (20 s, exit 1)?
+Answered by the owner on 2026-11-26.
+
+- **Q1.** Answered: the pruner gets its own living spec, harness/worktree-pruner, one spec per
+  unit (the owner's F63 direction). The reaper spec keeps its Purpose; REAP-10 is restated as
+  `runBounded` alone and the pruner's half moves to PRUNE-02 and PRUNE-10.
+- **Q2.** Answered: no time budget around `.husky/post-merge`; only the announce line and the
+  failure line are ported (PRUNE-07).
+- **Q3.** Answered: keep the template's fetch, 30 s or `PRUNE_WORKTREES_FETCH_SECONDS`, a stalled
+  fetch skipping the prune and exiting 0 (PRUNE-02).
 
 ## Affected specs
 
-- `openspec/specs/harness/process-reaper/spec.md`: modified REAP-03 and REAP-11; added REAP-14,
-  REAP-15, REAP-16, REAP-17, REAP-18 and REAP-19.
+- `openspec/specs/harness/process-reaper/spec.md`: modified REAP-03, REAP-10 and REAP-11.
+- `openspec/specs/harness/worktree-pruner/spec.md` (new): added PRUNE-01 to PRUNE-15.
 
 <!--
 Status is one of: open; archived — <date>; discarded — <date>, <reason>.

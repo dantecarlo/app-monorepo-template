@@ -2,312 +2,6 @@
 
 > **Change:** `2026-11-26-reaper-prune-parity`
 
-## ADDED Requirements
-
-### Requirement: REAP-14 — A worktree git has unregistered counts as removed, and its leftover folder is retried
-
-When `git worktree remove` fails for a worktree, the pruner SHALL read the registered worktrees
-again (`git worktree list --porcelain`). A worktree git still lists, or a list git cannot read,
-is kept as `git could not remove it` with git's message, as before. A worktree git no longer
-lists, because git deleted its `.git` file and its registration before it failed, as at a file
-another process holds on Windows, counts as removed, and the folder git left is removed through
-`removePath` (`@app/tooling/remove-path`) in four tries, waiting 250 ms, then 500 ms, then 750 ms
-between two tries, never through `rmSync`'s `force: true` and never with
-`git worktree remove --force`; a junction or a symbolic link in it is removed as the link and its
-target is never entered. A folder that stays after the fourth try is the residue: the removal line
-names it, with the error of the last try, as `; its directory stays: <path>: <error>`, and the
-run's exit code is unchanged. The branch is deleted after the folder, only while its tip is still
-the commit it was judged at, whether or not the folder stayed.
-
-**Evidence:** written at apply time, when the code exists.
-
-#### Scenario: a worktree git unregisters before its removal fails
-
-- **GIVEN** a merged worktree whose `git worktree remove` deletes its `.git` file and its
-  registration and then exits 1
-- **WHEN** the pruner runs
-- **THEN** the worktree is counted as removed, its folder and its branch are gone, and no residue
-  is named
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a worktree git unregisters before its removal fails is removed, its folder finished"
-
-#### Scenario: a leftover tried again
-
-- **GIVEN** a leftover folder whose removal fails twice and then succeeds, with an injected
-  `remove` and `wait`
-- **WHEN** the pruner removes the leftover
-- **THEN** it tried three times, waited 250 ms and then 500 ms, and reports no residue
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a leftover delete that fails partway is tried again until the directory goes"
-
-#### Scenario: a leftover that stays
-
-- **GIVEN** a leftover folder whose removal fails every time
-- **WHEN** the pruner removes the leftover
-- **THEN** it tried four times, waited 250, 500 and 750 ms, and returns the folder's path with the
-  last error as the residue, and the removal line prints `its directory stays:` with it
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a leftover that stays after every try is named by its path"
-
-#### Scenario: a directory released between tries
-
-- **GIVEN** a worktree folder a process holds when git fails and releases before the third try
-- **WHEN** the pruner runs
-- **THEN** the folder goes whole, the branch is deleted and the removal line names no residue
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a held directory released between tries goes whole, with its branch"
-
-#### Scenario: a worktree git still lists
-
-- **GIVEN** a worktree whose `git worktree remove` fails and which git still lists
-- **WHEN** the pruner runs
-- **THEN** it is kept with git's message and its folder and branch stay
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a removal git refuses is kept with the message git gave"
-
-#### Scenario: a junction in the leftover
-
-- **GIVEN** a leftover folder holding a junction to a folder outside it and one whose target is gone
-- **WHEN** the pruner removes it
-- **THEN** the folder goes, and the target of the first junction is untouched
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a left directory goes, and a junction in it is not followed"
-
-### Requirement: REAP-15 — Each removal is announced before it starts
-
-A real pruner run SHALL print `prune-worktrees: removing <path> (<branch>)` on its own line,
-`--quiet` included, before it asks git to remove a worktree, so that a run ended inside the
-removal leaves it as its last line; a dry run prints none. A run that fails after a removal was
-announced, and has not completed one, SHALL end with `a removal had started; the last "removing"
-line above names it` in the place of `nothing was removed`.
-
-**Evidence:** written at apply time, when the code exists.
-
-#### Scenario: the announcement
-
-- **GIVEN** a merged worktree
-- **WHEN** the pruner runs
-- **THEN** the `removing` line for that worktree is printed before its `removed` line, and a
-  worktree git refuses is announced before it is tried
-- **Test:** `scripts/prune-worktrees.test.mjs` › "each removal is announced before git removes it"
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a removal git refuses is announced before it is tried"
-
-#### Scenario: a dry run announces nothing
-
-- **GIVEN** the same worktree
-- **WHEN** the pruner runs with `--dry-run`
-- **THEN** it prints no `removing` line
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a dry run announces no removal"
-
-#### Scenario: a failure after an announcement
-
-- **GIVEN** a run that announced a removal and then fails with none completed
-- **WHEN** it builds its failure line
-- **THEN** the line says a removal had started and points at the `removing` line, never that
-  nothing was removed, and the run exits 1
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a failure after a removal started does not say nothing was removed"
-
-### Requirement: REAP-16 — The worktrees it kept are listed by age
-
-Outside `--quiet`, the pruner SHALL print, after its decision lines and before the main
-checkout's line, the heading `prune-worktrees: worktrees kept, by the age of their last commit,
-oldest first:` and one line for each kept worktree whose HEAD commit time git reports, oldest
-first: the whole days since that commit, right-aligned in four columns, then `d`, its path, its
-branch and its reason. The main checkout and the worktree the command runs in are left out, and
-no heading is printed when no line remains. The commit times are read with one
-`git log --no-walk=unsorted --ignore-missing` over the HEADs `git worktree list --porcelain`
-names; a log git cannot run leaves the list out. A dry run prints the list too.
-
-**Evidence:** written at apply time, when the code exists.
-
-#### Scenario: the list
-
-- **GIVEN** three kept worktrees whose last commits are 2, 40 and 9 days old, the main checkout
-  and the current worktree
-- **WHEN** the report is built
-- **THEN** the list names the three, the 40-day one first, and neither the main checkout nor the
-  current worktree
-- **Test:** `scripts/prune-worktrees.test.mjs` › "the kept worktrees are listed by the age of their last commit, oldest first"
-
-#### Scenario: a real run, and --quiet
-
-- **GIVEN** a clone with one worktree the pruner keeps
-- **WHEN** the pruner runs, and again with `--quiet`
-- **THEN** the first prints the list with that worktree and the second prints no list
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a real run lists each kept worktree by its age, and --quiet does not"
-
-### Requirement: REAP-17 — One real prune at a time
-
-A real pruner run SHALL take `takeLock` (REAP-11) at `prune-worktrees.lock` in the repository's
-common git directory before it runs `git fetch`, and release it however it ends. A run that finds
-the lock held SHALL print `prune-worktrees: another prune of <root> holds <lock path>; this run
-removes nothing.`, remove and move nothing and exit 0. A dry run SHALL take no lock and print its
-plan whoever holds it. A run started from inside a prune (`PRUNE_WORKTREES_RUNNING` set) still
-exits before the lock.
-
-**Evidence:** written at apply time, when the code exists.
-
-#### Scenario: another prune holds the lock
-
-- **GIVEN** a lock file a running process holds in the common git directory
-- **WHEN** the pruner runs
-- **THEN** it prints one line naming the lock, removes nothing and exits 0
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a run that finds another prune holding the lock prints one line, exits 0 and removes nothing"
-
-#### Scenario: the lock is released
-
-- **GIVEN** a merged worktree
-- **WHEN** a real run ends
-- **THEN** the lock file is gone
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a real run releases the lock it took"
-
-#### Scenario: a dry run
-
-- **GIVEN** a lock another prune holds
-- **WHEN** the pruner runs with `--dry-run`
-- **THEN** it prints its plan as usual
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a dry run while another prune holds the lock still prints its plan"
-
-### Requirement: REAP-18 — A folder a removal left under the worktree root is finished
-
-The pruner SHALL read the worktree root, `<main checkout parent>/<main checkout name>-worktrees/`,
-for orphan folders: a directory directly under it, a link excepted, that holds no `.git` and that
-no registered worktree is at. It SHALL finish one, deleting the folder and then its branch, only
-when its last write is more than 10 minutes old, exactly one local branch has its name as the last
-segment of its path, no registered worktree sits inside it, that branch is checked out in no
-registered worktree and its tip is reachable from the default branch; every other orphan folder is
-kept and printed with its reason (no branch, several branches, a worktree inside, checked out,
-not merged, written in the last 10 minutes). Right before a delete it SHALL read the registered
-worktrees again and keep the folder, deleting nothing, when git cannot list them, a worktree sits
-inside the folder, the folder is registered itself or it holds a `.git` by then. The folder is
-deleted as REAP-14 deletes a leftover and announced as REAP-15 announces a removal, as `removing
-orphan folder <path> (<branch>)`; its branch goes only once the folder is gone, at the tip it was
-judged at, and a folder that stays keeps its branch and is named. Nothing outside the worktree
-root is read for orphans or deleted as one. Orphan folders are finished last, after the main
-checkout's fast-forward and its install, and a dry run names each it would finish and deletes
-nothing.
-
-**Evidence:** written at apply time, when the code exists.
-
-#### Scenario: a merged orphan folder
-
-- **GIVEN** a folder under the worktree root with no `.git` and no registration, older than 10
-  minutes, whose one matching branch is merged
-- **WHEN** a run finishes orphan folders
-- **THEN** it prints `removing orphan folder` first, deletes the folder and then the branch
-- **Test:** `scripts/prune-worktrees.test.mjs` › "an orphan folder whose branch is merged goes with its branch, announced first"
-
-#### Scenario: a dry run
-
-- **GIVEN** the same folder
-- **WHEN** the pruner runs with `--dry-run --finish-orphans`
-- **THEN** it names the folder it would finish and deletes nothing
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a dry run names the orphan folder it would finish and deletes nothing"
-
-#### Scenario: a folder that is kept
-
-- **GIVEN** orphan folders with no matching branch, with two, whose branch is checked out, not
-  merged, or written a minute ago
-- **WHEN** a run finishes orphan folders
-- **THEN** each is kept, named with its reason, and nothing is deleted
-- **Test:** `scripts/prune-worktrees.test.mjs` › "an orphan folder is kept and named for each reason that keeps it"
-
-#### Scenario: a folder that holds a registered worktree
-
-- **GIVEN** an orphan folder with a registered worktree inside it, in the dry run
-- **WHEN** the pruner judges it
-- **THEN** it is kept as holding another registered worktree
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a dry run judges an orphan folder that holds a registered worktree as kept"
-
-#### Scenario: read again before the delete
-
-- **GIVEN** an orphan folder judged finishable, and then a worktree registered inside it, the
-  folder registered itself, a `.git` written in it, or a worktree list git cannot read
-- **WHEN** the run reaches its delete
-- **THEN** the folder is kept and nothing is deleted
-- **Test:** `scripts/prune-worktrees.test.mjs` › "an orphan folder that holds a worktree registered by the time of its delete is kept, and nothing is deleted"
-- **Test:** `scripts/prune-worktrees.test.mjs` › "an orphan folder registered as a worktree by the time of its delete is kept, and nothing is deleted"
-- **Test:** `scripts/prune-worktrees.test.mjs` › "an orphan folder that holds a .git by the time of its delete is kept, and nothing is deleted"
-- **Test:** `scripts/prune-worktrees.test.mjs` › "an orphan folder whose worktree list git cannot read again is kept, and nothing is deleted"
-
-#### Scenario: only the worktree root
-
-- **GIVEN** a folder beside the worktree root whose name matches a merged branch, a registered
-  worktree under the root with no `.git`, a folder under it that holds a `.git`, and a junction
-  under it
-- **WHEN** a run finishes orphan folders
-- **THEN** none is deleted, and the junction's target stays
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a folder outside the worktree root is never touched, even with a merged branch"
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a registered worktree under the worktree root is no orphan, even with no .git"
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a folder under the worktree root that holds a .git is no orphan, and stays"
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a junction under the worktree root is no orphan folder, and its target stays"
-
-#### Scenario: a folder that stays
-
-- **GIVEN** an orphan folder whose delete fails every try
-- **WHEN** the run finishes it
-- **THEN** its branch stays and the line names the folder as staying
-- **Test:** `scripts/prune-worktrees.test.mjs` › "an orphan folder that stays keeps its branch and is named"
-
-#### Scenario: the order
-
-- **GIVEN** a main checkout behind its origin and a finishable orphan folder
-- **WHEN** a run finishes orphan folders
-- **THEN** the main checkout is fast-forwarded before the folder is deleted
-- **Test:** `scripts/prune-worktrees.test.mjs` › "the main checkout is fast-forwarded before any orphan folder is deleted"
-
-### Requirement: REAP-19 — Orphan folders wait for a first manual run
-
-The pruner SHALL take `--finish-orphans` beside `--dry-run` and `--quiet`, an unknown option still
-throwing and naming itself. It SHALL finish orphan folders (REAP-18) only in a real run given
-`--finish-orphans` or while the file `prune-finish-orphans.enabled` exists in the repository's
-common git directory; otherwise a folder it could finish is kept, with the reason `orphan folders
-wait for a first manual run with --finish-orphans`. A real `--finish-orphans` run that leaves none
-of the folders it set out to finish on disk, a kept one excepted, SHALL write that file, holding
-the time, and print that every run finishes orphan folders from now on with its path; a run that
-leaves one on disk writes none, and a dry run writes none. `pnpm worktrees:prune:finish-orphans`
-SHALL run the pruner with `--finish-orphans`. `.husky/post-merge` runs the pruner as before, with
-`--quiet` alone.
-
-**Evidence:** written at apply time, when the code exists.
-
-#### Scenario: the option
-
-- **GIVEN** `--dry-run`, `--quiet` and `--finish-orphans`, then an unknown option
-- **WHEN** the pruner reads its options
-- **THEN** the first three are read, and the unknown option throws, naming it
-- **Test:** `scripts/prune-worktrees.test.mjs` › "--finish-orphans is read"
-- **Test:** `scripts/prune-worktrees.test.mjs` › "an unknown option throws, naming it"
-
-#### Scenario: before the marker
-
-- **GIVEN** a finishable orphan folder and no marker
-- **WHEN** the pruner runs without `--finish-orphans`
-- **THEN** it keeps the folder, naming the manual run, and deletes nothing
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a run before the marker exists reports the orphan folder it could finish and finishes none"
-
-#### Scenario: the first manual run
-
-- **GIVEN** the same folder
-- **WHEN** the pruner runs with `--finish-orphans`
-- **THEN** it finishes the folder, writes the marker and says every run finishes from now on
-- **Test:** `scripts/prune-worktrees.test.mjs` › "a --finish-orphans run that finishes every orphan folder it could writes the marker"
-
-#### Scenario: a folder left on disk
-
-- **GIVEN** an orphan folder whose delete fails
-- **WHEN** the pruner runs with `--finish-orphans`
-- **THEN** it writes no marker
-- **Test:** `scripts/prune-worktrees.test.mjs` › "an orphan folder finished with its folder left on disk withholds the marker"
-
-#### Scenario: after the marker
-
-- **GIVEN** the marker, and a new finishable orphan folder
-- **WHEN** the pruner runs without `--finish-orphans`
-- **THEN** it finishes the folder with its branch
-- **Test:** `scripts/prune-worktrees.test.mjs` › "once the marker exists a plain run finishes a new orphan folder with its branch"
-
-#### Scenario: the package script
-
-- **GIVEN** the root `package.json`
-- **WHEN** it is read
-- **THEN** `worktrees:prune:finish-orphans` runs `node scripts/prune-worktrees.mjs --finish-orphans`
-- **Test:** `scripts/prune-worktrees.test.mjs` › "the root package runs the first manual orphan run from worktrees:prune:finish-orphans"
-
 ## MODIFIED Requirements
 
 ### Requirement: REAP-03 — Only an orphan of a family is ended, by its executable and script
@@ -415,6 +109,29 @@ apply time.
 - **THEN** it reads as no watch mode, with the tsc script
 - **Test:** `scripts/agent-harness/reaper/contract.test.mjs` › "a node flag that only starts with --watch is skipped, and reads as no watch mode"
 
+### Requirement: REAP-10 — A child stopped at its bound takes its tree with it
+
+`runBounded` SHALL run a command with a time bound and, at the bound, end the child's whole tree
+with `signalProcessTree` (`taskkill /T /F` on Windows, the child's signal on POSIX), release its
+pipes and read as timed out. The worktree pruner runs its fetch and its install through it
+(PRUNE-02 and PRUNE-10 of harness/worktree-pruner).
+
+**Evidence:** `scripts/agent-harness/reaper/bounded-child.mjs:29-78`
+
+#### Scenario: the bound
+
+- **GIVEN** an injected child that never ends
+- **WHEN** `runBounded` reaches its bound
+- **THEN** it asked for the child's tree to end and returned timed out
+- **Test:** `scripts/agent-harness/reaper/bounded-child.test.mjs` › "a child that outlasts its bound has its tree ended and reads as timed out"
+
+#### Scenario: a real tree on Windows
+
+- **GIVEN** a node child that starts a node grandchild and waits
+- **WHEN** `runBounded` reaches its bound on Windows
+- **THEN** both the child and the grandchild have ended
+- **Test:** `scripts/agent-harness/reaper/bounded-child.test.mjs` › "on Windows a child stopped at its bound takes the process it started with it"
+
 ### Requirement: REAP-11 — One killing reaper at a time
 
 A reaper run with `--kill` SHALL first create its lock file under the OS temp directory
@@ -511,7 +228,7 @@ time.
 - **GIVEN** a lock whose holder ended and a guard whose holder runs
 - **WHEN** a run takes the lock
 - **THEN** it takes nothing, and the lock and the guard stay
-- **Test:** `scripts/agent-harness/reaper/lock.test.mjs` › "a run that finds a takeover under way takes nothing and leaves the lock"
+- **Test:** `scripts/agent-harness/reaper/lock.test.mjs` › "a run that finds a takeover under way by a holder that runs takes nothing and leaves the lock"
 
 #### Scenario: a guard replaced
 
