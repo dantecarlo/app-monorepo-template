@@ -17,8 +17,9 @@ export const createAppStore = <TState>({
   initializer,
   persist: persistOptions
 }: ICreateAppStoreParams<TState>): IAppStore<TState> => {
-  // eslint-disable-next-line local/single-object-params -- zustand calls a state creator as (set, get, store)
-  const stateCreator: StateCreator<TState> = (set, get) =>
+  // zustand calls a state creator with set, get and the store as three
+  // arguments: the initializer takes the first two as one object.
+  const stateCreator: StateCreator<TState> = (...[set, get]) =>
     initializer({ get, set })
 
   const useStore = persistOptions

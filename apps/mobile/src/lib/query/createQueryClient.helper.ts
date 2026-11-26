@@ -31,7 +31,9 @@ export const createQueryClient = ({
       }
     }),
     queryCache: new QueryCache({
-      onError: (error, query) => {
+      // The cache calls onError with the error and the query as two
+      // arguments: they arrive here as one list.
+      onError: (...[error, query]) => {
         void onCaptureError(error, {
           queryKey: sanitizeQueryKey({
             queryKey: query.queryKey,

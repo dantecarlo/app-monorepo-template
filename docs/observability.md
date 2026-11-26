@@ -552,7 +552,9 @@ repository keeps every file below; copy them from it rather than retyping.
      beside it:
 
      ```ts
-     // eslint-disable-next-line no-restricted-imports -- framework config entry point, like next.config.ts
+     // One of the files the `@sentry/nextjs` entry of
+     // .agents/contracts/dependencies.json names as its seam, so
+     // local/dependency-seam lets it import the SDK.
      import { withSentryConfig } from '@sentry/nextjs'
      import type { NextConfig } from 'next'
 

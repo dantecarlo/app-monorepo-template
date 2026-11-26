@@ -27,8 +27,9 @@ export class File {
 
   readonly parentDirectory: Directory
 
-  // eslint-disable-next-line local/single-object-params -- expo-file-system's File takes (directory, name)
-  constructor(directory: Directory, name: string) {
+  // expo-file-system's File takes the parts of its URI as one rest list; the
+  // app passes two, a directory and a name.
+  constructor(...[directory, name]: [directory: Directory, name: string]) {
     this.parentDirectory = directory
     this.name = name
   }

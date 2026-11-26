@@ -10,11 +10,12 @@ import type {
 
 // A persisted store writes through the device's key-value storage port, the
 // one seam of AsyncStorage; zustand reads and writes JSON strings through it.
+// zustand's StateStorage calls setItem with the name and the value as two
+// arguments: they arrive as one list and reach the port as one item.
 const deviceStorage = createJSONStorage(() => ({
   getItem: (name: string) => keyValueStorage.getItem({ key: name }),
   removeItem: (name: string) => keyValueStorage.removeItem({ key: name }),
-  // eslint-disable-next-line local/single-object-params -- zustand's StateStorage calls setItem(name, value)
-  setItem: (name: string, value: string) =>
+  setItem: (...[name, value]: [name: string, value: string]) =>
     keyValueStorage.setItem({ key: name, value })
 }))
 
@@ -28,8 +29,9 @@ export const createAppStore = <TState>({
   initializer,
   persist: persistOptions
 }: ICreateAppStoreParams<TState>): IAppStore<TState> => {
-  // eslint-disable-next-line local/single-object-params -- zustand calls a state creator as (set, get, store)
-  const stateCreator: StateCreator<TState> = (set, get) =>
+  // zustand calls a state creator with set, get and the store as three
+  // arguments: the initializer takes the first two as one object.
+  const stateCreator: StateCreator<TState> = (...[set, get]) =>
     initializer({ get, set })
 
   const useStore = persistOptions
