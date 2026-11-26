@@ -3,7 +3,7 @@
 > **Governs:** `.claude/skills/ticket-flow`, `.claude/skills/po-ticket`, `.claude/skills/refine-ticket`, `.claude/skills/dev-ticket`, `.claude/skills/qa-ticket`, `.claude/skills/release-ticket`, `.claude/skills/process-intake`, `.claude/skills/general-plan`, `scripts/verify-skills.mjs`, `scripts/verify-ticket-branch.mjs`, `.agents/contracts/harness-config.schema.json`
 > **ID prefix:** `TICKET`
 > **Derived from:** `openspec/changes/archive/2026-11-16-ticket-flow/source-spec.md`, `docs/harness.md`
-> **Verified against the code:** 2026-11-25 at `12d6b224`
+> **Verified against the code:** 2026-11-26 at `f1332cd1`
 
 ## Purpose
 
@@ -37,10 +37,10 @@ folder: `ticket.template.md`, the body a ticket is written from, with its target
 
 **Evidence:** `.claude/skills/ticket-flow/SKILL.md:28`, `.claude/skills/ticket-flow/SKILL.md:42`,
 `.claude/skills/ticket-flow/SKILL.md:84`, `.claude/skills/ticket-flow/SKILL.md:110`,
-`.claude/skills/ticket-flow/SKILL.md:191`, `.claude/skills/ticket-flow/SKILL.md:369`,
+`.claude/skills/ticket-flow/SKILL.md:191`, `.claude/skills/ticket-flow/SKILL.md:375`,
 `.claude/skills/ticket-flow/ticket.template.md:21`,
-`.claude/skills/ticket-flow/release.template.md:11`, `scripts/verify-skills.mjs:119`,
-`scripts/verify-skills.mjs:130`, `scripts/verify-skills.mjs:332`
+`.claude/skills/ticket-flow/release.template.md:11`, `scripts/verify-skills.mjs:121`,
+`scripts/verify-skills.mjs:132`, `scripts/verify-skills.mjs:394`
 
 #### Scenario: the contract of the repository
 
@@ -113,7 +113,7 @@ neither the contract's states table nor its board operations table.
 
 **Evidence:** `.claude/skills/po-ticket/SKILL.md:21`, `.claude/skills/refine-ticket/SKILL.md:21`,
 `.claude/skills/dev-ticket/SKILL.md:18`, `.claude/skills/qa-ticket/SKILL.md:20`,
-`.claude/skills/release-ticket/SKILL.md:19`, `scripts/verify-skills.mjs:807`
+`.claude/skills/release-ticket/SKILL.md:19`, `scripts/verify-skills.mjs:821`
 
 #### Scenario: a role skill that does not open with the contract
 
@@ -142,8 +142,8 @@ Each of the seven ticket skills SHALL have a `SKILL.md` whose frontmatter `name`
 whose description holds `USE WHEN:` and `DO NOT USE:`, and which has a `## CONTRACT` and an
 `## Output` section.
 
-**Evidence:** `scripts/verify-skills.mjs:753`, `scripts/verify-skills.mjs:841`,
-`scripts/verify-skills.mjs:941`
+**Evidence:** `scripts/verify-skills.mjs:767`, `scripts/verify-skills.mjs:787`,
+`scripts/verify-skills.mjs:958`
 
 #### Scenario: healthy skills
 
@@ -213,7 +213,7 @@ branching model.
 
 **Evidence:** `.claude/skills/process-intake/ticket-flow.template.md:7`,
 `.claude/skills/process-intake/ticket-flow.template.md:112`,
-`.claude/skills/process-intake/ticket-flow.template.md:121`, `scripts/verify-skills.mjs:332`
+`.claude/skills/process-intake/ticket-flow.template.md:121`, `scripts/verify-skills.mjs:585`
 
 #### Scenario: no board adapter section
 
@@ -488,7 +488,8 @@ each flag that replaced a field) and what it does not cover.
 The template's `pnpm validate` SHALL run `pnpm verify:ticket-branch:test` and never
 `pnpm verify:ticket-branch`, as the template's own branches carry no ticket id.
 
-**Evidence:** `package.json:47`, `.agents/contracts/gates.json:400`, `package.json:79`
+**Evidence:** `package.json:55`, `.agents/contracts/gates.json:479`, `package.json:87`,
+`.agents/contracts/gates.json:526`
 
 #### Scenario: the steps validate runs
 
@@ -529,9 +530,9 @@ to name `ready to merge, PR #`, and `qa-ticket` to hold no `Ready to merge → D
 **Evidence:** `.claude/skills/qa-ticket/SKILL.md:66`, `.claude/skills/qa-ticket/SKILL.md:85`,
 `.claude/skills/qa-ticket/SKILL.md:89`, `.claude/skills/qa-ticket/SKILL.md:96`,
 `.claude/skills/qa-ticket/SKILL.md:134`, `.claude/skills/ticket-flow/SKILL.md:97`,
-`.claude/skills/ticket-flow/SKILL.md:342`, `scripts/verify-skills.mjs:218`,
-`scripts/verify-skills.mjs:219`, `scripts/verify-skills.mjs:269`, `scripts/verify-skills.mjs:454`,
-`scripts/verify-skills.mjs:649`
+`.claude/skills/ticket-flow/SKILL.md:345`, `scripts/verify-skills.mjs:220`,
+`scripts/verify-skills.mjs:225`, `scripts/verify-skills.mjs:279`, `scripts/verify-skills.mjs:466`,
+`scripts/verify-skills.mjs:485`
 
 #### Scenario: the skills of the repository
 
@@ -618,9 +619,9 @@ which is `production` by default, and the tags-only alternative), the migrations
 and `.claude/skills/refine-ticket/SKILL.md` a section that groups Done tickets into a release
 ticket.
 
-**Evidence:** `.claude/skills/release-ticket/SKILL.md:89`,
-`.claude/skills/release-ticket/SKILL.md:118`, `.claude/skills/release-ticket/SKILL.md:123`,
-`.claude/skills/release-ticket/SKILL.md:146`, `.claude/skills/release-ticket/SKILL.md:158`,
+**Evidence:** `.claude/skills/release-ticket/SKILL.md:91`,
+`.claude/skills/release-ticket/SKILL.md:120`, `.claude/skills/release-ticket/SKILL.md:125`,
+`.claude/skills/release-ticket/SKILL.md:148`, `.claude/skills/release-ticket/SKILL.md:160`,
 `.claude/skills/refine-ticket/SKILL.md:293`
 
 #### Scenario: the branching is gone
@@ -654,8 +655,8 @@ the release ticket. `ticket-flow`'s Ready for prod row and § Release stage, `re
 Step 1 and `release.template.md` SHALL state the same rule and the same exception.
 
 **Evidence:** `.claude/skills/refine-ticket/SKILL.md:309`,
-`.claude/skills/ticket-flow/SKILL.md:101`, `.claude/skills/ticket-flow/SKILL.md:376`,
-`.claude/skills/ticket-flow/SKILL.md:377`, `.claude/skills/release-ticket/SKILL.md:35`,
+`.claude/skills/ticket-flow/SKILL.md:101`, `.claude/skills/ticket-flow/SKILL.md:379`,
+`.claude/skills/ticket-flow/SKILL.md:381`, `.claude/skills/release-ticket/SKILL.md:35`,
 `.claude/skills/release-ticket/SKILL.md:39`, `.claude/skills/ticket-flow/release.template.md:14`
 
 #### Scenario: an area not checked on staging
@@ -698,9 +699,17 @@ Step 1 and `release.template.md` SHALL state the same rule and the same exceptio
 `release-ticket` SHALL run the deploy targets a release touches in the order the project layer
 declares, only on the owner's word for the release and for each irreversible step, recorded on
 the release ticket, check each target, run a failed target's declared rollback and stop the
-release, and read every deploy secret from the store the target names, never from a ticket.
+release, and read every deploy secret from the store the target names, never from a ticket. Its
+Step 2 SHALL wait for the owner's word in the CI/CD session, or for the architect's relay of it
+(TICKET-36), which covers that one release; the relay covers no irreversible step, each of which
+gets its own yes in Step 3. The structural check SHALL hold `release-ticket` Step 2 to name
+`ticket-flow` rule 6.
 
-**Evidence:** `.claude/skills/release-ticket/SKILL.md:52`, `.claude/skills/release-ticket/SKILL.md:63`
+**Evidence:** `.claude/skills/release-ticket/SKILL.md:52`, `.claude/skills/release-ticket/SKILL.md:54`,
+`.claude/skills/release-ticket/SKILL.md:55`, `.claude/skills/release-ticket/SKILL.md:56`,
+`.claude/skills/release-ticket/SKILL.md:70`, `.claude/skills/release-ticket/SKILL.md:73`,
+`.claude/skills/release-ticket/SKILL.md:76`, `scripts/verify-skills.mjs:522`,
+`scripts/verify-skills.mjs:526`
 
 #### Scenario: a target fails its check
 
@@ -711,13 +720,29 @@ release, and read every deploy secret from the store the target names, never fro
 - **Test:** Not covered — the rule is a procedure a CI/CD session follows; no runner drives a
   session or a deploy
 
+#### Scenario: Step 2 drops the relay
+
+- **GIVEN** a `release-ticket` whose Step 2 never names the architect's relay
+- **WHEN** the structural check runs
+- **THEN** it reports one finding, naming the file, the step and the relay it owes
+- **Test:** `scripts/verify-skills.test.mjs` › "a release-ticket whose owner's word step names no architect relay is refused"
+
+#### Scenario: a relayed go covers the release and no irreversible step
+
+- **GIVEN** a release the architect relays the owner's yes for, with a production migration
+- **WHEN** the CI/CD session reaches the migration in Step 3
+- **THEN** it asks the owner for the migration in its own session and records that go on the
+  release ticket
+- **Test:** Not covered — the rule is a procedure a CI/CD session follows; no runner drives a
+  session
+
 ### Requirement: TICKET-17 — A migration in a release keeps the live app running
 
 `release-ticket` SHALL ship only backward-compatible migrations, expanding the schema in one
 release and contracting it in a later one, so a mobile app version already in the store keeps
 running against the new schema, and declare a migration's rollback as a forward fix.
 
-**Evidence:** `.claude/skills/release-ticket/SKILL.md:146`
+**Evidence:** `.claude/skills/release-ticket/SKILL.md:148`
 
 #### Scenario: a column the live app still reads
 
@@ -737,7 +762,7 @@ general plan names no open ticket (TICKET-29), so neither `po-ticket` § Step 5 
 
 **Evidence:** `.claude/skills/po-ticket/SKILL.md:65`, `.claude/skills/po-ticket/SKILL.md:82`,
 `.claude/skills/po-ticket/SKILL.md:88`, `.claude/skills/refine-ticket/SKILL.md:32`,
-`.claude/skills/ticket-flow/SKILL.md:294`, `.claude/skills/ticket-flow/SKILL.md:310`
+`.claude/skills/ticket-flow/SKILL.md:300`, `.claude/skills/ticket-flow/SKILL.md:313`
 
 #### Scenario: the plan cannot meet the version
 
@@ -811,10 +836,10 @@ merge a pull request into the production branch (TICKET-24).
 `.claude/skills/process-intake/ticket-flow.template.md:68`,
 `.claude/skills/process-intake/ticket-flow.template.md:70`,
 `.claude/skills/release-ticket/SKILL.md:24`, `.agents/contracts/harness-config.schema.json:74`,
-`.agents/contracts/harness-config.schema.json:75`, `scripts/verify-skills.mjs:165`,
-`scripts/verify-skills.mjs:312`, `scripts/verify-skills.mjs:324`, `scripts/verify-skills.mjs:326`,
-`scripts/verify-skills.mjs:335`, `scripts/verify-skills.mjs:409`, `scripts/verify-skills.mjs:449`,
-`scripts/verify-skills.mjs:450`, `scripts/verify-skills.mjs:683`,
+`.agents/contracts/harness-config.schema.json:75`, `scripts/verify-skills.mjs:167`,
+`scripts/verify-skills.mjs:322`, `scripts/verify-skills.mjs:334`, `scripts/verify-skills.mjs:336`,
+`scripts/verify-skills.mjs:345`, `scripts/verify-skills.mjs:419`, `scripts/verify-skills.mjs:460`,
+`scripts/verify-skills.mjs:461`, `scripts/verify-skills.mjs:697`,
 `scripts/verify-harness-config.mjs:174`, `scripts/verify-harness-config.mjs:193`,
 `scripts/verify-harness-config.mjs:323`, `scripts/verify-harness-config.mjs:465`,
 `scripts/verify-harness-config.mjs:562`
@@ -1149,9 +1174,9 @@ block, and the Ticket identity section of `.claude/skills/process-intake/ticket-
 to hold one `json ticket-identity` block that the branch check reads with no finding and whose
 fields are the branch check's defaults.
 
-**Evidence:** `scripts/verify-skills.mjs:323`, `scripts/verify-skills.mjs:391`,
-`scripts/verify-skills.mjs:526`, `scripts/verify-skills.mjs:555`, `scripts/verify-skills.mjs:696`,
-`.claude/skills/ticket-flow/SKILL.md:250`, `.claude/skills/ticket-flow/SKILL.md:256`,
+**Evidence:** `scripts/verify-skills.mjs:333`, `scripts/verify-skills.mjs:401`,
+`scripts/verify-skills.mjs:540`, `scripts/verify-skills.mjs:569`, `scripts/verify-skills.mjs:710`,
+`.claude/skills/ticket-flow/SKILL.md:253`, `.claude/skills/ticket-flow/SKILL.md:259`,
 `.claude/skills/process-intake/SKILL.md:88`,
 `.claude/skills/process-intake/ticket-flow.template.md:96`
 
@@ -1228,8 +1253,8 @@ hold `qa-ticket` § Step 2 to name `--detach` and § Step 5 to name `git push or
 
 **Evidence:** `.claude/skills/qa-ticket/SKILL.md:39`, `.claude/skills/qa-ticket/SKILL.md:79`,
 `.claude/skills/qa-ticket/SKILL.md:96`, `.claude/skills/qa-ticket/SKILL.md:110`,
-`.claude/skills/dev-ticket/SKILL.md:95`, `scripts/verify-skills.mjs:212`,
-`scripts/verify-skills.mjs:213`, `scripts/verify-skills.mjs:475`, `scripts/verify-skills.mjs:476`
+`.claude/skills/dev-ticket/SKILL.md:95`, `scripts/verify-skills.mjs:214`,
+`scripts/verify-skills.mjs:219`, `scripts/verify-skills.mjs:487`, `scripts/verify-skills.mjs:488`
 
 #### Scenario: the skills of the repository
 
@@ -1318,9 +1343,9 @@ the session that enters Done for a hotfix. The structural check SHALL hold `qa-t
 merge.
 
 **Evidence:** `.claude/skills/qa-ticket/SKILL.md:100`, `.claude/skills/refine-ticket/SKILL.md:98`,
-`.claude/skills/refine-ticket/SKILL.md:295`, `.claude/skills/release-ticket/SKILL.md:158`,
+`.claude/skills/refine-ticket/SKILL.md:300`, `.claude/skills/release-ticket/SKILL.md:160`,
 `.claude/skills/ticket-flow/SKILL.md:98`, `.claude/skills/ticket-flow/SKILL.md:172`,
-`scripts/verify-skills.mjs:225`, `scripts/verify-skills.mjs:478`
+`scripts/verify-skills.mjs:232`, `scripts/verify-skills.mjs:490`
 
 #### Scenario: the skills of the repository
 
@@ -1391,7 +1416,8 @@ queue, and only while the project layer's merge gate, when it names one, passes 
 to merge condition holds (CI green, no conflict, the branch holding the default branch's current
 tip); a pull request that fails one SHALL be brought current by the architect itself, a ticket's
 from its spare worktree (TICKET-33) and the closed ticket catalog pull request as TICKET-31 says.
-It SHALL merge on the owner's word, asked in the architect's own session, under the `manual`
+It SHALL merge on the owner's word, asked in the architect's own session, where a relay from any
+other session does not count (TICKET-36), under the `manual`
 policy, or when the default branch's copy of `.agents/harness.config.json` records no `low-risk`
 (TICKET-20); and, under `low-risk`, without asking only a pull
 request whose Risk line is `Risk: none` or that changes only passive files, and whose merge sets
@@ -1404,7 +1430,8 @@ queue current itself. `ticket-flow`'s states table SHALL name the architect as t
 enters Done, a hotfix aside (TICKET-24), and its § Messages SHALL carry
 `<id> ready to merge, PR #<n>`, from QA to the architect, and no line that asks a session to
 bring a branch current. The structural check SHALL hold `refine-ticket` to have a § Merge queue, which reads the
-policy from the default branch's copy and fails closed to `manual` (TICKET-20).
+policy from the default branch's copy and fails closed to `manual` (TICKET-20), and says that a
+relay from any other session does not count.
 
 **Evidence:** `.claude/skills/refine-ticket/SKILL.md:84`,
 `.claude/skills/refine-ticket/SKILL.md:93`, `.claude/skills/refine-ticket/SKILL.md:114`,
@@ -1413,14 +1440,15 @@ policy from the default branch's copy and fails closed to `manual` (TICKET-20).
 `.claude/skills/refine-ticket/SKILL.md:138`, `.claude/skills/refine-ticket/SKILL.md:143`,
 `.claude/skills/refine-ticket/SKILL.md:146`, `.claude/skills/refine-ticket/SKILL.md:150`,
 `.claude/skills/refine-ticket/SKILL.md:176`, `.claude/skills/refine-ticket/SKILL.md:177`,
-`.claude/skills/refine-ticket/SKILL.md:179`, `.claude/skills/refine-ticket/SKILL.md:181`,
+`.claude/skills/refine-ticket/SKILL.md:179`, `.claude/skills/refine-ticket/SKILL.md:181`, `.claude/skills/refine-ticket/SKILL.md:202`,
 `.claude/skills/refine-ticket/SKILL.md:204`, `.claude/skills/refine-ticket/SKILL.md:205`,
 `.claude/skills/refine-ticket/SKILL.md:213`, `.claude/skills/refine-ticket/SKILL.md:217`,
 `.claude/skills/refine-ticket/SKILL.md:218`, `.claude/skills/ticket-flow/SKILL.md:98`,
 `.claude/skills/ticket-flow/SKILL.md:142`, `.claude/skills/ticket-flow/SKILL.md:171`,
-`.claude/skills/ticket-flow/SKILL.md:351`, `.claude/skills/ticket-flow/SKILL.md:354`,
-`.claude/skills/ticket-flow/SKILL.md:360`, `scripts/verify-skills.mjs:202`,
-`scripts/verify-skills.mjs:439`, `scripts/verify-skills.mjs:442`, `scripts/verify-skills.mjs:450`
+`.claude/skills/ticket-flow/SKILL.md:354`, `.claude/skills/ticket-flow/SKILL.md:357`,
+`.claude/skills/ticket-flow/SKILL.md:363`, `scripts/verify-skills.mjs:204`,
+`scripts/verify-skills.mjs:450`, `scripts/verify-skills.mjs:453`, `scripts/verify-skills.mjs:461`,
+`scripts/verify-skills.mjs:462`
 
 #### Scenario: the skills of the repository
 
@@ -1487,6 +1515,14 @@ policy from the default branch's copy and fails closed to `manual` (TICKET-20).
 - **Test:** Not covered — the rule is a procedure an architect session follows; no runner drives
   a session, and the structural check only proves the merge queue says which copy it reads
 
+#### Scenario: the merge queue says nothing about a relay
+
+- **GIVEN** a `refine-ticket` whose § Merge queue never says that a relay from any other session
+  does not count
+- **WHEN** the structural check runs
+- **THEN** it reports one finding
+- **Test:** `scripts/verify-skills.test.mjs` › "a refine-ticket whose merge queue names no rule on a relay from another session is refused"
+
 ### Requirement: TICKET-26 — Every ticket carries a target version
 
 Every ticket of the flow, whatever its type (`feature`, `fix`, `tech` or `chore`; a test or docs
@@ -1502,14 +1538,14 @@ where the rule is checked, since no gate reads the board. `ticket.template.md` S
 version required, and the structural check SHALL hold its Target version section to name
 `**Version (required):**`.
 
-**Evidence:** `.claude/skills/ticket-flow/SKILL.md:92`, `.claude/skills/ticket-flow/SKILL.md:294`,
-`.claude/skills/ticket-flow/SKILL.md:296`, `.claude/skills/ticket-flow/SKILL.md:298`,
+**Evidence:** `.claude/skills/ticket-flow/SKILL.md:92`, `.claude/skills/ticket-flow/SKILL.md:300`,
+`.claude/skills/ticket-flow/SKILL.md:302`, `.claude/skills/ticket-flow/SKILL.md:305`,
 `.claude/skills/po-ticket/SKILL.md:57`, `.claude/skills/po-ticket/SKILL.md:67`,
 `.claude/skills/refine-ticket/SKILL.md:32`, `.claude/skills/refine-ticket/SKILL.md:34`,
 `.claude/skills/refine-ticket/SKILL.md:65`, `.claude/skills/refine-ticket/SKILL.md:108`,
 `.claude/skills/ticket-flow/ticket.template.md:23`,
-`.claude/skills/ticket-flow/ticket.template.md:28`, `scripts/verify-skills.mjs:297`,
-`scripts/verify-skills.mjs:348`
+`.claude/skills/ticket-flow/ticket.template.md:28`, `scripts/verify-skills.mjs:311`,
+`scripts/verify-skills.mjs:358`
 
 #### Scenario: the skills of the repository
 
@@ -1571,11 +1607,11 @@ serves as staging. The structural check SHALL hold the template's Branching mode
 
 **Evidence:** `.claude/skills/process-intake/ticket-flow.template.md:121`,
 `.claude/skills/process-intake/ticket-flow.template.md:125`,
-`.claude/skills/process-intake/SKILL.md:108`, `.claude/skills/ticket-flow/SKILL.md:389`,
-`.claude/skills/release-ticket/SKILL.md:108`, `.claude/skills/release-ticket/SKILL.md:123`,
+`.claude/skills/process-intake/SKILL.md:108`, `.claude/skills/ticket-flow/SKILL.md:392`,
+`.claude/skills/release-ticket/SKILL.md:110`, `.claude/skills/release-ticket/SKILL.md:125`,
 `.claude/skills/dev-ticket/SKILL.md:50`, `.claude/skills/qa-ticket/SKILL.md:85`,
-`.claude/skills/ticket-flow/release.template.md:15`, `scripts/verify-skills.mjs:206`,
-`scripts/verify-skills.mjs:509`
+`.claude/skills/ticket-flow/release.template.md:15`, `scripts/verify-skills.mjs:208`,
+`scripts/verify-skills.mjs:521`
 
 #### Scenario: the skills of the repository
 
@@ -1619,7 +1655,7 @@ hold both sections to name `source of every open ticket`.
 **Evidence:** `.claude/skills/ticket-flow/SKILL.md:47`, `.claude/skills/ticket-flow/SKILL.md:50`,
 `.claude/skills/process-intake/ticket-flow.template.md:11`,
 `.claude/skills/process-intake/SKILL.md:58`, `.claude/skills/process-intake/SKILL.md:60`,
-`scripts/verify-skills.mjs:235`, `scripts/verify-skills.mjs:386`, `scripts/verify-skills.mjs:528`
+`scripts/verify-skills.mjs:250`, `scripts/verify-skills.mjs:396`, `scripts/verify-skills.mjs:542`
 
 #### Scenario: the skills of the repository
 
@@ -1671,18 +1707,18 @@ naming `§ Closed Ticket Catalog`, `one pull request per close or release` and
 `` `### Dropped tickets` ``, and `po-ticket` to name no `edits:`.
 
 **Evidence:** `.claude/skills/refine-ticket/SKILL.md:96`,
-`.claude/skills/refine-ticket/SKILL.md:268`, `.claude/skills/refine-ticket/SKILL.md:270`,
-`.claude/skills/refine-ticket/SKILL.md:274`, `.claude/skills/refine-ticket/SKILL.md:277`,
-`.claude/skills/refine-ticket/SKILL.md:278`, `.claude/skills/refine-ticket/SKILL.md:281`,
+`.claude/skills/refine-ticket/SKILL.md:268`, `.claude/skills/refine-ticket/SKILL.md:273`,
+`.claude/skills/refine-ticket/SKILL.md:275`, `.claude/skills/refine-ticket/SKILL.md:277`,
+`.claude/skills/refine-ticket/SKILL.md:279`, `.claude/skills/refine-ticket/SKILL.md:282`,
 `.claude/skills/refine-ticket/SKILL.md:285`, `.claude/skills/refine-ticket/SKILL.md:323`,
 `.claude/skills/po-ticket/SKILL.md:24`, `.claude/skills/po-ticket/SKILL.md:50`,
 `.claude/skills/po-ticket/SKILL.md:110`, `.claude/skills/po-ticket/SKILL.md:113`,
 `.claude/skills/po-ticket/SKILL.md:130`, `.claude/skills/ticket-flow/SKILL.md:50`,
 `.claude/skills/ticket-flow/SKILL.md:99`, `.claude/skills/ticket-flow/SKILL.md:103`,
 `.claude/skills/ticket-flow/SKILL.md:198`, `.claude/skills/ticket-flow/SKILL.md:199`,
-`.claude/skills/process-intake/ticket-flow.template.md:11`, `scripts/verify-skills.mjs:243`,
-`scripts/verify-skills.mjs:246`, `scripts/verify-skills.mjs:408`, `scripts/verify-skills.mjs:411`,
-`scripts/verify-skills.mjs:439`, `scripts/verify-skills.mjs:440`, `scripts/verify-skills.mjs:441`
+`.claude/skills/process-intake/ticket-flow.template.md:11`, `scripts/verify-skills.mjs:259`,
+`scripts/verify-skills.mjs:256`, `scripts/verify-skills.mjs:418`, `scripts/verify-skills.mjs:422`,
+`scripts/verify-skills.mjs:450`, `scripts/verify-skills.mjs:451`, `scripts/verify-skills.mjs:452`
 
 #### Scenario: the skills of the repository
 
@@ -1882,9 +1918,9 @@ target version and closing pull request.
 `.claude/skills/refine-ticket/SKILL.md:176`, `.claude/skills/refine-ticket/SKILL.md:193`,
 `.claude/skills/refine-ticket/SKILL.md:200`, `.claude/skills/refine-ticket/SKILL.md:212`,
 `.claude/skills/refine-ticket/SKILL.md:214`, `.claude/skills/refine-ticket/SKILL.md:288`,
-`.claude/skills/ticket-flow/SKILL.md:160`, `.claude/skills/ticket-flow/SKILL.md:357`,
-`scripts/verify-skills.mjs:254`, `scripts/verify-skills.mjs:255`, `scripts/verify-skills.mjs:431`,
-`scripts/verify-skills.mjs:432`
+`.claude/skills/ticket-flow/SKILL.md:160`, `.claude/skills/ticket-flow/SKILL.md:360`,
+`scripts/verify-skills.mjs:264`, `scripts/verify-skills.mjs:265`, `scripts/verify-skills.mjs:442`,
+`scripts/verify-skills.mjs:443`
 
 #### Scenario: the skills of the repository
 
@@ -1977,8 +2013,8 @@ SHALL have a Dropped row. The structural check SHALL hold both states tables to 
 `.claude/skills/ticket-flow/SKILL.md:127`, `.claude/skills/ticket-flow/SKILL.md:128`,
 `.claude/skills/ticket-flow/SKILL.md:131`, `.claude/skills/ticket-flow/SKILL.md:135`,
 `.claude/skills/ticket-flow/SKILL.md:136`, `.claude/skills/ticket-flow/SKILL.md:175`,
-`.claude/skills/ticket-flow/SKILL.md:198`, `.claude/skills/ticket-flow/SKILL.md:313`,
-`.claude/skills/ticket-flow/SKILL.md:331`, `.claude/skills/ticket-flow/SKILL.md:376`,
+`.claude/skills/ticket-flow/SKILL.md:198`, `.claude/skills/ticket-flow/SKILL.md:316`,
+`.claude/skills/ticket-flow/SKILL.md:334`, `.claude/skills/ticket-flow/SKILL.md:379`,
 `.claude/skills/po-ticket/SKILL.md:35`, `.claude/skills/po-ticket/SKILL.md:93`,
 `.claude/skills/po-ticket/SKILL.md:105`, `.claude/skills/refine-ticket/SKILL.md:100`,
 `.claude/skills/refine-ticket/SKILL.md:245`, `.claude/skills/refine-ticket/SKILL.md:254`,
@@ -1988,10 +2024,10 @@ SHALL have a Dropped row. The structural check SHALL hold both states tables to 
 `.claude/skills/dev-ticket/SKILL.md:105`, `.claude/skills/qa-ticket/SKILL.md:111`,
 `.claude/skills/process-intake/ticket-flow.template.md:40`,
 `.claude/skills/release-ticket/SKILL.md:39`, `.claude/skills/ticket-flow/release.template.md:14`,
-`scripts/verify-skills.mjs:130`, `scripts/verify-skills.mjs:283`, `scripts/verify-skills.mjs:284`,
-`scripts/verify-skills.mjs:285`, `scripts/verify-skills.mjs:287`, `scripts/verify-skills.mjs:288`,
-`scripts/verify-skills.mjs:387`, `scripts/verify-skills.mjs:389`, `scripts/verify-skills.mjs:416`,
-`scripts/verify-skills.mjs:438`, `scripts/verify-skills.mjs:449`, `scripts/verify-skills.mjs:479`
+`scripts/verify-skills.mjs:132`, `scripts/verify-skills.mjs:293`, `scripts/verify-skills.mjs:294`,
+`scripts/verify-skills.mjs:295`, `scripts/verify-skills.mjs:297`, `scripts/verify-skills.mjs:298`,
+`scripts/verify-skills.mjs:397`, `scripts/verify-skills.mjs:399`, `scripts/verify-skills.mjs:427`,
+`scripts/verify-skills.mjs:450`, `scripts/verify-skills.mjs:460`, `scripts/verify-skills.mjs:491`
 
 #### Scenario: the skills of the repository
 
@@ -2141,19 +2177,19 @@ conflict by merging the base into the branch, never by a rebase. The structural 
 `.claude/skills/refine-ticket/SKILL.md:146`, `.claude/skills/refine-ticket/SKILL.md:213`,
 `.claude/skills/refine-ticket/SKILL.md:215`, `.claude/skills/refine-ticket/SKILL.md:216`,
 `.claude/skills/refine-ticket/SKILL.md:223`, `.claude/skills/refine-ticket/SKILL.md:224`,
-`.claude/skills/refine-ticket/SKILL.md:225`, `.claude/skills/refine-ticket/SKILL.md:226`,
+`.claude/skills/refine-ticket/SKILL.md:226`, `.claude/skills/refine-ticket/SKILL.md:226`,
 `.claude/skills/refine-ticket/SKILL.md:229`, `.claude/skills/refine-ticket/SKILL.md:230`,
-`.claude/skills/refine-ticket/SKILL.md:233`, `.claude/skills/refine-ticket/SKILL.md:235`,
+`.claude/skills/refine-ticket/SKILL.md:234`, `.claude/skills/refine-ticket/SKILL.md:235`,
 `.claude/skills/refine-ticket/SKILL.md:237`, `.claude/skills/refine-ticket/SKILL.md:240`,
 `.claude/skills/refine-ticket/SKILL.md:315`, `.claude/skills/refine-ticket/SKILL.md:343`,
 `.claude/skills/ticket-flow/SKILL.md:96`, `.claude/skills/ticket-flow/SKILL.md:148`,
-`.claude/skills/ticket-flow/SKILL.md:170`, `.claude/skills/ticket-flow/SKILL.md:351`,
-`.claude/skills/ticket-flow/SKILL.md:364`, `.claude/skills/qa-ticket/SKILL.md:96`,
+`.claude/skills/ticket-flow/SKILL.md:170`, `.claude/skills/ticket-flow/SKILL.md:354`,
+`.claude/skills/ticket-flow/SKILL.md:367`, `.claude/skills/qa-ticket/SKILL.md:96`,
 `.claude/skills/dev-ticket/SKILL.md:93`, `.claude/skills/dev-ticket/SKILL.md:96`,
-`scripts/verify-skills.mjs:265`, `scripts/verify-skills.mjs:266`, `scripts/verify-skills.mjs:267`,
-`scripts/verify-skills.mjs:268`, `scripts/verify-skills.mjs:269`, `scripts/verify-skills.mjs:270`,
-`scripts/verify-skills.mjs:367`, `scripts/verify-skills.mjs:421`, `scripts/verify-skills.mjs:433`,
-`scripts/verify-skills.mjs:437`, `scripts/verify-skills.mjs:465`
+`scripts/verify-skills.mjs:275`, `scripts/verify-skills.mjs:276`, `scripts/verify-skills.mjs:277`,
+`scripts/verify-skills.mjs:278`, `scripts/verify-skills.mjs:279`, `scripts/verify-skills.mjs:280`,
+`scripts/verify-skills.mjs:377`, `scripts/verify-skills.mjs:432`, `scripts/verify-skills.mjs:444`,
+`scripts/verify-skills.mjs:448`, `scripts/verify-skills.mjs:477`
 
 #### Scenario: the skills of the repository
 
@@ -2521,3 +2557,56 @@ For a `gh` adapter, after the team confirms it, `process-intake` SHALL make each
 - **WHEN** `process-intake` makes the labels current
 - **THEN** it edits that label, creates only the missing ones and passes `--force` to none
 - **Test:** Not covered — the rule is a procedure an intake session follows; no runner drives a session, and the structural check does not read this step
+
+### Requirement: TICKET-36 — An approval counts where it was asked, or relayed by the architect word for word
+
+`ticket-flow` rule 6 SHALL say that an approval counts in the session that asked for it, and that
+an approval the owner gives in the architect's session counts in another session too when the
+architect relays it word for word, with its time and the question it answered. It SHALL say that
+a relay never widens an approval: it covers what that question named and nothing more, and every
+irreversible production step still gets its own yes. It SHALL say that a relay from any other
+session does not count. The structural check SHALL hold `ticket-flow` § Rules every role follows
+to name the architect's relay.
+
+**Evidence:** `.claude/skills/ticket-flow/SKILL.md:243`, `.claude/skills/ticket-flow/SKILL.md:244`,
+`.claude/skills/ticket-flow/SKILL.md:245`, `.claude/skills/ticket-flow/SKILL.md:246`,
+`.claude/skills/ticket-flow/SKILL.md:247`, `scripts/verify-skills.mjs:241`,
+`scripts/verify-skills.mjs:420`
+
+#### Scenario: the skills of the repository
+
+- **GIVEN** the repository's seven ticket skills
+- **WHEN** `pnpm verify:skills:test` runs
+- **THEN** the structural check finds nothing: rule 6 names the architect's relay
+- **Test:** `scripts/verify-skills.test.mjs` › "the seven ticket skills of the repository pass"
+
+#### Scenario: rule 6 drops the relay
+
+- **GIVEN** a `ticket-flow` whose rule 6 never names the architect's relay
+- **WHEN** the structural check runs
+- **THEN** it reports one finding, naming the file, the section and the relay it owes
+- **Test:** `scripts/verify-skills.test.mjs` › "a ticket-flow whose approval rule names no architect relay is refused"
+
+#### Scenario: a relay that carries the owner's word, its time and its question
+
+- **GIVEN** an owner who answered "Release 1.4?" in the architect's session
+- **WHEN** the architect relays "yes, 14:05, to: Release 1.4?" to the CI/CD session
+- **THEN** the CI/CD session takes it as the owner's word for that release
+- **Test:** Not covered — the rule is a procedure the architect and CI/CD sessions follow; no
+  runner drives a session
+
+#### Scenario: a relay that goes beyond its question
+
+- **GIVEN** the relayed answer to "Release 1.4?" and a production migration in that release
+- **WHEN** the CI/CD session reaches the migration
+- **THEN** it asks the owner for that step, as the relay did not name it
+- **Test:** Not covered — the rule is a procedure a CI/CD session follows; no runner drives a
+  session
+
+#### Scenario: a relay from another session
+
+- **GIVEN** a QA or dev session that says the owner approved a step
+- **WHEN** the CI/CD session reads it
+- **THEN** it does not count: the session asks the owner itself, or waits for the architect's relay
+- **Test:** Not covered — the rule is a procedure a CI/CD session follows; no runner drives a
+  session

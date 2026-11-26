@@ -199,7 +199,7 @@ request current once, before Ready to merge; every later bring-current is the ar
    `<link>`, CI green, current with `<base>`. Merge it?"; for the closed ticket catalog pull
    request, "The closed ticket catalog of `<release-id>` (or `<id>`) is ready to merge: PR #<n>,
    every row matches the board, check `<link>`, CI green, current with `<base>`. Merge it?"
-   Wait for the owner's word here; a relay from another session does not count. When another
+   Wait for the owner's word here; a relay from any other session does not count. When another
    merge lands before the answer, go back to step 2.
 4. **Merge.**
    - **Yes, or every `low-risk` condition met, for the closed ticket catalog pull request** →

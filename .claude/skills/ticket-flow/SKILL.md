@@ -240,8 +240,11 @@ session may fill a dev role; exactly one QA session fills each dev area's QA rol
      production branch: a hotfix waits at Ready to merge, and the CI/CD session merges it as its
      release's deploy step (`release-ticket` § Hotfix).
 5. **Independent QA.** The session that built a ticket never moves it past Ready for QA.
-6. **Approval in place.** An approval counts only in the session that asked for it. A relay from
-   another session does not stand in for it.
+6. **Approval, in place or relayed by the architect.** An approval counts in the session that
+   asked for it. An approval the owner gives in the architect's session counts there too when the
+   architect relays it word for word, with its time and the question it answered. A relay never
+   widens it: it covers what that question named and nothing more, and every irreversible
+   production step still gets its own yes. A relay from any other session does not count.
 7. **Credentials stay out of tickets.** A deploy secret, token or password never goes into a
    ticket, a comment or a message: it lives in the host or CI secret store a deploy target names.
 

@@ -52,7 +52,9 @@ Go on only once every flagged ticket is settled on the release ticket.
 ## Step 2 — The owner's word for the release
 
 Ask in this session: "`<release-id>`: `<n>` tickets, targets `<target, in order>`, migrations
-`<list>`. Release it?" Wait. This session runs targets; it never decides to release.
+`<list>`. Release it?" Wait for the owner's word here, or for the architect's relay of it
+(`ticket-flow` rule 6), which covers this one release. This session runs targets; it never
+decides to release.
 
 - **Yes** → record the go in the release ticket's Owner's go (the words, the date, this
   session), then `move` it to In release.
