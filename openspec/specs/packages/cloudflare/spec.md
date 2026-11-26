@@ -3,7 +3,7 @@
 > **Governs:** `packages/cloudflare/src`
 > **ID prefix:** `CLOUDFLARE`
 > **Derived from:** `docs/infrastructure.md`, `docs/images.md`, `docs/architecture/shared.md`
-> **Verified against the code:** 2026-11-25 at `12d6b224`
+> **Verified against the code:** 2026-11-26 at `35cf057d`
 
 ## Purpose
 
