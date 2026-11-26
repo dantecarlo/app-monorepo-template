@@ -101,6 +101,7 @@
     "verify:router-coverage:test": "node --test scripts/verify-router-coverage.test.mjs",
     "verify:skills:test": "node --test scripts/verify-skills.test.mjs",
     "worktrees:prune": "node scripts/prune-worktrees.mjs",
+    "worktrees:prune:finish-orphans": "node scripts/prune-worktrees.mjs --finish-orphans",
     "worktrees:prune:test": "node --test scripts/prune-worktrees.test.mjs",
     "ci-windows:test": "node --test scripts/ci-windows.test.mjs"
   },

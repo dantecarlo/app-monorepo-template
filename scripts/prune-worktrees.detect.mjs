@@ -540,6 +540,14 @@ const ageLines = ({ now, results }) => {
   ]
 }
 
+// The line for the marker a `--finish-orphans` run wrote at `marker`, or
+// null when it wrote none.
+const markerLine = ({ marker }) =>
+  marker
+    ? `${LABEL}: every run finishes orphan folders from now on: ` +
+      `${resolve(marker).replaceAll('\\', '/')} was written.`
+    : null
+
 // One line per worktree, a kept one left out under `--quiet`; outside
 // `--quiet`, the kept worktrees by age (`ageLines`, at `now`); the main
 // checkout's line when it was behind or off the default branch, the
@@ -550,6 +558,7 @@ export const reportLines = ({
   dryRun,
   install,
   main,
+  marker,
   now = Date.now(),
   quiet,
   results
@@ -561,7 +570,8 @@ export const reportLines = ({
   ...[
     mainLine({ dryRun, main }),
     installLine({ dryRun, install, main, quiet }),
-    rewroteLine({ install, main })
+    rewroteLine({ install, main }),
+    markerLine({ marker })
   ].filter((line) => line !== null),
   summaryLine({ dryRun, results }),
   ...notCovered({ dryRun, install })

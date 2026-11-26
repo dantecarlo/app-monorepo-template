@@ -97,7 +97,13 @@ and the install, through `removePath` as a leftover is, announced as
 `removing orphan folder <path> (<branch>)`, then its branch at the tip it was
 judged at; right before a delete it reads the registered worktrees again and
 keeps a folder that holds a worktree, became one or whose list git cannot read.
-Nothing outside the worktree root is read or deleted as an orphan. Last, it
+Nothing outside the worktree root is read or deleted as an orphan. A real
+`--finish-orphans` run that leaves none of the folders it set out to finish on disk
+writes `prune-finish-orphans.enabled` in the common git directory and says so;
+while that file exists every run finishes orphan folders, and before it a real
+run without the option lists a finishable folder as kept, waiting for that first
+manual run (`pnpm worktrees:prune:finish-orphans`, after a `--dry-run
+--finish-orphans` has listed what it deletes). Last, it
 fast-forwards
 the main checkout with `git merge --ff-only` when that checkout is on the
 default branch. Any tracked local change there, staged or not, a

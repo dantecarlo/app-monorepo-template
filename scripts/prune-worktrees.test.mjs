@@ -59,6 +59,7 @@ import {
 import {
   fetchFailureOf,
   finishOrphan,
+  orphansFinished,
   removeIfStillClean,
   removeLeftover,
   removeWorktree
@@ -2832,4 +2833,82 @@ test('an orphan folder that stays keeps its branch and is named', () => {
   assert.notEqual(git({ args: ['branch', '--list', 'feat/ORPH-1'], cwd: main }), '')
   const [line] = reportLines({ dryRun: false, quiet: true, results: [result] })
   assert.ok(line.includes('; its directory stays: '), line)
+})
+
+// ---------------------------------------------------------------------------
+// Orphan folders wait for a first manual run (PRUNE-14): a run finishes them
+// only given --finish-orphans, until one such run leaves none behind and
+// writes a marker in the common git directory.
+// ---------------------------------------------------------------------------
+
+const ORPHAN_MARKER = 'prune-finish-orphans.enabled'
+
+test('a run before the marker exists reports the orphan folder it could finish and finishes none', () => {
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  const path = orphanFolder({ branch: 'feat/ORPH-1', main, name: 'ORPH-1' })
+  const run = prune({ cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.ok(existsSync(join(path, 'node_modules', 'a.txt')), `${path} was deleted`)
+  assert.notEqual(git({ args: ['branch', '--list', 'feat/ORPH-1'], cwd: main }), '')
+  assert.ok(!existsSync(join(main, '.git', ORPHAN_MARKER)), 'the marker was written')
+  assert.ok(
+    run.stdout.includes(
+      `${orphanLine({ branch: 'feat/ORPH-1', path, verb: 'kept' })}: ${REASON.ORPHAN_MANUAL}`
+    ),
+    run.stdout
+  )
+})
+
+test('a --finish-orphans run that finishes every orphan folder it could writes the marker', () => {
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  const path = orphanFolder({ branch: 'feat/ORPH-1', main, name: 'ORPH-1' })
+  const marker = join(main, '.git', ORPHAN_MARKER)
+  const dry = prune({ args: ['--dry-run', '--finish-orphans'], cwd: main })
+  assert.equal(dry.status, EXIT_OK, dry.stderr)
+  assert.ok(!existsSync(marker), 'a dry run wrote the marker')
+  const run = prune({ args: ['--finish-orphans'], cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.ok(!existsSync(path), `${path} still exists`)
+  assert.match(readFileSync(marker, 'utf8'), /^\d{4}-\d\d-\d\dT/u)
+  assert.ok(
+    run.stdout.includes(
+      'prune-worktrees: every run finishes orphan folders from now on: ' +
+        `${forward({ path: marker })} was written.`
+    ),
+    run.stdout
+  )
+})
+
+test('an orphan folder finished with its folder left on disk withholds the marker', () => {
+  assert.equal(orphansFinished({ orphans: [] }), true)
+  assert.equal(
+    orphansFinished({
+      orphans: [{ kept: REASON.ORPHAN_YOUNG }, { kept: null }]
+    }),
+    true
+  )
+  assert.equal(
+    orphansFinished({
+      orphans: [{ kept: null }, { kept: null, leftover: 'C:/wt/ORPH-1: EBUSY' }]
+    }),
+    false
+  )
+})
+
+test('once the marker exists a plain run finishes a new orphan folder with its branch', () => {
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  writeFileSync(join(main, '.git', ORPHAN_MARKER), `${new Date().toISOString()}\n`)
+  const path = orphanFolder({ branch: 'feat/LATER', main, name: 'LATER' })
+  const run = prune({ cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.ok(!existsSync(path), `${path} still exists`)
+  assert.equal(git({ args: ['branch', '--list', 'feat/LATER'], cwd: main }), '')
+})
+
+test('the root package runs the first manual orphan run from worktrees:prune:finish-orphans', () => {
+  const { scripts } = JSON.parse(readFileSync(ROOT_PACKAGE, 'utf8'))
+  assert.equal(
+    scripts['worktrees:prune:finish-orphans'],
+    'node scripts/prune-worktrees.mjs --finish-orphans'
+  )
 })

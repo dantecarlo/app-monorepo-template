@@ -92,7 +92,8 @@ import {
   mkdtempSync,
   readdirSync,
   rmSync,
-  statSync
+  statSync,
+  writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
@@ -143,6 +144,7 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 
 const REMOTE_HEAD = `refs/remotes/${REMOTE}/HEAD`
 const LOCK_NAME = 'prune-worktrees.lock'
+const MARKER_NAME = 'prune-finish-orphans.enabled'
 const NO_REMOTE_LINE = `prune-worktrees: no ${REMOTE} remote, so nothing to prune`
 // 64 MiB of git output.
 const GIT_OUTPUT_BYTES = 67_108_864
@@ -844,13 +846,21 @@ const pruneWorktrees = async ({
   }
 }
 
-// The lock that serializes the real runs of one repository, in the common git
-// directory every worktree of it shares.
-const lockPathOf = ({ root }) =>
-  join(
-    resolve(root, git({ args: ['rev-parse', '--git-common-dir'], cwd: root })),
-    LOCK_NAME
-  )
+// The repository's common git directory, which every worktree of it shares.
+const commonDirOf = ({ root }) =>
+  resolve(root, git({ args: ['rev-parse', '--git-common-dir'], cwd: root }))
+
+// The lock that serializes the real runs of one repository.
+const lockPathOf = ({ root }) => join(commonDirOf({ root }), LOCK_NAME)
+
+// The marker a `--finish-orphans` run writes once it leaves no orphan folder
+// it set out to finish; while it exists, every run finishes orphan folders.
+const markerPathOf = ({ root }) => join(commonDirOf({ root }), MARKER_NAME)
+
+// Whether every orphan folder a run set out to finish is gone: none of
+// `orphans` was finished with its folder left on disk.
+export const orphansFinished = ({ orphans }) =>
+  orphans.every(({ kept, leftover }) => kept || !leftover)
 
 // The repository's worktree root, `<main checkout parent>/<main checkout
 // name>-worktrees/`, beside the main checkout `main`.
@@ -938,8 +948,9 @@ const pruneUnderLock = async ({
     committedAt: commitTimes.get(worktree.head)
   }))
   // Judged before any removal, as every other decision is.
+  const marker = markerPathOf({ root })
   const orphans = judgeOrphans({
-    finishing: finishOrphans,
+    finishing: finishOrphans || existsSync(marker),
     merged,
     registrations: readRegistered({ root }),
     root,
@@ -968,14 +979,16 @@ const pruneUnderLock = async ({
     const install = await installAfter({ dryRun, env, main, root })
     // Orphan folders last, after the fast-forward and the install, so a run
     // ended inside a long delete has moved the main checkout.
-    if (!dryRun && finishOrphans) {
-      orphans.forEach((one) =>
-        results.push(
-          one.kept ? one : finishOrphan({ announce, orphan: one, root })
-        )
-      )
+    if (dryRun) return { install, main, results }
+    const finished = orphans.map((one) =>
+      one.kept ? one : finishOrphan({ announce, orphan: one, root })
+    )
+    results.push(...finished)
+    if (!finishOrphans || !orphansFinished({ orphans: finished })) {
+      return { install, main, results }
     }
-    return { install, main, results }
+    writeFileSync(marker, `${new Date().toISOString()}\n`)
+    return { install, main, marker, results }
   } catch (error) {
     return { error, results }
   }
@@ -1023,6 +1036,7 @@ const main = async () => {
           dryRun,
           install: outcome.install,
           main: outcome.main,
+          marker: outcome.marker,
           quiet,
           results: outcome.results
         })
