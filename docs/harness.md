@@ -990,8 +990,10 @@ gives that meaning, alone or in a cluster (`-xfd`), after git's own options (`-C
 `git push -n` is `--dry-run`, which skips nothing, so it passes.
 
 A letter that takes a value ends its cluster and takes the next word (`git tag -mfix`,
-`git tag -F notes.txt`), and `--` ends the options of any program. A wrapper (`sudo`, `env`,
-`timeout`) is read through. Every simple command of a list, a pipeline, a group, a function body
+`git tag -F notes.txt`), and `--` ends the options of any program but a runner that forwards
+(`npm`, `npx`, `pnpm`, `yarn`, `bun`), whose first `--` hands options to the script or the
+command it runs (`pnpm run deploy -- --force`), so only a second one ends them. A wrapper
+(`sudo`, `env`, `timeout`) is read through. Every simple command of a list, a pipeline, a group, a function body
 (`f() { … }`, `function f { … }`, `function f() { … }`), `coproc`, a compound command and a
 substitution is judged, in PowerShell a script block and a subexpression too. The shared
 tokenizer (3f) reads an arithmetic command (`(( … ))`, `for ((i=0;i<3;i++))`), whose

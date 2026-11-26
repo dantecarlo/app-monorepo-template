@@ -80,6 +80,16 @@ const GIT = 'git'
 const GIT_CONFIG = 'config'
 const GIT_GREP = 'grep'
 const END_OF_OPTIONS = '--'
+// The runners whose first `--` forwards what follows as options.
+const FORWARDING = new Set([
+  'bun',
+  'bunx',
+  'npm',
+  'npx',
+  'pnpm',
+  'pnpx',
+  'yarn'
+])
 const SHORT_CLUSTER = /^-[^-]/u
 const NOT_READ = new Set([
   '[',
@@ -226,14 +236,20 @@ const isLongForce = ({ language, word }) => {
   return isAbbreviated({ language, word })
 }
 
-// The options of `args`: every word before a `--` that ends them.
-const optionsOf = ({ args }) => {
-  const end = args.indexOf(END_OF_OPTIONS)
-  return end < 0 ? args : args.slice(0, end)
+// The options of `args`: every word before a `--` that ends them. A runner
+// that forwards (`pnpm run x -- --force`, `npx -- git push --force`) hands
+// the words after its first `--` to the script or the command it runs, as
+// options, so only a second `--` ends them.
+const optionsOf = ({ args, name }) => {
+  const first = args.indexOf(END_OF_OPTIONS)
+  const words =
+    FORWARDING.has(name) && first >= 0 ? args.toSpliced(first, 1) : args
+  const end = words.indexOf(END_OF_OPTIONS)
+  return end < 0 ? words : words.slice(0, end)
 }
 
-const longForce = ({ args, language }) =>
-  optionsOf({ args }).find((word) => isLongForce({ language, word }))
+const longForce = ({ args, language, name }) =>
+  optionsOf({ args, name }).find((word) => isLongForce({ language, word }))
 
 const withoutAssignments = ({ words }) => {
   const start = words.findIndex((word) => !ASSIGNMENT.test(word))
@@ -420,7 +436,7 @@ export const forceOf = ({ language = LANGUAGE.bash, words }) => {
     const option = args.find((word) => TASKKILL_FORCE.test(word))
     if (option !== undefined) return { option, program: TASKKILL }
   }
-  const option = longForce({ args, language })
+  const option = longForce({ args, language, name })
   return option === undefined ? undefined : { option, program: label() }
 }
 

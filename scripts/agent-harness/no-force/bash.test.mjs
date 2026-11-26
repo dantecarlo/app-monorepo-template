@@ -114,6 +114,13 @@ for (const [command, option, program] of [
   ["a=(\"x\" ')'); rm -rf x", '-rf', 'rm'],
   ['a=( $(git push --force) )', '--force', 'git push'],
   ['a=( `git push -f` )', '-f', 'git push'],
+  // A runner's first `--` hands what follows to the script or the command
+  // it runs, as options.
+  ['npx -- git push --force', '--force', 'npx'],
+  ['pnpm exec -- git push --force', '--force', 'pnpm'],
+  ['pnpm run deploy -- --force', '--force', 'pnpm'],
+  ['npm test -- --no-verify', '--no-verify', 'npm'],
+  ['yarn build -- --force', '--force', 'yarn'],
   // A quoted `)` inside an extended glob does not close it.
   ['[[ $x == @("a)"|b) ]] && rm -rf x', '-rf', 'rm'],
   // A trap's text runs later, as a command of its own.
@@ -177,6 +184,10 @@ for (const command of [
   "trap '' INT",
   'trap - EXIT',
   'npm test || exit',
+  // After a `--` that ends a program's options, a word is an operand.
+  'git push -- --force',
+  'pnpm test -- --run',
+  'npx -- git push -- --force',
   'a=( $(git ls-files) ); echo x',
   "a=(\"x\" ')' 'y z'); echo \"${a[@]}\"",
   'a=(\n  one # the first\n  two\n); echo "${a[1]}"',
