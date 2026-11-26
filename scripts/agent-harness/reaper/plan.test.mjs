@@ -263,6 +263,33 @@ test('a family is matched by the executable and its script, never by text in the
   assert.deepEqual(plan({ processes }).candidates, [])
 })
 
+test('inline code with its value attached is no script, so an argument after it matches no family', () => {
+  const inline = [
+    'node --eval=setInterval(()=>{},1000) C:\\r\\node_modules\\vitest\\vitest.mjs run',
+    'node --print=1 C:\\r\\node_modules\\vitest\\vitest.mjs run',
+    'node -esetInterval(()=>{},1000) C:\\r\\node_modules\\vitest\\vitest.mjs run',
+    'node -p1 C:\\r\\node_modules\\vitest\\vitest.mjs run',
+    'python -cimport C:\\r\\node_modules\\vitest\\vitest.mjs run'
+  ]
+  const processes = [
+    ...SESSION,
+    ...inline.map((command, at) => proc({ command, pid: 1500 + at, ppid: 7 }))
+  ]
+  assert.deepEqual(rootsOf({ processes }), [])
+})
+
+test('a flag that only starts like --watch is no watch mode, so the run it belongs to is ended', () => {
+  const processes = [
+    ...SESSION,
+    proc({
+      command: 'node --watch-preserve-output C:\\r\\node_modules\\vitest\\vitest.mjs run',
+      pid: 2500,
+      ppid: 7
+    })
+  ]
+  assert.deepEqual(rootsOf({ processes }), [{ family: 'vitest', pid: 2500 }])
+})
+
 test('persistent and watch work is never a candidate, one-shot runs are', () => {
   const persistent = [
     '"C:\\r\\node_modules\\turbo-windows-64\\bin\\turbo.exe" --skip-infer run dev',
@@ -281,8 +308,7 @@ test('persistent and watch work is never a candidate, one-shot runs are', () => 
     'node --watch C:\\r\\node_modules\\typescript\\bin\\tsc --noEmit',
     'node --watch=true C:\\r\\node_modules\\typescript\\bin\\tsc --noEmit',
     'node --watch-path=src C:\\r\\node_modules\\typescript\\bin\\tsc --noEmit',
-    'node --watch-path src C:\\r\\node_modules\\typescript\\bin\\tsc --noEmit',
-    'node --watch-preserve-output C:\\r\\node_modules\\vitest\\vitest.mjs run'
+    'node --watch-path src C:\\r\\node_modules\\typescript\\bin\\tsc --noEmit'
   ]
   const oneShot = [
     ['turbo', TURBO],
@@ -382,6 +408,37 @@ test('a tree that holds a process the contract spares is kept', () => {
   assert.deepEqual(result.kept, [
     { family: 'turbo', pid: 95, reason: `${KEPT.SPARED} (mcp-proxy)` },
     { family: 'turbo', pid: 97, reason: `${KEPT.SPARED} (msys-runtime)` }
+  ])
+})
+
+test('any executable of the Git for Windows usr/bin is spared, and the same name elsewhere is not', () => {
+  // cat.exe is no shell, so only the msys-runtime entry that reads usr/bin
+  // spares the first tree; the second tree's cat.exe sits outside it.
+  const outside = proc({ command: TURBO, name: 'turbo.exe', pid: 97, ppid: 9 })
+  const processes = [
+    ...SESSION,
+    proc({ command: TURBO, name: 'turbo.exe', pid: 95, ppid: 8 }),
+    proc({
+      command: '"C:\\Program Files\\Git\\usr\\bin\\cat.exe" lint.log',
+      name: 'cat.exe',
+      pid: 96,
+      ppid: 95
+    }),
+    outside,
+    proc({
+      command: '"C:\\tools\\bin\\cat.exe" lint.log',
+      name: 'cat.exe',
+      pid: 98,
+      ppid: 97
+    })
+  ]
+  const result = plan({ processes })
+  assert.deepEqual(
+    result.candidates.map(({ pid }) => pid),
+    [outside.pid]
+  )
+  assert.deepEqual(result.kept, [
+    { family: 'turbo', pid: 95, reason: `${KEPT.SPARED} (msys-runtime)` }
   ])
 })
 

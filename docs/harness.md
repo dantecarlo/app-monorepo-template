@@ -686,9 +686,11 @@ the launcher holds about as much memory as the server.
 families are one-shot runs, so `turbo run dev` or `start`, the turbo daemon,
 `vitest` without `run`, `tsc --watch`, tsserver and the dev servers (`next dev`,
 `expo start`, metro) match none. Nor does a node process in watch mode, one whose
-flags before its script name `--watch`, `--watch=<value>`, `--watch-path <path>`,
-`--watch-path=<path>` or `--watch-preserve-output`, a wrapper included, and a
-tree that holds one is kept. Its own ancestry. A tree that holds a process
+flags before its script name `--watch`, `--watch=<value>`, `--watch-path <path>`
+or `--watch-path=<path>`, a wrapper included, and a tree that holds one is kept;
+`--watch-preserve-output` alone starts no watch mode. Inline code is no script,
+with its value separate or attached (`--eval=<code>`, `-e<code>`), so an argument
+after it matches no family. Its own ancestry. A tree that holds a process
 the contract spares: the shared MCP proxy, however it is launched (the
 `mcp-proxy` executable, `python -m mcp_proxy`, a node `mcp-proxy` script), which
 runs detached by design; every Git for Windows (MSYS) process, whose runtime

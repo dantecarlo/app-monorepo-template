@@ -161,6 +161,10 @@ test('the entry of a process is its executable and its script, the flags before 
     watch: false
   })
   assert.deepEqual(entryOf({ process: processOf({ command: 'node -e "setInterval(() => {}, 1)"' }) }).script, null)
+  for (const attached of ['--eval=1', '--print=1', '-e1', '-p1']) {
+    assert.deepEqual(entryOf({ process: processOf({ command: `node ${attached} C:\\r\\vitest.mjs run` }) }).script, null, attached)
+  }
+  assert.deepEqual(entryOf({ process: processOf({ command: 'python -cimport C:\\r\\vitest.mjs', name: 'python' }) }).script, null)
   assert.deepEqual(entryOf({ process: { command: '', name: 'cmd.exe' } }), {
     args: '',
     exe: 'cmd.exe',
@@ -191,8 +195,7 @@ test('a node process in watch mode reads as watch mode, and --watch-path takes t
     '--watch=true',
     '--watch-path src',
     '--watch-path=src',
-    '--watch-preserve-output',
-    '--max-old-space-size=4096 --watch-path "C:\\r\\src" --watch-preserve-output'
+    '--max-old-space-size=4096 --watch-path "C:\\r\\src"'
   ]) {
     assert.deepEqual(entryOf({ process: processOf({ command: `node ${flags} ${TSC} -p .` }) }), watched, flags)
   }
@@ -202,6 +205,23 @@ test('a node process in watch mode reads as watch mode, and --watch-path takes t
     args: '--watch',
     watch: false
   })
+})
+
+test('a node flag that only starts with --watch is skipped, and reads as no watch mode', () => {
+  assert.deepEqual(
+    entryOf({
+      process: processOf({
+        command: 'node --watch-preserve-output C:\\r\\node_modules\\typescript\\bin\\tsc -p .'
+      })
+    }),
+    {
+      args: '-p .',
+      exe: 'node',
+      label: 'tsc',
+      script: 'C:/r/node_modules/typescript/bin/tsc',
+      watch: false
+    }
+  )
 })
 
 test('the wrapper family matches the consoles, the POSIX shells and the npx launcher', () => {

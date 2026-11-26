@@ -51,15 +51,16 @@ const VALUE_FLAGS = new Set([
   '--require'
 ])
 const INLINE_FLAGS = new Set(['-c', '-e', '-p', '--eval', '--print'])
+// An inline-code flag with its code attached: `--eval=<code>`,
+// `--print=<code>`, or `-c`, `-e` or `-p` run together with it.
+const INLINE_ATTACHED = /^(?:--(?:eval|print)=|-[cep].)/u
 const MODULE_FLAG = '-m'
 // node's watch mode: its flags before the script. `--watch=<value>` is
 // watch mode whatever its value, and `--watch-path` takes the next argument
-// as its value, or its value inline after `=`.
-const WATCH_FLAG = '--watch'
-const WATCH_FLAGS = new Set([WATCH_FLAG, '--watch-preserve-output'])
-const WATCH_INLINE = `${WATCH_FLAG}=`
+// as its value, or its value inline after `=`. A flag that only starts like
+// one, `--watch-preserve-output`, starts no watch mode.
+const WATCH_FLAG = /^--watch(?:-path)?(?:=|$)/u
 const WATCH_PATH_FLAG = '--watch-path'
-const WATCH_PATH_INLINE = `${WATCH_PATH_FLAG}=`
 // One argument of a command line: a double-quoted run, or a run of
 // anything but whitespace.
 const ARGUMENT = /"([^"]*)"|(\S+)/gu
@@ -79,14 +80,8 @@ const argumentsOf = ({ text }) =>
 
 // How many arguments a watch flag spans, or 0 when `token` is none.
 const watchSpan = ({ token }) => {
-  if (
-    WATCH_FLAGS.has(token) ||
-    token.startsWith(WATCH_INLINE) ||
-    token.startsWith(WATCH_PATH_INLINE)
-  ) {
-    return 1
-  }
-  return token === WATCH_PATH_FLAG ? 2 : 0
+  if (!WATCH_FLAG.test(token)) return 0
+  return token === WATCH_PATH_FLAG ? 2 : 1
 }
 
 // Where an interpreter's script is among `rest`, where its own arguments
@@ -99,6 +94,9 @@ const scriptOf = ({ rest }) => {
     const token = rest[at]
     const span = watchSpan({ token })
     if (INLINE_FLAGS.has(token)) return { next: at + 2, script: null, watch }
+    if (INLINE_ATTACHED.test(token)) {
+      return { next: at + 1, script: null, watch }
+    }
     if (token === MODULE_FLAG) {
       return { next: at + 2, script: rest[at + 1] ?? null, watch }
     }
