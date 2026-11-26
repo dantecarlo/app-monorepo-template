@@ -272,6 +272,21 @@
       "blind": "exported-cases"
     },
     {
+      "id": "verify:ci-blocking:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:ci-blocking",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "instant",
+      "blind": "exported-cases"
+    },
+    {
       "id": "verify:workflow-pins:test",
       "capability": "core",
       "stage": "repository",
