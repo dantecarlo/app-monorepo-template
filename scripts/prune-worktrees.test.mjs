@@ -26,6 +26,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   utimesSync,
@@ -153,8 +154,11 @@ after(() =>
   )
 )
 
+// The scratch root by its long name: a Windows TEMP may be an 8.3 short path
+// (`C:\Users\RUNNER~1\…` on a CI runner), and git reports a worktree's long
+// one, so a path built from the short name would match no line git prints.
 const scratchRoot = ({ prefix }) => {
-  const root = mkdtempSync(join(tmpdir(), prefix))
+  const root = realpathSync.native(mkdtempSync(join(tmpdir(), prefix)))
   scratchRoots.push(root)
   return root
 }
