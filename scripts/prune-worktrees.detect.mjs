@@ -30,7 +30,11 @@ const RENAMED = /^(?:[RC].|.[RC]) /u
 // `S` marks it skip-worktree.
 const HIDDEN_TAG = /^(?:[a-z]|S) /u
 
-const OPTION = { DRY_RUN: '--dry-run', QUIET: '--quiet' }
+const OPTION = {
+  DRY_RUN: '--dry-run',
+  FINISH_ORPHANS: '--finish-orphans',
+  QUIET: '--quiet'
+}
 
 // Set on every git the command runs. The fast-forward of the main checkout
 // fires that checkout's post-merge, which starts the command again from
@@ -175,6 +179,15 @@ export const REASON = {
   MAIN: 'the main checkout',
   NO_UPSTREAM: 'its branch has no upstream',
   NOT_IN_DEFAULT: 'its HEAD is not in the default branch',
+  ORPHAN_AMBIGUOUS: 'several local branches end in its name',
+  ORPHAN_BECAME_WORKTREE: 'it became a worktree after it was judged',
+  ORPHAN_CHECKED_OUT: 'its branch is checked out in a registered worktree',
+  ORPHAN_HOLDS_GIT: 'it holds a git repository or worktree',
+  ORPHAN_MANUAL: `orphan folders wait for a first manual run with ${OPTION.FINISH_ORPHANS}`,
+  ORPHAN_NOT_MERGED: 'its branch is not in the default branch',
+  ORPHAN_NO_BRANCH: 'no local branch ends in its name',
+  ORPHAN_YOUNG:
+    'it was written in the last 10 minutes, as a worktree being added is',
   REMOVE_FAILED: 'git could not remove it',
   TRACKS_DEFAULT: 'its branch tracks the default branch',
   UNREADABLE: 'git could not read it',
@@ -187,7 +200,8 @@ export const samePath = ({ path }) => {
   return process.platform === 'win32' ? forward.toLowerCase() : forward
 }
 
-// `--dry-run` and `--quiet`; any other option throws, naming it.
+// `--dry-run`, `--quiet` and `--finish-orphans`; any other option throws,
+// naming it.
 export const optionsFrom = ({ argv }) => {
   const given = argv.slice(2)
   const unknown = given.filter(
@@ -196,18 +210,19 @@ export const optionsFrom = ({ argv }) => {
   if (unknown.length > 0) {
     throw new Error(
       `unknown option ${unknown.join(', ')}; it takes ` +
-        `${OPTION.DRY_RUN} and ${OPTION.QUIET}`
+        `${OPTION.DRY_RUN}, ${OPTION.QUIET} and ${OPTION.FINISH_ORPHANS}`
     )
   }
   return {
     dryRun: given.includes(OPTION.DRY_RUN),
+    finishOrphans: given.includes(OPTION.FINISH_ORPHANS),
     quiet: given.includes(OPTION.QUIET)
   }
 }
 
 // Every worktree `git worktree list --porcelain` printed, as its path, its
-// branch and, when it is locked, the lock with its reason, the main checkout
-// first; a detached checkout reads `(detached)`.
+// HEAD commit, its branch and, when it is locked, the lock with its reason,
+// the main checkout first; a detached checkout reads `(detached)`.
 export const parseWorktrees = ({ porcelain }) =>
   porcelain.split(/\r?\n\r?\n/).flatMap((block) => {
     const path = (block.match(/^worktree (.+)$/m) ?? [])[1]
@@ -215,9 +230,12 @@ export const parseWorktrees = ({ porcelain }) =>
     const branch = (
       (block.match(/^branch (.+)$/m) ?? [])[1] ?? DETACHED_BRANCH
     ).replace(BRANCH_PREFIX, '')
+    const head = (block.match(/^HEAD (\S+)$/m) ?? [])[1]
     const lock = block.match(/^locked(?: (.+))?$/m)
     return [
-      lock ? { branch, lock: { reason: lock[1] }, path } : { branch, path }
+      lock
+        ? { branch, head, lock: { reason: lock[1] }, path }
+        : { branch, head, path }
     ]
   })
 
@@ -412,10 +430,12 @@ const mainLine = ({ dryRun, main }) => {
   )
 }
 
+const ORPHAN = 'orphan folder'
+
 const decisionLine = ({ dryRun, result }) => {
   const branch =
     result.branch === DETACHED_BRANCH ? 'detached' : result.branch
-  const where = `${result.path} (${branch})`
+  const where = `${result.orphan ? `${ORPHAN} ` : ''}${result.path} (${branch})`
   if (result.kept) {
     const detail = result.detail ? `: ${result.detail}` : ''
     return `${LABEL}: kept ${where}: ${result.kept}${detail}`
@@ -490,29 +510,167 @@ const rewroteLine = ({ install, main }) =>
       "install's lockfile change)"
     : null
 
-// One line per worktree, a kept one left out under `--quiet`, the main
+const DAY_MS = 86_400_000
+const AGE_WIDTH = 4
+// The reasons whose worktree the age lines leave out.
+const UNAGED = new Set([REASON.CURRENT, REASON.MAIN])
+
+// Every kept worktree but the main checkout and the one the command runs in,
+// with a known commit time, oldest first: the whole days since its HEAD
+// commit, its path, its branch and its reason, under a heading line; no line
+// when there is none.
+const ageLines = ({ now, results }) => {
+  const aged = results
+    .filter(
+      ({ committedAt, kept }) =>
+        kept && !UNAGED.has(kept) && committedAt !== undefined
+    )
+    .sort((one, other) => one.committedAt - other.committedAt)
+  if (aged.length === 0) return []
+  return [
+    `${LABEL}: worktrees kept, by the age of their last commit, oldest first:`,
+    ...aged.map((result) => {
+      const days = Math.floor((now - result.committedAt) / DAY_MS)
+      const branch =
+        result.branch === DETACHED_BRANCH ? 'detached' : result.branch
+      return (
+        `${LABEL}: ${String(days).padStart(AGE_WIDTH)} d  ` +
+        `${result.path} (${branch}): ${result.kept}`
+      )
+    })
+  ]
+}
+
+// The line for the marker a `--finish-orphans` run wrote at `marker`, or
+// null when it wrote none.
+const markerLine = ({ marker }) =>
+  marker
+    ? `${LABEL}: every run finishes orphan folders from now on: ` +
+      `${resolve(marker).replaceAll('\\', '/')} was written.`
+    : null
+
+// One line per worktree, a kept one left out under `--quiet`; outside
+// `--quiet`, the kept worktrees by age (`ageLines`, at `now`); the main
 // checkout's line when it was behind or off the default branch, the
 // install's line after a fast-forward that changed the lockfile and the
 // line of an install that rewrote it, the summary line, and for a dry run
 // what it does not cover.
-export const reportLines = ({ dryRun, install, main, quiet, results }) => [
+export const reportLines = ({
+  dryRun,
+  install,
+  main,
+  marker,
+  now = Date.now(),
+  quiet,
+  results
+}) => [
   ...results
     .filter((result) => !quiet || !result.kept)
     .map((result) => decisionLine({ dryRun, result })),
+  ...(quiet ? [] : ageLines({ now, results })),
   ...[
     mainLine({ dryRun, main }),
     installLine({ dryRun, install, main, quiet }),
-    rewroteLine({ install, main })
+    rewroteLine({ install, main }),
+    markerLine({ marker })
   ].filter((line) => line !== null),
   summaryLine({ dryRun, results }),
   ...notCovered({ dryRun, install })
 ]
 
+// `git worktree add` writes the folder before its registration, so a folder
+// written this recently may be a worktree still being added.
+export const ORPHAN_GRACE_MS = 600_000
+const NO_BRANCH = 'no branch'
+const SEVERAL_BRANCHES = 'several branches'
+
+// Whether one of `registered`, registered worktree paths in any spelling,
+// sits inside the folder at `path`.
+export const holdsRegistered = ({ path, registered }) => {
+  const inside = `${samePath({ path })}/`
+  return registered.some((other) =>
+    samePath({ path: other }).startsWith(inside)
+  )
+}
+
+// The decision for one orphan folder: finishable (`kept: null`) when exactly
+// one local branch's last path segment is the folder's name, no registered
+// worktree sits inside the folder, the folder holds no `.git` at
+// any depth (`holdsGit`, read only when it comes to that: true, false, or
+// null when it could not be read), that branch is checked out in no
+// registered worktree, its tip is reachable from the default branch and the
+// folder was last written more than ORPHAN_GRACE_MS ago; otherwise kept with
+// the reason. `path` is the folder in forward slashes, `registered` the
+// registered worktree paths and `upstreams` every local branch with its tip.
+// The tip is the one the branch is deleted at.
+export const decideOrphan = ({
+  ageMs,
+  checkedOut,
+  holdsGit = () => false,
+  merged,
+  path,
+  registered,
+  upstreams
+}) => {
+  const orphan = { orphan: true, path }
+  const name = path.split('/').at(-1)
+  const matches = [...upstreams.keys()].filter(
+    (branch) => branch.split('/').at(-1) === name
+  )
+  if (matches.length === 0) {
+    return { ...orphan, branch: NO_BRANCH, kept: REASON.ORPHAN_NO_BRANCH }
+  }
+  if (matches.length > 1) {
+    return {
+      ...orphan,
+      branch: SEVERAL_BRANCHES,
+      detail: matches.join(', '),
+      kept: REASON.ORPHAN_AMBIGUOUS
+    }
+  }
+  const [branch] = matches
+  const judged = { ...orphan, branch, sha: upstreams.get(branch).sha }
+  if (holdsRegistered({ path, registered })) {
+    return { ...judged, kept: REASON.HOLDS_WORKTREE }
+  }
+  const nested = holdsGit()
+  if (nested === null) return { ...judged, kept: REASON.UNREADABLE }
+  if (nested) return { ...judged, kept: REASON.ORPHAN_HOLDS_GIT }
+  if (checkedOut.has(branch)) {
+    return { ...judged, kept: REASON.ORPHAN_CHECKED_OUT }
+  }
+  if (!merged.has(branch)) return { ...judged, kept: REASON.ORPHAN_NOT_MERGED }
+  if (ageMs <= ORPHAN_GRACE_MS) return { ...judged, kept: REASON.ORPHAN_YOUNG }
+  return { ...judged, kept: null }
+}
+
+// The line printed before a removal starts, `removing <path> (<branch>)`:
+// a run ended inside the removal leaves it as its last line.
+export const removingLine = ({ worktree }) => {
+  const branch =
+    worktree.branch === DETACHED_BRANCH ? 'detached' : worktree.branch
+  const path = resolve(worktree.path).replaceAll('\\', '/')
+  const what = worktree.orphan ? `${ORPHAN} ` : ''
+  return `${LABEL}: removing ${what}${path} (${branch})`
+}
+
 // The line a failed run ends with, on stderr: git's message, then what the
-// run had removed before it failed, the worktrees its report listed above,
-// or that nothing was removed. A dry run removes nothing.
-export const failureLine = ({ dryRun = false, message, results = [] }) => {
+// run had removed before it failed, the worktrees its report listed above;
+// when it removed none, that a removal had started if one was announced, else
+// that nothing was removed. A dry run removes nothing.
+export const failureLine = ({
+  dryRun = false,
+  message,
+  results = [],
+  started = false
+}) => {
   const removed = dryRun ? 0 : results.filter(({ kept }) => !kept).length
+  if (removed === 0 && started) {
+    return (
+      `${LABEL}: ${message} — a removal had started; the last "removing" ` +
+      'line above names it.'
+    )
+  }
   if (removed === 0) return `${LABEL}: ${message} — nothing was removed.`
   const worktrees =
     removed === 1 ? '1 worktree was' : `${removed} worktrees were`

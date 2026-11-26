@@ -19,9 +19,11 @@
 // ---------------------------------------------------------------------------
 
 import assert from 'node:assert/strict'
-import { execFileSync, spawnSync } from 'node:child_process'
+import { execFileSync, spawn, spawnSync } from 'node:child_process'
+import { once } from 'node:events'
 import {
   appendFileSync,
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -34,7 +36,7 @@ import {
 } from 'node:fs'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
-import { delimiter, dirname, join, resolve } from 'node:path'
+import { basename, delimiter, dirname, join, resolve } from 'node:path'
 import { after, before, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
@@ -43,6 +45,7 @@ import { withHookGitDir } from './hook-git-dir.mjs'
 import {
   DIVERGED,
   FETCH_SECONDS_VARIABLE,
+  failureLine,
   fetchSecondsFrom,
   INSTALL_SECONDS_VARIABLE,
   installSecondsFrom,
@@ -55,6 +58,8 @@ import {
 } from './prune-worktrees.detect.mjs'
 import {
   fetchFailureOf,
+  finishOrphan,
+  orphansFinished,
   removeIfStillClean,
   removeLeftover,
   removeWorktree
@@ -876,7 +881,7 @@ test('an unknown option throws, naming it', () => {
 test('--dry-run and --quiet are read', () => {
   assert.deepEqual(
     optionsFrom({ argv: ['node', 'x.mjs', '--dry-run', '--quiet'] }),
-    { dryRun: true, quiet: true }
+    { dryRun: true, finishOrphans: false, quiet: true }
   )
 })
 
@@ -1329,8 +1334,8 @@ const mergedWorktrees = ({ branches, hook }) => {
   return { main, paths }
 }
 
-const prune = ({ cwd, env = gitFreeEnv() }) =>
-  spawnSync(process.execPath, [SCRIPT], { cwd, encoding: 'utf8', env })
+const prune = ({ args = [], cwd, env = gitFreeEnv() }) =>
+  spawnSync(process.execPath, [SCRIPT, ...args], { cwd, encoding: 'utf8', env })
 
 test("the worktree the command runs in survives the post-merge hook the main checkout's fast-forward fires", () => {
   const { main, paths } = mergedWorktrees({
@@ -2093,4 +2098,897 @@ test('the root package runs this suite from validate', () => {
         id === 'worktrees:prune:test' && profile === 'standard'
     )
   )
+})
+
+// ---------------------------------------------------------------------------
+// A removal git ends partway (PRUNE-06): the worktree counts as removed once
+// git no longer lists it, and its leftover folder is tried again.
+// ---------------------------------------------------------------------------
+
+const LEFTOVER_WAITS_MS = [250, 500, 750]
+
+// The error a delete of a file another process holds open throws.
+const busy = ({ path }) =>
+  Object.assign(
+    new Error(`EBUSY: resource busy or locked, unlink '${path}'`),
+    { code: 'EBUSY', path }
+  )
+
+// A leftover directory holding `done/a.txt`, which a delete removes, and
+// `locked/z.js`, which a fake delete reports as held.
+const leftoverTree = ({ prefix }) => {
+  const leftover = join(scratchRoot({ prefix }), 'worktree')
+  ;['done/a.txt', 'locked/z.js'].forEach((file) => {
+    mkdirSync(dirname(join(leftover, file)), { recursive: true })
+    writeFileSync(join(leftover, file), 'x\n')
+  })
+  return { done: join(leftover, 'done'), leftover }
+}
+
+test('a leftover delete that fails partway is tried again until the directory goes', () => {
+  const { done, leftover } = leftoverTree({ prefix: 'prune-retry-' })
+  const tries = { count: 0 }
+  const waits = []
+  const fs = {
+    rmSync: (path, options) => {
+      tries.count += 1
+      if (tries.count < 3) {
+        if (existsSync(done)) rmSync(done, { recursive: true })
+        throw busy({ path: join(path, 'locked', 'z.js') })
+      }
+      rmSync(path, options)
+    }
+  }
+  const residue = removeLeftover({
+    fs,
+    path: leftover,
+    wait: ({ ms }) => waits.push(ms)
+  })
+  assert.equal(residue, undefined)
+  assert.ok(!existsSync(leftover), `${leftover} still exists`)
+  assert.equal(tries.count, 3)
+  assert.deepEqual(waits, [250, 500])
+})
+
+test('a leftover that stays after every try is named by its path', () => {
+  const { leftover } = leftoverTree({ prefix: 'prune-residue-' })
+  const locked = join(leftover, 'locked', 'z.js')
+  const tries = { count: 0 }
+  const waits = []
+  const fs = {
+    rmSync: () => {
+      tries.count += 1
+      throw busy({ path: locked })
+    }
+  }
+  const residue = removeLeftover({
+    fs,
+    path: leftover,
+    wait: ({ ms }) => waits.push(ms)
+  })
+  assert.equal(tries.count, 4)
+  assert.deepEqual(waits, LEFTOVER_WAITS_MS)
+  assert.ok(residue.startsWith(forward({ path: leftover })), residue)
+  assert.ok(residue.includes(locked), residue)
+  assert.ok(existsSync(locked))
+})
+
+const HELD_DIR = join('node_modules', 'held')
+// The holder ends itself after a minute should a case never release it.
+const HOLDER_SCRIPT =
+  "process.stdout.write('held'); setTimeout(() => {}, 60000)"
+const READ_ONLY_DIR = 0o555
+const WRITABLE_DIR = 0o755
+const INT32_BYTES = 4
+
+const sleepSync = ({ ms }) =>
+  Atomics.wait(
+    new Int32Array(new SharedArrayBuffer(INT32_BYTES)),
+    0,
+    0,
+    ms
+  )
+
+const restoreMode = ({ dir }) => {
+  try {
+    chmodSync(dir, WRITABLE_DIR)
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error
+  }
+}
+
+// Holds `dir` so that no delete removes it or what it holds: on Windows a
+// process runs in it, elsewhere it is read-only. `release` ends the hold and
+// runs once; on Windows the directory is free some milliseconds after it
+// returns.
+const holdDirectory = async ({ dir }) => {
+  const state = { released: false }
+  const once1 = (release) => () => {
+    if (state.released) return
+    state.released = true
+    release()
+  }
+  if (process.platform !== 'win32') {
+    chmodSync(dir, READ_ONLY_DIR)
+    return { release: once1(() => restoreMode({ dir })) }
+  }
+  const holder = spawn(process.execPath, ['-e', HOLDER_SCRIPT], {
+    cwd: dir,
+    stdio: ['ignore', 'pipe', 'ignore']
+  })
+  await once(holder.stdout, 'data')
+  return { release: once1(() => holder.kill()) }
+}
+
+// A repository on main and its merged worktree `feat/held`, clean, whose
+// ignored `node_modules/held/` holds one file.
+const heldRepository = () => {
+  const scratch = scratchRoot({ prefix: 'prune-held-' })
+  const main = join(scratch, 'main')
+  const path = join(scratch, 'held')
+  git({ args: ['init', '-q', '-b', MAIN, main], cwd: scratch })
+  appendFileSync(join(main, '.git', 'info', 'exclude'), 'node_modules/\n')
+  writeFileSync(join(main, README), README_TEXT)
+  git({ args: ['add', README], cwd: main })
+  git({ args: ['commit', '-q', '-m', 'init'], cwd: main })
+  git({
+    args: ['worktree', 'add', '-q', '-b', 'feat/held', path],
+    cwd: main
+  })
+  mkdirSync(join(path, HELD_DIR), { recursive: true })
+  writeFileSync(join(path, HELD_DIR, 'z.js'), 'z\n')
+  const sha = git({ args: ['rev-parse', 'HEAD'], cwd: path })
+  return { main, path, worktree: { branch: 'feat/held', path, sha } }
+}
+
+// `git worktree remove` deletes the `.git` file and the registration even
+// when the delete of the directory stops partway, as on Windows at a held
+// file: the worktree is then removed, and what stays is named.
+test('a worktree git unregisters before its removal fails is removed, its folder finished', async () => {
+  const { main, path, worktree } = heldRepository()
+  const hold = await holdDirectory({ dir: join(path, HELD_DIR) })
+  try {
+    const result = removeWorktree({ root: main, wait: () => {}, worktree })
+    assert.equal(result.kept, null, result.detail)
+    assert.ok(
+      result.leftover?.startsWith(forward({ path })),
+      String(result.leftover)
+    )
+    assert.ok(
+      !git({ args: ['worktree', 'list', '--porcelain'], cwd: main }).includes(
+        'feat/held'
+      )
+    )
+    assert.equal(git({ args: ['branch', '--list', 'feat/held'], cwd: main }), '')
+    const [line] = reportLines({
+      dryRun: false,
+      quiet: true,
+      results: [result]
+    })
+    assert.ok(
+      line.includes(`; its directory stays: ${forward({ path })}`),
+      line
+    )
+  } finally {
+    hold.release()
+  }
+})
+
+test('a failed remove whose worktree list git cannot read is kept, and nothing is deleted', async () => {
+  const { main, path, worktree } = heldRepository()
+  const hold = await holdDirectory({ dir: join(path, HELD_DIR) })
+  const removes = { count: 0 }
+  try {
+    const result = removeWorktree({
+      fs: {
+        rmSync: () => {
+          removes.count += 1
+        }
+      },
+      listRegistered: () => {
+        throw new Error('git worktree list could not run')
+      },
+      root: main,
+      wait: () => {},
+      worktree
+    })
+    assert.equal(result.kept, REASON.REMOVE_FAILED)
+    assert.equal(removes.count, 0)
+    assert.ok(existsSync(path), `${path} was deleted`)
+    assert.notEqual(git({ args: ['branch', '--list', 'feat/held'], cwd: main }), '')
+  } finally {
+    hold.release()
+  }
+})
+
+test('a held directory released between tries goes whole, with its branch', async () => {
+  const { main, path, worktree } = heldRepository()
+  const hold = await holdDirectory({ dir: join(path, HELD_DIR) })
+  const tries = { waits: 0 }
+  try {
+    const result = removeWorktree({
+      root: main,
+      wait: ({ ms }) => {
+        tries.waits += 1
+        hold.release()
+        sleepSync({ ms })
+      },
+      worktree
+    })
+    assert.equal(result.kept, null, result.detail)
+    assert.equal(result.leftover, undefined)
+    assert.ok(!existsSync(path), `${path} still exists`)
+    assert.ok(tries.waits >= 1, 'the delete was not tried again')
+    assert.equal(git({ args: ['branch', '--list', 'feat/held'], cwd: main }), '')
+  } finally {
+    hold.release()
+  }
+})
+
+// ---------------------------------------------------------------------------
+// Each removal is announced before it starts (PRUNE-07).
+// ---------------------------------------------------------------------------
+
+test('each removal is announced before git removes it', () => {
+  const path = forward({ path: fixture.paths['feat/merged'] })
+  const lines = fixture.real.stdout.split(/\r?\n/u)
+  const announced = lines.indexOf(
+    `prune-worktrees: removing ${path} (feat/merged)`
+  )
+  const removed = lines.indexOf(
+    `prune-worktrees: removed ${path} (feat/merged)`
+  )
+  assert.ok(announced >= 0, fixture.real.stdout)
+  assert.ok(announced < removed, fixture.real.stdout)
+})
+
+test('a removal git refuses is announced before it is tried', () => {
+  const { main, path, worktree } = heldRepository()
+  writeFileSync(join(path, UNSAVED_FILE), 'unsaved\n')
+  const announced = []
+  const result = removeWorktree({
+    announce: ({ line }) =>
+      announced.push({
+        line,
+        listed: git({ args: ['worktree', 'list', '--porcelain'], cwd: main })
+      }),
+    root: main,
+    worktree
+  })
+  assert.equal(result.kept, REASON.REMOVE_FAILED)
+  assert.equal(announced.length, 1)
+  assert.equal(
+    announced[0].line,
+    `prune-worktrees: removing ${forward({ path })} (feat/held)`
+  )
+  assert.ok(announced[0].listed.includes('feat/held'), 'it was gone already')
+})
+
+test('a dry run announces no removal', () => {
+  assert.ok(!fixture.dryRun.stdout.includes('removing '), fixture.dryRun.stdout)
+})
+
+test('a failure after a removal started does not say nothing was removed', () => {
+  const started = failureLine({
+    message: 'git worktree prune failed',
+    results: [],
+    started: true
+  })
+  assert.ok(!started.includes('nothing was removed'), started)
+  assert.match(started, /a removal had started; the last "removing" line above names it/u)
+  const idle = failureLine({ message: 'git worktree prune failed', results: [] })
+  assert.match(idle, /nothing was removed/u)
+  const done = failureLine({
+    message: 'x',
+    results: [{ kept: null }],
+    started: true
+  })
+  assert.match(done, /1 worktree was removed before it failed/u)
+})
+
+// ---------------------------------------------------------------------------
+// The kept worktrees are listed by the age of their last commit (PRUNE-08).
+// ---------------------------------------------------------------------------
+
+const AGE_HEADING =
+  'prune-worktrees: worktrees kept, by the age of their last commit, oldest first:'
+const DAY_MS = 86_400_000
+
+test('the kept worktrees are listed by the age of their last commit, oldest first', () => {
+  const now = Date.UTC(2026, 10, 26)
+  const aged = ({ branch, days, kept = REASON.DIRTY }) => ({
+    branch,
+    committedAt: now - days * DAY_MS,
+    kept,
+    path: `C:/wt/${branch}`
+  })
+  const lines = reportLines({
+    dryRun: false,
+    main: { behind: 0, moved: false, path: 'C:/wt/main' },
+    now,
+    quiet: false,
+    results: [
+      aged({ branch: 'main', days: 900, kept: REASON.MAIN }),
+      aged({ branch: 'recent', days: 2 }),
+      aged({ branch: 'oldest', days: 40, kept: REASON.IGNORED }),
+      aged({ branch: 'current', days: 800, kept: REASON.CURRENT }),
+      aged({ branch: 'middle', days: 9 }),
+      { branch: 'unknown', kept: REASON.DIRTY, path: 'C:/wt/unknown' }
+    ]
+  })
+  const at = lines.indexOf(AGE_HEADING)
+  assert.ok(at >= 0, lines.join('\n'))
+  assert.deepEqual(lines.slice(at + 1, at + 4), [
+    `prune-worktrees:   40 d  C:/wt/oldest (oldest): ${REASON.IGNORED}`,
+    `prune-worktrees:    9 d  C:/wt/middle (middle): ${REASON.DIRTY}`,
+    `prune-worktrees:    2 d  C:/wt/recent (recent): ${REASON.DIRTY}`
+  ])
+  assert.ok(
+    !lines.some((line) => /\d d {2}C:\/wt\/(?:main|current|unknown) /u.test(line)),
+    lines.join('\n')
+  )
+  const none = reportLines({
+    dryRun: false,
+    now,
+    quiet: false,
+    results: [aged({ branch: 'main', days: 3, kept: REASON.MAIN })]
+  })
+  assert.ok(!none.includes(AGE_HEADING))
+})
+
+test('a real run lists each kept worktree by its age, and --quiet does not', () => {
+  const branch = 'feat/kept-by-age'
+  const { main, paths } = mergedWorktrees({ branches: [branch], hook: false })
+  writeFileSync(join(paths[branch], UNSAVED_FILE), 'unsaved\n')
+  const run = prune({ cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  const lines = run.stdout.split(/\r?\n/u)
+  const at = lines.indexOf(AGE_HEADING)
+  assert.ok(at >= 0, run.stdout)
+  assert.match(
+    lines[at + 1],
+    new RegExp(
+      `^prune-worktrees: +\\d+ d  ${forward({ path: paths[branch] }).replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')} \\(${branch}\\): `,
+      'u'
+    )
+  )
+  const quiet = prune({ args: ['--quiet'], cwd: main })
+  assert.equal(quiet.status, EXIT_OK, quiet.stderr)
+  assert.ok(!quiet.stdout.includes(AGE_HEADING), quiet.stdout)
+})
+
+// ---------------------------------------------------------------------------
+// One real prune at a time (PRUNE-12).
+// ---------------------------------------------------------------------------
+
+const PRUNE_LOCK = 'prune-worktrees.lock'
+
+// A lock of another prune in the common git directory of `main`, held by
+// this test's own process, which runs for as long as the prune does.
+const holdPruneLock = ({ main }) => {
+  const path = join(main, '.git', PRUNE_LOCK)
+  writeFileSync(path, `${process.pid}\nanother-prune\n`)
+  return path
+}
+
+test('a run that finds another prune holding the lock prints one line, exits 0 and removes nothing', () => {
+  const branch = 'feat/locked-out'
+  const { main, paths } = mergedWorktrees({ branches: [branch], hook: false })
+  const lock = holdPruneLock({ main })
+  const run = prune({ cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.equal(
+    run.stdout.trim(),
+    `prune-worktrees: another prune of ${forward({ path: main })} holds ` +
+      `${forward({ path: lock })}; this run removes nothing.`
+  )
+  assert.ok(existsSync(paths[branch]), `${paths[branch]} was removed`)
+  assert.ok(existsSync(lock), 'the other prune keeps its lock')
+})
+
+test('a real run releases the lock it took', () => {
+  const branch = 'feat/releases-lock'
+  const { main, paths } = mergedWorktrees({ branches: [branch], hook: false })
+  const run = prune({ cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.ok(!existsSync(paths[branch]), run.stdout)
+  assert.ok(!existsSync(join(main, '.git', PRUNE_LOCK)), 'the lock stays')
+})
+
+test('a dry run while another prune holds the lock still prints its plan', () => {
+  const branch = 'feat/dry-while-locked'
+  const { main, paths } = mergedWorktrees({ branches: [branch], hook: false })
+  const lock = holdPruneLock({ main })
+  const run = prune({ args: ['--dry-run'], cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.ok(
+    run.stdout.includes(`would remove ${forward({ path: paths[branch] })}`),
+    run.stdout
+  )
+  assert.ok(existsSync(lock), 'the other prune keeps its lock')
+})
+
+// ---------------------------------------------------------------------------
+// Orphan folders under the worktree root, judged (PRUNE-13, PRUNE-14): a
+// folder a removal ended partway left, with no `.git` and no registration.
+// ---------------------------------------------------------------------------
+
+const ORPHAN_AGE_MINUTES = 60
+const SECONDS_PER_MINUTE = 60
+
+test('--finish-orphans is read', () => {
+  assert.deepEqual(
+    optionsFrom({ argv: ['node', 'x.mjs', '--finish-orphans'] }),
+    { dryRun: false, finishOrphans: true, quiet: false }
+  )
+})
+
+// The folder a worktree's removal that ended partway leaves: no `.git`, one
+// file below it, last written `ageMinutes` ago, and, when `branch` is given,
+// that local branch at the tip of main, which origin holds.
+const orphanFolder = ({
+  ageMinutes = ORPHAN_AGE_MINUTES,
+  branch,
+  main,
+  name
+}) => {
+  const path = join(dirname(main), `${basename(main)}-worktrees`, name)
+  mkdirSync(join(path, 'node_modules'), { recursive: true })
+  writeFileSync(join(path, 'node_modules', 'a.txt'), 'a\n')
+  const then = Date.now() / 1000 - ageMinutes * SECONDS_PER_MINUTE
+  utimesSync(path, then, then)
+  if (branch) git({ args: ['branch', branch], cwd: main })
+  return path
+}
+
+const orphanLine = ({ branch, path, verb }) =>
+  `prune-worktrees: ${verb} orphan folder ${forward({ path })} (${branch})`
+
+test('a dry run names the orphan folder it would finish and deletes nothing', () => {
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  const path = orphanFolder({ branch: 'feat/ORPH-1', main, name: 'ORPH-1' })
+  const waiting = prune({ args: ['--dry-run'], cwd: main })
+  assert.equal(waiting.status, EXIT_OK, waiting.stderr)
+  assert.ok(
+    waiting.stdout.includes(
+      `${orphanLine({ branch: 'feat/ORPH-1', path, verb: 'kept' })}: ${REASON.ORPHAN_MANUAL}`
+    ),
+    waiting.stdout
+  )
+  const run = prune({ args: ['--dry-run', '--finish-orphans'], cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.ok(
+    run.stdout.includes(
+      orphanLine({ branch: 'feat/ORPH-1', path, verb: 'would remove' })
+    ),
+    run.stdout
+  )
+  assert.ok(existsSync(join(path, 'node_modules', 'a.txt')), 'the folder went')
+  assert.ok(
+    git({ args: ['branch', '--list', 'feat/ORPH-1'], cwd: main }).includes(
+      'feat/ORPH-1'
+    ),
+    'the branch went'
+  )
+})
+
+test('an orphan folder is kept and named for each reason that keeps it', () => {
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  const unmerged = git({
+    args: ['commit-tree', 'HEAD^{tree}', '-p', 'HEAD', '-m', 'unmerged'],
+    cwd: main
+  })
+  git({ args: ['branch', 'feat/NOT-MERGED', unmerged], cwd: main })
+  const elsewhere = join(dirname(main), 'elsewhere')
+  git({
+    args: ['worktree', 'add', '-q', '-b', 'feat/OUT', elsewhere],
+    cwd: main
+  })
+  git({ args: ['branch', 'fix/DUP'], cwd: main })
+  const cases = [
+    {
+      branch: 'no branch',
+      name: 'NO-BRANCH',
+      reason: REASON.ORPHAN_NO_BRANCH
+    },
+    {
+      branch: 'several branches',
+      branches: ['feat/DUP'],
+      detail: 'feat/DUP, fix/DUP',
+      name: 'DUP',
+      reason: REASON.ORPHAN_AMBIGUOUS
+    },
+    {
+      branch: 'feat/NOT-MERGED',
+      name: 'NOT-MERGED',
+      reason: REASON.ORPHAN_NOT_MERGED
+    },
+    {
+      branch: 'feat/OUT',
+      name: 'OUT',
+      reason: REASON.ORPHAN_CHECKED_OUT
+    },
+    {
+      ageMinutes: 1,
+      branch: 'feat/FRESH',
+      branches: ['feat/FRESH'],
+      name: 'FRESH',
+      reason: REASON.ORPHAN_YOUNG
+    }
+  ]
+  const paths = cases.map(({ ageMinutes, branches = [], name }) => {
+    const path = orphanFolder({ ageMinutes, main, name })
+    branches.forEach((branch) =>
+      git({ args: ['branch', branch], cwd: main })
+    )
+    return path
+  })
+  const run = prune({ args: ['--dry-run', '--finish-orphans'], cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  cases.forEach(({ branch, detail, reason }, at) => {
+    const line = `${orphanLine({ branch, path: paths[at], verb: 'kept' })}: ${reason}`
+    assert.ok(
+      run.stdout.includes(detail ? `${line}: ${detail}` : line),
+      `${line}\n${run.stdout}`
+    )
+  })
+  assert.ok(!run.stdout.includes('would remove orphan folder'), run.stdout)
+})
+
+test('a dry run judges an orphan folder that holds a registered worktree as kept', () => {
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  const path = orphanFolder({ branch: 'feat/HOLDS', main, name: 'HOLDS' })
+  git({
+    args: ['worktree', 'add', '-q', '-b', 'feat/INNER', join(path, 'inner')],
+    cwd: main
+  })
+  const run = prune({ args: ['--dry-run', '--finish-orphans'], cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.ok(
+    run.stdout.includes(
+      `${orphanLine({ branch: 'feat/HOLDS', path, verb: 'kept' })}: ${REASON.HOLDS_WORKTREE}`
+    ),
+    run.stdout
+  )
+})
+
+// ---------------------------------------------------------------------------
+// Orphan folders, finished (PRUNE-13): a real `--finish-orphans` run deletes
+// each one it judged finishable, then its branch.
+// ---------------------------------------------------------------------------
+
+const FINISH_ORPHANS = '--finish-orphans'
+
+// A repository with one merged worktree and a control orphan folder `CTRL`,
+// which every run with `--finish-orphans` finishes, so that a case that
+// must leave something alone shows the run did reach its orphan folders.
+const orphanRepository = () => {
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  const control = orphanFolder({ branch: 'feat/CTRL', main, name: 'CTRL' })
+  return { control, main }
+}
+
+const finished = ({ control, run }) => {
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.ok(!existsSync(control), `the control folder stays\n${run.stdout}`)
+}
+
+test('an orphan folder whose branch is merged goes with its branch, announced first', () => {
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  const path = orphanFolder({ branch: 'feat/ORPH-1', main, name: 'ORPH-1' })
+  const run = prune({ args: [FINISH_ORPHANS], cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  const lines = run.stdout.split(/\r?\n/u)
+  const announced = lines.indexOf(
+    orphanLine({ branch: 'feat/ORPH-1', path, verb: 'removing' })
+  )
+  const removed = lines.indexOf(
+    orphanLine({ branch: 'feat/ORPH-1', path, verb: 'removed' })
+  )
+  assert.ok(announced >= 0 && announced < removed, run.stdout)
+  assert.ok(!existsSync(path), `${path} still exists`)
+  assert.equal(git({ args: ['branch', '--list', 'feat/ORPH-1'], cwd: main }), '')
+})
+
+test('the main checkout is fast-forwarded before any orphan folder is deleted', () => {
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  const path = orphanFolder({ branch: 'feat/ORPH-1', main, name: 'ORPH-1' })
+  // The post-merge the fast-forward fires records whether the folder was
+  // still on disk at that moment.
+  const record = join(dirname(main), 'at-fast-forward')
+  writeFileSync(
+    join(main, '.git', 'hooks', 'post-merge'),
+    [
+      '#!/bin/sh',
+      `if [ -d "${forward({ path })}" ]; then echo present; ` +
+        `else echo gone; fi > "${forward({ path: record })}"`,
+      ''
+    ].join('\n'),
+    { mode: 0o755 }
+  )
+  const run = prune({ args: [FINISH_ORPHANS], cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.equal(readFileSync(record, 'utf8').trim(), 'present')
+  assert.ok(!existsSync(path), `${path} still exists`)
+})
+
+// A folder judged finishable, then changed before its delete: the run reads
+// the registered worktrees again and deletes nothing.
+const finishable = () => {
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  const path = orphanFolder({ branch: 'feat/ORPH-1', main, name: 'ORPH-1' })
+  const sha = git({ args: ['rev-parse', 'feat/ORPH-1'], cwd: main })
+  const orphan = { branch: 'feat/ORPH-1', orphan: true, path: forward({ path }), sha }
+  const deletes = { count: 0 }
+  const fs = {
+    rmSync: () => {
+      deletes.count += 1
+    }
+  }
+  return { deletes, fs, main, orphan, path }
+}
+
+const keptBy = ({ listRegistered = () => () => new Set(), reason, setup = () => {} }) => {
+  const { deletes, fs, main, orphan, path } = finishable()
+  setup({ path })
+  const result = finishOrphan({
+    fs,
+    listRegistered: listRegistered({ path }),
+    orphan,
+    root: main
+  })
+  assert.equal(result.kept, reason)
+  assert.equal(deletes.count, 0)
+  assert.ok(existsSync(path), `${path} was deleted`)
+  assert.notEqual(git({ args: ['branch', '--list', 'feat/ORPH-1'], cwd: main }), '')
+}
+
+test('an orphan folder that holds a worktree registered by the time of its delete is kept, and nothing is deleted', () => {
+  keptBy({
+    listRegistered: ({ path }) => () => new Set([join(path, 'inner')]),
+    reason: REASON.HOLDS_WORKTREE
+  })
+})
+
+test('an orphan folder registered as a worktree by the time of its delete is kept, and nothing is deleted', () => {
+  keptBy({
+    listRegistered: ({ path }) => () => new Set([path]),
+    reason: REASON.ORPHAN_BECAME_WORKTREE
+  })
+})
+
+test('an orphan folder that holds a .git by the time of its delete is kept, and nothing is deleted', () => {
+  keptBy({
+    reason: REASON.ORPHAN_BECAME_WORKTREE,
+    setup: ({ path }) => writeFileSync(join(path, '.git'), 'gitdir: x\n')
+  })
+})
+
+test('an orphan folder whose worktree list git cannot read again is kept, and nothing is deleted', () => {
+  keptBy({
+    listRegistered: () => () => {
+      throw new Error('git worktree list could not run')
+    },
+    reason: REASON.UNREADABLE
+  })
+})
+
+test('a folder outside the worktree root is never touched, even with a merged branch', () => {
+  const { control, main } = orphanRepository()
+  const outside = join(dirname(main), 'outside', 'OUT-MERGED')
+  mkdirSync(join(outside, 'node_modules'), { recursive: true })
+  writeFileSync(join(outside, 'node_modules', 'a.txt'), 'a\n')
+  git({ args: ['branch', 'feat/OUT-MERGED'], cwd: main })
+  finished({ control, run: prune({ args: [FINISH_ORPHANS], cwd: main }) })
+  assert.ok(existsSync(join(outside, 'node_modules', 'a.txt')), 'a folder outside was deleted')
+  assert.notEqual(git({ args: ['branch', '--list', 'feat/OUT-MERGED'], cwd: main }), '')
+})
+
+test('a registered worktree under the worktree root is no orphan, even with no .git', () => {
+  const { control, main } = orphanRepository()
+  const live = join(dirname(main), `${basename(main)}-worktrees`, 'LIVE')
+  git({ args: ['worktree', 'add', '-q', '-b', 'feat/LIVE', live], cwd: main })
+  rmSync(join(live, '.git'))
+  finished({ control, run: prune({ args: [FINISH_ORPHANS], cwd: main }) })
+  assert.ok(existsSync(join(live, README)), 'the registered worktree was deleted')
+  assert.notEqual(git({ args: ['branch', '--list', 'feat/LIVE'], cwd: main }), '')
+})
+
+test('a folder under the worktree root that holds a .git is no orphan, and stays', () => {
+  const { control, main } = orphanRepository()
+  const path = orphanFolder({ branch: 'feat/WITHGIT', main, name: 'WITHGIT' })
+  writeFileSync(join(path, '.git'), 'gitdir: elsewhere\n')
+  finished({ control, run: prune({ args: [FINISH_ORPHANS], cwd: main }) })
+  assert.ok(existsSync(join(path, 'node_modules', 'a.txt')), `${path} was deleted`)
+  assert.notEqual(git({ args: ['branch', '--list', 'feat/WITHGIT'], cwd: main }), '')
+})
+
+test('a junction under the worktree root is no orphan folder, and its target stays', () => {
+  const { control, main } = orphanRepository()
+  const target = join(dirname(main), 'link-target')
+  mkdirSync(target)
+  writeFileSync(join(target, 'kept.txt'), 'kept\n')
+  const link = join(dirname(main), `${basename(main)}-worktrees`, 'LINK')
+  symlinkSync(target, link, 'junction')
+  git({ args: ['branch', 'feat/LINK'], cwd: main })
+  finished({ control, run: prune({ args: [FINISH_ORPHANS], cwd: main }) })
+  assert.equal(readFileSync(join(target, 'kept.txt'), 'utf8'), 'kept\n')
+  assert.ok(existsSync(link), 'the junction was deleted')
+})
+
+test('an orphan folder that stays keeps its branch and is named', () => {
+  const { deletes, main, orphan, path } = finishable()
+  const failing = {
+    rmSync: () => {
+      deletes.count += 1
+      throw Object.assign(new Error('EBUSY: resource busy or locked'), {
+        code: 'EBUSY'
+      })
+    }
+  }
+  const result = finishOrphan({ fs: failing, orphan, root: main, wait: () => {} })
+  assert.equal(result.kept, null)
+  assert.equal(deletes.count, 4)
+  assert.ok(result.leftover.startsWith(forward({ path })), result.leftover)
+  assert.notEqual(git({ args: ['branch', '--list', 'feat/ORPH-1'], cwd: main }), '')
+  const [line] = reportLines({ dryRun: false, quiet: true, results: [result] })
+  assert.ok(line.includes('; its directory stays: '), line)
+})
+
+// ---------------------------------------------------------------------------
+// Orphan folders wait for a first manual run (PRUNE-14): a run finishes them
+// only given --finish-orphans, until one such run leaves none behind and
+// writes a marker in the common git directory.
+// ---------------------------------------------------------------------------
+
+const ORPHAN_MARKER = 'prune-finish-orphans.enabled'
+
+test('a run before the marker exists reports the orphan folder it could finish and finishes none', () => {
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  const path = orphanFolder({ branch: 'feat/ORPH-1', main, name: 'ORPH-1' })
+  const run = prune({ cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.ok(existsSync(join(path, 'node_modules', 'a.txt')), `${path} was deleted`)
+  assert.notEqual(git({ args: ['branch', '--list', 'feat/ORPH-1'], cwd: main }), '')
+  assert.ok(!existsSync(join(main, '.git', ORPHAN_MARKER)), 'the marker was written')
+  assert.ok(
+    run.stdout.includes(
+      `${orphanLine({ branch: 'feat/ORPH-1', path, verb: 'kept' })}: ${REASON.ORPHAN_MANUAL}`
+    ),
+    run.stdout
+  )
+})
+
+test('a --finish-orphans run that finishes every orphan folder it could writes the marker', () => {
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  const path = orphanFolder({ branch: 'feat/ORPH-1', main, name: 'ORPH-1' })
+  const marker = join(main, '.git', ORPHAN_MARKER)
+  const dry = prune({ args: ['--dry-run', '--finish-orphans'], cwd: main })
+  assert.equal(dry.status, EXIT_OK, dry.stderr)
+  assert.ok(!existsSync(marker), 'a dry run wrote the marker')
+  const run = prune({ args: ['--finish-orphans'], cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.ok(!existsSync(path), `${path} still exists`)
+  assert.match(readFileSync(marker, 'utf8'), /^\d{4}-\d\d-\d\dT/u)
+  assert.ok(
+    run.stdout.includes(
+      'prune-worktrees: every run finishes orphan folders from now on: ' +
+        `${forward({ path: marker })} was written.`
+    ),
+    run.stdout
+  )
+})
+
+test('an orphan folder finished with its folder left on disk withholds the marker', async () => {
+  assert.equal(orphansFinished({ orphans: [] }), true)
+  assert.equal(
+    orphansFinished({
+      orphans: [{ kept: REASON.ORPHAN_YOUNG }, { kept: null }]
+    }),
+    true
+  )
+  assert.equal(
+    orphansFinished({
+      orphans: [{ kept: null }, { kept: null, leftover: 'C:/wt/ORPH-1: EBUSY' }]
+    }),
+    false
+  )
+  // A real run whose delete of one folder stays: the process that holds it
+  // (on Windows) or its read-only mode (elsewhere) outlasts the four tries.
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  const path = orphanFolder({ branch: 'feat/HELD', main, name: 'HELD' })
+  const held = join(path, 'node_modules', 'held')
+  mkdirSync(held, { recursive: true })
+  writeFileSync(join(held, 'z.js'), 'z\n')
+  const then = Date.now() / 1000 - ORPHAN_AGE_MINUTES * SECONDS_PER_MINUTE
+  utimesSync(path, then, then)
+  const hold = await holdDirectory({ dir: held })
+  try {
+    const run = prune({ args: ['--finish-orphans'], cwd: main })
+    assert.equal(run.status, EXIT_OK, run.stderr)
+    assert.ok(run.stdout.includes('; its directory stays: '), run.stdout)
+    assert.ok(existsSync(held), 'the held folder was deleted')
+    assert.notEqual(git({ args: ['branch', '--list', 'feat/HELD'], cwd: main }), '')
+    assert.ok(!existsSync(join(main, '.git', ORPHAN_MARKER)), 'the marker was written')
+    assert.ok(!run.stdout.includes('every run finishes orphan folders'), run.stdout)
+  } finally {
+    hold.release()
+  }
+})
+
+test('once the marker exists a plain run finishes a new orphan folder with its branch', () => {
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  writeFileSync(join(main, '.git', ORPHAN_MARKER), `${new Date().toISOString()}\n`)
+  const path = orphanFolder({ branch: 'feat/LATER', main, name: 'LATER' })
+  const run = prune({ cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.ok(!existsSync(path), `${path} still exists`)
+  assert.equal(git({ args: ['branch', '--list', 'feat/LATER'], cwd: main }), '')
+})
+
+test('the root package runs the first manual orphan run from worktrees:prune:finish-orphans', () => {
+  const { scripts } = JSON.parse(readFileSync(ROOT_PACKAGE, 'utf8'))
+  assert.equal(
+    scripts['worktrees:prune:finish-orphans'],
+    'node scripts/prune-worktrees.mjs --finish-orphans'
+  )
+})
+
+// ---------------------------------------------------------------------------
+// The worktree root reached through a link (PRUNE-13): git records a nested
+// worktree by its real path, so the scan reads real paths too.
+// ---------------------------------------------------------------------------
+
+test('an orphan folder reached through a linked worktree root keeps the registered worktree inside it', () => {
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  const real = join(dirname(main), 'real-root')
+  const folder = join(real, 'o')
+  mkdirSync(join(folder, 'node_modules'), { recursive: true })
+  writeFileSync(join(folder, 'node_modules', 'a.txt'), 'a\n')
+  git({ args: ['branch', 'feat/o'], cwd: main })
+  const link = join(dirname(main), `${basename(main)}-worktrees`)
+  symlinkSync(real, link, process.platform === 'win32' ? 'junction' : 'dir')
+  // The nested worktree is added through the link; git records its real path.
+  git({
+    args: ['worktree', 'add', '-q', '-b', 'feat/inner', join(link, 'o', 'inner')],
+    cwd: main
+  })
+  const precious = join(folder, 'inner', 'precious.txt')
+  writeFileSync(precious, 'precious\n')
+  const then = Date.now() / 1000 - ORPHAN_AGE_MINUTES * SECONDS_PER_MINUTE
+  utimesSync(folder, then, then)
+  const run = prune({ args: ['--finish-orphans'], cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.ok(
+    run.stdout.includes(
+      `${orphanLine({ branch: 'feat/o', path: folder, verb: 'kept' })}: ${REASON.HOLDS_WORKTREE}`
+    ),
+    run.stdout
+  )
+  assert.ok(existsSync(precious), 'the worktree inside the folder was deleted')
+  assert.notEqual(git({ args: ['branch', '--list', 'feat/o'], cwd: main }), '')
+})
+
+test('an orphan folder holding a nested repository is kept', () => {
+  const { control, main } = orphanRepository()
+  const path = orphanFolder({ branch: 'feat/NEST-REPO', main, name: 'NEST-REPO' })
+  const nested = join(path, 'work', 'sub')
+  mkdirSync(nested, { recursive: true })
+  git({ args: ['init', '-q', '-b', MAIN], cwd: nested })
+  writeFileSync(join(nested, 'unpushed.txt'), 'unpushed\n')
+  git({ args: ['add', 'unpushed.txt'], cwd: nested })
+  git({ args: ['commit', '-q', '-m', 'unpushed'], cwd: nested })
+  const then = Date.now() / 1000 - ORPHAN_AGE_MINUTES * SECONDS_PER_MINUTE
+  utimesSync(path, then, then)
+  const run = prune({ args: [FINISH_ORPHANS], cwd: main })
+  finished({ control, run })
+  assert.ok(
+    run.stdout.includes(
+      `${orphanLine({ branch: 'feat/NEST-REPO', path, verb: 'kept' })}: ${REASON.ORPHAN_HOLDS_GIT}`
+    ),
+    run.stdout
+  )
+  assert.ok(existsSync(join(nested, 'unpushed.txt')), 'the nested repository was deleted')
+  assert.equal(git({ args: ['log', '--format=%s'], cwd: nested }), 'unpushed')
+  assert.notEqual(git({ args: ['branch', '--list', 'feat/NEST-REPO'], cwd: main }), '')
 })

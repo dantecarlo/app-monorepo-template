@@ -91,28 +91,35 @@ import {
   lstatSync,
   mkdtempSync,
   readdirSync,
-  rmSync
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { removePath } from '@app/tooling/remove-path'
 
 import { runBounded } from './agent-harness/reaper/bounded-child.mjs'
+import { takeLock } from './agent-harness/reaper/lock.mjs'
 import { gitFreeEnv } from './git-free-env.mjs'
 import {
   AGENT_TOOLING_DIR,
   BRANCH_PREFIX,
+  decideOrphan,
   defaultBranchOf,
   DIVERGED,
   failureLine,
   fetchSecondsFrom,
   hiddenOf,
+  holdsRegistered,
   installCommandOf,
   installOutcomeOf,
   installSecondsFrom,
   isSkillRegistry,
+  LABEL,
   listDetail,
   LOCAL_CHANGES,
   localChangesOf,
@@ -125,6 +132,7 @@ import {
   REASON,
   refusalOf,
   REMOTE,
+  removingLine,
   reportLines,
   samePath,
   skippedLines,
@@ -136,9 +144,13 @@ import {
 const HERE = dirname(fileURLToPath(import.meta.url))
 
 const REMOTE_HEAD = `refs/remotes/${REMOTE}/HEAD`
+const LOCK_NAME = 'prune-worktrees.lock'
+const MARKER_NAME = 'prune-finish-orphans.enabled'
 const NO_REMOTE_LINE = `prune-worktrees: no ${REMOTE} remote, so nothing to prune`
 // 64 MiB of git output.
 const GIT_OUTPUT_BYTES = 67_108_864
+const INT32_BYTES = 4
+const nothing = () => {}
 const MS_PER_SECOND = 1000
 // `git merge-base --is-ancestor` exits 1 when the first commit is not an
 // ancestor of the second; any other failure is an error.
@@ -379,22 +391,104 @@ const contentReason = ({ worktree }) => {
   }
 }
 
-// A directory `git worktree remove` left on disk. `removePath` removes a
-// junction or a symbolic link as the link itself, a broken one included,
-// and never enters its target, so the pnpm store it points into is kept.
-// A directory that went after it was seen is gone, as asked; any other
-// failure is the leftover the removal reports.
-export const removeLeftover = ({ path }) => removePath({ path })
+// A leftover delete is tried LEFTOVER_TRIES times, waiting LEFTOVER_WAIT_MS
+// times the tries made so far between two of them. Node's own `maxRetries`
+// does not retry the EPERM a directory a process runs in throws on Windows.
+const LEFTOVER_TRIES = 4
+const LEFTOVER_WAIT_MS = 250
+
+const pause = ({ ms }) =>
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(INT32_BYTES)), 0, 0, ms)
+
+// A path in forward slashes, its case kept.
+const forwardPath = ({ path }) => resolve(path).replaceAll('\\', '/')
+
+// A directory `git worktree remove` left on disk, removed through
+// `removePath` and tried again, with `wait` between two tries, while it
+// stays. `removePath` removes a junction or a symbolic link as the link
+// itself, a broken one included, and never enters its target, so the pnpm
+// store it points into is kept; a directory that went after it was seen is
+// gone, as asked. Undefined once the path is gone; otherwise the residue: the
+// path, and the error of the last try. `fs` and `wait` are injected by tests.
+export const removeLeftover = ({ fs, path, tried = 0, wait = pause }) => {
+  try {
+    removePath({ fs, path })
+    return undefined
+  } catch (error) {
+    if (tried + 1 >= LEFTOVER_TRIES) {
+      return `${forwardPath({ path })}: ${error.message}`
+    }
+    wait({ ms: LEFTOVER_WAIT_MS * (tried + 1) })
+    return removeLeftover({ fs, path, tried: tried + 1, wait })
+  }
+}
+
+// The time of the commit each of `heads` names, in milliseconds, by commit;
+// a commit git cannot read is left out, and so is every commit when there is
+// no head or git cannot run the log.
+const readCommitTimes = ({ heads, root }) => {
+  if (heads.length === 0) return new Map()
+  try {
+    return new Map(
+      git({
+        args: [
+          'log',
+          '--no-walk=unsorted',
+          '--ignore-missing',
+          '--format=%H%x09%ct',
+          ...heads
+        ],
+        cwd: root
+      })
+        .split(/\r?\n/u)
+        .filter(Boolean)
+        .map((line) => {
+          const [sha, seconds] = line.split('\t')
+          return [sha, Number(seconds) * MS_PER_SECOND]
+        })
+    )
+  } catch {
+    return new Map()
+  }
+}
+
+// Every registered worktree path of the repository `root` belongs to, in one
+// spelling.
+const readRegistered = ({ root }) =>
+  new Set(listWorktrees({ root }).map(({ path }) => samePath({ path })))
+
+// Whether git still lists `worktree` as registered; a list git cannot read
+// counts as registered.
+const isRegistered = ({ listRegistered, root, worktree }) => {
+  try {
+    return listRegistered({ root }).has(samePath({ path: worktree.path }))
+  } catch {
+    return true
+  }
+}
 
 // Removes one worktree, the directory Windows may leave behind, and its
 // branch. Git refuses a worktree holding a modified or untracked file and
 // deletes an ignored one, with untracked files shown whatever the
-// repository's status configuration; a refusal is kept with git's message.
-// A directory that stays is reported on the removal. The branch goes only
-// while its tip is still `worktree.sha`, the commit it was judged at, and
-// its configuration with it, as `git branch -D` would; a branch that moved
-// since keeps the commits it gained.
-export const removeWorktree = ({ root, worktree }) => {
+// repository's status configuration; a refusal that leaves the worktree
+// registered is kept with git's message. A delete that stops partway, at a
+// file another process holds on Windows, fails the command after git has
+// deleted the `.git` file and the registration: that worktree counts as
+// removed, and what git left is removed as a leftover, tried again while it
+// stays. A directory that stays is reported on the removal, by its path. The
+// branch goes only while its tip is still `worktree.sha`, the commit it was
+// judged at, and its configuration with it, as `git branch -D` would; a
+// branch that moved since keeps the commits it gained. `fs`, `wait` reach
+// `removeLeftover`; `listRegistered` reads the registered worktrees.
+export const removeWorktree = ({
+  announce = nothing,
+  fs,
+  listRegistered = readRegistered,
+  root,
+  wait,
+  worktree
+}) => {
+  announce({ line: removingLine({ worktree }) })
   try {
     git({
       args: [
@@ -407,21 +501,25 @@ export const removeWorktree = ({ root, worktree }) => {
       cwd: root
     })
   } catch (error) {
-    return {
-      ...worktree,
-      detail: error.message,
-      kept: REASON.REMOVE_FAILED
+    if (isRegistered({ listRegistered, root, worktree })) {
+      return {
+        ...worktree,
+        detail: error.message,
+        kept: REASON.REMOVE_FAILED
+      }
     }
   }
-  const leftover = (() => {
-    if (!existsSync(worktree.path)) return undefined
-    try {
-      removeLeftover({ path: worktree.path })
-      return undefined
-    } catch (error) {
-      return error.message
-    }
-  })()
+  const leftover = removeLeftover({ fs, path: worktree.path, wait })
+  const branchKept = deleteBranch({ root, worktree })
+  return branchKept
+    ? { ...worktree, detail: branchKept, kept: null, leftover }
+    : { ...worktree, kept: null, leftover }
+}
+
+// Deletes `worktree.branch` only while its tip is still `worktree.sha`, and
+// its configuration with it, as `git branch -D` would. Undefined once it is
+// gone; otherwise the message git gave for keeping it.
+const deleteBranch = ({ root, worktree }) => {
   try {
     git({
       args: [
@@ -433,7 +531,7 @@ export const removeWorktree = ({ root, worktree }) => {
       cwd: root
     })
   } catch (error) {
-    return { ...worktree, detail: error.message, kept: null, leftover }
+    return error.message
   }
   try {
     git({
@@ -443,7 +541,109 @@ export const removeWorktree = ({ root, worktree }) => {
   } catch {
     // A branch with no configuration has no section to remove.
   }
-  return { ...worktree, kept: null, leftover }
+  return undefined
+}
+
+const FOLDER_STAYS = 'its folder is not gone yet'
+
+// `path` as the disk names it, links resolved, or null when it cannot be
+// read. Git records a worktree by its real path, so an orphan folder reached
+// through a junction or a symbolic link is compared by its real path too.
+const realOf = ({ path }) => {
+  try {
+    return realpathSync.native(path)
+  } catch {
+    return null
+  }
+}
+
+// The most entries `holdsGit` reads in one folder before it gives up.
+const MAX_ENTRIES = 500_000
+
+// Whether the folder at `path` holds a `.git`, a file or a folder, at any
+// depth: true or false, or null when a folder cannot be read or the folder
+// holds more than MAX_ENTRIES entries, so that a folder it could not
+// look through is kept. A link is never followed, so the walk stays inside
+// the folder.
+const holdsGit = ({ path }) => {
+  const pending = [path]
+  let seen = 0
+  while (pending.length > 0) {
+    const directory = pending.pop()
+    let entries
+    try {
+      entries = readdirSync(directory, { withFileTypes: true })
+    } catch {
+      return null
+    }
+    for (const entry of entries) {
+      seen += 1
+      if (seen > MAX_ENTRIES) return null
+      if (entry.name === '.git') return true
+      if (entry.isDirectory()) pending.push(join(directory, entry.name))
+    }
+  }
+  return false
+}
+
+// Each of `paths` by its real path; one that cannot be read, a registered
+// worktree whose folder is gone, stays as git printed it.
+const realPaths = ({ paths }) =>
+  paths.map((path) => realOf({ path }) ?? path)
+
+// The reason an orphan folder is kept at its delete, from the registered
+// worktrees read again then (`listRegistered`): git cannot read the list or
+// the folder cannot be read; a registered worktree sits inside the folder; or
+// the folder became a worktree, registered at its own path, or holds a
+// `.git` at any depth, as `git worktree add` into an empty folder makes
+// it. Null for none.
+const recheckOrphan = ({ listRegistered, orphan, root }) => {
+  const registered = (() => {
+    try {
+      return [...listRegistered({ root })]
+    } catch {
+      return null
+    }
+  })()
+  const folder = realOf({ path: orphan.path })
+  if (registered === null || folder === null) return REASON.UNREADABLE
+  const reals = realPaths({ paths: registered })
+  if (holdsRegistered({ path: folder, registered: reals })) {
+    return REASON.HOLDS_WORKTREE
+  }
+  const own = samePath({ path: folder })
+  if (reals.some((other) => samePath({ path: other }) === own)) {
+    return REASON.ORPHAN_BECAME_WORKTREE
+  }
+  const nested = holdsGit({ path: folder })
+  if (nested === null) return REASON.UNREADABLE
+  return nested ? REASON.ORPHAN_BECAME_WORKTREE : null
+}
+
+// Finishes one orphan folder after `announce` received its `removingLine`: a
+// folder `recheckOrphan` keeps is kept with nothing deleted; otherwise the
+// folder is removed as a leftover (`removeLeftover`, with `fs` and `wait`),
+// then its branch, only once the folder is gone, at the tip it was judged at.
+// A folder that stays is named on the removal, its branch kept.
+export const finishOrphan = ({
+  announce = nothing,
+  fs,
+  listRegistered = readRegistered,
+  orphan,
+  root,
+  wait
+}) => {
+  const kept = recheckOrphan({ listRegistered, orphan, root })
+  if (kept) return { ...orphan, kept }
+  announce({ line: removingLine({ worktree: orphan }) })
+  const leftover = removeLeftover({ fs, path: orphan.path, wait })
+  if (leftover) {
+    return { ...orphan, detail: FOLDER_STAYS, kept: null, leftover }
+  }
+  const branchKept = deleteBranch({ root, worktree: orphan })
+  return branchKept
+    ? { ...orphan, detail: branchKept, kept: null }
+    : { ...orphan, kept: null }
 }
 
 // A worktree judged removable, read again just before it goes, since the
@@ -451,9 +651,9 @@ export const removeWorktree = ({ root, worktree }) => {
 // one that gained a change in the meantime, an ignored file nothing writes
 // again included, is kept with that reason, and the rest is removed as
 // `removeWorktree` removes it.
-export const removeIfStillClean = ({ root, worktree }) => {
+export const removeIfStillClean = ({ announce, root, worktree }) => {
   const again = contentReason({ worktree })
-  return again.kept ? again : removeWorktree({ root, worktree })
+  return again.kept ? again : removeWorktree({ announce, root, worktree })
 }
 
 // Every tracked path with a local change in `root`, staged or not, a
@@ -657,7 +857,14 @@ const forwardMain = ({ defaultBranch, dryRun, root, worktree }) => {
 // default branch or a list git cannot read throws before anything is
 // removed; a step that fails after the decisions returns its `error` with
 // the results gathered before it, every removal made included.
-const pruneWorktrees = async ({ cwd, dryRun, env, fetchSeconds }) => {
+const pruneWorktrees = async ({
+  announce,
+  cwd,
+  dryRun,
+  env,
+  fetchSeconds,
+  finishOrphans
+}) => {
   const current = samePath({
     path: git({ args: ['rev-parse', '--show-toplevel'], cwd })
   })
@@ -666,6 +873,120 @@ const pruneWorktrees = async ({ cwd, dryRun, env, fetchSeconds }) => {
   // A repository with no origin has no merged branch to read: nothing to do.
   const remotes = git({ args: ['remote'], cwd: root }).split(/\r?\n/u)
   if (!remotes.includes(REMOTE)) return { noRemote: true }
+  const run = {
+    announce,
+    current,
+    dryRun,
+    env,
+    fetchSeconds,
+    finishOrphans,
+    root,
+    worktrees
+  }
+  if (dryRun) return pruneUnderLock(run)
+  const path = lockPathOf({ root })
+  const lock = takeLock({ path })
+  if (!lock) return { busy: path, root }
+  try {
+    return await pruneUnderLock(run)
+  } finally {
+    lock.release()
+  }
+}
+
+// The repository's common git directory, which every worktree of it shares.
+const commonDirOf = ({ root }) =>
+  resolve(root, git({ args: ['rev-parse', '--git-common-dir'], cwd: root }))
+
+// The lock that serializes the real runs of one repository.
+const lockPathOf = ({ root }) => join(commonDirOf({ root }), LOCK_NAME)
+
+// The marker a `--finish-orphans` run writes once it leaves no orphan folder
+// it set out to finish; while it exists, every run finishes orphan folders.
+const markerPathOf = ({ root }) => join(commonDirOf({ root }), MARKER_NAME)
+
+// Whether every orphan folder a run set out to finish is gone: none of
+// `orphans` was finished with its folder left on disk.
+export const orphansFinished = ({ orphans }) =>
+  orphans.every(({ kept, leftover }) => kept || !leftover)
+
+// The repository's worktree root, `<main checkout parent>/<main checkout
+// name>-worktrees/`, beside the main checkout `main`.
+const worktreeRootOf = ({ main }) =>
+  join(dirname(resolve(main)), `${basename(resolve(main))}-worktrees`)
+
+// Every directory directly under `worktreeRoot`, read by its real path, with
+// no `.git` and no registration (`registrations`, real paths in one
+// spelling), as a `git worktree remove` ended partway leaves one. A link is
+// no such directory, and a root that does not exist or whose real path
+// cannot be read holds none.
+const readOrphanPaths = ({ registrations, worktreeRoot }) => {
+  const real = existsSync(worktreeRoot) ? realOf({ path: worktreeRoot }) : null
+  if (real === null) return []
+  return readdirSync(real, { withFileTypes: true })
+    .filter((dirent) => dirent.isDirectory())
+    .map((dirent) => join(real, dirent.name))
+    .filter((path) => !existsSync(join(path, '.git')))
+    .filter((path) => !registrations.has(samePath({ path })))
+}
+
+// The orphan folder at `path` whose real path cannot be read: kept, since a
+// folder that cannot be placed against the registered worktrees is never
+// deleted.
+const unreadableOrphan = ({ path }) => ({
+  branch: 'no branch',
+  kept: REASON.UNREADABLE,
+  orphan: true,
+  path: forwardPath({ path })
+})
+
+// Every orphan folder under the worktree root, judged by `decideOrphan`; one
+// it could finish is kept as waiting for a first manual run unless
+// `finishing` is set.
+const judgeOrphans = ({
+  finishing,
+  merged,
+  registrations,
+  root,
+  upstreams,
+  worktrees
+}) => {
+  const checkedOut = new Set(worktrees.map(({ branch }) => branch))
+  const registered = realPaths({ paths: [...registrations] })
+  return readOrphanPaths({
+    registrations: new Set(registered.map((path) => samePath({ path }))),
+    worktreeRoot: worktreeRootOf({ main: root })
+  })
+    .map((path) =>
+      realOf({ path }) === null
+        ? unreadableOrphan({ path })
+        : decideOrphan({
+            ageMs: Date.now() - statSync(path).mtimeMs,
+            checkedOut,
+            holdsGit: () => holdsGit({ path }),
+            merged,
+            path: forwardPath({ path }),
+            registered,
+            upstreams
+          })
+    )
+    .map((one) =>
+      one.kept || finishing ? one : { ...one, kept: REASON.ORPHAN_MANUAL }
+    )
+}
+
+// What `pruneWorktrees` does once a real run holds the lock, or at once for a
+// dry run, from the fetch on.
+const pruneUnderLock = async ({
+  announce,
+  current,
+  dryRun,
+  env,
+  fetchSeconds,
+  finishOrphans,
+  root,
+  worktrees
+}) => {
   if (!(await fetchOrigin({ root, seconds: fetchSeconds })))
     return { timedOut: true }
   const defaultBranch = readDefaultBranch({ root })
@@ -674,8 +995,13 @@ const pruneWorktrees = async ({ cwd, dryRun, env, fetchSeconds }) => {
 
   const registered = worktrees.map(({ path }) => samePath({ path }))
 
-  const decided = worktrees.map((worktree, at) =>
-    decide({
+  const commitTimes = readCommitTimes({
+    heads: [...new Set(worktrees.map(({ head }) => head).filter(Boolean))],
+    root
+  })
+
+  const decided = worktrees.map((worktree, at) => ({
+    ...decide({
       current,
       defaultBranch,
       isMain: at === 0,
@@ -683,8 +1009,19 @@ const pruneWorktrees = async ({ cwd, dryRun, env, fetchSeconds }) => {
       registered,
       upstreams,
       worktree
-    })
-  )
+    }),
+    committedAt: commitTimes.get(worktree.head)
+  }))
+  // Judged before any removal, as every other decision is.
+  const marker = markerPathOf({ root })
+  const orphans = judgeOrphans({
+    finishing: finishOrphans || existsSync(marker),
+    merged,
+    registrations: readRegistered({ root }),
+    root,
+    upstreams,
+    worktrees
+  })
   // Each result is kept as it comes, so a step that fails after a removal,
   // the main checkout's included, returns with what was removed before it.
   const results = []
@@ -693,9 +1030,10 @@ const pruneWorktrees = async ({ cwd, dryRun, env, fetchSeconds }) => {
       results.push(
         dryRun || one.kept
           ? one
-          : removeIfStillClean({ root, worktree: one })
+          : removeIfStillClean({ announce, root, worktree: one })
       )
     )
+    if (dryRun) results.push(...orphans)
     if (!dryRun) git({ args: ['worktree', 'prune'], cwd: root })
     const main = forwardMain({
       defaultBranch,
@@ -703,15 +1041,28 @@ const pruneWorktrees = async ({ cwd, dryRun, env, fetchSeconds }) => {
       root,
       worktree: worktrees[0]
     })
-    return {
-      install: await installAfter({ dryRun, env, main, root }),
-      main,
-      results
+    const install = await installAfter({ dryRun, env, main, root })
+    // Orphan folders last, after the fast-forward and the install, so a run
+    // ended inside a long delete has moved the main checkout.
+    if (dryRun) return { install, main, results }
+    const finished = orphans.map((one) =>
+      one.kept ? one : finishOrphan({ announce, orphan: one, root })
+    )
+    results.push(...finished)
+    if (!finishOrphans || !orphansFinished({ orphans: finished })) {
+      return { install, main, results }
     }
+    writeFileSync(marker, `${new Date().toISOString()}\n`)
+    return { install, main, marker, results }
   } catch (error) {
     return { error, results }
   }
 }
+
+// The line a real run prints when another prune holds the lock.
+const busyLine = ({ busy, root }) =>
+  `${LABEL}: another prune of ${forwardPath({ path: root })} holds ` +
+  `${forwardPath({ path: busy })}; this run removes nothing.`
 
 // A read that fails before anything is removed prints the reason and exits
 // 1, saying nothing was removed; a step that fails after a removal prints
@@ -721,16 +1072,28 @@ const pruneWorktrees = async ({ cwd, dryRun, env, fetchSeconds }) => {
 // fast-forward fires, does nothing and prints nothing.
 const main = async () => {
   if (process.env[NESTED_RUN_VARIABLE]) return
+  const progress = { started: false }
+  // Each removal is printed as it starts, `--quiet` or not.
+  const announce = ({ line }) => {
+    progress.started = true
+    console.log(line)
+  }
   try {
-    const { dryRun, quiet } = optionsFrom({ argv: process.argv })
+    const { dryRun, finishOrphans, quiet } = optionsFrom({
+      argv: process.argv
+    })
     const fetchSeconds = fetchSecondsFrom({ env: process.env })
     const outcome = await pruneWorktrees({
+      announce,
       cwd: process.cwd(),
       dryRun,
       env: process.env,
-      fetchSeconds
+      fetchSeconds,
+      finishOrphans
     })
-    const lines = outcome.noRemote
+    const lines = outcome.busy
+      ? [busyLine(outcome)]
+      : outcome.noRemote
       ? [NO_REMOTE_LINE]
       : outcome.timedOut
         ? skippedLines({ dryRun, seconds: fetchSeconds })
@@ -738,6 +1101,7 @@ const main = async () => {
           dryRun,
           install: outcome.install,
           main: outcome.main,
+          marker: outcome.marker,
           quiet,
           results: outcome.results
         })
@@ -747,13 +1111,16 @@ const main = async () => {
         failureLine({
           dryRun,
           message: outcome.error.message,
-          results: outcome.results
+          results: outcome.results,
+          started: progress.started
         })
       )
       process.exitCode = 1
     }
   } catch (error) {
-    console.error(failureLine({ message: error.message }))
+    console.error(
+      failureLine({ message: error.message, started: progress.started })
+    )
     process.exitCode = 1
   }
 }

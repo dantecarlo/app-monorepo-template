@@ -580,6 +580,7 @@
         "openspec/specs/harness/process-reaper/spec.md",
         "openspec/specs/harness/ticket-flow/spec.md",
         "openspec/specs/harness/updaters/spec.md",
+        "openspec/specs/harness/worktree-pruner/spec.md",
         "openspec/specs/packages/core/spec.md",
         "openspec/specs/packages/tooling/spec.md",
         "openspec/templates/**",

@@ -69,7 +69,46 @@ removes the others, an ignored file nothing rebuilds included, keeps that
 worktree. It never removes the main checkout, the worktree it runs in, a
 locked worktree, one under
 `.claude/worktrees/` or one holding another worktree, and it deletes the
-branch only while its tip is the commit it judged. Last, it fast-forwards
+branch only while its tip is the commit it judged. A `git worktree remove` that
+fails after git deleted the worktree's `.git` file and its registration, as at a
+file another process holds on Windows, counts as removed once git no longer
+lists it: the folder git left is removed through `removePath` in four tries,
+250, 500 and 750 ms apart, and one that stays is named, with the last error, on
+the removal line. A real run prints `removing <path> (<branch>)` before each
+removal, `--quiet` included, so a run ended inside one leaves it as its last
+line, and a failure after one says a removal had started where it would say
+nothing was removed. Outside `--quiet` it then lists every worktree it kept, the main
+checkout and the one it runs in aside, by the age of its last commit, oldest
+first (whole days, path, branch, reason), from one `git log --no-walk` over their
+HEADs. A real run holds `prune-worktrees.lock` in the repository's common git
+directory, through the reaper's `takeLock` (section 3g), from before the fetch to
+its end; a run that finds it held prints one line, removes nothing and exits 0,
+and a dry run takes none. It reads the worktree root,
+`<repo-parent>/<repo>-worktrees/`, for orphan folders, the ones a removal ended
+partway leaves: a directory directly under it with no `.git` and no registration.
+It judges each by the one local branch whose last path segment is the folder's
+name (checked out nowhere, in the default branch, the folder written more than
+10 minutes ago, no registered worktree inside it) and prints every other one as
+kept, with its reason. Orphan folders wait for a first manual run with
+`--finish-orphans`: until then a folder it could finish is kept with that
+reason, and a dry run with the option names it as one it would remove. A real
+run with the option deletes each finishable folder last, after the fast-forward
+and the install, through `removePath` as a leftover is, announced as
+`removing orphan folder <path> (<branch>)`, then its branch at the tip it was
+judged at; right before a delete it reads the registered worktrees again and
+keeps a folder that holds a worktree, became one or whose list git cannot read.
+Nothing outside the worktree root is read or deleted as an orphan; the root,
+each folder and each registered worktree are compared by real path (a root reached
+through a junction or a symbolic link keeps a worktree inside it), a folder that
+holds a `.git` at any depth is kept, links are not followed while looking, and a
+folder whose real path cannot be read is kept. A real
+`--finish-orphans` run that leaves none of the folders it set out to finish on disk
+writes `prune-finish-orphans.enabled` in the common git directory and says so;
+while that file exists every run finishes orphan folders, and before it a real
+run without the option lists a finishable folder as kept, waiting for that first
+manual run (`pnpm worktrees:prune:finish-orphans`, after a `--dry-run
+--finish-orphans` has listed what it deletes). Last, it
+fast-forwards
 the main checkout with `git merge --ff-only` when that checkout is on the
 default branch. Any tracked local change there, staged or not, a
 line-ending-only one included, blocks it, and so does whatever git refuses
@@ -262,7 +301,7 @@ the pre-commit hook on staged files.
 | `verify:skill-frontmatter` | Every `.claude/skills/*/SKILL.md` has a frontmatter that parses, a `name` that is its folder, and a description of at most 1,024 characters once parsed (the line break a `>` block keeps counted) that holds `USE WHEN:` and `DO NOT USE:`; a skill `.claude/skills-lock.json` lists (archify) is vendored and gets the parse, name and length checks only. `verify:skill-frontmatter:test` plants each refusal, both quoting styles and both block styles |
 | `verify:skill-neutrality` | No file under `.claude/skills/` (a `SKILL.md`, a template, a reference or a script, a vendored skill included) names a downstream project: a name `.agents/contracts/downstream-projects.json` declares for one, matched as a whole word in any letter case, so a product name also catches the package scope, slug and bundle id built from it, and a name inside a longer word does not. A downstream project's core-purity gate refuses a first-party skill that names a product, so a template skill that names one is refused on sync. The list names donor products, so it is `template-maintainer` material and never ships: a derived project finds it absent and the gate forbids nothing, saying so in its denominator, while the template, run in the checkout whose `.agents/harness.config.json` identity is the template's own (`scripts/template-identity.mjs`), fails anywhere else; a list that does not parse, declares no project, or gives a project no name fails too. A new downstream project is one entry of that list. `verify:skill-neutrality:test` plants each refusal with synthetic names and runs the gate over a scratch tree |
 | `git-free-env:test`, `hook-git-dir:test` | `gitFreeEnv()` drops every `GIT_*` variable, in any case, from the environment a script hands to git or to a child; `withHookGitDir` runs a flow with `GIT_DIR` and `GIT_INDEX_FILE` naming a decoy repository, as a git hook exports them, reports whether anything under the decoy changed, and puts both variables back and removes the decoy however the flow ends. Every suite that spawns git runs one end-to-end case under it and asserts the decoy is left alone; `init-project:test` takes its whole copy under it |
-| `worktrees:prune:test` | `scripts/prune-worktrees.test.mjs` drives the pruner (Layer 2) over a scratch origin, its clone and one linked worktree per case, `--dry-run` first: the merged clean worktree goes and its branch with it; every reason to keep one is seen kept and printed, an ignored file nothing rebuilds, an env file, a file under `.atl/`, a note beside the two skill-registry files in `.atl/`, a lock, an edit hidden by `--skip-worktree` or `--assume-unchanged` and a file that differs only in its line endings among them; a branch whose tip moved after it was judged stays; an `.atl/` that holds only those two files goes with its worktree; an ignored file nothing rebuilds, written after the decision, keeps the worktree at the check just before its removal, and a worktree still clean there goes with its branch; a dry run removes and moves nothing, states the real run's decisions and ends with what is not covered; the main checkout is fast-forwarded to `origin/HEAD`'s branch, whatever its name, and is left, with the reason, over any tracked local change, staged, line-ending-only or in a file the fast-forward does not touch, and over git's refusal, named by its first line that is not a hint and the files it lists; a dry run says it would leave a main checkout that diverged, and one with an untracked file the fast-forward would overwrite, with git's refusal, and touches neither, while a file whose timestamp alone changed and an `index.lock` already in the main checkout leave its "would fast-forward" as it was; the worktree the command runs in survives the `post-merge` that fast-forward fires; an unset `origin/HEAD` exits 1 naming `git remote set-head origin --auto`; a step that fails after a removal exits 1 and still reports the removal, never "nothing was removed"; a fetch from a remote that never answers is stopped at `PRUNE_WORKTREES_FETCH_SECONDS`, and the run says so, removes and moves nothing and exits 0, where the same repositories with a remote that answers are pruned and moved; on Windows a fetch stopped at its bound ends the ssh command git started; the bound is 30 s, a value that is not a positive number throws, naming it, and one that is no whole number of milliseconds is rounded up; through a recording `pnpm` first on the path, a fast-forward that changes `pnpm-lock.yaml` runs `pnpm install` once in the main checkout, an install that rewrites the lockfile adds its one line, under `--quiet` too, an install that exits 1 and one stopped at `PRUNE_WORKTREES_INSTALL_SECONDS` each print the command to run and exit 0, a dry run installs nothing and says it would, `--quiet` drops the line of an install that succeeded, a fast-forward that leaves the lockfile installs nothing and prints exactly the lines it printed before, and the install's bound is 120 s; and the real `.husky/post-merge`, run by `git hook run`, prunes and exits 0 even when the pruner fails |
+| `worktrees:prune:test` | `scripts/prune-worktrees.test.mjs` drives the pruner (Layer 2) over a scratch origin, its clone and one linked worktree per case, `--dry-run` first: the merged clean worktree goes and its branch with it; every reason to keep one is seen kept and printed, an ignored file nothing rebuilds, an env file, a file under `.atl/`, a note beside the two skill-registry files in `.atl/`, a lock, an edit hidden by `--skip-worktree` or `--assume-unchanged` and a file that differs only in its line endings among them; a branch whose tip moved after it was judged stays; an `.atl/` that holds only those two files goes with its worktree; an ignored file nothing rebuilds, written after the decision, keeps the worktree at the check just before its removal, and a worktree still clean there goes with its branch; a dry run removes and moves nothing, states the real run's decisions and ends with what is not covered; the main checkout is fast-forwarded to `origin/HEAD`'s branch, whatever its name, and is left, with the reason, over any tracked local change, staged, line-ending-only or in a file the fast-forward does not touch, and over git's refusal, named by its first line that is not a hint and the files it lists; a dry run says it would leave a main checkout that diverged, and one with an untracked file the fast-forward would overwrite, with git's refusal, and touches neither, while a file whose timestamp alone changed and an `index.lock` already in the main checkout leave its "would fast-forward" as it was; the worktree the command runs in survives the `post-merge` that fast-forward fires; an unset `origin/HEAD` exits 1 naming `git remote set-head origin --auto`; a step that fails after a removal exits 1 and still reports the removal, never "nothing was removed"; a fetch from a remote that never answers is stopped at `PRUNE_WORKTREES_FETCH_SECONDS`, and the run says so, removes and moves nothing and exits 0, where the same repositories with a remote that answers are pruned and moved; on Windows a fetch stopped at its bound ends the ssh command git started; the bound is 30 s, a value that is not a positive number throws, naming it, and one that is no whole number of milliseconds is rounded up; through a recording `pnpm` first on the path, a fast-forward that changes `pnpm-lock.yaml` runs `pnpm install` once in the main checkout, an install that rewrites the lockfile adds its one line, under `--quiet` too, an install that exits 1 and one stopped at `PRUNE_WORKTREES_INSTALL_SECONDS` each print the command to run and exit 0, a dry run installs nothing and says it would, `--quiet` drops the line of an install that succeeded, a fast-forward that leaves the lockfile installs nothing and prints exactly the lines it printed before, and the install's bound is 120 s; and the real `.husky/post-merge`, run by `git hook run`, prunes and exits 0 even when the pruner fails; a worktree git unregistered before its removal failed counts as removed and its leftover is tried four times, 250, 500 and 750 ms apart; each removal is announced first; the kept worktrees are listed by age; a second real prune finds the lock and removes nothing; and an orphan folder is judged (every reason that keeps one named), finished only by `--finish-orphans` and then by every run once the marker exists, after the fast-forward, never outside the worktree root |
 | `ci-windows:test` | `scripts/ci-windows.test.mjs` finds every tracked test file whose `skip:` tests `process.platform !== 'win32'` or `!IS_WINDOWS`, and fails when no step of CI's `windows-process-trees` job runs it, by a `node --test` that names it or a `pnpm` script whose `node --test` does: a case that skips on POSIX is a skipped check unless Windows runs it |
 | `verify:router-coverage` | Every "Load skill" cell of the Router tables of `AGENTS.md` (its `## Router` section) names, in backticks, a skill with a `.claude/skills/<name>/SKILL.md`, and every skill, read as `verify:skill-frontmatter` reads them, has a row; every "Validated by" cell is `review` or cites, in backticks, only scripts the root `package.json` defines, the text outside the backticks (`lint` (jsx-a11y)) explaining them; a Router table missing either column, a Router with no table and an `AGENTS.md` with no Router fail too. An `/init` prune that drops a skill leaves its row dead and fails this gate until Stage 6 removes the row. `verify:router-coverage:test` plants each refusal and runs the gate over a scratch tree |
 | `codex-budget:test`   | The generated `.codex/config.toml` sets `project_doc_max_bytes` above every table header, and `AGENTS.md`, counted with CRLF endings, fits it: Codex drops what is past the budget |
@@ -686,9 +725,11 @@ the launcher holds about as much memory as the server.
 families are one-shot runs, so `turbo run dev` or `start`, the turbo daemon,
 `vitest` without `run`, `tsc --watch`, tsserver and the dev servers (`next dev`,
 `expo start`, metro) match none. Nor does a node process in watch mode, one whose
-flags before its script name `--watch`, `--watch=<value>`, `--watch-path <path>`,
-`--watch-path=<path>` or `--watch-preserve-output`, a wrapper included, and a
-tree that holds one is kept. Its own ancestry. A tree that holds a process
+flags before its script name `--watch`, `--watch=<value>`, `--watch-path <path>`
+or `--watch-path=<path>`, a wrapper included, and a tree that holds one is kept;
+`--watch-preserve-output` alone starts no watch mode. Inline code is no script,
+with its value separate or attached (`--eval=<code>`, `-e<code>`), so an argument
+after it matches no family. Its own ancestry. A tree that holds a process
 the contract spares: the shared MCP proxy, however it is launched (the
 `mcp-proxy` executable, `python -m mcp_proxy`, a node `mcp-proxy` script), which
 runs detached by design; every Git for Windows (MSYS) process, whose runtime
@@ -703,14 +744,16 @@ root pid, family, the wrapper it came through, age, process count and MB), one
 `kept` line per tree it keeps and why, then the total MB. `pnpm reap:kill` ends
 them; `--json` prints the plan as one JSON line and `--quiet` only the total
 line. A killing run first creates `atl-process-reaper.lock` in the OS temp
-directory, exclusively, with a token unique to that run; another reaper that
-finds it held prints so and exits 0 at once, and a lock gone by the time it is
-read is created again, never taken over. A lock older than 30 s, left by a
-reaper that died, is taken over only under `atl-process-reaper.lock.guard`,
-created exclusively, and removed under it only while it still holds the bytes
-the run read, so two runs that find it stale never both take it; a guard older than 30 s, left by a reaper
-that died holding it, is removed, only while it holds what that run read, and
-the next run takes the lock. A run removes the lock at its end only while it
+directory, exclusively, holding its pid and a token unique to that run; another
+reaper that finds it held prints so and exits 0 at once, and a lock gone by the
+time it is read is created again, never taken over. A lock is taken over only
+once its holder has ended, that is when no process runs with the pid on its
+first line, or after an hour: a holder that still runs keeps its lock however
+long its run stalls. The takeover runs only under `atl-process-reaper.lock.guard`,
+created exclusively, and removes the lock under it only while it still holds
+the bytes the run read, so two runs that find it takeable never both take it;
+a guard whose holder ended, left by a reaper that died holding it, is removed,
+only while it holds what that run read, and the next run takes the lock. A run removes the lock at its end only while it
 still holds its token, never one a later run took over.
 Right before its kills it lists the processes again and leaves every tree whose
 root pid is gone or now names a process that started at another time, since a
