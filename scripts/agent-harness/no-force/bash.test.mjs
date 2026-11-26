@@ -91,7 +91,25 @@ for (const [command, option, program] of [
     '-c core.hooksPath=/dev/null',
     'git commit'
   ],
-  ['git config core.hooksPath /dev/null', 'core.hooksPath', 'git config']
+  ['git config core.hooksPath /dev/null', 'core.hooksPath', 'git config'],
+  // Single lines bash runs that the reader once could not parse.
+  ['for ((i=0;i<3;i++)); do rm -rf x$i; done', '-rf', 'rm'],
+  ['[[ $b =~ ^(main|master)$ ]] && git push --force', '--force', 'git push'],
+  ['[[ x == @(a|b) ]] && rm -rf x', '-rf', 'rm'],
+  ['shopt -s extglob\nrm -rf !(keep)', '-rf', 'rm'],
+  ['(( n > 0 )) && git push -f', '-f', 'git push'],
+  ['if (( 2 > 1 )); then git clean -fdx; fi', '-fdx', 'git clean'],
+  ['(( $(git push --force) ))', '--force', 'git push'],
+  ['((git push -f); echo b)', '-f', 'git push'],
+  ['[[ ( -n a ) && -z "" ]] && git push -f', '-f', 'git push'],
+  ['[[ "a b" =~ (a b) ]] || git branch -D old', '-D', 'git branch'],
+  ['rm -rf *.@(js|ts)', '-rf', 'rm'],
+  // A trap's text runs later, as a command of its own.
+  ["trap 'rm -rf x' EXIT", '-rf', 'rm'],
+  ['trap "git push --force" INT TERM', '--force', 'git push'],
+  // A failure swallowed by an exit that reports success.
+  ['pnpm lint || exit 0', '|| exit 0', 'pnpm'],
+  ['npm test || return 0', '|| return 0', 'npm']
 ]) {
   test(`\`${command}\` passes a force option`, () => {
     assert.deepEqual(bashForce({ command }), { option, program })
@@ -136,7 +154,17 @@ for (const command of [
   'git config core.hooksPath',
   'git config get core.hooksPath',
   'git config --list',
-  'git config user.name x'
+  'git config user.name x',
+  // The same constructs, with nothing forced.
+  'for ((i=0;i<3;i++)); do echo $i; done',
+  '[[ $b =~ ^(main|master)$ ]] && echo ok',
+  'shopt -s extglob\nls !(keep)',
+  '((echo a); echo b)',
+  '[[ $1 == --force ]] && echo forced',
+  'test "$1" = --force',
+  "trap '' INT",
+  'trap - EXIT',
+  'npm test || exit'
 ]) {
   test(`\`${command}\` passes no force option`, () => {
     assert.equal(bashForce({ command }), undefined)
@@ -157,9 +185,28 @@ test('past a line bash cannot parse, the script is the longest prefix of whole l
   assert.deepEqual(commandsOf({ script: read.script }), ['a', 'b "x\ny"'])
 })
 
-test('one line bash cannot parse leaves no script', () => {
-  assert.deepEqual(bashScript({ command: 'a "x' }), { script: [] })
-})
+// The reader errors bash raises on a lone line too, so nothing on it runs.
+for (const command of ['a "x', 'git push --force `x', 'git push -f )']) {
+  test(`one line bash refuses too leaves no script: ${command}`, () => {
+    assert.deepEqual(bashScript({ command }), { script: [] })
+  })
+}
+
+// Every other reader error is one bash may not raise: unreadable, which the
+// hook refuses. Bash runs a here-doc that never ends, to the end of input.
+for (const [command, problem] of [
+  ['git push --force <<EOF', /an unterminated here-doc/u],
+  ['ls apps/(group)/x.tsx', /an unexpected parenthesis/u],
+  ['echo $(ls', /an unterminated \$\( or \(/u],
+  ['rm -rf dist\ncase x in a', /a case/u],
+  ['echo >', /with no target/u]
+]) {
+  test(`a reader error bash may not raise is unreadable: ${JSON.stringify(command)}`, () => {
+    const read = bashScript({ command })
+    assert.equal(read.script, undefined)
+    assert.match(read.unreadable ?? '', problem)
+  })
+}
 
 test("nesting past the tokenizer's cap is unreadable", () => {
   const read = bashScript({

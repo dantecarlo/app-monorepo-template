@@ -52,6 +52,21 @@ test('the hook denies a force option, naming the LAW', () => {
   )
 })
 
+for (const command of [
+  'for ((i=0;i<3;i++)); do rm -rf x$i; done',
+  'git push --force <<EOF',
+  'ls apps/(group)/x.tsx && git push -f'
+]) {
+  test(`the hook denies \`${command}\`, a line bash runs or the reader cannot read`, () => {
+    const run = runHook({ input: payloadText({ command }) })
+    assert.equal(run.status, 0)
+    assert.equal(
+      JSON.parse(run.stdout).hookSpecificOutput.permissionDecision,
+      'deny'
+    )
+  })
+}
+
 for (const input of [
   payloadText({ command: 'git push origin main' }),
   payloadText({ command: 'Get-ChildItem', tool: 'PowerShell' }),

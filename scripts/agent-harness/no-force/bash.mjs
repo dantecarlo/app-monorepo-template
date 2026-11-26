@@ -5,13 +5,16 @@
 //
 // Bash runs a command one complete line at a time, so every whole line
 // before one it cannot parse has run when it stops: `bash -c $'touch m\n
-// echo "x'` creates `m`. A command the tokenizer cannot parse is therefore
-// read as the longest prefix of its whole lines that parses, and one line
-// it cannot parse on its own is no script at all, since Bash refuses the
-// whole line. Nesting past the tokenizer's cap is unreadable, which the
-// hook refuses, and so is a command whose prefixes cost more than
-// PARSE_BUDGET characters to try, since a hook that runs past its timeout
-// lets the call through.
+// echo "x'` creates `m`. When the tokenizer stops on an error bash raises
+// on a lone line too (an unterminated quote or backtick, an unbalanced
+// `)`: the tokenizer's `bashRefuses`), the command is read as the longest
+// prefix of its whole lines that parses, and that one line on its own is no
+// script at all, since bash refuses it whole. Every other reader error is
+// one bash may not raise, as it runs a here-doc that never ends to the end
+// of its input: the command is unreadable, which the hook refuses. So is
+// nesting past the tokenizer's cap, and a command whose prefixes cost more
+// than PARSE_BUDGET characters to try, since a hook that runs past its
+// timeout lets the call through.
 // ---------------------------------------------------------------------------
 
 import { joinContinuations } from '../write-guard/continuations.mjs'
@@ -27,12 +30,16 @@ const TOO_LONG =
 
 const parseText = ({ text }) => {
   const joined = joinContinuations({ source: text })
-  if (joined.split) return { deep: false, problem: SPLIT_OPENER }
+  if (joined.split) return { bashRefuses: false, problem: SPLIT_OPENER }
   try {
     return { script: createParser({ source: joined.text }).parseAll() }
   } catch (error) {
     if (!error?.unreadable) throw error
-    return { deep: error.deep === true, problem: String(error.message) }
+    return {
+      bashRefuses: error.bashRefuses === true,
+      deep: error.deep === true,
+      problem: String(error.message)
+    }
   }
 }
 
@@ -43,7 +50,7 @@ const parseText = ({ text }) => {
 export const bashScript = ({ command }) => {
   const whole = parseText({ text: command })
   if (whole.script !== undefined) return { script: whole.script }
-  if (whole.deep) return { unreadable: whole.problem }
+  if (!whole.bashRefuses) return { unreadable: whole.problem }
   const lines = command.split(NEWLINE)
   let spent = 0
   for (let end = lines.length - 1; end > 0; end -= 1) {

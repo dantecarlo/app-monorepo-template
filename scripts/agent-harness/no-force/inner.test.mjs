@@ -71,7 +71,17 @@ for (const [words, inner, own] of [
     [{ words: ['git', 'branch', '-D'] }],
     ['xargs', '-n', '1']
   ],
-  [['env', 'X=1', 'sh', '-c', 'ls'], [{ language: LANGUAGE.bash, text: 'ls' }], ['env', 'X=1', 'sh', '-c']]
+  [['env', 'X=1', 'sh', '-c', 'ls'], [{ language: LANGUAGE.bash, text: 'ls' }], ['env', 'X=1', 'sh', '-c']],
+  [
+    ['trap', 'rm -rf x', 'EXIT'],
+    [{ language: LANGUAGE.bash, text: 'rm -rf x' }],
+    ['trap', 'EXIT']
+  ],
+  [
+    ['trap', '--', 'git push -f', 'INT', 'TERM'],
+    [{ language: LANGUAGE.bash, text: 'git push -f' }],
+    ['trap', '--', 'INT', 'TERM']
+  ]
 ]) {
   test(`\`${words.join(' ')}\` runs ${JSON.stringify(inner)}`, () => {
     assert.deepEqual(innerOf({ words }), { inner, own })
@@ -85,7 +95,11 @@ for (const command of [
   'sh',
   'find . -name x -print',
   'xargs',
-  'eval'
+  'eval',
+  'trap',
+  'trap -p',
+  'trap - EXIT',
+  'trap -l'
 ]) {
   test(`\`${command}\` runs no inner command`, () => {
     const words = wordsOf({ command })

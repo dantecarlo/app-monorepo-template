@@ -32,7 +32,8 @@
 // A wrapper (`sudo`, `env`, `timeout`, ...) is read through to the command
 // it runs, with the write guard's own reader of one. `--` ends the options
 // of any program. The words of `rg`, `grep`, `git grep`, `echo`, `printf`,
-// `Write-Output`, `Write-Host` and `Select-String` are text, never options.
+// `Write-Output`, `Write-Host` and `Select-String` are text, never options,
+// and those of `[[`, `[` and `test` the operands of a condition.
 //
 // The result is { option, program } or undefined.
 // ---------------------------------------------------------------------------
@@ -81,12 +82,15 @@ const GIT_GREP = 'grep'
 const END_OF_OPTIONS = '--'
 const SHORT_CLUSTER = /^-[^-]/u
 const NOT_READ = new Set([
+  '[',
+  '[[',
   'echo',
   'grep',
   'printf',
   'rg',
   'select-string',
   'sls',
+  'test',
   'write',
   'write-host',
   'write-output'

@@ -9,7 +9,9 @@
 //     `-EncodedCommand` (`-e`, `-ec`), decoded; `powershell` with no
 //     parameter before its words runs them as a command too; and
 //     `Invoke-Expression` (`iex`), read as PowerShell;
-//   - the command `find -exec`, `fd -x` and `xargs` run, read as words.
+//   - the command `find -exec`, `fd -x` and `xargs` run, read as words;
+//   - the text `trap` runs on a signal (`trap 'rm -rf x' EXIT`), read as
+//     Bash; `trap -` and `trap ''` run none.
 //
 // The shells and their `-c`, and the readers of find, fd and xargs, are the
 // write guard's own (shell.programs.mjs, shell.commands.mjs), so both hooks
@@ -33,10 +35,13 @@ const EVAL = 'eval'
 const FIND = 'find'
 const FD = 'fd'
 const XARGS = 'xargs'
+const TRAP = 'trap'
+const TRAP_RESET = '-'
 const POWERSHELLS = new Set(['powershell', 'pwsh'])
 const WINDOWS_POWERSHELL = 'powershell'
 const EXPRESSIONS = new Set(['iex', 'invoke-expression'])
 const SPACE = ' '
+const END_OF_OPTIONS = '--'
 const COMMAND_PARAMETER = 'command'
 const ENCODED_PARAMETER = 'encodedcommand'
 const FILE_PARAMETER = 'file'
@@ -183,6 +188,20 @@ export const innerOf = ({ words }) => {
       : {
           inner: [{ language: LANGUAGE.powershell, text: found.text }],
           own: upTo({ end: found.end })
+        }
+  }
+  if (name === TRAP) {
+    const start = rest[0] === END_OF_OPTIONS ? 1 : 0
+    const text = rest[start]
+    return text === undefined ||
+      text === '' ||
+      text === TRAP_RESET ||
+      (start === 0 && text.startsWith('-')) ||
+      rest.length === start + 1
+      ? NONE({ words })
+      : {
+          inner: [{ language: LANGUAGE.bash, text }],
+          own: words.filter((_, at) => at !== head + start)
         }
   }
   if (name === FIND) {

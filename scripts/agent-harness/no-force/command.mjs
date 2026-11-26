@@ -8,10 +8,11 @@
 //     (`$( )`, backticks, `<( )`, `$(( ))`), which Bash runs wherever it
 //     stands, inside double quotes too; in PowerShell every statement of
 //     a script block, a group and a subexpression;
-//   - a failure swallowed by `|| true` or `|| :` (any path to `true`);
+//   - a failure swallowed by `|| true`, `|| :` (any path to `true`),
+//     `|| exit 0` or `|| return 0`;
 //   - the command a wrapper runs inside one (inner.mjs: `eval`, `sh -c`,
 //     `pwsh -Command`, `Invoke-Expression`, `find -exec`, `fd -x`,
-//     `xargs`), and a here-doc, a here-string or a pipe of `cat`, `echo`
+//     `xargs`, `trap`), and a here-doc, a here-string or a pipe of `cat`, `echo`
 //     or `printf` fed to a shell (the write guard's stdinCode), judged in
 //     its own language as the outer one is;
 //   - PowerShell's `[Environment]::SetEnvironmentVariable('HUSKY','0')`.
@@ -53,6 +54,10 @@ const UNKNOWN_PART = '\u0000'
 const OR = '||'
 const PIPES = new Set(['|', '|&'])
 const SUCCEEDS = new Set([':', 'true'])
+// The builtins that leave with the status they are given: `exit 0` and
+// `return 0` report success whatever failed before them.
+const LEAVES = new Set(['exit', 'return'])
+const SUCCESS = /^0+$/u
 
 const firstFound = ({ items, read }) => {
   for (const item of items) {
@@ -112,15 +117,23 @@ const wordsForce = ({ depth, language, words }) => {
   )
 }
 
+// Whether the command `texts` reports success whatever came before it:
+// `true`, `:`, `exit 0` and `return 0`.
+const succeeds = ({ texts }) => {
+  const name = commandName({ arg: { text: texts[0] } })
+  return (
+    SUCCEEDS.has(name) ||
+    (LEAVES.has(name) && texts.length === 2 && SUCCESS.test(texts[1]))
+  )
+}
+
 // `cmd || true`: the failure of `previous` is swallowed by the command
 // whose own words are `texts`.
 const swallowed = ({ previous, texts }) => {
   if (previous?.op !== OR || texts.length === 0) return undefined
-  if (!SUCCEEDS.has(commandName({ arg: { text: texts[0] } }))) {
-    return undefined
-  }
+  if (!succeeds({ texts })) return undefined
   return {
-    option: `${OR} ${texts[0]}`,
+    option: `${OR} ${texts.join(' ')}`,
     program:
       previous.type === 'cmd'
         ? programLabel({ words: ownTexts({ item: previous }) })
