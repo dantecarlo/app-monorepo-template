@@ -206,6 +206,13 @@
       "cost": "seconds"
     },
     {
+      "id": "ci-windows:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
       "id": "report:spec-drift:test",
       "capability": "sdd",
       "stage": "repository",

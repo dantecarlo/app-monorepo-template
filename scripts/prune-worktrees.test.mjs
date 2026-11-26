@@ -1468,7 +1468,7 @@ test(
   {
     skip:
       process.platform !== 'win32' &&
-      'on POSIX the bound still stops git alone, as before'
+      "on POSIX the bound stops git alone; CI's windows-process-trees job runs this"
   },
   async () => {
     const { main, paths } = mergedWorktrees({

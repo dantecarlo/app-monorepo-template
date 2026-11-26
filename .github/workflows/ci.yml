@@ -67,10 +67,11 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: pnpm exec commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
 
-  # The process-tree and bounded-child suites end a real process tree on
-  # Windows, where a killed parent leaves its children running. Their
-  # Windows-only cases skip on POSIX only because this job runs them on
-  # Windows, beside the whole process reaper suite.
+  # The process-tree, bounded-child and worktree-pruner suites end a real
+  # process tree on Windows, where a killed parent leaves its children
+  # running. Their Windows-only cases skip on POSIX only because this job
+  # runs them on Windows, beside the whole process reaper suite;
+  # scripts/ci-windows.test.mjs fails a Windows-only case no step here runs.
   windows-process-trees:
     name: windows-process-trees
     runs-on: windows-latest
@@ -92,6 +93,9 @@ jobs:
 
       - name: Run the process reaper suite, bounded-child included
         run: pnpm reap:test
+
+      - name: Run the worktree pruner suite
+        run: pnpm worktrees:prune:test
 
   expo-health:
     name: expo-health

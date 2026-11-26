@@ -91,6 +91,7 @@
     "scripts/agent-harness/**",
     "scripts/check-identity.mjs",
     "scripts/check-identity.test.mjs",
+    "scripts/ci-windows.test.mjs",
     "scripts/codex-budget.test.mjs",
     "scripts/dependency-seams.detect.mjs",
     "scripts/eslint-config.detect.mjs",
