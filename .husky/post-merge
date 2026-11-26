@@ -1,4 +1,6 @@
 # Removes the worktree of every branch a pull request merged, then
-# fast-forwards the main checkout, listing only what it changed. A failure
-# here never fails the merge.
-node "$(dirname "$0")/../scripts/prune-worktrees.mjs" --quiet || true
+# fast-forwards the main checkout, listing only what it changed. A post-merge
+# hook never undoes the merge, so a prune that fails shows its failure here
+# instead of hiding it; a repository with no origin remote has nothing to
+# prune, and the pruner exits 0 there itself.
+node "$(dirname "$0")/../scripts/prune-worktrees.mjs" --quiet

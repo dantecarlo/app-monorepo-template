@@ -39,7 +39,7 @@ Managed by Husky, in `.husky/`.
 | ------------ | ----------------------- | --------------------------------- |
 | `pre-commit` | `pnpm exec lint-staged` | ESLint + Prettier on staged files |
 | `commit-msg` | `pnpm exec commitlint`  | Conventional commits              |
-| `post-merge` | `node scripts/prune-worktrees.mjs --quiet` | Removes merged worktrees, then fast-forwards the main checkout and installs when that changes `pnpm-lock.yaml`; never fails the merge |
+| `post-merge` | `node scripts/prune-worktrees.mjs --quiet` | Removes merged worktrees, then fast-forwards the main checkout and installs when that changes `pnpm-lock.yaml`; a prune that fails fails the hook, so it is seen, though a post-merge hook never undoes the merge; a repository with no origin has nothing to prune |
 
 `git commit --no-verify` skips both commit hooks; CI's `commitlint` job lints the
 commit messages of a pull request again, its default ignores aside (Layer 4).

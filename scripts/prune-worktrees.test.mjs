@@ -913,13 +913,27 @@ test('post-merge exits 0 and lists no kept line', () => {
   assert.ok(!fixture.postMerge.output.includes(': kept '))
 })
 
-test('post-merge exits 0 when the prune fails, and says nothing was removed', () => {
+test('post-merge exits 0 in a repository with no origin, since there is nothing to prune', () => {
   const scratch = scratchRoot({ prefix: 'prune-post-merge-' })
   const repository = join(scratch, 'repository')
   git({ args: ['init', '-q', repository], cwd: scratch })
   installPostMerge({ main: repository })
   const run = runPostMerge({ cwd: repository })
   assert.equal(run.status, EXIT_OK, run.output)
+  assert.match(run.output, /prune-worktrees: no origin remote, so nothing to prune/u)
+})
+
+test('post-merge fails when the prune fails, so the failure is seen', () => {
+  const scratch = scratchRoot({ prefix: 'prune-post-merge-' })
+  const repository = join(scratch, 'repository')
+  git({ args: ['init', '-q', repository], cwd: scratch })
+  git({
+    args: ['remote', 'add', 'origin', join(scratch, 'missing.git')],
+    cwd: repository
+  })
+  installPostMerge({ main: repository })
+  const run = runPostMerge({ cwd: repository })
+  assert.notEqual(run.status, EXIT_OK, run.output)
   assert.match(run.output, /prune-worktrees: .*nothing was removed/su)
 })
 
