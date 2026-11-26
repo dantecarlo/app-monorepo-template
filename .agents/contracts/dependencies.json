@@ -416,10 +416,17 @@
       "seam": []
     },
     {
+      "name": "@eslint/js",
+      "category": "build",
+      "owner": "core",
+      "seam": []
+    },
+    {
       "name": "@next/eslint-plugin-next",
       "category": "build",
-      "owner": "web-next",
-      "seam": []
+      "owner": "core",
+      "seam": [],
+      "note": "The root eslint.config.mjs imports it on every run and applies its rules to each app that declares next, so the root declares it and a prune of web-next keeps it."
     },
     {
       "name": "@playwright/test",
@@ -473,12 +480,6 @@
       "name": "eslint",
       "category": "build",
       "owner": "core",
-      "seam": []
-    },
-    {
-      "name": "eslint-config-next",
-      "category": "build",
-      "owner": "web-next",
       "seam": []
     },
     {

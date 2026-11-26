@@ -24,7 +24,6 @@ allowBuilds:
   core-js: false
   msw: true
   sharp: true
-  unrs-resolver: true
 # pnpm 11 reads overrides/packageExtensions from here, not package.json
 # (the old `pnpm` field there is ignored with a warning).
 overrides:

@@ -109,13 +109,7 @@ const inRepository = ({ files, use }) =>
       git({ args: ['init', '--quiet'], root })
       git({ args: ['add', '--all'], root })
       git({
-        args: [
-          ...IDENTITY,
-          'commit',
-          '--quiet',
-          '-m',
-          'base'
-        ],
+        args: [...IDENTITY, 'commit', '--quiet', '-m', 'base'],
         root
       })
       return use({
@@ -330,7 +324,10 @@ test('a second run moves nothing and exits 0', () => {
       const status = git({ args: ['status', '--porcelain'], root }).stdout
       const again = run({ root })
       assert.equal(again.status, PASSED, again.stderr)
-      assert.match(again.stdout, /nothing to move/u)
+      assert.match(
+        again.stdout,
+        /nothing to move — every test sits in its unit's __tests__\/\.\n/u
+      )
       assert.equal(read(STORE_MOVED), moved)
       assert.equal(
         git({ args: ['status', '--porcelain'], root }).stdout,
@@ -397,7 +394,7 @@ test('a destination that already exists is not overwritten', () => {
   })
 })
 
-test('a frozen exception is neither moved nor listed', () => {
+test('planMoves plans every misplaced test verify-tests can place', () => {
   withScratchTree({
     files: {
       ...BASE,
@@ -406,11 +403,11 @@ test('a frozen exception is neither moved nor listed', () => {
     },
     prefix: 'move-tests-plan-',
     use: ({ root }) => {
-      const context = collectContext({
-        frozen: [{ path: STORE_TEST, reason: 'cannot move yet' }],
-        root
+      const context = collectContext({ root })
+      assert.deepEqual(planMoves({ context }), {
+        moves: [{ from: STORE_TEST, to: STORE_MOVED }],
+        unplaced: []
       })
-      assert.deepEqual(planMoves({ context }), { moves: [], unplaced: [] })
     }
   })
 })

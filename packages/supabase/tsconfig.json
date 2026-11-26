@@ -8,5 +8,5 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src", "__tests__"]
+  "include": ["src", "__tests__", "supabase/tests/__tests__"]
 }

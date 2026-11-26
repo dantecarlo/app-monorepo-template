@@ -919,7 +919,8 @@ branch, and hands git, gh and every updater the environment it was given. It run
 5. **The skills, part a** (slice 5): `skills-drift` brought over from Certifipago, and the
    adaptations of a vendored `SKILL.md` recorded as a patch.
 6. **The skills, part b** (slice 6): the re-vendor engine. archify moves to 3.2.0, which is MIT,
-   in a change of its own vendored now with its locale catalogs allowlisted; the engine expects
+   in a change of its own vendored now with its four unread example catalogs trimmed and
+   `locales/es.json`, which archify reads, its one allowlisted file; the engine expects
    the licence the lock records for an entry.
 7. **The agent-rules watcher** (slice 7), **the shared rules** (slice 8) and **a local doctor**
    (slice 9), each with its parity-ledger row.

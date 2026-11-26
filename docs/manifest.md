@@ -118,8 +118,7 @@ a line, where it would open a region of its own file.
 Code holds a region where a capability adds to a list another owner keeps:
 each app's `src/lib/auth/authGateway.adapter.ts` lists the gateway of every
 backend capability in that capability's region, and serves a no-op gateway
-when none is left; `scripts/verify-tests.mjs` keeps a capability's frozen
-exception in its region. A comment line outside every region keeps the list
+when none is left. A comment line outside every region keeps the list
 printed as it stands once its last entry goes.
 
 A living spec holds a capability's part the same way: the part's own

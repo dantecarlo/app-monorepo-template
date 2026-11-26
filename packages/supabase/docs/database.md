@@ -559,7 +559,7 @@ reset role; -- return to the session role (postgres) for setup/teardown
 and fails a file whose output holds no plan line or a count that differs from
 its plan. So a file there is always a suite, never a page of notes: the
 conventions every suite shares live in this section and in the header of
-`rls_profile.test.sql`. The offline test `src/__tests__/supabaseSql.test.ts`
+`rls_profile.test.sql`. The offline test `supabase/tests/__tests__/tests.test.ts`
 fails, in every `pnpm validate`, on a file there that never calls `plan()` or
 `finish()`.
 

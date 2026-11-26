@@ -16,10 +16,10 @@
 //     are never read.
 //
 // A test with no destination (its stem names no unit, a destination that
-// already exists) is listed and left where it is, and the run exits 1. A test
-// verify-tests freezes is left alone. A moved test that builds a path from its
-// own folder (`import.meta.dirname`, `__dirname`, ...) is named for review:
-// only a reader can tell what such a path means. A second run moves nothing.
+// already exists) is listed and left where it is, and the run exits 1. A moved
+// test that builds a path from its own folder (`import.meta.dirname`,
+// `__dirname`, ...) is named for review: only a reader can tell what such a
+// path means. A second run moves nothing.
 //
 // Usage:
 //   node scripts/move-tests-into-blocks.mjs [--root <dir>] [--dry-run]
@@ -129,19 +129,16 @@ const isDirectory = (path) => {
 }
 
 // Pure: what a run does over `context` (collectContext of verify-tests).
-// Frozen tests are neither moved nor listed.
 export const planMoves = ({ context, exists = () => false }) => {
-  const frozen = new Set(context.frozen.map(({ path }) => path))
   const { misplaced } = classifyTests(context)
-  const candidates = misplaced.filter(({ path }) => !frozen.has(path))
   const targets = new Map()
-  candidates.forEach(({ target }) => {
+  misplaced.forEach(({ target }) => {
     if (target !== null)
       targets.set(target, (targets.get(target) ?? 0) + 1)
   })
   const moves = []
   const unplaced = []
-  candidates.forEach((finding) => {
+  misplaced.forEach((finding) => {
     const { detail, kind, path, target } = finding
     if (target === null || !MOVABLE_KINDS.has(kind)) {
       unplaced.push({ detail, path })
@@ -281,8 +278,7 @@ const main = () => {
   if (moves.length === 0) {
     console.log(
       unplaced.length === 0
-        ? `${ID}: nothing to move — every test sits in its unit's __tests__/ ` +
-            'or is a frozen exception of verify-tests.'
+        ? `${ID}: nothing to move — every test sits in its unit's __tests__/.`
         : `${ID}: nothing to move.`
     )
     printUnplaced({ unplaced })

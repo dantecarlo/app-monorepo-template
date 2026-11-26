@@ -165,7 +165,7 @@ hand, and only on a disposable development project.
 - `src/types.ts` — generated `Database` type (placeholder until `gen:types`)
 - `src/findMigrationOrderViolations.helper.ts`, `src/sqlCode.helper.ts` — the offline order
   check of the migrations; `src/__tests__/findMigrationOrderViolations.helper.test.ts` runs it
-  over the migrations, and `src/__tests__/supabaseSql.test.ts` checks the pgTAP files, in
+  over the migrations, and `supabase/tests/__tests__/tests.test.ts` checks the pgTAP files, in
   `pnpm validate` (`src/test/sqlFiles.ts` reads the files)
 - `src/pgTapBundle.helper.ts`, `src/testDbRun.helper.ts` — `test:db`: the bundle of the
   pgTAP files with the checkout's migrations, and the run on the target `config.testDbTarget`

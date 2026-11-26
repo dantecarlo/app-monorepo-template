@@ -14,12 +14,7 @@
         "eslint-local-rules/**/*.mjs",
         ".claude/skills/**/*.mjs"
       ],
-      "ignoreDependencies": [
-        "@commitlint/types",
-        "@eslint/js",
-        "@next/eslint-plugin-next",
-        "vite"
-      ]
+      "ignoreDependencies": ["vite"]
     },
     "apps/web": {
       "entry": [
@@ -40,13 +35,7 @@
         "src/validation/*.schema.ts"
       ],
       "project": ["src/**/*.{ts,tsx}"],
-      "ignoreDependencies": [
-        "@next/eslint-plugin-next",
-        "eslint-config-next",
-        "prettier",
-        "@supabase/ssr",
-        "@supabase/supabase-js"
-      ]
+      "ignoreDependencies": ["@supabase/ssr", "@supabase/supabase-js"]
     },
     "apps/mobile": {
       "entry": [
@@ -65,11 +54,7 @@
       ],
       "project": ["src/**/*.{ts,tsx}"],
       "metro": false,
-      "ignoreDependencies": [
-        "@supabase/supabase-js",
-        "expo-updates",
-        "expo-system-ui"
-      ]
+      "ignoreDependencies": ["@supabase/supabase-js", "expo-system-ui"]
     },
     "packages/core": {
       "project": ["src/**/*.ts"]

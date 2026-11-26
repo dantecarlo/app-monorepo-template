@@ -400,9 +400,9 @@ screen.getByRole('heading', { name: /item title/i })
 - `src/test/` (setup, the test helper, MSW handlers and server, module mocks) and `__mocks__/`
   are shared test infrastructure, not unit tests, and no rule judges where they sit.
 - `pnpm verify:tests` fails a test beside its unit, one in a higher `__tests__/`, one whose stem
-  names no unit of the folder that holds its `__tests__/`, and a `__tests__/` inside another; a
-  frozen exception in `scripts/verify-tests.mjs` carries its reason and fails once it exempts
-  nothing. `pnpm tests:into-blocks` moves every test it can place with `git mv`, rewriting the
+  names neither a unit of the folder that holds its `__tests__/` nor that folder (a folder is a
+  unit, tested by a test named after it in its own `__tests__/`), and a `__tests__/` inside
+  another; no test is exempt. `pnpm tests:into-blocks` moves every test it can place with `git mv`, rewriting the
   test's relative imports and every citation of its old path in `openspec/specs/` and `docs/`;
   a project that adopts the rule runs it once. The Vitest configs read `src/**/__tests__/` and
   the workspace's root `__tests__/`.
@@ -727,7 +727,9 @@ reject is met in one adapter that hands the code a shape they accept.
 > decision 1.
 >
 > **Three exceptions.** `scripts/verify-english.allow.json`, the allowlist of
-> `verify:english` (§15), cannot hold a backlog: it ships empty, each entry
+> `verify:english` (§15), cannot hold a backlog: it holds one entry, the vendored
+> archify's `locales/es.json`, which archify reads at run time and which waits on
+> the owner (under the LAW "A check is never forced or skipped"), each entry
 > names its file, its line (the text or a pattern) and the reason the line keeps
 > that text, and the gate fails an entry that excuses no line, so a stale one
 > cannot stay. `eslint-style-positioning-allowlist.json`, read by the styling
