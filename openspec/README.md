@@ -149,7 +149,7 @@ ones are deleted and their ID is never reused.
 | **The session that builds the change** | Sizes it, writes the change folder, builds it test first, verifies, archives; a small change that contradicts a spec stops and is resized               |
 | **The `sdd` skill's `sync` mode**      | On request: re-checks one living spec, every requirement against its evidence, and reports the drift. The nine `sdd` evals state what each mode must do |
 | **`verify:specs`**                     | The shape of every spec and change, and that every cited test exists and holds its quoted title (§ 5)                                                   |
-| **`report:spec-drift`**                | Lists, in every `pnpm validate`, each living spec whose governed code changed after the commit on its `Verified against the code` line (§ 4.1)          |
+| **`report:spec-drift`**                | Lists, in every `pnpm validate`, each living spec whose governed code changed after the commit on its `Verified against the code` line (§ 4.1), and fails it until each is synced |
 | **The pull request review**            | Reads the spec commit first; judges that the deltas say what the code does, and that every path a spec cites exists                                     |
 
 ### 4.1 Keeping the specs from drifting
@@ -160,8 +160,9 @@ and one by an agent:
 - **Which specs may have drifted** is deterministic. Each spec names the paths it governs and the
   commit it was last verified at. `pnpm report:spec-drift` lists every spec with a file under those
   paths that differs from that commit, committed or not, and runs inside every `pnpm validate`.
-  It never blocks: most pull requests touch governed code without changing what a spec states, so
-  a blocking gate would stop work that broke no requirement.
+  It blocks: a change that touches governed code syncs the specs it moved before it merges, since
+  a report nobody had to act on skipped the check it is (the LAW "A check is never forced or
+  skipped", `AGENTS.md`).
 - **Whether a spec is still true** takes an agent. `sync <spec>`, the `sdd` skill's mode, re-reads
   every requirement against its evidence, rewrites what the code no longer does, and moves the
   spec's `Verified against the code` line to the current commit, which takes it off the report.
@@ -185,7 +186,7 @@ the pull request review.
 | An open change has its proposal and tasks; a modified or removed ID exists in the living spec; a change with every task done has its verify report                  | `verify:specs`                                              | whether the owner approved it                                       |
 | Every backticked path a spec cites exists, and every `path:line` names a line the file has                                                                          | the pull request review; no gate reads the prose yet        | a path that moves after the review                                  |
 | The templates and the gate agree: each template, filled in, is accepted, and with a structural element removed is refused                                           | `verify:specs:test` (the template cases)                    | the verify report and design templates, whose content no gate reads |
-| A spec whose governed code changed after its verified commit is listed                                                                                              | `report:spec-drift`, inside `pnpm validate`, never blocking | whether that spec is wrong, or a fresh one right: `sync`            |
+| A spec whose governed code changed after its verified commit is listed                                                                                              | `report:spec-drift`, inside `pnpm validate`, blocking       | whether that spec is wrong, or a fresh one right: `sync`            |
 | A change that alters a requirement goes through this lifecycle, and a merged change is archived                                                                     | review, and `sync`                                          | no gate can see whether a diff changed a contract                   |
 
 ## 6. Asking for something new

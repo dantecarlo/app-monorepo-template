@@ -7,9 +7,11 @@
 // it was verified at ("Verified against the code: <date> at `<sha>`"). A
 // file under those paths that differs from that commit, committed or not,
 // makes the spec stale: its words may no longer say what the code does.
-// The report prints one WARN line per stale or unmeasurable spec and always
-// exits 0; re-verifying a listed spec is the `sync <spec>` mode of the sdd
-// skill, which rewrites the spec from the code and moves its commit forward.
+// The report prints one WARN line per stale or unmeasurable spec and exits 1
+// when it prints any, so `pnpm validate` fails until each is re-verified (a
+// report that never failed skipped the check it is); re-verifying a listed
+// spec is the `sync <spec>` mode of the sdd skill, which rewrites the spec
+// from the code and moves its commit forward.
 //
 // It does not judge whether a spec is wrong — a stale spec may still be true,
 // and a fresh one may have been wrong from the start. That semantic check
@@ -146,6 +148,7 @@ const main = () => {
       'which only the sync mode of the sdd skill judges; a stale spec may ' +
       'still be true.'
   )
+  if (findings.length > 0) process.exitCode = 1
 }
 
 if (

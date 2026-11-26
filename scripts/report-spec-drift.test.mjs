@@ -210,12 +210,12 @@ test('measureDrift sees committed, uncommitted and untracked change through git'
   ])
 })
 
-test('the report lists each stale spec and still exits 0', () => {
+test('the report lists each stale spec and exits 1', () => {
   const result = spawnSync(process.execPath, [REPORT, '--root', scratch], {
     encoding: 'utf8',
     env: gitFreeEnv()
   })
-  assert.equal(result.status, 0)
+  assert.equal(result.status, 1)
   const warned = result.stdout
     .split(/\r?\n/u)
     .filter((line) => line.includes('WARN'))
@@ -238,8 +238,8 @@ test('the report lists each stale spec and still exits 0', () => {
 // A repository of its own: a spec whose first Governs line names `core/`
 // and whose region names `vendor/`, so a change under either path must make
 // it stale, and the report must say so. Returns what measureDrift read and
-// what the report printed.
-const measureTwoGoverns = () =>
+// what the report printed. With `change` false, nothing moves.
+const measureTwoGoverns = ({ change = true } = {}) =>
   withScratchTree({
     files: {
       'core/a.ts': 'export const a = 1\n',
@@ -274,8 +274,10 @@ const measureTwoGoverns = () =>
           sha: base
         })
       )
-      writeFileSync(join(root, 'core', 'a.ts'), 'export const a = 2\n')
-      writeFileSync(join(root, 'vendor', 'a.ts'), 'export const a = 3\n')
+      if (change) {
+        writeFileSync(join(root, 'core', 'a.ts'), 'export const a = 2\n')
+        writeFileSync(join(root, 'vendor', 'a.ts'), 'export const a = 3\n')
+      }
 
       const [measured] = measureDrift({ root })
       const result = spawnSync(
@@ -294,7 +296,7 @@ const assertTwoGovernsDrift = ({ measured, result }) => {
   assert.deepEqual(measured.governed, ['core/', 'vendor/'])
   assert.deepEqual(measured.changed, ['core/a.ts', 'vendor/a.ts'])
   assert.deepEqual(measured.missing, [])
-  assert.equal(result.status, 0)
+  assert.equal(result.status, 1)
   assert.equal(result.stderr, '')
   assert.match(
     result.stdout,
@@ -305,6 +307,13 @@ const assertTwoGovernsDrift = ({ measured, result }) => {
 
 test('a spec is measured against the paths of every Governs line', () => {
   assertTwoGovernsDrift(measureTwoGoverns())
+})
+
+test('a tree whose specs all match their code exits 0', () => {
+  const { measured, result } = measureTwoGoverns({ change: false })
+  assert.deepEqual(measured.changed, [])
+  assert.equal(result.status, 0, result.stdout)
+  assert.match(result.stdout, /0 of 1 living spec\(s\) behind their code/u)
 })
 
 test("END TO END: under a hook's GIT_DIR, the drift is measured in the scratch repository and the hook's repository is left alone", () => {

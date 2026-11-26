@@ -70,7 +70,7 @@ pnpm validate
 `pnpm verify:agent-context`, runs
 `turbo run lint typecheck test build format:check`, then
 `pnpm verify:tests`, the spec gates (`verify:specs`, and `report:spec-drift`, which
-only reports), `pnpm verify:english`, `pnpm verify:instruction-entry`,
+fails on a spec behind its code), `pnpm verify:english`, `pnpm verify:instruction-entry`,
 `pnpm verify:unicode-safety`, `pnpm verify:workflow-pins`,
 `pnpm verify:skill-frontmatter`, `pnpm verify:skill-neutrality`,
 `pnpm verify:router-coverage`, `pnpm codex-budget:test` and `pnpm verify:maps`.
