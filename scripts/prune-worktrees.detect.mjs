@@ -30,7 +30,11 @@ const RENAMED = /^(?:[RC].|.[RC]) /u
 // `S` marks it skip-worktree.
 const HIDDEN_TAG = /^(?:[a-z]|S) /u
 
-const OPTION = { DRY_RUN: '--dry-run', QUIET: '--quiet' }
+const OPTION = {
+  DRY_RUN: '--dry-run',
+  FINISH_ORPHANS: '--finish-orphans',
+  QUIET: '--quiet'
+}
 
 // Set on every git the command runs. The fast-forward of the main checkout
 // fires that checkout's post-merge, which starts the command again from
@@ -175,6 +179,13 @@ export const REASON = {
   MAIN: 'the main checkout',
   NO_UPSTREAM: 'its branch has no upstream',
   NOT_IN_DEFAULT: 'its HEAD is not in the default branch',
+  ORPHAN_AMBIGUOUS: 'several local branches end in its name',
+  ORPHAN_CHECKED_OUT: 'its branch is checked out in a registered worktree',
+  ORPHAN_MANUAL: `orphan folders wait for a first manual run with ${OPTION.FINISH_ORPHANS}`,
+  ORPHAN_NOT_MERGED: 'its branch is not in the default branch',
+  ORPHAN_NO_BRANCH: 'no local branch ends in its name',
+  ORPHAN_YOUNG:
+    'it was written in the last 10 minutes, as a worktree being added is',
   REMOVE_FAILED: 'git could not remove it',
   TRACKS_DEFAULT: 'its branch tracks the default branch',
   UNREADABLE: 'git could not read it',
@@ -187,7 +198,8 @@ export const samePath = ({ path }) => {
   return process.platform === 'win32' ? forward.toLowerCase() : forward
 }
 
-// `--dry-run` and `--quiet`; any other option throws, naming it.
+// `--dry-run`, `--quiet` and `--finish-orphans`; any other option throws,
+// naming it.
 export const optionsFrom = ({ argv }) => {
   const given = argv.slice(2)
   const unknown = given.filter(
@@ -196,11 +208,12 @@ export const optionsFrom = ({ argv }) => {
   if (unknown.length > 0) {
     throw new Error(
       `unknown option ${unknown.join(', ')}; it takes ` +
-        `${OPTION.DRY_RUN} and ${OPTION.QUIET}`
+        `${OPTION.DRY_RUN}, ${OPTION.QUIET} and ${OPTION.FINISH_ORPHANS}`
     )
   }
   return {
     dryRun: given.includes(OPTION.DRY_RUN),
+    finishOrphans: given.includes(OPTION.FINISH_ORPHANS),
     quiet: given.includes(OPTION.QUIET)
   }
 }
@@ -415,10 +428,12 @@ const mainLine = ({ dryRun, main }) => {
   )
 }
 
+const ORPHAN = 'orphan folder'
+
 const decisionLine = ({ dryRun, result }) => {
   const branch =
     result.branch === DETACHED_BRANCH ? 'detached' : result.branch
-  const where = `${result.path} (${branch})`
+  const where = `${result.orphan ? `${ORPHAN} ` : ''}${result.path} (${branch})`
   if (result.kept) {
     const detail = result.detail ? `: ${result.detail}` : ''
     return `${LABEL}: kept ${where}: ${result.kept}${detail}`
@@ -550,6 +565,66 @@ export const reportLines = ({
   summaryLine({ dryRun, results }),
   ...notCovered({ dryRun, install })
 ]
+
+// `git worktree add` writes the folder before its registration, so a folder
+// written this recently may be a worktree still being added.
+export const ORPHAN_GRACE_MS = 600_000
+const NO_BRANCH = 'no branch'
+const SEVERAL_BRANCHES = 'several branches'
+
+// Whether one of `registered`, registered worktree paths in any spelling,
+// sits inside the folder at `path`.
+export const holdsRegistered = ({ path, registered }) => {
+  const inside = `${samePath({ path })}/`
+  return registered.some((other) =>
+    samePath({ path: other }).startsWith(inside)
+  )
+}
+
+// The decision for one orphan folder: finishable (`kept: null`) when exactly
+// one local branch's last path segment is the folder's name, no registered
+// worktree sits inside the folder, that branch is checked out in no
+// registered worktree, its tip is reachable from the default branch and the
+// folder was last written more than ORPHAN_GRACE_MS ago; otherwise kept with
+// the reason. `path` is the folder in forward slashes, `registered` the
+// registered worktree paths and `upstreams` every local branch with its tip.
+// The tip is the one the branch is deleted at.
+export const decideOrphan = ({
+  ageMs,
+  checkedOut,
+  merged,
+  path,
+  registered,
+  upstreams
+}) => {
+  const orphan = { orphan: true, path }
+  const name = path.split('/').at(-1)
+  const matches = [...upstreams.keys()].filter(
+    (branch) => branch.split('/').at(-1) === name
+  )
+  if (matches.length === 0) {
+    return { ...orphan, branch: NO_BRANCH, kept: REASON.ORPHAN_NO_BRANCH }
+  }
+  if (matches.length > 1) {
+    return {
+      ...orphan,
+      branch: SEVERAL_BRANCHES,
+      detail: matches.join(', '),
+      kept: REASON.ORPHAN_AMBIGUOUS
+    }
+  }
+  const [branch] = matches
+  const judged = { ...orphan, branch, sha: upstreams.get(branch).sha }
+  if (holdsRegistered({ path, registered })) {
+    return { ...judged, kept: REASON.HOLDS_WORKTREE }
+  }
+  if (checkedOut.has(branch)) {
+    return { ...judged, kept: REASON.ORPHAN_CHECKED_OUT }
+  }
+  if (!merged.has(branch)) return { ...judged, kept: REASON.ORPHAN_NOT_MERGED }
+  if (ageMs <= ORPHAN_GRACE_MS) return { ...judged, kept: REASON.ORPHAN_YOUNG }
+  return { ...judged, kept: null }
+}
 
 // The line printed before a removal starts, `removing <path> (<branch>)`:
 // a run ended inside the removal leaves it as its last line.

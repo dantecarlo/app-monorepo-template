@@ -36,7 +36,7 @@ import {
 } from 'node:fs'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
-import { delimiter, dirname, join, resolve } from 'node:path'
+import { basename, delimiter, dirname, join, resolve } from 'node:path'
 import { after, before, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
@@ -879,7 +879,7 @@ test('an unknown option throws, naming it', () => {
 test('--dry-run and --quiet are read', () => {
   assert.deepEqual(
     optionsFrom({ argv: ['node', 'x.mjs', '--dry-run', '--quiet'] }),
-    { dryRun: true, quiet: true }
+    { dryRun: true, finishOrphans: false, quiet: true }
   )
 })
 
@@ -2504,4 +2504,148 @@ test('a dry run while another prune holds the lock still prints its plan', () =>
     run.stdout
   )
   assert.ok(existsSync(lock), 'the other prune keeps its lock')
+})
+
+// ---------------------------------------------------------------------------
+// Orphan folders under the worktree root, judged (PRUNE-13, PRUNE-14): a
+// folder a removal ended partway left, with no `.git` and no registration.
+// ---------------------------------------------------------------------------
+
+const ORPHAN_AGE_MINUTES = 60
+const SECONDS_PER_MINUTE = 60
+
+test('--finish-orphans is read', () => {
+  assert.deepEqual(
+    optionsFrom({ argv: ['node', 'x.mjs', '--finish-orphans'] }),
+    { dryRun: false, finishOrphans: true, quiet: false }
+  )
+})
+
+// The folder a worktree's removal that ended partway leaves: no `.git`, one
+// file below it, last written `ageMinutes` ago, and, when `branch` is given,
+// that local branch at the tip of main, which origin holds.
+const orphanFolder = ({
+  ageMinutes = ORPHAN_AGE_MINUTES,
+  branch,
+  main,
+  name
+}) => {
+  const path = join(dirname(main), `${basename(main)}-worktrees`, name)
+  mkdirSync(join(path, 'node_modules'), { recursive: true })
+  writeFileSync(join(path, 'node_modules', 'a.txt'), 'a\n')
+  const then = Date.now() / 1000 - ageMinutes * SECONDS_PER_MINUTE
+  utimesSync(path, then, then)
+  if (branch) git({ args: ['branch', branch], cwd: main })
+  return path
+}
+
+const orphanLine = ({ branch, path, verb }) =>
+  `prune-worktrees: ${verb} orphan folder ${forward({ path })} (${branch})`
+
+test('a dry run names the orphan folder it would finish and deletes nothing', () => {
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  const path = orphanFolder({ branch: 'feat/ORPH-1', main, name: 'ORPH-1' })
+  const waiting = prune({ args: ['--dry-run'], cwd: main })
+  assert.equal(waiting.status, EXIT_OK, waiting.stderr)
+  assert.ok(
+    waiting.stdout.includes(
+      `${orphanLine({ branch: 'feat/ORPH-1', path, verb: 'kept' })}: ${REASON.ORPHAN_MANUAL}`
+    ),
+    waiting.stdout
+  )
+  const run = prune({ args: ['--dry-run', '--finish-orphans'], cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.ok(
+    run.stdout.includes(
+      orphanLine({ branch: 'feat/ORPH-1', path, verb: 'would remove' })
+    ),
+    run.stdout
+  )
+  assert.ok(existsSync(join(path, 'node_modules', 'a.txt')), 'the folder went')
+  assert.ok(
+    git({ args: ['branch', '--list', 'feat/ORPH-1'], cwd: main }).includes(
+      'feat/ORPH-1'
+    ),
+    'the branch went'
+  )
+})
+
+test('an orphan folder is kept and named for each reason that keeps it', () => {
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  const unmerged = git({
+    args: ['commit-tree', 'HEAD^{tree}', '-p', 'HEAD', '-m', 'unmerged'],
+    cwd: main
+  })
+  git({ args: ['branch', 'feat/NOT-MERGED', unmerged], cwd: main })
+  const elsewhere = join(dirname(main), 'elsewhere')
+  git({
+    args: ['worktree', 'add', '-q', '-b', 'feat/OUT', elsewhere],
+    cwd: main
+  })
+  git({ args: ['branch', 'fix/DUP'], cwd: main })
+  const cases = [
+    {
+      branch: 'no branch',
+      name: 'NO-BRANCH',
+      reason: REASON.ORPHAN_NO_BRANCH
+    },
+    {
+      branch: 'several branches',
+      branches: ['feat/DUP'],
+      detail: 'feat/DUP, fix/DUP',
+      name: 'DUP',
+      reason: REASON.ORPHAN_AMBIGUOUS
+    },
+    {
+      branch: 'feat/NOT-MERGED',
+      name: 'NOT-MERGED',
+      reason: REASON.ORPHAN_NOT_MERGED
+    },
+    {
+      branch: 'feat/OUT',
+      name: 'OUT',
+      reason: REASON.ORPHAN_CHECKED_OUT
+    },
+    {
+      ageMinutes: 1,
+      branch: 'feat/FRESH',
+      branches: ['feat/FRESH'],
+      name: 'FRESH',
+      reason: REASON.ORPHAN_YOUNG
+    }
+  ]
+  const paths = cases.map(({ ageMinutes, branches = [], name }) => {
+    const path = orphanFolder({ ageMinutes, main, name })
+    branches.forEach((branch) =>
+      git({ args: ['branch', branch], cwd: main })
+    )
+    return path
+  })
+  const run = prune({ args: ['--dry-run', '--finish-orphans'], cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  cases.forEach(({ branch, detail, reason }, at) => {
+    const line = `${orphanLine({ branch, path: paths[at], verb: 'kept' })}: ${reason}`
+    assert.ok(
+      run.stdout.includes(detail ? `${line}: ${detail}` : line),
+      `${line}\n${run.stdout}`
+    )
+  })
+  assert.ok(!run.stdout.includes('would remove orphan folder'), run.stdout)
+})
+
+test('a dry run judges an orphan folder that holds a registered worktree as kept', () => {
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  const path = orphanFolder({ branch: 'feat/HOLDS', main, name: 'HOLDS' })
+  git({
+    args: ['worktree', 'add', '-q', '-b', 'feat/INNER', join(path, 'inner')],
+    cwd: main
+  })
+  const run = prune({ args: ['--dry-run', '--finish-orphans'], cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.ok(
+    run.stdout.includes(
+      `${orphanLine({ branch: 'feat/HOLDS', path, verb: 'kept' })}: ${REASON.HOLDS_WORKTREE}`
+    ),
+    run.stdout
+  )
 })

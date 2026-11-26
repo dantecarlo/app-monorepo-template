@@ -87,13 +87,15 @@
 import { execFileSync } from 'node:child_process'
 import {
   copyFileSync,
+  existsSync,
   lstatSync,
   mkdtempSync,
   readdirSync,
-  rmSync
+  rmSync,
+  statSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { removePath } from '@app/tooling/remove-path'
@@ -104,6 +106,7 @@ import { gitFreeEnv } from './git-free-env.mjs'
 import {
   AGENT_TOOLING_DIR,
   BRANCH_PREFIX,
+  decideOrphan,
   defaultBranchOf,
   DIVERGED,
   failureLine,
@@ -743,7 +746,8 @@ const pruneWorktrees = async ({
   cwd,
   dryRun,
   env,
-  fetchSeconds
+  fetchSeconds,
+  finishOrphans
 }) => {
   const current = samePath({
     path: git({ args: ['rev-parse', '--show-toplevel'], cwd })
@@ -753,7 +757,16 @@ const pruneWorktrees = async ({
   // A repository with no origin has no merged branch to read: nothing to do.
   const remotes = git({ args: ['remote'], cwd: root }).split(/\r?\n/u)
   if (!remotes.includes(REMOTE)) return { noRemote: true }
-  const run = { announce, current, dryRun, env, fetchSeconds, root, worktrees }
+  const run = {
+    announce,
+    current,
+    dryRun,
+    env,
+    fetchSeconds,
+    finishOrphans,
+    root,
+    worktrees
+  }
   if (dryRun) return pruneUnderLock(run)
   const path = lockPathOf({ root })
   const lock = takeLock({ path })
@@ -773,6 +786,54 @@ const lockPathOf = ({ root }) =>
     LOCK_NAME
   )
 
+// The repository's worktree root, `<main checkout parent>/<main checkout
+// name>-worktrees/`, beside the main checkout `main`.
+const worktreeRootOf = ({ main }) =>
+  join(dirname(resolve(main)), `${basename(resolve(main))}-worktrees`)
+
+// Every directory directly under `worktreeRoot` with no `.git` and no
+// registration, as a `git worktree remove` ended partway leaves one. A link
+// is no such directory, and a root that does not exist holds none.
+const readOrphanPaths = ({ registrations, worktreeRoot }) => {
+  if (!existsSync(worktreeRoot)) return []
+  return readdirSync(worktreeRoot, { withFileTypes: true })
+    .filter((dirent) => dirent.isDirectory())
+    .map((dirent) => join(worktreeRoot, dirent.name))
+    .filter((path) => !existsSync(join(path, '.git')))
+    .filter((path) => !registrations.has(samePath({ path })))
+}
+
+// Every orphan folder under the worktree root, judged by `decideOrphan`; one
+// it could finish is kept as waiting for a first manual run unless
+// `finishing` is set.
+const judgeOrphans = ({
+  finishing,
+  merged,
+  registrations,
+  root,
+  upstreams,
+  worktrees
+}) => {
+  const checkedOut = new Set(worktrees.map(({ branch }) => branch))
+  return readOrphanPaths({
+    registrations,
+    worktreeRoot: worktreeRootOf({ main: root })
+  })
+    .map((path) =>
+      decideOrphan({
+        ageMs: Date.now() - statSync(path).mtimeMs,
+        checkedOut,
+        merged,
+        path: forwardPath({ path }),
+        registered: [...registrations],
+        upstreams
+      })
+    )
+    .map((one) =>
+      one.kept || finishing ? one : { ...one, kept: REASON.ORPHAN_MANUAL }
+    )
+}
+
 // What `pruneWorktrees` does once a real run holds the lock, or at once for a
 // dry run, from the fetch on.
 const pruneUnderLock = async ({
@@ -781,6 +842,7 @@ const pruneUnderLock = async ({
   dryRun,
   env,
   fetchSeconds,
+  finishOrphans,
   root,
   worktrees
 }) => {
@@ -820,6 +882,18 @@ const pruneUnderLock = async ({
           : removeIfStillClean({ announce, root, worktree: one })
       )
     )
+    if (dryRun) {
+      results.push(
+        ...judgeOrphans({
+          finishing: finishOrphans,
+          merged,
+          registrations: readRegistered({ root }),
+          root,
+          upstreams,
+          worktrees
+        })
+      )
+    }
     if (!dryRun) git({ args: ['worktree', 'prune'], cwd: root })
     const main = forwardMain({
       defaultBranch,
@@ -857,14 +931,17 @@ const main = async () => {
     console.log(line)
   }
   try {
-    const { dryRun, quiet } = optionsFrom({ argv: process.argv })
+    const { dryRun, finishOrphans, quiet } = optionsFrom({
+      argv: process.argv
+    })
     const fetchSeconds = fetchSecondsFrom({ env: process.env })
     const outcome = await pruneWorktrees({
       announce,
       cwd: process.cwd(),
       dryRun,
       env: process.env,
-      fetchSeconds
+      fetchSeconds,
+      finishOrphans
     })
     const lines = outcome.busy
       ? [busyLine(outcome)]

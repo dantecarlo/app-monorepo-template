@@ -83,7 +83,16 @@ first (whole days, path, branch, reason), from one `git log --no-walk` over thei
 HEADs. A real run holds `prune-worktrees.lock` in the repository's common git
 directory, through the reaper's `takeLock` (section 3g), from before the fetch to
 its end; a run that finds it held prints one line, removes nothing and exits 0,
-and a dry run takes none. Last, it fast-forwards
+and a dry run takes none. It reads the worktree root,
+`<repo-parent>/<repo>-worktrees/`, for orphan folders, the ones a removal ended
+partway leaves: a directory directly under it with no `.git` and no registration.
+It judges each by the one local branch whose last path segment is the folder's
+name (checked out nowhere, in the default branch, the folder written more than
+10 minutes ago, no registered worktree inside it) and prints every other one as
+kept, with its reason. Orphan folders wait for a first manual run with
+`--finish-orphans`: until then a folder it could finish is kept with that
+reason, and a dry run with the option names it as one it would remove. Last, it
+fast-forwards
 the main checkout with `git merge --ff-only` when that checkout is on the
 default branch. Any tracked local change there, staged or not, a
 line-ending-only one included, blocks it, and so does whatever git refuses
