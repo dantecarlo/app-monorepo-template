@@ -446,7 +446,8 @@ path 10,000 folders deep is judged in milliseconds.
 A Bash command is read by a shell parser ported from Certifipago's guard, not
 by a pattern. Line continuations go first, where Bash drops them; then come
 quotes, substitutions (`$(…)`, backticks, `$(( ))`), here-docs, groups,
-pipelines, loops and `case`. A word is expanded as Bash expands it: braces
+pipelines, loops, `case`, a function body in each of its forms (`f() { … }`,
+`function f { … }`, `function f() { … }`) and `coproc`. A word is expanded as Bash expands it: braces
 first (`AGENTS.md{,.bak}` is two words, and the empty word `{AGENTS.md,}`
 leaves is dropped), `$'…'` decoded, a NUL ending the
 word, and a backslash-escaped character read as quoted. A variable resolves
@@ -558,9 +559,10 @@ or a folder on the disk) is also read for the name the file gets there, so
 `Copy-Item /tmp/AGENTS.md .` asks.
 
 Every reason names the rule, the file and how to proceed; a rule file cites the
-LAW. Stdin that is not a JSON payload prints nothing, and a hook that crashes,
-or whose engine fails to load, still refuses a subagent and asks the main
-session.
+LAW. Stdin that is empty, is not JSON or is no JSON object is refused, with a
+reason that names the recovery below: it names no agent, so the guard cannot
+tell a read-only agent from the main session. A hook that crashes, or whose
+engine fails to load, still refuses a subagent and asks the main session.
 
 No variable switches it off. The one recovery is Claude Code's own: put
 `"disableAllHooks": true` in `.claude/settings.local.json`. That file is
@@ -936,22 +938,37 @@ A Claude Code hook that refuses a Bash or PowerShell command that forces or skip
 backs the LAW "A check is never forced or skipped" (`AGENTS.md`), which the owner asked for on
 2026-11-25 and widened the same day from forcing to skipping.
 
-| Piece                                          | What it is |
-| ---------------------------------------------- | ---------- |
-| `scripts/agent-harness/no-force/forms.mjs`      | The pure core: the force option one simple command passes, from its words |
-| `scripts/agent-harness/no-force/bash.mjs`       | Reads a Bash command with the write guard's own continuations and tokenizer (3f), and judges every simple command in it |
-| `scripts/agent-harness/no-force/powershell.mjs` | A small reader of PowerShell's statements and words, since the write guard parses none |
+| Piece                                           | What it is |
+| ----------------------------------------------- | ---------- |
+| `scripts/agent-harness/no-force/forms.mjs`      | The pure core: the force or skip one simple command passes, from its words |
+| `scripts/agent-harness/no-force/inner.mjs`      | The command a wrapper runs inside one (`eval`, `sh -c`, `pwsh -Command`, `find -exec`, `xargs`), with the write guard's own readers of a shell's `-c`, find, fd and xargs |
+| `scripts/agent-harness/no-force/bash.mjs`       | Reads a Bash command with the write guard's own continuations and tokenizer (3f): the whole command, or the longest prefix of its whole lines that parses |
+| `scripts/agent-harness/no-force/powershell.mjs` | A small reader of PowerShell's statements and words, and how deeply they nest, since the write guard parses none |
+| `scripts/agent-harness/no-force/command.mjs`    | The judge: every simple command either reader finds, `\|\| true`, and each wrapper's command in its own language, to 16 levels deep |
 | `scripts/agent-harness/no-force/decide.mjs`     | The verdict on a PreToolUse payload: a deny whose reason names the LAW, or nothing |
 | `scripts/agent-harness/no-force/claude-hook.mjs` | The Claude Code adapter: a payload on stdin, a `permissionDecision` on stdout |
-| `.agents/hooks.json`                           | Its entry, `no-force`, matcher `Bash\|PowerShell`, timeout 5 s; `.claude/settings.json` is generated from it (3e) |
+| `.agents/hooks.json`                            | Its entry, `no-force`, matcher `Bash\|PowerShell`, timeout 5 s; `.claude/settings.json` is generated from it (3e) |
 
 **What it refuses.** A long form on any tool, case-insensitive, with one dash or two:
 `--force`, `--force-with-lease`, every `--force-*` and `-Force`, with or without a value, and
-`--no-verify`; an explicit off, `=false` or `:$false`, passes. `taskkill /F`, `-F` and Git Bash's
-`//F`. `rm` with an `f` among its short options (`-f`, `-rf`). `HUSKY=0`, which skips every git
-hook: an assignment before a command, an `export`, an `env` argument, or PowerShell's
-`$env:HUSKY = 0`. git's short options that force or skip, by the letters each subcommand gives
-that meaning, alone or in a cluster (`-xfd`), after git's own options (`-C`, `-c`, `--git-dir`):
+`--no-verify`; an explicit off, `=false` or `:$false`, passes. A prefix git and getopt read as
+the option itself, from `--fo` and `--no-v` up (`--forc`, `--no-verif`), and in PowerShell from
+`-Fo` up, which is how PowerShell binds an abbreviated parameter; `--format` and `--follow` are
+no prefix of either, so they pass. `taskkill /F`, `-F` and Git Bash's `//F`. `rm` with an `f`
+among its short options (`-f`, `-rf`). A failure swallowed by `|| true` or `|| :`; `|| echo
+failed` and `|| exit 1` handle it, and pass. `HUSKY=0`, which skips every git hook, only where it
+sets the environment: an assignment before a command or a wrapper's (`env`, `sudo`), an `export`
+or `declare` argument, and in PowerShell `$env:HUSKY = 0`, `${env:HUSKY} = 0`,
+`Set-Item env:HUSKY 0` and `[Environment]::SetEnvironmentVariable('HUSKY','0')`;
+`git diff --stat HUSKY=0` sets nothing and passes. A git setting that moves the hooks away:
+`core.hooksPath` through `git -c` or `--config-env` on any subcommand, and every write form of
+`git config` (a value, `--add`, `--replace-all`, `--unset`, `set`, `unset`, and removing or
+renaming the `core` section); `git config --get core.hooksPath` reads, and passes. husky's own
+`prepare` script, `husky`, which points `core.hooksPath` at `.husky/_`, is no agent command: pnpm
+runs it as a lifecycle script of `pnpm install`, and husky spawns its `git config` itself, which
+no PreToolUse hook sees. git's short options that force or skip, by the letters each subcommand
+gives that meaning, alone or in a cluster (`-xfd`), after git's own options (`-C`, `-c`,
+`--git-dir`):
 
 | Subcommand                                        | Letters |
 | ------------------------------------------------- | ------- |
@@ -964,17 +981,31 @@ that meaning, alone or in a cluster (`-xfd`), after git's own options (`-C`, `-c
 `git push -n` is `--dry-run`, which skips nothing, so it passes.
 
 A letter that takes a value ends its cluster and takes the next word (`git tag -mfix`,
-`git tag -F notes.txt`), and `--` ends git's options. A wrapper (`sudo`, `env`, `timeout`) is read
-through. Every simple command of a list, a pipeline, a group, a compound command and a
-substitution is judged, in PowerShell a script block and a subexpression too.
+`git tag -F notes.txt`), and `--` ends the options of any program. A wrapper (`sudo`, `env`,
+`timeout`) is read through. Every simple command of a list, a pipeline, a group, a function body
+(`f() { … }`, `function f { … }`, `function f() { … }`), `coproc`, a compound command and a
+substitution is judged, in PowerShell a script block and a subexpression too. So is the command a
+wrapper runs, in its own language, as the outer one is: `eval`, an inner shell's `-c` (`sh`,
+`dash`, `zsh`, `bash -lc`), a here-doc or a pipe of `cat`, `echo` or `printf` fed to a shell,
+`find -exec`, `fd -x` and `xargs` (the write guard's own readers of them), PowerShell's
+`-Command` (`-c`, any prefix) and `-EncodedCommand` (decoded), `powershell` with its command as
+its words, and `Invoke-Expression`. Bash runs every whole line before one it cannot parse
+(`bash -c $'touch m\necho "x'` creates `m`), so a command its tokenizer cannot parse is read as
+the longest prefix of its whole lines that parses; one line it cannot parse on its own is let
+through, since Bash refuses the whole line.
 
 **What it does not read as a command**: a multi-word quoted span (a commit message), a
-here-doc's or a here-string's body, a comment, and the words of `rg`, `grep`, `echo` and
-`printf`. A Bash command its tokenizer cannot parse is let through, for the write guard to judge.
+here-doc's or a here-string's body unless a shell reads it, a comment, and the words of `rg`,
+`grep`, `git grep`, `echo`, `printf`, `Write-Output`, `Write-Host` and `Select-String`.
 
 **It fails closed**, as the write guard does (3f): a broken hook would let every force and skip
-through unseen. When its engine cannot load or throws, it denies the call with one line naming
-the error and the one recovery, `"disableAllHooks": true` in `.claude/settings.local.json`.
+through unseen. Stdin that is empty, is not JSON or is no JSON object, a Bash or PowerShell call
+whose `command` is no string, a command nested deeper than 16 levels of commands inside commands
+(or past the tokenizer's own cap of 32), one whose line prefixes would take more than about a
+second to try, an engine that cannot load and one that throws each get one line that denies,
+naming the problem and the one recovery, `"disableAllHooks": true` in
+`.claude/settings.local.json`. A tool it does not judge gets nothing: the matcher already keeps
+the hook to Bash and PowerShell.
 
 **The registered exception** is code, never a typed command: `taskkill /T /F` and
 `taskkill /F /PID …` in `scripts/agent-harness/reaper/**` (3g) and
@@ -988,11 +1019,14 @@ the code. `rm -f`, `rm -rf` and `rmSync`'s `force: true` are inside the LAW, sin
 widened it to skipping: a path that may be missing goes through `removePath`
 (`packages/tooling/src/remove-path.mjs`), where only a path already gone counts as success.
 
-**Not covered:** a force or skip in code, config, CI or docs, which review reads; a short `-f`
-outside git, `rm` and taskkill;
-a git letter outside the table (`rebase -f`, `submodule -f`, `worktree add -B`); a `+refspec`
-push; `bash -c`, `cmd /c`, xargs, an alias and a variable's value; a PowerShell splat or an
-abbreviated `-Fo`; and Codex, OpenCode and Copilot, which run no adapter yet.
+**Not covered:** a force or skip in code, config, CI or docs, which review reads; what a script
+a shell runs from a file does (`bash x.sh`, `pwsh -File x.ps1`), though the options passed to it
+are read; a short `-f` outside git, `rm` and taskkill; a git letter outside the table
+(`rebase -f`, `submodule -f`, `worktree add -B`); a `+refspec` push; `cmd /c`, `watch`, `ssh`,
+and git's short letters behind `pnpm exec` or `npx`; an alias and a variable's value (`$CMD`, or
+a hooks path set through the `GIT_CONFIG_*` variables); a here-string fed to a shell, whose
+quotes are read with its text; a PowerShell splat, a `||` chain in PowerShell, and a .NET call
+split across lines; and Codex, OpenCode and Copilot, which run no adapter yet.
 
 ---
 
