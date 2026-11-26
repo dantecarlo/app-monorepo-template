@@ -11,12 +11,7 @@
 
 import { MAX_MENTIONS } from './mentions.mjs'
 import { TARGET_KIND } from './paths.mjs'
-import {
-  ACTOR_KIND,
-  AGENT_CONTEXT_FILE,
-  POLICY_FILE,
-  SWITCH_OFF
-} from './policy.mjs'
+import { ACTOR_KIND, AGENT_CONTEXT_FILE, POLICY_FILE } from './policy.mjs'
 import { TOOL_ADVICE } from './writers.tools.mjs'
 
 // The longest part of a command a reason quotes.
@@ -26,9 +21,11 @@ export const LAW =
   'The LAW "A rule is not edited to fit the work" (AGENTS.md) lets a rule ' +
   'change only when the owner asks for that change, in words, as the request.'
 
-const SWITCH =
-  `${SWITCH_OFF.variable}=${SWITCH_OFF.value} set when launching the ` +
-  'session switches the guard off'
+// The one way out no variable gives: Claude Code's own, which switches
+// every hook off, the guard's among them.
+const HOOKS_OFF =
+  'set "disableAllHooks": true in the git-ignored ' +
+  '.claude/settings.local.json, which switches every Claude Code hook off'
 
 const ADVICE_REPORT = 'Report the change for the caller to make.'
 
@@ -191,4 +188,4 @@ export const askReason = ({ actor, command, finding, named, tool }) => {
 export const guardError = ({ actor, denied, problem, tool }) =>
   `The write guard could not judge this ${tool} (${problem}), so it ` +
   `${denied ? `refuses it for ${actor.name}, which it polices` : 'asks before letting it run'}. ` +
-  `Fix what it names, or, if the owner agrees, ${SWITCH}.`
+  `Fix what it names, or, if the owner agrees, ${HOOKS_OFF}.`

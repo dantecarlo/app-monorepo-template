@@ -532,7 +532,7 @@ container, at the same path without its drive letter, and runs `pg_prove -r`
 over it. No live run has confirmed it yet.
 
 **DB tests are intentionally NOT part of `pnpm validate`.** The validation
-gate (`ATL_TEMPLATE_SELF=1 pnpm validate`) is offline: it needs no database
+gate (`pnpm validate`) is offline: it needs no database
 and no Docker. `AGENTS.md` forbids an agent to start Docker, so a person or a
 CI job with Docker runs `test:db`. What `pnpm validate` checks offline is the
 bundle and the runner (`src/__tests__/pgTapBundle.helper.test.ts`,
@@ -559,7 +559,7 @@ reset role; -- return to the session role (postgres) for setup/teardown
 and fails a file whose output holds no plan line or a count that differs from
 its plan. So a file there is always a suite, never a page of notes: the
 conventions every suite shares live in this section and in the header of
-`rls_profile.test.sql`. The offline test `src/__tests__/supabaseSql.test.ts`
+`rls_profile.test.sql`. The offline test `supabase/tests/__tests__/tests.test.ts`
 fails, in every `pnpm validate`, on a file there that never calls `plan()` or
 `finish()`.
 

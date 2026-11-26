@@ -34,7 +34,7 @@ import {
   targetFinding
 } from './shell.findings.mjs'
 import { LEVEL } from './target.mjs'
-import { createParser, KEYWORDS } from './tokenizer.mjs'
+import { commandStart, createParser } from './tokenizer.mjs'
 
 const LOOP_ITEMS_JUDGED = 32
 const ASSIGNMENT = /^([A-Za-z_]\w*)\+?=/
@@ -105,16 +105,6 @@ const bracedWords = ({ word }) => {
     : found.words
 }
 
-// Where a command's own words start: past the keywords before it, and the
-// `-p` of `time -p`.
-const keywordsEnd = ({ words }) => {
-  let at = 0
-  while (at < words.length && KEYWORDS.has(words[at].raw)) {
-    at += words[at].raw === 'time' && words[at + 1]?.raw === '-p' ? 2 : 1
-  }
-  return at
-}
-
 const isWritingRedirect = ({ redirect }) =>
   redirect.target !== undefined &&
   !['<', '<<<', 'dup'].includes(redirect.op)
@@ -163,11 +153,9 @@ const loopVariable = ({ command, state }) =>
 
 // What the command itself does, once its substitutions are judged.
 const ownVerdict = ({ command, producer, state }) => {
-  const words = command.words.slice(keywordsEnd({ words: command.words }))
+  const words = command.words.slice(commandStart({ words: command.words }))
   const head = words[0]?.raw
-  if (head === undefined || head === 'case' || head === 'function') {
-    return undefined
-  }
+  if (head === undefined || head === 'case') return undefined
   if (head === 'for' || head === 'select') {
     // `for g in a b c`: each later command using $g is judged per item.
     const [, , keyword, ...list] = words

@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
 import { useAppTranslator } from '@/lib/i18n/useAppTranslator.hook'
+import { toMutationCallbacks } from '@/lib/query/mutationCallbacks.adapter'
 import { omitUndefined } from '@/lib/query/omitUndefined.helper'
 import { resolveErrorMessage } from '@/lib/query/resolveErrorMessage.helper'
 import type {
@@ -48,32 +49,27 @@ export const useAppMutation = <
     useMutation<TData, TError, TVariables>({
       ...omitUndefined({ gcTime, mutationKey }),
       mutationFn,
-      // eslint-disable-next-line local/single-object-params -- TanStack Query calls onError(error, variables)
-      onError(failure, variables) {
-        const message = resolveErrorMessage({
-          error: failure,
-          errorMessage,
-          fallback: t(GENERIC_ERROR_KEY),
-          hasKey: has,
-          translate: (key) => (has(key) ? t(key) : key)
-        })
-        addToast({ message, variant: 'error' })
-        onError?.({ error: failure, variables })
-      },
-      ...(onMutate
-        ? { onMutate: (variables: TVariables) => onMutate({ variables }) }
-        : {}),
-      // eslint-disable-next-line local/single-object-params -- TanStack Query calls onSettled(data, error, variables)
-      onSettled(result, failure, variables) {
-        onSettled?.({ data: result, error: failure, variables })
-      },
-      // eslint-disable-next-line local/single-object-params -- TanStack Query calls onSuccess(data, variables)
-      onSuccess(result, variables) {
-        if (successMessage) {
-          addToast({ message: successMessage, variant: 'success' })
+      ...toMutationCallbacks<TData, TError, TVariables>({
+        onError: ({ error: failure, variables }) => {
+          const message = resolveErrorMessage({
+            error: failure,
+            errorMessage,
+            fallback: t(GENERIC_ERROR_KEY),
+            hasKey: has,
+            translate: (key) => (has(key) ? t(key) : key)
+          })
+          addToast({ message, variant: 'error' })
+          onError?.({ error: failure, variables })
+        },
+        onMutate,
+        onSettled: (outcome) => onSettled?.(outcome),
+        onSuccess: (outcome) => {
+          if (successMessage) {
+            addToast({ message: successMessage, variant: 'success' })
+          }
+          onSuccess?.(outcome)
         }
-        onSuccess?.({ data: result, variables })
-      }
+      })
     })
 
   return useMemo(

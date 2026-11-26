@@ -7,6 +7,8 @@ Implements the `@app/core` ports (`IAuthGateway`, `IBackendClientProvider`,
 
 Apps depend on the **port types** from `@app/core` for type safety and import
 the concrete factories from this package in their `src/lib` adapter layer.
+No app declares a Supabase SDK: `@supabase/supabase-js` and `@supabase/ssr` are
+this package's dependencies alone, and only its `src/*.adapter.ts` import them.
 To swap providers, implement the same ports in a new adapter package and
 update `src/lib/supabase/*.adapter.ts` in each app to point at it.
 
@@ -165,7 +167,7 @@ hand, and only on a disposable development project.
 - `src/types.ts` — generated `Database` type (placeholder until `gen:types`)
 - `src/findMigrationOrderViolations.helper.ts`, `src/sqlCode.helper.ts` — the offline order
   check of the migrations; `src/__tests__/findMigrationOrderViolations.helper.test.ts` runs it
-  over the migrations, and `src/__tests__/supabaseSql.test.ts` checks the pgTAP files, in
+  over the migrations, and `supabase/tests/__tests__/tests.test.ts` checks the pgTAP files, in
   `pnpm validate` (`src/test/sqlFiles.ts` reads the files)
 - `src/pgTapBundle.helper.ts`, `src/testDbRun.helper.ts` — `test:db`: the bundle of the
   pgTAP files with the checkout's migrations, and the run on the target `config.testDbTarget`

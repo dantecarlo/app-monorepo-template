@@ -3,7 +3,7 @@
 > **Governs:** `.claude/skills/ticket-flow`, `.claude/skills/po-ticket`, `.claude/skills/refine-ticket`, `.claude/skills/dev-ticket`, `.claude/skills/qa-ticket`, `.claude/skills/release-ticket`, `.claude/skills/process-intake`, `.claude/skills/general-plan`, `scripts/verify-skills.mjs`, `scripts/verify-ticket-branch.mjs`, `.agents/contracts/harness-config.schema.json`
 > **ID prefix:** `TICKET`
 > **Derived from:** `openspec/changes/archive/2026-11-16-ticket-flow/source-spec.md`, `docs/harness.md`
-> **Verified against the code:** 2026-11-25 at `bc372b48`
+> **Verified against the code:** 2026-11-25 at `12d6b224`
 
 ## Purpose
 
@@ -2508,3 +2508,16 @@ endings included, byte for byte; the renamed file SHALL pass `pnpm verify:harnes
 - **WHEN** `scripts/verify-harness-config.mjs` runs in it
 - **THEN** it exits 0
 - **Test:** `scripts/init-project.test.mjs` › "the renamed harness config passes verify:harness-config"
+
+### Requirement: TICKET-35 — The intake makes the GitHub labels current, and never forces one
+
+For a `gh` adapter, after the team confirms it, `process-intake` SHALL make each label exist once, `ticket:<state>` for every state and `type:<type>` for every type: it SHALL read the labels with `gh label list --json name,color,description`, run `gh label create <label>` for each one missing and `gh label edit <label>` for one whose colour or description differs, and SHALL never pass `--force`.
+
+**Evidence:** `.claude/skills/process-intake/SKILL.md:124`, `.claude/skills/process-intake/SKILL.md:125`, `.claude/skills/process-intake/SKILL.md:126`, `.claude/skills/process-intake/SKILL.md:127`, `.claude/skills/process-intake/SKILL.md:128`
+
+#### Scenario: a label that exists with another colour
+
+- **GIVEN** a repository whose `ticket:done` label exists with another colour
+- **WHEN** `process-intake` makes the labels current
+- **THEN** it edits that label, creates only the missing ones and passes `--force` to none
+- **Test:** Not covered — the rule is a procedure an intake session follows; no runner drives a session, and the structural check does not read this step

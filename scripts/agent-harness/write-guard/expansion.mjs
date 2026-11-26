@@ -266,13 +266,15 @@ const partValue = ({ index, part, state }) => {
           `a brace expansion of more than ${MAX_BRACE_WORDS} words`
         ]
       }
-    : 'safe' in part
-      ? known({ text: SAFE })
-      : 'param' in part
-        ? parameterValue({ part, state })
-        : part.process
-          ? known({ text: PROCESS_DEVICE })
-          : substitutionValue({ script: part.sub, state })
+    : part.array
+      ? { text: UNKNOWN, unknown: ['an array'] }
+      : 'safe' in part
+        ? known({ text: SAFE })
+        : 'param' in part
+          ? parameterValue({ part, state })
+          : part.process
+            ? known({ text: PROCESS_DEVICE })
+            : substitutionValue({ script: part.sub, state })
   return { ...value, pattern: escapeGlob({ text: value.text }) }
 }
 

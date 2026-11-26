@@ -187,7 +187,7 @@ Object.entries(FIXTURE_SOURCES).forEach(([name, files]) =>
     writeFixture({ path: join('packages', name, 'src', file) })
   )
 )
-after(() => rmSync(SRC_ALIAS_FIXTURE, { force: true, recursive: true }))
+after(() => rmSync(SRC_ALIAS_FIXTURE, { recursive: true }))
 
 // Absolute paths as ESLint hands them to the rule; the fix depends on the
 // file's path and the files beside it, never on the folder ESLint runs from.

@@ -8,19 +8,26 @@
 // is a block folder, a hook's own folder, a folder of plain units or a
 // workspace folder outside `src/` (`apps/<app>/next.config.ts` by
 // `apps/<app>/__tests__/next.config.test.ts`). An index file is a unit like any
-// other. In an Expo Router tree (the `src/app/` of a workspace that depends on
-// `expo-router`) a test is named after its route file as `<route>.route`:
+// other. A folder is a unit too, tested as a whole by a test named after it in
+// its own `__tests__/`: `supabase/tests/` by
+// `supabase/tests/__tests__/tests.test.ts`. In an Expo Router tree (the
+// `src/app/` of a workspace that depends on `expo-router`) a test is named
+// after its route file as `<route>.route`:
 // `_layout.tsx` by `layout.route.test.tsx`, `index.tsx` by
 // `index.route.test.tsx`.
 //
 // Findings, one per problem:
 //   - beside / outside: a test that is not in a `__tests__/` folder;
 //   - higher: a test in a `__tests__/` above the folder that holds its unit;
-//   - no-unit: a test whose stem names no unit of the folder that holds its
-//     `__tests__/` (in a route tree, no route file under its `.route` name);
+//   - no-unit: a test whose stem names neither a unit of the folder that holds
+//     its `__tests__/` nor that folder (in a route tree, no route file under
+//     its `.route` name);
 //   - nested: a `__tests__/` inside another `__tests__/`;
-//   - missing: an app unit with a tracked suffix that has no test;
-//   - a frozen exception without a reason, or one that exempts nothing.
+//   - missing: an app unit with a tracked suffix that has no test.
+//
+// No test is exempt from the location rule: a test that cannot sit where it
+// belongs is moved, or the rule learns the unit it tests, as it learned
+// folders.
 //
 // Shared test infrastructure (`src/test/**`) and `__mocks__/` are not judged.
 // A finding that knows where its test belongs carries that path as `target`,
@@ -100,29 +107,8 @@ const isExempt = ({ expoApps, path }) =>
   expoApps.some((app) => path.startsWith(`${app}/`)) &&
   EXEMPT_SUFFIXES.some((suffix) => path.endsWith(suffix))
 
-// Frozen exceptions: tests the location rule lets stay where they are. Each
-// entry names its path and the reason it cannot move yet; an entry without a
-// reason, or one whose test now sits correctly or is gone, fails the gate, so
-// the list only shrinks. The goal is none.
-//
-// The supabase capability's one below checks a folder of SQL tests as a
-// whole, so no single file is its unit.
-export const FROZEN = Object.freeze([
-  // A capability's exception sits in its region (docs/manifest.md § Regions).
-  // region supabase
-  {
-    path: 'packages/supabase/src/__tests__/supabaseSql.test.ts',
-    reason:
-      'checks every pgTAP file under `supabase/tests/` together; the unit is ' +
-      'the folder, not a file'
-  }
-  // endregion supabase
-])
-
 export const FINDING_KIND = Object.freeze({
   beside: 'beside',
-  frozenMalformed: 'frozen-malformed',
-  frozenStale: 'frozen-stale',
   higher: 'higher',
   missing: 'missing',
   nested: 'nested',
@@ -181,6 +167,11 @@ const indexUnits = ({ files }) => {
 
 const hasUnit = ({ folder, stem, units }) =>
   units.get(folder)?.has(stem) ?? false
+
+// A test whose stem is the name of the folder that holds its `__tests__/`
+// tests that folder as a whole.
+const namesItsFolder = ({ stem, unitFolder }) =>
+  stem === basename(unitFolder)
 
 // The name a test of `unitStem` in `folder` carries, the `.route` form in a
 // route tree.
@@ -260,7 +251,10 @@ const besideFinding = ({ ext, folder, name, path, routeTrees, units }) => {
 const testsFolderFinding = ({ ext, name, path, routeTrees, units }) => {
   const unitFolder = dirname(dirname(path))
   const { stem } = testParts(name)
-  if (unitStemNamed({ folder: unitFolder, routeTrees, stem, units })) {
+  if (
+    unitStemNamed({ folder: unitFolder, routeTrees, stem, units }) ||
+    namesItsFolder({ stem, unitFolder })
+  ) {
     return null
   }
   if (isInRouteTree({ folder: unitFolder, routeTrees })) {
@@ -304,8 +298,9 @@ const testsFolderFinding = ({ ext, name, path, routeTrees, units }) => {
   return {
     detail:
       `${path} names no unit: ${unitFolder} holds no file named ` +
-      `${stem}.<ext> — move the test into the ${TESTS_FOLDER}/ of the folder ` +
-      'that holds its unit, or name it after that unit.',
+      `${stem}.<ext> and is not named ${stem} — move the test into the ` +
+      `${TESTS_FOLDER}/ of the folder that holds its unit, or name it after ` +
+      'that unit.',
     kind: FINDING_KIND.noUnit,
     path,
     target: null
@@ -405,72 +400,25 @@ const missingTests = ({ expoApps = [], files }) => {
   }
 }
 
-const frozenFindings = ({ frozen, misplaced }) => {
-  const misplacedPaths = new Set(misplaced.map(({ path }) => path))
-  return frozen.flatMap((entry) => {
-    const path = typeof entry?.path === 'string' ? entry.path : null
-    const reason = typeof entry?.reason === 'string' ? entry.reason : ''
-    if (path === null || reason.trim() === '') {
-      return [
-        {
-          detail:
-            `frozen exception ${JSON.stringify(entry)} carries no path or ` +
-            'no reason — every entry says why its test cannot move yet.',
-          kind: FINDING_KIND.frozenMalformed,
-          path,
-          target: null
-        }
-      ]
-    }
-    if (misplacedPaths.has(path)) return []
-    return [
-      {
-        detail:
-          `${path} is a stale frozen exception — it sits correctly now or ` +
-          'is gone, so the entry exempts nothing. Remove it from FROZEN in ' +
-          'scripts/verify-tests.mjs; the list only shrinks.',
-        kind: FINDING_KIND.frozenStale,
-        path,
-        target: null
-      }
-    ]
-  })
-}
-
-const exemptPaths = ({ frozen }) =>
-  new Set(
-    frozen
-      .filter(
-        (entry) =>
-          typeof entry?.path === 'string' &&
-          typeof entry?.reason === 'string' &&
-          entry.reason.trim() !== ''
-      )
-      .map(({ path }) => path)
-  )
-
 export const gate = defineGate({
   claims:
     "every test file under apps/* and packages/* sits directly in the __tests__/ of its own unit's " +
     "folder and carries that unit's stem (in an Expo Router tree, <route>.route after its route " +
-    'file), no __tests__/ sits inside another, every app unit with a tracked suffix has a test, and ' +
-    'every frozen exception has a reason and still exempts a misplaced test.',
+    "file; for a folder that is its own unit, the folder's name), no __tests__/ sits inside " +
+    'another, and every app unit with a tracked suffix has a test.',
   id: 'verify-tests',
   notCovered:
     'the root tooling tests under scripts/ and eslint-local-rules/, which keep their own layout; ' +
-    'the e2e specs and the SQL tests; whether a test named after a unit tests that unit; a unit ' +
+    'the e2e specs and the SQL tests; whether a test named after a unit tests that unit, and ' +
+    'whether one named after its folder tests the whole folder (a block test named after its ' +
+    'block folder rather than its component passes as a folder test); a unit ' +
     'with two tests under different names, the second named after another file; the ' +
     'components and hooks of an app that declares expo, which the presence check exempts; and ' +
     'package units, which it does not judge.',
-  run: ({ expoApps, files, frozen, routeTrees }) => {
-    const { misplaced } = classifyTests({ files, routeTrees })
-    const exempt = exemptPaths({ frozen })
-    return [
-      ...frozenFindings({ frozen, misplaced }),
-      ...misplaced.filter(({ path }) => !exempt.has(path)),
-      ...missingTests({ expoApps, files }).findings
-    ]
-  }
+  run: ({ expoApps, files, routeTrees }) => [
+    ...classifyTests({ files, routeTrees }).misplaced,
+    ...missingTests({ expoApps, files }).findings
+  ]
 })
 
 const readJson = (path) => {
@@ -535,12 +483,7 @@ export const routeTreesOf = ({ root, workspaces }) =>
     )
     .filter((tree) => tree !== undefined)
 
-// FROZEN names paths of this repository, so a run over another root (a
-// scratch tree, through --root) starts with no frozen exception.
-const frozenFor = ({ root }) =>
-  resolve(root).toLowerCase() === REPO_ROOT.toLowerCase() ? FROZEN : []
-
-export const collectContext = ({ frozen, root }) => {
+export const collectContext = ({ root }) => {
   const workspaces = workspacesOf({ root })
   const files = workspaces
     .flatMap((workspace) =>
@@ -555,7 +498,6 @@ export const collectContext = ({ frozen, root }) => {
   return {
     expoApps: readFrameworks({ root }).expo,
     files,
-    frozen: frozen ?? frozenFor({ root }),
     routeTrees: routeTreesOf({ root, workspaces }),
     workspaces
   }
@@ -585,8 +527,7 @@ const main = () => {
     context,
     denominator:
       `${tests.length} test file(s) and ${units} unit(s) that need one, across ` +
-      `${context.workspaces.length} workspace(s), ${context.frozen.length} ` +
-      'frozen exception(s)',
+      `${context.workspaces.length} workspace(s)`,
     gate
   })
 }

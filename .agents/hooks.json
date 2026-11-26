@@ -1,5 +1,5 @@
 {
-  "$comment": "The neutral source of the runtime hooks: each names its event, the tools it runs on (matcher, which a SessionStart hook may leave out to run on every start), the script it runs, relative to the repository root, and its timeout in seconds. pnpm agent-harness:generate renders it for Claude Code into .claude/settings.json, and pnpm agent-harness:projection-check fails a hand edit of that file. Codex and OpenCode are not wired yet: each gets its adapter after a live test. See docs/harness.md sections 3f (the write guard) and 3g (the process reaper).",
+  "$comment": "The neutral source of the runtime hooks: each names its event, the tools it runs on (matcher, which a SessionStart hook may leave out to run on every start), the script it runs, relative to the repository root, and its timeout in seconds. pnpm agent-harness:generate renders it for Claude Code into .claude/settings.json, and pnpm agent-harness:projection-check fails a hand edit of that file. Codex and OpenCode are not wired yet: each gets its adapter after a live test. See docs/harness.md sections 3f (the write guard), 3g (the process reaper) and 3j (the no-force hook).",
   "hooks": [
     {
       "name": "write-guard",
@@ -7,6 +7,13 @@
       "matcher": "Bash|PowerShell|Edit|Write|NotebookEdit",
       "script": "scripts/agent-harness/write-guard/claude-hook.mjs",
       "timeout": 10
+    },
+    {
+      "name": "no-force",
+      "event": "PreToolUse",
+      "matcher": "Bash|PowerShell",
+      "script": "scripts/agent-harness/no-force/claude-hook.mjs",
+      "timeout": 5
     },
     {
       "name": "process-reaper",

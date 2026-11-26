@@ -74,11 +74,11 @@ FAILED) when its prerequisite is absent; log the reason explicitly.
 # (expo export --platform ios --platform android; no Xcode or adb needed)
 
 # Tier 4 — iOS Simulator: local only; requires Xcode + simctl
-xcrun simctl list devices 2>/dev/null | grep -q "Booted\|Shutdown" \
+xcrun simctl list devices | grep -q "Booted\|Shutdown" \
   && echo "AVAILABLE" || echo "SKIPPED: Xcode / simctl not found"
 
 # Tier 5 — Android device/emulator: local only; requires adb + authorized device
-adb devices 2>/dev/null | grep -E "device$" \
+adb devices | grep -E "device$" \
   && echo "AVAILABLE" || echo "SKIPPED: no authorized adb device or emulator"
 ```
 
@@ -191,7 +191,14 @@ for runtime, list_ in devs.items():
     if d.get('isAvailable') and 'iPhone' in d.get('name',''):
       print(d['udid']); exit()
 ")
-xcrun simctl boot "$SIM_UDID" 2>/dev/null || true  # idempotent if already booted
+# Boot it only when it is shut down: booting a booted simulator fails, and
+# that failure is never hidden.
+SIM_STATE=$(xcrun simctl list devices --json | python3 -c "
+import sys, json
+devs = json.load(sys.stdin)['devices']
+print(next(d['state'] for list_ in devs.values() for d in list_ if d['udid'] == '$SIM_UDID'))
+")
+if [ "$SIM_STATE" = "Shutdown" ]; then xcrun simctl boot "$SIM_UDID"; fi
 
 # 2. Launch the app
 pnpm --filter @app/mobile exec expo run:ios

@@ -91,7 +91,11 @@ test('a child that never started has nothing to end', () => {
 // replaced, through the builtin's live bindings, to read what they are given.
 test(
   'on Windows taskkill is bounded at 5 s, waited for or not',
-  { skip: !IS_WINDOWS && 'taskkill runs on Windows only' },
+  {
+    skip:
+      !IS_WINDOWS &&
+      "taskkill runs on Windows only; CI's windows-process-trees job runs this"
+  },
   () => {
     const seen = []
     const record = (name) =>

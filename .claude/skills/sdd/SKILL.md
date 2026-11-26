@@ -66,8 +66,8 @@ README § 2.1) and the code behind them.
    `component`, `screen`, `service`, `store` or `feature`, a change to an existing one through
    `modify`. This skill decides what is built; those decide how.
 3. Copy `openspec/templates/verify-report.md` to `verify-report.md`: one row per scenario of the
-   deltas, with its test and the result you observed. Run `pnpm validate`
-   (`ATL_TEMPLATE_SELF=1 pnpm validate` in the template itself); record its exit code.
+   deltas, with its test and the result you observed. Run `pnpm validate`; record its exit
+   code.
 4. **Archive**, as the last commit of the pull request: apply each delta to its living spec
    (append ADDED, with the region a delta holds it in and outside every other region; replace
    MODIFIED in place, inside or outside its region; delete REMOVED; never reuse a removed ID),

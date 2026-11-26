@@ -1,9 +1,9 @@
 # harness/updaters — living spec
 
-> **Governs:** `.agents/contracts/updaters.json`, `scripts/verify-updaters.mjs`, `scripts/updaters/run.mjs`
+> **Governs:** `.agents/contracts/updaters.json`, `scripts/verify-updaters.mjs`, `scripts/updaters/run.mjs`, `scripts/updaters/branch.mjs`, `scripts/updaters/label.mjs`, `scripts/updaters/messages.mjs`, `scripts/updaters/steps.mjs`
 > **ID prefix:** `UPDATERS`
 > **Derived from:** `docs/harness.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-25 at `1539a3f`
+> **Verified against the code:** 2026-11-25 at `12d6b224`
 
 ## Purpose
 
@@ -105,7 +105,7 @@ holds a path that `ruleFor` (`scripts/agent-harness/write-guard/policy.mjs`) cla
 file under the write guard's policy, `.agents/contracts/write-guard.json`, or a path with a
 wildcard, which no classifier can read; and it SHALL fail when that policy cannot be read.
 
-**Evidence:** `scripts/verify-updaters.mjs:101-107`, `scripts/verify-updaters.mjs:130-138`, `scripts/verify-updaters.mjs:170-195`, `scripts/agent-harness/write-guard/policy.mjs:108-117`
+**Evidence:** `scripts/verify-updaters.mjs:101-107`, `scripts/verify-updaters.mjs:130-138`, `scripts/verify-updaters.mjs:170-195`, `scripts/agent-harness/write-guard/policy.mjs:96-107`
 
 #### Scenario: a rule file written by an updater that proposes nothing
 
@@ -158,7 +158,7 @@ wildcard, which no classifier can read; and it SHALL fail when that policy canno
 one, and nothing more for an updater whose check exits 0; a registry the gate refuses, an
 `--only` that names no updater and a `--where` other than `ci` or `local` run nothing and exit 1.
 
-**Evidence:** `scripts/updaters/run.mjs:430-449`, `scripts/updaters/run.mjs:456-476`
+**Evidence:** `scripts/updaters/run.mjs:332-351`, `scripts/updaters/run.mjs:355-376`, `scripts/updaters/run.mjs:407-416`
 
 #### Scenario: an updater that is current
 
@@ -200,21 +200,24 @@ one, and nothing more for an updater whose check exits 0; a registry the gate re
 ### Requirement: UPDATERS-05 — An out-of-date updater becomes one pull request from `updates/<id>`
 
 When an updater's check exits 2, `pnpm updaters:run` SHALL, on a working tree with no change,
-rebuild the branch `updates/<id>` from the default branch, run the updater and then its `verify`
-commands, commit the change with a Conventional Commit that carries no attribution, push it to
-`updates/<id>` only, open one pull request from it or update the one already open, and return to
-the ref it started on; an update that changes nothing commits nothing and opens nothing.
+start detached from the default branch when the remote holds no `updates/<id>` (UPDATERS-10 says
+how it starts from one the remote holds), run the updater and then its `verify` commands, commit
+the change with a Conventional Commit that carries no attribution, push it to `updates/<id>`
+only, open one pull request from it or update the one already open, and return to the ref it
+started on; an update that changes nothing commits nothing and opens nothing.
 
-**Evidence:** `scripts/updaters/run.mjs:197-243`, `scripts/updaters/run.mjs:245-317`, `scripts/updaters/run.mjs:321-402`
+**Evidence:** `scripts/updaters/run.mjs:123-169`, `scripts/updaters/run.mjs:171-234`, `scripts/updaters/run.mjs:238-318`, `scripts/updaters/run.mjs:383-387`, `scripts/updaters/branch.mjs:40-89`
 
 #### Scenario: no pull request open yet
 
-- **GIVEN** an updater whose check exits 2 and no open pull request from `updates/<id>`
+- **GIVEN** an updater whose check exits 2, no `updates/<id>` on the remote and no open pull
+  request from it
 - **WHEN** `pnpm updaters:run --where ci` runs
-- **THEN** git and gh are called in this order: status, the current ref, the default branch,
-  fetch, `checkout -B updates/<id>`, the update, status, each verify command, add, commit, push to
-  `updates/<id>`, `gh pr list --head updates/<id>`, `gh pr create`, and the checkout back; the
-  pull request is ready for review and carries no label
+- **THEN** git and gh are called in this order: status, the current ref, the default branch, the
+  fetch of the default branch, `ls-remote` of `updates/<id>`, `checkout --detach` of the default
+  branch, the update, status, each verify command, add, commit, push to `updates/<id>`,
+  `gh pr list --head updates/<id>`, `gh pr create`, and the checkout back; the pull request is
+  ready for review and carries no label
 - **Test:** `scripts/updaters/run.test.mjs` › "an out-of-date updater opens one pull request from updates/<id>"
 
 #### Scenario: a pull request already open
@@ -242,17 +245,29 @@ the ref it started on; an update that changes nothing commits nothing and opens 
 
 `pnpm updaters:run` SHALL open the pull request as a draft labelled `rule-proposal`, whose body
 quotes the LAW "A rule is not edited to fit the work" of `AGENTS.md`, when the updater declares
-`proposal: true` or its diff touches a path `ruleFor` classifies as a rule file.
+`proposal: true` or its diff touches a path `ruleFor` classifies as a rule file. It SHALL make the
+label current with no force option: read it with `gh label list`, then `gh label create` it when
+it is missing, or `gh label edit` it when its colour or description differs, and leave a current
+one alone.
 
-**Evidence:** `scripts/updaters/run.mjs:151-167`, `scripts/updaters/run.mjs:357-360`, `scripts/updaters/run.mjs:255-317`
+**Evidence:** `scripts/updaters/run.mjs:180-188`, `scripts/updaters/run.mjs:203`, `scripts/updaters/run.mjs:221`, `scripts/updaters/run.mjs:227-232`, `scripts/updaters/run.mjs:272-275`, `scripts/updaters/messages.mjs:55-76`, `scripts/updaters/label.mjs:14-55`
 
 #### Scenario: a diff that touches a rule file
 
 - **GIVEN** an updater with `proposal: false` whose update changes `.agents/contracts/mcp-servers.json`
 - **WHEN** `pnpm updaters:run --where ci` runs
-- **THEN** it creates the label, then a draft pull request labelled `rule-proposal` whose body
-  quotes the LAW and names the path
+- **THEN** it lists the labels and creates the missing one, then a draft pull request labelled
+  `rule-proposal` whose body quotes the LAW and names the path
 - **Test:** `scripts/updaters/run.test.mjs` › "a diff that touches a rule path opens a draft labelled rule-proposal that quotes the LAW"
+
+#### Scenario: a label that is already there
+
+- **GIVEN** a `rule-proposal` label whose colour and description differ, and another that is
+  current
+- **WHEN** `pnpm updaters:run --where ci` opens a proposal over each
+- **THEN** the first is edited with `gh label edit`, the second is only listed, and neither is
+  created
+- **Test:** `scripts/updaters/run.test.mjs` › "a rule-proposal label whose colour or description differs is edited, and a current one is left"
 
 #### Scenario: an updater that declares a proposal
 
@@ -272,9 +287,9 @@ quotes the LAW "A rule is not edited to fit the work" of `AGENTS.md`, when the u
 
 `pnpm updaters:run` SHALL exit 1 and open no pull request for an updater whose check exits 1,
 going on to the next updater, or whose update or `verify` command fails, which commits nothing
-and stops the run with the tree left on `updates/<id>` for a person to read.
+and stops the run with the tree left detached where the update ran, for a person to read.
 
-**Evidence:** `scripts/updaters/run.mjs:335-343`, `scripts/updaters/run.mjs:467-474`, `scripts/updaters/run.mjs:481-492`
+**Evidence:** `scripts/updaters/run.mjs:251-259`, `scripts/updaters/run.mjs:369-376`, `scripts/updaters/run.mjs:388-395`
 
 #### Scenario: a check that fails
 
@@ -288,33 +303,34 @@ and stops the run with the tree left on `updates/<id>` for a person to read.
 
 - **GIVEN** an out-of-date updater whose verify command exits 1 after the update
 - **WHEN** `pnpm updaters:run --where ci` runs
-- **THEN** it adds, commits and pushes nothing, opens nothing, says the tree is left on
-  `updates/<id>`, and exits 1
+- **THEN** it adds, commits and pushes nothing, opens nothing, says the tree is left detached
+  where the update of `updates/<id>` ran, and exits 1
 - **Test:** `scripts/updaters/run.test.mjs` › "a failing verify command commits nothing and opens nothing"
 
 ### Requirement: UPDATERS-08 — Nothing reaches the default branch without a person
 
 `pnpm updaters:run` SHALL never merge, approve or enable auto-merge on a pull request, never
-push to the default branch, and never set `ATL_WRITE_GUARD` in the environment it hands to git,
-gh and the updaters.
+push to the default branch, merge with git only the default branch into the detached update
+(or abort that merge), and hand git, gh and the updaters the environment it was given,
+unchanged.
 
-**Evidence:** `scripts/updaters/run.mjs:376-382`, `scripts/updaters/run.mjs:418-428`
+**Evidence:** `scripts/updaters/run.mjs:171-234`, `scripts/updaters/run.mjs:291-297`, `scripts/updaters/run.mjs:421-434`, `scripts/updaters/branch.mjs:68-84`
 
 #### Scenario: every run of the suite
 
 - **GIVEN** the calls every case of the runner's suite recorded
 - **WHEN** they are read together
 - **THEN** none is `gh pr merge`, `gh pr review` or an auto-merge, every push names
-  `updates/<id>` and never the default branch, and no environment handed out holds
-  `ATL_WRITE_GUARD`
-- **Test:** `scripts/updaters/run.test.mjs` › "no run merges, approves, enables auto-merge, pushes the default branch or sets ATL_WRITE_GUARD"
+  `updates/<id>` and never the default branch, every `git merge` merges `origin/<default>` or
+  aborts, and every environment handed out is the one the run was given
+- **Test:** `scripts/updaters/run.test.mjs` › "no run merges, approves, enables auto-merge, pushes the default branch or changes the environment"
 
 ### Requirement: UPDATERS-09 — A dry run runs no git and no gh
 
 `pnpm updaters:run --dry-run` SHALL run the check of each updater it selects and print what it
 would do for each one out of date, and run no git and no gh command.
 
-**Evidence:** `scripts/updaters/run.mjs:404-416`, `scripts/updaters/run.mjs:477-480`
+**Evidence:** `scripts/updaters/run.mjs:379-382`, `scripts/updaters/run.mjs:403`
 
 #### Scenario: a dry run over an out-of-date updater
 
@@ -323,3 +339,43 @@ would do for each one out of date, and run no git and no gh command.
 - **THEN** it runs the check alone, prints the branch, the commands, the commit and the pull
   request it would open, and exits 0
 - **Test:** `scripts/updaters/run.test.mjs` › "a dry run prints the plan and runs no git or gh"
+
+### Requirement: UPDATERS-10 — `updates/<id>` is appended to, never rewritten
+
+`pnpm updaters:run` SHALL never rewrite `updates/<id>`: when the remote holds it, the runner
+SHALL fetch it, check it out detached, merge the default branch into it with a normal merge, put
+the update's commit on top and push it with no force option. When that merge conflicts, it SHALL
+abort the merge, return to the ref it started on, open nothing, print one line naming the branch
+and the conflicting paths, go on to the next updater and exit 1. No git, gh or shell call it makes
+SHALL force or skip a check, as the no-force hook reads one, or pass a `+` refspec, following the
+LAW "A check is never forced or skipped" of `AGENTS.md`.
+
+**Evidence:** `scripts/updaters/branch.mjs:40-89`, `scripts/updaters/run.mjs:291-297`, `scripts/updaters/run.mjs:388-395`, `scripts/updaters/label.mjs:14-55`
+
+#### Scenario: the remote holds `updates/<id>`
+
+- **GIVEN** an out-of-date updater whose `updates/<id>` the remote holds, with pull request #7
+  open from it
+- **WHEN** `pnpm updaters:run --where ci` runs
+- **THEN** after the fetch of the default branch and `ls-remote` it fetches `updates/<id>`,
+  checks it out detached, runs `git merge --no-edit origin/<default>`, then the update, the
+  verify commands, add and commit, pushes `HEAD:refs/heads/updates/<id>` with no force option and
+  edits #7; the commit says the default branch was merged in
+- **Test:** `scripts/updaters/run.test.mjs` › "an existing updates/<id> gets the default branch merged in and the update on top, pushed without force"
+
+#### Scenario: a merge that conflicts
+
+- **GIVEN** two updaters, the first out of date with an `updates/<id>` whose merge of the default
+  branch conflicts in `docs/mcp.md`
+- **WHEN** `pnpm updaters:run --where ci` runs
+- **THEN** it lists the conflicting paths, aborts the merge, checks out its ref again, runs no
+  update and opens nothing, prints one line naming `updates/<id>` and `docs/mcp.md`, checks the
+  second updater, and exits 1
+- **Test:** `scripts/updaters/run.test.mjs` › "a merge that conflicts opens nothing, names the branch and the conflict, and exits 1"
+
+#### Scenario: every call of the suite
+
+- **GIVEN** the calls every case of the runner's suite recorded, a merge among them
+- **WHEN** each is read with the no-force hook's reader (`scripts/agent-harness/no-force/forms.mjs`)
+- **THEN** none passes a force option and no word of any starts with `+`
+- **Test:** `scripts/updaters/run.test.mjs` › "no call of any run passes a force option or a + refspec"

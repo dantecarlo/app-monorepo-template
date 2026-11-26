@@ -3,14 +3,15 @@
 > **Governs:** `packages/tooling/src`
 > **ID prefix:** `TOOLING`
 > **Derived from:** `docs/code-standards.md`, `docs/architecture/shared.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-20 at `c324145`
+> **Verified against the code:** 2026-11-25 at `12d6b224`
 
 ## Purpose
 
 The tooling package holds the plain-ESM scripts more than one workspace imports by name: the
 shared Vitest base every package config builds on, the shuffled test order seeded from the
 commit that every workspace runs under (apps/web and apps/mobile take the sequence alone), the
-process-tree kill the root web smoke script uses, the observability port contract every adapter
+process-tree kill the root web smoke script uses, the removal of a path that may already be gone,
+the observability port contract every adapter
 test runs, and the prune check that proves a capability of the manifest leaves no dangling
 reference behind, in its files, its regions, its specs and the dependency registry. Each
 workspace keeps its own include globs and coverage settings; Turborepo and the root configs own
@@ -19,13 +20,13 @@ this unit.
 
 ## Requirements
 
-### Requirement: TOOLING-01 — Four named entry points
+### Requirement: TOOLING-01 — Five named entry points
 
-The tooling package SHALL expose four entry points, `@app/tooling/observability-port-contract`,
-`@app/tooling/process-tree`, `@app/tooling/vitest-package-base` and `@app/tooling/vitest-sequence`,
-each pairing its plain ESM module with its type declarations.
+The tooling package SHALL expose five entry points, `@app/tooling/observability-port-contract`,
+`@app/tooling/process-tree`, `@app/tooling/remove-path`, `@app/tooling/vitest-package-base` and
+`@app/tooling/vitest-sequence`, each pairing its plain ESM module with its type declarations.
 
-**Evidence:** `packages/tooling/package.json:6-23`
+**Evidence:** `packages/tooling/package.json:6-27`
 
 #### Scenario: a workspace imports the package base by name
 
@@ -428,12 +429,14 @@ entry the prune leaves that names a removed dependency.
 - **THEN** the drift is listed
 - **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a patched plugin list that drifts from app.json is a leak"
 
+<!-- region sentry -->
 #### Scenario: the sentry capability of this repository
 
 - **GIVEN** the repository's tracked files and its `template.manifest.json`
 - **WHEN** the prune of `sentry` is checked
 - **THEN** nothing is listed
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, supabase, mobile-expo or web-next of this repository leaves no dangling reference"
+- **Test:** `scripts/prune-boundary.sentry.test.mjs` › "pruning sentry of this repository leaves no dangling reference"
+<!-- endregion sentry -->
 
 ### Requirement: TOOLING-17 — The registry a prune leaves stays true
 
@@ -445,7 +448,7 @@ declaring it; and list every kept entry whose package no kept `package.json` dec
 `apps/` or `packages/`, and every dependency a kept `package.json` still declares that no kept
 entry names.
 
-**Evidence:** `packages/tooling/src/prune-boundary.mjs:223-308`, `.agents/contracts/dependencies.json:2-9`
+**Evidence:** `packages/tooling/src/prune-boundary.mjs:223-308`, `.agents/contracts/dependencies.json:4-9`
 
 #### Scenario: an entry the capability owns
 
@@ -492,14 +495,33 @@ entry names.
 - **GIVEN** the repository's tracked files, its manifest and its registry
 - **WHEN** the prune of `sentry`, `mobile-expo`, `supabase`, `web-next` and `cloudflare` is checked
 - **THEN** no registry finding is listed for any of them
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, mobile-expo, supabase, web-next or cloudflare of this repository leaves the registry true"
+<!-- region sentry -->
+- **Test:** `scripts/prune-boundary.sentry.test.mjs` › "pruning sentry of this repository leaves no dangling reference"
+<!-- endregion sentry -->
+<!-- region mobile-expo -->
+- **Test:** `scripts/prune-boundary.mobile-expo.test.mjs` › "pruning mobile-expo of this repository leaves no dangling reference"
+<!-- endregion mobile-expo -->
+<!-- region supabase -->
+- **Test:** `scripts/prune-boundary.supabase.test.mjs` › "pruning supabase of this repository leaves no dangling reference"
+<!-- endregion supabase -->
+<!-- region web-next -->
+- **Test:** `scripts/prune-boundary.web-next.test.mjs` › "pruning web-next of this repository leaves no dangling reference"
+<!-- endregion web-next -->
+<!-- region cloudflare -->
+- **Test:** `scripts/prune-boundary.cloudflare.test.mjs` › "pruning cloudflare of this repository leaves the registry true"
+<!-- endregion cloudflare -->
 
 #### Scenario: the packages of this repository a prune takes
 
 - **GIVEN** the repository's tracked files, its manifest and its registry
 - **WHEN** the prune of `i18n` and of `design-tokens` is checked
 - **THEN** no kept `package.json` declares a package whose entry the prune takes
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning i18n or design-tokens of this repository keeps no package whose entry it takes"
+<!-- region i18n -->
+- **Test:** `scripts/prune-boundary.i18n.test.mjs` › "pruning i18n of this repository keeps no package whose entry it takes"
+<!-- endregion i18n -->
+<!-- region design-tokens -->
+- **Test:** `scripts/prune-boundary.design-tokens.test.mjs` › "pruning design-tokens of this repository keeps no package whose entry it takes"
+<!-- endregion design-tokens -->
 
 ### Requirement: TOOLING-18 — A kept spec cites no pruned file
 
@@ -525,6 +547,7 @@ path.
 - **THEN** the kept spec is listed with both files
 - **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a kept spec that governs or cites a pruned file as evidence is a leak"
 
+<!-- region sentry -->
 #### Scenario: the Sentry part of this repository's app specs
 
 - **GIVEN** the repository's web and mobile specs, each holding the Sentry part of its app, its
@@ -532,15 +555,21 @@ path.
 - **WHEN** the prune of `sentry` is checked with its regions dropped, and again with them kept
 - **THEN** with the regions dropped neither spec is listed, and with them kept both are, with the
   Sentry files their regions cite
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry of this repository drops the Sentry part of each app spec with its region"
+- **Test:** `scripts/prune-boundary.sentry.test.mjs` › "pruning sentry of this repository drops the Sentry part of each app spec with its region"
+<!-- endregion sentry -->
 
 #### Scenario: an app prune of this repository, Sentry kept
 
 - **GIVEN** the repository's tracked files and its `template.manifest.json`
 - **WHEN** the prune of `mobile-expo` and of `web-next` is simulated, Sentry kept: the files the
   app claims or removes deleted, and the app gone from the manifest
-- **THEN** no claim the `sentry` capability makes on a living spec is left matching no file
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning mobile-expo or web-next of this repository leaves no sentry claim on a spec stale"
+- **THEN** no claim a kept capability makes on a living spec is left matching no file
+<!-- region mobile-expo -->
+- **Test:** `scripts/prune-boundary.mobile-expo.test.mjs` › "pruning mobile-expo of this repository leaves no claim of a kept capability on a spec stale"
+<!-- endregion mobile-expo -->
+<!-- region web-next -->
+- **Test:** `scripts/prune-boundary.web-next.test.mjs` › "pruning web-next of this repository leaves no claim of a kept capability on a spec stale"
+<!-- endregion web-next -->
 
 ### Requirement: TOOLING-19 — A kept file names no pruned file and keeps no orphaned key
 
@@ -587,4 +616,55 @@ capability.
 - **WHEN** the prune of `sentry`, of `supabase`, of `mobile-expo` and of `web-next` is checked with
   every check
 - **THEN** nothing is listed for any of them
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, supabase, mobile-expo or web-next of this repository leaves no dangling reference"
+<!-- region sentry -->
+- **Test:** `scripts/prune-boundary.sentry.test.mjs` › "pruning sentry of this repository leaves no dangling reference"
+<!-- endregion sentry -->
+<!-- region supabase -->
+- **Test:** `scripts/prune-boundary.supabase.test.mjs` › "pruning supabase of this repository leaves no dangling reference"
+<!-- endregion supabase -->
+<!-- region mobile-expo -->
+- **Test:** `scripts/prune-boundary.mobile-expo.test.mjs` › "pruning mobile-expo of this repository leaves no dangling reference"
+<!-- endregion mobile-expo -->
+<!-- region web-next -->
+- **Test:** `scripts/prune-boundary.web-next.test.mjs` › "pruning web-next of this repository leaves no dangling reference"
+<!-- endregion web-next -->
+
+### Requirement: TOOLING-21 — A path that may be gone is removed, and only that failure is forgiven
+
+The tooling package SHALL export `removePath`, which removes the file, or the folder with
+everything under it, at `path` through `fs.rmSync(path, { recursive: true })` with no `force`,
+returns when `rmSync` fails with `ENOENT`, and rethrows every other failure as it was raised,
+including one that carries no code. `fs` defaults to `node:fs` and is injected by tests.
+
+**Evidence:** `packages/tooling/src/remove-path.mjs:20`, `packages/tooling/src/remove-path.mjs:21-27`, `packages/tooling/src/remove-path.d.mts:6-12`, `packages/tooling/package.json:14-17`
+
+#### Scenario: a path that is already gone
+
+- **GIVEN** a path that does not exist
+- **WHEN** `removePath` runs on it
+- **THEN** it returns nothing and creates nothing there
+- **Test:** `packages/tooling/src/__tests__/remove-path.test.mjs` › "a missing path returns, and nothing is created there"
+
+#### Scenario: a file or a folder
+
+- **GIVEN** a file, and a folder holding nested files
+- **WHEN** `removePath` runs on each
+- **THEN** the file is gone and the folder that held it stays; the folder is gone with everything
+  under it
+- **Test:** `packages/tooling/src/__tests__/remove-path.test.mjs` › "a file is removed, and the folder that holds it stays"
+- **Test:** `packages/tooling/src/__tests__/remove-path.test.mjs` › "a folder is removed with everything under it"
+
+#### Scenario: an injected fs
+
+- **GIVEN** an `fs` whose `rmSync` throws `ENOENT`
+- **WHEN** `removePath` runs on `gone`
+- **THEN** `rmSync` was called once with `{ recursive: true }` and no `force`, and the call returns
+- **Test:** `packages/tooling/src/__tests__/remove-path.test.mjs` › "an injected fs removes the path recursively, and its missing path returns"
+
+#### Scenario: any other failure
+
+- **GIVEN** an `fs` whose `rmSync` throws a permission error, or an error with no code
+- **WHEN** `removePath` runs
+- **THEN** that same error is rethrown
+- **Test:** `packages/tooling/src/__tests__/remove-path.test.mjs` › "any other failure is rethrown as it was raised"
+- **Test:** `packages/tooling/src/__tests__/remove-path.test.mjs` › "a failure that carries no code is rethrown too"

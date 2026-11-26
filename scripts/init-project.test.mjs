@@ -31,6 +31,7 @@ const KEPT_AS_IS = [
   'scripts/check-identity.mjs',
   'scripts/init-project.mjs',
   'scripts/init-project.test.mjs',
+  'scripts/template-identity.mjs',
   'pnpm-lock.yaml'
 ]
 
@@ -57,9 +58,7 @@ before(() => {
   hookRun = withHookGitDir({
     use: () => {
       copy = mkdtempSync(join(tmpdir(), 'init-project-'))
-      process.on('exit', () =>
-        rmSync(copy, { force: true, recursive: true })
-      )
+      process.on('exit', () => rmSync(copy, { recursive: true }))
       const listed = listFiles()
       for (const file of listed) {
         const target = join(copy, file)
@@ -88,30 +87,14 @@ test("END TO END: under a hook's GIT_DIR, the copy is listed from this repositor
 
 const read = ({ root, file }) => readFileSync(join(root, file), 'utf8')
 
-// A derived project already carries its own name, so there is nothing to rename.
-const IS_TEMPLATE_TREE =
-  JSON.parse(read({ file: 'package.json', root: REPO_ROOT })).name ===
-  TEMPLATE_NAME
-
-test(
-  'a root script that names a workspace gets the new name',
-  { skip: !IS_TEMPLATE_TREE },
-  () => {
-    const smoke = read({
-      file: 'scripts/smoke-web-render.mjs',
-      root: copy
-    })
-
-    assert.match(smoke, new RegExp(`@${SLUG}/web`))
-    assert.doesNotMatch(smoke, /@app\//)
-  }
-)
-
+// Renaming the template's own names holds only where the template carries
+// them: scripts/init-project.template.test.mjs, which /init removes from a
+// derived project.
 test('the root package.json names no template workspace', () => {
   assert.doesNotMatch(read({ file: 'package.json', root: copy }), /@app\//)
 })
 
-// The guard above reads the root name against TEMPLATE_NAME, which the copy keeps.
+// TEMPLATE_NAME is the template's root name, which this file keeps as it is.
 test('a renamed tree no longer counts as the template', () => {
   const { name } = JSON.parse(read({ file: 'package.json', root: copy }))
 
@@ -132,7 +115,7 @@ test('no template identity token is left', () => {
   assert.doesNotThrow(() =>
     execFileSync(process.execPath, ['scripts/check-identity.mjs'], {
       cwd: copy,
-      env: { ...gitFreeEnv(), ATL_TEMPLATE_SELF: '' },
+      env: gitFreeEnv(),
       stdio: 'ignore'
     })
   )

@@ -52,7 +52,7 @@ default provider for each concern is a **swappable adapter**:
    credential is absent: no PostHog key → no capture; no `TURNSTILE_SECRET_KEY`
    → `verifyToken` resolves `{ success: true }`; no `CF_ORIGIN_SECRET` → origin
    guard returns `{ trusted: true, reason: NOT_CONFIGURED }`. Build and
-   `ATL_TEMPLATE_SELF=1 pnpm validate` stay green with no real credentials.
+   `pnpm validate` stay green with no real credentials.
 
 ## Consequences
 

@@ -13,7 +13,7 @@
 -- validate gate; AGENTS.md forbids an agent to start Docker.
 --
 -- Every .sql file in this folder is a suite pg_prove runs on its own, and pg_prove fails one
--- whose output has no plan; src/__tests__/supabaseSql.test.ts checks offline that each file
+-- whose output has no plan; __tests__/tests.test.ts of this folder checks offline that each file
 -- calls plan() and finish(). The conventions every suite shares are here and in
 -- packages/supabase/docs/database.md (pgTAP workflow).
 --

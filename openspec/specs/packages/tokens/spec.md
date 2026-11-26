@@ -3,7 +3,7 @@
 > **Governs:** `packages/tokens/src`, `packages/tokens/scripts`, `packages/tokens/theme.css`, `packages/tokens/tailwind-preset.cjs`
 > **ID prefix:** `TOKENS`
 > **Derived from:** `docs/architecture/shared.md`
-> **Verified against the code:** 2026-11-20 at `c324145`
+> **Verified against the code:** 2026-11-25 at `12d6b224`
 
 ## Purpose
 

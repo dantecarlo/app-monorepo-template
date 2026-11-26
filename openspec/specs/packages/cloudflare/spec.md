@@ -3,7 +3,7 @@
 > **Governs:** `packages/cloudflare/src`
 > **ID prefix:** `CLOUDFLARE`
 > **Derived from:** `docs/infrastructure.md`, `docs/images.md`, `docs/architecture/shared.md`
-> **Verified against the code:** 2026-11-15 at `8852663`
+> **Verified against the code:** 2026-11-26 at `35cf057d`
 
 ## Purpose
 
@@ -499,7 +499,8 @@ result, `SignedImageUrlVerificationType`, is either
 #### Scenario: the result type
 
 - **GIVEN** `SignedImageUrlVerificationType`, the type of the result
-- **WHEN** a valid result is written with a reason, or a rejected one without one
-- **THEN** neither type-checks, while a valid result with no reason and a rejected one with its
-  reason do
+- **WHEN** a valid result with no reason and a rejected one with its reason are checked against it,
+  and its valid variant is read for a reason, and a rejected result with no reason is checked
+- **THEN** the first two are assignable, the valid variant has no reason property, and the rejected
+  result with no reason is not assignable
 - **Test:** `packages/cloudflare/src/__tests__/signedImageUrl.helper.test.ts` › "a verification is either valid with no reason, or rejected with one"

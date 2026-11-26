@@ -11,9 +11,11 @@
 //   node scripts/agent-harness/generate.mjs
 // ---------------------------------------------------------------------------
 
-import { mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+import { removePath } from '@app/tooling/remove-path'
 
 import {
   compareProjection,
@@ -27,15 +29,17 @@ const TEMPORARY_SUFFIX = '.generating'
 
 // Rename within the same directory, so a crash mid-write leaves the previous
 // projection intact rather than a truncated agent definition the tool would
-// load anyway. The temporary file is removed on any failure path.
+// load anyway. A rename that succeeds leaves no temporary file; on a failure
+// it is removed, and a write that failed before creating it leaves none.
 const writeAtomically = ({ absolutePath, text }) => {
   const temporary = `${absolutePath}${TEMPORARY_SUFFIX}`
   mkdirSync(dirname(absolutePath), { recursive: true })
   try {
     writeFileSync(temporary, text, { flag: 'w' })
     renameSync(temporary, absolutePath)
-  } finally {
-    rmSync(temporary, { force: true })
+  } catch (error) {
+    removePath({ path: temporary })
+    throw error
   }
 }
 

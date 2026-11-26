@@ -24,9 +24,7 @@ const SOURCE = join('src', 'tokens.constant.ts')
 const scratchDirs: string[] = []
 
 afterAll(() => {
-  scratchDirs.forEach((dir) =>
-    rmSync(dir, { force: true, recursive: true })
-  )
+  scratchDirs.forEach((dir) => rmSync(dir, { recursive: true }))
 })
 
 const kebab = (key: string) =>

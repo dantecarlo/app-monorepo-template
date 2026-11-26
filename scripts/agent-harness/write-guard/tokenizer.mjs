@@ -6,6 +6,7 @@
 //   script  = [{ type: 'cmd', words, redirects, op } | { type: 'group', ... }]
 //   word    = { parts, raw }   part = { lit, quoted } | { param, op, alt }
 //                                   | { sub } | { safe, subs } | { process, sub }
+//                                   | { array, subs }
 //
 // `op` is the operator FOLLOWING the item: `|` means it feeds the next one.
 // A here-doc's body lands on its redirect once the line that opens it ends.
@@ -31,6 +32,7 @@ export const KEYWORDS = new Set([
   '!',
   '{',
   '}',
+  'coproc',
   'do',
   'done',
   'elif',
@@ -44,7 +46,76 @@ export const KEYWORDS = new Set([
   'while'
 ])
 
+const FUNCTION = 'function'
+const COPROC = 'coproc'
+const GROUP_OPEN = '{'
+const TIME = 'time'
+const TIME_POSIX = '-p'
+
+/**
+ * Where a simple command's own words start: past the keywords before it,
+ * the `-p` of `time -p`, the name `coproc NAME { … }` gives its group, and
+ * the `function NAME` that opens a function body, so the body's first
+ * command is read as the command.
+ */
+export const commandStart = ({ words }) => {
+  let at = 0
+  while (at < words.length) {
+    const raw = words[at].raw
+    if (raw === FUNCTION) {
+      at += 2
+    } else if (raw === COPROC && words[at + 2]?.raw === GROUP_OPEN) {
+      at += 2
+    } else if (KEYWORDS.has(raw)) {
+      at += raw === TIME && words[at + 1]?.raw === TIME_POSIX ? 2 : 1
+    } else {
+      return at
+    }
+  }
+  return words.length
+}
+
+// The words before `(` that make it a function's `name()`: one name, or
+// `function` and a name.
+const isFunctionName = ({ words }) =>
+  words.length === 1 ||
+  (words.length === 2 && words[0].raw === FUNCTION)
+
+const ARITHMETIC_COMMAND = '(('
+const FOR = 'for'
+const CONDITION_OPEN = '[['
+const CONDITION_CLOSE = ']]'
+const REGEX_MATCH = '=~'
+const CONDITION_OPERATORS = new Set(['&&', '||'])
+const CONDITION_SINGLES = new Set(['(', ')', '<', '>'])
+// The text before `(` that opens an extended glob: `!( @( *( +( ?(`.
+const EXTGLOB_OPENER = /[!@*+?]$/u
+
+// Whether `((` after `words` starts an arithmetic command: where a command
+// starts (past its keywords), or after `for`.
+const startsArithmetic = ({ words }) => {
+  const at = commandStart({ words })
+  return (
+    at === words.length || (at === words.length - 1 && words[at].raw === FOR)
+  )
+}
+
+// Whether the command `words` begin is inside a `[[ … ]]` not yet closed.
+const inCondition = ({ words }) =>
+  words[commandStart({ words })]?.raw === CONDITION_OPEN &&
+  !words.some((word) => word.raw === CONDITION_CLOSE)
+
+// An operator of a condition, kept as a word of its own.
+const operatorWord = ({ text }) => ({
+  parts: [{ lit: text, quoted: true }],
+  raw: text
+})
+
 const WORD_END = /[\s;&|<>()]/
+// The name and `=` (or `+=`) before the `(` of an array assignment.
+const ARRAY_ASSIGNMENT = /^[A-Za-z_]\w*\+?=$/
+// What separates the elements of an array: blanks and newlines.
+const ARRAY_BLANKS = /(?:\s|\\\n)*/y
 const BLANKS = /(?:[ \t\r]|\\\n)*/y
 const PLAIN_WORD = /[^\s;&|<>()\\'"$`]+/y
 const PLAIN_DOUBLE = /[^"\\$`]+/y
@@ -107,7 +178,12 @@ export const createParser = ({ depth = 0, source }) => {
   const parseBacktick = () => {
     BACKTICK_BODY.lastIndex = i + 1
     const match = BACKTICK_BODY.exec(s)
-    if (!match) return unreadable({ problem: 'an unterminated backtick' })
+    if (!match) {
+      return unreadable({
+        bashRefuses: true,
+        problem: 'an unterminated backtick'
+      })
+    }
     i = BACKTICK_BODY.lastIndex
     const inner = match[1].replace(/\\([`\\$])/g, '$1')
     return {
@@ -115,12 +191,14 @@ export const createParser = ({ depth = 0, source }) => {
     }
   }
 
-  // `$(( ... ))` evaluates to a number, but a `$(...)`, a backtick or a
-  // nested `$((` inside it still runs: `subs` keeps those for the judge.
-  const parseArithmetic = () => {
+  // An arithmetic expression from `from` to the `))` that closes it, at
+  // depth 0 of its own parentheses: a `$(...)`, a backtick or a nested
+  // `$((` inside it still runs, and `subs` keeps those for the judge. On
+  // `closed`, the cursor is past the `))`.
+  const scanArithmetic = ({ from }) => {
     const subs = []
     let nested = 0
-    let j = i + ARITHMETIC_OPEN.length
+    let j = from
     let closed = false
     repeat({
       bound: s.length,
@@ -153,9 +231,36 @@ export const createParser = ({ depth = 0, source }) => {
         return true
       }
     })
+    if (closed) i = j + 2
+    return { closed, subs }
+  }
+
+  // `$(( ... ))` evaluates to a number; its substitutions still run.
+  const parseArithmetic = () => {
+    const { closed, subs } = scanArithmetic({
+      from: i + ARITHMETIC_OPEN.length
+    })
     if (!closed) unreadable({ problem: 'an unterminated $((' })
-    i = j + 2
     return { safe: true, subs }
+  }
+
+  // `((…))` where a command starts, `for ((…;…;…))` among them: arithmetic,
+  // read as a group of the substitutions it runs. A `((` that closes no
+  // `))` is two subshells, as bash reads `((cd a); ls)`, and undefined.
+  const parseArithmeticCommand = ({ redirects }) => {
+    const start = i
+    let found
+    try {
+      found = scanArithmetic({ from: i + ARITHMETIC_COMMAND.length })
+    } catch (error) {
+      if (!error?.unreadable) throw error
+      found = { closed: false }
+    }
+    if (!found.closed) {
+      i = start
+      return undefined
+    }
+    return { op: '', redirects, script: found.subs.flat(), type: 'group' }
   }
 
   const parseBraced = () => {
@@ -181,7 +286,9 @@ export const createParser = ({ depth = 0, source }) => {
     } else if (next === "'" && !quoted) {
       ANSI_BODY.lastIndex = i + 2
       const match = ANSI_BODY.exec(s)
-      if (!match) unreadable({ problem: 'an unterminated quote' })
+      if (!match) {
+        unreadable({ bashRefuses: true, problem: 'an unterminated quote' })
+      }
       parts.push({
         lit: decodeAnsi({ text: match?.[1] ?? '' }),
         quoted: true
@@ -235,8 +342,105 @@ export const createParser = ({ depth = 0, source }) => {
         return true
       }
     })
-    if (!closed) unreadable({ problem: 'an unterminated quote' })
+    if (!closed) {
+      unreadable({ bashRefuses: true, problem: 'an unterminated quote' })
+    }
     flush()
+  }
+
+  // Where the `quote` opened before `from` closes, past escaped ones inside
+  // double quotes; -1 when it never does.
+  const closingQuote = ({ from, quote }) => {
+    if (quote === "'") return s.indexOf("'", from)
+    let at = from
+    while (at < s.length && s[at] !== '"') at += s[at] === '\\' ? 2 : 1
+    return at < s.length ? at : -1
+  }
+
+  // Whether the double-quoted text from `from` to `to` holds a command
+  // substitution, `$(` or a backtick, that bash would run.
+  const substitutes = ({ from, to }) => {
+    let at = from
+    while (at < to) {
+      if (s[at] === '`' || (s[at] === '$' && s[at + 1] === '(')) return true
+      at += s[at] === '\\' ? 2 : 1
+    }
+    return false
+  }
+
+  // The `(…)` of an extended glob at the cursor, nested ones included.
+  const extglobGroup = () => {
+    const start = i
+    let depth = 0
+    repeat({
+      bound: s.length,
+      step: () => {
+        if (i >= s.length) return false
+        const c = s[i]
+        if (c === '`' || (c === '$' && s[i + 1] === '(')) {
+          unreadable({ problem: 'a substitution inside an extended glob' })
+        }
+        if (c === '\\') {
+          i += 2
+          return true
+        }
+        if (c === "'" || c === '"') {
+          // A quoted `)` or `|` is text of the pattern, not its syntax.
+          const end = closingQuote({ from: i + 1, quote: c })
+          if (end < 0) {
+            unreadable({ problem: 'an unterminated quote in an extended glob' })
+          }
+          if (c === '"' && substitutes({ from: i + 1, to: end })) {
+            unreadable({ problem: 'a substitution inside an extended glob' })
+          }
+          i = end + 1
+          return true
+        }
+        if (c === '(') depth += 1
+        if (c === ')') depth -= 1
+        i += 1
+        return depth > 0
+      }
+    })
+    if (depth > 0) unreadable({ problem: 'an unterminated extended glob' })
+    return s.slice(start, i)
+  }
+
+  // The elements of an array assignment, from past its `(` to past the `)`
+  // that closes it, each read as a word: a quote or a substitution in one
+  // counts, and a comment or a newline between them is skipped. A variable
+  // that holds an array names no path, so the part carries only the
+  // scripts its elements run. What a list would hold there, an operator or
+  // a redirect, is unreadable.
+  const arrayElements = () => {
+    const subs = []
+    repeat({
+      bound: s.length,
+      step: () => {
+        sticky({ pattern: ARRAY_BLANKS })
+        if (i >= s.length) unreadable({ problem: 'an unterminated array' })
+        if (s[i] === ')') {
+          i += 1
+          return false
+        }
+        if (atComment()) {
+          skipComment()
+          return true
+        }
+        const before = i
+        const word = parseWord()
+        if (i === before) {
+          unreadable({ problem: `an unexpected ${s[i]} in an array` })
+        }
+        subs.push(
+          ...word.parts.flatMap((part) =>
+            'sub' in part ? [part.sub] : (part.subs ?? [])
+          )
+        )
+        return true
+      }
+    })
+    return { array: true, subs }
   }
 
   const parseWord = () => {
@@ -252,12 +456,14 @@ export const createParser = ({ depth = 0, source }) => {
       step: () => {
         if (i >= s.length) return false
         const c = s[i]
-        if (c === '(' && /^[A-Za-z_]\w*\+?=$/.test(text)) {
-          // An array assignment, `a=(1 2)`: kept as one opaque literal.
-          const end = s.indexOf(')', i)
-          if (end < 0) unreadable({ problem: 'an unterminated array' })
-          text += s.slice(i, end + 1)
-          i = end + 1
+        if (c === '(' && EXTGLOB_OPENER.test(text)) {
+          // An extended glob, `!(a|b)`: kept in its word as a literal.
+          text += extglobGroup()
+        } else if (c === '(' && ARRAY_ASSIGNMENT.test(text)) {
+          // An array assignment, `a=(1 "$(x)")`: its elements are words.
+          flush()
+          i += 1
+          parts.push(arrayElements())
         } else if (WORD_END.test(c)) {
           return false
         } else if (c === '\\') {
@@ -269,7 +475,9 @@ export const createParser = ({ depth = 0, source }) => {
           i += 2
         } else if (c === "'") {
           const end = s.indexOf("'", i + 1)
-          if (end < 0) unreadable({ problem: 'an unterminated quote' })
+          if (end < 0) {
+            unreadable({ bashRefuses: true, problem: 'an unterminated quote' })
+          }
           flush()
           parts.push({ lit: s.slice(i + 1, end), quoted: true })
           i = end + 1
@@ -330,9 +538,51 @@ export const createParser = ({ depth = 0, source }) => {
     return { fd, op: op === '>&' ? '&>' : op, target }
   }
 
+  // The regex after `=~` in `[[ … ]]`: its parentheses and `|` are its
+  // own, and so is a blank inside its parentheses. Quotes are read as in a
+  // word; a substitution inside it is not, and is unreadable.
+  const parseRegex = () => {
+    const start = i
+    let depth = 0
+    repeat({
+      bound: s.length,
+      step: () => {
+        if (i >= s.length) return false
+        const c = s[i]
+        if (depth === 0 && (/\s/u.test(c) || c === ')' || c === ';')) {
+          return false
+        }
+        if (c === '`' || (c === '$' && s[i + 1] === '(')) {
+          unreadable({ problem: 'a substitution inside a regex' })
+        }
+        if (c === '\\') {
+          i += 2
+        } else if (c === "'" || c === '"') {
+          const end = closingQuote({ from: i + 1, quote: c })
+          if (end < 0) {
+            unreadable({ bashRefuses: true, problem: 'an unterminated quote' })
+          }
+          if (c === '"' && substitutes({ from: i + 1, to: end })) {
+            unreadable({ problem: 'a substitution inside a regex' })
+          }
+          i = end + 1
+        } else {
+          if (c === '(') depth += 1
+          if (c === ')') depth -= 1
+          i += 1
+        }
+        return true
+      }
+    })
+    if (depth > 0) unreadable({ problem: 'an unterminated regex' })
+    const raw = s.slice(start, i)
+    return { parts: [{ lit: raw, quoted: true }], raw }
+  }
+
   const parseParenthesis = ({ redirects, words }) => {
-    if (words.length === 1 && s[i + 1] === ')') {
-      // `name()`: a function definition; its body follows as commands.
+    if (isFunctionName({ words }) && s[i + 1] === ')') {
+      // `name()` or `function name()`: a function definition; its body
+      // follows as commands.
       i += 2
       return { op: '', redirects, type: 'cmd', words: [] }
     }
@@ -364,14 +614,32 @@ export const createParser = ({ depth = 0, source }) => {
         if (i >= s.length) return false
         const c = s[i]
         const before = i
+        const condition = inCondition({ words })
         if (atComment()) skipComment()
-        else if ('\n;|)'.includes(c) || (c === '&' && s[i + 1] !== '>')) {
+        else if (condition && CONDITION_OPERATORS.has(s.slice(i, i + 2))) {
+          words.push(operatorWord({ text: s.slice(i, i + 2) }))
+          i += 2
+        } else if (condition && words.at(-1)?.raw === REGEX_MATCH) {
+          words.push(parseRegex())
+        } else if (condition && CONDITION_SINGLES.has(c)) {
+          words.push(operatorWord({ text: c }))
+          i += 1
+        } else if ('\n;|)'.includes(c) || (c === '&' && s[i + 1] !== '>')) {
+          return false
+        } else if (
+          c === '(' &&
+          s[i + 1] === '(' &&
+          redirects.length === 0 &&
+          startsArithmetic({ words })
+        ) {
+          group = parseArithmeticCommand({ redirects })
+          if (group === undefined) {
+            group = parseParenthesis({ redirects, words })
+          }
           return false
         } else if (c === '(') {
           group = parseParenthesis({ redirects, words })
           return false
-        } else if (words[0]?.raw === '[[' && (c === '<' || c === '>')) {
-          i += 1
         } else {
           const redirect = parseRedirect()
           if (redirect) redirects.push(redirect)
@@ -409,7 +677,9 @@ export const createParser = ({ depth = 0, source }) => {
         const c = s[i]
         const two = s.slice(i, i + 2)
         if (c === ')') {
-          if (closer !== ')') unreadable({ problem: 'an unbalanced )' })
+          if (closer !== ')') {
+            unreadable({ bashRefuses: true, problem: 'an unbalanced )' })
+          }
           i += 1
           closed = true
           return false

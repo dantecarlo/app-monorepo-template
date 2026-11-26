@@ -13,7 +13,14 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import { literal } from './expansion.mjs'
-import { commandName, judgeArgs, unwrap } from './shell.commands.mjs'
+import {
+  commandName,
+  fdCommand,
+  findExecs,
+  judgeArgs,
+  unwrap,
+  xargsCommand
+} from './shell.commands.mjs'
 
 const words = ({ command }) =>
   command.split(' ').map((text) => literal({ text }))
@@ -52,15 +59,13 @@ const STATE = {
   actor: { kind: 'main', name: null },
   cwd: 'c:/work/repo',
   host: {
-    env: {},
     isCheckout: ({ dir }) => dir.toLowerCase() === 'c:/work/repo',
     ownRoot: 'C:\\work\\repo',
     scratchRoots: ['/tmp'],
     windows: true
   },
   policy: {
-    ruleFiles: [{ glob: 'AGENTS.md', what: 'the LAWs and the router' }],
-    switchOff: { value: 'off', variable: 'ATL_WRITE_GUARD' }
+    ruleFiles: [{ glob: 'AGENTS.md', what: 'the LAWs and the router' }]
   },
   vars: new Map()
 }
@@ -85,3 +90,41 @@ for (const [command, shape] of [
     assert.equal(finding.shape, shape)
   })
 }
+
+test('find names the commands its -exec actions run, and where each ends', () => {
+  const args = words({ command: '. -exec rm -rf {} + -name x -ok ls ;' })
+  assert.deepEqual(
+    findExecs({ args }).map(({ from, inner, to }) => ({
+      from,
+      inner: inner.map(({ text }) => text),
+      to
+    })),
+    [
+      { from: 1, inner: ['rm', '-rf', '{}'], to: 5 },
+      { from: 8, inner: ['ls'], to: 10 }
+    ]
+  )
+  assert.deepEqual(findExecs({ args: words({ command: '. -exec rm' }) })[0].to, 3)
+})
+
+test('fd names the command its -x runs', () => {
+  const found = fdCommand({ args: words({ command: 'x src -x rm -rf ;' }) })
+  assert.equal(found.at, 2)
+  assert.deepEqual(
+    found.inner.map(({ text }) => text),
+    ['rm', '-rf']
+  )
+  assert.equal(fdCommand({ args: words({ command: 'x src' }) }), undefined)
+})
+
+test('xargs names the command it runs and the string -I replaces', () => {
+  const found = xargsCommand({
+    args: words({ command: '-n 1 -I {} git branch -D {}' })
+  })
+  assert.equal(found.start, 4)
+  assert.equal(found.replace, '{}')
+  assert.deepEqual(
+    found.inner.map(({ text }) => text),
+    ['git', 'branch', '-D', '{}']
+  )
+})

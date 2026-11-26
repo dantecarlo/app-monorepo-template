@@ -39,7 +39,7 @@ Managed by Husky, in `.husky/`.
 | ------------ | ----------------------- | --------------------------------- |
 | `pre-commit` | `pnpm exec lint-staged` | ESLint + Prettier on staged files |
 | `commit-msg` | `pnpm exec commitlint`  | Conventional commits              |
-| `post-merge` | `node scripts/prune-worktrees.mjs --quiet` | Removes merged worktrees, then fast-forwards the main checkout and installs when that changes `pnpm-lock.yaml`; never fails the merge |
+| `post-merge` | `node scripts/prune-worktrees.mjs --quiet` | Removes merged worktrees, then fast-forwards the main checkout and installs when that changes `pnpm-lock.yaml`; a prune that fails fails the hook, so it is seen, though a post-merge hook never undoes the merge; a repository with no origin has nothing to prune |
 
 `git commit --no-verify` skips both commit hooks; CI's `commitlint` job lints the
 commit messages of a pull request again, its default ignores aside (Layer 4).
@@ -144,7 +144,7 @@ file you did not touch now has no owner.
 ## Layer 3 — the gate
 
 ```bash
-ATL_TEMPLATE_SELF=1 pnpm validate
+pnpm validate
 ```
 
 **Nothing is done until this exits 0.** Check the exit code, not the tail of a
@@ -210,6 +210,7 @@ gate the run reaches is blinded by exactly one step, whose companion's exported
 | `pnpm agent-harness:projection-check` | Every projected agent file equals what its neutral source renders, and is committed (see 3e) |
 | `pnpm agent-harness:test`       | The projector's reader, adapters, hook projection, writer, checker and sync still behave |
 | `pnpm write-guard:test`         | The write guard decides every cell of its table, its errors and its switch-off, for the file tools, Bash and PowerShell; it reads every Windows spelling of a path (or refuses what it cannot read) and every checkout that holds it, and judges a 10,000-folder path and a pathological 30-item list in under a second. Every Bash case of Certifipago's guard is ported, every checkout rule glob matches a file, every module the hook loads is a rule file, and the real hook answers a payload on stdin end to end, through a junction too (see 3f) |
+| `pnpm no-force:test`            | The no-force hook refuses each force form, long, `taskkill /F` and every git letter of its table, through wrappers, groups, pipelines and substitutions in Bash and PowerShell; refuses each skip (`--no-verify`, `git commit -n`, `rm -f` and `-rf`, `HUSKY=0`); lets the nearest legitimate commands run (`rm -r`, `cp -f`, `docker rm -f`, `git push -n`, `git tag -F`, a commit message, a here-doc's body, `echo`); names the LAW in its reason; and the real hook answers a payload end to end and fails closed (see 3j) |
 | `pnpm reap:test`               | The process reaper's core decides each rule over synthetic process tables (an orphan, a live parent, a reused pid, POSIX reparenting, the hour a clock falls back, unknown names, a family matched by executable and script and never by text in the arguments, persistent and watch work, node's watch flags, the wrappers, live Git for Windows shells and tmux, its own ancestry, the spared processes, the grace period); the adapter lists and ends on each platform through an injected spawn; the command's modes, lock, second listing, bound and exit codes; the lock's takeover under its guard, a dead guard and a release that leaves a later run's lock, with injected races and two real processes; the session hook's kill mode, its MCP check's line and its exit 0 on any failure; the MCP check over scratch trees; and `runBounded` ends a real child's tree on Windows (see 3g) |
 | `pnpm verify:agent-context:test` | The agent-context gate fails each defect it names, on synthetic entries and over a scratch tree |
 | `pnpm verify:agent-context`     | Every agent of `.agents/agents/` has an entry in `.agents/agent-context.json` whose `gradedBy` names the skills that grade it, each a folder of `.claude/skills/` holding a `SKILL.md`, whose `writes` is true or false, whose `surface`, if any, lists repository-relative folders beside `writes: true`, and which holds no other key; no entry names an agent that is gone (see 3e) |
@@ -252,18 +253,20 @@ the pre-commit hook on staged files.
 | `verify:skills:test` | `scripts/verify-skills.test.mjs` holds the seven ticket skills of `.claude/skills/` to their sections (the shape of `new-skill`, every state, role and board operation of `ticket-flow`, Dropped among the states of its table and of the process template's, the role skills' opening and the contract tables they must not copy, the three templates, the ticket template's target version marked `**Version (required):**`, and both merge policies, `manual` and `low-risk`, named in `ticket-flow` rule 4, `refine-ticket`'s merge queue, `process-intake`'s mapping step and the process template, each beside `.agents/harness.config.json`, where the project records its own, and the process template's Policy line names `delivery.mergePolicy` in it; the policy read fail closed: `ticket-flow` rule 4 and `refine-ticket`'s merge queue say that a value other than `low-risk`, a missing file, or a file that does not parse means `manual`, and that the policy is read from the default branch's copy, never from the pull request's own branch; the production branch: the process template's Branching model, whose Production branch line gives `production`, the default; the merge queue: `refine-ticket` has its § Merge queue, `qa-ticket`'s hand-off step names `<id> ready to merge, PR #<n>`, and `qa-ticket` holds no `Ready to merge → Done`; the ticket identity: `ticket-flow` names `branchTypes` and the `json ticket-identity` block, `process-intake`'s mapping step names the block, and the process template ships one that the branch check reads with no finding and whose fields are its defaults; QA's checkout: `qa-ticket`'s Step 2 adds its worktree with `--detach` and its Step 5 pushes with `git push origin HEAD:<branch>`; and the hotfix: `qa-ticket`'s hand-off step, `refine-ticket`'s release step and `ticket-flow`'s messages name `<id> ready to merge, hotfix`, and `release-ticket`'s Hotfix section says that QA leaves it at Ready to merge; and the board as the source: `ticket-flow`'s Board operations and the process template's Board adapter name the board the source of every open ticket, and the closed ticket catalog: `refine-ticket`'s § Record the closed tickets names `§ Closed Ticket Catalog` and one pull request per close or release, `po-ticket` names no `edits:`, since the PO does no repository work, and `refine-ticket`'s merge queue says that the architect brings the catalog pull request current itself and that each row it adds matches its board page in id, title, target version and closing pull request; and the drop: `ticket-flow` has its § Dropped, naming `Superseded by:`, and its messages name `<id> dropped`, which `po-ticket`'s Step 6 — Drop a ticket, `refine-ticket`'s § Drop a ticket, `dev-ticket`'s § Changes requested and `qa-ticket`'s Step 7 also name, and `refine-ticket`'s § Record the closed tickets names `### Dropped tickets`; and the later bring-current: `refine-ticket`'s merge queue brings a ticket's pull request current from a spare worktree of its own, never QA's or the dev's, names `--detach` and `git push origin HEAD:<branch>`, pushes in the background and says that a code conflict goes back to the dev session, none of `ticket-flow`, `refine-ticket` and `qa-ticket` names `<id> bring current`, and `qa-ticket` holds no `Ready to merge → Changes requested`), with synthetic cases and over the repository; it also runs the cases of `.claude/skills/general-plan/validate-general-plan.test.mjs` |
 | `docs:diagrams:check` | Every committed diagram matches its spec and the tokens                                   |
 | `verify:specs`        | Every living spec and change has its shape, and every test a scenario names exists        |
-| `report:spec-drift`   | Lists the living specs whose governed code moved past their verified commit; never blocks |
+| `report:spec-drift`   | Lists the living specs whose governed code moved past their verified commit, and fails on any, until each is synced; a project made from the template measures them from its birth commit, the one that commits `pnpm run init`, so it passes right after init with fresh history or the template's, and a shallow clone fails (`openspec/README.md` § 4.1) |
 | `verify:english`      | No tracked text outside the i18n catalogs holds a Spanish line, unless allowlisted        |
 | `verify:instruction-entry` | `AGENTS.md` and `README.md` exist, and no `CLAUDE.md` or `CLAUDE.local.md` in any folder makes Claude Code read it instead of `AGENTS.md` |
 | `verify:unicode-safety` | No tracked text file holds a zero-width character (U+200B to U+200D, U+2060, U+FEFF), a direction embedding, override or isolate (U+202A to U+202E, U+2066 to U+2069), a tag character (U+E0000 to U+E007F) or an invisible filler (U+115F, U+1160, U+3164, U+FFA0); the emoji joiner U+200D is allowed under `packages/i18n/src/locales/`, a file holding a NUL byte is skipped as binary, and a finding names the file, the line, the column and the code point. `verify:unicode-safety:test` plants each code point and runs the gate over a scratch repository |
 | `verify:workflow-pins` | Every `uses:` of every workflow under `.github/workflows/` (`.yml` or `.yaml`), a step and a reusable workflow alike, is pinned to a full 40-character commit SHA, the tag it was resolved from kept as a comment; a local action (`./`) and a Docker image (`docker://`) are exempt; a line inside any block scalar (`\|` or `>`, a `run:` script and a folded `name:` alike) is not judged, a comment never opens one, and a quoted `"uses":` key is judged. `verify:workflow-pins:test` plants a tag, a branch, a short SHA and a missing ref |
+| `verify:ci-blocking` | No workflow under `.github/workflows/` and no fenced yaml or yml block of a doc under `docs/` carries a `continue-on-error` key, a job's or a step's, whose value is anything but `false`: the check it marks runs and is skipped (the LAW "A check is never forced or skipped"); a line inside a block scalar is text |
 | `verify:skill-frontmatter` | Every `.claude/skills/*/SKILL.md` has a frontmatter that parses, a `name` that is its folder, and a description of at most 1,024 characters once parsed (the line break a `>` block keeps counted) that holds `USE WHEN:` and `DO NOT USE:`; a skill `.claude/skills-lock.json` lists (archify) is vendored and gets the parse, name and length checks only. `verify:skill-frontmatter:test` plants each refusal, both quoting styles and both block styles |
-| `verify:skill-neutrality` | No file under `.claude/skills/` (a `SKILL.md`, a template, a reference or a script, a vendored skill included) names a downstream project: a name `.agents/contracts/downstream-projects.json` declares for one, matched as a whole word in any letter case, so a product name also catches the package scope, slug and bundle id built from it, and a name inside a longer word does not. A downstream project's core-purity gate refuses a first-party skill that names a product, so a template skill that names one is refused on sync. The list names donor products, so it is `template-maintainer` material and never ships: a derived project finds it absent and the gate forbids nothing, saying so in its denominator, while the template, run with `ATL_TEMPLATE_SELF=1`, fails without it; a list that does not parse, declares no project, or gives a project no name fails too. A new downstream project is one entry of that list. `verify:skill-neutrality:test` plants each refusal with synthetic names and runs the gate over a scratch tree |
+| `verify:skill-neutrality` | No file under `.claude/skills/` (a `SKILL.md`, a template, a reference or a script, a vendored skill included) names a downstream project: a name `.agents/contracts/downstream-projects.json` declares for one, matched as a whole word in any letter case, so a product name also catches the package scope, slug and bundle id built from it, and a name inside a longer word does not. A downstream project's core-purity gate refuses a first-party skill that names a product, so a template skill that names one is refused on sync. The list names donor products, so it is `template-maintainer` material and never ships: a derived project finds it absent and the gate forbids nothing, saying so in its denominator, while the template, run in the checkout whose `.agents/harness.config.json` identity is the template's own (`scripts/template-identity.mjs`), fails anywhere else; a list that does not parse, declares no project, or gives a project no name fails too. A new downstream project is one entry of that list. `verify:skill-neutrality:test` plants each refusal with synthetic names and runs the gate over a scratch tree |
 | `git-free-env:test`, `hook-git-dir:test` | `gitFreeEnv()` drops every `GIT_*` variable, in any case, from the environment a script hands to git or to a child; `withHookGitDir` runs a flow with `GIT_DIR` and `GIT_INDEX_FILE` naming a decoy repository, as a git hook exports them, reports whether anything under the decoy changed, and puts both variables back and removes the decoy however the flow ends. Every suite that spawns git runs one end-to-end case under it and asserts the decoy is left alone; `init-project:test` takes its whole copy under it |
 | `worktrees:prune:test` | `scripts/prune-worktrees.test.mjs` drives the pruner (Layer 2) over a scratch origin, its clone and one linked worktree per case, `--dry-run` first: the merged clean worktree goes and its branch with it; every reason to keep one is seen kept and printed, an ignored file nothing rebuilds, an env file, a file under `.atl/`, a note beside the two skill-registry files in `.atl/`, a lock, an edit hidden by `--skip-worktree` or `--assume-unchanged` and a file that differs only in its line endings among them; a branch whose tip moved after it was judged stays; an `.atl/` that holds only those two files goes with its worktree; an ignored file nothing rebuilds, written after the decision, keeps the worktree at the check just before its removal, and a worktree still clean there goes with its branch; a dry run removes and moves nothing, states the real run's decisions and ends with what is not covered; the main checkout is fast-forwarded to `origin/HEAD`'s branch, whatever its name, and is left, with the reason, over any tracked local change, staged, line-ending-only or in a file the fast-forward does not touch, and over git's refusal, named by its first line that is not a hint and the files it lists; a dry run says it would leave a main checkout that diverged, and one with an untracked file the fast-forward would overwrite, with git's refusal, and touches neither, while a file whose timestamp alone changed and an `index.lock` already in the main checkout leave its "would fast-forward" as it was; the worktree the command runs in survives the `post-merge` that fast-forward fires; an unset `origin/HEAD` exits 1 naming `git remote set-head origin --auto`; a step that fails after a removal exits 1 and still reports the removal, never "nothing was removed"; a fetch from a remote that never answers is stopped at `PRUNE_WORKTREES_FETCH_SECONDS`, and the run says so, removes and moves nothing and exits 0, where the same repositories with a remote that answers are pruned and moved; on Windows a fetch stopped at its bound ends the ssh command git started; the bound is 30 s, a value that is not a positive number throws, naming it, and one that is no whole number of milliseconds is rounded up; through a recording `pnpm` first on the path, a fast-forward that changes `pnpm-lock.yaml` runs `pnpm install` once in the main checkout, an install that rewrites the lockfile adds its one line, under `--quiet` too, an install that exits 1 and one stopped at `PRUNE_WORKTREES_INSTALL_SECONDS` each print the command to run and exit 0, a dry run installs nothing and says it would, `--quiet` drops the line of an install that succeeded, a fast-forward that leaves the lockfile installs nothing and prints exactly the lines it printed before, and the install's bound is 120 s; and the real `.husky/post-merge`, run by `git hook run`, prunes and exits 0 even when the pruner fails |
+| `ci-windows:test` | `scripts/ci-windows.test.mjs` finds every tracked test file whose `skip:` tests `process.platform !== 'win32'` or `!IS_WINDOWS`, and fails when no step of CI's `windows-process-trees` job runs it, by a `node --test` that names it or a `pnpm` script whose `node --test` does: a case that skips on POSIX is a skipped check unless Windows runs it |
 | `verify:router-coverage` | Every "Load skill" cell of the Router tables of `AGENTS.md` (its `## Router` section) names, in backticks, a skill with a `.claude/skills/<name>/SKILL.md`, and every skill, read as `verify:skill-frontmatter` reads them, has a row; every "Validated by" cell is `review` or cites, in backticks, only scripts the root `package.json` defines, the text outside the backticks (`lint` (jsx-a11y)) explaining them; a Router table missing either column, a Router with no table and an `AGENTS.md` with no Router fail too. An `/init` prune that drops a skill leaves its row dead and fails this gate until Stage 6 removes the row. `verify:router-coverage:test` plants each refusal and runs the gate over a scratch tree |
 | `codex-budget:test`   | The generated `.codex/config.toml` sets `project_doc_max_bytes` above every table header, and `AGENTS.md`, counted with CRLF endings, fits it: Codex drops what is past the budget |
-| `check:identity`      | The template's default identity is gone (skipped on self)                                 |
+| `check:identity`      | The template's default identity is gone; the template passes as itself, read from its `.agents/harness.config.json` identity and its `origin` remote (`scripts/template-identity.mjs`), with no variable, so a copy not renamed yet fails |
 | `knip`                | No dead exports, no unlisted or unused dependencies                                       |
 
 ### 3d. What the gate deliberately excludes
@@ -388,8 +391,10 @@ guard's code and the modules it loads (`scripts/manifest.mjs`, whose glob
 reader it uses, and `scripts/manifest-owners.mjs`), `.husky/**`,
 `.github/workflows/**`, and the user-level `~/.claude/settings.json` and
 `~/.claude/settings.local.json`, where `disableAllHooks` switches every hook
-off; and `.agents/harness.config.json`, whose `delivery.mergePolicy: low-risk` lets
-an agent merge without asking (3h). `package.json` is not one. A glob reads as
+off; `.agents/harness.config.json`, whose `delivery.mergePolicy: low-risk` lets
+an agent merge without asking (3h); and `scripts/template-identity.mjs`, which
+reads whether a checkout is the template and so decides which checks run.
+`package.json` is not one. A glob reads as
 the manifest's do, with letter
 case ignored, against the path relative to EVERY checkout that holds the file,
 so a rule file of a sibling worktree, or of a clone under the temp dir, is one
@@ -414,7 +419,6 @@ allows. A deny wins over an ask, and the main session is never refused.
 | PowerShell                                    | deny            | deny          | ask on a write cmdlet that names a rule path |
 | Guard error                                   | deny            | deny          | ask                                    |
 | `.agents/agent-context.json` unreadable       | deny            | deny          | deny for every subagent, writers and unlisted agents included; the main session is judged as above |
-| `ATL_WRITE_GUARD=off`                         | —               | —             | —                                      |
 
 Claude Code sets `agent_type` inside a subagent, and the main session carries
 none. A read-only agent is `writes: false`, a surface agent has a `surface`,
@@ -446,7 +450,11 @@ path 10,000 folders deep is judged in milliseconds.
 A Bash command is read by a shell parser ported from Certifipago's guard, not
 by a pattern. Line continuations go first, where Bash drops them; then come
 quotes, substitutions (`$(…)`, backticks, `$(( ))`), here-docs, groups,
-pipelines, loops and `case`. A word is expanded as Bash expands it: braces
+pipelines, loops, `case`, a function body in each of its forms (`f() { … }`,
+`function f { … }`, `function f() { … }`) and `coproc`, an arithmetic command (`(( … ))`,
+`for ((;;))`), whose `>` compares and whose substitutions run, a `[[ … ]]` condition with its
+`&&`, `||`, parentheses, `<`, `>` and the regex after `=~`, and an extended glob (`!(keep)`),
+one word. A word is expanded as Bash expands it: braces
 first (`AGENTS.md{,.bak}` is two words, and the empty word `{AGENTS.md,}`
 leaves is dropped), `$'…'` decoded, a NUL ending the
 word, and a backslash-escaped character read as quoted. A variable resolves
@@ -521,8 +529,9 @@ path; one that keeps to the index, the history or the branches (`add`,
 `commit`, `tag`, `push`) asks nothing.
 
 A command the guard cannot read is one it cannot parse: an unterminated
-quote, a here-doc with no end, a line continuation that splits `$(`,
-nesting past 32 levels. It also covers, for the main session, a writer or an
+quote, a here-doc with no end, a line continuation that splits `$(`, a
+substitution inside a `[[` regex or an extended glob, nesting past 32
+levels. It also covers, for the main session, a writer or an
 unlisted agent, one of the programs above. Such a command is refused to a
 policed agent. Anyone else is asked only when the command names a rule path:
 an unknown program by its own words, a value attached to a short option
@@ -558,12 +567,12 @@ or a folder on the disk) is also read for the name the file gets there, so
 `Copy-Item /tmp/AGENTS.md .` asks.
 
 Every reason names the rule, the file and how to proceed; a rule file cites the
-LAW. Stdin that is not a JSON payload prints nothing, and a hook that crashes,
-or whose engine fails to load, still refuses a subagent and asks the main
-session. `ATL_WRITE_GUARD=off` is read before any module of the guard is
-imported, so it silences even a guard that cannot load.
+LAW. Stdin that is empty, is not JSON or is no JSON object is refused, with a
+reason that names the recovery below: it names no agent, so the guard cannot
+tell a read-only agent from the main session. A hook that crashes, or whose
+engine fails to load, still refuses a subagent and asks the main session.
 
-To switch it off, launch the session with `ATL_WRITE_GUARD=off`, or put
+No variable switches it off. The one recovery is Claude Code's own: put
 `"disableAllHooks": true` in `.claude/settings.local.json`. That file is
 git-ignored, and it is where a project's own permissions go: `.claude/settings.json`
 is generated.
@@ -831,6 +840,7 @@ updater that runs periodically".
 | `.agents/contracts/updaters.json`  | The registry: one entry per updater. A contract, so the write guard asks before an edit (3f) |
 | `scripts/verify-updaters.mjs`      | `pnpm verify:updaters`, the gate that holds the registry, inside `pnpm validate` |
 | `scripts/updaters/run.mjs`         | `pnpm updaters:run`, the runner, never inside `pnpm validate`               |
+| `scripts/updaters/branch.mjs`, `label.mjs`, `messages.mjs`, `steps.mjs` | Where an update starts (the remote's `updates/<id>` with the default branch merged in, or the default branch), the `rule-proposal` label made current, the commit, pull request and dry-run texts, and the steps they share; no call forces or skips a check |
 
 **The entry.** Each declares every key, and no other:
 
@@ -878,21 +888,26 @@ holds `--where` (`local` by default), or the one `--only` names:
 
 1. It runs `<command> --check`. Exit 0: current, nothing more. Exit 1 or any other: failed, no
    pull request, and the run goes on to the next updater, then exits 1.
-2. Exit 2: on a working tree with no change, it rebuilds `updates/<id>` from the default branch
-   (the one `gh repo view` names), runs `<command>`, then each `verify` command. An update that
-   changes nothing commits nothing.
-3. It commits with a Conventional Commit that carries no attribution, force-pushes to
-   `updates/<id>` alone (the updater owns that branch: each run rebuilds it, so a commit pushed
-   there by hand is replaced), and opens one pull request from it with `gh pr create`, or edits
-   the open one (`gh pr list --head updates/<id>`, then `gh pr edit`). Then it returns to the ref
-   it started on.
-4. A failed update, verify command, git or gh step stops the run there and exits 1, and names
-   the branch the tree is left on, for a person to read.
+2. Exit 2: on a working tree with no change, it starts detached from `updates/<id>` as the
+   remote holds it, with the default branch (the one `gh repo view` names) merged in by a normal
+   merge, or from the default branch when the remote holds no `updates/<id>`
+   (`scripts/updaters/branch.mjs`). It runs `<command>`, then each `verify` command. An update
+   that changes nothing commits nothing. A merge that conflicts opens nothing: the merge is
+   aborted, the tree returns to its ref, one line names the branch and the conflicting paths,
+   and the run goes on to the next updater, then exits 1.
+3. It commits with a Conventional Commit that carries no attribution, pushes it on top of
+   `updates/<id>` alone with no force option, so the branch is appended to and never rewritten
+   and a commit pushed there by hand stays, and opens one pull request from it with
+   `gh pr create`, or edits the open one (`gh pr list --head updates/<id>`, then `gh pr edit`).
+   The `rule-proposal` label is read with `gh label list`, then created when it is missing or
+   edited when its colour or description differs (`scripts/updaters/label.mjs`). Then it returns
+   to the ref it started on.
+4. A failed update, verify command, git or gh step stops the run there and exits 1, and says
+   the tree is left detached where the update ran, for a person to read.
 
 `--dry-run` runs the checks and prints what each out-of-date updater would do, and runs no git
 and no gh. The runner never merges, approves or enables auto-merge, never pushes to the default
-branch, and never sets `ATL_WRITE_GUARD`: it hands git, gh and every updater the environment it
-was given. It runs no third-party action. `git`, `gh` and the shell are passed in, so
+branch, and hands git, gh and every updater the environment it was given. It runs no third-party action. `git`, `gh` and the shell are passed in, so
 `updaters:run:test` drives every path against fakes and asserts each call in order.
 
 **What the later slices add.** This is slice 1 of nine (F73). Decided by the owner:
@@ -914,7 +929,8 @@ was given. It runs no third-party action. `git`, `gh` and the shell are passed i
 5. **The skills, part a** (slice 5): `skills-drift` brought over from Certifipago, and the
    adaptations of a vendored `SKILL.md` recorded as a patch.
 6. **The skills, part b** (slice 6): the re-vendor engine. archify moves to 3.2.0, which is MIT,
-   in a change of its own vendored now with its locale catalogs allowlisted; the engine expects
+   in a change of its own vendored now with its four unread example catalogs trimmed and
+   `locales/es.json`, which archify reads, its one allowlisted file; the engine expects
    the licence the lock records for an entry.
 7. **The agent-rules watcher** (slice 7), **the shared rules** (slice 8) and **a local doctor**
    (slice 9), each with its parity-ledger row.
@@ -924,12 +940,132 @@ reads from the diff it got and review reads in the pull request; whether a comma
 contract, which its own suite proves; whether `network` and `secrets` name every host and
 variable it reaches; and the schedule and its token, which slice 2 adds.
 
+### 3j. The no-force hook
+
+A Claude Code hook that refuses a Bash or PowerShell command that forces or skips a check. It
+backs the LAW "A check is never forced or skipped" (`AGENTS.md`), which the owner asked for on
+2026-11-25 and widened the same day from forcing to skipping.
+
+| Piece                                           | What it is |
+| ----------------------------------------------- | ---------- |
+| `scripts/agent-harness/no-force/forms.mjs`      | The pure core: the force or skip one simple command passes, from its words |
+| `scripts/agent-harness/no-force/inner.mjs`      | The command a wrapper runs inside one (`eval`, `sh -c`, `pwsh -Command`, `find -exec`, `xargs`), with the write guard's own readers of a shell's `-c`, find, fd and xargs |
+| `scripts/agent-harness/no-force/bash.mjs`       | Reads a Bash command with the write guard's own continuations and tokenizer (3f): the whole command, or the longest prefix of its whole lines that parses |
+| `scripts/agent-harness/no-force/powershell.mjs` | A small reader of PowerShell's statements and words, and how deeply they nest, since the write guard parses none |
+| `scripts/agent-harness/no-force/command.mjs`    | The judge: every simple command either reader finds, `\|\| true`, and each wrapper's command in its own language, to 16 levels deep |
+| `scripts/agent-harness/no-force/decide.mjs`     | The verdict on a PreToolUse payload: a deny whose reason names the LAW, or nothing |
+| `scripts/agent-harness/no-force/claude-hook.mjs` | The Claude Code adapter: a payload on stdin, a `permissionDecision` on stdout |
+| `.agents/hooks.json`                            | Its entry, `no-force`, matcher `Bash\|PowerShell`, timeout 5 s; `.claude/settings.json` is generated from it (3e) |
+
+**What it refuses.** A long form on any tool, case-insensitive, with one dash or two:
+`--force`, `--force-with-lease`, every `--force-*` and `-Force`, with or without a value, and
+`--no-verify`; an explicit off, `=false` or `:$false`, passes. A prefix git and getopt read as
+the option itself, from `--fo` and `--no-v` up (`--forc`, `--no-verif`), and in PowerShell from
+`-Fo` up, which is how PowerShell binds an abbreviated parameter; `--format` and `--follow` are
+no prefix of either, so they pass. `taskkill /F`, `-F` and Git Bash's `//F`. `rm` with an `f`
+among its short options (`-f`, `-rf`). A failure swallowed by `|| true`, `|| :`, `|| exit 0` or
+`|| return 0`; `|| echo failed`, `|| exit 1` and a bare `|| exit` handle it, and pass. `HUSKY=0`,
+which skips every git hook, only where it
+sets the environment: an assignment before a command or a wrapper's (`env`, `sudo`), an `export`
+or `declare` argument, and in PowerShell `$env:HUSKY = 0`, `${env:HUSKY} = 0`,
+`Set-Item env:HUSKY 0` and `[Environment]::SetEnvironmentVariable('HUSKY','0')`;
+`git diff --stat HUSKY=0` sets nothing and passes. A git setting that moves the hooks away:
+`core.hooksPath` through `git -c` or `--config-env` on any subcommand, and every write form of
+`git config` (a value, `--add`, `--replace-all`, `--unset`, `set`, `unset`, and removing or
+renaming the `core` section); `git config --get core.hooksPath` reads, and passes. husky's own
+`prepare` script, `husky`, which points `core.hooksPath` at `.husky/_`, is no agent command: pnpm
+runs it as a lifecycle script of `pnpm install`, and husky spawns its `git config` itself, which
+no PreToolUse hook sees. git's short options that force or skip, by the letters each subcommand
+gives that meaning, alone or in a cluster (`-xfd`), after git's own options (`-C`, `-c`,
+`--git-dir`):
+
+| Subcommand                                        | Letters |
+| ------------------------------------------------- | ------- |
+| add, clean, fetch, mv, push, rm, tag, worktree    | `f`     |
+| branch                                            | `f`, `D`, `M`, `C` |
+| checkout                                          | `f`, `B` |
+| commit                                            | `n` (`--no-verify`) |
+| switch                                            | `f`, `C`, and `--discard-changes` |
+
+`git push -n` is `--dry-run`, which skips nothing, so it passes.
+
+A letter that takes a value ends its cluster and takes the next word (`git tag -mfix`,
+`git tag -F notes.txt`), and `--` ends the options of any program but a runner that forwards
+(`npm`, `npx`, `pnpm`, `yarn`, `bun`), whose first `--` hands options to the script or the
+command it runs (`pnpm run deploy -- --force`), so only a second one ends them. A wrapper
+(`sudo`, `env`, `timeout`) is read through. Every simple command of a list, a pipeline, a group, a function body
+(`f() { … }`, `function f { … }`, `function f() { … }`), `coproc`, a compound command and a
+substitution is judged, in PowerShell a script block and a subexpression too. The shared
+tokenizer (3f) reads an arithmetic command (`(( … ))`, `for ((i=0;i<3;i++))`), whose
+substitutions still run, a `[[ … ]]` condition with its operators and the regex after `=~`
+(`^(main|master)$`), an extended glob (`!(keep)`, `*.@(js|ts)`) whether or not
+`shopt -s extglob` is on, a quoted `)` inside it included (`@("a)"|b)`), and an array's elements
+as words (`files=( $(git ls-files) )`), so its substitutions are judged and the `)` that closes
+it is the real one; a variable that holds an array names no path the write guard trusts. So is
+the command a wrapper runs, in its own language, as the outer one
+is: `eval`, an inner shell's `-c` (`sh`, `dash`, `zsh`, `bash -lc`), a here-doc or a pipe of
+`cat`, `echo` or `printf` fed to a shell, `find -exec`, `fd -x` and `xargs` (the write guard's own
+readers of them), the text `trap` runs on a signal (`trap 'rm -rf x' EXIT`), PowerShell's
+`-Command` (`-c`, any prefix) and `-EncodedCommand` (decoded), `powershell` with its command as
+its words, and `Invoke-Expression`. Bash runs every whole line before one it cannot parse
+(`bash -c $'touch m\necho "x'` creates `m`). When the tokenizer stops on an error bash raises on a
+lone line too, an unterminated quote or backtick or an unbalanced `)`, the command is read as the
+longest prefix of its whole lines that parses, and that one line alone is let through, since bash
+refuses it whole. Every other reader error is one bash may not raise, and the command is denied
+(below): bash runs a here-doc that never ends to the end of its input.
+
+**What it does not read as a command**: a multi-word quoted span (a commit message), a
+here-doc's or a here-string's body unless a shell reads it, a comment, the words of `rg`,
+`grep`, `git grep`, `echo`, `printf`, `Write-Output`, `Write-Host` and `Select-String`, and the
+operands of `[[`, `[` and `test`.
+
+**It fails closed**, as the write guard does (3f): a broken hook would let every force and skip
+through unseen. Stdin that is empty, is not JSON or is no JSON object, a Bash or PowerShell call
+whose `command` is no string, a Bash command the tokenizer stops on with an error bash may not
+raise (a here-doc that never ends, `ls apps/(group)/x.tsx`, a substitution inside a regex or an
+extended glob), a command nested deeper than 16 levels of commands inside commands (or past the
+tokenizer's own cap of 32), one whose line prefixes would take more than about a second to try,
+an engine that cannot load and one that throws each get one line that denies,
+naming the problem and the one recovery, `"disableAllHooks": true` in
+`.claude/settings.local.json`. A tool it does not judge gets nothing: the matcher already keeps
+the hook to Bash and PowerShell.
+
+**The registered exceptions** are code, never a typed command: `taskkill /T /F` and
+`taskkill /F /PID …` in `scripts/agent-harness/reaper/**` (3g) and
+`packages/tooling/src/process-tree.mjs`, and the vendored archify's
+`preview.stop({ force: true })` in `.claude/skills/archify/bin/preview.mjs`, which stops its
+preview server on a second Ctrl+C. A tool call never types them, so the hook exempts nothing.
+
+**What is not a force option.** A tool setting whose name merely starts with `force` and that
+overrides no refusal, such as Chromium's `--force-device-scale-factor` in the vendored archify,
+is not one; the hook still refuses it when typed, since it stays conservative and the LAW decides
+the code. `rm -f`, `rm -rf` and `rmSync`'s `force: true` are inside the LAW, since the owner
+widened it to skipping: a path that may be missing goes through `removePath`
+(`packages/tooling/src/remove-path.mjs`), where only a path already gone counts as success.
+
+**Not covered:** a force or skip in code, config, CI or docs, which review reads; what a script
+a shell runs from a file does (`bash x.sh`, `pwsh -File x.ps1`), though the options passed to it
+are read; a short `-f` outside git, `rm` and taskkill; a git letter outside the table
+(`rebase -f`, `submodule -f`, `worktree add -B`); a `+refspec` push; `cmd /c`, `watch`, `ssh`,
+and git's short letters behind `pnpm exec` or `npx`; an alias and a variable's value (`$CMD`, or
+a hooks path set through the `GIT_CONFIG_*` variables); a here-string fed to a shell, whose
+quotes are read with its text; a PowerShell splat, a `||` chain in PowerShell, a failure
+PowerShell swallows with a success exit (`if ($LASTEXITCODE) { exit 0 }`), and a .NET call
+split across lines; and Codex, OpenCode and Copilot, which run no adapter yet.
+
 ---
 
 ## Layer 4 — CI
 
-`.github/workflows/ci.yml` runs `pnpm install` then the same gate, with
-`ATL_TEMPLATE_SELF=1`. CI runs no check that a developer cannot run locally.
+`.github/workflows/ci.yml` runs `pnpm install` then the same gate, with no
+variable set, on a checkout of the whole history (`fetch-depth: 0`), since
+`report:spec-drift` measures each spec from a commit a shallow clone does not
+hold. CI runs no check that a developer cannot run locally. Every job
+blocks: none carries `continue-on-error` (the LAW "A check is never forced or
+skipped"). `windows-process-trees` runs the Windows-only cases of the
+process-tree, bounded-child and worktree-pruner suites, and the whole reaper
+suite, on `windows-latest`; those cases skip on POSIX only because that job
+runs them, and `ci-windows:test` fails a Windows-only case no step of it runs.
 
 On a pull request, the `commitlint` job lints the commits of the pull request,
 from its base SHA to its head SHA, with `commitlint.config.js`, on a checkout
@@ -1032,7 +1168,9 @@ Flexibility without weakening the gate, in order of preference (§20):
    systematic in one area — as with the vendored skill under
    `.claude/skills/archify/**`, which is pinned upstream and not ours to
    reformat.
-3. **A justified inline disable**, with a written reason, one rule per line.
+
+No inline disable, `@ts-expect-error` or test skip: each skips a check, which
+the LAW "A check is never forced or skipped" forbids (3j).
 
 **Never an allowlist file**, but for the three below. A list of blessed paths
 freezes a backlog into a file nobody reads. A ceiling — one number per scope that can only go down, with

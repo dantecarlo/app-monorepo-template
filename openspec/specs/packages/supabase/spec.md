@@ -3,7 +3,7 @@
 > **Governs:** `packages/supabase/src`, `packages/supabase/supabase/migrations`, `packages/supabase/supabase/config.toml`, `packages/supabase/package.json`, `scripts/supabase-test-db.mjs`
 > **ID prefix:** `SUPABASE`
 > **Derived from:** `packages/supabase/docs/database.md`, `AGENTS.md`, `docs/code-standards.md`
-> **Verified against the code:** 2026-11-25 at `6cdbbaa`
+> **Verified against the code:** 2026-11-25 at `12d6b224`
 
 ## Purpose
 
@@ -1121,7 +1121,7 @@ naming the key and the three. A
 run SHALL exit with the CLI's status and remove the bundle; with `--dry-run` it SHALL write the
 bundle and name the command without running it.
 
-**Evidence:** `packages/supabase/package.json:22`, `packages/supabase/package.json:24-26`, `packages/supabase/src/testDbRun.constant.ts:3-10`, `packages/supabase/src/testDbRun.constant.ts:17-22`, `packages/supabase/src/testDbRun.helper.ts:55-69`, `packages/supabase/src/testDbRun.helper.ts:74-95`, `scripts/supabase-test-db.mjs:63-65`, `scripts/supabase-test-db.mjs:70-73`
+**Evidence:** `packages/supabase/package.json:22`, `packages/supabase/package.json:24-26`, `packages/supabase/src/testDbRun.constant.ts:3-10`, `packages/supabase/src/testDbRun.constant.ts:17-22`, `packages/supabase/src/testDbRun.helper.ts:55-69`, `packages/supabase/src/testDbRun.helper.ts:74-95`, `scripts/supabase-test-db.mjs:63-65`, `scripts/supabase-test-db.mjs:68`, `scripts/supabase-test-db.mjs:70-73`
 
 #### Scenario: no target set
 

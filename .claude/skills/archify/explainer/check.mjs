@@ -156,7 +156,7 @@ export function checkExplainerHtml(html, { file = '<html>', checkNative = true }
         let receipt; try {receipt=JSON.parse(run.stdout);} catch {receipt=null;}
         childReceipts.push({id,receipt});
         if (run.status!==0 || !receipt?.ok || receipt.artifact?.sha256!==child.sha256 || receipt.composition?.profile!==(bundle?.quality || document?.meta?.quality_profile || 'standard')) issue('native-check',`Native diagram failed its existing composition checks: ${id}.`,'Fix the nested diagram using the native checker diagnostics.',ids.get(id),'diagram');
-      } finally {fs.rmSync(directory,{recursive:true,force:true});}
+      } finally {fs.rmSync(directory,{recursive:true});}
     }
   }
   add('explainer_native_diagrams',before,childReceipts.map(({id,receipt})=>`${id}: ${receipt?.ok ? 'pass':'fail'}`));

@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------------------
-// policy — what the write guard reads: the rule files and the switch-off
-// variable of `.agents/contracts/write-guard.json`, and who the payload's
-// caller is under `.agents/agent-context.json`.
+// policy — what the write guard reads: the rule files of
+// `.agents/contracts/write-guard.json`, and who the payload's caller is
+// under `.agents/agent-context.json`. Nothing it reads switches the guard
+// off.
 //
 // A file that cannot be read loads as an Error rather than throwing, so the
 // decision engine can still refuse or ask instead of letting a crash wave
@@ -15,13 +16,6 @@ import { globToRegExp } from '../../manifest.mjs'
 
 export const POLICY_FILE = '.agents/contracts/write-guard.json'
 export const AGENT_CONTEXT_FILE = '.agents/agent-context.json'
-
-// The way out when the policy itself cannot be read: the same variable the
-// policy names, which a test holds equal to it.
-export const SWITCH_OFF = Object.freeze({
-  value: 'off',
-  variable: 'ATL_WRITE_GUARD'
-})
 
 export const ACTOR_KIND = Object.freeze({
   main: 'main',
@@ -53,7 +47,7 @@ const isText = ({ value }) =>
 const policyProblem = ({ policy }) => {
   if (policy instanceof Error) return policy.message
   if (!isRecord({ value: policy })) return 'it is not an object'
-  const { ruleFiles, switchOff } = policy
+  const { ruleFiles } = policy
   if (!Array.isArray(ruleFiles) || ruleFiles.length === 0) {
     return 'ruleFiles is not a non-empty list'
   }
@@ -63,14 +57,9 @@ const policyProblem = ({ policy }) => {
       !isText({ value: rule.glob }) ||
       !isText({ value: rule.what })
   )
-  if (bad !== undefined) {
-    return `the rule ${JSON.stringify(bad)} needs a glob and a what`
-  }
-  return isRecord({ value: switchOff }) &&
-    isText({ value: switchOff.variable }) &&
-    isText({ value: switchOff.value })
+  return bad === undefined
     ? null
-    : 'switchOff needs a variable and a value'
+    : `the rule ${JSON.stringify(bad)} needs a glob and a what`
 }
 
 export const assertPolicy = ({ policy }) => {
@@ -193,18 +182,6 @@ export const homeHeldRuleFor = ({ policy, relative }) =>
       })),
     relative
   })
-
-// Read without anything that can throw: an unreadable policy still leaves
-// the documented variable to switch the guard off.
-export const isSwitchedOff = ({ env, policy }) => {
-  const { value, variable } =
-    policyProblem({ policy }) === null ? policy.switchOff : SWITCH_OFF
-  const set = env?.[variable]
-  return (
-    typeof set === 'string' &&
-    set.trim().toLowerCase() === value.toLowerCase()
-  )
-}
 
 const unknown = ({ name, problem }) => ({
   kind: ACTOR_KIND.unknown,

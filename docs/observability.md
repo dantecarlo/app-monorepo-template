@@ -445,7 +445,8 @@ The `sentry` capability of `template.manifest.json` owns every Sentry file, so
 - **claims** the web root files: `apps/web/instrumentation.ts`,
   `apps/web/next-sentry.config.ts`, `apps/web/sentry.client.config.ts`,
   `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts` and
-  `apps/web/__tests__/next-sentry.config.test.ts`;
+  `apps/web/__tests__/next-sentry.config.test.ts`, and the suite that checks
+  its prune, `scripts/prune-boundary.sentry.test.mjs`;
 - **removes** what sits inside the apps' `src/`, which `web-next` and
   `mobile-expo` own: both `createSentryObservability.adapter.ts` with their
   tests, and `apps/mobile/src/test/mocks/sentry-react-native.ts`;
@@ -453,9 +454,10 @@ The `sentry` capability of `template.manifest.json` owns every Sentry file, so
   `expo.plugins` of `apps/mobile/app.json` to the list without
   `@sentry/react-native/expo`.
 
-`packages/tooling/src/__tests__/prune-boundary.test.mjs` fails when a file the
-prune keeps still imports a file it deletes or a dependency it removes, or when
-`app.json` would keep a plugin of a removed dependency. That is why
+`scripts/prune-boundary.sentry.test.mjs` fails when a file the prune keeps
+still imports a file it deletes or a dependency it removes, or when `app.json`
+would keep a plugin of a removed dependency; the prune deletes that suite with
+the capability. That is why
 `next.config.ts` names no capability: it applies the default export of every
 `next-<capability>.config.ts` beside it, and Sentry's is
 `next-sentry.config.ts`. What the prune cannot reach yet is listed in
@@ -552,7 +554,9 @@ repository keeps every file below; copy them from it rather than retyping.
      beside it:
 
      ```ts
-     // eslint-disable-next-line no-restricted-imports -- framework config entry point, like next.config.ts
+     // One of the files the `@sentry/nextjs` entry of
+     // .agents/contracts/dependencies.json names as its seam, so
+     // local/dependency-seam lets it import the SDK.
      import { withSentryConfig } from '@sentry/nextjs'
      import type { NextConfig } from 'next'
 

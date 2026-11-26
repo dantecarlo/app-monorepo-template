@@ -36,7 +36,7 @@ const HUNG_BOUND_MS = 200
 const PROCESS_GUARD_MS = 10_000
 
 const scratch = mkdtempSync(join(tmpdir(), 'reap-session-test-'))
-after(() => rmSync(scratch, { force: true, recursive: true }))
+after(() => rmSync(scratch, { recursive: true }))
 
 const cim = ({ command, mb, name = 'node.exe', pid, ppid }) => ({
   CommandLine: command,

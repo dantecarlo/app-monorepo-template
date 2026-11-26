@@ -82,20 +82,22 @@ const compileWebTheme = () => {
   const theme = require.resolve('@app/tokens/theme.css')
   const tailwind = require.resolve('tailwindcss/index.css')
   const css = ["@import 'tailwindcss';", readFileSync(theme, 'utf8')]
+  const readStylesheet = ({ base, id }: { base: string; id: string }) => {
+    const path =
+      id === 'tailwindcss'
+        ? tailwind
+        : require.resolve(id, { paths: [base] })
+    return {
+      base: dirname(path),
+      content: readFileSync(path, 'utf8'),
+      path
+    }
+  }
   return compile(css.join('\n'), {
     base: dirname(theme),
-    // eslint-disable-next-line local/single-object-params -- mirrors the loadStylesheet(id, base) callback shape of Tailwind's compile()
-    loadStylesheet: async (id, base) => {
-      const path =
-        id === 'tailwindcss'
-          ? tailwind
-          : require.resolve(id, { paths: [base] })
-      return {
-        base: dirname(path),
-        content: readFileSync(path, 'utf8'),
-        path
-      }
-    }
+    // compile() calls loadStylesheet with the id and the base folder as two
+    // arguments: they arrive as one list and are read as one object.
+    loadStylesheet: async (...[id, base]) => readStylesheet({ base, id })
   })
 }
 

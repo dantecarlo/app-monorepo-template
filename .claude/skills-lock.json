@@ -33,11 +33,13 @@
         "SKILL.md and references/explainer-authoring.md: removed the explainer proactive-mode offer — the Output paragraph and the two lines that pointed to it (Choose the artifact, and the explainer reply step). On acceptance it wrote a line into the agent global rules file (~/.claude/CLAUDE.md, ~/.codex/AGENTS.md and the like); a vendored skill here never edits a user global configuration. A [archify explainer: ...] line the user adds themselves still selects the mode. No other step of SKILL.md or its references writes outside the repository or reaches the network by default: brand capture runs only for an explicitly requested mark with a user-supplied URL, and --open and preview only on request",
         "renderers/shared/text-fit.mjs: adds nodeLabelRailReserve, availableNodeLabelWidth, fittedNodeLabelFontSize and requiredNodeLabelBoxWidth, a symmetric rail reserve of 2 x (SEMANTIC_SIGIL_FOOTPRINT 17 + 4) = 42px, or 2 x 24 = 48px with a brand mark (the stricter, never summed); existing exports are unchanged, so the other renderers behave as upstream",
         "renderers/architecture/render-architecture.mjs: the label font size comes from fittedNodeLabelFontSize, and validation replaces the brand-only brandTopRailProblem with architecture/component-label-sigil-rail, which rejects any label (branded or not) that cannot clear the rail at the 8px legible minimum and names the box width needed. Three upstream examples (web-app, production-deployment, brand-aware-delivery) now render some labels smaller; all five architecture examples still validate at showcase",
-        "The renderer adaptations above are one recorded patch over 208acba (see patches): it names every patched file with its sha256 at the pinned commit and after the patch, and fileHashes holds the patched values. computedHash and localHash cover SKILL.md only"
+        "The renderer adaptations above are one recorded patch over 208acba (see patches): it names every patched file with its sha256 at the pinned commit and after the patch, and fileHashes holds the patched values. computedHash and localHash cover SKILL.md only",
+        "explainer/check.mjs: the scratch folder the native-diagram check makes with mkdtempSync is removed by fs.rmSync(directory, { recursive: true }), where upstream passed force: true. The folder is the check's own and exists when it is removed, so force hid nothing but a failure to remove it, which the LAW \"A check is never forced or skipped\" (AGENTS.md) wants seen. The file is part of the run-time path: scripts/check-render-output.mjs and bin/visual-check.mjs import it, `deliver` (run by pnpm docs:diagrams) runs check-render-output.mjs, and `doctor` requires it. A second recorded patch (explainer-check-plain-removal)"
       ],
       "trimmed": [
         "test/ and every other path outside upstream archify/ — the upstream repository, not the skill package",
-        "examples/*.html — the 15 pre-rendered demos, about 12.5 MB of the 17.8 MB package, read by nothing at run time; every examples/*.json specification and examples/locales/*.json catalog is kept because the authoring path and `doctor` read them",
+        "examples/*.html — the 15 pre-rendered demos, about 12.5 MB of the 17.8 MB package, read by nothing at run time; every examples/*.json specification is kept because the authoring path and `doctor` read them",
+        "examples/locales/de.json, fr.json, fr.partial.json and pt.json — four of the seven unenrolled example catalogs. No archify code reads them: locales/manifest.json enrolls only the catalogs under locales/, and `doctor`, `validate` and every renderer run without them. Kept, they would each need a verify:english allowlist entry, and on 2026-11-25 the owner ruled (translated from Spanish) that \"if something is used to skip it, it has to be fixed\". The other three, examples/locales/it.json, ja.json and ru.json, stay as the reusable translations references/authoring-contract.md points to",
         "scripts/check-update.mjs and scripts/delivery-update-child.mjs — the network update checker and the child process `deliver` and `finalize` spawn to run it; bin/delivery-update.mjs is kept because bin/finalize.mjs imports it, and with the child gone its check resolves to `unavailable` without a request",
         "references/update-awareness.md — the guide of the removed `## Update awareness` step",
         "scripts/generate-brand-marks.mjs, scripts/generate-validators.mjs, scripts/update-contract.mjs — upstream maintenance tooling that regenerates vendored artifacts; it imports simple-icons and ajv, which are not run-time dependencies here. The two scripts bin/archify.mjs calls, check-render-output.mjs and render-examples.mjs, are kept",
@@ -81,12 +83,8 @@
         "examples/example-rebuild.waterfall.json": "77d610013a5aab031df739c207b66ebc26e1740371b51da06956ecf06b5e9929",
         "examples/holiday-planning.workflow.json": "b98354f921ca45842fed235db09fd4f19d94adc16865876f438c0d699d05e1ea",
         "examples/incident-response.workflow.json": "630be98449925d2716ecb8439f404b2bff5fe65ba905b0ad0baea6d96890c526",
-        "examples/locales/de.json": "77975293855578923fbbee29f478d9d84002c04d6a7b3e22cd9db8cf3fb414ba",
-        "examples/locales/fr.json": "ea1af868932eb22761094a4950b769fd0634430fe706fc4ea4335eca7f0529bb",
-        "examples/locales/fr.partial.json": "8958a8354ffccce2ce63ac21b3f8a0f131086f532832445a3fe7feff02200397",
         "examples/locales/it.json": "be8cd15fcd0311521dc8ae1f35bbcf8e33a180e20e5ce94fd0d65dec4e147e6b",
         "examples/locales/ja.json": "bb6d66d7e1126c5c622423317a536728820d3fe686be90d0c9cc8f6ca4ff3e67",
-        "examples/locales/pt.json": "8e3c6a054183e96465bd882bc23d38eafe19c0484eda5709f4e2b37e132e0731",
         "examples/locales/ru.json": "ea673bf7156d87ac43d754839155a1a145aafa481b5de540e04d1f8d3ec008d3",
         "examples/orders.erd.json": "1777a374647084466f4d7ce3a968004be6ab70ac9cf82459b96bed7c556cdfdd",
         "examples/payment-incident.timeline.json": "c1f535b3cc915ddd47ecd7df4e3ef02c441c8c3191daced5cf4422cff8dec95f",
@@ -100,7 +98,7 @@
         "examples/web-app.architecture.json": "95e051b27a9e4a3307e194c0f666fca4af51470be7e2228d400ff48aea5b353b",
         "explainer/browser-check.mjs": "cbbebfca2cb58cde0791f349e4f13490c0d085ce2f8653279139cf2aed334677",
         "explainer/charts.mjs": "bb49c5e8e5d6ba70a511d292dbac6a47953a010b67a8563e5f68222c7b220390",
-        "explainer/check.mjs": "151211edd6f1b842ee63b1aef8682cb68e6237ce3b9e7a81e09667420f2b9b3b",
+        "explainer/check.mjs": "8c04f94e87ec81cf0edc150f3109bb8757ebea78719a517440c28c6bbb981fd1",
         "explainer/diagrams.mjs": "bb4aae343968db5a5ad70c368ad41dcc9d2ac93f3ace02645059daf33cab16ba",
         "explainer/diff.mjs": "0851a6b9715a3f277308cb88c84a5ef5fc943f09a9e0a391a573438fe8a30fbb",
         "explainer/inline.mjs": "e024b719a365077b547cb3d50ac9909db7e080ca5bde62387e5d62ead3f819f3",
@@ -248,6 +246,18 @@
           "summary": "Architecture node labels reserve the semantic sigil in label fitting and render-time shrinking; validation names the box width a label needs. Ported from the 2.17 patch to the one renderer 3.2.0 leaves exposed. Details in adaptations.",
           "droppedFor": "workflow, data-flow and lifecycle: upstream 05bc389a (2026-09-21, Refs #199, #220) places their labels with nodeLabelLayout, which shifts a label away from a corner icon or moves it below the decoration rail; the two bundled examples the 2.17 patch re-fitted are therefore taken unchanged. sequence: the participant label row sits at y + 36, below the sigil box (y + 6 to y + 17), so the two cannot meet",
           "measuredWith": "the renderer width model (textUnits x font x 0.6, glyph top 0.8 em) over the 15 bundled architecture, sequence, workflow, data-flow and lifecycle examples rendered by 3.2.0: 0 of 136 labels meet their sigil; a valid showcase architecture with a 130 x 40 box labelled Payments Gateway: 2 of 10 labels met their sigil before the patch and 0 after",
+          "upstreamReport": "pending: not yet filed with tt-a1i/archify"
+        },
+        {
+          "files": {
+            "explainer/check.mjs": {
+              "patched": "8c04f94e87ec81cf0edc150f3109bb8757ebea78719a517440c28c6bbb981fd1",
+              "pinned": "151211edd6f1b842ee63b1aef8682cb68e6237ce3b9e7a81e09667420f2b9b3b"
+            }
+          },
+          "id": "explainer-check-plain-removal",
+          "summary": "The explainer check removes the scratch folder it made with mkdtempSync by fs.rmSync(directory, { recursive: true }), without force: true. Details in adaptations.",
+          "measuredWith": "scripts/archify-vendor.test.mjs, which refuses an rmSync with force: true in the file and pins both hashes",
           "upstreamReport": "pending: not yet filed with tt-a1i/archify"
         }
       ]

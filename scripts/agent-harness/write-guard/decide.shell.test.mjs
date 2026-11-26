@@ -16,7 +16,6 @@ import { test } from 'node:test'
 
 import {
   decisionOf,
-  HOST,
   MAIN,
   SCRATCH,
   shell
@@ -93,6 +92,18 @@ for (const { actor, agent, row } of TABLE) {
   }
 }
 
+// A command the reader once could not parse is now read, so a read-only
+// agent's loop, test and glob that write nothing pass.
+for (const command of [
+  'for ((i=0;i<3;i++)); do echo $i; done',
+  '[[ $b =~ ^(main|master)$ ]] && echo ok',
+  'shopt -s extglob\nls !(keep)'
+]) {
+  test(`a read-only agent's command that writes nothing passes: ${JSON.stringify(command)}`, () => {
+    assert.equal(decisionOf({ agent: 'validator', command }), '—')
+  })
+}
+
 // -- every write shape of a rule file asks the main session --------------------
 for (const command of [
   'echo x >> AGENTS.md',
@@ -114,7 +125,24 @@ for (const command of [
   'S=.claude/skills; echo x > $S/new/SKILL.md',
   // An inner shell's text is judged as Bash.
   "bash -c 'echo x > AGENTS.md'",
-  'eval "echo x > .claude/skills/a/SKILL.md"'
+  'eval "echo x > .claude/skills/a/SKILL.md"',
+  // A function body and a coprocess are commands like any other.
+  'function f { rm .claude/skills/sdd/SKILL.md; }',
+  'function f() { touch AGENTS.md; }',
+  'coproc rm AGENTS.md',
+  // So are an arithmetic loop's body, a [[ test's command and a line with
+  // an extended glob.
+  'for ((i=0;i<1;i++)); do echo x > AGENTS.md; done',
+  '(( 1 )) && touch AGENTS.md',
+  '[[ $b =~ ^(main|master)$ ]] && echo x > AGENTS.md',
+  '[[ a < b && -n x ]] && touch .claude/skills/sdd/SKILL.md',
+  'shopt -s extglob\nrm AGENTS.md !(keep)',
+  // An array's elements are read: a substitution in one runs, and the
+  // variable names no path the guard can trust.
+  'a=( $(touch AGENTS.md) )',
+  'a=(AGENTS.md); echo x > "$a"',
+  // A quoted regex's substitution runs too.
+  '[[ x =~ "$(touch AGENTS.md)" ]]'
 ]) {
   test(`the main session is asked before a rule file: ${command}`, () => {
     assert.equal(decisionOf({ agent: MAIN, command }), 'ask')
@@ -371,16 +399,6 @@ test('a shell call that names no command is an error: asked of the main session,
     assert.equal(
       decisionOf({ agent: 'validator', command: 5, tool }),
       'deny'
-    )
-  }
-})
-
-test('ATL_WRITE_GUARD=off silences the shell verdicts too', () => {
-  const host = { ...HOST, env: { ATL_WRITE_GUARD: 'off' } }
-  for (const tool of ['Bash', 'PowerShell']) {
-    assert.equal(
-      shell({ command: 'echo x > AGENTS.md', host, tool }),
-      undefined
     )
   }
 })

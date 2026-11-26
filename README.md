@@ -205,8 +205,11 @@ copy its anatomy for new screens.
 > An un-renamed guard (`pnpm check:identity`) is wired into `pnpm validate`
 > and fails the gate if the template-default identity is still present. This
 > is intentional — a derived project cannot pass `validate` until renamed.
-> The canonical template repo itself bypasses this check via `ATL_TEMPLATE_SELF=1`
-> (set in its own CI).
+> The template repo itself passes it because its `.agents/harness.config.json`
+> identity is the template's own and its `origin` remote is the template's
+> repository. A copy keeps that identity until `pnpm run init` rewrites it, so
+> a clone under another repository, a fork or a download is checked as a
+> derived project from the start. No environment variable decides it.
 
 ```bash
 pnpm install            # install all workspace dependencies

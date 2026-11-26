@@ -18,8 +18,9 @@
 //
 // The list names donor products, so it is template-maintainer material that
 // never ships. A derived project finds it absent and the gate forbids
-// nothing, saying so in its denominator; the template, run with
-// ATL_TEMPLATE_SELF=1, is refused without it, since a gate that forbids
+// nothing, saying so in its denominator; the template, the checkout whose
+// .agents/harness.config.json identity is the template's own
+// (template-identity.mjs), is refused without it, since a gate that forbids
 // nothing reports the same green as one that found nothing.
 //
 // `run` is pure: it decides on the files `collectContext` gathers.
@@ -33,6 +34,8 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { defineGate, reportGate } from './gate/gate.mjs'
+import { isTemplateCheckout } from './template-identity.mjs'
+import { HARNESS_CONFIG } from './verify-harness-config.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT_FLAG = '--root'
@@ -41,8 +44,6 @@ const FIRST_LINE = 1
 const LINE_BREAK = /\r?\n/u
 const SKILLS_ROOT = '.claude/skills'
 const CONTRACT = '.agents/contracts/downstream-projects.json'
-const SELF_VARIABLE = 'ATL_TEMPLATE_SELF'
-const SELF_VALUE = '1'
 // A whole word: no letter, digit or underscore on either side, in any
 // script, so `@name/`, `name's` and `com.name.app` match and `names` does
 // not.
@@ -127,8 +128,9 @@ export const gate = defineGate({
     'not, names a name of a downstream project that ' +
     `${CONTRACT} declares, matched as a whole word in any letter case; ` +
     'the list itself parses, declares at least one project, and gives ' +
-    'each a project name and at least one non-blank name; in the template ' +
-    `(${SELF_VARIABLE}=${SELF_VALUE}) the list must exist.`,
+    'each a project name and at least one non-blank name; in the template, ' +
+    `the checkout whose ${HARNESS_CONFIG} identity is the template's own, ` +
+    'the list must exist.',
   id: 'verify-skill-neutrality',
   notCovered:
     "a project's name spelled another way (split by a space or a hyphen, " +
@@ -194,15 +196,15 @@ const walk = ({ directory, prefix }) =>
     })
 
 // The declared list, every file of every skill, and whether this is the
-// template itself.
-export const collectContext = ({ root, self }) => {
+// template itself, read from its identity block.
+export const collectContext = ({ root }) => {
   const directory = join(root, SKILLS_ROOT)
   return {
     contract: readContract({ root }),
     files: existsSync(directory)
       ? walk({ directory, prefix: SKILLS_ROOT })
       : [],
-    self
+    self: isTemplateCheckout({ root })
   }
 }
 
@@ -228,10 +230,7 @@ const declaredOf = ({ contract }) => {
 }
 
 const main = () => {
-  const context = collectContext({
-    root: readRoot(),
-    self: process.env[SELF_VARIABLE] === SELF_VALUE
-  })
+  const context = collectContext({ root: readRoot() })
 
   reportGate({
     context,

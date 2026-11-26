@@ -62,6 +62,13 @@ const MOBILE_COMPONENT =
 const MOBILE_HOOK = 'apps/mobile/src/hooks/useSession.hook.ts'
 const MOBILE_SERVICE = 'apps/mobile/src/services/Items/items.service.ts'
 
+// A folder of pgTAP suites, checked as a whole by one test named after it.
+const SQL_SUITE = 'packages/supabase/supabase/tests/rls_profile.test.sql'
+const SQL_FOLDER_TEST =
+  'packages/supabase/supabase/tests/__tests__/tests.test.ts'
+const SQL_FOLDER_HIGHER =
+  'packages/supabase/supabase/__tests__/tests.test.ts'
+
 const ROUTE_LAYOUT = 'apps/mobile/src/app/_layout.tsx'
 const ROUTE_INDEX = 'apps/mobile/src/app/index.tsx'
 const ROUTE_LOGIN = 'apps/mobile/src/app/login.tsx'
@@ -77,12 +84,12 @@ const tree = ({ files, manifests = {} }) =>
   ])
 
 const walk =
-  ({ files, frozen = [], manifests }) =>
+  ({ files, manifests }) =>
   () =>
     withScratchTree({
       files: tree({ files, manifests }),
       prefix: 'verify-tests-',
-      use: ({ root }) => collectContext({ frozen, root })
+      use: ({ root }) => collectContext({ root })
     })
 
 const runGate = ({ files, manifests }) =>
@@ -94,11 +101,6 @@ const runGate = ({ files, manifests }) =>
         encoding: 'utf8'
       })
   })
-
-const frozenEntry = ({ path, reason = 'its unit cannot move yet' }) => ({
-  path,
-  reason
-})
 
 export const CASES = [
   {
@@ -125,6 +127,16 @@ export const CASES = [
     context: walk({ files: [HELPER, HELPER_OWN, HELPER_NESTED] }),
     expected: 1,
     name: 'a __tests__/ inside another __tests__/ is refused'
+  },
+  {
+    context: walk({ files: [SQL_SUITE, SQL_FOLDER_TEST] }),
+    expected: 0,
+    name: "a test named after its folder, in that folder's __tests__/, tests the folder as a unit"
+  },
+  {
+    context: walk({ files: [SQL_SUITE, SQL_FOLDER_HIGHER] }),
+    expected: 1,
+    name: 'a test named after a folder, in a higher __tests__/, names no unit'
   },
   {
     context: walk({
@@ -268,43 +280,10 @@ export const CASES = [
     }),
     expected: 0,
     name: 'the presence check judges the apps only'
-  },
-  {
-    context: walk({
-      files: [HELPER, HELPER_BESIDE],
-      frozen: [frozenEntry({ path: HELPER_BESIDE })]
-    }),
-    expected: 0,
-    name: 'a frozen entry exempts the misplaced test it names'
-  },
-  {
-    context: walk({
-      files: [HELPER, HELPER_OWN],
-      frozen: [frozenEntry({ path: HELPER_OWN })]
-    }),
-    expected: 1,
-    name: 'a frozen entry whose test sits correctly is stale'
-  },
-  {
-    context: walk({
-      files: [HELPER, HELPER_OWN],
-      frozen: [frozenEntry({ path: HELPER_BESIDE })]
-    }),
-    expected: 1,
-    name: 'a frozen entry whose test is gone is stale'
-  },
-  {
-    context: walk({
-      files: [HELPER, HELPER_BESIDE],
-      frozen: [frozenEntry({ path: HELPER_BESIDE, reason: ' ' })]
-    }),
-    expected: 2,
-    name: 'a frozen entry without a reason is refused and exempts nothing'
   }
 ]
 
-const findingsOf = ({ files, frozen }) =>
-  gate.run(walk({ files, frozen })())
+const findingsOf = ({ files }) => gate.run(walk({ files })())
 
 const checks = [
   {
@@ -412,7 +391,7 @@ const checks = [
       assert.equal(result.status, PASSED, result.stderr)
       assert.match(
         result.stdout,
-        /PASS — 1 test file\(s\) and 1 unit\(s\) that need one, across 2 workspace\(s\), 0 frozen exception\(s\)/u
+        /PASS — 1 test file\(s\) and 1 unit\(s\) that need one, across 2 workspace\(s\)\. /u
       )
     }
   },

@@ -91,8 +91,14 @@ const THIRD_PARTY_CALLBACK_NAMES = new Set([
 // Param names that signal an event-handler / callback contract.
 const EVENT_PARAM_RE = /^(_?e|_?ev|_?evt|_?event|_?args?|_?next|_?prev)$/i
 
-// eslint-disable-next-line no-control-regex
-const NON_ASCII_RE = /[^\x00-\x7F]/
+// The last code point of ASCII: a name with a character above it is not
+// ASCII.
+const ASCII_MAX_CODE_POINT = 0x7f
+
+const hasNonAsciiCharacter = (name) =>
+  [...name].some(
+    (character) => (character.codePointAt(0) ?? 0) > ASCII_MAX_CODE_POINT
+  )
 
 const getCalleeName = (node) => {
   if (!node) return undefined
@@ -262,7 +268,7 @@ const noNonAsciiIdentifier = {
   create(context) {
     return {
       Identifier(node) {
-        if (NON_ASCII_RE.test(node.name)) {
+        if (hasNonAsciiCharacter(node.name)) {
           context.report({
             data: { name: node.name },
             messageId: 'nonAscii',

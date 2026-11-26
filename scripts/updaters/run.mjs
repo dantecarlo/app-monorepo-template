@@ -10,27 +10,32 @@
 //   1. It runs `<command> --check`, which writes nothing. Exit 0: current,
 //      nothing more. Exit 1, or any other: failed, no pull request; the run
 //      goes on to the next updater and exits 1.
-//   2. Exit 2: out of date. On a working tree with no change, it rebuilds
-//      the branch `updates/<id>` from the default branch (the one gh names),
-//      runs `<command>`, then each `verify` command. An update that changes
+//   2. Exit 2: out of date. On a working tree with no change, it starts
+//      detached from `updates/<id>` as the remote holds it, with the
+//      default branch (the one gh names) merged in, or from the default
+//      branch when the remote holds no `updates/<id>` (branch.mjs), runs
+//      `<command>`, then each `verify` command. An update that changes
 //      nothing commits nothing. Otherwise it commits the change with a
-//      Conventional Commit that carries no attribution, force-pushes it to
-//      `updates/<id>` (the updater owns that branch: each run rebuilds it,
-//      so a commit pushed there by hand is replaced), and opens one pull
-//      request from it, or edits the one already open. Then it returns to
-//      the ref it started on.
+//      Conventional Commit that carries no attribution, pushes it on top of
+//      `updates/<id>` with no force option, so the branch is appended to and
+//      never rewritten, and opens one pull request from it, or edits the
+//      one already open. Then it returns to the ref it started on. A merge
+//      that conflicts opens nothing: one line names the branch and the
+//      conflict, the tree returns to its ref, the run goes on to the next
+//      updater and exits 1.
 //   3. A pull request whose updater declares `proposal: true`, or whose
 //      diff touches a path the write guard's `ruleFor` classifies as a rule
 //      file, is a draft labelled `rule-proposal`, and its body quotes the
 //      LAW "A rule is not edited to fit the work": an updater proposes a
 //      rule change, the owner decides it.
 //   4. A failed update, verify command, git or gh step stops the run there,
-//      commits nothing more and exits 1, and says which branch the tree is
-//      left on, for a person to read.
+//      commits nothing more and exits 1, and says where the tree is left,
+//      for a person to read.
 //
-// It never merges, approves or enables auto-merge, never pushes to the
-// default branch, and hands git, gh and every updater the environment it
-// was given, never setting ATL_WRITE_GUARD.
+// It never merges, approves or enables auto-merge on a pull request, never
+// pushes to the default branch, passes no force option (the rule-proposal
+// label is made current by label.mjs), and hands git, gh and every updater
+// the environment it was given, unchanged.
 //
 // `git`, `gh` and the shell are passed in, so its suite drives it with
 // fakes; this file starts them only from `main`.
@@ -59,25 +64,31 @@ import {
   ruleOfPath,
   UPDATERS_FILE
 } from '../verify-updaters.mjs'
+import { startUpdate } from './branch.mjs'
+import { ensureLabel } from './label.mjs'
+import {
+  BRANCH_PREFIX,
+  commitBodyOf,
+  LABEL_COLOR,
+  LABEL_DESCRIPTION,
+  planOf,
+  pullBodyOf,
+  reviewsOf,
+  RULE_PROPOSAL_LABEL,
+  subjectOf
+} from './messages.mjs'
+import {
+  EXIT,
+  firstLine,
+  MergeConflict,
+  must,
+  StepFailed
+} from './steps.mjs'
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const DEFAULT_WHERE = 'local'
-const BRANCH_PREFIX = 'updates/'
 const DETACHED = 'HEAD'
-const COMMIT_WIDTH = 100
 const MAX_BUFFER = 64 * 1024 * 1024
-
-const EXIT = Object.freeze({ current: 0, failed: 1, outdated: 2 })
-
-export const RULE_PROPOSAL_LABEL = 'rule-proposal'
-const LABEL_COLOR = 'b60205'
-const LABEL_DESCRIPTION =
-  'An updater proposes a rule change; the owner decides it'
-
-// The LAW of AGENTS.md a rule proposal quotes, word for word.
-const LAW = 'A rule is not edited to fit the work'
-const LAW_TEXT =
-  'They change only when the owner asks for that change, in words, as the request.'
 
 const STATUS_ARGS = Object.freeze([
   'status',
@@ -85,21 +96,6 @@ const STATUS_ARGS = Object.freeze([
   '-z',
   '--untracked-files=all'
 ])
-
-class StepFailed extends Error {}
-
-const firstLine = ({ text }) =>
-  (text ?? '').split(/\r?\n/u).find((line) => line.trim() !== '') ?? ''
-
-// The result of one call, or a StepFailed naming it.
-const must = ({ result, what }) => {
-  if (result.status === EXIT.current) return result
-  const why = firstLine({ text: result.stderr })
-  throw new StepFailed(
-    `\`${what}\` exited ${result.status ?? 'without a status'}` +
-      (why === '' ? '' : `: ${why}`)
-  )
-}
 
 // Every path of `git status --porcelain=v1 -z`: a rename or a copy names
 // its new path, then its old one.
@@ -116,76 +112,6 @@ export const changedPaths = ({ porcelain }) => {
   }
   return paths
 }
-
-const wrap = ({ text }) =>
-  text.split(' ').reduce((lines, word) => {
-    const last = lines.at(-1)
-    if (last === undefined) return [word]
-    return `${last} ${word}`.length <= COMMIT_WIDTH
-      ? [...lines.slice(0, -1), `${last} ${word}`]
-      : [...lines, word]
-  }, [])
-
-const subjectOf = ({ entry }) => `chore(updates): run the ${entry.id} updater`
-
-const verifiedBy = ({ entry, quote = (text) => text }) =>
-  entry.verify.length === 0
-    ? 'It declares no verify command.'
-    : `Then ${entry.verify.map(quote).join(', ')} passed.`
-
-const commitBodyOf = ({ base, branch, entry }) =>
-  wrap({
-    text:
-      `pnpm updaters:run found ${entry.id} out of date and ran ${entry.command} ` +
-      `on ${branch}, rebuilt from ${base}. ${verifiedBy({ entry })}`
-  }).join('\n')
-
-const reviewsOf = ({ stdout }) =>
-  (stdout ?? '')
-    .split(/\r?\n/u)
-    .map((line) => /^review: (?<path>.+)$/u.exec(line.trim())?.groups.path)
-    .filter((path) => path !== undefined)
-
-const bullet = ({ text }) => `- \`${text}\``
-
-const proposalSection = ({ rules }) => [
-  '## Rule proposal',
-  '',
-  rules.length === 0
-    ? `Its updater declares \`proposal: true\`, so this pull request opens as a draft labelled \`${RULE_PROPOSAL_LABEL}\`.`
-    : `This change touches a rule path, so it opens as a draft labelled \`${RULE_PROPOSAL_LABEL}\`:`,
-  ...(rules.length === 0
-    ? []
-    : ['', ...rules.map(({ path, rule }) => `${bullet({ text: path })}, ${rule.what}`)]),
-  '',
-  `> **${LAW} — LAW** (\`AGENTS.md\`)`,
-  '>',
-  `> ${LAW_TEXT}`,
-  '',
-  'The owner decides: approve the rule change in words, or close this pull request.',
-  ''
-]
-
-const pullBodyOf = ({ base, branch, changed, entry, proposal, reviews, rules }) =>
-  [
-    `\`pnpm updaters:run\` found \`${entry.id}\` out of date (\`${entry.command} --check\` exited 2). ` +
-      `It ran \`${entry.command}\` on \`${branch}\`, rebuilt from \`${base}\`. ` +
-      verifiedBy({ entry, quote: (text) => `\`${text}\`` }),
-    '',
-    '## Changed',
-    '',
-    ...changed.map((path) => bullet({ text: path })),
-    '',
-    ...(reviews.length === 0
-      ? []
-      : ['## Review', '', ...reviews.map((path) => bullet({ text: path })), '']),
-    ...(proposal ? proposalSection({ rules }) : []),
-    '---',
-    '',
-    'An updater opened this pull request. It never merges, approves or enables auto-merge: a ' +
-      `person reviews and merges it. The next run rebuilds \`${branch}\` from \`${base}\` and ` +
-      'force-pushes it, so a commit pushed to it by hand is replaced.'
-  ].join('\n')
 
 const backArgs = ({ original }) =>
   original.branch === undefined
@@ -212,7 +138,7 @@ const prepare = ({ env, gh, git }) => {
   }).stdout.trim()
   if (head.startsWith(BRANCH_PREFIX)) {
     throw new StepFailed(
-      `the run is on ${head}, a branch it rebuilds; switch to another branch first`
+      `the run is on ${head}, a branch the updaters push to; switch to another branch first`
     )
   }
   const original =
@@ -252,21 +178,12 @@ const openPull = ({ base, body, branch, env, gh, proposal, title }) => {
   })
   const [open] = JSON.parse(listed.stdout || '[]')
   if (proposal) {
-    must({
-      result: gh({
-        args: [
-          'label',
-          'create',
-          RULE_PROPOSAL_LABEL,
-          '--color',
-          LABEL_COLOR,
-          '--description',
-          LABEL_DESCRIPTION,
-          '--force'
-        ],
-        env
-      }),
-      what: `gh label create ${RULE_PROPOSAL_LABEL}`
+    ensureLabel({
+      color: LABEL_COLOR,
+      description: LABEL_DESCRIPTION,
+      env,
+      gh,
+      name: RULE_PROPOSAL_LABEL
     })
   }
   if (open === undefined) {
@@ -321,18 +238,16 @@ const openPull = ({ base, body, branch, env, gh, proposal, title }) => {
 const propose = ({ entry, env, gh, git, policy, session, sh }) => {
   const { base, original } = session
   const branch = `${BRANCH_PREFIX}${entry.id}`
-  must({
-    result: git({
-      args: ['fetch', 'origin', `+refs/heads/${base}:refs/remotes/origin/${base}`],
-      env
-    }),
-    what: `git fetch origin ${base}`
+  const start = startUpdate({
+    back: backArgs({ original }),
+    base,
+    branch,
+    env,
+    git
   })
-  must({
-    result: git({ args: ['checkout', '-B', branch, `origin/${base}`], env }),
-    what: `git checkout -B ${branch}`
-  })
-  const left = `; nothing was committed and no pull request opened; the tree is left on ${branch}`
+  const left =
+    '; nothing was committed and no pull request opened; the tree is left detached where ' +
+    `the update of ${branch} ran`
   const run = ({ command }) => {
     const result = sh({ command, env })
     if (result.status === EXIT.current) return result
@@ -350,7 +265,7 @@ const propose = ({ entry, env, gh, git, policy, session, sh }) => {
   })
   if (changed.length === 0) {
     must({ result: git({ args: backArgs({ original }), env }), what: 'git checkout' })
-    return `changed nothing against ${base}; no pull request`
+    return `changed nothing against ${start.against}; no pull request`
   }
   entry.verify.forEach((command) => run({ command }))
 
@@ -367,7 +282,7 @@ const propose = ({ entry, env, gh, git, policy, session, sh }) => {
         '--message',
         title,
         '--message',
-        commitBodyOf({ base, branch, entry })
+        commitBodyOf({ branch, entry, start })
       ],
       env
     }),
@@ -375,7 +290,7 @@ const propose = ({ entry, env, gh, git, policy, session, sh }) => {
   })
   must({
     result: git({
-      args: ['push', '--force', 'origin', `HEAD:refs/heads/${branch}`],
+      args: ['push', 'origin', `HEAD:refs/heads/${branch}`],
       env
     }),
     what: `git push origin ${branch}`
@@ -389,7 +304,8 @@ const propose = ({ entry, env, gh, git, policy, session, sh }) => {
       entry,
       proposal,
       reviews: reviewsOf({ stdout: update.stdout }),
-      rules
+      rules,
+      start
     }),
     branch,
     env,
@@ -399,20 +315,6 @@ const propose = ({ entry, env, gh, git, policy, session, sh }) => {
   })
   must({ result: git({ args: backArgs({ original }), env }), what: 'git checkout' })
   return done
-}
-
-const planOf = ({ entry }) => {
-  const branch = `${BRANCH_PREFIX}${entry.id}`
-  const verify =
-    entry.verify.length === 0 ? '' : `, then ${entry.verify.join(', ')}`
-  const pull = entry.proposal
-    ? `a draft labelled ${RULE_PROPOSAL_LABEL}`
-    : `ready for review, or a draft labelled ${RULE_PROPOSAL_LABEL} if its diff touches a rule path`
-  return (
-    `updaters: [dry run] ${entry.id} would rebuild ${branch} from the default branch, ` +
-    `run ${entry.command}${verify}, commit "${subjectOf({ entry })}", ` +
-    `push ${branch} and open or update one pull request, ${pull}`
-  )
 }
 
 export const runUpdaters = ({
@@ -487,6 +389,8 @@ export const runUpdaters = ({
       if (!(error instanceof StepFailed)) throw error
       tally.failed += 1
       warn(`updaters: ${entry.id}: ${error.message}`)
+      // A conflict leaves the tree on its ref, so the next updater can run.
+      if (error instanceof MergeConflict) continue
       warn('updaters: the run stopped there; no other updater ran')
       break
     }

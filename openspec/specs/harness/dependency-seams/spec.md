@@ -3,7 +3,7 @@
 > **Governs:** `.agents/contracts/dependencies.json`, `eslint-dependency-seam-allowlist.json`, `eslint-local-rules/dependency-seam.detect.mjs`, `eslint-local-rules/wrapped-import.detect.mjs`, `scripts/dependency-seams.detect.mjs`, `scripts/eslint-config.detect.mjs`, `scripts/verify-dependency-seams.mjs`, `eslint.config.mjs`, `eslint.rules.mjs`
 > **ID prefix:** `SEAM`
 > **Derived from:** `docs/code-standards.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-20 at `bdd39a8`
+> **Verified against the code:** 2026-11-26 at `35cf057d`
 
 ## Purpose
 
@@ -27,15 +27,15 @@ declares (SEAM-09, SEAM-10); the other lint rules themselves are not part of thi
 The dependency registry `.agents/contracts/dependencies.json` SHALL hold one entry per package or
 package subpath, each with a category among `core`, `infra`, `ui`, `vendor`, `vendor-package`,
 `build` and `peer`, a seam of repository globs for every non-core entry, no seam for a core
-entry, `types` either `seam` (the default) or `anywhere`, and an `owner` that names, as text, the
+entry, `types` either `seam` (the default) or `anywhere`, an optional text `note`, no other key, and an `owner` that names, as text, the
 capability of `template.manifest.json` whose prune removes the entry, or `core`;
 `pnpm verify:dependency-seams` refuses an entry that breaks this shape, an owner that is not text
 included, and a name listed twice; whether an entry has an owner, and whether the manifest
 declares it, is `pnpm verify:manifest:coverage`'s to refuse.
 
-**Evidence:** `.agents/contracts/dependencies.json:2-9`, `scripts/dependency-seams.detect.mjs:99-139`,
-`scripts/dependency-seams.detect.mjs:144-168`, `scripts/dependency-seams.detect.mjs:370-375`,
-`scripts/dependency-seams.detect.mjs:388-389`, `scripts/manifest-owners.mjs:28-69`
+**Evidence:** `.agents/contracts/dependencies.json:2-9`, `eslint-local-rules/dependency-seam.detect.mjs:49-59`,
+`scripts/dependency-seams.detect.mjs:56-63`, `scripts/dependency-seams.detect.mjs:101-141`,
+`scripts/dependency-seams.detect.mjs:183-208`, `scripts/manifest-owners.mjs:28-69`
 
 #### Scenario: a non-core entry without a seam
 
@@ -78,9 +78,10 @@ declares it, is `pnpm verify:manifest:coverage`'s to refuse.
 every file of `apps/*/**` and `packages/*/**` it lints, test infrastructure included; a Node
 builtin resolves to the registry's `node:*` entry.
 
-**Evidence:** `eslint-local-rules/dependency-seam.detect.mjs:138-145`,
-`eslint-local-rules/dependency-seam.detect.mjs:172-183`,
-`eslint-local-rules/dependency-seam.detect.mjs:188-194`, `eslint-local-rules/index.mjs:914-958`
+**Evidence:** `eslint-local-rules/dependency-seam.detect.mjs:67`,
+`eslint-local-rules/dependency-seam.detect.mjs:141-148`,
+`eslint-local-rules/dependency-seam.detect.mjs:190-193`,
+`eslint-local-rules/dependency-seam.detect.mjs:206-212`, `eslint-local-rules/index.mjs:924-953`
 
 #### Scenario: a package nobody registered
 
@@ -102,7 +103,7 @@ builtin resolves to the registry's `node:*` entry.
 any other registered package only in a file one of its seam globs matches; a type-only import is
 judged the same way unless the entry sets `types` to `anywhere`.
 
-**Evidence:** `eslint-local-rules/dependency-seam.detect.mjs:195-201`, `.agents/contracts/dependencies.json:113-115`
+**Evidence:** `eslint-local-rules/dependency-seam.detect.mjs:213-223`, `.agents/contracts/dependencies.json:133-136`
 
 #### Scenario: outside the seam
 
@@ -155,11 +156,11 @@ judged the same way unless the entry sets `types` to `anywhere`.
 and the module argument of `vi.mock`, `vi.doMock`, `vi.unmock`, `vi.doUnmock`,
 `vi.importActual` and `vi.importMock`.
 
-**Evidence:** `eslint-local-rules/dependency-seam.detect.mjs:78-85`,
-`eslint-local-rules/dependency-seam.detect.mjs:132-145`,
-`eslint-local-rules/dependency-seam.detect.mjs:217-225`,
-`eslint-local-rules/dependency-seam.detect.mjs:247-291`,
-`eslint-local-rules/dependency-seam.detect.mjs:304-319`
+**Evidence:** `eslint-local-rules/dependency-seam.detect.mjs:81-88`,
+`eslint-local-rules/dependency-seam.detect.mjs:250-258`,
+`eslint-local-rules/dependency-seam.detect.mjs:267-276`,
+`eslint-local-rules/dependency-seam.detect.mjs:280-324`,
+`eslint-local-rules/dependency-seam.detect.mjs:337-352`
 
 #### Scenario: a dynamic import
 
@@ -230,7 +231,8 @@ and the module argument of `vi.mock`, `vi.doMock`, `vi.unmock`, `vi.doUnmock`,
 is the specifier itself or one of its parent paths down to its package, so a subpath entry
 narrows its package and a subpath without an entry of its own takes its package's.
 
-**Evidence:** `eslint-local-rules/dependency-seam.detect.mjs:172-183`, `.agents/contracts/dependencies.json:55-58`
+**Evidence:** `eslint-local-rules/dependency-seam.detect.mjs:190-201`, `.agents/contracts/dependencies.json:32-35`,
+`.agents/contracts/dependencies.json:66-69`
 
 #### Scenario: a narrowed subpath of a core package
 
@@ -253,8 +255,8 @@ admits, the unit being the file named by the test's stem in the folder that hold
 `__tests__/`, and in a file under a test-infrastructure glob of the registry
 (`{apps,packages}/*/src/test/**`), every registered package.
 
-**Evidence:** `eslint-local-rules/dependency-seam.detect.mjs:106-122`,
-`eslint-local-rules/dependency-seam.detect.mjs:196`, `eslint-local-rules/dependency-seam.detect.mjs:198-201`,
+**Evidence:** `eslint-local-rules/dependency-seam.detect.mjs:74-78`,
+`eslint-local-rules/dependency-seam.detect.mjs:109-125`, `eslint-local-rules/dependency-seam.detect.mjs:214-219`,
 `.agents/contracts/dependencies.json:3`
 
 #### Scenario: a test of a unit inside the seam
@@ -388,11 +390,11 @@ stale, and when a source file under `apps/` or `packages/` cannot be parsed. It 
 population it judged when it passes, and against a registry it refuses it counts no file-package
 pair.
 
-**Evidence:** `scripts/dependency-seams.detect.mjs:171-180`, `scripts/dependency-seams.detect.mjs:182-193`,
-`scripts/dependency-seams.detect.mjs:195-206`, `scripts/dependency-seams.detect.mjs:208-229`,
-`scripts/dependency-seams.detect.mjs:263-273`, `scripts/dependency-seams.detect.mjs:358-397`,
-`scripts/dependency-seams.detect.mjs:401-406`, `scripts/verify-dependency-seams.mjs:119-125`,
-`scripts/verify-dependency-seams.mjs:136-151`, `scripts/verify-dependency-seams.mjs:226-245`,
+**Evidence:** `scripts/dependency-seams.detect.mjs:223-232`, `scripts/dependency-seams.detect.mjs:234-245`,
+`scripts/dependency-seams.detect.mjs:247-258`, `scripts/dependency-seams.detect.mjs:260-281`,
+`scripts/dependency-seams.detect.mjs:315-325`, `scripts/dependency-seams.detect.mjs:444-480`,
+`scripts/verify-dependency-seams.mjs:121-129`, `scripts/verify-dependency-seams.mjs:131-155`,
+`scripts/verify-dependency-seams.mjs:201-216`, `scripts/verify-dependency-seams.mjs:231-251`,
 `scripts/eslint-config.detect.mjs:68-84`
 
 #### Scenario: an unregistered dependency
@@ -472,8 +474,8 @@ suffix; and `local/dependency-seam` at `error` to every JavaScript and TypeScrip
 `apps/*/**` and `packages/*/**`; each block registering the plugins it needs, so an app added under
 `apps/` is judged by every shared rule with no config change.
 
-**Evidence:** `eslint.config.mjs:258-267`, `eslint.config.mjs:310-313`, `eslint.config.mjs:353-373`,
-`eslint.rules.mjs:335-340`, `eslint.rules.mjs:673-689`, `eslint-local-rules/style-positioning.detect.mjs:310-314`,
+**Evidence:** `eslint.config.mjs:258-267`, `eslint.config.mjs:310-313`, `eslint.config.mjs:352-372`,
+`eslint.rules.mjs:335-340`, `eslint.rules.mjs:673-680`, `eslint-local-rules/style-positioning.detect.mjs:310-314`,
 `eslint-local-rules/ui-kit.detect.mjs:63-66`, `eslint-local-rules/__fixtures__/apps/fixture/package.json:1-7`
 
 #### Scenario: the base rules
@@ -558,8 +560,8 @@ the file.
 **Evidence:** `scripts/eslint-config.detect.mjs:51-60`, `scripts/eslint-config.detect.mjs:68-92`,
 `scripts/eslint-config.detect.mjs:96-106`, `scripts/eslint-config.detect.mjs:116-143`,
 `eslint.config.mjs:142-153`, `eslint.config.mjs:159-176`, `eslint.config.mjs:181-207`,
-`eslint.config.mjs:218-233`, `eslint.config.mjs:240`, `eslint.config.mjs:273-276`,
-`eslint.config.mjs:322-324`, `eslint.config.mjs:361`
+`eslint.config.mjs:218-233`, `eslint.config.mjs:240`, `eslint.config.mjs:272-275`,
+`eslint.config.mjs:320-322`, `eslint.config.mjs:359`
 
 #### Scenario: an app that declares next
 
@@ -651,7 +653,7 @@ in a file under that folder of the same app; a name no block of the file's app i
 (`View`, `ScrollView`, `Pressable`) SHALL pass anywhere. A type-only import SHALL be judged the
 same way, and the name judged SHALL be the one `react-native` exports, not the local alias.
 
-**Evidence:** `eslint-local-rules/wrapped-import.detect.mjs:63-74`, `eslint-local-rules/wrapped-import.detect.mjs:227`, `eslint-local-rules/wrapped-import.detect.mjs:334-346`, `.agents/contracts/dependencies.json:40-42`
+**Evidence:** `eslint-local-rules/wrapped-import.detect.mjs:63-74`, `eslint-local-rules/wrapped-import.detect.mjs:227`, `eslint-local-rules/wrapped-import.detect.mjs:334-346`, `.agents/contracts/dependencies.json:48-51`
 
 #### Scenario: outside its block
 
@@ -706,7 +708,7 @@ same way, and the name judged SHALL be the one `react-native` exports, not the l
 followed by a capital) or its `router` object only in a file under the `src/lib/routing/` of the
 file's app; its layout components and its types SHALL pass anywhere.
 
-**Evidence:** `eslint-local-rules/wrapped-import.detect.mjs:48-49`, `eslint-local-rules/wrapped-import.detect.mjs:348-358`, `.agents/contracts/dependencies.json:22-24`
+**Evidence:** `eslint-local-rules/wrapped-import.detect.mjs:48-49`, `eslint-local-rules/wrapped-import.detect.mjs:348-358`, `.agents/contracts/dependencies.json:26-29`
 
 #### Scenario: a hook outside lib/routing
 
@@ -827,7 +829,7 @@ and `packages/*` by pattern, with the workspace root the config is built for, so
 under `apps/` is judged by its own `src/components/ui/` folders and its own `src/lib/routing/`
 with no change to the config; a file outside `apps/*` and `packages/*` SHALL NOT be judged.
 
-**Evidence:** `eslint.rules.mjs:691-698`, `eslint.config.mjs:377`, `eslint-local-rules/index.mjs:991`, `eslint-local-rules/index.mjs:1001`
+**Evidence:** `eslint.rules.mjs:691-698`, `eslint.config.mjs:375`, `eslint-local-rules/index.mjs:990-998`, `eslint-local-rules/index.mjs:1006-1010`
 
 #### Scenario: a new app
 
@@ -856,7 +858,7 @@ this shape as a malformed registry, judging nothing else against it, and SHALL f
 migration that no entry of `eslint-dependency-seam-allowlist.json` names, as stale, to be closed by
 removing it; while the allowlist cannot be read, it SHALL call no migration stale.
 
-**Evidence:** `.agents/contracts/dependencies.json:677`,
+**Evidence:** `.agents/contracts/dependencies.json:685`,
 `eslint-local-rules/dependency-seam.detect.mjs:155-166`,
 `eslint-local-rules/dependency-seam.detect.mjs:183`, `scripts/dependency-seams.detect.mjs:49-55`,
 `scripts/dependency-seams.detect.mjs:146-181`, `scripts/dependency-seams.detect.mjs:195`,

@@ -400,9 +400,9 @@ screen.getByRole('heading', { name: /item title/i })
 - `src/test/` (setup, the test helper, MSW handlers and server, module mocks) and `__mocks__/`
   are shared test infrastructure, not unit tests, and no rule judges where they sit.
 - `pnpm verify:tests` fails a test beside its unit, one in a higher `__tests__/`, one whose stem
-  names no unit of the folder that holds its `__tests__/`, and a `__tests__/` inside another; a
-  frozen exception in `scripts/verify-tests.mjs` carries its reason and fails once it exempts
-  nothing. `pnpm tests:into-blocks` moves every test it can place with `git mv`, rewriting the
+  names neither a unit of the folder that holds its `__tests__/` nor that folder (a folder is a
+  unit, tested by a test named after it in its own `__tests__/`), and a `__tests__/` inside
+  another; no test is exempt. `pnpm tests:into-blocks` moves every test it can place with `git mv`, rewriting the
   test's relative imports and every citation of its old path in `openspec/specs/` and `docs/`;
   a project that adopts the rule runs it once. The Vitest configs read `src/**/__tests__/` and
   the workspace's root `__tests__/`.
@@ -631,7 +631,7 @@ Nothing is **DONE** until the validation harness is green.
 
 After generating any feature, change, or fix:
 
-1. **Run `ATL_TEMPLATE_SELF=1 pnpm validate`** — the deterministic gate. It runs
+1. **Run `pnpm validate`** — the deterministic gate. It runs
    the manifest gates and the lint-rule tests first (instant, so structural
    drift fails before anything expensive), then
    `turbo run lint typecheck test build format:check`, then the `verify:*`
@@ -709,18 +709,17 @@ rule mid-migration; the target for every rule is `error` under a
 regress. Never flip a rule to `error` over code that still violates it. Never
 leave a rule at `warn` forever.
 
-**Flexibility without weakening the gate** — three tiers, in order of preference:
+**Flexibility without weakening the gate** — two tiers, in order of preference:
 
 1. **Tune the rule** (options, selectors) so it never fires on the legitimate
    pattern. Zero noise. Best.
 2. **Scoped path override** — `off` for one glob, when the false positive is
    _systematic_ in one area, declared in `eslint.config.mjs`.
-3. **Justified inline disable** for one-offs, with a written reason, one rule
-   per line, and `reportUnusedDisableDirectives: 'error'` so a stale disable
-   becomes an error and auto-expires.
 
-That third tier is what keeps escape hatches **visible, greppable, and
-self-cleaning**.
+**No inline disable**: an `eslint-disable` comment, `@ts-expect-error`,
+`@ts-ignore` or `@ts-nocheck` skips a check, which the LAW "A check is never
+forced or skipped" (`AGENTS.md`) forbids. A vendor's signature the rules
+reject is met in one adapter that hands the code a shape they accept.
 
 > **No allowlist files.** A `*-allowlist.json` freezes a backlog into a file
 > nobody reads and the ratchet stops moving. A rule either passes clean here, or
@@ -728,7 +727,9 @@ self-cleaning**.
 > decision 1.
 >
 > **Three exceptions.** `scripts/verify-english.allow.json`, the allowlist of
-> `verify:english` (§15), cannot hold a backlog: it ships empty, each entry
+> `verify:english` (§15), cannot hold a backlog: it holds one entry, the vendored
+> archify's `locales/es.json`, which archify reads at run time and which waits on
+> the owner (under the LAW "A check is never forced or skipped"), each entry
 > names its file, its line (the text or a pattern) and the reason the line keeps
 > that text, and the gate fails an entry that excuses no line, so a stale one
 > cannot stay. `eslint-style-positioning-allowlist.json`, read by the styling
@@ -813,8 +814,9 @@ This table exists so that difference is visible.
 | Agent projections in sync   | script        | `agent-harness:projection-check` — each projection equals its source |
 | Every agent names its grader | script       | `verify:agent-context` (and `:test`) — every agent has a `gradedBy` in `.agents/agent-context.json` naming skills that exist, a `writes` that is true or false, a well-formed `surface` if any, and no other key, and no entry outlives its agent; not whether the skill is the right grader, whether `writes` is the right one, or that its evals ever ran |
 | Harness settings in one file | script     | `verify:harness-config` (and `:test`) — `.agents/harness.config.json` holds only the sections and settings `.agents/contracts/harness-config.schema.json` declares, each a value it allows, every list item one its `items` allows, no text shorter than its `minLength`, and every required one there, the project's `identity` among them, and neither file gives a key twice in one object; the schema uses only keywords the gate reads, `additionalProperties` only as `true` or `false`, and every object outside an `if`, `then` or `else` sets it to `false`, so every key the config holds is one the schema declares; not whether a setting is the right one for the project, whether `identity` names this project rather than the template, or whether the tree agrees with it |
-| `AGENTS.md` LAWs            | review        | — no gate reads a LAW; the one below has an agent hook too          |
+| `AGENTS.md` LAWs            | review        | — no gate reads a LAW; the two below have an agent hook too         |
 | LAW: a rule is not edited to fit the work | agent hook + review | the write guard (`write-guard:test`, `docs/harness.md` §3f): in Claude Code, an Edit, Write, NotebookEdit, Bash or PowerShell write of a rule file of `.agents/contracts/write-guard.json` asks the human, the main session included, and a read-only agent is refused; Bash globs, braces, folders written by name, git subcommands that rewrite the tree and programs the guard does not know are read too, a command the guard cannot read asks only when it names a rule path, and a call past its 5 s deadline is refused or asked, never let through; not the inside of a script, a rule path a command builds, a command that rewrites rule files without naming one (`git reset --hard`, `rm -rf .`), perl, ruby and git writes the guard does not list, PowerShell writes other than its write cmdlets, Codex, OpenCode or Copilot, which run no adapter yet, or why a rule changed, which review reads |
+| LAW: a check is never forced or skipped | agent hook + test + review | the no-force hook (`no-force:test`, `docs/harness.md` §3j): in Claude Code, a Bash or PowerShell command that passes `--force`, `--force-with-lease`, any `--force-*` or `-Force` on any tool, `--no-verify`, `taskkill /F`, `rm` with an `f` among its short options, `HUSKY=0`, or a git short option that forces or skips (`-f` of add, clean, fetch, mv, push, rm, tag and worktree, `commit -n`, `branch -D`, `-M` and `-C`, `checkout -B`, `switch -C`, `--discard-changes`) is refused with a reason that names the LAW, through a wrapper, a group, a pipeline and a substitution too; it fails closed, refusing every call while it is broken; `updaters:run:test` proves no git, gh or shell call of the updaters' runner forces or skips, or passes a `+` refspec; not a force or skip in other code, config, CI or docs, which review reads; a short `-f` outside git, `rm` and taskkill, or a git letter outside its table (`rebase -f`, `submodule -f`, `worktree add -B`); a `+refspec` push; `bash -c`, `cmd /c`, xargs, an alias, a variable or a PowerShell splat or abbreviated `-Fo`; Codex, OpenCode or Copilot, which run no adapter yet |
 | `AGENTS.md` Router          | script        | `verify:router-coverage` — every "Load skill" cell a shipped skill, every skill a row, every "Validated by" script one `package.json` defines; not whether a row routes the right requests, which review reads |
 | §22 Screens only position   | lint+script   | `local/style-positions-only` + `verify:allowlist-freshness`         |
 | §22 Values are tokens       | lint+script   | `local/style-token-values` + `verify:allowlist-freshness`           |

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { Animated } from 'react-native'
 
 import {
@@ -7,17 +7,20 @@ import {
 } from '@/components/ui/Toggle/Toggle.constant'
 import type { IUseToggleKnobResult } from '@/components/ui/Toggle/Toggle.type'
 
+// The knob's offset: one animated value for the life of the toggle, made on
+// its first render from the value it starts with, and animated on each change.
 export const useToggleKnob = (value: boolean): IUseToggleKnobResult => {
-  const translateXRef = useRef(new Animated.Value(value ? KNOB_ON_X : 0))
+  const [translateX] = useState(
+    () => new Animated.Value(value ? KNOB_ON_X : 0)
+  )
 
   useEffect(() => {
-    Animated.timing(translateXRef.current, {
+    Animated.timing(translateX, {
       duration: ANIMATE_DURATION_MS,
       toValue: value ? KNOB_ON_X : 0,
       useNativeDriver: true
     }).start()
-  }, [value])
+  }, [translateX, value])
 
-  // eslint-disable-next-line react-hooks/refs -- stable Animated.Value ref; callers need it for RN style wiring
-  return { translateX: translateXRef.current }
+  return { translateX }
 }

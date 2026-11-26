@@ -12,7 +12,9 @@ const AsyncStorageMock = {
   removeItem: async (key: string) => {
     store.delete(key)
   },
-  setItem: async (key: string, value: string) => {
+  // AsyncStorage takes the key and the value as two arguments, read here as
+  // one list.
+  setItem: async (...[key, value]: [key: string, value: string]) => {
     store.set(key, value)
   }
 }

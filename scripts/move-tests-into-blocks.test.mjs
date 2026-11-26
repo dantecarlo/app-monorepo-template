@@ -12,9 +12,16 @@
 
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { test } from 'node:test'
+import { after, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import { gitFreeEnv } from './git-free-env.mjs'
@@ -53,12 +60,30 @@ const STORE = 'apps/web/src/stores/auth.store.ts'
 const STORE_TEST = 'apps/web/src/stores/auth.store.test.ts'
 const STORE_MOVED = 'apps/web/src/stores/__tests__/auth.store.test.ts'
 
-const git = ({ args, root }) =>
-  spawnSync('git', args, {
+// Every git call of the suite, read by its last case.
+const gitCalls = []
+
+// A scratch repository reads none of the user's git settings: an empty
+// global config and no system one, so no hook or template of theirs runs
+// in it, and its commits need no option that skips one.
+const ISOLATED_CONFIG = mkdtempSync(join(tmpdir(), 'move-tests-git-'))
+const GLOBAL_CONFIG = join(ISOLATED_CONFIG, 'config')
+writeFileSync(GLOBAL_CONFIG, '')
+after(() => rmSync(ISOLATED_CONFIG, { recursive: true }))
+const GIT_ENV = Object.freeze({
+  ...gitFreeEnv(),
+  GIT_CONFIG_GLOBAL: GLOBAL_CONFIG,
+  GIT_CONFIG_NOSYSTEM: '1'
+})
+
+const git = ({ args, root }) => {
+  gitCalls.push(args)
+  return spawnSync('git', args, {
     cwd: root,
     encoding: 'utf8',
-    env: gitFreeEnv()
+    env: GIT_ENV
   })
+}
 
 const run = ({ args = [], root }) =>
   spawnSync(process.execPath, [CODEMOD, '--root', root, ...args], {
@@ -84,14 +109,7 @@ const inRepository = ({ files, use }) =>
       git({ args: ['init', '--quiet'], root })
       git({ args: ['add', '--all'], root })
       git({
-        args: [
-          ...IDENTITY,
-          'commit',
-          '--quiet',
-          '--no-verify',
-          '-m',
-          'base'
-        ],
+        args: [...IDENTITY, 'commit', '--quiet', '-m', 'base'],
         root
       })
       return use({
@@ -306,7 +324,10 @@ test('a second run moves nothing and exits 0', () => {
       const status = git({ args: ['status', '--porcelain'], root }).stdout
       const again = run({ root })
       assert.equal(again.status, PASSED, again.stderr)
-      assert.match(again.stdout, /nothing to move/u)
+      assert.match(
+        again.stdout,
+        /nothing to move — every test sits in its unit's __tests__\/\.\n/u
+      )
       assert.equal(read(STORE_MOVED), moved)
       assert.equal(
         git({ args: ['status', '--porcelain'], root }).stdout,
@@ -373,7 +394,7 @@ test('a destination that already exists is not overwritten', () => {
   })
 })
 
-test('a frozen exception is neither moved nor listed', () => {
+test('planMoves plans every misplaced test verify-tests can place', () => {
   withScratchTree({
     files: {
       ...BASE,
@@ -382,11 +403,11 @@ test('a frozen exception is neither moved nor listed', () => {
     },
     prefix: 'move-tests-plan-',
     use: ({ root }) => {
-      const context = collectContext({
-        frozen: [{ path: STORE_TEST, reason: 'cannot move yet' }],
-        root
+      const context = collectContext({ root })
+      assert.deepEqual(planMoves({ context }), {
+        moves: [{ from: STORE_TEST, to: STORE_MOVED }],
+        unplaced: []
       })
-      assert.deepEqual(planMoves({ context }), { moves: [], unplaced: [] })
     }
   })
 })
@@ -416,5 +437,12 @@ test('rewriteCitations replaces a path only where it is the whole path', () => {
       count: 2,
       text: '`a/__tests__/b.test.ts` x/a/b.test.ts a/b.test.tsx ../a/__tests__/b.test.ts.'
     }
+  )
+})
+
+test('no git call of the suite skips a hook', () => {
+  assert.ok(gitCalls.length > 0, 'the suite ran no git to judge')
+  gitCalls.forEach((args) =>
+    assert.ok(!args.includes('--no-verify'), args.join(' '))
   )
 })

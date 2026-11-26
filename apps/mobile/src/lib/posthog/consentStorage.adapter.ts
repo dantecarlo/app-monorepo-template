@@ -93,6 +93,21 @@ export const createConsentStorage = (): IPostHogConsentStorage => {
     return next
   }
 
+  // Keeps a value PostHog hands over: on the device once it holds the
+  // marker, in memory after a refused one, nowhere before a grant.
+  const keepValue = async ({
+    key,
+    value
+  }: IStorageItemParams): Promise<void> => {
+    await ready
+    handledKeys.add(key)
+    if (consent.isOnDevice) {
+      await writeToDevice({ key: deviceKeyOf({ key }), value })
+      return
+    }
+    if (consent.isGranted) memory.set(key, value)
+  }
+
   return {
     close: () =>
       flip({
@@ -158,15 +173,9 @@ export const createConsentStorage = (): IPostHogConsentStorage => {
         }
       }),
 
-    // eslint-disable-next-line local/single-object-params -- PostHog's customStorage contract is setItem(key, value)
-    setItem: async (key: string, value: string): Promise<void> => {
-      await ready
-      handledKeys.add(key)
-      if (consent.isOnDevice) {
-        await writeToDevice({ key: deviceKeyOf({ key }), value })
-        return
-      }
-      if (consent.isGranted) memory.set(key, value)
-    }
+    // PostHog's customStorage calls setItem with the key and the value as two
+    // arguments: they arrive as one list and are kept as one item.
+    setItem: (...[key, value]: [key: string, value: string]) =>
+      keepValue({ key, value })
   }
 }

@@ -26,6 +26,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   utimesSync,
@@ -147,15 +148,17 @@ const scratchRoots = []
 after(() =>
   scratchRoots.forEach((root) =>
     rmSync(root, {
-      force: true,
       maxRetries: REMOVE_RETRIES,
       recursive: true
     })
   )
 )
 
+// The scratch root by its long name: a Windows TEMP may be an 8.3 short path
+// (`C:\Users\RUNNER~1\…` on a CI runner), and git reports a worktree's long
+// one, so a path built from the short name would match no line git prints.
 const scratchRoot = ({ prefix }) => {
-  const root = mkdtempSync(join(tmpdir(), prefix))
+  const root = realpathSync.native(mkdtempSync(join(tmpdir(), prefix)))
   scratchRoots.push(root)
   return root
 }
@@ -914,13 +917,27 @@ test('post-merge exits 0 and lists no kept line', () => {
   assert.ok(!fixture.postMerge.output.includes(': kept '))
 })
 
-test('post-merge exits 0 when the prune fails, and says nothing was removed', () => {
+test('post-merge exits 0 in a repository with no origin, since there is nothing to prune', () => {
   const scratch = scratchRoot({ prefix: 'prune-post-merge-' })
   const repository = join(scratch, 'repository')
   git({ args: ['init', '-q', repository], cwd: scratch })
   installPostMerge({ main: repository })
   const run = runPostMerge({ cwd: repository })
   assert.equal(run.status, EXIT_OK, run.output)
+  assert.match(run.output, /prune-worktrees: no origin remote, so nothing to prune/u)
+})
+
+test('post-merge fails when the prune fails, so the failure is seen', () => {
+  const scratch = scratchRoot({ prefix: 'prune-post-merge-' })
+  const repository = join(scratch, 'repository')
+  git({ args: ['init', '-q', repository], cwd: scratch })
+  git({
+    args: ['remote', 'add', 'origin', join(scratch, 'missing.git')],
+    cwd: repository
+  })
+  installPostMerge({ main: repository })
+  const run = runPostMerge({ cwd: repository })
+  assert.notEqual(run.status, EXIT_OK, run.output)
   assert.match(run.output, /prune-worktrees: .*nothing was removed/su)
 })
 
@@ -1455,7 +1472,7 @@ test(
   {
     skip:
       process.platform !== 'win32' &&
-      'on POSIX the bound still stops git alone, as before'
+      "on POSIX the bound stops git alone; CI's windows-process-trees job runs this"
   },
   async () => {
     const { main, paths } = mergedWorktrees({

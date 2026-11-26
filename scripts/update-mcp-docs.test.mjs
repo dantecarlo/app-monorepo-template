@@ -248,9 +248,7 @@ before(() => {
 
 after(() => {
   globalThis.fetch = realFetch
-  scratchRoots.forEach((root) =>
-    rmSync(root, { force: true, recursive: true })
-  )
+  scratchRoots.forEach((root) => rmSync(root, { recursive: true }))
 })
 
 test('a changed pin rewrites its row and prints the review paths', async () => {

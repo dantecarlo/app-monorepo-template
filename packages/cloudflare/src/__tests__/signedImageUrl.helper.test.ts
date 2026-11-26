@@ -1,4 +1,4 @@
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, expect, expectTypeOf, test, vi } from 'vitest'
 
 import { createCloudflareImagesDelivery } from '#src/createCloudflareImagesDelivery.adapter'
 import { createR2SignedDelivery } from '#src/createR2SignedDelivery.adapter'
@@ -8,6 +8,7 @@ import {
 } from '#src/signedImageUrl.helper'
 import {
   SignedImageUrlRejectionEnum,
+  type SignedImageUrlRejectionType,
   type SignedImageUrlVerificationType
 } from '#src/signedImageUrl.type'
 
@@ -242,20 +243,30 @@ test('verifySignedImageUrl rejects every URL when no secret is configured', asyn
 })
 
 test('a verification is either valid with no reason, or rejected with one', () => {
+  expectTypeOf<{
+    valid: true
+  }>().toExtend<SignedImageUrlVerificationType>()
+  expectTypeOf<{
+    reason: SignedImageUrlRejectionType
+    valid: false
+  }>().toExtend<SignedImageUrlVerificationType>()
+  expectTypeOf<
+    Extract<SignedImageUrlVerificationType, { valid: true }>
+  >().not.toHaveProperty('reason')
+  expectTypeOf<{
+    valid: false
+  }>().not.toExtend<SignedImageUrlVerificationType>()
+
   const valid: SignedImageUrlVerificationType = { valid: true }
   const rejected: SignedImageUrlVerificationType = {
     reason: SignedImageUrlRejectionEnum.EXPIRED,
     valid: false
   }
-  const validWithReason: SignedImageUrlVerificationType = {
-    // @ts-expect-error a valid verification carries no reason
+  const validWithReason = {
     reason: SignedImageUrlRejectionEnum.EXPIRED,
     valid: true
   }
-  // @ts-expect-error a rejected verification names its reason
-  const rejectedWithoutReason: SignedImageUrlVerificationType = {
-    valid: false
-  }
+  const rejectedWithoutReason = { valid: false }
   expect([
     valid,
     rejected,

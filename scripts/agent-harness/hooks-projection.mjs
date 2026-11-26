@@ -2,7 +2,8 @@
 // hooks-projection — reads `.agents/hooks.json`, the neutral source of the
 // runtime hooks, and renders each runtime's wiring of them. Today that is
 // Claude Code only: `.claude/settings.json`, whose PreToolUse hooks run the
-// write guard (scripts/agent-harness/write-guard/claude-hook.mjs) and whose
+// write guard (scripts/agent-harness/write-guard/claude-hook.mjs) and the
+// no-force hook (scripts/agent-harness/no-force/claude-hook.mjs) and whose
 // SessionStart hooks run the process reaper
 // (scripts/agent-harness/reaper/session-start.mjs). A PreToolUse hook names
 // the tools it runs on in its matcher; a SessionStart hook may leave the

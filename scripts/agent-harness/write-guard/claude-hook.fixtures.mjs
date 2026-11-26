@@ -1,17 +1,16 @@
 // ---------------------------------------------------------------------------
 // claude-hook.fixtures — what the end-to-end suites of the Claude Code hook
-// share: where the hook and this checkout are, an environment without a
-// switch-off a developer may have exported, the spawn that runs the real
-// hook and checks it exits 0, writes nothing on stderr and never prints
-// allow, and the PreToolUse payloads of a file tool and of a shell tool.
+// share: where the hook and this checkout are, the variable that once
+// switched the guard off, the spawn that runs the real hook in this
+// process's environment and checks it exits 0, writes nothing on stderr and
+// never prints allow, and the PreToolUse payloads of a file tool and of a
+// shell tool.
 // ---------------------------------------------------------------------------
 
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-
-import { SWITCH_OFF } from './policy.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 export const HOOK = join(HERE, 'claude-hook.mjs')
@@ -23,19 +22,20 @@ export const LOADED_MODULES = [
   'scripts/manifest-owners.mjs'
 ]
 
-// The environment the hook starts in, without a switch-off a developer may
-// have exported.
-const CLEAN_ENV = Object.fromEntries(
-  Object.entries(process.env).filter(
-    ([key]) => key !== SWITCH_OFF.variable
-  )
-)
+// The variable that switched the guard off until the owner removed it on
+// 2026-11-25 ("if something is used to skip it, it has to be fixed",
+// translated from Spanish). The guard reads no environment variable now:
+// the cases launch the hook with it set to show it silences nothing.
+export const RETIRED_GUARD_VARIABLE = Object.freeze({
+  value: 'off',
+  variable: 'ATL_WRITE_GUARD'
+})
 
 // What the hook prints, after it exits 0 with nothing on stderr.
 export const rawHookOutput = ({ env = {}, hook = HOOK, input }) => {
   const result = spawnSync(process.execPath, [hook], {
     encoding: 'utf8',
-    env: { ...CLEAN_ENV, ...env },
+    env: { ...process.env, ...env },
     input
   })
   assert.equal(result.status, 0, result.stderr)

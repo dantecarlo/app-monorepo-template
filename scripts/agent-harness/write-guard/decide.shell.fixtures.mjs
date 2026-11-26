@@ -28,7 +28,6 @@ export const AGENT_CONTEXT = {
 }
 
 export const HOST = {
-  env: {},
   homeDir: 'C:\\Users\\me',
   isCheckout: ({ dir }) =>
     [

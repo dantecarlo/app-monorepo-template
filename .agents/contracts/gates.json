@@ -23,6 +23,13 @@
       "cost": "seconds"
     },
     {
+      "id": "no-force:test",
+      "capability": "core",
+      "stage": "preflight",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
       "id": "reap:test",
       "capability": "core",
       "stage": "preflight",
@@ -185,7 +192,21 @@
       "cost": "seconds"
     },
     {
+      "id": "gate:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
       "id": "worktrees:prune:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "ci-windows:test",
       "capability": "core",
       "stage": "repository",
       "profile": "standard",
@@ -248,6 +269,21 @@
       "stage": "repository",
       "profile": "standard",
       "cost": "seconds",
+      "blind": "exported-cases"
+    },
+    {
+      "id": "verify:ci-blocking:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "verify:ci-blocking",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "instant",
       "blind": "exported-cases"
     },
     {
@@ -325,6 +361,13 @@
       "cost": "seconds"
     },
     {
+      "id": "check:identity:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
       "id": "check:identity",
       "capability": "core",
       "stage": "repository",
@@ -333,6 +376,13 @@
     },
     {
       "id": "init-project:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
+      "id": "prune-boundary:test",
       "capability": "core",
       "stage": "repository",
       "profile": "standard",

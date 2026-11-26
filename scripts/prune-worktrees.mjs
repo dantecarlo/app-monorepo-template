@@ -57,7 +57,12 @@
 // install. `--quiet` prints the removals, the main checkout's line, an
 // install's failure and the summary line only.
 //
-// `.husky/post-merge` runs it with `--quiet` after a local merge or pull.
+// A repository with no `origin` remote has no merged branch to read, so a
+// run there prints one line and exits 0. Every other failure exits 1.
+//
+// `.husky/post-merge` runs it with `--quiet` after a local merge or pull,
+// and fails when it does, so a failure is seen; a post-merge hook never
+// undoes the merge.
 // This file runs git and touches the disk; every decision it takes from
 // what git printed is in prune-worktrees.detect.mjs.
 //
@@ -91,6 +96,8 @@ import {
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+import { removePath } from '@app/tooling/remove-path'
 
 import { runBounded } from './agent-harness/reaper/bounded-child.mjs'
 import { gitFreeEnv } from './git-free-env.mjs'
@@ -129,6 +136,7 @@ import {
 const HERE = dirname(fileURLToPath(import.meta.url))
 
 const REMOTE_HEAD = `refs/remotes/${REMOTE}/HEAD`
+const NO_REMOTE_LINE = `prune-worktrees: no ${REMOTE} remote, so nothing to prune`
 // 64 MiB of git output.
 const GIT_OUTPUT_BYTES = 67_108_864
 const MS_PER_SECOND = 1000
@@ -371,11 +379,12 @@ const contentReason = ({ worktree }) => {
   }
 }
 
-// A directory `git worktree remove` left on disk. `rmSync` removes a
+// A directory `git worktree remove` left on disk. `removePath` removes a
 // junction or a symbolic link as the link itself, a broken one included,
 // and never enters its target, so the pnpm store it points into is kept.
-export const removeLeftover = ({ path }) =>
-  rmSync(path, { force: true, recursive: true })
+// A directory that went after it was seen is gone, as asked; any other
+// failure is the leftover the removal reports.
+export const removeLeftover = ({ path }) => removePath({ path })
 
 // Removes one worktree, the directory Windows may leave behind, and its
 // branch. Git refuses a worktree holding a modified or untracked file and
@@ -509,7 +518,7 @@ const dryCheckout = ({ ref, root }) => {
       env
     })
   } finally {
-    rmSync(scratch, { force: true, recursive: true })
+    rmSync(scratch, { recursive: true })
   }
 }
 
@@ -654,6 +663,9 @@ const pruneWorktrees = async ({ cwd, dryRun, env, fetchSeconds }) => {
   })
   const worktrees = listWorktrees({ root: current })
   const root = worktrees[0].path
+  // A repository with no origin has no merged branch to read: nothing to do.
+  const remotes = git({ args: ['remote'], cwd: root }).split(/\r?\n/u)
+  if (!remotes.includes(REMOTE)) return { noRemote: true }
   if (!(await fetchOrigin({ root, seconds: fetchSeconds })))
     return { timedOut: true }
   const defaultBranch = readDefaultBranch({ root })
@@ -718,9 +730,11 @@ const main = async () => {
       env: process.env,
       fetchSeconds
     })
-    const lines = outcome.timedOut
-      ? skippedLines({ dryRun, seconds: fetchSeconds })
-      : reportLines({
+    const lines = outcome.noRemote
+      ? [NO_REMOTE_LINE]
+      : outcome.timedOut
+        ? skippedLines({ dryRun, seconds: fetchSeconds })
+        : reportLines({
           dryRun,
           install: outcome.install,
           main: outcome.main,

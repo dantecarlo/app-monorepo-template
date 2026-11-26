@@ -66,6 +66,6 @@ export const withHookGitDir = ({ use }) => {
     return { decoyWritten: footprintOf({ gitDir }) !== before, result }
   } finally {
     restore({ saved })
-    rmSync(decoy, { force: true, recursive: true })
+    rmSync(decoy, { recursive: true })
   }
 }

@@ -416,10 +416,17 @@
       "seam": []
     },
     {
+      "name": "@eslint/js",
+      "category": "build",
+      "owner": "core",
+      "seam": []
+    },
+    {
       "name": "@next/eslint-plugin-next",
       "category": "build",
-      "owner": "web-next",
-      "seam": []
+      "owner": "core",
+      "seam": [],
+      "note": "The root eslint.config.mjs imports it on every run and applies its rules to each app that declares next, so the root declares it and a prune of web-next keeps it."
     },
     {
       "name": "@playwright/test",
@@ -473,12 +480,6 @@
       "name": "eslint",
       "category": "build",
       "owner": "core",
-      "seam": []
-    },
-    {
-      "name": "eslint-config-next",
-      "category": "build",
-      "owner": "web-next",
       "seam": []
     },
     {
@@ -654,6 +655,13 @@
       "category": "peer",
       "owner": "mobile-expo",
       "seam": []
+    },
+    {
+      "name": "expo-system-ui",
+      "category": "peer",
+      "owner": "mobile-expo",
+      "seam": [],
+      "note": "Applies apps/mobile/app.json's userInterfaceStyle on Android, where Expo needs it installed; no file imports it."
     },
     {
       "name": "react-native-screens",

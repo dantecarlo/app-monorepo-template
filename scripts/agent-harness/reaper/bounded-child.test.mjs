@@ -120,7 +120,11 @@ const PARENT_SOURCE = [
 
 test(
   'on Windows a child stopped at its bound takes the process it started with it',
-  { skip: !IS_WINDOWS && 'a POSIX child keeps its signal alone, as before' },
+  {
+    skip:
+      !IS_WINDOWS &&
+      "a POSIX child keeps its signal alone; CI's windows-process-trees job runs this"
+  },
   async () => {
     let pids = []
     try {

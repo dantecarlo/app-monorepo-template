@@ -1,5 +1,4 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import type { ImgHTMLAttributes } from 'react'
 import { describe, expect, test, vi } from 'vitest'
 
 vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
@@ -11,13 +10,7 @@ vi.mock('@/lib/i18n/useAppTranslator.hook', () => ({
   })
 }))
 
-vi.mock('@/components/ui/Image/Image.component', () => ({
-  Image: (props: ImgHTMLAttributes<HTMLImageElement>) => (
-    // eslint-disable-next-line @next/next/no-img-element -- test stub mirroring the ui Image block
-    <img {...props} />
-  )
-}))
-
+// The asset renders through the ui Image block itself, as the app draws it.
 import { Logo } from '@/components/ui/Logo/Logo.component'
 
 describe('Logo', () => {

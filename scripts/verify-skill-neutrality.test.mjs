@@ -8,7 +8,9 @@
 // downstream projects, each differing from a neutral one by one thing; no
 // real project is named here. The checks then run the gate as a process
 // over a scratch tree in the OS temp directory, which `withScratchTree`
-// removes, and over the repository itself.
+// removes, and over the repository itself. A scratch tree is the template
+// when its .agents/harness.config.json names the template's own identity
+// (template-identity.mjs), and derived otherwise.
 //
 // Usage:
 //   node --test scripts/verify-skill-neutrality.test.mjs
@@ -22,6 +24,8 @@ import { fileURLToPath } from 'node:url'
 import { registerCases, runCases } from './gate/cases.mjs'
 import { blindGate } from './gate/gate.mjs'
 import { withScratchTree } from './gate/scratch.mjs'
+import { TEMPLATE_IDENTITY } from './template-identity.mjs'
+import { HARNESS_CONFIG } from './verify-harness-config.mjs'
 import { gate } from './verify-skill-neutrality.mjs'
 
 const GATE = join(
@@ -30,7 +34,11 @@ const GATE = join(
 )
 const FAILED = 1
 const PASSED = 0
-const SELF_VARIABLE = 'ATL_TEMPLATE_SELF'
+const DERIVED_IDENTITY = Object.freeze({
+  packageScope: '@acme-ledger',
+  product: 'acme-ledger',
+  repository: 'acme/acme-ledger'
+})
 const CONTRACT = '.agents/contracts/downstream-projects.json'
 const LOCK = '.claude/skills-lock.json'
 const SKILL = '.claude/skills/lint-copy/SKILL.md'
@@ -193,21 +201,20 @@ export const CASES = [
   }
 ]
 
-const runGate = ({ env = {}, files }) =>
+const runGate = ({ files, origin }) =>
   withScratchTree({
     files,
+    origin,
     prefix: 'skill-neutrality-run-',
-    use: ({ root }) => {
-      const inherited = { ...process.env }
-      delete inherited[SELF_VARIABLE]
-      return spawnSync(process.execPath, [GATE, '--root', root], {
-        encoding: 'utf8',
-        env: { ...inherited, ...env }
+    use: ({ root }) =>
+      spawnSync(process.execPath, [GATE, '--root', root], {
+        encoding: 'utf8'
       })
-    }
   })
 
 const contractText = () => JSON.stringify({ projects: PROJECTS }, null, 2)
+
+const configText = ({ identity }) => JSON.stringify({ identity }, null, 2)
 
 const checks = [
   {
@@ -268,17 +275,33 @@ const checks = [
     }
   },
   {
-    name: 'the gate run with ATL_TEMPLATE_SELF=1 over a tree with no list exits 1',
+    name: "the gate run over a tree whose identity is the template's, with no list, exits 1",
     run: () => {
       const result = runGate({
-        env: { [SELF_VARIABLE]: '1' },
-        files: { [SKILL]: NEUTRAL }
+        files: {
+          [HARNESS_CONFIG]: configText({ identity: TEMPLATE_IDENTITY }),
+          [SKILL]: NEUTRAL
+        },
+        origin: `https://github.com/${TEMPLATE_IDENTITY.repository}.git`
       })
       assert.equal(result.status, FAILED, result.stdout)
       assert.match(
         result.stderr,
         /downstream-projects\.json: is absent, so the gate forbids no name/u
       )
+    }
+  },
+  {
+    name: 'the gate run over a tree whose identity names another project, with no list, exits 0',
+    run: () => {
+      const result = runGate({
+        files: {
+          [HARNESS_CONFIG]: configText({ identity: DERIVED_IDENTITY }),
+          [SKILL]: withLine({ line: `${PRODUCT} does it.` })
+        }
+      })
+      assert.equal(result.status, PASSED, result.stderr)
+      assert.match(result.stdout, /no downstream project declared/u)
     }
   },
   {

@@ -475,9 +475,9 @@ const realpathOrNull = ({ path }) => {
 }
 
 // The host the hook really runs on: the disk, the OS temp dir, the home
-// folder and the environment. Tests hand `decide` a synthetic one instead.
+// folder and the scratch folders the environment names. Tests hand `decide`
+// a synthetic one instead.
 export const liveHost = ({ environment = process.env, ownRoot } = {}) => ({
-  env: environment,
   exists: ({ path }) => existsSync(path),
   glob: globOnDisk,
   homeDir: homedir(),

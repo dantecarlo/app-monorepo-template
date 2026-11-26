@@ -41,8 +41,10 @@ import {
 } from './writers.tools.mjs'
 
 const SHAPE_WORDS = 3
-const SHELLS = new Set(['bash', 'dash', 'fish', 'ksh', 'sh', 'zsh'])
-const COMMAND_FLAG = /^-[a-zA-Z]*c[a-zA-Z]*$/u
+/** The shells whose `-c` text, or stdin, is a command of its own. */
+export const SHELLS = new Set(['bash', 'dash', 'fish', 'ksh', 'sh', 'zsh'])
+/** A shell's option cluster that holds `-c` (`-c`, `-lc`, `-xc`). */
+export const COMMAND_FLAG = /^-[a-zA-Z]*c[a-zA-Z]*$/u
 const NPX = new Set(['bunx', 'npx', 'pnpx'])
 const CODE_FLAG = /^-[^-]*[eE]$/u
 // The calls of perl and ruby code that write a file or start a process:

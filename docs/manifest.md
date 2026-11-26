@@ -54,8 +54,8 @@ per entry on 2026-11-19.
   capability that claims every `package.json` declaring the package, or, for a
   workspace package (`@app/*`), its folder. When no capability's claims alone
   remove the package, the one whose claims and `remove-dep` actions together
-  remove it (`supabase` for `@supabase/supabase-js`, `e2e-playwright` for
-  `@playwright/test`). Otherwise `core`, as is `node:*`. So `@app/cloudflare`
+  remove it (`e2e-playwright` for `@playwright/test`, which the root
+  `package.json` declares). Otherwise `core`, as is `node:*`. So `@app/cloudflare`
   belongs to `web-next`, which claims the only `package.json` declaring it,
   and the `cloudflare` prune takes it with its `remove-dep`.
 - **The cross-cutting case is a verb.** A `remove-dep` that takes a package
@@ -118,8 +118,7 @@ a line, where it would open a region of its own file.
 Code holds a region where a capability adds to a list another owner keeps:
 each app's `src/lib/auth/authGateway.adapter.ts` lists the gateway of every
 backend capability in that capability's region, and serves a no-op gateway
-when none is left; `scripts/verify-tests.mjs` keeps a capability's frozen
-exception in its region. A comment line outside every region keeps the list
+when none is left. A comment line outside every region keeps the list
 printed as it stands once its last entry goes.
 
 A living spec holds a capability's part the same way: the part's own
@@ -166,7 +165,8 @@ prunes Sentry unless the project picks it (`docs/observability.md`).
 
 - It **claims** the web root files no other claim covers:
   `apps/web/instrumentation.ts`, `apps/web/next-sentry.config.ts`, the three
-  `apps/web/sentry.*.config.ts` and `apps/web/__tests__/next-sentry.config.test.ts`.
+  `apps/web/sentry.*.config.ts` and `apps/web/__tests__/next-sentry.config.test.ts`,
+  and the suite that checks its prune, `scripts/prune-boundary.sentry.test.mjs`.
   `web-next` therefore claims its own root files by name instead of
   `apps/web/**`, and its `onAbsent` removes `apps/web/**`, which keeps what an
   absent `web-next` deletes.
@@ -189,19 +189,43 @@ prunes Sentry unless the project picks it (`docs/observability.md`).
   an app's prune removes its whole spec, so a project that keeps Sentry and
   drops an app loses that app's part and no claim is left behind.
 
-`packages/tooling/src/__tests__/prune-boundary.test.mjs` proves the prune
-leaves no dangling reference. With the capability's regions dropped, it fails
-when a file the prune keeps imports a file the prune deletes or a dependency it
+`findPruneLeaks` of `packages/tooling/src/prune-boundary.mjs` judges what a
+prune leaves, and `packages/tooling/src/__tests__/prune-boundary.test.mjs`
+holds it on synthetic trees. With the capability's regions dropped, it lists a
+file the prune keeps that imports a file the prune deletes or a dependency it
 removes, names a pruned file by a quoted relative path, keeps an
 `.env.example` key only pruned files read, or is a living spec that cites a
-pruned file; when a kept `app.json` would list a plugin of a removed
-dependency, or the patched plugin list drifts from `app.json`; and when the
-registry the prune leaves would fail `verify:dependency-seams`. The same test
-holds the registry true after the `sentry`, `mobile-expo`, `supabase`,
-`web-next` and `cloudflare` prunes, the `mobile-expo` and `web-next` prunes to
-every check, and the `supabase` prune to every check but the gaps below. A Next.js config cannot be pruned by deleting a file
-it imports, so `apps/web/next.config.ts` applies every
-`next-<capability>.config.ts` beside it and names none.
+pruned file; a kept `app.json` that would list a plugin of a removed
+dependency, or a patched plugin list that drifts from `app.json`; and a
+registry the prune leaves that would fail `verify:dependency-seams`. A Next.js
+config cannot be pruned by deleting a file it imports, so
+`apps/web/next.config.ts` applies every `next-<capability>.config.ts` beside
+it and names none.
+
+### Each prune's checks go with it
+
+The prune of a capability is checked on this repository by a suite that
+capability claims, `scripts/prune-boundary.<capability>.test.mjs`, built on the
+core helper `scripts/prune-boundary.repository.mjs`. The prune deletes the
+suite with the rest of the capability's files, so a project `/init` pruned runs
+every check its manifest still declares and carries none for a capability it
+no longer declares: no check is skipped by capability. Each suite first proves
+the manifest gives it to its capability alone. A kept living spec cites a suite
+only inside a region of the suite's capability (§ Regions).
+
+| Suite of       | Holds                                                                                        |
+| -------------- | -------------------------------------------------------------------------------------------- |
+| `sentry`       | every check, and the Sentry part of each app spec dropped with its region                     |
+| `supabase`     | every check                                                                                  |
+| `web-next`     | every check, no claim of a kept capability on a spec left stale, the gateway list in regions |
+| `mobile-expo`  | every check, no claim of a kept capability on a spec left stale, the gateway list in regions |
+| `cloudflare`   | the registry it leaves, beside the gaps below                                                |
+| `i18n`         | no kept `package.json` declares the package whose entry it takes, beside the gaps below      |
+| `design-tokens`| no kept `package.json` declares the package whose entry it takes, beside the gaps below      |
+
+A check that holds only in the template itself lives in a suite the
+`template-maintainer` capability claims, which `/init` always removes:
+`scripts/init-project.template.test.mjs` renames the template's own names.
 
 ---
 

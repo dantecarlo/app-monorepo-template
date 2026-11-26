@@ -62,7 +62,7 @@ See `docs/memory.md` for the LOAD and CONTRIBUTE flow.
 Nothing is "done" until the validation gate is green:
 
 ```bash
-ATL_TEMPLATE_SELF=1 pnpm validate
+pnpm validate
 ```
 
 `pnpm validate` starts with `pnpm agent-harness:projection-check`,
@@ -70,7 +70,7 @@ ATL_TEMPLATE_SELF=1 pnpm validate
 `pnpm verify:agent-context`, runs
 `turbo run lint typecheck test build format:check`, then
 `pnpm verify:tests`, the spec gates (`verify:specs`, and `report:spec-drift`, which
-only reports), `pnpm verify:english`, `pnpm verify:instruction-entry`,
+fails on a spec behind its code), `pnpm verify:english`, `pnpm verify:instruction-entry`,
 `pnpm verify:unicode-safety`, `pnpm verify:workflow-pins`,
 `pnpm verify:skill-frontmatter`, `pnpm verify:skill-neutrality`,
 `pnpm verify:router-coverage`, `pnpm codex-budget:test` and `pnpm verify:maps`.
@@ -253,10 +253,9 @@ inherits as fact.
 The one exception is the request itself: when the owner asks for a rule, a
 gate, a LAW or a skill to change, that IS the work, and it is done in full.
 
-The escape hatches of `docs/code-standards.md` §20 stay what they are: a
-justified inline disable, or a `verify:english` allowlist entry, each with its
-written reason, records a false positive. Reaching for one to silence a finding
-that is true is what this LAW forbids.
+A false positive is no reason for an inline disable or a new allowlist entry,
+which the LAW "A check is never forced or skipped" forbids: it is a reason to
+tune the rule, which is a rule change and so the owner's to ask for.
 
 **Enforced by** the write guard (`docs/harness.md` §3f, `pnpm write-guard:test`):
 in Claude Code, an Edit, Write, NotebookEdit, Bash or PowerShell write of a rule
@@ -300,6 +299,58 @@ enforcement table and the validation gate already make, comprehension bought
 with time.
 
 **Enforced by review.**
+
+### A check is never forced or skipped — LAW
+
+Applies to every agent, every command it runs, and every script, config,
+build file, CI workflow, doc and skill it writes. The owner decided it on
+2026-11-25 (translated from Spanish): "force is never used for anything;
+that is how things break; record it as a law and tell the template too",
+then widened it the same day (translated from Spanish): "if something is
+used to skip it, it has to be fixed", and "to everything necessary, that
+is, to everything except what we already discussed about PostHog". That
+PostHog exception belongs to a downstream project, never to the template.
+
+**A force overrides the refusal a tool raised to protect something, and a
+skip jumps the check that would have raised one.** That refusal or check is
+the finding: read why and fix its cause, for example clean a worktree before
+`git worktree remove`. If it looks wrong, say so and stop: the owner decides.
+
+**What this forbids**: `--force`, `--force-with-lease` and every `--force-*`
+on any tool; git's short force options (`-f`, `branch -D`, `-M` and `-C`,
+`checkout -B`, `switch -C` and `--discard-changes`); PowerShell's `-Force`;
+`taskkill /F`; `rm -f`, `rm -rf` and `rmSync`'s `force: true`;
+`--no-verify`, `git commit -n` and `HUSKY=0`; an `|| true` that swallows a
+failure; an inline lint disable, `@ts-expect-error`, `@ts-ignore` or
+`@ts-nocheck`; a skipped or `todo` test; `continue-on-error` in CI; an
+allowlist entry or exemption that excuses a finding; a variable that
+switches a check off; and any script, config or build file that does one.
+A tool setting whose name merely starts with `force` and that overrides no
+refusal, such as Chromium's `--force-device-scale-factor`, is not a force
+option.
+
+**The registered exceptions**: `taskkill /T /F` and `taskkill /F /PID …`
+in `scripts/agent-harness/reaper/**` and
+`packages/tooling/src/process-tree.mjs`. On Windows a taskkill without `/F`
+only asks a console process to close, and those processes ignore the
+request; that code ends only process trees it has verified (orphan, family,
+identity) or the bounded child it started itself. And the vendored
+archify's `preview.stop({ force: true })` in
+`.claude/skills/archify/bin/preview.mjs`, on a second Ctrl+C after the
+first asked the preview to stop; the owner registered it on 2026-11-26
+(translated from Spanish): "that archify thing goes into the exceptions".
+Only the owner registers another, here.
+
+**Enforced by** the no-force hook (`docs/harness.md` §3j,
+`pnpm no-force:test`): in Claude Code, a Bash or PowerShell command that
+forces or skips is refused, with a reason that names this LAW, and so is
+one it cannot read: the hook fails closed. It reads through `eval`,
+`sh -c`, `pwsh -Command`, `find -exec`, `xargs`, `trap` and a here-doc fed
+to a shell, and refuses `|| true`, `|| exit 0` and a moved
+`core.hooksPath`. It does not read
+code or config, a script a shell runs from a file, a short `-f` outside
+git, `rm` and taskkill, `cmd /c`, an alias or a variable's value, nor run
+in Codex, OpenCode or Copilot. Beyond that, review.
 
 ### Reply shape — LAW
 

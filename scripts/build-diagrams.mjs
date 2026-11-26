@@ -174,7 +174,7 @@ for (const name of specs) {
       stale.push(outPath)
     }
   } finally {
-    rmSync(scratch, { force: true, recursive: true })
+    rmSync(scratch, { recursive: true })
   }
 }
 
