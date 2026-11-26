@@ -329,13 +329,17 @@ A tool setting whose name merely starts with `force` and that overrides no
 refusal, such as Chromium's `--force-device-scale-factor`, is not a force
 option.
 
-**The one registered exception**: `taskkill /T /F` and `taskkill /F /PID …`
+**The registered exceptions**: `taskkill /T /F` and `taskkill /F /PID …`
 in `scripts/agent-harness/reaper/**` and
 `packages/tooling/src/process-tree.mjs`. On Windows a taskkill without `/F`
 only asks a console process to close, and those processes ignore the
 request; that code ends only process trees it has verified (orphan, family,
-identity) or the bounded child it started itself. Only the owner registers
-another, here.
+identity) or the bounded child it started itself. And the vendored
+archify's `preview.stop({ force: true })` in
+`.claude/skills/archify/bin/preview.mjs`, on a second Ctrl+C after the
+first asked the preview to stop; the owner registered it on 2026-11-26
+(translated from Spanish): "that archify thing goes into the exceptions".
+Only the owner registers another, here.
 
 **Enforced by** the no-force hook (`docs/harness.md` §3j,
 `pnpm no-force:test`): in Claude Code, a Bash or PowerShell command that

@@ -1030,10 +1030,11 @@ naming the problem and the one recovery, `"disableAllHooks": true` in
 `.claude/settings.local.json`. A tool it does not judge gets nothing: the matcher already keeps
 the hook to Bash and PowerShell.
 
-**The registered exception** is code, never a typed command: `taskkill /T /F` and
+**The registered exceptions** are code, never a typed command: `taskkill /T /F` and
 `taskkill /F /PID …` in `scripts/agent-harness/reaper/**` (3g) and
-`packages/tooling/src/process-tree.mjs`, which a tool call never types, so the hook exempts
-nothing.
+`packages/tooling/src/process-tree.mjs`, and the vendored archify's
+`preview.stop({ force: true })` in `.claude/skills/archify/bin/preview.mjs`, which stops its
+preview server on a second Ctrl+C. A tool call never types them, so the hook exempts nothing.
 
 **What is not a force option.** A tool setting whose name merely starts with `force` and that
 overrides no refusal, such as Chromium's `--force-device-scale-factor` in the vendored archify,
