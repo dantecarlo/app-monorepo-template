@@ -10,8 +10,10 @@
 // from (`${CLAUDE_PROJECT_DIR}`, the main checkout), asks `decide`, and
 // prints `hookSpecificOutput.permissionDecision` with its reason. It prints
 // nothing when the guard has nothing to say, and never `allow`, so the
-// session's own permissions still apply. Stdin that is not a JSON object
-// prints nothing. It spawns nothing and reads no network.
+// session's own permissions still apply. Stdin that is empty, is not JSON
+// or is no JSON object is refused, with a reason that names the one
+// recovery below: it names no agent, so the guard cannot tell a read-only
+// agent from the main session. It spawns nothing and reads no network.
 //
 // No environment variable switches it off. The engine is imported inside a
 // `try`: a hook that crashes, or whose module fails to load, lets the call
@@ -38,18 +40,36 @@ const EVENT = 'PreToolUse'
 const CRASH_DENY = 'deny'
 const CRASH_ASK = 'ask'
 
+const NO_PAYLOAD = 'stdin is empty'
+const NOT_JSON = 'stdin is not JSON'
+const NOT_OBJECT = 'stdin is no JSON object'
+
+// The payload on stdin, or the problem that keeps it from being one.
 const readPayload = ({ text }) => {
+  if (text.trim() === '') return { problem: NO_PAYLOAD }
+  let payload
   try {
-    const payload = JSON.parse(text)
-    return payload !== null &&
-      typeof payload === 'object' &&
-      !Array.isArray(payload)
-      ? payload
-      : undefined
+    payload = JSON.parse(text)
   } catch {
-    return undefined
+    return { problem: NOT_JSON }
   }
+  return payload !== null &&
+    typeof payload === 'object' &&
+    !Array.isArray(payload)
+    ? { payload }
+    : { problem: NOT_OBJECT }
 }
+
+// A payload the hook cannot read names no agent, so it is refused: the
+// guard cannot tell a read-only agent from the main session.
+const unreadVerdict = ({ problem }) => ({
+  decision: CRASH_DENY,
+  reason:
+    `The write guard cannot read its payload (${problem}), so it refuses ` +
+    'this call. If the owner agrees, set "disableAllHooks": true in the ' +
+    'git-ignored .claude/settings.local.json, which switches every Claude ' +
+    'Code hook off.'
+})
 
 const renderVerdict = ({ verdict }) =>
   JSON.stringify({
@@ -85,10 +105,13 @@ const crashVerdict = ({ error, payload }) => ({
 const main = async () => {
   const chunks = []
   for await (const chunk of process.stdin) chunks.push(chunk)
-  const payload = readPayload({
+  const { payload, problem } = readPayload({
     text: Buffer.concat(chunks).toString('utf8')
   })
-  if (payload === undefined) return
+  if (payload === undefined) {
+    process.stdout.write(renderVerdict({ verdict: unreadVerdict({ problem }) }))
+    return
+  }
   let verdict
   try {
     verdict = await engineVerdict({ payload })

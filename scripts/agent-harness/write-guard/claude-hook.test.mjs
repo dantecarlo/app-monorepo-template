@@ -115,9 +115,12 @@ test('END TO END: sdd-steward is asked before a rule file and left alone elsewhe
   )
 })
 
-for (const input of ['refs/heads/x 2a35076', '', '42', 'null']) {
-  test(`END TO END: stdin that is not a JSON payload prints nothing: ${JSON.stringify(input)}`, () => {
-    assert.equal(spawnHook({ input }), null)
+for (const input of ['refs/heads/x 2a35076', '', '42', 'null', '[]']) {
+  test(`END TO END: stdin that is not a JSON payload fails closed, naming the recovery: ${JSON.stringify(input)}`, () => {
+    const output = spawnHook({ input })
+    assert.equal(output?.permissionDecision, 'deny')
+    assert.match(output.permissionDecisionReason, /cannot read its payload/u)
+    assert.match(output.permissionDecisionReason, /"disableAllHooks": true/u)
   })
 }
 
