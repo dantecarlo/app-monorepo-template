@@ -59,11 +59,44 @@ for (const payload of [
   payloadOf({ command: 'Remove-Item dist', tool: 'PowerShell' }),
   payloadOf({ command: 'git push --force', tool: 'Edit' }),
   { tool_input: { file_path: 'a.md' }, tool_name: 'Write' },
-  { tool_input: {}, tool_name: 'Bash' },
-  { tool_name: 'Bash' },
+  { tool_input: { command: 'git push -f' }, tool_name: 'Read' },
   {}
 ]) {
   test(`${JSON.stringify(payload)} gets no verdict`, () => {
     assert.equal(decide({ payload }), undefined)
   })
 }
+
+// A call the hook judges but cannot read fails closed, and the reason
+// names the one recovery.
+for (const payload of [
+  { tool_input: {}, tool_name: 'Bash' },
+  { tool_name: 'Bash' },
+  { tool_input: { command: 7 }, tool_name: 'Bash' },
+  { tool_input: { command: null }, tool_name: 'PowerShell' },
+  { tool_input: 'git push -f', tool_name: 'PowerShell' },
+  payloadOf({ command: `${'eval '.repeat(17)}ls` }),
+  payloadOf({ command: `${'pwsh -c '.repeat(17)}ls`, tool: 'PowerShell' })
+]) {
+  test(`${JSON.stringify(payload).slice(0, 80)} is denied as unreadable`, () => {
+    const verdict = decide({ payload })
+    assert.equal(verdict?.decision, 'deny')
+    assert.ok(verdict.reason.includes(`"${LAW}"`), verdict.reason)
+    assert.ok(
+      verdict.reason.includes('"disableAllHooks": true'),
+      verdict.reason
+    )
+  })
+}
+
+test('a command nested exactly as deep as the reader reads gets its verdict', () => {
+  assert.equal(
+    decide({ payload: payloadOf({ command: `${'eval '.repeat(16)}ls` }) }),
+    undefined
+  )
+  const verdict = decide({
+    payload: payloadOf({ command: `${'eval '.repeat(16)}git push -f` })
+  })
+  assert.equal(verdict?.decision, 'deny')
+  assert.ok(verdict.reason.includes('`git push` passes `-f`'), verdict.reason)
+})

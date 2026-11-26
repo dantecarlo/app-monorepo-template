@@ -9,15 +9,16 @@
 // It reads the PreToolUse payload on stdin ({ tool_name, tool_input }),
 // asks `decide` and prints `hookSpecificOutput.permissionDecision: deny`
 // with its reason when the command forces or skips a check. It prints
-// nothing for any other call, and never `allow`, so the session's own
-// permissions still apply. Stdin that is not a JSON object prints nothing.
-// It spawns nothing and reads no file but its own modules.
+// nothing for a call it lets through, and never `allow`, so the session's
+// own permissions still apply. It spawns nothing and reads no file but its
+// own modules.
 //
 // It fails closed, as the write guard does: a hook that broke would let
-// every force and skip through unseen. When its engine cannot load or
-// throws, it denies the call with one line naming the error and the one
-// recovery, Claude Code's own `"disableAllHooks": true` in the git-ignored
-// `.claude/settings.local.json`.
+// every force and skip through unseen. Stdin that is empty, is not JSON or
+// is no JSON object, an engine that cannot load or throws, and a call
+// decide cannot read each get one line that denies, naming the problem and
+// the one recovery, Claude Code's own `"disableAllHooks": true` in the
+// git-ignored `.claude/settings.local.json`.
 //
 // Usage (Claude Code runs it):
 //   node "${CLAUDE_PROJECT_DIR}/scripts/agent-harness/no-force/claude-hook.mjs"
@@ -25,17 +26,24 @@
 
 const EVENT = 'PreToolUse'
 
+const NO_PAYLOAD = 'stdin is empty'
+const NOT_JSON = 'stdin is not JSON'
+const NOT_OBJECT = 'stdin is no JSON object'
+
+// The payload on stdin, or the problem that keeps it from being one.
 const readPayload = ({ text }) => {
+  if (text.trim() === '') return { problem: NO_PAYLOAD }
+  let payload
   try {
-    const payload = JSON.parse(text)
-    return payload !== null &&
-      typeof payload === 'object' &&
-      !Array.isArray(payload)
-      ? payload
-      : undefined
+    payload = JSON.parse(text)
   } catch {
-    return undefined
+    return { problem: NOT_JSON }
   }
+  return payload !== null &&
+    typeof payload === 'object' &&
+    !Array.isArray(payload)
+    ? { payload }
+    : { problem: NOT_OBJECT }
 }
 
 const renderVerdict = ({ verdict }) =>
@@ -62,13 +70,25 @@ const crashLine = ({ error }) =>
     }
   })
 
+const unreadLine = ({ problem }) =>
+  renderVerdict({
+    verdict: {
+      decision: CRASH_DENY,
+      reason:
+        `The no-force hook cannot read its payload (${problem}), so it ` +
+        'refuses this call. If the owner agrees, set "disableAllHooks": ' +
+        'true in the git-ignored .claude/settings.local.json, which ' +
+        'switches every Claude Code hook off.'
+    }
+  })
+
 /**
  * What the hook prints for the stdin `text`: a verdict, one crash line, or
  * nothing. `load` imports the engine.
  */
 export const answer = async ({ load, text }) => {
-  const payload = readPayload({ text })
-  if (payload === undefined) return ''
+  const { payload, problem } = readPayload({ text })
+  if (payload === undefined) return unreadLine({ problem })
   try {
     const { decide } = await load()
     const verdict = decide({ payload })

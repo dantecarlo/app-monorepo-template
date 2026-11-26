@@ -1,8 +1,9 @@
 // ---------------------------------------------------------------------------
-// powershell — the force option a PowerShell command passes, for the LAW
+// powershell — the statements a PowerShell command runs, for the LAW
 // "A check is never forced or skipped" (AGENTS.md). The write guard does not
 // parse PowerShell, so this is a small reader of its own: the statements of
-// a command, each the texts of its words, then forms.mjs on each one.
+// a command, each the texts of its words, and how deeply they nest, which
+// command.mjs judges.
 //
 // A statement ends at `;`, `|`, `&` (and `&&`, `||`, the call operator) and
 // a line end; a script block, a group or a subexpression (`{ }`, `( )`,
@@ -15,11 +16,9 @@
 // (`@' '@`, `@" "@`) is text. A redirection's stream (`2>`, `*>&1`) is no
 // word.
 //
-// Not read: a parameter abbreviated (`-Fo`), a splatted hashtable
-// (`@{ Force = $true }`) and a variable's value.
+// Not read: a splatted hashtable (`@{ Force = $true }`) and a variable's
+// value.
 // ---------------------------------------------------------------------------
-
-import { forceOf } from './forms.mjs'
 
 // What a part the hook cannot know (a here-string, a subexpression inside
 // a string) reads as, so it never completes an option.
@@ -96,18 +95,23 @@ const readDouble = ({ from, read, source }) => {
   let text = ''
   let at = from + 1
   const nested = []
+  let depth = 0
   while (at < source.length) {
     const c = source[at]
     if (c === '`') {
       text += source[at + 1] ?? ''
       at += 2
     } else if (c === '"') {
-      if (source[at + 1] !== '"') return { end: at + 1, nested, text }
+      if (source[at + 1] !== '"') {
+        return { depth, end: at + 1, nested, text }
+      }
       text += '"'
       at += 2
     } else if (c === '$' && source[at + 1] === '(') {
       const close = matchingParen({ from: at + 1, source })
-      nested.push(...read({ command: source.slice(at + 2, close) }))
+      const inner = read({ command: source.slice(at + 2, close) })
+      nested.push(...inner.statements)
+      depth = Math.max(depth, inner.depth + 1)
       text += UNKNOWN_PART
       at = close + 1
     } else {
@@ -115,7 +119,7 @@ const readDouble = ({ from, read, source }) => {
       at += 1
     }
   }
-  return { end: at, nested, text }
+  return { depth, end: at, nested, text }
 }
 
 // The cursor past a redirection operator at `from`: `>`, `>>` and a merge
@@ -127,11 +131,16 @@ const redirectEnd = ({ from, source }) => {
   return at
 }
 
-/** The statements of the PowerShell `command`, each its words' texts. */
-export const statementsOf = ({ command }) => {
+/**
+ * The statements of the PowerShell `command`, each its words' texts, and
+ * `depth`, how many blocks, groups and subexpressions the deepest one
+ * sits in.
+ */
+export const readStatements = ({ command }) => {
   const source = command
   const statements = []
   const outer = []
+  let depth = 0
   let current = []
   let word = null
   const start = () => {
@@ -148,6 +157,7 @@ export const statementsOf = ({ command }) => {
   const open = () => {
     endWord()
     outer.push(current)
+    depth = Math.max(depth, outer.length)
     start()
   }
   const close = () => {
@@ -186,9 +196,10 @@ export const statementsOf = ({ command }) => {
       append({ text: read.text })
       at = read.end
     } else if (c === '"') {
-      const read = readDouble({ from: at, read: statementsOf, source })
+      const read = readDouble({ from: at, read: readStatements, source })
       append({ text: read.text })
       statements.push(...read.nested)
+      depth = Math.max(depth, outer.length + read.depth)
       at = read.end
     } else if (c === '$' && next === '{') {
       const brace = source.indexOf('}', at)
@@ -218,14 +229,12 @@ export const statementsOf = ({ command }) => {
     }
   }
   endWord()
-  return statements.filter((words) => words.length > 0)
+  return {
+    depth,
+    statements: statements.filter((words) => words.length > 0)
+  }
 }
 
-/** The force option the PowerShell `command` passes, or undefined. */
-export const powershellForce = ({ command }) => {
-  for (const words of statementsOf({ command })) {
-    const found = forceOf({ words })
-    if (found !== undefined) return found
-  }
-  return undefined
-}
+/** The statements of the PowerShell `command`, each its words' texts. */
+export const statementsOf = ({ command }) =>
+  readStatements({ command }).statements
