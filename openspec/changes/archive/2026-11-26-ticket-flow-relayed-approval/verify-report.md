@@ -22,7 +22,9 @@ the texts. The rest of the scenarios of TICKET-16 and TICKET-25 keep the tests t
 
 ## Gate
 
-- `pnpm validate`: exit pending, 2026-11-26.
+- `pnpm validate`: exit 0, 2026-11-26, on the archive tree (71 steps). A first run, before the
+  archive moved the spec's verified line to `f1332cd1`, exited 1 at `report:spec-drift`, which
+  listed this spec behind its governed files; the archive cleared it.
 
 ## Not verified
 

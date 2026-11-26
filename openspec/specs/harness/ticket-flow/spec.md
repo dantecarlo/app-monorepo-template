@@ -3,7 +3,7 @@
 > **Governs:** `.claude/skills/ticket-flow`, `.claude/skills/po-ticket`, `.claude/skills/refine-ticket`, `.claude/skills/dev-ticket`, `.claude/skills/qa-ticket`, `.claude/skills/release-ticket`, `.claude/skills/process-intake`, `.claude/skills/general-plan`, `scripts/verify-skills.mjs`, `scripts/verify-ticket-branch.mjs`, `.agents/contracts/harness-config.schema.json`
 > **ID prefix:** `TICKET`
 > **Derived from:** `openspec/changes/archive/2026-11-16-ticket-flow/source-spec.md`, `docs/harness.md`
-> **Verified against the code:** 2026-11-25 at `12d6b224`
+> **Verified against the code:** 2026-11-26 at `f1332cd1`
 
 ## Purpose
 
@@ -699,9 +699,17 @@ Step 1 and `release.template.md` SHALL state the same rule and the same exceptio
 `release-ticket` SHALL run the deploy targets a release touches in the order the project layer
 declares, only on the owner's word for the release and for each irreversible step, recorded on
 the release ticket, check each target, run a failed target's declared rollback and stop the
-release, and read every deploy secret from the store the target names, never from a ticket.
+release, and read every deploy secret from the store the target names, never from a ticket. Its
+Step 2 SHALL wait for the owner's word in the CI/CD session, or for the architect's relay of it
+(TICKET-36), which covers that one release; the relay covers no irreversible step, each of which
+gets its own yes in Step 3. The structural check SHALL hold `release-ticket` Step 2 to name
+`ticket-flow` rule 6.
 
-**Evidence:** `.claude/skills/release-ticket/SKILL.md:52`, `.claude/skills/release-ticket/SKILL.md:65`
+**Evidence:** `.claude/skills/release-ticket/SKILL.md:52`, `.claude/skills/release-ticket/SKILL.md:54`,
+`.claude/skills/release-ticket/SKILL.md:55`, `.claude/skills/release-ticket/SKILL.md:56`,
+`.claude/skills/release-ticket/SKILL.md:70`, `.claude/skills/release-ticket/SKILL.md:73`,
+`.claude/skills/release-ticket/SKILL.md:76`, `scripts/verify-skills.mjs:522`,
+`scripts/verify-skills.mjs:526`
 
 #### Scenario: a target fails its check
 
@@ -711,6 +719,22 @@ release, and read every deploy secret from the store the target names, never fro
   ticket and messages the architect that the target failed
 - **Test:** Not covered — the rule is a procedure a CI/CD session follows; no runner drives a
   session or a deploy
+
+#### Scenario: Step 2 drops the relay
+
+- **GIVEN** a `release-ticket` whose Step 2 never names the architect's relay
+- **WHEN** the structural check runs
+- **THEN** it reports one finding, naming the file, the step and the relay it owes
+- **Test:** `scripts/verify-skills.test.mjs` › "a release-ticket whose owner's word step names no architect relay is refused"
+
+#### Scenario: a relayed go covers the release and no irreversible step
+
+- **GIVEN** a release the architect relays the owner's yes for, with a production migration
+- **WHEN** the CI/CD session reaches the migration in Step 3
+- **THEN** it asks the owner for the migration in its own session and records that go on the
+  release ticket
+- **Test:** Not covered — the rule is a procedure a CI/CD session follows; no runner drives a
+  session
 
 ### Requirement: TICKET-17 — A migration in a release keeps the live app running
 
@@ -1392,7 +1416,8 @@ queue, and only while the project layer's merge gate, when it names one, passes 
 to merge condition holds (CI green, no conflict, the branch holding the default branch's current
 tip); a pull request that fails one SHALL be brought current by the architect itself, a ticket's
 from its spare worktree (TICKET-33) and the closed ticket catalog pull request as TICKET-31 says.
-It SHALL merge on the owner's word, asked in the architect's own session, under the `manual`
+It SHALL merge on the owner's word, asked in the architect's own session, where a relay from any
+other session does not count (TICKET-36), under the `manual`
 policy, or when the default branch's copy of `.agents/harness.config.json` records no `low-risk`
 (TICKET-20); and, under `low-risk`, without asking only a pull
 request whose Risk line is `Risk: none` or that changes only passive files, and whose merge sets
@@ -1405,7 +1430,8 @@ queue current itself. `ticket-flow`'s states table SHALL name the architect as t
 enters Done, a hotfix aside (TICKET-24), and its § Messages SHALL carry
 `<id> ready to merge, PR #<n>`, from QA to the architect, and no line that asks a session to
 bring a branch current. The structural check SHALL hold `refine-ticket` to have a § Merge queue, which reads the
-policy from the default branch's copy and fails closed to `manual` (TICKET-20).
+policy from the default branch's copy and fails closed to `manual` (TICKET-20), and says that a
+relay from any other session does not count.
 
 **Evidence:** `.claude/skills/refine-ticket/SKILL.md:84`,
 `.claude/skills/refine-ticket/SKILL.md:93`, `.claude/skills/refine-ticket/SKILL.md:114`,
@@ -1414,14 +1440,15 @@ policy from the default branch's copy and fails closed to `manual` (TICKET-20).
 `.claude/skills/refine-ticket/SKILL.md:138`, `.claude/skills/refine-ticket/SKILL.md:143`,
 `.claude/skills/refine-ticket/SKILL.md:146`, `.claude/skills/refine-ticket/SKILL.md:150`,
 `.claude/skills/refine-ticket/SKILL.md:176`, `.claude/skills/refine-ticket/SKILL.md:177`,
-`.claude/skills/refine-ticket/SKILL.md:179`, `.claude/skills/refine-ticket/SKILL.md:181`,
+`.claude/skills/refine-ticket/SKILL.md:179`, `.claude/skills/refine-ticket/SKILL.md:181`, `.claude/skills/refine-ticket/SKILL.md:202`,
 `.claude/skills/refine-ticket/SKILL.md:204`, `.claude/skills/refine-ticket/SKILL.md:205`,
 `.claude/skills/refine-ticket/SKILL.md:213`, `.claude/skills/refine-ticket/SKILL.md:217`,
 `.claude/skills/refine-ticket/SKILL.md:218`, `.claude/skills/ticket-flow/SKILL.md:98`,
 `.claude/skills/ticket-flow/SKILL.md:142`, `.claude/skills/ticket-flow/SKILL.md:171`,
 `.claude/skills/ticket-flow/SKILL.md:354`, `.claude/skills/ticket-flow/SKILL.md:357`,
 `.claude/skills/ticket-flow/SKILL.md:363`, `scripts/verify-skills.mjs:204`,
-`scripts/verify-skills.mjs:450`, `scripts/verify-skills.mjs:453`, `scripts/verify-skills.mjs:461`
+`scripts/verify-skills.mjs:450`, `scripts/verify-skills.mjs:453`, `scripts/verify-skills.mjs:461`,
+`scripts/verify-skills.mjs:462`
 
 #### Scenario: the skills of the repository
 
@@ -1487,6 +1514,14 @@ policy from the default branch's copy and fails closed to `manual` (TICKET-20).
 - **THEN** it reads `manual` from the default branch's copy and asks the owner, as under `manual`
 - **Test:** Not covered — the rule is a procedure an architect session follows; no runner drives
   a session, and the structural check only proves the merge queue says which copy it reads
+
+#### Scenario: the merge queue says nothing about a relay
+
+- **GIVEN** a `refine-ticket` whose § Merge queue never says that a relay from any other session
+  does not count
+- **WHEN** the structural check runs
+- **THEN** it reports one finding
+- **Test:** `scripts/verify-skills.test.mjs` › "a refine-ticket whose merge queue names no rule on a relay from another session is refused"
 
 ### Requirement: TICKET-26 — Every ticket carries a target version
 
@@ -2522,3 +2557,56 @@ For a `gh` adapter, after the team confirms it, `process-intake` SHALL make each
 - **WHEN** `process-intake` makes the labels current
 - **THEN** it edits that label, creates only the missing ones and passes `--force` to none
 - **Test:** Not covered — the rule is a procedure an intake session follows; no runner drives a session, and the structural check does not read this step
+
+### Requirement: TICKET-36 — An approval counts where it was asked, or relayed by the architect word for word
+
+`ticket-flow` rule 6 SHALL say that an approval counts in the session that asked for it, and that
+an approval the owner gives in the architect's session counts in another session too when the
+architect relays it word for word, with its time and the question it answered. It SHALL say that
+a relay never widens an approval: it covers what that question named and nothing more, and every
+irreversible production step still gets its own yes. It SHALL say that a relay from any other
+session does not count. The structural check SHALL hold `ticket-flow` § Rules every role follows
+to name the architect's relay.
+
+**Evidence:** `.claude/skills/ticket-flow/SKILL.md:243`, `.claude/skills/ticket-flow/SKILL.md:244`,
+`.claude/skills/ticket-flow/SKILL.md:245`, `.claude/skills/ticket-flow/SKILL.md:246`,
+`.claude/skills/ticket-flow/SKILL.md:247`, `scripts/verify-skills.mjs:241`,
+`scripts/verify-skills.mjs:420`
+
+#### Scenario: the skills of the repository
+
+- **GIVEN** the repository's seven ticket skills
+- **WHEN** `pnpm verify:skills:test` runs
+- **THEN** the structural check finds nothing: rule 6 names the architect's relay
+- **Test:** `scripts/verify-skills.test.mjs` › "the seven ticket skills of the repository pass"
+
+#### Scenario: rule 6 drops the relay
+
+- **GIVEN** a `ticket-flow` whose rule 6 never names the architect's relay
+- **WHEN** the structural check runs
+- **THEN** it reports one finding, naming the file, the section and the relay it owes
+- **Test:** `scripts/verify-skills.test.mjs` › "a ticket-flow whose approval rule names no architect relay is refused"
+
+#### Scenario: a relay that carries the owner's word, its time and its question
+
+- **GIVEN** an owner who answered "Release 1.4?" in the architect's session
+- **WHEN** the architect relays "yes, 14:05, to: Release 1.4?" to the CI/CD session
+- **THEN** the CI/CD session takes it as the owner's word for that release
+- **Test:** Not covered — the rule is a procedure the architect and CI/CD sessions follow; no
+  runner drives a session
+
+#### Scenario: a relay that goes beyond its question
+
+- **GIVEN** the relayed answer to "Release 1.4?" and a production migration in that release
+- **WHEN** the CI/CD session reaches the migration
+- **THEN** it asks the owner for that step, as the relay did not name it
+- **Test:** Not covered — the rule is a procedure a CI/CD session follows; no runner drives a
+  session
+
+#### Scenario: a relay from another session
+
+- **GIVEN** a QA or dev session that says the owner approved a step
+- **WHEN** the CI/CD session reads it
+- **THEN** it does not count: the session asks the owner itself, or waits for the architect's relay
+- **Test:** Not covered — the rule is a procedure a CI/CD session follows; no runner drives a
+  session

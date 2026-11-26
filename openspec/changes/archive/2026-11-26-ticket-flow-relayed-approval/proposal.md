@@ -1,6 +1,6 @@
 # Proposal: An approval the architect relays word for word counts
 
-> **Status:** open
+> **Status:** archived — 2026-11-26
 
 ## Why
 
