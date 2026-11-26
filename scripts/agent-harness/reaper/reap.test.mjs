@@ -12,8 +12,9 @@
 // ---------------------------------------------------------------------------
 
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { EventEmitter } from 'node:events'
-import { existsSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { PassThrough } from 'node:stream'
@@ -32,7 +33,6 @@ const BYTES_PER_MB = 1_048_576
 const SELF = 900
 const EXIT_OK = 0
 const EXIT_FAILED = 1
-const STALE_SECONDS = 31
 
 const scratch = mkdtempSync(join(tmpdir(), 'reap-test-'))
 after(() => rmSync(scratch, { recursive: true }))
@@ -198,7 +198,9 @@ test('--quiet prints only the total and --json the plan', async () => {
 
 test('a second reaper finds the lock and exits 0 at once, ending nothing', async () => {
   const first = harness()
-  writeFileSync(first.lockPath, '4242')
+  writeFileSync(first.lockPath, `${process.pid}
+another-reaper
+`)
   assert.equal(await first.run({ argv: ['--kill', '--quiet'] }), EXIT_OK)
   assert.deepEqual(first.calls, [])
   assert.deepEqual(first.out, [
@@ -207,11 +209,12 @@ test('a second reaper finds the lock and exits 0 at once, ending nothing', async
   assert.ok(existsSync(first.lockPath), 'the other reaper keeps its lock')
 })
 
-test('a lock older than 30 s is a reaper that died, and is taken over', async () => {
+test('a lock whose holder has ended is a reaper that died, and is taken over', async () => {
   const stale = harness()
-  writeFileSync(stale.lockPath, '4242')
-  const then = Date.now() / 1000 - STALE_SECONDS
-  utimesSync(stale.lockPath, then, then)
+  const ended = spawnSync(process.execPath, ['-e', '']).pid
+  writeFileSync(stale.lockPath, `${ended}
+dead-reaper
+`)
   assert.equal(await stale.run({ argv: ['--kill', '--quiet'] }), EXIT_OK)
   assert.equal(stale.kills().length, 2)
   assert.deepEqual(stale.out, ['reap: ended 2 trees, 475 MB'])
@@ -220,7 +223,9 @@ test('a lock older than 30 s is a reaper that died, and is taken over', async ()
 
 test('a dry run takes no lock', async () => {
   const dry = harness()
-  writeFileSync(dry.lockPath, '4242')
+  writeFileSync(dry.lockPath, `${process.pid}
+another-reaper
+`)
   assert.equal(await dry.run({ argv: ['--quiet'] }), EXIT_OK)
   assert.deepEqual(dry.out, ['reap: dry run: 2 trees to end, 475 MB; pnpm reap:kill ends them'])
 })

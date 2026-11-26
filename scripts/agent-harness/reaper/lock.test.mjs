@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 // ---------------------------------------------------------------------------
-// lock — one killing reaper at a time: two runs that find the same stale
-// lock never both take it, a release removes only the lock its own run
-// wrote, and a guard left by a reaper that died is cleared for the next run.
-// Each race is driven, not waited: an injected fs runs the other reaper at
-// the exact step where the race opens, and an injected clock ages a lock.
-// One case runs two real node processes, one step after the other. Every
-// lock sits in a scratch folder of its own under the OS temp directory,
-// removed when the suite ends.
+// lock — one killing reaper at a time: a lock is taken over only once its
+// holder has ended or after an hour, two runs that find the same lock never
+// both take it, a release removes only the lock its own run wrote, and a
+// guard left by a reaper that died is cleared for the next run. Each race is
+// driven, not waited: an injected fs runs the other reaper at the exact step
+// where the race opens, an injected clock ages a lock and an injected
+// reading says whether a holder runs. One case runs two real node processes,
+// one step after the other. Every lock sits in a scratch folder of its own
+// under the OS temp directory, removed when the suite ends.
 //
 // Usage:
 //   node --test scripts/agent-harness/reaper/lock.test.mjs
@@ -21,13 +22,19 @@ import { dirname, join } from 'node:path'
 import { after, test } from 'node:test'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
-import { takeLock } from './lock.mjs'
+import { holderRuns, takeLock } from './lock.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const LOCK_MODULE = pathToFileURL(join(HERE, 'lock.mjs')).href
-const STALE_SECONDS = 31
-const STALE_MS = STALE_SECONDS * 1000
+const MS_PER_SECOND = 1000
+const STALLED_SECONDS = 31
+const PAST_AN_HOUR_SECONDS = 3660
+const PAST_AN_HOUR_MS = PAST_AN_HOUR_SECONDS * MS_PER_SECOND
 const GUARD_SUFFIX = '.guard'
+const ESRCH = 'ESRCH'
+const EPERM = 'EPERM'
+const RUNS = () => true
+const ENDED = () => false
 
 const scratch = nodeFs.mkdtempSync(join(tmpdir(), 'reaper-lock-test-'))
 after(() => nodeFs.rmSync(scratch, { recursive: true }))
@@ -40,10 +47,10 @@ const freshLockPath = () => {
 const read = ({ path }) =>
   nodeFs.existsSync(path) ? nodeFs.readFileSync(path, 'utf8') : null
 
-// A file written `STALE_SECONDS` ago, as a reaper that died leaves it.
-const writeStale = ({ path, text }) => {
+// A file written `seconds` ago.
+const writeAged = ({ path, seconds = STALLED_SECONDS, text }) => {
   nodeFs.writeFileSync(path, text)
-  const then = Date.now() / 1000 - STALE_SECONDS
+  const then = Date.now() / MS_PER_SECOND - seconds
   nodeFs.utimesSync(path, then, then)
 }
 
@@ -106,20 +113,29 @@ test('a lock released and re-created during a takeover is never held twice', () 
   holder?.release()
 })
 
-test('two runs that find the same stale lock never both take it', () => {
+test("two runs that find the same lock's holder ended never both take it", () => {
   const path = freshLockPath()
-  writeStale({ path, text: '4242\n' })
+  writeAged({ path, text: '4242\n' })
   let second = null
-  // The second run takes the lock over right after the first read it as
-  // stale.
+  // The second run takes the lock over right after the first read its
+  // holder as ended.
   const fs = racingFs({
     onStat: () => {
-      second = takeLock({ path, token: tokenOf({ token: 'token-b' }) })
+      second = takeLock({
+        holderRunning: ENDED,
+        path,
+        token: tokenOf({ token: 'token-b' })
+      })
     },
     path
   })
-  const first = takeLock({ fs, path, token: tokenOf({ token: 'token-a' }) })
-  assert.notEqual(second, null, 'the second run takes the stale lock')
+  const first = takeLock({
+    fs,
+    holderRunning: ENDED,
+    path,
+    token: tokenOf({ token: 'token-a' })
+  })
+  assert.notEqual(second, null, 'the second run takes the lock')
   assert.equal(first, null, 'the first run takes nothing')
   assert.match(read({ path }), /token-b/u)
   assert.equal(read({ path: `${path}${GUARD_SUFFIX}` }), null, 'no guard is left behind')
@@ -131,9 +147,10 @@ test('a release leaves a lock a later run took over', () => {
   const path = freshLockPath()
   const first = takeLock({ path, token: tokenOf({ token: 'token-a' }) })
   assert.notEqual(first, null)
-  // 31 s later the first run looks dead, and a later run takes over.
+  // An hour later the first run's lock is old enough to be taken over,
+  // although its pid still runs.
   const later = takeLock({
-    now: () => Date.now() + STALE_MS,
+    now: () => Date.now() + PAST_AN_HOUR_MS,
     path,
     token: tokenOf({ token: 'token-b' })
   })
@@ -147,32 +164,98 @@ test('a release leaves a lock a later run took over', () => {
 test('a guard left by a reaper that died is removed, and the next run takes the lock', () => {
   const path = freshLockPath()
   const guard = `${path}${GUARD_SUFFIX}`
-  writeStale({ path, text: '4242\n' })
-  writeStale({ path: guard, text: '4343\ndead-guard\n' })
-  assert.equal(takeLock({ path, token: tokenOf({ token: 'token-a' }) }), null)
-  assert.equal(read({ path: guard }), null, 'the stale guard is gone')
+  writeAged({ path, text: '4242\n' })
+  writeAged({ path: guard, text: '4343\ndead-guard\n' })
+  assert.equal(
+    takeLock({ holderRunning: ENDED, path, token: tokenOf({ token: 'token-a' }) }),
+    null
+  )
+  assert.equal(read({ path: guard }), null, 'the dead guard is gone')
   assert.equal(read({ path }), '4242\n', 'that run took nothing')
-  const next = takeLock({ path, token: tokenOf({ token: 'token-b' }) })
+  const next = takeLock({
+    holderRunning: ENDED,
+    path,
+    token: tokenOf({ token: 'token-b' })
+  })
   assert.notEqual(next, null, 'the next run takes the lock')
   assert.match(read({ path }), /token-b/u)
   assert.equal(read({ path: guard }), null)
   next.release()
 })
 
-test('a stale guard is removed only while it holds what the run read', () => {
+test('a guard whose holder ended is removed only while it holds what the run read', () => {
   const path = freshLockPath()
   const guard = `${path}${GUARD_SUFFIX}`
-  writeStale({ path, text: '4242\n' })
-  writeStale({ path: guard, text: '4343\ndead-guard\n' })
+  writeAged({ path, text: '4242\n' })
+  writeAged({ path: guard, text: '4343\ndead-guard\n' })
   // Right after this run read the guard's age, another run cleared it and
   // wrote its own.
   const fs = racingFs({
     onStat: () => nodeFs.writeFileSync(guard, '4444\nguard-c\n'),
     path: guard
   })
-  assert.equal(takeLock({ fs, path, token: tokenOf({ token: 'token-a' }) }), null)
+  assert.equal(
+    takeLock({ fs, holderRunning: ENDED, path, token: tokenOf({ token: 'token-a' }) }),
+    null
+  )
   assert.equal(read({ path: guard }), '4444\nguard-c\n', "the other run's guard stays")
   assert.equal(read({ path }), '4242\n', 'this run took nothing')
+})
+
+test('a lock whose holder still runs is not taken over before an hour, however long its run stalls', () => {
+  const path = freshLockPath()
+  writeAged({ path, text: 'other\nreaper\n' })
+  assert.equal(
+    takeLock({ holderRunning: RUNS, path, token: tokenOf({ token: 'token-b' }) }),
+    null
+  )
+  assert.equal(read({ path }), 'other\nreaper\n')
+})
+
+test('a lock held for over an hour is taken over even when a process holds its pid', () => {
+  const path = freshLockPath()
+  writeAged({ path, seconds: PAST_AN_HOUR_SECONDS, text: 'other\nreaper\n' })
+  const lock = takeLock({
+    holderRunning: RUNS,
+    path,
+    token: tokenOf({ token: 'token-a' })
+  })
+  assert.notEqual(lock, null)
+  assert.match(read({ path }), /token-a/u)
+  lock.release()
+})
+
+test('a run that finds a takeover under way by a holder that runs takes nothing and leaves the lock', () => {
+  const path = freshLockPath()
+  const guard = `${path}${GUARD_SUFFIX}`
+  nodeFs.writeFileSync(path, '4242\nreaper\n')
+  nodeFs.writeFileSync(guard, '4343\nguard\n')
+  const onlyTheLockEnded = ({ text }) => text !== '4343\nguard\n'
+  assert.equal(
+    takeLock({
+      holderRunning: onlyTheLockEnded,
+      path,
+      token: tokenOf({ token: 'token-b' })
+    }),
+    null
+  )
+  assert.equal(read({ path }), '4242\nreaper\n')
+  assert.equal(read({ path: guard }), '4343\nguard\n')
+})
+
+test('a holder is read as running from the pid its lock names, and a lock without one as running', () => {
+  const ended = spawnSync(process.execPath, ['-e', '']).pid
+  const refused = () => {
+    throw Object.assign(new Error('not allowed'), { code: EPERM })
+  }
+  const gone = () => {
+    throw Object.assign(new Error('no such process'), { code: ESRCH })
+  }
+  assert.equal(holderRuns({ text: `${process.pid}\nx\n` }), true)
+  assert.equal(holderRuns({ text: `${ended}\nx\n` }), false)
+  assert.equal(holderRuns({ kill: gone, text: '4242\nx\n' }), false)
+  assert.equal(holderRuns({ kill: refused, text: '4242\nx\n' }), true)
+  assert.equal(holderRuns({ text: 'no-pid\n' }), true)
 })
 
 // A node process that takes the lock with `token`, prints `held` or
@@ -214,8 +297,9 @@ test('a reaper process that releases late leaves the lock another process took o
     { stdio: ['pipe', 'pipe', 'inherit'] }
   )
   assert.equal(await firstLine({ child: first }), 'held')
-  // The first process outlives the stale age; a second one takes over.
-  const then = Date.now() / 1000 - STALE_SECONDS
+  // The first process still runs, but its lock is over an hour old; a
+  // second one takes over.
+  const then = Date.now() / MS_PER_SECOND - PAST_AN_HOUR_SECONDS
   nodeFs.utimesSync(path, then, then)
   const second = spawnSync(process.execPath, holderArgs({ path, token: 'token-b' }), {
     encoding: 'utf8'

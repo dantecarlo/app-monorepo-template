@@ -703,14 +703,16 @@ root pid, family, the wrapper it came through, age, process count and MB), one
 `kept` line per tree it keeps and why, then the total MB. `pnpm reap:kill` ends
 them; `--json` prints the plan as one JSON line and `--quiet` only the total
 line. A killing run first creates `atl-process-reaper.lock` in the OS temp
-directory, exclusively, with a token unique to that run; another reaper that
-finds it held prints so and exits 0 at once, and a lock gone by the time it is
-read is created again, never taken over. A lock older than 30 s, left by a
-reaper that died, is taken over only under `atl-process-reaper.lock.guard`,
-created exclusively, and removed under it only while it still holds the bytes
-the run read, so two runs that find it stale never both take it; a guard older than 30 s, left by a reaper
-that died holding it, is removed, only while it holds what that run read, and
-the next run takes the lock. A run removes the lock at its end only while it
+directory, exclusively, holding its pid and a token unique to that run; another
+reaper that finds it held prints so and exits 0 at once, and a lock gone by the
+time it is read is created again, never taken over. A lock is taken over only
+once its holder has ended, that is when no process runs with the pid on its
+first line, or after an hour: a holder that still runs keeps its lock however
+long its run stalls. The takeover runs only under `atl-process-reaper.lock.guard`,
+created exclusively, and removes the lock under it only while it still holds
+the bytes the run read, so two runs that find it takeable never both take it;
+a guard whose holder ended, left by a reaper that died holding it, is removed,
+only while it holds what that run read, and the next run takes the lock. A run removes the lock at its end only while it
 still holds its token, never one a later run took over.
 Right before its kills it lists the processes again and leaves every tree whose
 root pid is gone or now names a process that started at another time, since a
