@@ -360,6 +360,13 @@
       "cost": "seconds"
     },
     {
+      "id": "prune-boundary:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
       "id": "verify:pairing",
       "capability": "core",
       "stage": "repository",

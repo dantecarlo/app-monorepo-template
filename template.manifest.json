@@ -108,6 +108,7 @@
     "scripts/mcp/**",
     "scripts/move-tests-into-blocks.mjs",
     "scripts/move-tests-into-blocks.test.mjs",
+    "scripts/prune-boundary.repository.mjs",
     "scripts/prune-worktrees.detect.mjs",
     "scripts/prune-worktrees.mjs",
     "scripts/prune-worktrees.test.mjs",
@@ -167,7 +168,8 @@
       "group": "foundation",
       "claims": [
         "openspec/specs/packages/tokens/spec.md",
-        "packages/tokens/**"
+        "packages/tokens/**",
+        "scripts/prune-boundary.design-tokens.test.mjs"
       ],
       "onAbsent": [
         {
@@ -206,7 +208,8 @@
       "group": "foundation",
       "claims": [
         "openspec/specs/packages/i18n/spec.md",
-        "packages/i18n/**"
+        "packages/i18n/**",
+        "scripts/prune-boundary.i18n.test.mjs"
       ],
       "onAbsent": [
         {
@@ -253,6 +256,7 @@
         "apps/web/vitest.config.ts",
         "docs/architecture/web.md",
         "openspec/specs/apps/web/spec.md",
+        "scripts/prune-boundary.web-next.test.mjs",
         "scripts/smoke-web-render.mjs"
       ],
       "onAbsent": [
@@ -287,7 +291,8 @@
         "apps/mobile/**",
         "docs/architecture/mobile.md",
         "openspec/specs/apps/mobile/spec.md",
-        "scripts/assert-expo-export.mjs"
+        "scripts/assert-expo-export.mjs",
+        "scripts/prune-boundary.mobile-expo.test.mjs"
       ],
       "onAbsent": [
         {
@@ -327,6 +332,7 @@
       "claims": [
         "openspec/specs/packages/supabase/spec.md",
         "packages/supabase/**",
+        "scripts/prune-boundary.supabase.test.mjs",
         "scripts/supabase-test-db.mjs"
       ],
       "onAbsent": [
@@ -401,7 +407,8 @@
         "docs/images.md",
         "docs/infrastructure.md",
         "openspec/specs/packages/cloudflare/spec.md",
-        "packages/cloudflare/**"
+        "packages/cloudflare/**",
+        "scripts/prune-boundary.cloudflare.test.mjs"
       ],
       "onAbsent": [
         {
@@ -434,7 +441,8 @@
         "apps/web/next-sentry.config.ts",
         "apps/web/sentry.client.config.ts",
         "apps/web/sentry.edge.config.ts",
-        "apps/web/sentry.server.config.ts"
+        "apps/web/sentry.server.config.ts",
+        "scripts/prune-boundary.sentry.test.mjs"
       ],
       "onAbsent": [
         {
@@ -674,7 +682,8 @@
         "docs/GENERALIZATION_PLAN.md",
         "docs/INIT_AND_HARNESS_PLAN.md",
         "docs/audits/**",
-        "openspec/changes/**"
+        "openspec/changes/**",
+        "scripts/init-project.template.test.mjs"
       ]
     }
   ],

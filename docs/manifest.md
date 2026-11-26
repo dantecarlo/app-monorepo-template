@@ -165,7 +165,8 @@ prunes Sentry unless the project picks it (`docs/observability.md`).
 
 - It **claims** the web root files no other claim covers:
   `apps/web/instrumentation.ts`, `apps/web/next-sentry.config.ts`, the three
-  `apps/web/sentry.*.config.ts` and `apps/web/__tests__/next-sentry.config.test.ts`.
+  `apps/web/sentry.*.config.ts` and `apps/web/__tests__/next-sentry.config.test.ts`,
+  and the suite that checks its prune, `scripts/prune-boundary.sentry.test.mjs`.
   `web-next` therefore claims its own root files by name instead of
   `apps/web/**`, and its `onAbsent` removes `apps/web/**`, which keeps what an
   absent `web-next` deletes.
@@ -188,19 +189,43 @@ prunes Sentry unless the project picks it (`docs/observability.md`).
   an app's prune removes its whole spec, so a project that keeps Sentry and
   drops an app loses that app's part and no claim is left behind.
 
-`packages/tooling/src/__tests__/prune-boundary.test.mjs` proves the prune
-leaves no dangling reference. With the capability's regions dropped, it fails
-when a file the prune keeps imports a file the prune deletes or a dependency it
+`findPruneLeaks` of `packages/tooling/src/prune-boundary.mjs` judges what a
+prune leaves, and `packages/tooling/src/__tests__/prune-boundary.test.mjs`
+holds it on synthetic trees. With the capability's regions dropped, it lists a
+file the prune keeps that imports a file the prune deletes or a dependency it
 removes, names a pruned file by a quoted relative path, keeps an
 `.env.example` key only pruned files read, or is a living spec that cites a
-pruned file; when a kept `app.json` would list a plugin of a removed
-dependency, or the patched plugin list drifts from `app.json`; and when the
-registry the prune leaves would fail `verify:dependency-seams`. The same test
-holds the registry true after the `sentry`, `mobile-expo`, `supabase`,
-`web-next` and `cloudflare` prunes, the `mobile-expo` and `web-next` prunes to
-every check, and the `supabase` prune to every check but the gaps below. A Next.js config cannot be pruned by deleting a file
-it imports, so `apps/web/next.config.ts` applies every
-`next-<capability>.config.ts` beside it and names none.
+pruned file; a kept `app.json` that would list a plugin of a removed
+dependency, or a patched plugin list that drifts from `app.json`; and a
+registry the prune leaves that would fail `verify:dependency-seams`. A Next.js
+config cannot be pruned by deleting a file it imports, so
+`apps/web/next.config.ts` applies every `next-<capability>.config.ts` beside
+it and names none.
+
+### Each prune's checks go with it
+
+The prune of a capability is checked on this repository by a suite that
+capability claims, `scripts/prune-boundary.<capability>.test.mjs`, built on the
+core helper `scripts/prune-boundary.repository.mjs`. The prune deletes the
+suite with the rest of the capability's files, so a project `/init` pruned runs
+every check its manifest still declares and carries none for a capability it
+no longer declares: no check is skipped by capability. Each suite first proves
+the manifest gives it to its capability alone. A kept living spec cites a suite
+only inside a region of the suite's capability (§ Regions).
+
+| Suite of       | Holds                                                                                        |
+| -------------- | -------------------------------------------------------------------------------------------- |
+| `sentry`       | every check, and the Sentry part of each app spec dropped with its region                     |
+| `supabase`     | every check                                                                                  |
+| `web-next`     | every check, no claim of a kept capability on a spec left stale, the gateway list in regions |
+| `mobile-expo`  | every check, no claim of a kept capability on a spec left stale, the gateway list in regions |
+| `cloudflare`   | the registry it leaves, beside the gaps below                                                |
+| `i18n`         | no kept `package.json` declares the package whose entry it takes, beside the gaps below      |
+| `design-tokens`| no kept `package.json` declares the package whose entry it takes, beside the gaps below      |
+
+A check that holds only in the template itself lives in a suite the
+`template-maintainer` capability claims, which `/init` always removes:
+`scripts/init-project.template.test.mjs` renames the template's own names.
 
 ---
 

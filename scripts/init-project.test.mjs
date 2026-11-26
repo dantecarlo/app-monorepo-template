@@ -87,30 +87,14 @@ test("END TO END: under a hook's GIT_DIR, the copy is listed from this repositor
 
 const read = ({ root, file }) => readFileSync(join(root, file), 'utf8')
 
-// A derived project already carries its own name, so there is nothing to rename.
-const IS_TEMPLATE_TREE =
-  JSON.parse(read({ file: 'package.json', root: REPO_ROOT })).name ===
-  TEMPLATE_NAME
-
-test(
-  'a root script that names a workspace gets the new name',
-  { skip: !IS_TEMPLATE_TREE },
-  () => {
-    const smoke = read({
-      file: 'scripts/smoke-web-render.mjs',
-      root: copy
-    })
-
-    assert.match(smoke, new RegExp(`@${SLUG}/web`))
-    assert.doesNotMatch(smoke, /@app\//)
-  }
-)
-
+// Renaming the template's own names holds only where the template carries
+// them: scripts/init-project.template.test.mjs, which /init removes from a
+// derived project.
 test('the root package.json names no template workspace', () => {
   assert.doesNotMatch(read({ file: 'package.json', root: copy }), /@app\//)
 })
 
-// The guard above reads the root name against TEMPLATE_NAME, which the copy keeps.
+// TEMPLATE_NAME is the template's root name, which this file keeps as it is.
 test('a renamed tree no longer counts as the template', () => {
   const { name } = JSON.parse(read({ file: 'package.json', root: copy }))
 

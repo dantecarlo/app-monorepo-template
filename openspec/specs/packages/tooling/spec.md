@@ -428,12 +428,14 @@ entry the prune leaves that names a removed dependency.
 - **THEN** the drift is listed
 - **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a patched plugin list that drifts from app.json is a leak"
 
+<!-- region sentry -->
 #### Scenario: the sentry capability of this repository
 
 - **GIVEN** the repository's tracked files and its `template.manifest.json`
 - **WHEN** the prune of `sentry` is checked
 - **THEN** nothing is listed
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, supabase, mobile-expo or web-next of this repository leaves no dangling reference"
+- **Test:** `scripts/prune-boundary.sentry.test.mjs` › "pruning sentry of this repository leaves no dangling reference"
+<!-- endregion sentry -->
 
 ### Requirement: TOOLING-17 — The registry a prune leaves stays true
 
@@ -492,14 +494,33 @@ entry names.
 - **GIVEN** the repository's tracked files, its manifest and its registry
 - **WHEN** the prune of `sentry`, `mobile-expo`, `supabase`, `web-next` and `cloudflare` is checked
 - **THEN** no registry finding is listed for any of them
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, mobile-expo, supabase, web-next or cloudflare of this repository leaves the registry true"
+<!-- region sentry -->
+- **Test:** `scripts/prune-boundary.sentry.test.mjs` › "pruning sentry of this repository leaves no dangling reference"
+<!-- endregion sentry -->
+<!-- region mobile-expo -->
+- **Test:** `scripts/prune-boundary.mobile-expo.test.mjs` › "pruning mobile-expo of this repository leaves no dangling reference"
+<!-- endregion mobile-expo -->
+<!-- region supabase -->
+- **Test:** `scripts/prune-boundary.supabase.test.mjs` › "pruning supabase of this repository leaves no dangling reference"
+<!-- endregion supabase -->
+<!-- region web-next -->
+- **Test:** `scripts/prune-boundary.web-next.test.mjs` › "pruning web-next of this repository leaves no dangling reference"
+<!-- endregion web-next -->
+<!-- region cloudflare -->
+- **Test:** `scripts/prune-boundary.cloudflare.test.mjs` › "pruning cloudflare of this repository leaves the registry true"
+<!-- endregion cloudflare -->
 
 #### Scenario: the packages of this repository a prune takes
 
 - **GIVEN** the repository's tracked files, its manifest and its registry
 - **WHEN** the prune of `i18n` and of `design-tokens` is checked
 - **THEN** no kept `package.json` declares a package whose entry the prune takes
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning i18n or design-tokens of this repository keeps no package whose entry it takes"
+<!-- region i18n -->
+- **Test:** `scripts/prune-boundary.i18n.test.mjs` › "pruning i18n of this repository keeps no package whose entry it takes"
+<!-- endregion i18n -->
+<!-- region design-tokens -->
+- **Test:** `scripts/prune-boundary.design-tokens.test.mjs` › "pruning design-tokens of this repository keeps no package whose entry it takes"
+<!-- endregion design-tokens -->
 
 ### Requirement: TOOLING-18 — A kept spec cites no pruned file
 
@@ -525,6 +546,7 @@ path.
 - **THEN** the kept spec is listed with both files
 - **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "a kept spec that governs or cites a pruned file as evidence is a leak"
 
+<!-- region sentry -->
 #### Scenario: the Sentry part of this repository's app specs
 
 - **GIVEN** the repository's web and mobile specs, each holding the Sentry part of its app, its
@@ -532,7 +554,8 @@ path.
 - **WHEN** the prune of `sentry` is checked with its regions dropped, and again with them kept
 - **THEN** with the regions dropped neither spec is listed, and with them kept both are, with the
   Sentry files their regions cite
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry of this repository drops the Sentry part of each app spec with its region"
+- **Test:** `scripts/prune-boundary.sentry.test.mjs` › "pruning sentry of this repository drops the Sentry part of each app spec with its region"
+<!-- endregion sentry -->
 
 #### Scenario: an app prune of this repository, Sentry kept
 
@@ -540,7 +563,12 @@ path.
 - **WHEN** the prune of `mobile-expo` and of `web-next` is simulated, Sentry kept: the files the
   app claims or removes deleted, and the app gone from the manifest
 - **THEN** no claim the `sentry` capability makes on a living spec is left matching no file
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning mobile-expo or web-next of this repository leaves no sentry claim on a spec stale"
+<!-- region mobile-expo -->
+- **Test:** `scripts/prune-boundary.mobile-expo.test.mjs` › "pruning mobile-expo of this repository leaves no claim of a kept capability on a spec stale"
+<!-- endregion mobile-expo -->
+<!-- region web-next -->
+- **Test:** `scripts/prune-boundary.web-next.test.mjs` › "pruning web-next of this repository leaves no claim of a kept capability on a spec stale"
+<!-- endregion web-next -->
 
 ### Requirement: TOOLING-19 — A kept file names no pruned file and keeps no orphaned key
 
@@ -587,4 +615,15 @@ capability.
 - **WHEN** the prune of `sentry`, of `supabase`, of `mobile-expo` and of `web-next` is checked with
   every check
 - **THEN** nothing is listed for any of them
-- **Test:** `packages/tooling/src/__tests__/prune-boundary.test.mjs` › "pruning sentry, supabase, mobile-expo or web-next of this repository leaves no dangling reference"
+<!-- region sentry -->
+- **Test:** `scripts/prune-boundary.sentry.test.mjs` › "pruning sentry of this repository leaves no dangling reference"
+<!-- endregion sentry -->
+<!-- region supabase -->
+- **Test:** `scripts/prune-boundary.supabase.test.mjs` › "pruning supabase of this repository leaves no dangling reference"
+<!-- endregion supabase -->
+<!-- region mobile-expo -->
+- **Test:** `scripts/prune-boundary.mobile-expo.test.mjs` › "pruning mobile-expo of this repository leaves no dangling reference"
+<!-- endregion mobile-expo -->
+<!-- region web-next -->
+- **Test:** `scripts/prune-boundary.web-next.test.mjs` › "pruning web-next of this repository leaves no dangling reference"
+<!-- endregion web-next -->
