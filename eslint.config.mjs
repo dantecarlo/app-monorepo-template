@@ -242,7 +242,6 @@ export const createConfig = ({
   return defineConfig([
     { ignores: IGNORES },
     eslint.configs.recommended,
-    // @ts-expect-error - Plugin type incompatibility with ESLint 9 defineConfig
     ...tseslint.configs.recommended,
 
     // Pin the TSConfig root so typescript-eslint's parser doesn't error on
@@ -318,7 +317,6 @@ export const createConfig = ({
     // declares: React in every app and package, Next.js and Expo in the apps.
     // React first: the Expo block relaxes jsx-a11y rules it sets.
     // -----------------------------------------------------------------------
-    // @ts-expect-error - Plugin type incompatibility
     ...forWorkspaces({ blocks: REACT_BLOCKS, dirs: frameworks.react }),
     ...forWorkspaces({ blocks: NEXT_BLOCKS, dirs: frameworks.next }),
     ...forWorkspaces({ blocks: EXPO_BLOCKS, dirs: frameworks.expo }),
@@ -378,7 +376,6 @@ export const createConfig = ({
     DTS_FILE_OVERRIDE,
 
     // Prettier must be last to disable conflicting rules.
-    // @ts-expect-error - Plugin type incompatibility
     prettierConfig
   ])
 }
