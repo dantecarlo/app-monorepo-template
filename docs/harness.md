@@ -77,7 +77,10 @@ lists it: the folder git left is removed through `removePath` in four tries,
 the removal line. A real run prints `removing <path> (<branch>)` before each
 removal, `--quiet` included, so a run ended inside one leaves it as its last
 line, and a failure after one says a removal had started where it would say
-nothing was removed. Last, it fast-forwards
+nothing was removed. Outside `--quiet` it then lists every worktree it kept, the main
+checkout and the one it runs in aside, by the age of its last commit, oldest
+first (whole days, path, branch, reason), from one `git log --no-walk` over their
+HEADs. Last, it fast-forwards
 the main checkout with `git merge --ff-only` when that checkout is on the
 default branch. Any tracked local change there, staged or not, a
 line-ending-only one included, blocks it, and so does whatever git refuses

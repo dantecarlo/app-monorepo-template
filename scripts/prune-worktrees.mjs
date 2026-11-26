@@ -413,6 +413,35 @@ export const removeLeftover = ({ fs, path, tried = 0, wait = pause }) => {
   }
 }
 
+// The time of the commit each of `heads` names, in milliseconds, by commit;
+// a commit git cannot read is left out, and so is every commit when there is
+// no head or git cannot run the log.
+const readCommitTimes = ({ heads, root }) => {
+  if (heads.length === 0) return new Map()
+  try {
+    return new Map(
+      git({
+        args: [
+          'log',
+          '--no-walk=unsorted',
+          '--ignore-missing',
+          '--format=%H%x09%ct',
+          ...heads
+        ],
+        cwd: root
+      })
+        .split(/\r?\n/u)
+        .filter(Boolean)
+        .map((line) => {
+          const [sha, seconds] = line.split('\t')
+          return [sha, Number(seconds) * MS_PER_SECOND]
+        })
+    )
+  } catch {
+    return new Map()
+  }
+}
+
 // Every registered worktree path of the repository `root` belongs to, in one
 // spelling.
 const readRegistered = ({ root }) =>
@@ -729,8 +758,13 @@ const pruneWorktrees = async ({
 
   const registered = worktrees.map(({ path }) => samePath({ path }))
 
-  const decided = worktrees.map((worktree, at) =>
-    decide({
+  const commitTimes = readCommitTimes({
+    heads: [...new Set(worktrees.map(({ head }) => head).filter(Boolean))],
+    root
+  })
+
+  const decided = worktrees.map((worktree, at) => ({
+    ...decide({
       current,
       defaultBranch,
       isMain: at === 0,
@@ -738,8 +772,9 @@ const pruneWorktrees = async ({
       registered,
       upstreams,
       worktree
-    })
-  )
+    }),
+    committedAt: commitTimes.get(worktree.head)
+  }))
   // Each result is kept as it comes, so a step that fails after a removal,
   // the main checkout's included, returns with what was removed before it.
   const results = []

@@ -1332,8 +1332,8 @@ const mergedWorktrees = ({ branches, hook }) => {
   return { main, paths }
 }
 
-const prune = ({ cwd, env = gitFreeEnv() }) =>
-  spawnSync(process.execPath, [SCRIPT], { cwd, encoding: 'utf8', env })
+const prune = ({ args = [], cwd, env = gitFreeEnv() }) =>
+  spawnSync(process.execPath, [SCRIPT, ...args], { cwd, encoding: 'utf8', env })
 
 test("the worktree the command runs in survives the post-merge hook the main checkout's fast-forward fires", () => {
   const { main, paths } = mergedWorktrees({
@@ -2382,4 +2382,75 @@ test('a failure after a removal started does not say nothing was removed', () =>
     started: true
   })
   assert.match(done, /1 worktree was removed before it failed/u)
+})
+
+// ---------------------------------------------------------------------------
+// The kept worktrees are listed by the age of their last commit (PRUNE-08).
+// ---------------------------------------------------------------------------
+
+const AGE_HEADING =
+  'prune-worktrees: worktrees kept, by the age of their last commit, oldest first:'
+const DAY_MS = 86_400_000
+
+test('the kept worktrees are listed by the age of their last commit, oldest first', () => {
+  const now = Date.UTC(2026, 10, 26)
+  const aged = ({ branch, days, kept = REASON.DIRTY }) => ({
+    branch,
+    committedAt: now - days * DAY_MS,
+    kept,
+    path: `C:/wt/${branch}`
+  })
+  const lines = reportLines({
+    dryRun: false,
+    main: { behind: 0, moved: false, path: 'C:/wt/main' },
+    now,
+    quiet: false,
+    results: [
+      aged({ branch: 'main', days: 900, kept: REASON.MAIN }),
+      aged({ branch: 'recent', days: 2 }),
+      aged({ branch: 'oldest', days: 40, kept: REASON.IGNORED }),
+      aged({ branch: 'current', days: 800, kept: REASON.CURRENT }),
+      aged({ branch: 'middle', days: 9 }),
+      { branch: 'unknown', kept: REASON.DIRTY, path: 'C:/wt/unknown' }
+    ]
+  })
+  const at = lines.indexOf(AGE_HEADING)
+  assert.ok(at >= 0, lines.join('\n'))
+  assert.deepEqual(lines.slice(at + 1, at + 4), [
+    `prune-worktrees:   40 d  C:/wt/oldest (oldest): ${REASON.IGNORED}`,
+    `prune-worktrees:    9 d  C:/wt/middle (middle): ${REASON.DIRTY}`,
+    `prune-worktrees:    2 d  C:/wt/recent (recent): ${REASON.DIRTY}`
+  ])
+  assert.ok(
+    !lines.some((line) => /\d d {2}C:\/wt\/(?:main|current|unknown) /u.test(line)),
+    lines.join('\n')
+  )
+  const none = reportLines({
+    dryRun: false,
+    now,
+    quiet: false,
+    results: [aged({ branch: 'main', days: 3, kept: REASON.MAIN })]
+  })
+  assert.ok(!none.includes(AGE_HEADING))
+})
+
+test('a real run lists each kept worktree by its age, and --quiet does not', () => {
+  const branch = 'feat/kept-by-age'
+  const { main, paths } = mergedWorktrees({ branches: [branch], hook: false })
+  writeFileSync(join(paths[branch], UNSAVED_FILE), 'unsaved\n')
+  const run = prune({ cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  const lines = run.stdout.split(/\r?\n/u)
+  const at = lines.indexOf(AGE_HEADING)
+  assert.ok(at >= 0, run.stdout)
+  assert.match(
+    lines[at + 1],
+    new RegExp(
+      `^prune-worktrees: +\\d+ d  ${forward({ path: paths[branch] }).replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')} \\(${branch}\\): `,
+      'u'
+    )
+  )
+  const quiet = prune({ args: ['--quiet'], cwd: main })
+  assert.equal(quiet.status, EXIT_OK, quiet.stderr)
+  assert.ok(!quiet.stdout.includes(AGE_HEADING), quiet.stdout)
 })

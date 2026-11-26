@@ -206,8 +206,8 @@ export const optionsFrom = ({ argv }) => {
 }
 
 // Every worktree `git worktree list --porcelain` printed, as its path, its
-// branch and, when it is locked, the lock with its reason, the main checkout
-// first; a detached checkout reads `(detached)`.
+// HEAD commit, its branch and, when it is locked, the lock with its reason,
+// the main checkout first; a detached checkout reads `(detached)`.
 export const parseWorktrees = ({ porcelain }) =>
   porcelain.split(/\r?\n\r?\n/).flatMap((block) => {
     const path = (block.match(/^worktree (.+)$/m) ?? [])[1]
@@ -215,9 +215,12 @@ export const parseWorktrees = ({ porcelain }) =>
     const branch = (
       (block.match(/^branch (.+)$/m) ?? [])[1] ?? DETACHED_BRANCH
     ).replace(BRANCH_PREFIX, '')
+    const head = (block.match(/^HEAD (\S+)$/m) ?? [])[1]
     const lock = block.match(/^locked(?: (.+))?$/m)
     return [
-      lock ? { branch, lock: { reason: lock[1] }, path } : { branch, path }
+      lock
+        ? { branch, head, lock: { reason: lock[1] }, path }
+        : { branch, head, path }
     ]
   })
 
@@ -490,15 +493,55 @@ const rewroteLine = ({ install, main }) =>
       "install's lockfile change)"
     : null
 
-// One line per worktree, a kept one left out under `--quiet`, the main
+const DAY_MS = 86_400_000
+const AGE_WIDTH = 4
+// The reasons whose worktree the age lines leave out.
+const UNAGED = new Set([REASON.CURRENT, REASON.MAIN])
+
+// Every kept worktree but the main checkout and the one the command runs in,
+// with a known commit time, oldest first: the whole days since its HEAD
+// commit, its path, its branch and its reason, under a heading line; no line
+// when there is none.
+const ageLines = ({ now, results }) => {
+  const aged = results
+    .filter(
+      ({ committedAt, kept }) =>
+        kept && !UNAGED.has(kept) && committedAt !== undefined
+    )
+    .sort((one, other) => one.committedAt - other.committedAt)
+  if (aged.length === 0) return []
+  return [
+    `${LABEL}: worktrees kept, by the age of their last commit, oldest first:`,
+    ...aged.map((result) => {
+      const days = Math.floor((now - result.committedAt) / DAY_MS)
+      const branch =
+        result.branch === DETACHED_BRANCH ? 'detached' : result.branch
+      return (
+        `${LABEL}: ${String(days).padStart(AGE_WIDTH)} d  ` +
+        `${result.path} (${branch}): ${result.kept}`
+      )
+    })
+  ]
+}
+
+// One line per worktree, a kept one left out under `--quiet`; outside
+// `--quiet`, the kept worktrees by age (`ageLines`, at `now`); the main
 // checkout's line when it was behind or off the default branch, the
 // install's line after a fast-forward that changed the lockfile and the
 // line of an install that rewrote it, the summary line, and for a dry run
 // what it does not cover.
-export const reportLines = ({ dryRun, install, main, quiet, results }) => [
+export const reportLines = ({
+  dryRun,
+  install,
+  main,
+  now = Date.now(),
+  quiet,
+  results
+}) => [
   ...results
     .filter((result) => !quiet || !result.kept)
     .map((result) => decisionLine({ dryRun, result })),
+  ...(quiet ? [] : ageLines({ now, results })),
   ...[
     mainLine({ dryRun, main }),
     installLine({ dryRun, install, main, quiet }),
