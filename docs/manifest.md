@@ -54,8 +54,8 @@ per entry on 2026-11-19.
   capability that claims every `package.json` declaring the package, or, for a
   workspace package (`@app/*`), its folder. When no capability's claims alone
   remove the package, the one whose claims and `remove-dep` actions together
-  remove it (`supabase` for `@supabase/supabase-js`, `e2e-playwright` for
-  `@playwright/test`). Otherwise `core`, as is `node:*`. So `@app/cloudflare`
+  remove it (`e2e-playwright` for `@playwright/test`, which the root
+  `package.json` declares). Otherwise `core`, as is `node:*`. So `@app/cloudflare`
   belongs to `web-next`, which claims the only `package.json` declaring it,
   and the `cloudflare` prune takes it with its `remove-dep`.
 - **The cross-cutting case is a verb.** A `remove-dep` that takes a package
