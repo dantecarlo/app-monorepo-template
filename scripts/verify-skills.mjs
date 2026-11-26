@@ -20,7 +20,8 @@
 //     `Superseded by:`, messages that name the hotfix's line
 //     `<id> ready to merge, hotfix` and the drop's line `<id> dropped`, rules
 //     that name
-//     both merge policies, a ticket identity that names `branchTypes` and
+//     both merge policies, an approval rule that names the architect's relay
+//     (rule 6), a ticket identity that names `branchTypes` and
 //     the `json ticket-identity` block, its ticket and release templates,
 //     the ticket's target version marked required, and no
 //     `<id> bring current`, since no session is asked to bring a branch
@@ -45,7 +46,8 @@
 //     stops on `<id> dropped` when the architect writes back, no move of a
 //     ticket to Done or back from Ready to merge, both the architect's, and
 //     no `<id> bring current`; and
-//     `release-ticket` its deploy targets, branching, migrations and a hotfix
+//     `release-ticket` its owner's word step, which names the architect's
+//     relay (`ticket-flow` rule 6), its deploy targets, branching, migrations and a hotfix
 //     section in which QA leaves the hotfix at Ready to merge;
 //   - `process-intake`: a mapping step that names both merge policies and
 //     the `json ticket-identity` block, and the template of the project
@@ -233,6 +235,13 @@ const RELEASE_STEP = '## Group a release'
 const MESSAGES_HEADING = '## Messages'
 const HOTFIX_HEADING = '## Hotfix'
 
+// An approval counts where it was asked, or relayed by the architect word for
+// word: the contract's rule 6 says so, and the release's Step 2, the one place
+// a relayed word is waited for, names that rule.
+const RELAY_RULE = 'Approval, in place or relayed by the architect.'
+const RELEASE_WORD_STEP = "## Step 2 — The owner's word for the release"
+const RELAY_REFERENCE = '(`ticket-flow` rule 6)'
+
 // The board is the source of every open ticket, its content included:
 // nothing in the repository writes or mirrors one, and the general plan
 // records a ticket only once it is closed. The contract and the template of
@@ -407,6 +416,7 @@ export const SKILL_CONTRACTS = [
       droppedMention({ heading: MESSAGES_HEADING }),
       ...policyMentions({ heading: RULES_HEADING }),
       ...policyReadMentions({ heading: RULES_HEADING }),
+      { heading: RULES_HEADING, text: RELAY_RULE },
       ...identityMentions({ heading: IDENTITY_HEADING })
     ],
     tables: [
@@ -507,9 +517,11 @@ export const SKILL_CONTRACTS = [
       '## Branching',
       '## Migrations',
       HOTFIX_HEADING,
+      RELEASE_WORD_STEP,
       ...SHAPE_HEADINGS
     ],
     mentions: [
+      { heading: RELEASE_WORD_STEP, text: RELAY_REFERENCE },
       { heading: '## Branching', text: 'production' },
       { heading: '## Branching', text: 'tags only' },
       { heading: HOTFIX_HEADING, text: HOTFIX_LEFT }
@@ -895,7 +907,8 @@ export const gate = defineGate({
     `${BOARD_SOURCE}, a pre-flight that names process-intake, a Dropped ` +
     `section that names ${SUPERSEDED_BY}, messages that name ` +
     `${HOTFIX_MESSAGE} and ${DROPPED_MESSAGE}, rules that name ` +
-    'both merge policies (manual and low-risk), a ticket identity that ' +
+    'both merge policies (manual and low-risk), an approval rule that ' +
+    `names ${RELAY_RULE}, a ticket identity that ` +
     `names branchTypes and the ${IDENTITY_INFO} block, and its ticket and ` +
     'release templates, the ticket template naming its target version ' +
     `${VERSION_REQUIRED}, and names no ${BRING_CURRENT_MESSAGE}; each role ` +
@@ -919,6 +932,7 @@ export const gate = defineGate({
     `${HOTFIX_MESSAGE}, a step for when the architect writes back that ` +
     `names ${DROPPED_MESSAGE}, and no ${DONE_MOVE}, ${BACK_FROM_READY} or ` +
     `${BRING_CURRENT_MESSAGE}, and release-ticket its ` +
+    `owner's word step that names ${RELAY_REFERENCE}, its ` +
     'deploy targets, its ' +
     'branching with the tags-only alternative, its migrations and a ' +
     `hotfix section that says ${HOTFIX_LEFT}; and ` +

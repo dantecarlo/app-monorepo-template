@@ -85,6 +85,12 @@ const FAIL_CLOSED_NAMED = `It names ${FAIL_CLOSED}.`
 const DEFAULT_BRANCH_COPY =
   "the default branch's copy, never from the pull request's own branch"
 const DEFAULT_BRANCH_COPY_NAMED = `It names ${DEFAULT_BRANCH_COPY}.`
+// An approval counts where it was asked, or relayed by the architect word for
+// word: the contract's rule 6 and the release's Step 2 both say so.
+const RELAY_RULE = 'Approval, in place or relayed by the architect.'
+const RELAY_RULE_NAMED = `It names ${RELAY_RULE}.`
+const RELAY_REFERENCE = '(`ticket-flow` rule 6)'
+const RELAY_REFERENCE_NAMED = `It names ${RELAY_REFERENCE}.`
 const POLICY_DROPPED = `does not name \`${LOW_RISK}\``
 const ANY_POLICY_LINE = /^- \*\*Policy:\*\* .*$/mu
 const POLICY_RECORDED = `${POLICY_FIELD} \`manual\``
@@ -685,6 +691,30 @@ export const CASES = [
     }),
     expected: 1,
     name: 'a ticket-flow whose rules never name the harness config is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: CONTRACT })]: replace({
+          from: RELAY_RULE_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a ticket-flow whose approval rule names no architect relay is refused'
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'release-ticket' })]: replace({
+          from: RELAY_REFERENCE_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: "a release-ticket whose owner's word step names no architect relay is refused"
   },
   {
     context: skills({
