@@ -17,7 +17,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { after, test } from 'node:test'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { withScratchTree } from './gate/scratch.mjs'
 import { gitFreeEnv } from './git-free-env.mjs'
@@ -323,4 +323,181 @@ test("END TO END: under a hook's GIT_DIR, the drift is measured in the scratch r
 
   assert.equal(decoyWritten, false)
   assertTwoGovernsDrift(result)
+})
+
+// -- a project made from the template --------------------------------------
+// A derived checkout is one whose .agents/harness.config.json names an
+// identity that is not the template's. Its history starts where its own
+// identity first appears: at the commit `pnpm run init` makes when it is
+// committed, whether or not the checkout holds the template's commits.
+
+const TEMPLATE = {
+  packageScope: '@app',
+  product: 'app-monorepo-template',
+  repository: 'dantecarlo/app-monorepo-template'
+}
+const PROJECT = { packageScope: '@acme', product: 'acme', repository: 'acme' }
+
+const configWith = ({ identity }) =>
+  `${JSON.stringify({ identity }, null, 2)}\n`
+
+// A repository of its own under the OS temp dir, its git run with a fixed
+// author; `use` gets the root and that runner.
+const withRepository = ({ use }) =>
+  withScratchTree({
+    files: { 'core/a.ts': "import { x } from '@app/core'\n" },
+    prefix: 'report-spec-drift-derived-',
+    use: ({ root }) => {
+      const run = (args) =>
+        execFileSync(
+          'git',
+          [
+            '-c',
+            'user.email=test@example.invalid',
+            '-c',
+            'user.name=test',
+            ...args
+          ],
+          { cwd: root, encoding: 'utf8', env: gitFreeEnv() }
+        ).trim()
+      const write = ({ path, text }) => {
+        mkdirSync(dirname(join(root, path)), { recursive: true })
+        writeFileSync(join(root, path), text)
+      }
+      const report = () =>
+        spawnSync(process.execPath, [REPORT, '--root', root], {
+          encoding: 'utf8',
+          env: gitFreeEnv()
+        })
+      run(['init', '-q'])
+      return use({ report, root, run, write })
+    }
+  })
+
+const SPEC = 'openspec/specs/unit/spec.md'
+
+// What `pnpm run init acme` does to this tree: the identity block and the
+// `@app/` specifier of the governed code.
+const initialize = ({ write }) => {
+  write({
+    path: '.agents/harness.config.json',
+    text: configWith({ identity: PROJECT })
+  })
+  write({ path: 'core/a.ts', text: "import { x } from '@acme/core'\n" })
+}
+
+// The template as one commit, its spec verified at `sha` (a commit of the
+// template's history the new repository may not hold).
+const templateCommit = ({ run, sha, write }) => {
+  write({
+    path: '.agents/harness.config.json',
+    text: configWith({ identity: TEMPLATE })
+  })
+  write({ path: SPEC, text: specText({ governs: '`core/`', sha }) })
+  run(['add', '-A'])
+  run(['commit', '-q', '-m', 'template'])
+  return run(['rev-parse', 'HEAD'])
+}
+
+test('a project with fresh history passes right after init, and fails a real drift after its birth commit', () => {
+  withRepository({
+    use: ({ report, run, write }) => {
+      templateCommit({ run, sha: UNKNOWN_SHA, write })
+      initialize({ write })
+      const unborn = report()
+      assert.equal(unborn.status, 0, unborn.stdout)
+      assert.match(unborn.stdout, /not committed yet/u)
+
+      run(['add', '-A'])
+      run(['commit', '-q', '-m', 'chore: init acme'])
+      const birth = run(['rev-parse', '--short', 'HEAD'])
+      const born = report()
+      assert.equal(born.status, 0, born.stdout)
+      assert.match(born.stdout, new RegExp(`born at ${birth}`, 'u'))
+
+      write({ path: 'core/a.ts', text: 'export const drift = 1\n' })
+      const drifted = report()
+      assert.equal(drifted.status, 1, drifted.stdout)
+      assert.match(
+        drifted.stdout,
+        /WARN openspec\/specs\/unit\/spec\.md: 1 file\(s\) under its governed paths changed since [0-9a-f]+, e\.g\. core\/a\.ts/u
+      )
+    }
+  })
+})
+
+test("a project that keeps the template's history passes right after init, and is measured from its birth", () => {
+  withRepository({
+    use: ({ report, run, write }) => {
+      write({ path: 'core/a.ts', text: "import { x } from '@app/core'\n" })
+      run(['add', '-A'])
+      run(['commit', '-q', '-m', 'template code'])
+      const verified = run(['rev-parse', 'HEAD'])
+      templateCommit({ run, sha: verified, write })
+      initialize({ write })
+      assert.equal(report().status, 0)
+
+      run(['add', '-A'])
+      run(['commit', '-q', '-m', 'chore: init acme'])
+      assert.equal(report().status, 0)
+
+      write({ path: 'core/b.ts', text: 'export const b = 1\n' })
+      assert.equal(report().status, 1)
+    }
+  })
+})
+
+test('a spec a project syncs after its birth is measured from its own commit', () => {
+  withRepository({
+    use: ({ report, run, write }) => {
+      templateCommit({ run, sha: UNKNOWN_SHA, write })
+      initialize({ write })
+      run(['add', '-A'])
+      run(['commit', '-q', '-m', 'chore: init acme'])
+      write({ path: 'core/a.ts', text: 'export const a = 2\n' })
+      run(['add', '-A'])
+      run(['commit', '-q', '-m', 'feat: change core'])
+      assert.equal(report().status, 1)
+      const synced = run(['rev-parse', 'HEAD'])
+      write({ path: SPEC, text: specText({ governs: '`core/`', sha: synced }) })
+      assert.equal(report().status, 0)
+    }
+  })
+})
+
+test('the template itself still fails a spec verified at a commit it does not hold', () => {
+  withRepository({
+    use: ({ report, run, write }) => {
+      templateCommit({ run, sha: UNKNOWN_SHA, write })
+      const result = report()
+      assert.equal(result.status, 1)
+      assert.match(result.stdout, /a commit this repository does not hold/u)
+    }
+  })
+})
+
+test('a shallow clone of a project cannot show its birth, and fails', () => {
+  withRepository({
+    use: ({ root, run, write }) => {
+      templateCommit({ run, sha: UNKNOWN_SHA, write })
+      initialize({ write })
+      run(['add', '-A'])
+      run(['commit', '-q', '-m', 'chore: init acme'])
+      write({ path: 'core/b.ts', text: 'export const b = 1\n' })
+      run(['add', '-A'])
+      run(['commit', '-q', '-m', 'feat: b'])
+      const clone = join(root, 'shallow')
+      execFileSync(
+        'git',
+        ['clone', '-q', '--depth', '1', pathToFileURL(root).href, clone],
+        { encoding: 'utf8', env: gitFreeEnv() }
+      )
+      const result = spawnSync(process.execPath, [REPORT, '--root', clone], {
+        encoding: 'utf8',
+        env: gitFreeEnv()
+      })
+      assert.equal(result.status, 1, result.stdout)
+      assert.match(result.stdout, /shallow/u)
+    }
+  })
 })

@@ -162,7 +162,17 @@ and one by an agent:
   paths that differs from that commit, committed or not, and runs inside every `pnpm validate`.
   It blocks: a change that touches governed code syncs the specs it moved before it merges, since
   a report nobody had to act on skipped the check it is (the LAW "A check is never forced or
-  skipped", `AGENTS.md`).
+  skipped", `AGENTS.md`). In the template a spec verified at a commit the clone does not hold
+  fails, so CI checks out the whole history.
+- **A project made from the template is measured from its birth.** Its
+  `.agents/harness.config.json` names its own identity, and its history starts at the commit
+  that first holds it: the one that commits what `pnpm run init` did. A project made with fresh
+  history holds none of the template's commits, and one that kept them changed every governed
+  file init renamed, so each spec is measured from that birth commit, or from its own verified
+  commit when that one descends from the birth (a spec the project synced). Both kinds pass right
+  after `pnpm run init`: until the birth is committed nothing is measured, since no commit holds
+  the renamed tree. From the birth commit on, a real drift fails, and a shallow clone, which
+  cannot show the birth, fails too.
 - **Whether a spec is still true** takes an agent. `sync <spec>`, the `sdd` skill's mode, re-reads
   every requirement against its evidence, rewrites what the code no longer does, and moves the
   spec's `Verified against the code` line to the current commit, which takes it off the report.
@@ -186,7 +196,7 @@ the pull request review.
 | An open change has its proposal and tasks; a modified or removed ID exists in the living spec; a change with every task done has its verify report                  | `verify:specs`                                              | whether the owner approved it                                       |
 | Every backticked path a spec cites exists, and every `path:line` names a line the file has                                                                          | the pull request review; no gate reads the prose yet        | a path that moves after the review                                  |
 | The templates and the gate agree: each template, filled in, is accepted, and with a structural element removed is refused                                           | `verify:specs:test` (the template cases)                    | the verify report and design templates, whose content no gate reads |
-| A spec whose governed code changed after its verified commit is listed                                                                                              | `report:spec-drift`, inside `pnpm validate`, blocking       | whether that spec is wrong, or a fresh one right: `sync`            |
+| A spec whose governed code changed after its verified commit is listed; in a project made from the template, after its birth commit                                 | `report:spec-drift`, inside `pnpm validate`, blocking       | whether that spec is wrong, or a fresh one right: `sync`; a governed edit made before the birth is committed |
 | A change that alters a requirement goes through this lifecycle, and a merged change is archived                                                                     | review, and `sync`                                          | no gate can see whether a diff changed a contract                   |
 
 ## 6. Asking for something new
