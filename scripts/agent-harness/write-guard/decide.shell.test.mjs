@@ -113,7 +113,11 @@ for (const command of [
   'S=.claude/skills; echo x > $S/new/SKILL.md',
   // An inner shell's text is judged as Bash.
   "bash -c 'echo x > AGENTS.md'",
-  'eval "echo x > .claude/skills/a/SKILL.md"'
+  'eval "echo x > .claude/skills/a/SKILL.md"',
+  // A function body and a coprocess are commands like any other.
+  'function f { rm .claude/skills/sdd/SKILL.md; }',
+  'function f() { touch AGENTS.md; }',
+  'coproc rm AGENTS.md'
 ]) {
   test(`the main session is asked before a rule file: ${command}`, () => {
     assert.equal(decisionOf({ agent: MAIN, command }), 'ask')

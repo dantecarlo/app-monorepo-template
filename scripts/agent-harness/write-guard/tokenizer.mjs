@@ -31,6 +31,7 @@ export const KEYWORDS = new Set([
   '!',
   '{',
   '}',
+  'coproc',
   'do',
   'done',
   'elif',
@@ -43,6 +44,41 @@ export const KEYWORDS = new Set([
   'until',
   'while'
 ])
+
+const FUNCTION = 'function'
+const COPROC = 'coproc'
+const GROUP_OPEN = '{'
+const TIME = 'time'
+const TIME_POSIX = '-p'
+
+/**
+ * Where a simple command's own words start: past the keywords before it,
+ * the `-p` of `time -p`, the name `coproc NAME { … }` gives its group, and
+ * the `function NAME` that opens a function body, so the body's first
+ * command is read as the command.
+ */
+export const commandStart = ({ words }) => {
+  let at = 0
+  while (at < words.length) {
+    const raw = words[at].raw
+    if (raw === FUNCTION) {
+      at += 2
+    } else if (raw === COPROC && words[at + 2]?.raw === GROUP_OPEN) {
+      at += 2
+    } else if (KEYWORDS.has(raw)) {
+      at += raw === TIME && words[at + 1]?.raw === TIME_POSIX ? 2 : 1
+    } else {
+      return at
+    }
+  }
+  return words.length
+}
+
+// The words before `(` that make it a function's `name()`: one name, or
+// `function` and a name.
+const isFunctionName = ({ words }) =>
+  words.length === 1 ||
+  (words.length === 2 && words[0].raw === FUNCTION)
 
 const WORD_END = /[\s;&|<>()]/
 const BLANKS = /(?:[ \t\r]|\\\n)*/y
@@ -331,8 +367,9 @@ export const createParser = ({ depth = 0, source }) => {
   }
 
   const parseParenthesis = ({ redirects, words }) => {
-    if (words.length === 1 && s[i + 1] === ')') {
-      // `name()`: a function definition; its body follows as commands.
+    if (isFunctionName({ words }) && s[i + 1] === ')') {
+      // `name()` or `function name()`: a function definition; its body
+      // follows as commands.
       i += 2
       return { op: '', redirects, type: 'cmd', words: [] }
     }

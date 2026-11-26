@@ -164,6 +164,30 @@ const findPatterns = ({ args, roots }) =>
       : []
   })
 
+const FIND_EXEC = /^-(?:exec|execdir|ok|okdir)$/u
+const FIND_EXEC_ENDS = new Set([';', '+'])
+
+/**
+ * The commands find's `-exec`, `-execdir`, `-ok` and `-okdir` run, among
+ * find's `args` ({ text }): each its words, and `from` and `to`, the
+ * index of its action and of the `;` or `+` that ends it (args.length
+ * when none does).
+ */
+export const findExecs = ({ args }) => {
+  const execs = []
+  for (let from = 0; from < args.length; from += 1) {
+    if (FIND_EXEC.test(args[from].text)) {
+      const end = args.findIndex(
+        (one, at) => at > from && FIND_EXEC_ENDS.has(one.text)
+      )
+      const to = end < 0 ? args.length : end
+      execs.push({ from, inner: args.slice(from + 1, to), to })
+      from = to
+    }
+  }
+  return execs
+}
+
 const findVerdict = ({ args, state }) => {
   const firstExpression = args.findIndex(({ text }) => /^[-(!]/.test(text))
   const starts =
@@ -173,10 +197,19 @@ const findVerdict = ({ args, state }) => {
   const placeholder = patterns[0] ?? below({ root: roots[0] })
   const contained = isPoliced({ state })
   const checks = []
+  const execs = new Map(
+    findExecs({ args }).map((exec) => [exec.from, exec])
+  )
   let skip = -1
   for (const [k, arg] of args.entries()) {
     if (k <= skip) continue
-    if (arg.text === '-delete') {
+    const exec = execs.get(k)
+    if (exec !== undefined) {
+      skip = exec.to
+      checks.push(() =>
+        innerCommand({ args: exec.inner, placeholder, state })
+      )
+    } else if (arg.text === '-delete') {
       checks.push(() =>
         strongestOf({
           items: [...roots, ...patterns],
@@ -201,13 +234,6 @@ const findVerdict = ({ args, state }) => {
           via: arg.text
         })
       )
-    } else if (/^-(?:exec|execdir|ok|okdir)$/.test(arg.text)) {
-      const end = args.findIndex(
-        (one, j) => j > k && (one.text === ';' || one.text === '+')
-      )
-      skip = end < 0 ? args.length : end
-      const inner = args.slice(k + 1, end < 0 ? undefined : end)
-      checks.push(() => innerCommand({ args: inner, placeholder, state }))
     }
   }
   return firstOfChecks({ checks })
@@ -242,15 +268,30 @@ const FD_VALUED = [
   '-t'
 ]
 
+const FD_EXEC = new Set(['-x', '--exec', '-X', '--exec-batch'])
+
+/**
+ * The command `fd [PATTERN] [PATH...] -x CMD` runs, among fd's `args`
+ * ({ text }): `at`, the index of its `-x`, and `inner`, its words; or
+ * undefined when fd runs none.
+ */
+export const fdCommand = ({ args }) => {
+  const at = args.findIndex(({ text }) => FD_EXEC.has(text))
+  return at < 0
+    ? undefined
+    : {
+        at,
+        inner: args.slice(at + 1).filter(({ text }) => text !== ';')
+      }
+}
+
 // `fd [PATTERN] [PATH...] -x CMD`: like xargs, a command naming no `{}`
 // gets the found path appended.
 const fdVerdict = ({ args, state }) => {
-  const at = args.findIndex(({ text }) =>
-    ['-x', '--exec', '-X', '--exec-batch'].includes(text)
-  )
-  if (at < 0) return undefined
+  const exec = fdCommand({ args })
+  if (exec === undefined) return undefined
   const { operands, options } = splitArgs({
-    args: args.slice(0, at),
+    args: args.slice(0, exec.at),
     valued: FD_VALUED
   })
   const root =
@@ -261,7 +302,7 @@ const fdVerdict = ({ args, state }) => {
     operands[1] ??
     CWD
   const placeholder = below({ root })
-  const inner = args.slice(at + 1).filter(({ text }) => text !== ';')
+  const { inner } = exec
   const named = inner.some(({ text }) => /\{[^}]*\}/.test(text))
   return innerCommand({
     args: named ? inner : [...inner, placeholder],
@@ -273,7 +314,12 @@ const fdVerdict = ({ args, state }) => {
 const XARGS_VALUED =
   /^-[nPLsdEa]$|^--(?:max-args|max-procs|delimiter|arg-file)$/
 
-const xargsVerdict = ({ args, state }) => {
+/**
+ * The command xargs runs, among its `args` ({ text }): `start`, the index
+ * where it begins, `inner`, its words, and `replace`, the string `-I`
+ * names for each input, when one does.
+ */
+export const xargsCommand = ({ args }) => {
   let skip = -1
   let start = args.length
   let replace
@@ -292,7 +338,11 @@ const xargsVerdict = ({ args, state }) => {
     } else if (text === '-i' || text === '--replace') replace = '{}'
     else if (XARGS_VALUED.test(text)) skip = k + 1
   }
-  const inner = args.slice(start)
+  return { inner: args.slice(start), replace, start }
+}
+
+const xargsVerdict = ({ args, state }) => {
+  const { inner, replace } = xargsCommand({ args })
   if (inner.length === 0) return undefined
   const input = {
     raw: '<input>',

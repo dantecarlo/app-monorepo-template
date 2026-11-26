@@ -12,7 +12,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import { SAFE, UNKNOWN } from './scan.mjs'
-import { createParser } from './tokenizer.mjs'
+import { commandStart, createParser } from './tokenizer.mjs'
 
 const parse = ({ source }) => createParser({ source }).parseAll()
 
@@ -159,6 +159,10 @@ test('a group, a function and a process substitution are read', () => {
     commandsOf({ script: parse({ source: 'f() { ls; }' }) }),
     ['', '{ ls', '}']
   )
+  assert.deepEqual(
+    commandsOf({ script: parse({ source: 'function f () { ls; }' }) }),
+    ['', '{ ls', '}']
+  )
   const [diff] = parse({ source: 'diff <(ls a) <(ls b)' })
   assert.equal(diff.words[1].parts[0].process, true)
 })
@@ -221,3 +225,25 @@ test('parseExpanding reads a here-doc body as a double-quoted word', () => {
   const parts = createParser({ source: 'a $(touch b) c' }).parseExpanding()
   assert.ok(parts.some((part) => 'sub' in part))
 })
+
+for (const [source, start] of [
+  ['git status', 'git status'],
+  ['! time -p git status', 'git status'],
+  ['if true', 'true'],
+  ['{ rm -rf x', 'rm -rf x'],
+  ['function clean { git clean -fdx', 'git clean -fdx'],
+  ['function clean', ''],
+  ['coproc rm -rf x', 'rm -rf x'],
+  ['coproc worker { git push -f', 'git push -f']
+]) {
+  test(`a command's own words start past its keywords: ${source}`, () => {
+    const [command] = parse({ source })
+    assert.equal(
+      command.words
+        .slice(commandStart({ words: command.words }))
+        .map((word) => word.raw)
+        .join(' '),
+      start
+    )
+  })
+}
