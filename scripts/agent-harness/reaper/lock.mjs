@@ -34,6 +34,9 @@ const ENCODING = 'utf8'
 const EXISTS = 'EEXIST'
 const GONE = 'ENOENT'
 const NO_SUCH_PROCESS = 'ESRCH'
+// On Windows an open of a file another run is deleting fails with EPERM, as
+// that run releases its lock: the lock is held, not unreadable.
+const BEING_DELETED = 'EPERM'
 const LEADING_PID = /^(\d+)(?:\n|$)/u
 const NODE_FS = Object.freeze({ readFileSync, rmSync, statSync, writeFileSync })
 
@@ -142,8 +145,9 @@ const takeOver = ({ fs, holderRunning, now, path, seen, text }) => {
  * The lock at `path`, as { release }, or null when another reaper holds it
  * or is taking it over. A lock that is gone by the time it is read is
  * created again; one whose holder ended, or older than an hour, is taken
- * over under its guard; any other failure to read or write it throws. `fs`,
- * `holderRunning`, `now` and `token` are injected by tests.
+ * over under its guard; a file that cannot be opened because another run is
+ * deleting it (EPERM) reads as held; any other failure to read or write it
+ * throws. `fs`, `holderRunning`, `now` and `token` are injected by tests.
  */
 export const takeLock = ({
   fs = NODE_FS,
@@ -153,9 +157,14 @@ export const takeLock = ({
   token = randomUUID
 } = {}) => {
   const text = `${process.pid}\n${token()}\n`
-  if (create({ fs, path, text })) return heldAt({ fs, path, text })
-  const seen = readOrNull({ fs, path })
-  if (seen === null) return createHeld({ fs, path, text })
-  if (!isTakeable({ fs, holderRunning, now, path, text: seen })) return null
-  return takeOver({ fs, holderRunning, now, path, seen, text })
+  try {
+    if (create({ fs, path, text })) return heldAt({ fs, path, text })
+    const seen = readOrNull({ fs, path })
+    if (seen === null) return createHeld({ fs, path, text })
+    if (!isTakeable({ fs, holderRunning, now, path, text: seen })) return null
+    return takeOver({ fs, holderRunning, now, path, seen, text })
+  } catch (error) {
+    if (error.code === BEING_DELETED) return null
+    throw error
+  }
 }

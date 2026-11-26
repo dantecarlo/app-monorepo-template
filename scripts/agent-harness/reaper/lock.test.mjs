@@ -310,3 +310,18 @@ test('a reaper process that releases late leaves the lock another process took o
   assert.equal(await exited, 0)
   assert.match(read({ path }), /token-b/u, "the second process's lock stays")
 })
+
+test('a lock file another run is deleting reads as held, not as a failure', () => {
+  // On Windows an open of a file another run is deleting fails with EPERM.
+  const path = freshLockPath()
+  const deleting = () => () => {
+    throw Object.assign(new Error(`EPERM: operation not permitted, open '${path}'`), {
+      code: EPERM,
+      syscall: 'open'
+    })
+  }
+  const fs = { ...nodeFs, readFileSync: deleting(), statSync: deleting(), writeFileSync: deleting() }
+  assert.equal(takeLock({ fs, path, token: tokenOf({ token: 'token-a' }) }), null)
+  const other = { ...nodeFs, writeFileSync: () => { throw Object.assign(new Error('EACCES: permission denied'), { code: 'EACCES' }) } }
+  assert.throws(() => takeLock({ fs: other, path, token: tokenOf({ token: 'token-b' }) }), /EACCES/u)
+})
