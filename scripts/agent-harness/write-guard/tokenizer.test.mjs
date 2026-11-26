@@ -225,7 +225,10 @@ for (const [source, problem, bashRefuses] of [
   ['[[ $x =~ (a ]]', /an unterminated regex/, false],
   ['a=( x', /an unterminated array/, false],
   ['a=( x; y )', /an unexpected ; in an array/, false],
-  ['ls @("a)|b)', /an unterminated quote in an extended glob/, false]
+  ['ls @("a)|b)', /an unterminated quote in an extended glob/, false],
+  ['ls @("$(ls)"|b)', /a substitution inside an extended glob/, false],
+  ['[[ x =~ "$(ls)" ]]', /a substitution inside a regex/, false],
+  ['[[ x =~ "`ls`" ]]', /a substitution inside a regex/, false]
 ]) {
   test(`what cannot be read throws, naming why: ${JSON.stringify(source)}`, () => {
     const error = problemOf({ source })

@@ -357,6 +357,17 @@ export const createParser = ({ depth = 0, source }) => {
     return at < s.length ? at : -1
   }
 
+  // Whether the double-quoted text from `from` to `to` holds a command
+  // substitution, `$(` or a backtick, that bash would run.
+  const substitutes = ({ from, to }) => {
+    let at = from
+    while (at < to) {
+      if (s[at] === '`' || (s[at] === '$' && s[at + 1] === '(')) return true
+      at += s[at] === '\\' ? 2 : 1
+    }
+    return false
+  }
+
   // The `(…)` of an extended glob at the cursor, nested ones included.
   const extglobGroup = () => {
     const start = i
@@ -378,6 +389,9 @@ export const createParser = ({ depth = 0, source }) => {
           const end = closingQuote({ from: i + 1, quote: c })
           if (end < 0) {
             unreadable({ problem: 'an unterminated quote in an extended glob' })
+          }
+          if (c === '"' && substitutes({ from: i + 1, to: end })) {
+            unreadable({ problem: 'a substitution inside an extended glob' })
           }
           i = end + 1
           return true
@@ -544,9 +558,12 @@ export const createParser = ({ depth = 0, source }) => {
         if (c === '\\') {
           i += 2
         } else if (c === "'" || c === '"') {
-          const end = s.indexOf(c, i + 1)
+          const end = closingQuote({ from: i + 1, quote: c })
           if (end < 0) {
             unreadable({ bashRefuses: true, problem: 'an unterminated quote' })
+          }
+          if (c === '"' && substitutes({ from: i + 1, to: end })) {
+            unreadable({ problem: 'a substitution inside a regex' })
           }
           i = end + 1
         } else {

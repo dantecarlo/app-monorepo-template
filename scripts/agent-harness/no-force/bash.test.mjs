@@ -121,6 +121,8 @@ for (const [command, option, program] of [
   ['pnpm run deploy -- --force', '--force', 'pnpm'],
   ['npm test -- --no-verify', '--no-verify', 'npm'],
   ['yarn build -- --force', '--force', 'yarn'],
+  // An escaped quote inside a quoted regex does not close it.
+  ['[[ $l =~ "\\"" ]] && git push --force', '--force', 'git push'],
   // A quoted `)` inside an extended glob does not close it.
   ['[[ $x == @("a)"|b) ]] && rm -rf x', '-rf', 'rm'],
   // A trap's text runs later, as a command of its own.
@@ -191,7 +193,8 @@ for (const command of [
   'a=( $(git ls-files) ); echo x',
   "a=(\"x\" ')' 'y z'); echo \"${a[@]}\"",
   'a=(\n  one # the first\n  two\n); echo "${a[1]}"',
-  '[[ $x == @("a)"|b) ]] && echo y'
+  '[[ $x == @("a)"|b) ]] && echo y',
+  '[[ $l =~ "\\"" ]] && echo ok'
 ]) {
   test(`\`${command}\` passes no force option`, () => {
     assert.equal(bashForce({ command }), undefined)

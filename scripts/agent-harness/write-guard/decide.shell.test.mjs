@@ -140,7 +140,9 @@ for (const command of [
   // An array's elements are read: a substitution in one runs, and the
   // variable names no path the guard can trust.
   'a=( $(touch AGENTS.md) )',
-  'a=(AGENTS.md); echo x > "$a"'
+  'a=(AGENTS.md); echo x > "$a"',
+  // A quoted regex's substitution runs too.
+  '[[ x =~ "$(touch AGENTS.md)" ]]'
 ]) {
   test(`the main session is asked before a rule file: ${command}`, () => {
     assert.equal(decisionOf({ agent: MAIN, command }), 'ask')
