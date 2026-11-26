@@ -130,10 +130,17 @@ rest were written red first, task by task.
 | PRUNE-15 | the hook runs the pruner | `scripts/prune-worktrees.test.mjs` › "post-merge exits 0 and lists no kept line" | green |
 | PRUNE-15 | the worktree the command runs in | `scripts/prune-worktrees.test.mjs` › "the worktree the command runs in survives the post-merge hook the main checkout's fast-forward fires" | green |
 | PRUNE-15 | a prune that fails | `scripts/prune-worktrees.test.mjs` › "post-merge fails when the prune fails, so the failure is seen" | green |
+| PRUNE-13 | a worktree root reached through a link | `scripts/prune-worktrees.test.mjs` › "an orphan folder reached through a linked worktree root keeps the registered worktree inside it" | green; added by the correction batch |
+| PRUNE-13 | a nested repository | `scripts/prune-worktrees.test.mjs` › "an orphan folder holding a nested repository is kept" | green; added by the correction batch |
+| REAP-11 | a lock file another run is deleting | `scripts/agent-harness/reaper/lock.test.mjs` › "a lock file another run is deleting reads as held, not as a failure" | green; added by the correction batch |
+
+The correction batch (B1, the nested repository, A5 to A8) re-ran both suites green: 251 of 251.
+The PRUNE-14 test "an orphan folder finished with its folder left on disk withholds the marker"
+now also runs a real `--finish-orphans` over a held folder and asserts that no marker file is written.
 
 ## Gate
 
-- `pnpm validate`: exit 0, 2026-11-26, on the archived tree (71 steps, 370 s).
+- `pnpm validate`: exit 0, 2026-11-26, on the archived tree (71 steps, 370 s), before the correction batch; its re-run after the batch: exit 0, 2026-11-26 (71 steps, 464 s).
 
 ## Not verified
 

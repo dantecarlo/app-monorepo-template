@@ -3,7 +3,7 @@
 > **Governs:** `scripts/prune-worktrees.mjs`, `scripts/prune-worktrees.detect.mjs`, `.husky/post-merge`
 > **ID prefix:** `PRUNE`
 > **Derived from:** `docs/harness.md`
-> **Verified against the code:** 2026-11-26 at `1974f902`
+> **Verified against the code:** 2026-11-26 at `2004fa66`
 
 ## Purpose
 
@@ -27,7 +27,7 @@ and exit 0. Outside a git repository it SHALL exit 1 and say nothing was removed
 prints the decisions a real run carries out, removes and moves nothing, and ends with the
 `not covered` line that names what it leaves out.
 
-**Evidence:** `scripts/prune-worktrees.detect.mjs:33-43`, `scripts/prune-worktrees.detect.mjs:120-130`, `scripts/prune-worktrees.detect.mjs:204-222`, `scripts/prune-worktrees.mjs:145-148`, `scripts/prune-worktrees.mjs:812-848`, `scripts/prune-worktrees.mjs:1008-1068`
+**Evidence:** `scripts/prune-worktrees.detect.mjs:33-43`, `scripts/prune-worktrees.detect.mjs:120-132`, `scripts/prune-worktrees.detect.mjs:205-224`, `scripts/prune-worktrees.mjs:145-148`, `scripts/prune-worktrees.mjs:860-896`, `scripts/prune-worktrees.mjs:1073-1133`
 
 #### Scenario: the options
 
@@ -81,7 +81,7 @@ fetch that is stopped there SHALL skip the prune and the fast-forward, print one
 so, `--quiet` included, and exit 0. A fetch that fails SHALL throw git's stderr, else the spawn's
 error, else its exit code, never `undefined`.
 
-**Evidence:** `scripts/prune-worktrees.mjs:204-228`, `scripts/prune-worktrees.mjs:915-925`, `scripts/prune-worktrees.detect.mjs:44-82`, `scripts/prune-worktrees.detect.mjs:678-683`, `scripts/prune-worktrees.mjs:1008-1068`
+**Evidence:** `scripts/prune-worktrees.mjs:205-229`, `scripts/prune-worktrees.mjs:980-990`, `scripts/prune-worktrees.detect.mjs:44-82`, `scripts/prune-worktrees.detect.mjs:685-690`, `scripts/prune-worktrees.mjs:1073-1133`
 
 #### Scenario: a fetch that outlasts its bound
 
@@ -120,7 +120,7 @@ branch (the one `origin/HEAD` names), on a branch whose upstream still exists, o
 whose tip is not in the default branch; only one whose branch upstream reads `[gone]` and whose
 tip is in the default branch goes on to the checks of PRUNE-04.
 
-**Evidence:** `scripts/prune-worktrees.detect.mjs:169-195`, `scripts/prune-worktrees.detect.mjs:282-305`, `scripts/prune-worktrees.mjs:230-281`, `scripts/prune-worktrees.mjs:334-366`
+**Evidence:** `scripts/prune-worktrees.detect.mjs:169-197`, `scripts/prune-worktrees.detect.mjs:283-306`, `scripts/prune-worktrees.mjs:231-282`, `scripts/prune-worktrees.mjs:335-367`
 
 #### Scenario: a merged worktree
 
@@ -164,7 +164,7 @@ holds only `skill-registry.md` and `.skill-registry.cache.json`), an env file an
 under `.atl/` included. It SHALL read those again just before the removal and keep a worktree that
 gained one in the meantime.
 
-**Evidence:** `scripts/prune-worktrees.detect.mjs:143-167`, `scripts/prune-worktrees.detect.mjs:307-378`, `scripts/prune-worktrees.mjs:283-395`, `scripts/prune-worktrees.mjs:606-611`
+**Evidence:** `scripts/prune-worktrees.detect.mjs:143-167`, `scripts/prune-worktrees.detect.mjs:308-379`, `scripts/prune-worktrees.mjs:284-396`, `scripts/prune-worktrees.mjs:654-659`
 
 #### Scenario: ignored files that are written again
 
@@ -218,7 +218,7 @@ SHALL delete the branch with `git update-ref -d` only while the branch tip is st
 was judged at, and remove the branch's configuration section; a branch that moved since keeps
 the commits it gained.
 
-**Evidence:** `scripts/prune-worktrees.mjs:482-544`
+**Evidence:** `scripts/prune-worktrees.mjs:483-545`
 
 #### Scenario: a refusal
 
@@ -256,7 +256,7 @@ names it, with the error of the last try, as `; its directory stays: <path>: <er
 run's exit code is unchanged. The branch is deleted after the folder, only while its tip is still
 the commit it was judged at, whether or not the folder stayed.
 
-**Evidence:** `scripts/prune-worktrees.mjs:393-425`, `scripts/prune-worktrees.mjs:456-480`, `scripts/prune-worktrees.mjs:482-519`
+**Evidence:** `scripts/prune-worktrees.mjs:394-427`, `scripts/prune-worktrees.mjs:457-481`, `scripts/prune-worktrees.mjs:483-521`
 
 #### Scenario: a worktree git unregisters before its removal fails
 
@@ -270,7 +270,7 @@ the commit it was judged at, whether or not the folder stayed.
 #### Scenario: a leftover tried again
 
 - **GIVEN** a leftover folder whose removal fails twice and then succeeds, with an injected
-  `remove` and `wait`
+  `fs` and `wait`
 - **WHEN** the pruner removes the leftover
 - **THEN** it tried three times, waited 250 ms and then 500 ms, and reports no residue
 - **Test:** `scripts/prune-worktrees.test.mjs` › "a leftover delete that fails partway is tried again until the directory goes"
@@ -319,7 +319,7 @@ removal leaves it as its last line; a dry run prints none. A run that fails afte
 announced, and has not completed one, SHALL end with `a removal had started; the last "removing"
 line above names it` in the place of `nothing was removed`.
 
-**Evidence:** `scripts/prune-worktrees.detect.mjs:640-681`, `scripts/prune-worktrees.mjs:482-486`, `scripts/prune-worktrees.mjs:1008-1060`
+**Evidence:** `scripts/prune-worktrees.detect.mjs:649-684`, `scripts/prune-worktrees.mjs:483-488`, `scripts/prune-worktrees.mjs:1073-1133`
 
 #### Scenario: the announcement
 
@@ -356,7 +356,7 @@ no heading is printed when no line remains. The commit times are read with one
 `git log --no-walk=unsorted --ignore-missing` over the HEADs `git worktree list --porcelain`
 names; a log git cannot run leaves the list out. A dry run prints the list too.
 
-**Evidence:** `scripts/prune-worktrees.detect.mjs:225-241`, `scripts/prune-worktrees.detect.mjs:512-580`, `scripts/prune-worktrees.mjs:426-455`, `scripts/prune-worktrees.mjs:925-960`
+**Evidence:** `scripts/prune-worktrees.detect.mjs:226-243`, `scripts/prune-worktrees.detect.mjs:513-581`, `scripts/prune-worktrees.mjs:429-456`, `scripts/prune-worktrees.mjs:946-979`
 
 #### Scenario: the list
 
@@ -387,7 +387,7 @@ the index, so a file whose timestamp alone changed is no refusal and the checkou
 `index.lock` are left alone. With no `origin/HEAD` the run throws, naming `git remote set-head
 origin --auto`, and moves nothing.
 
-**Evidence:** `scripts/prune-worktrees.mjs:613-810`, `scripts/prune-worktrees.detect.mjs:132-143`, `scripts/prune-worktrees.detect.mjs:396-430`
+**Evidence:** `scripts/prune-worktrees.mjs:661-858`, `scripts/prune-worktrees.detect.mjs:133-145`, `scripts/prune-worktrees.detect.mjs:411-432`
 
 #### Scenario: a main checkout behind
 
@@ -446,7 +446,7 @@ included, offering to commit it on a branch or to run `git restore --source=HEAD
 which discards the install's lockfile change, and never `git checkout --`. A dry run says it
 would install and installs nothing.
 
-**Evidence:** `scripts/prune-worktrees.mjs:692-757`, `scripts/prune-worktrees.detect.mjs:84-118`, `scripts/prune-worktrees.detect.mjs:468-510`
+**Evidence:** `scripts/prune-worktrees.mjs:740-806`, `scripts/prune-worktrees.detect.mjs:84-119`, `scripts/prune-worktrees.detect.mjs:477-512`
 
 #### Scenario: an install after a fast-forward that changed the lockfile
 
@@ -509,7 +509,7 @@ reason. A read that fails before anything is removed SHALL exit 1 and say nothin
 step that fails after a removal SHALL still print the report of what was done, then git's message
 and how many worktrees were removed before it, and exit 1.
 
-**Evidence:** `scripts/prune-worktrees.detect.mjs:410-470`, `scripts/prune-worktrees.detect.mjs:545-580`, `scripts/prune-worktrees.detect.mjs:654-683`, `scripts/prune-worktrees.mjs:1008-1068`
+**Evidence:** `scripts/prune-worktrees.detect.mjs:411-476`, `scripts/prune-worktrees.detect.mjs:546-581`, `scripts/prune-worktrees.detect.mjs:661-690`, `scripts/prune-worktrees.mjs:1073-1133`
 
 #### Scenario: the summary
 
@@ -541,7 +541,7 @@ removes nothing.`, remove and move nothing and exit 0. A dry run SHALL take no l
 plan whoever holds it. A run started from inside a prune (`PRUNE_WORKTREES_RUNNING` set) still
 exits before the lock.
 
-**Evidence:** `scripts/prune-worktrees.mjs:812-862`, `scripts/prune-worktrees.mjs:996-1003`, `scripts/agent-harness/reaper/lock.mjs:148-161`
+**Evidence:** `scripts/prune-worktrees.mjs:860-912`, `scripts/prune-worktrees.mjs:1063-1072`, `scripts/agent-harness/reaper/lock.mjs:152-170`
 
 #### Scenario: another prune holds the lock
 
@@ -570,12 +570,17 @@ The pruner SHALL read the worktree root, `<main checkout parent>/<main checkout 
 for orphan folders: a directory directly under it, a link excepted, that holds no `.git` and that
 no registered worktree is at. It SHALL finish one, deleting the folder and then its branch, only
 when its last write is more than 10 minutes old, exactly one local branch has its name as the last
-segment of its path, no registered worktree sits inside it, that branch is checked out in no
-registered worktree and its tip is reachable from the default branch; every other orphan folder is
-kept and printed with its reason (no branch, several branches, a worktree inside, checked out,
-not merged, written in the last 10 minutes). Right before a delete it SHALL read the registered
+segment of its path, no registered worktree sits inside it, the folder holds no `.git`, a file or a folder, at any depth
+(no link is followed while it looks, and a folder it cannot read through, or that holds more than
+500,000 entries, is kept), that branch is checked out in no registered worktree and its tip is
+reachable from the default branch; every other orphan folder is kept and printed with its reason
+(no branch, several branches, a worktree inside, it holds a git repository or worktree, checked
+out, not merged, written in the last 10 minutes). The worktree root, each folder and each
+registered worktree are compared by their real path, links resolved, since git records a worktree
+by its real path and a worktree root may be reached through a junction or a symbolic link; a
+folder whose real path cannot be read is kept. Right before a delete it SHALL read the registered
 worktrees again and keep the folder, deleting nothing, when git cannot list them, a worktree sits
-inside the folder, the folder is registered itself or it holds a `.git` by then. The folder is
+inside the folder, the folder is registered itself or it holds a `.git` at any depth by then. The folder is
 deleted as PRUNE-06 deletes a leftover and announced as PRUNE-07 announces a removal, as `removing
 orphan folder <path> (<branch>)`; its branch goes only once the folder is gone, at the tip it was
 judged at, and a folder that stays keeps its branch and is named. Nothing outside the worktree
@@ -583,7 +588,7 @@ root is read for orphans or deleted as one. Orphan folders are finished last, af
 checkout's fast-forward and its install, and a dry run names each it would finish and deletes
 nothing.
 
-**Evidence:** `scripts/prune-worktrees.mjs:546-604`, `scripts/prune-worktrees.mjs:864-915`, `scripts/prune-worktrees.mjs:960-990`, `scripts/prune-worktrees.detect.mjs:578-640`
+**Evidence:** `scripts/prune-worktrees.mjs:547-652`, `scripts/prune-worktrees.mjs:913-979`, `scripts/prune-worktrees.mjs:1030-1062`, `scripts/prune-worktrees.detect.mjs:583-648`
 
 #### Scenario: a merged orphan folder
 
@@ -626,6 +631,23 @@ nothing.
 - **Test:** `scripts/prune-worktrees.test.mjs` › "an orphan folder that holds a .git by the time of its delete is kept, and nothing is deleted"
 - **Test:** `scripts/prune-worktrees.test.mjs` › "an orphan folder whose worktree list git cannot read again is kept, and nothing is deleted"
 
+#### Scenario: a worktree root reached through a link
+
+- **GIVEN** an orphan folder whose worktree root is a junction (a symbolic link on POSIX) to a real
+  folder, with a registered worktree inside the orphan folder that git records by its real path
+- **WHEN** a run finishes orphan folders
+- **THEN** the folder is kept as holding another registered worktree, the worktree's files stay and
+  so does the branch
+- **Test:** `scripts/prune-worktrees.test.mjs` › "an orphan folder reached through a linked worktree root keeps the registered worktree inside it"
+
+#### Scenario: a nested repository
+
+- **GIVEN** an orphan folder that holds a git repository with a commit nothing pushed
+- **WHEN** a run finishes orphan folders
+- **THEN** the folder is kept as holding a git repository or worktree, and the repository's files,
+  its commit and the folder's branch stay
+- **Test:** `scripts/prune-worktrees.test.mjs` › "an orphan folder holding a nested repository is kept"
+
 #### Scenario: only the worktree root
 
 - **GIVEN** a folder beside the worktree root whose name matches a merged branch, a registered
@@ -665,7 +687,7 @@ leaves one on disk writes none, and a dry run writes none. `pnpm worktrees:prune
 SHALL run the pruner with `--finish-orphans`. `.husky/post-merge` runs the pruner as before, with
 `--quiet` alone.
 
-**Evidence:** `scripts/prune-worktrees.mjs:146-148`, `scripts/prune-worktrees.mjs:856-866`, `scripts/prune-worktrees.mjs:960-990`, `scripts/prune-worktrees.detect.mjs:33-39`, `scripts/prune-worktrees.detect.mjs:204-222`, `scripts/prune-worktrees.detect.mjs:540-556`, `package.json:104`
+**Evidence:** `scripts/prune-worktrees.mjs:146-148`, `scripts/prune-worktrees.mjs:898-912`, `scripts/prune-worktrees.mjs:1030-1062`, `scripts/prune-worktrees.detect.mjs:33-39`, `scripts/prune-worktrees.detect.mjs:205-224`, `scripts/prune-worktrees.detect.mjs:546-557`, `package.json:104`
 
 #### Scenario: the option
 
@@ -691,9 +713,9 @@ SHALL run the pruner with `--finish-orphans`. `.husky/post-merge` runs the prune
 
 #### Scenario: a folder left on disk
 
-- **GIVEN** an orphan folder whose delete fails
+- **GIVEN** an orphan folder whose delete fails every try, as a held directory does
 - **WHEN** the pruner runs with `--finish-orphans`
-- **THEN** it writes no marker
+- **THEN** it names the folder as staying, keeps its branch and writes no marker file
 - **Test:** `scripts/prune-worktrees.test.mjs` › "an orphan folder finished with its folder left on disk withholds the marker"
 
 #### Scenario: after the marker

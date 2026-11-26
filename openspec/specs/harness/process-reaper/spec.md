@@ -3,7 +3,7 @@
 > **Governs:** `.agents/contracts/process-reaper.json`, `scripts/agent-harness/reaper/contract.mjs`, `scripts/agent-harness/reaper/plan.mjs`, `scripts/agent-harness/reaper/platform.mjs`, `scripts/agent-harness/reaper/bounded-child.mjs`, `scripts/agent-harness/reaper/lock.mjs`, `scripts/agent-harness/reaper/reap.mjs`, `scripts/agent-harness/reaper/session-start.mjs`, `scripts/agent-harness/reaper/mcp-check.mjs`
 > **ID prefix:** `REAP`
 > **Derived from:** `docs/harness.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-26 at `1974f902`
+> **Verified against the code:** 2026-11-26 at `2004fa66`
 
 ## Purpose
 
@@ -536,10 +536,11 @@ holding it, SHALL be removed by the run that finds it only while it still holds 
 read, and that run takes nothing. The run SHALL release its lock however it ends, removing it only
 while it still holds its own token, and a dry run takes none. Every removal goes through
 `removePath` (`@app/tooling/remove-path`), which counts a path already gone (ENOENT) as removed and
-rethrows every other failure, never through `rmSync`'s `force: true`. Whether a holder runs is
-injected (`holderRunning`), as `fs`, `now` and `token` are.
+rethrows every other failure, never through `rmSync`'s `force: true`. A lock file that cannot be
+opened because another run is deleting it (`EPERM`, on Windows) reads as held, so the run exits 0 as
+it does for any held lock. Whether a holder runs is injected (`holderRunning`), as `fs`, `now` and `token` are.
 
-**Evidence:** `scripts/agent-harness/reaper/lock.mjs:23-161`, `scripts/agent-harness/reaper/reap.mjs:252-259`, `scripts/agent-harness/reaper/reap.mjs:267-332`, `packages/tooling/src/remove-path.mjs:23-29`
+**Evidence:** `scripts/agent-harness/reaper/lock.mjs:23-170`, `scripts/agent-harness/reaper/reap.mjs:252-259`, `scripts/agent-harness/reaper/reap.mjs:267-332`, `packages/tooling/src/remove-path.mjs:23-29`
 
 #### Scenario: the lock is held
 
@@ -637,6 +638,14 @@ injected (`holderRunning`), as `fs`, `now` and `token` are.
 - **THEN** the failure is raised, not swallowed
 - **Test:** Not covered — `removePath` itself is tested in packages/tooling, but no reaper test makes
   the lock's removal fail
+
+#### Scenario: a lock file another run is deleting
+
+- **GIVEN** a lock file whose open fails with `EPERM` because another run is deleting it, and one
+  whose open fails with `EACCES`
+- **WHEN** a run takes the lock
+- **THEN** the first reads as held and takes nothing, and the second is raised, not swallowed
+- **Test:** `scripts/agent-harness/reaper/lock.test.mjs` › "a lock file another run is deleting reads as held, not as a failure"
 
 #### Scenario: a dry run
 

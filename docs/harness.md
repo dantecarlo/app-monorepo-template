@@ -97,7 +97,11 @@ and the install, through `removePath` as a leftover is, announced as
 `removing orphan folder <path> (<branch>)`, then its branch at the tip it was
 judged at; right before a delete it reads the registered worktrees again and
 keeps a folder that holds a worktree, became one or whose list git cannot read.
-Nothing outside the worktree root is read or deleted as an orphan. A real
+Nothing outside the worktree root is read or deleted as an orphan; the root,
+each folder and each registered worktree are compared by real path (a root reached
+through a junction or a symbolic link keeps a worktree inside it), a folder that
+holds a `.git` at any depth is kept, links are not followed while looking, and a
+folder whose real path cannot be read is kept. A real
 `--finish-orphans` run that leaves none of the folders it set out to finish on disk
 writes `prune-finish-orphans.enabled` in the common git directory and says so;
 while that file exists every run finishes orphan folders, and before it a real
