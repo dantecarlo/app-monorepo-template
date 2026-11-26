@@ -35,15 +35,23 @@ const DERIVED = Object.freeze({
 const configText = ({ identity }) =>
   JSON.stringify({ identity, workflow: { mode: 'sdd' } }, null, 2)
 
-const inScratch = ({ files, read }) =>
+const TEMPLATE_ORIGIN = `https://github.com/${TEMPLATE_IDENTITY.repository}.git`
+const DERIVED_ORIGIN = `https://github.com/${DERIVED.repository}.git`
+
+const inScratch = ({ files, origin, read }) =>
   withScratchTree({
     files,
+    origin,
     prefix: 'template-identity-',
     use: ({ root }) => read({ root })
   })
 
-const readsAsTemplate = ({ files }) =>
-  inScratch({ files, read: isTemplateCheckout })
+const readsAsTemplate = ({ files, origin }) =>
+  inScratch({ files, origin, read: isTemplateCheckout })
+
+const TEMPLATE_FILES = Object.freeze({
+  [HARNESS_CONFIG]: configText({ identity: TEMPLATE_IDENTITY })
+})
 
 test("the template's own identity is the template", () => {
   assert.equal(
@@ -84,14 +92,35 @@ for (const [name, identity] of [
   })
 }
 
-test('a checkout whose harness config names the template reads as the template', () => {
+test("a checkout whose harness config names the template, cloned from the template's repository, reads as the template", () => {
   assert.equal(
-    readsAsTemplate({
-      files: { [HARNESS_CONFIG]: configText({ identity: TEMPLATE_IDENTITY }) }
-    }),
+    readsAsTemplate({ files: TEMPLATE_FILES, origin: TEMPLATE_ORIGIN }),
     true
   )
 })
+
+// `pnpm run init` is what rewrites the identity block, so a copy that has
+// not run it yet carries the template's identity byte for byte: only where
+// it was cloned from tells it apart.
+for (const [name, origin] of [
+  ['an origin on another repository, a copy not renamed yet', DERIVED_ORIGIN],
+  ['no git checkout at all, a download', undefined]
+]) {
+  test(`a checkout whose harness config names the template, with ${name}, reads as derived`, () => {
+    assert.equal(readsAsTemplate({ files: TEMPLATE_FILES, origin }), false)
+  })
+}
+
+for (const origin of [
+  `https://github.com/${TEMPLATE_IDENTITY.repository}`,
+  `git@github.com:${TEMPLATE_IDENTITY.repository}.git`,
+  `ssh://git@github.com/${TEMPLATE_IDENTITY.repository}.git`,
+  `https://github.com/${TEMPLATE_IDENTITY.repository.toUpperCase()}.git`
+]) {
+  test(`the template's repository reads as the template in the spelling ${origin}`, () => {
+    assert.equal(readsAsTemplate({ files: TEMPLATE_FILES, origin }), true)
+  })
+}
 
 test('a checkout whose harness config names another project reads as derived', () => {
   assert.equal(
@@ -128,15 +157,15 @@ test('identityOf reads the identity block as the harness config holds it', () =>
   )
 })
 
-// The root package.json name is a second witness, which `pnpm run init`
-// rewrites with the identity block: the two agree in the template and in
-// every renamed project.
-test("the repository reads as the template exactly when its root package.json carries the template's name", () => {
+// The root package.json name is a witness `pnpm run init` rewrites with the
+// identity block: a checkout that reads as the template carries it, and a
+// renamed project does not. A copy not renamed yet carries it too, and
+// reads as derived.
+test("the repository reads as the template only when its root package.json carries the template's name", () => {
   const { name } = JSON.parse(
     readFileSync(join(REPO_ROOT, 'package.json'), 'utf8')
   )
-  assert.equal(
-    isTemplateCheckout({ root: REPO_ROOT }),
-    name === TEMPLATE_IDENTITY.product
-  )
+  if (isTemplateCheckout({ root: REPO_ROOT })) {
+    assert.equal(name, TEMPLATE_IDENTITY.product)
+  }
 })

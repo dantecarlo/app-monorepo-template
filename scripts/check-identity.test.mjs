@@ -19,6 +19,7 @@ import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import { withScratchTree } from './gate/scratch.mjs'
+import { gitFreeEnv } from './git-free-env.mjs'
 import { TEMPLATE_IDENTITY } from './template-identity.mjs'
 import { HARNESS_CONFIG } from './verify-harness-config.mjs'
 
@@ -50,20 +51,26 @@ const treeOf = ({ identity, names }) => ({
   [CORE_PACKAGE]: packageText({ name: `${names.packageScope}/core` })
 })
 
-const runGuard = ({ files }) =>
+const TEMPLATE_ORIGIN = `https://github.com/${TEMPLATE_IDENTITY.repository}.git`
+
+// The guard run over `files`, a checkout cloned from `origin` when one is
+// given; no variable of the environment decides it.
+const runGuard = ({ files, origin }) =>
   withScratchTree({
     files,
+    origin,
     prefix: 'check-identity-',
     use: ({ root }) =>
       spawnSync(process.execPath, [GUARD, '--root', root], {
         encoding: 'utf8',
-        env: {}
+        env: gitFreeEnv()
       })
   })
 
 test("a tree whose identity is the template's passes with its template tokens, and says why", () => {
   const result = runGuard({
-    files: treeOf({ identity: TEMPLATE_IDENTITY, names: TEMPLATE_IDENTITY })
+    files: treeOf({ identity: TEMPLATE_IDENTITY, names: TEMPLATE_IDENTITY }),
+    origin: TEMPLATE_ORIGIN
   })
   assert.equal(result.status, PASSED, result.stderr)
   assert.match(result.stdout, /names the template itself/u)
@@ -106,6 +113,24 @@ test('a renamed tree whose identity names another project passes', () => {
     /OK — no template-default identity tokens found/u
   )
 })
+
+// A copy of the template keeps its identity block byte for byte until
+// `pnpm run init` rewrites it: the repository it was cloned from tells it
+// apart, so it cannot pass validate until renamed.
+for (const [name, origin] of [
+  ['cloned from another repository', 'https://github.com/acme/acme-ledger.git'],
+  ['with no git checkout', undefined]
+]) {
+  test(`a tree whose identity is the template's, ${name}, fails until pnpm run init renames it`, () => {
+    const result = runGuard({
+      files: treeOf({ identity: TEMPLATE_IDENTITY, names: TEMPLATE_IDENTITY }),
+      origin
+    })
+    assert.equal(result.status, FAILED, result.stdout)
+    assert.match(result.stderr, /FAIL — 2 template-default identity token/u)
+    assert.match(result.stderr, /pnpm run init/u)
+  })
+}
 
 test('a tree with no harness config is checked as a derived project', () => {
   const result = runGuard({

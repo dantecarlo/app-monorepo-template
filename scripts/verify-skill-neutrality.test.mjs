@@ -201,9 +201,10 @@ export const CASES = [
   }
 ]
 
-const runGate = ({ files }) =>
+const runGate = ({ files, origin }) =>
   withScratchTree({
     files,
+    origin,
     prefix: 'skill-neutrality-run-',
     use: ({ root }) =>
       spawnSync(process.execPath, [GATE, '--root', root], {
@@ -280,7 +281,8 @@ const checks = [
         files: {
           [HARNESS_CONFIG]: configText({ identity: TEMPLATE_IDENTITY }),
           [SKILL]: NEUTRAL
-        }
+        },
+        origin: `https://github.com/${TEMPLATE_IDENTITY.repository}.git`
       })
       assert.equal(result.status, FAILED, result.stdout)
       assert.match(

@@ -13,10 +13,11 @@
 //
 // The template's names come from scripts/template-identity.mjs. The guard
 // applies to every checkout but the template itself, the one whose
-// .agents/harness.config.json identity is the template's own: it carries
-// these tokens by design, and the guard says so and passes. No environment
-// variable decides it. A derived project fails until `pnpm run init <slug>`
-// renames it, identity block included.
+// .agents/harness.config.json identity is the template's own and whose
+// origin remote is the template's repository: it carries these tokens by
+// design, and the guard says so and passes. No environment variable decides
+// it. A derived project, a copy not renamed yet included, fails until
+// `pnpm run init <slug>` renames it, identity block included.
 //
 // Usage:
 //   node scripts/check-identity.mjs [--root <directory>]

@@ -9,10 +9,12 @@
 // ---------------------------------------------------------------------------
 
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
+import { gitFreeEnv } from '../git-free-env.mjs'
 import { withScratchTree } from './scratch.mjs'
 
 const PREFIX = 'gate-scratch-test-'
@@ -31,6 +33,22 @@ test('use reads the files under its root, gets its result back, and the root is 
 
   assert.equal(result, 'b\n')
   assert.equal(existsSync(seen), false)
+})
+
+test('a tree given an origin is a git checkout whose origin remote is that URL, and is gone after use', () => {
+  const origin = 'https://github.com/acme/acme-ledger.git'
+  const args = ['config', '--get', 'remote.origin.url']
+  const [root, url] = withScratchTree({
+    files: {},
+    origin,
+    prefix: PREFIX,
+    use: ({ root }) => [
+      root,
+      execFileSync('git', ['-C', root, ...args], { env: gitFreeEnv() })
+    ]
+  })
+  assert.equal(String(url).trim(), origin)
+  assert.equal(existsSync(root), false)
 })
 
 test('a use that throws reaches the caller, and the root is gone after it', () => {
