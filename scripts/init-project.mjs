@@ -98,7 +98,8 @@ const IGNORED_DIRS = new Set([
 const KEPT_FILES = new Set([
   'scripts/check-identity.mjs',
   'scripts/init-project.mjs',
-  'scripts/init-project.test.mjs'
+  'scripts/init-project.test.mjs',
+  'scripts/template-identity.mjs'
 ])
 
 const toRel = ({ file }) => relative(REPO_ROOT, file).split(sep).join('/')

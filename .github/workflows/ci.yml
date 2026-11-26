@@ -20,13 +20,6 @@ jobs:
   validate:
     name: validate
     runs-on: ubuntu-latest
-    env:
-      # The canonical template repo keeps its own identity tokens (@app/*,
-      # app-monorepo-template) intentionally. ATL_TEMPLATE_SELF=1 tells
-      # check-identity.mjs to skip the un-renamed guard for this repo only.
-      # Derived projects must NOT set this variable — their validate fails
-      # until they run `pnpm run init <slug>`.
-      ATL_TEMPLATE_SELF: '1'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 

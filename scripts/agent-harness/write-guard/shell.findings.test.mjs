@@ -22,7 +22,6 @@ import {
 } from './shell.findings.mjs'
 
 const HOST = {
-  env: {},
   isCheckout: ({ dir }) => dir.toLowerCase() === 'c:/work/repo',
   ownRoot: 'C:\\work\\repo',
   scratchRoots: ['/tmp'],
@@ -91,8 +90,7 @@ test('a target finding carries the shape the reason quotes', () => {
       cwd: 'c:/work/repo',
       host: HOST,
       policy: {
-        ruleFiles: [{ glob: 'AGENTS.md', what: 'the LAWs' }],
-        switchOff: { value: 'off', variable: 'ATL_WRITE_GUARD' }
+        ruleFiles: [{ glob: 'AGENTS.md', what: 'the LAWs' }]
       }
     },
     target: literal({ text: 'AGENTS.md' }),

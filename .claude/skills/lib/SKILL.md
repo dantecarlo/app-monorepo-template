@@ -381,7 +381,7 @@ Each is the shape for its kind of library; `docs/code-standards.md` §23 states 
 - [ ] `pnpm typecheck` exits 0: no public type names a vendor type.
 - [ ] `pnpm verify:tests` exits 0: the wrapper's units have their tests in `__tests__/`.
 - [ ] `eslint-dependency-seam-allowlist.json` is unchanged: still `[]`.
-- [ ] `ATL_TEMPLATE_SELF=1 pnpm validate` (`pnpm validate` in a derived project) exits 0.
+- [ ] `pnpm validate` exits 0.
 
 ---
 

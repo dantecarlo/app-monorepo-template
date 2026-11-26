@@ -5,33 +5,56 @@
 // Fails (exit 1) when any of the following template-default identity tokens
 // are still present in the repo:
 //
-//   - root package.json name === 'app-monorepo-template'
-//   - apps/mobile/app.json expo.slug === 'app-monorepo-template'
+//   - root package.json name === the template's product name
+//   - apps/mobile/app.json expo.slug === the template's product name
 //   - android.package or ios.bundleIdentifier === 'com.app.template'
-//   - any package.json name starting with '@app/'
-//   - tsconfig.base.json still has '@app/*' path key
+//   - any package.json name starting with the template's package scope
+//   - tsconfig.base.json still has the template's '<scope>/*' path key
 //
-// Self-skip: if ATL_TEMPLATE_SELF=1 is set, the check is skipped and exits 0.
-// This lets the canonical template repo keep its own `pnpm validate` green
-// while the gate is a hard failure for every derived project.
+// The template's names come from scripts/template-identity.mjs. The guard
+// applies to every checkout but the template itself, the one whose
+// .agents/harness.config.json identity is the template's own: it carries
+// these tokens by design, and the guard says so and passes. No environment
+// variable decides it. A derived project fails until `pnpm run init <slug>`
+// renames it, identity block included.
 //
 // Usage:
-//   node scripts/check-identity.mjs
-//   ATL_TEMPLATE_SELF=1 node scripts/check-identity.mjs   # self-skip
+//   node scripts/check-identity.mjs [--root <directory>]
 // ---------------------------------------------------------------------------
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const HERE = dirname(fileURLToPath(import.meta.url))
-const REPO_ROOT = resolve(HERE, '..')
+import {
+  isTemplateCheckout,
+  TEMPLATE_IDENTITY
+} from './template-identity.mjs'
+import { HARNESS_CONFIG } from './verify-harness-config.mjs'
 
-// Self-skip for the canonical template repo's own CI.
-if (process.env.ATL_TEMPLATE_SELF === '1') {
+const HERE = dirname(fileURLToPath(import.meta.url))
+const ROOT_FLAG = '--root'
+const NOT_FOUND = -1
+const TEMPLATE_NAME = TEMPLATE_IDENTITY.product
+const TEMPLATE_SCOPE = `${TEMPLATE_IDENTITY.packageScope}/`
+const TEMPLATE_PATH_KEY = `${TEMPLATE_SCOPE}*`
+const TEMPLATE_BUNDLE = 'com.app.template'
+
+const readRoot = () => {
+  const index = process.argv.indexOf(ROOT_FLAG)
+  return index === NOT_FOUND
+    ? resolve(HERE, '..')
+    : resolve(process.argv[index + 1])
+}
+
+const REPO_ROOT = readRoot()
+
+if (isTemplateCheckout({ root: REPO_ROOT })) {
   console.log(
-    'check-identity: ATL_TEMPLATE_SELF=1 — self-skip active. ' +
-      'This is the canonical template; identity guard bypassed.'
+    `check-identity: OK — ${HARNESS_CONFIG} names the template itself ` +
+      `(${TEMPLATE_NAME}), which carries the template identity by design; ` +
+      'the guard applies to every checkout whose identity names another ' +
+      'project.'
   )
   process.exit(0)
 }
@@ -62,7 +85,7 @@ const offenders = []
 // ---------------------------------------------------------------------------
 
 const rootPkg = readJson({ path: 'package.json' })
-if (rootPkg?.name === 'app-monorepo-template') {
+if (rootPkg?.name === TEMPLATE_NAME) {
   offenders.push({
     field: 'name',
     file: 'package.json',
@@ -76,21 +99,21 @@ if (rootPkg?.name === 'app-monorepo-template') {
 
 if (exists({ path: 'apps/mobile/app.json' })) {
   const appJson = readJson({ path: 'apps/mobile/app.json' })
-  if (appJson?.expo?.slug === 'app-monorepo-template') {
+  if (appJson?.expo?.slug === TEMPLATE_NAME) {
     offenders.push({
       field: 'expo.slug',
       file: 'apps/mobile/app.json',
       found: appJson.expo.slug
     })
   }
-  if (appJson?.expo?.android?.package === 'com.app.template') {
+  if (appJson?.expo?.android?.package === TEMPLATE_BUNDLE) {
     offenders.push({
       field: 'expo.android.package',
       file: 'apps/mobile/app.json',
       found: appJson.expo.android.package
     })
   }
-  if (appJson?.expo?.ios?.bundleIdentifier === 'com.app.template') {
+  if (appJson?.expo?.ios?.bundleIdentifier === TEMPLATE_BUNDLE) {
     offenders.push({
       field: 'expo.ios.bundleIdentifier',
       file: 'apps/mobile/app.json',
@@ -100,20 +123,20 @@ if (exists({ path: 'apps/mobile/app.json' })) {
 }
 
 // ---------------------------------------------------------------------------
-// 3. tsconfig.base.json — '@app/*' path key
+// 3. tsconfig.base.json — the template's '<scope>/*' path key
 // ---------------------------------------------------------------------------
 
 const tsconfig = readJson({ path: 'tsconfig.base.json' })
-if (tsconfig?.compilerOptions?.paths?.['@app/*']) {
+if (tsconfig?.compilerOptions?.paths?.[TEMPLATE_PATH_KEY]) {
   offenders.push({
-    field: "compilerOptions.paths['@app/*']",
+    field: `compilerOptions.paths['${TEMPLATE_PATH_KEY}']`,
     file: 'tsconfig.base.json',
-    found: '@app/*'
+    found: TEMPLATE_PATH_KEY
   })
 }
 
 // ---------------------------------------------------------------------------
-// 4. All package.json files — any name starting with '@app/'
+// 4. All package.json files — any name starting with the template's scope.
 //    Walk packages/* and apps/* dynamically instead of a hardcoded list so
 //    newly added packages (e.g. packages/analytics) are always covered.
 // ---------------------------------------------------------------------------
@@ -145,7 +168,7 @@ const discoveredPackagePaths = collectPackageJsonPaths({ roots: ['packages', 'ap
 
 for (const pkgPath of discoveredPackagePaths) {
   const pkg = readJson({ path: pkgPath })
-  if (typeof pkg?.name === 'string' && pkg.name.startsWith('@app/')) {
+  if (typeof pkg?.name === 'string' && pkg.name.startsWith(TEMPLATE_SCOPE)) {
     offenders.push({
       field: 'name',
       file: pkgPath,

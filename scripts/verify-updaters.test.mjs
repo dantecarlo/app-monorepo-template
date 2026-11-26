@@ -358,12 +358,10 @@ const checks = [
     run: () => {
       const entries = withFields({ fields: { writes: ['docs/rules/policy.md'] } })
       const listing = {
-        ruleFiles: [{ glob: 'docs/rules/**', what: 'a policy document' }],
-        switchOff: POLICY.switchOff
+        ruleFiles: [{ glob: 'docs/rules/**', what: 'a policy document' }]
       }
       const silent = {
-        ruleFiles: [{ glob: 'AGENTS.md', what: 'the LAWs and the router' }],
-        switchOff: POLICY.switchOff
+        ruleFiles: [{ glob: 'AGENTS.md', what: 'the LAWs and the router' }]
       }
       assert.deepEqual(detailsOf({ entries, policy: listing }), [
         `${UPDATERS_FILE}: mcp-docs: writes docs/rules/policy.md, a policy document (docs/rules/** in ${POLICY_FILE}), so its pull request proposes a rule change: set proposal: true`

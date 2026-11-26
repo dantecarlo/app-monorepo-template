@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // ---------------------------------------------------------------------------
 // decide — the write guard's decision for the file tools, cell by cell of
-// the decision table in docs/harness.md § 3f, plus the errors, the
-// switch-off variable, the tools it leaves alone, and the verifier's
+// the decision table in docs/harness.md § 3f, plus the errors, the tools
+// it leaves alone, and the verifier's
 // probes of the per-tool path key and of a planted .git. The policy, the
 // agent context and the host are synthetic (decide.fixtures.mjs), so no
 // case reads the disk. decide.paths.test.mjs holds the path cases.
@@ -164,7 +164,10 @@ for (const [agent, expected] of [
     const found = verdict({ agent, cwd: 5, filePath: 'src/a.ts' })
     assert.equal(found?.decision, expected)
     assert.match(found.reason, /could not judge/)
-    assert.match(found.reason, /ATL_WRITE_GUARD=off/)
+    assert.match(
+      found.reason,
+      /"disableAllHooks": true in the git-ignored \.claude\/settings\.local\.json/
+    )
   })
 }
 
@@ -223,25 +226,6 @@ test('a file tool that names no path is an error', () => {
 })
 
 // -- what the guard leaves alone ---------------------------------------------------
-test('ATL_WRITE_GUARD=off silences every verdict', () => {
-  const env = { ATL_WRITE_GUARD: 'off' }
-  assert.equal(verdict({ env, filePath: 'AGENTS.md' }), undefined)
-  assert.equal(
-    verdict({ agent: 'validator', env, filePath: 'src/a.ts' }),
-    undefined
-  )
-  assert.equal(
-    verdict({
-      agent: 'validator',
-      cwd: 5,
-      env,
-      filePath: 'src/a.ts',
-      policy: new Error('unreadable')
-    }),
-    undefined
-  )
-})
-
 // Bash and PowerShell have suites of their own: decide.bash*.test.mjs and
 // decide.shell.test.mjs.
 test('the shell tools are Bash and PowerShell, and both are judged', () => {

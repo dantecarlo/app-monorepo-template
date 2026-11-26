@@ -31,6 +31,7 @@ const KEPT_AS_IS = [
   'scripts/check-identity.mjs',
   'scripts/init-project.mjs',
   'scripts/init-project.test.mjs',
+  'scripts/template-identity.mjs',
   'pnpm-lock.yaml'
 ]
 
@@ -130,7 +131,7 @@ test('no template identity token is left', () => {
   assert.doesNotThrow(() =>
     execFileSync(process.execPath, ['scripts/check-identity.mjs'], {
       cwd: copy,
-      env: { ...gitFreeEnv(), ATL_TEMPLATE_SELF: '' },
+      env: gitFreeEnv(),
       stdio: 'ignore'
     })
   )

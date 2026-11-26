@@ -311,8 +311,8 @@ and stops the run with the tree left detached where the update ran, for a person
 
 `pnpm updaters:run` SHALL never merge, approve or enable auto-merge on a pull request, never
 push to the default branch, merge with git only the default branch into the detached update
-(or abort that merge), and never set `ATL_WRITE_GUARD` in the environment it hands to git, gh
-and the updaters.
+(or abort that merge), and hand git, gh and the updaters the environment it was given,
+unchanged.
 
 **Evidence:** `scripts/updaters/run.mjs:360-367`, `scripts/updaters/run.mjs:405-415`, `scripts/updaters/branch.mjs:68-84`
 
@@ -322,8 +322,8 @@ and the updaters.
 - **WHEN** they are read together
 - **THEN** none is `gh pr merge`, `gh pr review` or an auto-merge, every push names
   `updates/<id>` and never the default branch, every `git merge` merges `origin/<default>` or
-  aborts, and no environment handed out holds `ATL_WRITE_GUARD`
-- **Test:** `scripts/updaters/run.test.mjs` › "no run merges, approves, enables auto-merge, pushes the default branch or sets ATL_WRITE_GUARD"
+  aborts, and every environment handed out is the one the run was given
+- **Test:** `scripts/updaters/run.test.mjs` › "no run merges, approves, enables auto-merge, pushes the default branch or changes the environment"
 
 ### Requirement: UPDATERS-09 — A dry run runs no git and no gh
 

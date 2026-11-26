@@ -18,6 +18,7 @@
     "reap:test": "node --test scripts/agent-harness/reaper/*.test.mjs",
     "build": "turbo run build",
     "check:identity": "node scripts/check-identity.mjs",
+    "check:identity:test": "node --test scripts/check-identity.test.mjs scripts/template-identity.test.mjs",
     "codex-budget:test": "node --test scripts/codex-budget.test.mjs",
     "dev": "turbo run dev",
     "docs:diagrams": "node scripts/build-diagrams.mjs",

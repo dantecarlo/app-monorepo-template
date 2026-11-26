@@ -339,6 +339,13 @@
       "cost": "seconds"
     },
     {
+      "id": "check:identity:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
       "id": "check:identity",
       "capability": "core",
       "stage": "repository",

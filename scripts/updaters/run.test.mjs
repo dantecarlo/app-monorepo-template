@@ -11,8 +11,8 @@
 //
 // No case starts git, gh or an updater: the last two cases read every call
 // the suite recorded and prove none merges a pull request, approves,
-// enables auto-merge, pushes the default branch, sets ATL_WRITE_GUARD or
-// passes a force option, which the no-force hook's own reader (forms.mjs)
+// enables auto-merge, pushes the default branch, hands a child an
+// environment other than its own or passes a force option, which the no-force hook's own reader (forms.mjs)
 // judges, or a `+` refspec. Two process cases run
 // the runner over a scratch tree in the OS temp directory, which
 // `withScratchTree` removes, on paths that start nothing.
@@ -49,7 +49,7 @@ const LAW_TEXT =
   'They change only when the owner asks for that change, in words, as the request.'
 const BODY = '<body>'
 
-// What the runner hands every child: an environment with no ATL_WRITE_GUARD.
+// What the runner hands every child: the environment it was given.
 const ENV = Object.freeze({ PATH: '/usr/bin' })
 
 const SCRIPTS = {
@@ -706,7 +706,7 @@ test('the runner as a process skips an updater of another place and refuses an u
   )
 })
 
-test('no run merges, approves, enables auto-merge, pushes the default branch or sets ATL_WRITE_GUARD', () => {
+test('no run merges, approves, enables auto-merge, pushes the default branch or changes the environment', () => {
   const pushes = everyCall.filter(
     ({ args, tool }) => tool === 'git' && args[0] === 'push'
   )
@@ -742,7 +742,6 @@ test('no run merges, approves, enables auto-merge, pushes the default branch or 
     })
   everyCall.forEach(({ env }) => {
     assert.equal(env, ENV)
-    assert.ok(!Object.hasOwn(env, 'ATL_WRITE_GUARD'))
   })
 })
 

@@ -116,7 +116,7 @@ must end the work accurate, not stale:
 
 The work is done when all five hold:
 
-1. `ATL_TEMPLATE_SELF=1 pnpm validate` is green.
+1. `pnpm validate` is green.
 2. No occurrence of `certifipago` / `verifipagos` survives, proven by a gate.
 3. Every supported preset: clean clone → init → `pnpm validate` green, in CI.
 4. **Round trip:** certifipago can be re-derived from the new template. This is
@@ -1090,7 +1090,7 @@ Blocked by phase 4.
 | 2026-09-04 | This plan written                                 | ☑                                                                                                                           |
 | 2026-09-04 | B1 — host API typing in `packages/core`           | ☑ Module-scoped `hostConsole` seam; @types/node and DOM lib both rejected, rationale in `docs/architecture/shared.md`       |
 | 2026-09-04 | B5 — knip vs lint-staged (found while closing B1) | ☑ `pnpm exec lint-staged` in the husky hook; no ignore entry added                                                          |
-| 2026-09-04 | Full gate                                         | ☑ `ATL_TEMPLATE_SELF=1 pnpm validate` exit 0 end to end                                                                     |
+| 2026-09-04 | Full gate                                         | ☑ `pnpm validate`, run as the template, exit 0 end to end                                                                   |
 | 2026-09-07 | Phase 1 — code-standards merge                    | ☑ 368 → 670 lines; §21 coverage ledger built from real mechanisms; 6 unenforced rules named                                 |
 | 2026-09-07 | Applied new §1.2 to my own code                   | ☑ 2 violations found and fixed in `hostConsole.helper.ts` and its test; 4 pre-existing left as phase-2 backlog              |
 | 2026-09-07 | Plan expanded to per-item ledgers                 | ☑ 243 numbered rows, 1000 checkboxes: every skill, rule, gate, detect module, agent and UI block                            |

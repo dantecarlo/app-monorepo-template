@@ -21,7 +21,6 @@ const stateFor = ({ kind, judgeText = () => undefined }) => ({
   actor: { kind, name: kind === ACTOR_KIND.main ? null : 'x' },
   cwd: 'c:/work/repo',
   host: {
-    env: {},
     isCheckout: ({ dir }) => dir.toLowerCase() === 'c:/work/repo',
     ownRoot: 'C:\\work\\repo',
     scratchRoots: ['/tmp'],
@@ -29,8 +28,7 @@ const stateFor = ({ kind, judgeText = () => undefined }) => ({
   },
   judgeText,
   policy: {
-    ruleFiles: [{ glob: 'AGENTS.md', what: 'the LAWs and the router' }],
-    switchOff: { value: 'off', variable: 'ATL_WRITE_GUARD' }
+    ruleFiles: [{ glob: 'AGENTS.md', what: 'the LAWs and the router' }]
   },
   vars: new Map()
 })

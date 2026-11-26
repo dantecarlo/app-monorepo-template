@@ -26,9 +26,16 @@ import {
   payloadFor,
   rawHookOutput,
   REPO_ROOT,
+  RETIRED_GUARD_VARIABLE,
   spawnHook
 } from './claude-hook.fixtures.mjs'
-import { AGENT_CONTEXT_FILE, POLICY_FILE, SWITCH_OFF } from './policy.mjs'
+import { AGENT_CONTEXT_FILE, POLICY_FILE } from './policy.mjs'
+
+// The environment that once silenced the guard, and its spelling.
+const RETIRED_ENV = Object.freeze({
+  [RETIRED_GUARD_VARIABLE.variable]: RETIRED_GUARD_VARIABLE.value
+})
+const RETIRED = `${RETIRED_GUARD_VARIABLE.variable}=${RETIRED_GUARD_VARIABLE.value}`
 
 test('END TO END: the main session is asked before it writes AGENTS.md', () => {
   const output = spawnHook({
@@ -114,16 +121,23 @@ for (const input of ['refs/heads/x 2a35076', '', '42', 'null']) {
   })
 }
 
-test('END TO END: ATL_WRITE_GUARD=off prints nothing', () => {
+test(`END TO END: ${RETIRED} in the environment no longer silences the hook`, () => {
   assert.equal(
     spawnHook({
-      env: { [SWITCH_OFF.variable]: SWITCH_OFF.value },
+      env: RETIRED_ENV,
       input: payloadFor({
         agent: 'validator',
         filePath: join(REPO_ROOT, 'AGENTS.md')
       })
-    }),
-    null
+    })?.permissionDecision,
+    'deny'
+  )
+  assert.equal(
+    spawnHook({
+      env: RETIRED_ENV,
+      input: payloadFor({ filePath: join(REPO_ROOT, 'AGENTS.md') })
+    })?.permissionDecision,
+    'ask'
   )
 })
 
@@ -201,6 +215,16 @@ test('END TO END: an engine that fails to load asks the main session and refuses
       const main = spawnHook({ hook, input: input({}) })
       assert.equal(main?.permissionDecision, 'ask')
       assert.match(main.permissionDecisionReason, /crashed/)
+      assert.match(
+        main.permissionDecisionReason,
+        /"disableAllHooks": true in the git-ignored \.claude\/settings\.local\.json/
+      )
+      assert.ok(
+        !main.permissionDecisionReason.includes(
+          RETIRED_GUARD_VARIABLE.variable
+        ),
+        main.permissionDecisionReason
+      )
       assert.equal(
         spawnHook({ hook, input: input({ agent: 'validator' }) })
           ?.permissionDecision,
@@ -208,11 +232,11 @@ test('END TO END: an engine that fails to load asks the main session and refuses
       )
       assert.equal(
         spawnHook({
-          env: { [SWITCH_OFF.variable]: SWITCH_OFF.value },
+          env: RETIRED_ENV,
           hook,
           input: input({ agent: 'validator' })
-        }),
-        null
+        })?.permissionDecision,
+        'deny'
       )
     }
   })
@@ -223,7 +247,7 @@ for (const module of [
   'scripts/manifest.mjs',
   'scripts/manifest-owners.mjs'
 ]) {
-  test(`END TO END: ATL_WRITE_GUARD=off still silences a hook whose ${module} cannot load`, () => {
+  test(`END TO END: a hook whose ${module} cannot load refuses the validator, ${RETIRED} in its environment or not`, () => {
     withScratchTree({
       files: {
         ...brokenPolicyTree(),
@@ -243,49 +267,13 @@ for (const module of [
           'deny'
         )
         assert.equal(
-          spawnHook({
-            env: { [SWITCH_OFF.variable]: SWITCH_OFF.value },
-            hook,
-            input
-          }),
-          null
+          spawnHook({ env: RETIRED_ENV, hook, input })?.permissionDecision,
+          'deny'
         )
       }
     })
   })
 }
-
-test('the hook reads the switch-off the policy names, before it imports it', () => {
-  withScratchTree({
-    files: {
-      ...brokenPolicyTree(),
-      [POLICY_FILE]: readFileSync(join(REPO_ROOT, POLICY_FILE), 'utf8'),
-      [`${GUARD_DIRECTORY}/policy.mjs`]: "throw new Error('cannot load')\n"
-    },
-    prefix: 'write-guard-hook-',
-    use: ({ root }) => {
-      const hook = join(root, GUARD_DIRECTORY, 'claude-hook.mjs')
-      const input = payloadFor({
-        agent: 'validator',
-        cwd: root,
-        filePath: join(root, 'docs', 'a.md')
-      })
-      assert.equal(
-        spawnHook({
-          env: { [SWITCH_OFF.variable]: SWITCH_OFF.value },
-          hook,
-          input
-        }),
-        null
-      )
-      assert.equal(
-        spawnHook({ env: { [SWITCH_OFF.variable]: 'on' }, hook, input })
-          ?.permissionDecision,
-        'deny'
-      )
-    }
-  })
-})
 
 // On a Node with no import.meta.main the entry must still run: a hook that
 // runs nothing lets every call through. The copy spells it as that Node

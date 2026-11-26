@@ -35,7 +35,7 @@
 // It never merges, approves or enables auto-merge on a pull request, never
 // pushes to the default branch, passes no force option (the rule-proposal
 // label is made current by label.mjs), and hands git, gh and every updater
-// the environment it was given, never setting ATL_WRITE_GUARD.
+// the environment it was given, unchanged.
 //
 // `git`, `gh` and the shell are passed in, so its suite drives it with
 // fakes; this file starts them only from `main`.

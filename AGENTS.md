@@ -62,7 +62,7 @@ See `docs/memory.md` for the LOAD and CONTRIBUTE flow.
 Nothing is "done" until the validation gate is green:
 
 ```bash
-ATL_TEMPLATE_SELF=1 pnpm validate
+pnpm validate
 ```
 
 `pnpm validate` starts with `pnpm agent-harness:projection-check`,

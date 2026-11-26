@@ -20,8 +20,8 @@ context: |
 
 testing:
   strict_tdd: true
-  test_command: 'ATL_TEMPLATE_SELF=1 pnpm validate'
-  note: 'Node 24. ATL_TEMPLATE_SELF=1 skips the identity guard on the template itself only; a derived project runs pnpm validate without it.'
+  test_command: 'pnpm validate'
+  note: 'Node 24. The template and a derived project run the same command: the identity guard tells the template by the identity block of .agents/harness.config.json, never by an environment variable.'
   unit:
     available: true
     framework: vitest
@@ -59,7 +59,7 @@ testing:
     tool: 'Prettier 3 (no semicolons, single quotes, 75-char width)'
 
 validation_gate:
-  command: 'ATL_TEMPLATE_SELF=1 pnpm validate'
+  command: 'pnpm validate'
   composition:
     - 'enumerated only in the gate registry .agents/contracts/gates.json, which pnpm validate (scripts/validate.mjs) runs in order (the manifest gates first, then turbo run lint typecheck test build format:check, the verify:* gates, knip)'
 

@@ -17,8 +17,7 @@ export const POLICY = {
     { glob: 'template.manifest.json', what: 'the manifest' },
     { glob: '.claude/settings*.json', what: 'the hook wiring' },
     { glob: '~/.claude/settings.json', what: 'the user-level settings' }
-  ],
-  switchOff: { value: 'off', variable: 'ATL_WRITE_GUARD' }
+  ]
 }
 
 export const AGENT_CONTEXT = {
@@ -37,7 +36,6 @@ export const AGENT_CONTEXT = {
 }
 
 export const HOST = {
-  env: {},
   isCheckout: ({ dir }) =>
     ['c:/work/repo', 'c:/users/me/appdata/local/temp/clone'].includes(
       dir.toLowerCase()
@@ -66,7 +64,6 @@ export const verdict = ({
   agent,
   agentContext = AGENT_CONTEXT,
   cwd,
-  env = {},
   filePath,
   host = HOST,
   policy = POLICY,
@@ -74,7 +71,7 @@ export const verdict = ({
 }) =>
   decide({
     agentContext,
-    host: { ...host, env },
+    host,
     payload: payloadFor({ agent, cwd, filePath, tool }),
     policy
   })

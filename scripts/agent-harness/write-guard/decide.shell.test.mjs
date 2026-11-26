@@ -16,7 +16,6 @@ import { test } from 'node:test'
 
 import {
   decisionOf,
-  HOST,
   MAIN,
   SCRATCH,
   shell
@@ -371,16 +370,6 @@ test('a shell call that names no command is an error: asked of the main session,
     assert.equal(
       decisionOf({ agent: 'validator', command: 5, tool }),
       'deny'
-    )
-  }
-})
-
-test('ATL_WRITE_GUARD=off silences the shell verdicts too', () => {
-  const host = { ...HOST, env: { ATL_WRITE_GUARD: 'off' } }
-  for (const tool of ['Bash', 'PowerShell']) {
-    assert.equal(
-      shell({ command: 'echo x > AGENTS.md', host, tool }),
-      undefined
     )
   }
 })

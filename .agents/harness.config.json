@@ -2,7 +2,7 @@
   "$schema": "./contracts/harness-config.schema.json",
   "$comment": "The project's harness settings and facts, one file. pnpm verify:harness-config holds it to .agents/contracts/harness-config.schema.json: an unknown key, a value the schema does not allow, or a missing setting fails the gate. See docs/harness.md section 3h.",
   "identity": {
-    "$comment": "The names of this project, the one block a derived repository rewrites to name itself. Nothing in the template reads it yet. pnpm run init <slug> rewrites this block: product and repository become the slug, and packageScope @<slug>, the scope it gives every package; only owner/name in repository is left to set by hand.",
+    "$comment": "The names of this project, the one block a derived repository rewrites to name itself. scripts/template-identity.mjs reads it: the checkout whose identity is the template's own is the template. pnpm run init <slug> rewrites this block: product and repository become the slug, and packageScope @<slug>, the scope it gives every package; only owner/name in repository is left to set by hand.",
     "product": "app-monorepo-template",
     "repository": "dantecarlo/app-monorepo-template",
     "packageScope": "@app"

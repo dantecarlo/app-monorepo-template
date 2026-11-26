@@ -32,18 +32,13 @@
 // when the command names a rule path (mentions.mjs). PowerShell is not
 // parsed (powershell.mjs). An error, a path spelling paths.mjs cannot read
 // among them, refuses a policed agent (read-only, surface, or one whose
-// entry cannot be read) and asks anyone else. `ATL_WRITE_GUARD=off` (the
-// policy's switchOff) silences it all.
+// entry cannot be read) and asks anyone else. No environment variable
+// silences it.
 // ---------------------------------------------------------------------------
 
 import { namedRule } from './mentions.mjs'
 import { liveHost } from './paths.mjs'
-import {
-  ACTOR_KIND,
-  actorFor,
-  assertPolicy,
-  isSwitchedOff
-} from './policy.mjs'
+import { ACTOR_KIND, actorFor, assertPolicy } from './policy.mjs'
 import { judgePowerShell } from './powershell.mjs'
 import { askReason, denyReason, guardError } from './reasons.mjs'
 import { judgeBash } from './shell.mjs'
@@ -207,7 +202,6 @@ export const decide = ({
   payload,
   policy
 }) => {
-  if (isSwitchedOff({ env: host.env, policy })) return undefined
   const tool = payload?.tool_name
   if (!FILE_TOOLS.includes(tool) && !SHELL_TOOLS.includes(tool)) {
     return undefined

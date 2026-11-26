@@ -30,7 +30,6 @@ const CHECKOUTS = [
 ]
 
 const HOST = {
-  env: {},
   isCheckout: ({ dir }) => CHECKOUTS.includes(dir.toLowerCase()),
   ownRoot: REPO,
   scratchRoots: [SCRATCH, '/tmp'],

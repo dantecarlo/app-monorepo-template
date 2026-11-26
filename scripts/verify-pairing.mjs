@@ -12,8 +12,8 @@
 //
 // Scanning roots: apps/*/src/services
 //
-// Self-skip: ATL_TEMPLATE_SELF=1 skips nothing — this check is meaningful
-// for the template itself since it ships example service/adapter pairs.
+// It runs the same in the template and in a derived project: the template
+// ships example service/adapter pairs, so the check means something there.
 //
 // Usage:
 //   node scripts/verify-pairing.mjs

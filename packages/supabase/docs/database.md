@@ -532,7 +532,7 @@ container, at the same path without its drive letter, and runs `pg_prove -r`
 over it. No live run has confirmed it yet.
 
 **DB tests are intentionally NOT part of `pnpm validate`.** The validation
-gate (`ATL_TEMPLATE_SELF=1 pnpm validate`) is offline: it needs no database
+gate (`pnpm validate`) is offline: it needs no database
 and no Docker. `AGENTS.md` forbids an agent to start Docker, so a person or a
 CI job with Docker runs `test:db`. What `pnpm validate` checks offline is the
 bundle and the runner (`src/__tests__/pgTapBundle.helper.test.ts`,

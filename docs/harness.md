@@ -144,7 +144,7 @@ file you did not touch now has no owner.
 ## Layer 3 — the gate
 
 ```bash
-ATL_TEMPLATE_SELF=1 pnpm validate
+pnpm validate
 ```
 
 **Nothing is done until this exits 0.** Check the exit code, not the tail of a
@@ -259,12 +259,12 @@ the pre-commit hook on staged files.
 | `verify:unicode-safety` | No tracked text file holds a zero-width character (U+200B to U+200D, U+2060, U+FEFF), a direction embedding, override or isolate (U+202A to U+202E, U+2066 to U+2069), a tag character (U+E0000 to U+E007F) or an invisible filler (U+115F, U+1160, U+3164, U+FFA0); the emoji joiner U+200D is allowed under `packages/i18n/src/locales/`, a file holding a NUL byte is skipped as binary, and a finding names the file, the line, the column and the code point. `verify:unicode-safety:test` plants each code point and runs the gate over a scratch repository |
 | `verify:workflow-pins` | Every `uses:` of every workflow under `.github/workflows/` (`.yml` or `.yaml`), a step and a reusable workflow alike, is pinned to a full 40-character commit SHA, the tag it was resolved from kept as a comment; a local action (`./`) and a Docker image (`docker://`) are exempt; a line inside any block scalar (`\|` or `>`, a `run:` script and a folded `name:` alike) is not judged, a comment never opens one, and a quoted `"uses":` key is judged. `verify:workflow-pins:test` plants a tag, a branch, a short SHA and a missing ref |
 | `verify:skill-frontmatter` | Every `.claude/skills/*/SKILL.md` has a frontmatter that parses, a `name` that is its folder, and a description of at most 1,024 characters once parsed (the line break a `>` block keeps counted) that holds `USE WHEN:` and `DO NOT USE:`; a skill `.claude/skills-lock.json` lists (archify) is vendored and gets the parse, name and length checks only. `verify:skill-frontmatter:test` plants each refusal, both quoting styles and both block styles |
-| `verify:skill-neutrality` | No file under `.claude/skills/` (a `SKILL.md`, a template, a reference or a script, a vendored skill included) names a downstream project: a name `.agents/contracts/downstream-projects.json` declares for one, matched as a whole word in any letter case, so a product name also catches the package scope, slug and bundle id built from it, and a name inside a longer word does not. A downstream project's core-purity gate refuses a first-party skill that names a product, so a template skill that names one is refused on sync. The list names donor products, so it is `template-maintainer` material and never ships: a derived project finds it absent and the gate forbids nothing, saying so in its denominator, while the template, run with `ATL_TEMPLATE_SELF=1`, fails without it; a list that does not parse, declares no project, or gives a project no name fails too. A new downstream project is one entry of that list. `verify:skill-neutrality:test` plants each refusal with synthetic names and runs the gate over a scratch tree |
+| `verify:skill-neutrality` | No file under `.claude/skills/` (a `SKILL.md`, a template, a reference or a script, a vendored skill included) names a downstream project: a name `.agents/contracts/downstream-projects.json` declares for one, matched as a whole word in any letter case, so a product name also catches the package scope, slug and bundle id built from it, and a name inside a longer word does not. A downstream project's core-purity gate refuses a first-party skill that names a product, so a template skill that names one is refused on sync. The list names donor products, so it is `template-maintainer` material and never ships: a derived project finds it absent and the gate forbids nothing, saying so in its denominator, while the template, run in the checkout whose `.agents/harness.config.json` identity is the template's own (`scripts/template-identity.mjs`), fails anywhere else; a list that does not parse, declares no project, or gives a project no name fails too. A new downstream project is one entry of that list. `verify:skill-neutrality:test` plants each refusal with synthetic names and runs the gate over a scratch tree |
 | `git-free-env:test`, `hook-git-dir:test` | `gitFreeEnv()` drops every `GIT_*` variable, in any case, from the environment a script hands to git or to a child; `withHookGitDir` runs a flow with `GIT_DIR` and `GIT_INDEX_FILE` naming a decoy repository, as a git hook exports them, reports whether anything under the decoy changed, and puts both variables back and removes the decoy however the flow ends. Every suite that spawns git runs one end-to-end case under it and asserts the decoy is left alone; `init-project:test` takes its whole copy under it |
 | `worktrees:prune:test` | `scripts/prune-worktrees.test.mjs` drives the pruner (Layer 2) over a scratch origin, its clone and one linked worktree per case, `--dry-run` first: the merged clean worktree goes and its branch with it; every reason to keep one is seen kept and printed, an ignored file nothing rebuilds, an env file, a file under `.atl/`, a note beside the two skill-registry files in `.atl/`, a lock, an edit hidden by `--skip-worktree` or `--assume-unchanged` and a file that differs only in its line endings among them; a branch whose tip moved after it was judged stays; an `.atl/` that holds only those two files goes with its worktree; an ignored file nothing rebuilds, written after the decision, keeps the worktree at the check just before its removal, and a worktree still clean there goes with its branch; a dry run removes and moves nothing, states the real run's decisions and ends with what is not covered; the main checkout is fast-forwarded to `origin/HEAD`'s branch, whatever its name, and is left, with the reason, over any tracked local change, staged, line-ending-only or in a file the fast-forward does not touch, and over git's refusal, named by its first line that is not a hint and the files it lists; a dry run says it would leave a main checkout that diverged, and one with an untracked file the fast-forward would overwrite, with git's refusal, and touches neither, while a file whose timestamp alone changed and an `index.lock` already in the main checkout leave its "would fast-forward" as it was; the worktree the command runs in survives the `post-merge` that fast-forward fires; an unset `origin/HEAD` exits 1 naming `git remote set-head origin --auto`; a step that fails after a removal exits 1 and still reports the removal, never "nothing was removed"; a fetch from a remote that never answers is stopped at `PRUNE_WORKTREES_FETCH_SECONDS`, and the run says so, removes and moves nothing and exits 0, where the same repositories with a remote that answers are pruned and moved; on Windows a fetch stopped at its bound ends the ssh command git started; the bound is 30 s, a value that is not a positive number throws, naming it, and one that is no whole number of milliseconds is rounded up; through a recording `pnpm` first on the path, a fast-forward that changes `pnpm-lock.yaml` runs `pnpm install` once in the main checkout, an install that rewrites the lockfile adds its one line, under `--quiet` too, an install that exits 1 and one stopped at `PRUNE_WORKTREES_INSTALL_SECONDS` each print the command to run and exit 0, a dry run installs nothing and says it would, `--quiet` drops the line of an install that succeeded, a fast-forward that leaves the lockfile installs nothing and prints exactly the lines it printed before, and the install's bound is 120 s; and the real `.husky/post-merge`, run by `git hook run`, prunes and exits 0 even when the pruner fails |
 | `verify:router-coverage` | Every "Load skill" cell of the Router tables of `AGENTS.md` (its `## Router` section) names, in backticks, a skill with a `.claude/skills/<name>/SKILL.md`, and every skill, read as `verify:skill-frontmatter` reads them, has a row; every "Validated by" cell is `review` or cites, in backticks, only scripts the root `package.json` defines, the text outside the backticks (`lint` (jsx-a11y)) explaining them; a Router table missing either column, a Router with no table and an `AGENTS.md` with no Router fail too. An `/init` prune that drops a skill leaves its row dead and fails this gate until Stage 6 removes the row. `verify:router-coverage:test` plants each refusal and runs the gate over a scratch tree |
 | `codex-budget:test`   | The generated `.codex/config.toml` sets `project_doc_max_bytes` above every table header, and `AGENTS.md`, counted with CRLF endings, fits it: Codex drops what is past the budget |
-| `check:identity`      | The template's default identity is gone (skipped on self)                                 |
+| `check:identity`      | The template's default identity is gone; the template passes as itself, read from its `.agents/harness.config.json` identity (`scripts/template-identity.mjs`), with no variable |
 | `knip`                | No dead exports, no unlisted or unused dependencies                                       |
 
 ### 3d. What the gate deliberately excludes
@@ -415,7 +415,6 @@ allows. A deny wins over an ask, and the main session is never refused.
 | PowerShell                                    | deny            | deny          | ask on a write cmdlet that names a rule path |
 | Guard error                                   | deny            | deny          | ask                                    |
 | `.agents/agent-context.json` unreadable       | deny            | deny          | deny for every subagent, writers and unlisted agents included; the main session is judged as above |
-| `ATL_WRITE_GUARD=off`                         | —               | —             | —                                      |
 
 Claude Code sets `agent_type` inside a subagent, and the main session carries
 none. A read-only agent is `writes: false`, a surface agent has a `surface`,
@@ -561,10 +560,9 @@ or a folder on the disk) is also read for the name the file gets there, so
 Every reason names the rule, the file and how to proceed; a rule file cites the
 LAW. Stdin that is not a JSON payload prints nothing, and a hook that crashes,
 or whose engine fails to load, still refuses a subagent and asks the main
-session. `ATL_WRITE_GUARD=off` is read before any module of the guard is
-imported, so it silences even a guard that cannot load.
+session.
 
-To switch it off, launch the session with `ATL_WRITE_GUARD=off`, or put
+No variable switches it off. The one recovery is Claude Code's own: put
 `"disableAllHooks": true` in `.claude/settings.local.json`. That file is
 git-ignored, and it is where a project's own permissions go: `.claude/settings.json`
 is generated.
@@ -899,8 +897,7 @@ holds `--where` (`local` by default), or the one `--only` names:
 
 `--dry-run` runs the checks and prints what each out-of-date updater would do, and runs no git
 and no gh. The runner never merges, approves or enables auto-merge, never pushes to the default
-branch, and never sets `ATL_WRITE_GUARD`: it hands git, gh and every updater the environment it
-was given. It runs no third-party action. `git`, `gh` and the shell are passed in, so
+branch, and hands git, gh and every updater the environment it was given. It runs no third-party action. `git`, `gh` and the shell are passed in, so
 `updaters:run:test` drives every path against fakes and asserts each call in order.
 
 **What the later slices add.** This is slice 1 of nine (F73). Decided by the owner:
@@ -993,8 +990,8 @@ abbreviated `-Fo`; and Codex, OpenCode and Copilot, which run no adapter yet.
 
 ## Layer 4 — CI
 
-`.github/workflows/ci.yml` runs `pnpm install` then the same gate, with
-`ATL_TEMPLATE_SELF=1`. CI runs no check that a developer cannot run locally.
+`.github/workflows/ci.yml` runs `pnpm install` then the same gate, with no
+variable set. CI runs no check that a developer cannot run locally.
 
 On a pull request, the `commitlint` job lints the commits of the pull request,
 from its base SHA to its head SHA, with `commitlint.config.js`, on a checkout

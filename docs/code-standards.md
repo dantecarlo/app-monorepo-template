@@ -631,7 +631,7 @@ Nothing is **DONE** until the validation harness is green.
 
 After generating any feature, change, or fix:
 
-1. **Run `ATL_TEMPLATE_SELF=1 pnpm validate`** — the deterministic gate. It runs
+1. **Run `pnpm validate`** — the deterministic gate. It runs
    the manifest gates and the lint-rule tests first (instant, so structural
    drift fails before anything expensive), then
    `turbo run lint typecheck test build format:check`, then the `verify:*`

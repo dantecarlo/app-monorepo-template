@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 // ---------------------------------------------------------------------------
-// policy — the rule files, the switch-off variable and the actor a payload
-// names, read from `.agents/contracts/write-guard.json` and
+// policy — the rule files and the actor a payload names, read from `.agents/contracts/write-guard.json` and
 // `.agents/agent-context.json`. The committed files are judged too: every
 // rule glob matches a file git lists, and the agents the guard polices are
 // declared as the owner decided.
@@ -29,11 +28,9 @@ import {
   heldRuleFor,
   homeHeldRuleFor,
   homeRuleFor,
-  isSwitchedOff,
   loadGuardFiles,
   POLICY_FILE,
-  ruleFor,
-  SWITCH_OFF
+  ruleFor
 } from './policy.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -64,8 +61,7 @@ const POLICY = {
     { glob: 'AGENTS.md', what: 'the LAWs' },
     { glob: '**/*allowlist*.json', what: 'an allowlist' },
     { glob: '.claude/skills/**', what: 'a skill' }
-  ],
-  switchOff: { value: 'off', variable: 'ATL_WRITE_GUARD' }
+  ]
 }
 
 test('the committed policy and agent context both read', () => {
@@ -121,10 +117,7 @@ test('a .git anywhere below a checkout root is a rule path, whatever the policy 
     'a/.GIT/HEAD'
   ]) {
     assert.equal(
-      ruleFor({
-        policy: { ruleFiles: [], switchOff: SWITCH_OFF },
-        relative
-      })?.glob,
+      ruleFor({ policy: { ruleFiles: [] }, relative })?.glob,
       GIT_RULE.glob,
       relative
     )
@@ -243,53 +236,12 @@ test('a rule names the glob that matched and what it guards', () => {
   )
 })
 
-test('the switch-off the policy names is the one the engine falls back on', () => {
-  assert.deepEqual(policy.switchOff, SWITCH_OFF)
-  assert.deepEqual(SWITCH_OFF, {
-    value: 'off',
-    variable: 'ATL_WRITE_GUARD'
-  })
-})
-
-for (const [value, expected] of [
-  ['off', true],
-  ['OFF', true],
-  [' off ', true],
-  ['on', false],
-  [undefined, false]
-]) {
-  test(`ATL_WRITE_GUARD=${value} switches the guard ${expected ? 'off' : 'on'}`, () => {
-    const env = value === undefined ? {} : { ATL_WRITE_GUARD: value }
-    assert.equal(isSwitchedOff({ env, policy: POLICY }), expected)
-  })
-}
-
-test('the switch-off still works when the policy cannot be read', () => {
-  assert.equal(
-    isSwitchedOff({
-      env: { ATL_WRITE_GUARD: 'off' },
-      policy: new Error('unreadable')
-    }),
-    true
-  )
-})
-
 for (const [name, broken] of [
   ['a policy that is not an object', []],
-  ['a policy with no ruleFiles', { switchOff: POLICY.switchOff }],
-  [
-    'a policy with an empty ruleFiles',
-    { ruleFiles: [], switchOff: POLICY.switchOff }
-  ],
-  [
-    'a rule with no glob',
-    { ruleFiles: [{ what: 'x' }], switchOff: POLICY.switchOff }
-  ],
-  [
-    'a rule with no what',
-    { ruleFiles: [{ glob: 'x' }], switchOff: POLICY.switchOff }
-  ],
-  ['a policy with no switchOff', { ruleFiles: POLICY.ruleFiles }],
+  ['a policy with no ruleFiles', {}],
+  ['a policy with an empty ruleFiles', { ruleFiles: [] }],
+  ['a rule with no glob', { ruleFiles: [{ what: 'x' }] }],
+  ['a rule with no what', { ruleFiles: [{ glob: 'x' }] }],
   ['an unreadable policy', new Error('does not parse')]
 ]) {
   test(`assertPolicy refuses ${name}`, () => {
@@ -299,6 +251,13 @@ for (const [name, broken] of [
     )
   })
 }
+
+// The policy holds its rule files and nothing that silences the guard.
+test('assertPolicy accepts a policy that names its rule files alone', () => {
+  assert.doesNotThrow(() =>
+    assertPolicy({ policy: { ruleFiles: POLICY.ruleFiles } })
+  )
+})
 
 test('a missing or corrupt guard file loads as an Error naming the file', () => {
   withScratchTree({
@@ -418,8 +377,7 @@ const HELD_POLICY = {
     { glob: 'scripts/verify-*', what: 'a gate' },
     { glob: '**/*allowlist*.json', what: 'an allowlist' },
     { glob: '~/.claude/settings.json', what: 'the user-level settings' }
-  ],
-  switchOff: SWITCH_OFF
+  ]
 }
 
 for (const [relative, glob] of [
