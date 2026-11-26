@@ -472,6 +472,10 @@ test('the template itself still fails a spec verified at a commit it does not ho
       const result = report()
       assert.equal(result.status, 1)
       assert.match(result.stdout, /a commit this repository does not hold/u)
+      assert.match(
+        result.stdout,
+        /a new project made from the template runs `pnpm run init <slug>` and commits it/u
+      )
     }
   })
 })

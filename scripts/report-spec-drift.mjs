@@ -240,6 +240,26 @@ const birthLine = ({ birth }) =>
       'from the commit that commits it'
   })[birth.kind]
 
+// The cause of a template checkout's unknown commits: a shallow clone, or
+// a new project, made with fresh history, that has not run init yet.
+const unknownCommitLine = ({ findings, root, template }) => {
+  if (
+    !template ||
+    !findings.some(({ kind }) => kind === DRIFT_KIND.unknownCommit)
+  ) {
+    return undefined
+  }
+  const shallow = git({
+    args: ['rev-parse', '--is-shallow-repository'],
+    root
+  }).stdout.trim()
+  return shallow === TRUE
+    ? 'this clone is shallow and holds too little history to measure ' +
+        'the specs: fetch the whole history (fetch-depth: 0)'
+    : 'a new project made from the template runs `pnpm run init <slug>` ' +
+        'and commits it, after which its specs are measured from that commit'
+}
+
 const main = () => {
   const root = readRoot()
   const birth = birthOf({ root })
@@ -268,7 +288,13 @@ const main = () => {
       'which only the sync mode of the sdd skill judges; a stale spec may ' +
       'still be true.'
   )
-  const said = birthLine({ birth })
+  const said =
+    birthLine({ birth }) ??
+    unknownCommitLine({
+      findings,
+      root,
+      template: isTemplateIdentity({ identity: identityOf({ root }) })
+    })
   if (said !== undefined) console.log(`  ${said}.`)
   if (findings.length > 0 || birth.kind === BIRTH.lost) process.exitCode = 1
 }
