@@ -256,4 +256,26 @@ test('a verification is either valid with no reason, or rejected with one', () =
   expectTypeOf<{
     valid: false
   }>().not.toExtend<SignedImageUrlVerificationType>()
+
+  const valid: SignedImageUrlVerificationType = { valid: true }
+  const rejected: SignedImageUrlVerificationType = {
+    reason: SignedImageUrlRejectionEnum.EXPIRED,
+    valid: false
+  }
+  const validWithReason = {
+    reason: SignedImageUrlRejectionEnum.EXPIRED,
+    valid: true
+  }
+  const rejectedWithoutReason = { valid: false }
+  expect([
+    valid,
+    rejected,
+    validWithReason,
+    rejectedWithoutReason
+  ]).toEqual([
+    VALID,
+    EXPIRED,
+    { reason: SignedImageUrlRejectionEnum.EXPIRED, valid: true },
+    { valid: false }
+  ])
 })
