@@ -241,6 +241,7 @@ const HOTFIX_HEADING = '## Hotfix'
 const RELAY_RULE = 'Approval, in place or relayed by the architect.'
 const RELEASE_WORD_STEP = "## Step 2 — The owner's word for the release"
 const RELAY_REFERENCE = '(`ticket-flow` rule 6)'
+const RELAY_ELSEWHERE = 'a relay from any other session does not count'
 
 // The board is the source of every open ticket, its content included:
 // nothing in the repository writes or mirrors one, and the general plan
@@ -458,6 +459,7 @@ export const SKILL_CONTRACTS = [
     mentions: [
       ...policyMentions({ heading: MERGE_QUEUE }),
       ...policyReadMentions({ heading: MERGE_QUEUE }),
+      { heading: MERGE_QUEUE, text: RELAY_ELSEWHERE },
       { heading: MERGE_QUEUE, text: CATALOG_CURRENT },
       { heading: MERGE_QUEUE, text: CATALOG_BOARD_CHECK },
       { heading: MERGE_QUEUE, text: SPARE_WORKTREE },
@@ -920,6 +922,7 @@ export const gate = defineGate({
     `step that names ${CLOSED_CATALOG}, ${ONE_PULL_REQUEST} and ` +
     `${DROPPED_TABLE}, a ` +
     'merge queue that names both merge policies, says that ' +
+    `${RELAY_ELSEWHERE} and that ` +
     `${CATALOG_CURRENT} and that each row the catalog pull request ` +
     `adds ${CATALOG_BOARD_CHECK}, and that brings a ticket's pull request ` +
     `current from ${SPARE_WORKTREE}, names ${DETACHED_CHECKOUT}, ` +

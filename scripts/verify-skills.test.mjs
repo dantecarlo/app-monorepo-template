@@ -89,6 +89,8 @@ const DEFAULT_BRANCH_COPY_NAMED = `It names ${DEFAULT_BRANCH_COPY}.`
 // word: the contract's rule 6 and the release's Step 2 both say so.
 const RELAY_RULE = 'Approval, in place or relayed by the architect.'
 const RELAY_RULE_NAMED = `It names ${RELAY_RULE}.`
+const RELAY_ELSEWHERE = 'a relay from any other session does not count'
+const RELAY_ELSEWHERE_NAMED = `It names ${RELAY_ELSEWHERE}.`
 const RELAY_REFERENCE = '(`ticket-flow` rule 6)'
 const RELAY_REFERENCE_NAMED = `It names ${RELAY_REFERENCE}.`
 const POLICY_DROPPED = `does not name \`${LOW_RISK}\``
@@ -715,6 +717,18 @@ export const CASES = [
     }),
     expected: 1,
     name: "a release-ticket whose owner's word step names no architect relay is refused"
+  },
+  {
+    context: skills({
+      edits: {
+        [SKILL({ folder: 'refine-ticket' })]: replace({
+          from: RELAY_ELSEWHERE_NAMED,
+          to: NAMES_NOTHING
+        })
+      }
+    }),
+    expected: 1,
+    name: 'a refine-ticket whose merge queue names no rule on a relay from another session is refused'
   },
   {
     context: skills({
