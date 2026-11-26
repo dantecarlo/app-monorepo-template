@@ -391,8 +391,10 @@ guard's code and the modules it loads (`scripts/manifest.mjs`, whose glob
 reader it uses, and `scripts/manifest-owners.mjs`), `.husky/**`,
 `.github/workflows/**`, and the user-level `~/.claude/settings.json` and
 `~/.claude/settings.local.json`, where `disableAllHooks` switches every hook
-off; and `.agents/harness.config.json`, whose `delivery.mergePolicy: low-risk` lets
-an agent merge without asking (3h). `package.json` is not one. A glob reads as
+off; `.agents/harness.config.json`, whose `delivery.mergePolicy: low-risk` lets
+an agent merge without asking (3h); and `scripts/template-identity.mjs`, which
+reads whether a checkout is the template and so decides which checks run.
+`package.json` is not one. A glob reads as
 the manifest's do, with letter
 case ignored, against the path relative to EVERY checkout that holds the file,
 so a rule file of a sibling worktree, or of a clone under the temp dir, is one

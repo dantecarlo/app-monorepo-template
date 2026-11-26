@@ -65,6 +65,10 @@
       "glob": "scripts/manifest-owners.mjs",
       "what": "a module the write guard loads"
     },
+    {
+      "glob": "scripts/template-identity.mjs",
+      "what": "the reader of whether a checkout is the template, which decides which checks run"
+    },
     { "glob": ".husky/**", "what": "a git hook" },
     { "glob": ".github/workflows/**", "what": "a CI workflow" }
   ]

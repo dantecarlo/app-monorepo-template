@@ -157,6 +157,7 @@ for (const relative of [
   'scripts/agent-harness/no-force/forms.mjs',
   'scripts/manifest.mjs',
   'scripts/manifest-owners.mjs',
+  'scripts/template-identity.mjs',
   '.agents/agents/validator.agent.md',
   '.claude/agents/validator.md',
   '.husky/pre-commit',
