@@ -64,8 +64,8 @@ process.exitCode = runTestDb({
       JSON.parse(readFileSync(PACKAGE_MANIFEST, 'utf8')).config
         ?.testDbTarget,
     readTests: () => readSqlFiles({ dir: TESTS_DIR }),
-    removeBundle: ({ dir }) =>
-      rmSync(dir, { force: true, recursive: true }),
+    // writeBundle created `dir`, so a bundle already gone is an error.
+    removeBundle: ({ dir }) => rmSync(dir, { recursive: true }),
     runSupabase: ({ args }) => {
       const { error, status } = spawnSync('supabase', args, {
         cwd: PACKAGE_DIR,

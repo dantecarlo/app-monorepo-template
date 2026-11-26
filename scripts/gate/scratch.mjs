@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------------------
 // Scratch trees for companion suites. `withScratchTree` builds `files`
 // under a fresh directory in the OS temp directory, hands its root to `use`,
-// and removes it before returning, so every caller of an exported CASES
+// and removes it before returning, with no `force`: it created the root,
+// so a root already gone is an error. Every caller of an exported CASES
 // list, a blinded re-run included, leaves the temp directory as it found it.
 // ---------------------------------------------------------------------------
 
@@ -19,6 +20,6 @@ export const withScratchTree = ({ files, prefix, use }) => {
     })
     return use({ root })
   } finally {
-    rmSync(root, { force: true, recursive: true })
+    rmSync(root, { recursive: true })
   }
 }

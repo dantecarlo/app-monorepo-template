@@ -147,7 +147,6 @@ const scratchRoots = []
 after(() =>
   scratchRoots.forEach((root) =>
     rmSync(root, {
-      force: true,
       maxRetries: REMOVE_RETRIES,
       recursive: true
     })

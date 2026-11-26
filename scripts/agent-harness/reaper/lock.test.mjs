@@ -30,7 +30,7 @@ const STALE_MS = STALE_SECONDS * 1000
 const GUARD_SUFFIX = '.guard'
 
 const scratch = nodeFs.mkdtempSync(join(tmpdir(), 'reaper-lock-test-'))
-after(() => nodeFs.rmSync(scratch, { force: true, recursive: true }))
+after(() => nodeFs.rmSync(scratch, { recursive: true }))
 let lockCount = 0
 const freshLockPath = () => {
   lockCount += 1

@@ -22,11 +22,12 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+
+import { withScratchTree } from './gate/scratch.mjs'
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const SKILL_DIR = join(REPO_ROOT, '.claude/skills/archify')
@@ -34,6 +35,7 @@ const ARCHIFY = join(SKILL_DIR, 'bin/archify.mjs')
 const LOCK = join(REPO_ROOT, '.claude/skills-lock.json')
 const EXAMPLE = join(SKILL_DIR, 'examples/web-app.architecture.json')
 const TEXT_FIT = join(SKILL_DIR, 'renderers/shared/text-fit.mjs')
+const CANDIDATE = 'candidate.json'
 
 const PASSED = 0
 const FAILED = 1
@@ -63,28 +65,32 @@ const shortBoxSpec = ({ label }) => {
   return spec
 }
 
-const validate = ({ spec }) => {
-  const scratch = mkdtempSync(join(tmpdir(), 'archify-vendor-'))
-  try {
-    const specPath = join(scratch, 'candidate.json')
-    writeFileSync(specPath, JSON.stringify(spec, null, 2))
-    const run = spawnSync(
-      process.execPath,
-      [ARCHIFY, 'validate', 'architecture', specPath, '--json'],
-      {
-        cwd: scratch,
-        encoding: 'utf8',
-        env: { ...process.env, ARCHIFY_UPDATE_CHECK_DISABLED: '1' }
-      }
-    )
-    const codes = (JSON.parse(run.stdout).diagnostics ?? [])
-      .filter(({ severity }) => severity === 'error')
-      .map(({ code }) => code)
-    return { codes, status: run.status }
-  } finally {
-    rmSync(scratch, { force: true, recursive: true })
-  }
-}
+const validate = ({ spec }) =>
+  withScratchTree({
+    files: { [CANDIDATE]: JSON.stringify(spec, null, 2) },
+    prefix: 'archify-vendor-',
+    use: ({ root: scratch }) => {
+      const run = spawnSync(
+        process.execPath,
+        [
+          ARCHIFY,
+          'validate',
+          'architecture',
+          join(scratch, CANDIDATE),
+          '--json'
+        ],
+        {
+          cwd: scratch,
+          encoding: 'utf8',
+          env: { ...process.env, ARCHIFY_UPDATE_CHECK_DISABLED: '1' }
+        }
+      )
+      const codes = (JSON.parse(run.stdout).diagnostics ?? [])
+        .filter(({ severity }) => severity === 'error')
+        .map(({ code }) => code)
+      return { codes, status: run.status }
+    }
+  })
 
 // Bytes are read as latin1, one character per byte, so normalizing CRLF never
 // re-encodes a byte of a UTF-8 or binary file.

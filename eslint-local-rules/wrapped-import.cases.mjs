@@ -48,7 +48,7 @@ RULE_CASE_BLOCKS.forEach((block) =>
     recursive: true
   })
 )
-after(() => rmSync(BLOCKS_ROOT, { force: true, recursive: true }))
+after(() => rmSync(BLOCKS_ROOT, { recursive: true }))
 
 const at = ({ code, name, path }) => ({
   code,

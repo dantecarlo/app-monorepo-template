@@ -12,6 +12,10 @@
       "types": "./src/process-tree.d.mts",
       "default": "./src/process-tree.mjs"
     },
+    "./remove-path": {
+      "types": "./src/remove-path.d.mts",
+      "default": "./src/remove-path.mjs"
+    },
     "./vitest-package-base": {
       "types": "./src/vitest-package-base.d.mts",
       "default": "./src/vitest-package-base.mjs"

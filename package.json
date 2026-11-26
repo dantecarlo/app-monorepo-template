@@ -26,6 +26,7 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json}\"",
     "git-free-env:test": "node --test scripts/git-free-env.test.mjs",
     "hook-git-dir:test": "node --test scripts/hook-git-dir.test.mjs",
+    "gate:test": "node --test scripts/gate/*.test.mjs",
     "init": "node scripts/init-project.mjs",
     "init-project:test": "node --test scripts/init-project.test.mjs",
     "knip": "knip --no-progress",

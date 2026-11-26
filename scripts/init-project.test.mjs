@@ -57,9 +57,7 @@ before(() => {
   hookRun = withHookGitDir({
     use: () => {
       copy = mkdtempSync(join(tmpdir(), 'init-project-'))
-      process.on('exit', () =>
-        rmSync(copy, { force: true, recursive: true })
-      )
+      process.on('exit', () => rmSync(copy, { recursive: true }))
       const listed = listFiles()
       for (const file of listed) {
         const target = join(copy, file)

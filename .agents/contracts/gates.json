@@ -192,6 +192,13 @@
       "cost": "seconds"
     },
     {
+      "id": "gate:test",
+      "capability": "core",
+      "stage": "repository",
+      "profile": "standard",
+      "cost": "seconds"
+    },
+    {
       "id": "worktrees:prune:test",
       "capability": "core",
       "stage": "repository",

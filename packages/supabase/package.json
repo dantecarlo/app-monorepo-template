@@ -18,7 +18,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "db:push": "supabase db push --linked",
-    "gen:types": "supabase gen types typescript --linked > src/types.ts.tmp && node -e \"require('node:fs').renameSync('src/types.ts.tmp', 'src/types.ts')\" || (node -e \"require('node:fs').rmSync('src/types.ts.tmp', { force: true })\" && exit 1)",
+    "gen:types": "supabase gen types typescript --linked > src/types.ts.tmp && node -e \"require('node:fs').renameSync('src/types.ts.tmp', 'src/types.ts')\" || (node --input-type=module -e \"import { removePath } from '@app/tooling/remove-path'; removePath({ path: 'src/types.ts.tmp' })\" && exit 1)",
     "test:db": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON ../../scripts/supabase-test-db.mjs"
   },
   "config": {

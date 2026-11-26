@@ -13,15 +13,7 @@
 // ---------------------------------------------------------------------------
 
 import assert from 'node:assert/strict'
-import {
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync
-} from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
@@ -326,52 +318,48 @@ test('END TO END: a hook on a Node without import.meta.main still judges the cal
 // A junction is a link the file tools write through. Removing the scratch
 // tree removes the junctions, never what they point at.
 test('Given a junction to a rule folder, when the main session or a read-only agent writes through it, then the guard asks or refuses', () => {
-  const scratch = mkdtempSync(join(tmpdir(), 'write-guard-junction-'))
-  try {
-    const repo = join(scratch, 'repo')
-    mkdirSync(join(repo, '.git'), { recursive: true })
-    mkdirSync(join(repo, '.agents', 'contracts'), { recursive: true })
-    writeFileSync(
-      join(repo, '.agents', 'contracts', 'write-guard.json'),
-      '{}'
-    )
-    symlinkSync(
-      join(repo, '.agents', 'contracts'),
-      join(repo, 'notes'),
-      'junction'
-    )
-    symlinkSync(
-      join(repo, '.agents'),
-      join(scratch, 'into-agents'),
-      'junction'
-    )
-    assert.equal(
-      spawnHook({
-        input: payloadFor({
-          cwd: repo,
-          filePath: join(repo, 'notes', 'write-guard.json')
-        })
-      })?.permissionDecision,
-      'ask'
-    )
-    assert.equal(
-      spawnHook({
-        input: payloadFor({
-          agent: 'validator',
-          cwd: repo,
-          filePath: join(
-            scratch,
-            'into-agents',
-            'contracts',
-            'write-guard.json'
-          )
-        })
-      })?.permissionDecision,
-      'deny'
-    )
-  } finally {
-    rmSync(scratch, { force: true, recursive: true })
-  }
+  withScratchTree({
+    files: { 'repo/.agents/contracts/write-guard.json': '{}' },
+    prefix: 'write-guard-junction-',
+    use: ({ root: scratch }) => {
+      const repo = join(scratch, 'repo')
+      mkdirSync(join(repo, '.git'))
+      symlinkSync(
+        join(repo, '.agents', 'contracts'),
+        join(repo, 'notes'),
+        'junction'
+      )
+      symlinkSync(
+        join(repo, '.agents'),
+        join(scratch, 'into-agents'),
+        'junction'
+      )
+      assert.equal(
+        spawnHook({
+          input: payloadFor({
+            cwd: repo,
+            filePath: join(repo, 'notes', 'write-guard.json')
+          })
+        })?.permissionDecision,
+        'ask'
+      )
+      assert.equal(
+        spawnHook({
+          input: payloadFor({
+            agent: 'validator',
+            cwd: repo,
+            filePath: join(
+              scratch,
+              'into-agents',
+              'contracts',
+              'write-guard.json'
+            )
+          })
+        })?.permissionDecision,
+        'deny'
+      )
+    }
+  })
 })
 
 // Every case asserts it through spawnHook too; this one runs its own calls,

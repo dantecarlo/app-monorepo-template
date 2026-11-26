@@ -19,6 +19,7 @@ import { dirname, join } from 'node:path'
 import { after, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
+import { withScratchTree } from './gate/scratch.mjs'
 import { gitFreeEnv } from './git-free-env.mjs'
 import { withHookGitDir } from './hook-git-dir.mjs'
 import { measureDrift } from './report-spec-drift.mjs'
@@ -138,7 +139,7 @@ test('a governed path that does not exist is reported beside the drift', () => {
 })
 
 const scratch = mkdtempSync(join(tmpdir(), 'report-spec-drift-'))
-after(() => rmSync(scratch, { force: true, recursive: true }))
+after(() => rmSync(scratch, { recursive: true }))
 
 const git = ({ args }) =>
   execFileSync(
@@ -238,47 +239,56 @@ test('the report lists each stale spec and still exits 0', () => {
 // and whose region names `vendor/`, so a change under either path must make
 // it stale, and the report must say so. Returns what measureDrift read and
 // what the report printed.
-const measureTwoGoverns = () => {
-  const root = mkdtempSync(join(tmpdir(), 'report-spec-drift-governs-'))
-  try {
-    const run = (args) =>
-      execFileSync(
-        'git',
-        [
-          '-c',
-          'user.email=test@example.invalid',
-          '-c',
-          'user.name=test',
-          ...args
-        ],
-        { cwd: root, encoding: 'utf8', env: gitFreeEnv() }
-      ).trim()
-    run(['init', '-q'])
-    for (const name of ['core', 'vendor']) {
-      mkdirSync(join(root, name), { recursive: true })
-      writeFileSync(join(root, name, 'a.ts'), 'export const a = 1\n')
-    }
-    run(['add', '-A'])
-    run(['commit', '-q', '-m', 'base'])
-    const base = run(['rev-parse', 'HEAD'])
-    mkdirSync(join(root, 'openspec', 'specs', 'unit'), { recursive: true })
-    writeFileSync(
-      join(root, 'openspec', 'specs', 'unit', 'spec.md'),
-      twoGovernsSpec({ first: '`core/`', second: '`vendor/`', sha: base })
-    )
-    writeFileSync(join(root, 'core', 'a.ts'), 'export const a = 2\n')
-    writeFileSync(join(root, 'vendor', 'a.ts'), 'export const a = 3\n')
+const measureTwoGoverns = () =>
+  withScratchTree({
+    files: {
+      'core/a.ts': 'export const a = 1\n',
+      'vendor/a.ts': 'export const a = 1\n'
+    },
+    prefix: 'report-spec-drift-governs-',
+    use: ({ root }) => {
+      const run = (args) =>
+        execFileSync(
+          'git',
+          [
+            '-c',
+            'user.email=test@example.invalid',
+            '-c',
+            'user.name=test',
+            ...args
+          ],
+          { cwd: root, encoding: 'utf8', env: gitFreeEnv() }
+        ).trim()
+      run(['init', '-q'])
+      run(['add', '-A'])
+      run(['commit', '-q', '-m', 'base'])
+      const base = run(['rev-parse', 'HEAD'])
+      mkdirSync(join(root, 'openspec', 'specs', 'unit'), {
+        recursive: true
+      })
+      writeFileSync(
+        join(root, 'openspec', 'specs', 'unit', 'spec.md'),
+        twoGovernsSpec({
+          first: '`core/`',
+          second: '`vendor/`',
+          sha: base
+        })
+      )
+      writeFileSync(join(root, 'core', 'a.ts'), 'export const a = 2\n')
+      writeFileSync(join(root, 'vendor', 'a.ts'), 'export const a = 3\n')
 
-    const [measured] = measureDrift({ root })
-    const result = spawnSync(process.execPath, [REPORT, '--root', root], {
-      encoding: 'utf8',
-      env: gitFreeEnv()
-    })
-    return { measured, result }
-  } finally {
-    rmSync(root, { force: true, recursive: true })
-  }
-}
+      const [measured] = measureDrift({ root })
+      const result = spawnSync(
+        process.execPath,
+        [REPORT, '--root', root],
+        {
+          encoding: 'utf8',
+          env: gitFreeEnv()
+        }
+      )
+      return { measured, result }
+    }
+  })
 
 const assertTwoGovernsDrift = ({ measured, result }) => {
   assert.deepEqual(measured.governed, ['core/', 'vendor/'])

@@ -20,6 +20,8 @@ import { readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
+import { removePath } from '@app/tooling/remove-path'
+
 export const LOCK_PATH = join(tmpdir(), 'atl-process-reaper.lock')
 
 const STALE_MS = 30_000
@@ -59,9 +61,10 @@ const isStale = ({ fs, now, path }) => {
   }
 }
 
-// Removes `path` only while it still holds `text`.
+// Removes `path` only while it still holds `text`. A file another run
+// removed after this read is already gone, which is what was asked.
 const removeIfHolds = ({ fs, path, text }) => {
-  if (readOrNull({ fs, path }) === text) fs.rmSync(path, { force: true })
+  if (readOrNull({ fs, path }) === text) removePath({ fs, path })
 }
 
 const heldAt = ({ fs, path, text }) => ({
@@ -93,7 +96,7 @@ const takeOver = ({ fs, now, path, seen, text }) => {
     const current = readOrNull({ fs, path })
     if (current === null) return createHeld({ fs, path, text })
     if (current !== seen || !isStale({ fs, now, path })) return null
-    fs.rmSync(path, { force: true })
+    removePath({ fs, path })
     return createHeld({ fs, path, text })
   } finally {
     removeIfHolds({ fs, path: guard, text })

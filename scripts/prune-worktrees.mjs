@@ -92,6 +92,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { removePath } from '@app/tooling/remove-path'
+
 import { runBounded } from './agent-harness/reaper/bounded-child.mjs'
 import { gitFreeEnv } from './git-free-env.mjs'
 import {
@@ -371,11 +373,12 @@ const contentReason = ({ worktree }) => {
   }
 }
 
-// A directory `git worktree remove` left on disk. `rmSync` removes a
+// A directory `git worktree remove` left on disk. `removePath` removes a
 // junction or a symbolic link as the link itself, a broken one included,
 // and never enters its target, so the pnpm store it points into is kept.
-export const removeLeftover = ({ path }) =>
-  rmSync(path, { force: true, recursive: true })
+// A directory that went after it was seen is gone, as asked; any other
+// failure is the leftover the removal reports.
+export const removeLeftover = ({ path }) => removePath({ path })
 
 // Removes one worktree, the directory Windows may leave behind, and its
 // branch. Git refuses a worktree holding a modified or untracked file and
@@ -509,7 +512,7 @@ const dryCheckout = ({ ref, root }) => {
       env
     })
   } finally {
-    rmSync(scratch, { force: true, recursive: true })
+    rmSync(scratch, { recursive: true })
   }
 }
 

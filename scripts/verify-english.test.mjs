@@ -13,8 +13,7 @@
 
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -22,6 +21,7 @@ import { ENGLISH_CASES } from './english.cases.mjs'
 import { findSpanishLines, SPANISH_WORDS } from './english.detect.mjs'
 import { registerCases, runCases } from './gate/cases.mjs'
 import { blindGate } from './gate/gate.mjs'
+import { withScratchTree } from './gate/scratch.mjs'
 import { gitFreeEnv } from './git-free-env.mjs'
 import { gate } from './verify-english.mjs'
 
@@ -33,13 +33,12 @@ const PASSED = 0
 // The gate run with a search path that holds no git, an empty scratch
 // folder, so its file listing cannot start.
 const PATH_KEY = /^path$/iu
-const runGateWithoutGit = () => {
-  const empty = mkdtempSync(join(tmpdir(), 'english-nogit-'))
-  try {
-    return spawnSync(
-      process.execPath,
-      [join(HERE, 'verify-english.mjs')],
-      {
+const runGateWithoutGit = () =>
+  withScratchTree({
+    files: {},
+    prefix: 'english-nogit-',
+    use: ({ root: empty }) =>
+      spawnSync(process.execPath, [join(HERE, 'verify-english.mjs')], {
         encoding: 'utf8',
         env: {
           ...Object.fromEntries(
@@ -49,12 +48,8 @@ const runGateWithoutGit = () => {
           ),
           PATH: empty
         }
-      }
-    )
-  } finally {
-    rmSync(empty, { force: true, recursive: true })
-  }
-}
+      })
+  })
 const OWN_SOURCES = [
   'english.cases.mjs',
   'english.detect.mjs',

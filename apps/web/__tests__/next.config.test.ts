@@ -29,9 +29,7 @@ const stepPlugin =
   })
 
 afterAll(() => {
-  FOLDERS.forEach((folder) =>
-    rmSync(folder, { force: true, recursive: true })
-  )
+  FOLDERS.forEach((folder) => rmSync(folder, { recursive: true }))
 })
 
 test('applies every next-<capability>.config.ts beside it, in name order', async () => {

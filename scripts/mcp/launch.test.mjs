@@ -70,9 +70,7 @@ const FIXTURE_SOURCE = [
 
 const scratchRoots = []
 after(() =>
-  scratchRoots.forEach((root) =>
-    rmSync(root, { force: true, recursive: true })
-  )
+  scratchRoots.forEach((root) => rmSync(root, { recursive: true }))
 )
 
 const write = ({ path, root, text }) => {

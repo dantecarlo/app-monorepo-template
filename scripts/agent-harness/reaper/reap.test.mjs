@@ -35,7 +35,7 @@ const EXIT_FAILED = 1
 const STALE_SECONDS = 31
 
 const scratch = mkdtempSync(join(tmpdir(), 'reap-test-'))
-after(() => rmSync(scratch, { force: true, recursive: true }))
+after(() => rmSync(scratch, { recursive: true }))
 let lockCount = 0
 const freshLockPath = () => {
   lockCount += 1

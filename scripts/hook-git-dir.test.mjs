@@ -12,11 +12,12 @@
 
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { test } from 'node:test'
 
+import { withScratchTree } from './gate/scratch.mjs'
 import { gitFreeEnv } from './git-free-env.mjs'
 import { withHookGitDir } from './hook-git-dir.mjs'
 
@@ -43,22 +44,21 @@ const samePath = ({ path }) =>
   resolve(path).replaceAll('\\', '/').toLowerCase()
 
 // A scratch repository with one commit, built by git started under `env`.
-const commitInScratch = ({ env }) => {
-  const root = mkdtempSync(join(tmpdir(), 'hook-git-dir-scratch-'))
-  try {
-    git({ args: ['init', '-q'], cwd: root, env })
-    writeFileSync(join(root, PROBE_FILE), 'probe\n')
-    git({ args: ['add', PROBE_FILE], cwd: root, env })
-    git({ args: ['commit', '-q', '-m', 'probe'], cwd: root, env })
-    return git({
-      args: ['rev-list', '--count', 'HEAD'],
-      cwd: root,
-      env: gitFreeEnv()
-    })
-  } finally {
-    rmSync(root, { force: true, recursive: true })
-  }
-}
+const commitInScratch = ({ env }) =>
+  withScratchTree({
+    files: { [PROBE_FILE]: 'probe\n' },
+    prefix: 'hook-git-dir-scratch-',
+    use: ({ root }) => {
+      git({ args: ['init', '-q'], cwd: root, env })
+      git({ args: ['add', PROBE_FILE], cwd: root, env })
+      git({ args: ['commit', '-q', '-m', 'probe'], cwd: root, env })
+      return git({
+        args: ['rev-list', '--count', 'HEAD'],
+        cwd: root,
+        env: gitFreeEnv()
+      })
+    }
+  })
 
 // Runs `use` with each hook variable set to `value`, or unset when `value`
 // is undefined, and puts back what was there.
@@ -102,56 +102,58 @@ test('given a flow whose git inherits the hook environment, the decoy is reporte
 })
 
 test('given a flow that only sets a config value through the hook environment, the decoy is reported written', () => {
-  const scratch = mkdtempSync(join(tmpdir(), 'hook-git-dir-config-'))
-  try {
-    const { decoyWritten } = withHookGitDir({
-      use: () =>
-        git({
-          args: ['config', 'probe.key', 'value'],
-          cwd: scratch,
-          env: process.env
-        })
-    })
+  withScratchTree({
+    files: {},
+    prefix: 'hook-git-dir-config-',
+    use: ({ root: scratch }) => {
+      const { decoyWritten } = withHookGitDir({
+        use: () =>
+          git({
+            args: ['config', 'probe.key', 'value'],
+            cwd: scratch,
+            env: process.env
+          })
+      })
 
-    assert.equal(decoyWritten, true)
-  } finally {
-    rmSync(scratch, { force: true, recursive: true })
-  }
+      assert.equal(decoyWritten, true)
+    }
+  })
 })
 
 test('while the flow runs, GIT_DIR and GIT_INDEX_FILE name a decoy repository outside the scratch tree', () => {
-  const scratch = mkdtempSync(join(tmpdir(), 'hook-git-dir-seen-'))
-  try {
-    const { result } = withHookGitDir({
-      use: () => ({
-        gitDir: process.env.GIT_DIR,
-        indexFile: process.env.GIT_INDEX_FILE,
-        resolved: git({
-          args: ['rev-parse', '--absolute-git-dir'],
-          cwd: scratch,
-          env: process.env
+  withScratchTree({
+    files: {},
+    prefix: 'hook-git-dir-seen-',
+    use: ({ root: scratch }) => {
+      const { result } = withHookGitDir({
+        use: () => ({
+          gitDir: process.env.GIT_DIR,
+          indexFile: process.env.GIT_INDEX_FILE,
+          resolved: git({
+            args: ['rev-parse', '--absolute-git-dir'],
+            cwd: scratch,
+            env: process.env
+          })
         })
       })
-    })
 
-    assert.equal(
-      samePath({ path: result.resolved }),
-      samePath({ path: result.gitDir })
-    )
-    assert.equal(
-      samePath({ path: result.indexFile }),
-      samePath({ path: join(result.gitDir, 'index') })
-    )
-    assert.ok(
-      !samePath({ path: result.gitDir }).startsWith(
-        samePath({ path: scratch })
-      ),
-      result.gitDir
-    )
-    assert.equal(existsSync(result.gitDir), false)
-  } finally {
-    rmSync(scratch, { force: true, recursive: true })
-  }
+      assert.equal(
+        samePath({ path: result.resolved }),
+        samePath({ path: result.gitDir })
+      )
+      assert.equal(
+        samePath({ path: result.indexFile }),
+        samePath({ path: join(result.gitDir, 'index') })
+      )
+      assert.ok(
+        !samePath({ path: result.gitDir }).startsWith(
+          samePath({ path: scratch })
+        ),
+        result.gitDir
+      )
+      assert.equal(existsSync(result.gitDir), false)
+    }
+  })
 })
 
 test('given hook variables unset before the run, they are unset after it', () => {
