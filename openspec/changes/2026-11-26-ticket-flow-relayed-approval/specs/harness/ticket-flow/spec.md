@@ -14,7 +14,10 @@ irreversible production step still gets its own yes. It SHALL say that a relay f
 session does not count. The structural check SHALL hold `ticket-flow` § Rules every role follows
 to name the architect's relay.
 
-**Evidence:** written at apply time, when the code exists.
+**Evidence:** `.claude/skills/ticket-flow/SKILL.md:243`, `.claude/skills/ticket-flow/SKILL.md:244`,
+`.claude/skills/ticket-flow/SKILL.md:245`, `.claude/skills/ticket-flow/SKILL.md:246`,
+`.claude/skills/ticket-flow/SKILL.md:247`, `scripts/verify-skills.mjs:241`,
+`scripts/verify-skills.mjs:420`
 
 #### Scenario: the skills of the repository
 
@@ -68,9 +71,10 @@ gets its own yes in Step 3. The structural check SHALL hold `release-ticket` Ste
 `ticket-flow` rule 6.
 
 **Evidence:** `.claude/skills/release-ticket/SKILL.md:52`, `.claude/skills/release-ticket/SKILL.md:54`,
-`.claude/skills/release-ticket/SKILL.md:55`, `.claude/skills/release-ticket/SKILL.md:68`,
-`.claude/skills/release-ticket/SKILL.md:71`, `.claude/skills/release-ticket/SKILL.md:74`. The
-relay clause of Step 2 is written at apply time.
+`.claude/skills/release-ticket/SKILL.md:55`, `.claude/skills/release-ticket/SKILL.md:56`,
+`.claude/skills/release-ticket/SKILL.md:70`, `.claude/skills/release-ticket/SKILL.md:73`,
+`.claude/skills/release-ticket/SKILL.md:76`, `scripts/verify-skills.mjs:522`,
+`scripts/verify-skills.mjs:526`
 
 #### Scenario: a target fails its check
 
@@ -96,3 +100,120 @@ relay clause of Step 2 is written at apply time.
   release ticket
 - **Test:** Not covered — the rule is a procedure a CI/CD session follows; no runner drives a
   session
+
+### Requirement: TICKET-25 — The architect keeps the merge queue and merges one pull request at a time
+
+`refine-ticket` § Merge queue SHALL keep one merge queue: every pull request at Ready to merge
+into the default branch, each with its evidence link, and the architect's own closed ticket
+catalog pull request (TICKET-31), in the merge order the architect sets, shown to the owner in the
+architect's session. The architect SHALL ask for or merge only the pull request at the head of the
+queue, and only while the project layer's merge gate, when it names one, passes and every Ready
+to merge condition holds (CI green, no conflict, the branch holding the default branch's current
+tip); a pull request that fails one SHALL be brought current by the architect itself, a ticket's
+from its spare worktree (TICKET-33) and the closed ticket catalog pull request as TICKET-31 says.
+It SHALL merge on the owner's word, asked in the architect's own session, where a relay from any
+other session does not count (TICKET-36), under the `manual`
+policy, or when the default branch's copy of `.agents/harness.config.json` records no `low-risk`
+(TICKET-20); and, under `low-risk`, without asking only a pull
+request whose Risk line is `Risk: none` or that changes only passive files, and whose merge sets
+off no irreversible step, recording on the ticket, or on the ticket or release ticket the closed
+ticket catalog pull request records, that it merged under `low-risk` and what it relied on. A pull
+request that fails one condition SHALL wait for the owner, as under `manual`. After each merge of
+a ticket's pull request the architect SHALL move the ticket to Done and message the ticket's QA
+and dev sessions `<id> merged`, and after every merge it SHALL bring the next pull request in the
+queue current itself. `ticket-flow`'s states table SHALL name the architect as the session that
+enters Done, a hotfix aside (TICKET-24), and its § Messages SHALL carry
+`<id> ready to merge, PR #<n>`, from QA to the architect, and no line that asks a session to
+bring a branch current. The structural check SHALL hold `refine-ticket` to have a § Merge queue, which reads the
+policy from the default branch's copy and fails closed to `manual` (TICKET-20), and says that a
+relay from any other session does not count.
+
+**Evidence:** `.claude/skills/refine-ticket/SKILL.md:84`,
+`.claude/skills/refine-ticket/SKILL.md:93`, `.claude/skills/refine-ticket/SKILL.md:114`,
+`.claude/skills/refine-ticket/SKILL.md:116`, `.claude/skills/refine-ticket/SKILL.md:122`,
+`.claude/skills/refine-ticket/SKILL.md:124`, `.claude/skills/refine-ticket/SKILL.md:135`,
+`.claude/skills/refine-ticket/SKILL.md:138`, `.claude/skills/refine-ticket/SKILL.md:143`,
+`.claude/skills/refine-ticket/SKILL.md:146`, `.claude/skills/refine-ticket/SKILL.md:150`,
+`.claude/skills/refine-ticket/SKILL.md:176`, `.claude/skills/refine-ticket/SKILL.md:177`,
+`.claude/skills/refine-ticket/SKILL.md:179`, `.claude/skills/refine-ticket/SKILL.md:181`, `.claude/skills/refine-ticket/SKILL.md:202`,
+`.claude/skills/refine-ticket/SKILL.md:204`, `.claude/skills/refine-ticket/SKILL.md:205`,
+`.claude/skills/refine-ticket/SKILL.md:213`, `.claude/skills/refine-ticket/SKILL.md:217`,
+`.claude/skills/refine-ticket/SKILL.md:218`, `.claude/skills/ticket-flow/SKILL.md:98`,
+`.claude/skills/ticket-flow/SKILL.md:142`, `.claude/skills/ticket-flow/SKILL.md:171`,
+`.claude/skills/ticket-flow/SKILL.md:354`, `.claude/skills/ticket-flow/SKILL.md:357`,
+`.claude/skills/ticket-flow/SKILL.md:363`, `scripts/verify-skills.mjs:204`,
+`scripts/verify-skills.mjs:450`, `scripts/verify-skills.mjs:453`, `scripts/verify-skills.mjs:461`,
+`scripts/verify-skills.mjs:462`
+
+#### Scenario: the skills of the repository
+
+- **GIVEN** the repository's seven ticket skills
+- **WHEN** `pnpm verify:skills:test` runs
+- **THEN** the structural check finds nothing: the architect has its merge queue
+- **Test:** `scripts/verify-skills.test.mjs` › "the seven ticket skills of the repository pass"
+
+#### Scenario: the architect has no merge queue
+
+- **GIVEN** a `refine-ticket` with no § Merge queue
+- **WHEN** the structural check runs
+- **THEN** it reports the missing section, rather than judging the policies it would name
+- **Test:** `scripts/verify-skills.test.mjs` › "a refine-ticket without its merge queue is refused"
+
+#### Scenario: two pull requests ready
+
+- **GIVEN** two tickets at Ready to merge into the default branch, the second depending on the
+  first, under `manual`
+- **WHEN** the architect asks the owner
+- **THEN** it shows both in the queue and asks for the first only; once it merges the first, it
+  moves it to Done, messages its QA and dev sessions `<id> merged`, brings the second current
+  itself from its spare worktree, and asks for the second only once its gate passes; the second's
+  QA is asked nothing
+- **Test:** Not covered — the rule is a procedure an architect session follows; no runner drives
+  a session, and the structural check only proves the section exists
+
+#### Scenario: `low-risk`, and a pull request that names a risk
+
+- **GIVEN** a project whose harness config records `low-risk`, and a pull request at the head
+  of the queue, Ready to merge, that changes code and says `Risk: item 3 (a public export)`
+- **WHEN** the architect reaches its merge
+- **THEN** the architect asks the owner, as under `manual`, and merges only on the owner's word
+- **Test:** Not covered — the rule is a procedure an architect session follows; no runner drives
+  a session
+
+#### Scenario: `low-risk`, and a pull request that meets every condition
+
+- **GIVEN** a project whose harness config records `low-risk`, and a pull request at the head
+  of the queue, Ready to merge into the default branch, that says `Risk: none` and whose merge
+  sets off no irreversible step
+- **WHEN** the architect reaches its merge
+- **THEN** the architect merges it without asking, comments on the ticket that it merged under
+  `low-risk` with that Risk line, moves it to Done and messages its QA and dev sessions
+  `<id> merged`
+- **Test:** Not covered — the rule is a procedure an architect session follows; no runner drives
+  a session
+
+#### Scenario: the merge queue does not say which copy is read
+
+- **GIVEN** a `refine-ticket` whose § Merge queue never says that the policy is read from the
+  default branch's copy, never from the pull request's own branch
+- **WHEN** the structural check runs
+- **THEN** it reports one finding
+- **Test:** `scripts/verify-skills.test.mjs` › "a refine-ticket whose merge queue does not read the policy from the default branch's copy is refused"
+
+#### Scenario: a pull request that sets its own policy to `low-risk`
+
+- **GIVEN** a default branch whose `.agents/harness.config.json` records `manual`, and a pull
+  request at the head of the queue, Ready to merge, that says `Risk: none` and whose own branch
+  sets `delivery.mergePolicy` to `low-risk`
+- **WHEN** the architect reaches its merge
+- **THEN** it reads `manual` from the default branch's copy and asks the owner, as under `manual`
+- **Test:** Not covered — the rule is a procedure an architect session follows; no runner drives
+  a session, and the structural check only proves the merge queue says which copy it reads
+
+#### Scenario: the merge queue says nothing about a relay
+
+- **GIVEN** a `refine-ticket` whose § Merge queue never says that a relay from any other session
+  does not count
+- **WHEN** the structural check runs
+- **THEN** it reports one finding
+- **Test:** `scripts/verify-skills.test.mjs` › "a refine-ticket whose merge queue names no rule on a relay from another session is refused"

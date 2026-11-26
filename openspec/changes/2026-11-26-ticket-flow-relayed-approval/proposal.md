@@ -15,6 +15,9 @@ The owner's words, verbatim:
   told him everything is approved, but don't go through me; you're passing my authorization
   through you, so I only manage everything through you"
 - 2026-11-25 (translated from Spanish), approving the port to the template: "Yes, port it"
+- 2026-11-26, approving this proposal and answering Q1: replace the `refine-ticket` § Merge queue
+  step 3 sentence "a relay from another session does not count" with "a relay from any other
+  session does not count", the same wording as rule 6.
 
 The skills name no product; the downstream quote and its incident stay in the downstream
 project's own docs.
@@ -28,8 +31,10 @@ project's own docs.
   relay from any other session does not count. The spec gains TICKET-36 for it.
 - `release-ticket` Step 2 waits for "the owner's word here, or for the architect's relay of it
   (`ticket-flow` rule 6), which covers this one release". TICKET-16 is modified.
-- `scripts/verify-skills.mjs` holds both texts, so a later edit cannot drop the relay clause
-  (task T3; the two tests it names are new).
+- `refine-ticket` § Merge queue step 3 says "a relay from any other session does not count", the
+  wording of rule 6 (the owner's answer to Q1). TICKET-25 is modified.
+- `scripts/verify-skills.mjs` holds the three texts, so a later edit cannot drop the relay clause
+  (task T3 and T5; the three tests it names are new).
 - `.claude/skills/process-intake/ticket-flow.template.md` needs no change, confirmed: its
   Approvals section says the owner approves each merge "in the architect's session" and names
   no relay rule, and its Merge policy section covers the merge policy only.
@@ -67,28 +72,24 @@ project's own docs.
 
 ## Out of scope
 
-- The edit the owner worded for `qa-ticket` step 6 is not written, and needs the owner's answer
-  (Q1 below). `qa-ticket` step 6 holds no ask and no "a relay from another session does not
-  count" sentence: it says "QA stops at Ready to merge: it asks the owner nothing and merges
-  nothing" (`.claude/skills/qa-ticket/SKILL.md:91`), and TICKET-11 requires that. The sentence
-  "Wait for the owner's word here; a relay from another session does not count." sits in
-  `refine-ticket` § Merge queue step 3 (`.claude/skills/refine-ticket/SKILL.md:202`), the
-  architect's own session, where "or the architect's relay of it" cannot apply: the architect is
-  the one relaying. This change leaves both files as they are.
+- The edit the owner worded for `qa-ticket` step 6 is dropped: it does not apply. `qa-ticket`
+  step 6 holds no ask and no "a relay from another session does not count" sentence: it says
+  "QA stops at Ready to merge: it asks the owner nothing and merges nothing"
+  (`.claude/skills/qa-ticket/SKILL.md:91`), and TICKET-11 requires that. The sentence the edit
+  meant sits in `refine-ticket` § Merge queue step 3, which Q1 below settles.
 - A relay for the merge ask: the architect asks the owner for each merge in its own session
   (TICKET-25), the session where the approval is given, so nothing needs relaying.
 - Any other step's approval: each irreversible production step still gets its own yes (TICKET-16).
 - The downstream project's own docs and incident record.
 
-### Q1
+### Q1 (answered 2026-11-26)
 
-Where does the relay clause for the merge ask belong? Options: (a) nowhere, as above, since QA
-asks nothing and the architect asks in its own session; (b) replace the sentence at
-`.claude/skills/refine-ticket/SKILL.md:202` with "a relay from any other session does not
-count", which is what rule 6 will then say. The owner decides; neither is written here.
+Where does the relay clause for the merge ask belong? The owner chose to replace the sentence at
+`.claude/skills/refine-ticket/SKILL.md:202` with "a relay from any other session does not count",
+the wording rule 6 has. Task T5.
 
 ## Affected specs
 
-- `openspec/specs/harness/ticket-flow/spec.md`: adds TICKET-36; modifies TICKET-16; T4 corrects
+- `openspec/specs/harness/ticket-flow/spec.md`: adds TICKET-36; modifies TICKET-16 and TICKET-25; T4 corrects
   citations of TICKET-01, 03, 04, 09, 11, 15, 18, 23, 24, 26, 28, 29, 32 and 33 without changing
   what they state.
