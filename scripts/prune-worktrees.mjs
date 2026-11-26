@@ -91,6 +91,7 @@ import {
   lstatSync,
   mkdtempSync,
   readdirSync,
+  realpathSync,
   rmSync,
   statSync,
   writeFileSync
@@ -405,7 +406,7 @@ const forwardPath = ({ path }) => resolve(path).replaceAll('\\', '/')
 // A directory `git worktree remove` left on disk, removed through
 // `removePath` and tried again, with `wait` between two tries, while it
 // stays. `removePath` removes a junction or a symbolic link as the link
-// XX, so the pnpm
+// itself, a broken one included, and never enters its target, so the pnpm
 // store it points into is kept; a directory that went after it was seen is
 // gone, as asked. Undefined once the path is gone; otherwise the residue: the
 // path, and the error of the last try. `fs` and `wait` are injected by tests.
@@ -545,11 +546,57 @@ const deleteBranch = ({ root, worktree }) => {
 
 const FOLDER_STAYS = 'its folder is not gone yet'
 
+// `path` as the disk names it, links resolved, or null when it cannot be
+// read. Git records a worktree by its real path, so an orphan folder reached
+// through a junction or a symbolic link is compared by its real path too.
+const realOf = ({ path }) => {
+  try {
+    return realpathSync.native(path)
+  } catch {
+    return null
+  }
+}
+
+// The most entries `holdsGit` reads in one folder before it gives up.
+const MAX_ENTRIES = 500_000
+
+// Whether the folder at `path` holds a `.git`, a file or a folder, at any
+// depth: true or false, or null when a folder cannot be read or the folder
+// holds more than MAX_ENTRIES entries, so that a folder it could not
+// look through is kept. A link is never followed, so the walk stays inside
+// the folder.
+const holdsGit = ({ path }) => {
+  const pending = [path]
+  let seen = 0
+  while (pending.length > 0) {
+    const directory = pending.pop()
+    let entries
+    try {
+      entries = readdirSync(directory, { withFileTypes: true })
+    } catch {
+      return null
+    }
+    for (const entry of entries) {
+      seen += 1
+      if (seen > MAX_ENTRIES) return null
+      if (entry.name === '.git') return true
+      if (entry.isDirectory()) pending.push(join(directory, entry.name))
+    }
+  }
+  return false
+}
+
+// Each of `paths` by its real path; one that cannot be read, a registered
+// worktree whose folder is gone, stays as git printed it.
+const realPaths = ({ paths }) =>
+  paths.map((path) => realOf({ path }) ?? path)
+
 // The reason an orphan folder is kept at its delete, from the registered
-// worktrees read again then (`listRegistered`): git cannot read the list; a
-// registered worktree sits inside the folder; or the folder became a
-// worktree, registered at its own path or holding a `.git`, as
-// `git worktree add` into an empty folder makes it. Null for none.
+// worktrees read again then (`listRegistered`): git cannot read the list or
+// the folder cannot be read; a registered worktree sits inside the folder; or
+// the folder became a worktree, registered at its own path, or holds a
+// `.git` at any depth, as `git worktree add` into an empty folder makes
+// it. Null for none.
 const recheckOrphan = ({ listRegistered, orphan, root }) => {
   const registered = (() => {
     try {
@@ -558,18 +605,19 @@ const recheckOrphan = ({ listRegistered, orphan, root }) => {
       return null
     }
   })()
-  if (registered === null) return REASON.UNREADABLE
-  if (holdsRegistered({ path: orphan.path, registered })) {
+  const folder = realOf({ path: orphan.path })
+  if (registered === null || folder === null) return REASON.UNREADABLE
+  const reals = realPaths({ paths: registered })
+  if (holdsRegistered({ path: folder, registered: reals })) {
     return REASON.HOLDS_WORKTREE
   }
-  const own = samePath({ path: orphan.path })
-  if (
-    registered.some((other) => samePath({ path: other }) === own) ||
-    existsSync(join(orphan.path, '.git'))
-  ) {
+  const own = samePath({ path: folder })
+  if (reals.some((other) => samePath({ path: other }) === own)) {
     return REASON.ORPHAN_BECAME_WORKTREE
   }
-  return null
+  const nested = holdsGit({ path: folder })
+  if (nested === null) return REASON.UNREADABLE
+  return nested ? REASON.ORPHAN_BECAME_WORKTREE : null
 }
 
 // Finishes one orphan folder after `announce` received its `removingLine`: a
@@ -867,17 +915,30 @@ export const orphansFinished = ({ orphans }) =>
 const worktreeRootOf = ({ main }) =>
   join(dirname(resolve(main)), `${basename(resolve(main))}-worktrees`)
 
-// Every directory directly under `worktreeRoot` with no `.git` and no
-// registration, as a `git worktree remove` ended partway leaves one. A link
-// is no such directory, and a root that does not exist holds none.
+// Every directory directly under `worktreeRoot`, read by its real path, with
+// no `.git` and no registration (`registrations`, real paths in one
+// spelling), as a `git worktree remove` ended partway leaves one. A link is
+// no such directory, and a root that does not exist or whose real path
+// cannot be read holds none.
 const readOrphanPaths = ({ registrations, worktreeRoot }) => {
-  if (!existsSync(worktreeRoot)) return []
-  return readdirSync(worktreeRoot, { withFileTypes: true })
+  const real = existsSync(worktreeRoot) ? realOf({ path: worktreeRoot }) : null
+  if (real === null) return []
+  return readdirSync(real, { withFileTypes: true })
     .filter((dirent) => dirent.isDirectory())
-    .map((dirent) => join(worktreeRoot, dirent.name))
+    .map((dirent) => join(real, dirent.name))
     .filter((path) => !existsSync(join(path, '.git')))
     .filter((path) => !registrations.has(samePath({ path })))
 }
+
+// The orphan folder at `path` whose real path cannot be read: kept, since a
+// folder that cannot be placed against the registered worktrees is never
+// deleted.
+const unreadableOrphan = ({ path }) => ({
+  branch: 'no branch',
+  kept: REASON.UNREADABLE,
+  orphan: true,
+  path: forwardPath({ path })
+})
 
 // Every orphan folder under the worktree root, judged by `decideOrphan`; one
 // it could finish is kept as waiting for a first manual run unless
@@ -891,19 +952,23 @@ const judgeOrphans = ({
   worktrees
 }) => {
   const checkedOut = new Set(worktrees.map(({ branch }) => branch))
+  const registered = realPaths({ paths: [...registrations] })
   return readOrphanPaths({
-    registrations,
+    registrations: new Set(registered.map((path) => samePath({ path }))),
     worktreeRoot: worktreeRootOf({ main: root })
   })
     .map((path) =>
-      decideOrphan({
-        ageMs: Date.now() - statSync(path).mtimeMs,
-        checkedOut,
-        merged,
-        path: forwardPath({ path }),
-        registered: [...registrations],
-        upstreams
-      })
+      realOf({ path }) === null
+        ? unreadableOrphan({ path })
+        : decideOrphan({
+            ageMs: Date.now() - statSync(path).mtimeMs,
+            checkedOut,
+            holdsGit: () => holdsGit({ path }),
+            merged,
+            path: forwardPath({ path }),
+            registered,
+            upstreams
+          })
     )
     .map((one) =>
       one.kept || finishing ? one : { ...one, kept: REASON.ORPHAN_MANUAL }

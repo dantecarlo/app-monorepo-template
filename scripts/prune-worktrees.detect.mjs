@@ -182,6 +182,7 @@ export const REASON = {
   ORPHAN_AMBIGUOUS: 'several local branches end in its name',
   ORPHAN_BECAME_WORKTREE: 'it became a worktree after it was judged',
   ORPHAN_CHECKED_OUT: 'its branch is checked out in a registered worktree',
+  ORPHAN_HOLDS_GIT: 'it holds a git repository or worktree',
   ORPHAN_MANUAL: `orphan folders wait for a first manual run with ${OPTION.FINISH_ORPHANS}`,
   ORPHAN_NOT_MERGED: 'its branch is not in the default branch',
   ORPHAN_NO_BRANCH: 'no local branch ends in its name',
@@ -594,7 +595,9 @@ export const holdsRegistered = ({ path, registered }) => {
 
 // The decision for one orphan folder: finishable (`kept: null`) when exactly
 // one local branch's last path segment is the folder's name, no registered
-// worktree sits inside the folder, that branch is checked out in no
+// worktree sits inside the folder, the folder holds no `.git` at
+// any depth (`holdsGit`, read only when it comes to that: true, false, or
+// null when it could not be read), that branch is checked out in no
 // registered worktree, its tip is reachable from the default branch and the
 // folder was last written more than ORPHAN_GRACE_MS ago; otherwise kept with
 // the reason. `path` is the folder in forward slashes, `registered` the
@@ -603,6 +606,7 @@ export const holdsRegistered = ({ path, registered }) => {
 export const decideOrphan = ({
   ageMs,
   checkedOut,
+  holdsGit = () => false,
   merged,
   path,
   registered,
@@ -629,6 +633,9 @@ export const decideOrphan = ({
   if (holdsRegistered({ path, registered })) {
     return { ...judged, kept: REASON.HOLDS_WORKTREE }
   }
+  const nested = holdsGit()
+  if (nested === null) return { ...judged, kept: REASON.UNREADABLE }
+  if (nested) return { ...judged, kept: REASON.ORPHAN_HOLDS_GIT }
   if (checkedOut.has(branch)) {
     return { ...judged, kept: REASON.ORPHAN_CHECKED_OUT }
   }

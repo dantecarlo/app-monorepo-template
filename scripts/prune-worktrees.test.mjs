@@ -2879,7 +2879,7 @@ test('a --finish-orphans run that finishes every orphan folder it could writes t
   )
 })
 
-test('an orphan folder finished with its folder left on disk withholds the marker', () => {
+test('an orphan folder finished with its folder left on disk withholds the marker', async () => {
   assert.equal(orphansFinished({ orphans: [] }), true)
   assert.equal(
     orphansFinished({
@@ -2893,6 +2893,27 @@ test('an orphan folder finished with its folder left on disk withholds the marke
     }),
     false
   )
+  // A real run whose delete of one folder stays: the process that holds it
+  // (on Windows) or its read-only mode (elsewhere) outlasts the four tries.
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  const path = orphanFolder({ branch: 'feat/HELD', main, name: 'HELD' })
+  const held = join(path, 'node_modules', 'held')
+  mkdirSync(held, { recursive: true })
+  writeFileSync(join(held, 'z.js'), 'z\n')
+  const then = Date.now() / 1000 - ORPHAN_AGE_MINUTES * SECONDS_PER_MINUTE
+  utimesSync(path, then, then)
+  const hold = await holdDirectory({ dir: held })
+  try {
+    const run = prune({ args: ['--finish-orphans'], cwd: main })
+    assert.equal(run.status, EXIT_OK, run.stderr)
+    assert.ok(run.stdout.includes('; its directory stays: '), run.stdout)
+    assert.ok(existsSync(held), 'the held folder was deleted')
+    assert.notEqual(git({ args: ['branch', '--list', 'feat/HELD'], cwd: main }), '')
+    assert.ok(!existsSync(join(main, '.git', ORPHAN_MARKER)), 'the marker was written')
+    assert.ok(!run.stdout.includes('every run finishes orphan folders'), run.stdout)
+  } finally {
+    hold.release()
+  }
 })
 
 test('once the marker exists a plain run finishes a new orphan folder with its branch', () => {
@@ -2911,4 +2932,63 @@ test('the root package runs the first manual orphan run from worktrees:prune:fin
     scripts['worktrees:prune:finish-orphans'],
     'node scripts/prune-worktrees.mjs --finish-orphans'
   )
+})
+
+// ---------------------------------------------------------------------------
+// The worktree root reached through a link (PRUNE-13): git records a nested
+// worktree by its real path, so the scan reads real paths too.
+// ---------------------------------------------------------------------------
+
+test('an orphan folder reached through a linked worktree root keeps the registered worktree inside it', () => {
+  const { main } = mergedWorktrees({ branches: ['feat/anchor'], hook: false })
+  const real = join(dirname(main), 'real-root')
+  const folder = join(real, 'o')
+  mkdirSync(join(folder, 'node_modules'), { recursive: true })
+  writeFileSync(join(folder, 'node_modules', 'a.txt'), 'a\n')
+  git({ args: ['branch', 'feat/o'], cwd: main })
+  const link = join(dirname(main), `${basename(main)}-worktrees`)
+  symlinkSync(real, link, process.platform === 'win32' ? 'junction' : 'dir')
+  // The nested worktree is added through the link; git records its real path.
+  git({
+    args: ['worktree', 'add', '-q', '-b', 'feat/inner', join(link, 'o', 'inner')],
+    cwd: main
+  })
+  const precious = join(folder, 'inner', 'precious.txt')
+  writeFileSync(precious, 'precious\n')
+  const then = Date.now() / 1000 - ORPHAN_AGE_MINUTES * SECONDS_PER_MINUTE
+  utimesSync(folder, then, then)
+  const run = prune({ args: ['--finish-orphans'], cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.ok(
+    run.stdout.includes(
+      `${orphanLine({ branch: 'feat/o', path: folder, verb: 'kept' })}: ${REASON.HOLDS_WORKTREE}`
+    ),
+    run.stdout
+  )
+  assert.ok(existsSync(precious), 'the worktree inside the folder was deleted')
+  assert.notEqual(git({ args: ['branch', '--list', 'feat/o'], cwd: main }), '')
+})
+
+test('an orphan folder holding a nested repository is kept', () => {
+  const { control, main } = orphanRepository()
+  const path = orphanFolder({ branch: 'feat/NEST-REPO', main, name: 'NEST-REPO' })
+  const nested = join(path, 'work', 'sub')
+  mkdirSync(nested, { recursive: true })
+  git({ args: ['init', '-q', '-b', MAIN], cwd: nested })
+  writeFileSync(join(nested, 'unpushed.txt'), 'unpushed\n')
+  git({ args: ['add', 'unpushed.txt'], cwd: nested })
+  git({ args: ['commit', '-q', '-m', 'unpushed'], cwd: nested })
+  const then = Date.now() / 1000 - ORPHAN_AGE_MINUTES * SECONDS_PER_MINUTE
+  utimesSync(path, then, then)
+  const run = prune({ args: [FINISH_ORPHANS], cwd: main })
+  finished({ control, run })
+  assert.ok(
+    run.stdout.includes(
+      `${orphanLine({ branch: 'feat/NEST-REPO', path, verb: 'kept' })}: ${REASON.ORPHAN_HOLDS_GIT}`
+    ),
+    run.stdout
+  )
+  assert.ok(existsSync(join(nested, 'unpushed.txt')), 'the nested repository was deleted')
+  assert.equal(git({ args: ['log', '--format=%s'], cwd: nested }), 'unpushed')
+  assert.notEqual(git({ args: ['branch', '--list', 'feat/NEST-REPO'], cwd: main }), '')
 })
