@@ -87,7 +87,6 @@
 import { execFileSync } from 'node:child_process'
 import {
   copyFileSync,
-  existsSync,
   lstatSync,
   mkdtempSync,
   readdirSync,
@@ -139,6 +138,7 @@ const REMOTE_HEAD = `refs/remotes/${REMOTE}/HEAD`
 const NO_REMOTE_LINE = `prune-worktrees: no ${REMOTE} remote, so nothing to prune`
 // 64 MiB of git output.
 const GIT_OUTPUT_BYTES = 67_108_864
+const INT32_BYTES = 4
 const MS_PER_SECOND = 1000
 // `git merge-base --is-ancestor` exits 1 when the first commit is not an
 // ancestor of the second; any other failure is an error.
@@ -379,22 +379,73 @@ const contentReason = ({ worktree }) => {
   }
 }
 
-// A directory `git worktree remove` left on disk. `removePath` removes a
-// junction or a symbolic link as the link itself, a broken one included,
-// and never enters its target, so the pnpm store it points into is kept.
-// A directory that went after it was seen is gone, as asked; any other
-// failure is the leftover the removal reports.
-export const removeLeftover = ({ path }) => removePath({ path })
+// A leftover delete is tried LEFTOVER_TRIES times, waiting LEFTOVER_WAIT_MS
+// times the tries made so far between two of them. Node's own `maxRetries`
+// does not retry the EPERM a directory a process runs in throws on Windows.
+const LEFTOVER_TRIES = 4
+const LEFTOVER_WAIT_MS = 250
+
+const pause = ({ ms }) =>
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(INT32_BYTES)), 0, 0, ms)
+
+// A path in forward slashes, its case kept.
+const forwardPath = ({ path }) => resolve(path).replaceAll('\\', '/')
+
+// A directory `git worktree remove` left on disk, removed through
+// `removePath` and tried again, with `wait` between two tries, while it
+// stays. `removePath` removes a junction or a symbolic link as the link
+// XX, so the pnpm
+// store it points into is kept; a directory that went after it was seen is
+// gone, as asked. Undefined once the path is gone; otherwise the residue: the
+// path, and the error of the last try. `fs` and `wait` are injected by tests.
+export const removeLeftover = ({ fs, path, tried = 0, wait = pause }) => {
+  try {
+    removePath({ fs, path })
+    return undefined
+  } catch (error) {
+    if (tried + 1 >= LEFTOVER_TRIES) {
+      return `${forwardPath({ path })}: ${error.message}`
+    }
+    wait({ ms: LEFTOVER_WAIT_MS * (tried + 1) })
+    return removeLeftover({ fs, path, tried: tried + 1, wait })
+  }
+}
+
+// Every registered worktree path of the repository `root` belongs to, in one
+// spelling.
+const readRegistered = ({ root }) =>
+  new Set(listWorktrees({ root }).map(({ path }) => samePath({ path })))
+
+// Whether git still lists `worktree` as registered; a list git cannot read
+// counts as registered.
+const isRegistered = ({ listRegistered, root, worktree }) => {
+  try {
+    return listRegistered({ root }).has(samePath({ path: worktree.path }))
+  } catch {
+    return true
+  }
+}
 
 // Removes one worktree, the directory Windows may leave behind, and its
 // branch. Git refuses a worktree holding a modified or untracked file and
 // deletes an ignored one, with untracked files shown whatever the
-// repository's status configuration; a refusal is kept with git's message.
-// A directory that stays is reported on the removal. The branch goes only
-// while its tip is still `worktree.sha`, the commit it was judged at, and
-// its configuration with it, as `git branch -D` would; a branch that moved
-// since keeps the commits it gained.
-export const removeWorktree = ({ root, worktree }) => {
+// repository's status configuration; a refusal that leaves the worktree
+// registered is kept with git's message. A delete that stops partway, at a
+// file another process holds on Windows, fails the command after git has
+// deleted the `.git` file and the registration: that worktree counts as
+// removed, and what git left is removed as a leftover, tried again while it
+// stays. A directory that stays is reported on the removal, by its path. The
+// branch goes only while its tip is still `worktree.sha`, the commit it was
+// judged at, and its configuration with it, as `git branch -D` would; a
+// branch that moved since keeps the commits it gained. `fs`, `wait` reach
+// `removeLeftover`; `listRegistered` reads the registered worktrees.
+export const removeWorktree = ({
+  fs,
+  listRegistered = readRegistered,
+  root,
+  wait,
+  worktree
+}) => {
   try {
     git({
       args: [
@@ -407,21 +458,15 @@ export const removeWorktree = ({ root, worktree }) => {
       cwd: root
     })
   } catch (error) {
-    return {
-      ...worktree,
-      detail: error.message,
-      kept: REASON.REMOVE_FAILED
+    if (isRegistered({ listRegistered, root, worktree })) {
+      return {
+        ...worktree,
+        detail: error.message,
+        kept: REASON.REMOVE_FAILED
+      }
     }
   }
-  const leftover = (() => {
-    if (!existsSync(worktree.path)) return undefined
-    try {
-      removeLeftover({ path: worktree.path })
-      return undefined
-    } catch (error) {
-      return error.message
-    }
-  })()
+  const leftover = removeLeftover({ fs, path: worktree.path, wait })
   try {
     git({
       args: [

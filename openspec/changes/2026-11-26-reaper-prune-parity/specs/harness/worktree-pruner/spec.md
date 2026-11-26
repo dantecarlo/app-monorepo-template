@@ -291,6 +291,13 @@ the commit it was judged at, whether or not the folder stayed.
 - **THEN** it is kept with git's message and its folder and branch stay
 - **Test:** `scripts/prune-worktrees.test.mjs` › "a removal git refuses is kept with the message git gave"
 
+#### Scenario: a worktree list git cannot read
+
+- **GIVEN** a worktree whose `git worktree remove` fails and a worktree list git cannot read
+- **WHEN** the pruner runs
+- **THEN** it is kept, and nothing is deleted
+- **Test:** `scripts/prune-worktrees.test.mjs` › "a failed remove whose worktree list git cannot read is kept, and nothing is deleted"
+
 #### Scenario: a junction in the leftover
 
 - **GIVEN** a leftover folder holding a junction to a folder outside it and one whose target is gone

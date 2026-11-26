@@ -19,9 +19,11 @@
 // ---------------------------------------------------------------------------
 
 import assert from 'node:assert/strict'
-import { execFileSync, spawnSync } from 'node:child_process'
+import { execFileSync, spawn, spawnSync } from 'node:child_process'
+import { once } from 'node:events'
 import {
   appendFileSync,
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -2093,4 +2095,229 @@ test('the root package runs this suite from validate', () => {
         id === 'worktrees:prune:test' && profile === 'standard'
     )
   )
+})
+
+// ---------------------------------------------------------------------------
+// A removal git ends partway (PRUNE-06): the worktree counts as removed once
+// git no longer lists it, and its leftover folder is tried again.
+// ---------------------------------------------------------------------------
+
+const LEFTOVER_WAITS_MS = [250, 500, 750]
+
+// The error a delete of a file another process holds open throws.
+const busy = ({ path }) =>
+  Object.assign(
+    new Error(`EBUSY: resource busy or locked, unlink '${path}'`),
+    { code: 'EBUSY', path }
+  )
+
+// A leftover directory holding `done/a.txt`, which a delete removes, and
+// `locked/z.js`, which a fake delete reports as held.
+const leftoverTree = ({ prefix }) => {
+  const leftover = join(scratchRoot({ prefix }), 'worktree')
+  ;['done/a.txt', 'locked/z.js'].forEach((file) => {
+    mkdirSync(dirname(join(leftover, file)), { recursive: true })
+    writeFileSync(join(leftover, file), 'x\n')
+  })
+  return { done: join(leftover, 'done'), leftover }
+}
+
+test('a leftover delete that fails partway is tried again until the directory goes', () => {
+  const { done, leftover } = leftoverTree({ prefix: 'prune-retry-' })
+  const tries = { count: 0 }
+  const waits = []
+  const fs = {
+    rmSync: (path, options) => {
+      tries.count += 1
+      if (tries.count < 3) {
+        if (existsSync(done)) rmSync(done, { recursive: true })
+        throw busy({ path: join(path, 'locked', 'z.js') })
+      }
+      rmSync(path, options)
+    }
+  }
+  const residue = removeLeftover({
+    fs,
+    path: leftover,
+    wait: ({ ms }) => waits.push(ms)
+  })
+  assert.equal(residue, undefined)
+  assert.ok(!existsSync(leftover), `${leftover} still exists`)
+  assert.equal(tries.count, 3)
+  assert.deepEqual(waits, [250, 500])
+})
+
+test('a leftover that stays after every try is named by its path', () => {
+  const { leftover } = leftoverTree({ prefix: 'prune-residue-' })
+  const locked = join(leftover, 'locked', 'z.js')
+  const tries = { count: 0 }
+  const waits = []
+  const fs = {
+    rmSync: () => {
+      tries.count += 1
+      throw busy({ path: locked })
+    }
+  }
+  const residue = removeLeftover({
+    fs,
+    path: leftover,
+    wait: ({ ms }) => waits.push(ms)
+  })
+  assert.equal(tries.count, 4)
+  assert.deepEqual(waits, LEFTOVER_WAITS_MS)
+  assert.ok(residue.startsWith(forward({ path: leftover })), residue)
+  assert.ok(residue.includes(locked), residue)
+  assert.ok(existsSync(locked))
+})
+
+const HELD_DIR = join('node_modules', 'held')
+// The holder ends itself after a minute should a case never release it.
+const HOLDER_SCRIPT =
+  "process.stdout.write('held'); setTimeout(() => {}, 60000)"
+const READ_ONLY_DIR = 0o555
+const WRITABLE_DIR = 0o755
+const INT32_BYTES = 4
+
+const sleepSync = ({ ms }) =>
+  Atomics.wait(
+    new Int32Array(new SharedArrayBuffer(INT32_BYTES)),
+    0,
+    0,
+    ms
+  )
+
+const restoreMode = ({ dir }) => {
+  try {
+    chmodSync(dir, WRITABLE_DIR)
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error
+  }
+}
+
+// Holds `dir` so that no delete removes it or what it holds: on Windows a
+// process runs in it, elsewhere it is read-only. `release` ends the hold and
+// runs once; on Windows the directory is free some milliseconds after it
+// returns.
+const holdDirectory = async ({ dir }) => {
+  const state = { released: false }
+  const once1 = (release) => () => {
+    if (state.released) return
+    state.released = true
+    release()
+  }
+  if (process.platform !== 'win32') {
+    chmodSync(dir, READ_ONLY_DIR)
+    return { release: once1(() => restoreMode({ dir })) }
+  }
+  const holder = spawn(process.execPath, ['-e', HOLDER_SCRIPT], {
+    cwd: dir,
+    stdio: ['ignore', 'pipe', 'ignore']
+  })
+  await once(holder.stdout, 'data')
+  return { release: once1(() => holder.kill()) }
+}
+
+// A repository on main and its merged worktree `feat/held`, clean, whose
+// ignored `node_modules/held/` holds one file.
+const heldRepository = () => {
+  const scratch = scratchRoot({ prefix: 'prune-held-' })
+  const main = join(scratch, 'main')
+  const path = join(scratch, 'held')
+  git({ args: ['init', '-q', '-b', MAIN, main], cwd: scratch })
+  appendFileSync(join(main, '.git', 'info', 'exclude'), 'node_modules/\n')
+  writeFileSync(join(main, README), README_TEXT)
+  git({ args: ['add', README], cwd: main })
+  git({ args: ['commit', '-q', '-m', 'init'], cwd: main })
+  git({
+    args: ['worktree', 'add', '-q', '-b', 'feat/held', path],
+    cwd: main
+  })
+  mkdirSync(join(path, HELD_DIR), { recursive: true })
+  writeFileSync(join(path, HELD_DIR, 'z.js'), 'z\n')
+  const sha = git({ args: ['rev-parse', 'HEAD'], cwd: path })
+  return { main, path, worktree: { branch: 'feat/held', path, sha } }
+}
+
+// `git worktree remove` deletes the `.git` file and the registration even
+// when the delete of the directory stops partway, as on Windows at a held
+// file: the worktree is then removed, and what stays is named.
+test('a worktree git unregisters before its removal fails is removed, its folder finished', async () => {
+  const { main, path, worktree } = heldRepository()
+  const hold = await holdDirectory({ dir: join(path, HELD_DIR) })
+  try {
+    const result = removeWorktree({ root: main, wait: () => {}, worktree })
+    assert.equal(result.kept, null, result.detail)
+    assert.ok(
+      result.leftover?.startsWith(forward({ path })),
+      String(result.leftover)
+    )
+    assert.ok(
+      !git({ args: ['worktree', 'list', '--porcelain'], cwd: main }).includes(
+        'feat/held'
+      )
+    )
+    assert.equal(git({ args: ['branch', '--list', 'feat/held'], cwd: main }), '')
+    const [line] = reportLines({
+      dryRun: false,
+      quiet: true,
+      results: [result]
+    })
+    assert.ok(
+      line.includes(`; its directory stays: ${forward({ path })}`),
+      line
+    )
+  } finally {
+    hold.release()
+  }
+})
+
+test('a failed remove whose worktree list git cannot read is kept, and nothing is deleted', async () => {
+  const { main, path, worktree } = heldRepository()
+  const hold = await holdDirectory({ dir: join(path, HELD_DIR) })
+  const removes = { count: 0 }
+  try {
+    const result = removeWorktree({
+      fs: {
+        rmSync: () => {
+          removes.count += 1
+        }
+      },
+      listRegistered: () => {
+        throw new Error('git worktree list could not run')
+      },
+      root: main,
+      wait: () => {},
+      worktree
+    })
+    assert.equal(result.kept, REASON.REMOVE_FAILED)
+    assert.equal(removes.count, 0)
+    assert.ok(existsSync(path), `${path} was deleted`)
+    assert.notEqual(git({ args: ['branch', '--list', 'feat/held'], cwd: main }), '')
+  } finally {
+    hold.release()
+  }
+})
+
+test('a held directory released between tries goes whole, with its branch', async () => {
+  const { main, path, worktree } = heldRepository()
+  const hold = await holdDirectory({ dir: join(path, HELD_DIR) })
+  const tries = { waits: 0 }
+  try {
+    const result = removeWorktree({
+      root: main,
+      wait: ({ ms }) => {
+        tries.waits += 1
+        hold.release()
+        sleepSync({ ms })
+      },
+      worktree
+    })
+    assert.equal(result.kept, null, result.detail)
+    assert.equal(result.leftover, undefined)
+    assert.ok(!existsSync(path), `${path} still exists`)
+    assert.ok(tries.waits >= 1, 'the delete was not tried again')
+    assert.equal(git({ args: ['branch', '--list', 'feat/held'], cwd: main }), '')
+  } finally {
+    hold.release()
+  }
 })
