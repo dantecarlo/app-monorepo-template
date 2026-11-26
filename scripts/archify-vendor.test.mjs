@@ -6,6 +6,9 @@
 //   - the semantic-sigil-label-reserve patch, through its text-fit helpers
 //     and through `validate` on an architecture spec whose short box puts the
 //     label on the sigil's rail;
+//   - the explainer-check-plain-removal patch: explainer/check.mjs removes
+//     its scratch folder without rmSync's force, and both of its hashes are
+//     the lock's;
 //   - every file the lock hashes, read from disk with CRLF normalized to LF,
 //     since the hashes are of the LF git blobs and a Windows checkout may
 //     hold CRLF.
@@ -139,4 +142,20 @@ test('every file the lock hashes matches its recorded sha256', () => {
     .map(([path]) => path)
   assert.ok(Object.keys(fileHashes).length > 0)
   assert.deepEqual(drifted, [])
+})
+
+test('the explainer check removes its scratch folder without rmSync force, as the lock records', () => {
+  const path = 'explainer/check.mjs'
+  const text = readFileSync(join(SKILL_DIR, path), 'utf8')
+  assert.doesNotMatch(text, /rmSync\([^)]*force\s*:\s*true/u)
+  assert.match(text, /fs\.rmSync\(directory,\{recursive:true\}\)/u)
+  const { fileHashes, patches } = JSON.parse(readFileSync(LOCK, 'utf8'))
+    .skills.archify
+  const patch = patches.find(({ files }) => Object.hasOwn(files, path))
+  assert.ok(patch, `a patch of the lock names ${path}`)
+  assert.equal(patch.files[path].patched, fileHashes[path])
+  assert.equal(
+    patch.files[path].pinned,
+    '151211edd6f1b842ee63b1aef8682cb68e6237ce3b9e7a81e09667420f2b9b3b'
+  )
 })
