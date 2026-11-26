@@ -9,7 +9,7 @@
 <!-- endregion supabase -->
 > **ID prefix:** `MOBILE`
 > **Derived from:** `docs/architecture/mobile.md`, `docs/architecture/shared.md`, `docs/code-standards.md`, `docs/observability.md`, `docs/e2e.md`, `docs/responsive.md`, `AGENTS.md`, `docs/manifest.md`, `docs/decisions/0001-pluggable-providers.md`
-> **Verified against the code:** 2026-11-20 at `0eee3fe`
+> **Verified against the code:** 2026-11-25 at `12d6b224`
 
 ## Purpose
 
@@ -546,7 +546,7 @@ The mobile app SHALL add an error toast with the resolved message when a mutatio
 useAppMutation fails, and a success toast when it succeeds with a success message given, then
 run the caller's own callback.
 
-**Evidence:** `apps/mobile/src/lib/query/useAppMutation.hook.ts:45-75`
+**Evidence:** `apps/mobile/src/lib/query/useAppMutation.hook.ts:46-71`, `apps/mobile/src/lib/query/mutationCallbacks.adapter.ts:18-30`
 
 #### Scenario: a failing mutation
 
@@ -625,7 +625,7 @@ against the values of `QueryKeySegmentEnum`, so the trailing params object of a 
 is always redacted, and every failed mutation to the observability port's captureError, tagged
 with the cache it came from.
 
-**Evidence:** `apps/mobile/src/lib/query/createQueryClient.helper.ts:36`, `apps/mobile/src/lib/query/queryKeys.constant.ts:29-41`, `apps/mobile/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/mobile/src/app/_layout.tsx:26`
+**Evidence:** `apps/mobile/src/lib/query/createQueryClient.helper.ts:36-44`, `apps/mobile/src/lib/query/queryKeys.constant.ts:29-41`, `apps/mobile/src/lib/observability/toCaptureError.helper.ts:7-11`, `apps/mobile/src/app/_layout.tsx:26`
 
 #### Scenario: a query key holding an identifier
 
@@ -1448,7 +1448,7 @@ marker, PostHog's two files under its prefix whether or not this launch read the
 it wrote or read, going on past a removal the device refuses and keeping it for the next grant,
 and SHALL write to the device again on a later grant.
 
-**Evidence:** `apps/mobile/src/lib/posthog/consentStorage.adapter.ts:38-172`, `apps/mobile/src/lib/posthog/consentStorage.constant.ts:3-8`, `apps/mobile/src/lib/posthog/sdkStorage.constant.ts:1-10`
+**Evidence:** `apps/mobile/src/lib/posthog/consentStorage.adapter.ts:38-180`, `apps/mobile/src/lib/posthog/consentStorage.constant.ts:3-8`, `apps/mobile/src/lib/posthog/sdkStorage.constant.ts:1-10`
 
 #### Scenario: before a grant
 
@@ -1854,7 +1854,7 @@ callbacks, each called with one object holding the variables and the data or the
 `reset`. An option left out SHALL keep the query client's default, each hook SHALL return the same
 result object while none of its fields changed, and no type of TanStack Query is part of either.
 
-**Evidence:** `apps/mobile/src/lib/query/useAppQuery.type.ts:8-26`, `apps/mobile/src/lib/query/useAppQuery.type.ts:38-47`, `apps/mobile/src/lib/query/useAppQuery.hook.ts:24-54`, `apps/mobile/src/lib/query/omitUndefined.helper.ts:6-11`, `apps/mobile/src/lib/query/useAppMutation.type.ts:32-48`, `apps/mobile/src/lib/query/useAppMutation.type.ts:67-77`, `apps/mobile/src/lib/query/useAppMutation.hook.ts:35-80`
+**Evidence:** `apps/mobile/src/lib/query/useAppQuery.type.ts:8-26`, `apps/mobile/src/lib/query/useAppQuery.type.ts:38-47`, `apps/mobile/src/lib/query/useAppQuery.hook.ts:24-54`, `apps/mobile/src/lib/query/omitUndefined.helper.ts:6-11`, `apps/mobile/src/lib/query/useAppMutation.type.ts:32-48`, `apps/mobile/src/lib/query/useAppMutation.type.ts:67-77`, `apps/mobile/src/lib/query/useAppMutation.hook.ts:34-77`, `apps/mobile/src/lib/query/mutationCallbacks.adapter.ts:18-30`
 
 #### Scenario: a query's result
 
@@ -1921,6 +1921,17 @@ result object while none of its fields changed, and no type of TanStack Query is
   object with the error and the variables
 - **Test:** `apps/mobile/src/lib/query/__tests__/useAppMutation.hook.test.ts` › "hands the caller's callbacks one object with the outcome and the variables"
 
+#### Scenario: the library's argument lists
+
+- **GIVEN** the callbacks `toMutationCallbacks` builds from callbacks that each take one object
+- **WHEN** TanStack Query calls them with its own argument lists, and an `onMutate` was left out
+- **THEN** each callback receives one object holding the error, the data and the variables it was handed, and the built callbacks hold no `onMutate`
+- **Test:** `apps/mobile/src/lib/query/__tests__/mutationCallbacks.adapter.test.ts` › "hands onError the error and the variables TanStack Query passes as arguments"
+- **Test:** `apps/mobile/src/lib/query/__tests__/mutationCallbacks.adapter.test.ts` › "hands onMutate the variables TanStack Query passes as an argument"
+- **Test:** `apps/mobile/src/lib/query/__tests__/mutationCallbacks.adapter.test.ts` › "leaves onMutate out when none is given, so the client default stays"
+- **Test:** `apps/mobile/src/lib/query/__tests__/mutationCallbacks.adapter.test.ts` › "hands onSettled the data, the error and the variables TanStack Query passes as arguments"
+- **Test:** `apps/mobile/src/lib/query/__tests__/mutationCallbacks.adapter.test.ts` › "hands onSuccess the data and the variables TanStack Query passes as arguments"
+
 #### Scenario: before the mutation and once it settles
 
 - **GIVEN** a mutation with an `onMutate` and an `onSettled` callback, run once to success and
@@ -1967,7 +1978,7 @@ other, and runs the observed ones again, and SHALL give every hook `useIsAppMuta
 mutation whose `mutationKey` equals the one it is handed runs, and false for a mutation under a
 longer key and once that mutation settled.
 
-**Evidence:** `apps/mobile/src/lib/query/AppQueryProvider.component.tsx:10-15`, `apps/mobile/src/lib/query/useInvalidateAppQuery.hook.ts:11-18`, `apps/mobile/src/lib/query/useIsAppMutating.hook.ts:9-12`, `apps/mobile/src/lib/query/createQueryClient.helper.ts:22`, `apps/mobile/src/app/_layout.tsx:40-54`
+**Evidence:** `apps/mobile/src/lib/query/AppQueryProvider.component.tsx:10-15`, `apps/mobile/src/lib/query/useInvalidateAppQuery.hook.ts:11-18`, `apps/mobile/src/lib/query/useIsAppMutating.hook.ts:9-12`, `apps/mobile/src/lib/query/createQueryClient.helper.ts:20-23`, `apps/mobile/src/app/_layout.tsx:40-54`
 
 #### Scenario: the provider
 
@@ -2010,7 +2021,7 @@ while each of its fields is unchanged; a store created with `persist` SHALL keep
 `partialize` names through the key-value storage port, `keyValueStorage` of `src/lib/storage/`,
 under its `name`, and a store created later with that name SHALL start with them.
 
-**Evidence:** `apps/mobile/src/lib/store/createAppStore.helper.ts:13-19`, `apps/mobile/src/lib/store/createAppStore.helper.ts:27-57`, `apps/mobile/src/lib/store/createAppStore.type.ts:33-45`, `apps/mobile/src/hooks/useSession.hook.ts:5-9`
+**Evidence:** `apps/mobile/src/lib/store/createAppStore.helper.ts:15-20`, `apps/mobile/src/lib/store/createAppStore.helper.ts:28-58`, `apps/mobile/src/lib/store/createAppStore.type.ts:33-45`, `apps/mobile/src/hooks/useSession.hook.ts:5-9`
 
 #### Scenario: a selector's reader
 

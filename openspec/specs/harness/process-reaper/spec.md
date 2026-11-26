@@ -3,7 +3,7 @@
 > **Governs:** `.agents/contracts/process-reaper.json`, `scripts/agent-harness/reaper/contract.mjs`, `scripts/agent-harness/reaper/plan.mjs`, `scripts/agent-harness/reaper/platform.mjs`, `scripts/agent-harness/reaper/bounded-child.mjs`, `scripts/agent-harness/reaper/lock.mjs`, `scripts/agent-harness/reaper/reap.mjs`, `scripts/agent-harness/reaper/session-start.mjs`, `scripts/agent-harness/reaper/mcp-check.mjs`
 > **ID prefix:** `REAP`
 > **Derived from:** `docs/harness.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-25 at `334cb90a`
+> **Verified against the code:** 2026-11-25 at `12d6b224`
 
 ## Purpose
 
@@ -332,9 +332,12 @@ without `/T` when an older process names a pid of the tree as its parent, and on
 to every pid of the tree, then, after 2 s, a second listing and SIGKILL only to each pid still
 listed with the start time the plan read; when that listing fails, returns no process or the bound
 has run out, it SHALL send no SIGKILL and report each tree it signalled as not ended, with the
-reason.
+reason. That `/F` is the one `taskkill` force the repository permits: the LAW "A check is never
+forced or skipped" registers `taskkill /T /F` and `taskkill /F /PID …` in
+`scripts/agent-harness/reaper/**` as its one exception, since on Windows a taskkill without `/F`
+only asks a console process to close, and the reaper ends only trees it has verified.
 
-**Evidence:** `scripts/agent-harness/reaper/platform.mjs:34-91`,
+**Evidence:** `AGENTS.md:303-337`, `scripts/agent-harness/reaper/platform.mjs:34-91`,
 `scripts/agent-harness/reaper/platform.mjs:95-123`,
 `scripts/agent-harness/reaper/platform.mjs:133-187`,
 `scripts/agent-harness/reaper/platform.mjs:201-274`
@@ -575,10 +578,13 @@ file beside it, and removed under that guard only while it still holds the bytes
 that two runs never both take it. A guard older than 30 s, left by a reaper that died holding
 it, SHALL be removed by the run that finds it only while it still holds what that run read, and
 that run takes nothing. The run SHALL release its lock however it ends, removing it only while it
-still holds its own token, and a dry run takes none.
+still holds its own token, and a dry run takes none. Every removal goes through `removePath`
+(`@app/tooling/remove-path`), which counts a path already gone (ENOENT) as removed and rethrows
+every other failure, never through `rmSync`'s `force: true`.
 
-**Evidence:** `scripts/agent-harness/reaper/lock.mjs:23-122`,
-`scripts/agent-harness/reaper/reap.mjs:252-259`, `scripts/agent-harness/reaper/reap.mjs:267-332`
+**Evidence:** `scripts/agent-harness/reaper/lock.mjs:23-125`,
+`scripts/agent-harness/reaper/reap.mjs:252-259`, `scripts/agent-harness/reaper/reap.mjs:267-332`,
+`packages/tooling/src/remove-path.mjs:23-29`
 
 #### Scenario: the lock is held
 
@@ -638,6 +644,14 @@ still holds its own token, and a dry run takes none.
 - **WHEN** the first process releases
 - **THEN** the lock still holds the second process's token
 - **Test:** `scripts/agent-harness/reaper/lock.test.mjs` › "a reaper process that releases late leaves the lock another process took over"
+
+#### Scenario: a removal that fails for another reason than a missing file
+
+- **GIVEN** a lock the run holds and a removal that fails with a code other than ENOENT
+- **WHEN** the run releases it
+- **THEN** the failure is raised, not swallowed
+- **Test:** Not covered — `removePath` itself is tested in packages/tooling, but no reaper test makes
+  the lock's removal fail
 
 #### Scenario: a dry run
 

@@ -3,7 +3,7 @@
 > **Governs:** `.agents/contracts/updaters.json`, `scripts/verify-updaters.mjs`, `scripts/updaters/run.mjs`, `scripts/updaters/branch.mjs`, `scripts/updaters/label.mjs`, `scripts/updaters/messages.mjs`, `scripts/updaters/steps.mjs`
 > **ID prefix:** `UPDATERS`
 > **Derived from:** `docs/harness.md`, `docs/INIT_AND_HARNESS_PLAN.md`
-> **Verified against the code:** 2026-11-25 at `1539a3f`
+> **Verified against the code:** 2026-11-25 at `12d6b224`
 
 ## Purpose
 
@@ -105,7 +105,7 @@ holds a path that `ruleFor` (`scripts/agent-harness/write-guard/policy.mjs`) cla
 file under the write guard's policy, `.agents/contracts/write-guard.json`, or a path with a
 wildcard, which no classifier can read; and it SHALL fail when that policy cannot be read.
 
-**Evidence:** `scripts/verify-updaters.mjs:101-107`, `scripts/verify-updaters.mjs:130-138`, `scripts/verify-updaters.mjs:170-195`, `scripts/agent-harness/write-guard/policy.mjs:108-117`
+**Evidence:** `scripts/verify-updaters.mjs:101-107`, `scripts/verify-updaters.mjs:130-138`, `scripts/verify-updaters.mjs:170-195`, `scripts/agent-harness/write-guard/policy.mjs:96-107`
 
 #### Scenario: a rule file written by an updater that proposes nothing
 
@@ -158,7 +158,7 @@ wildcard, which no classifier can read; and it SHALL fail when that policy canno
 one, and nothing more for an updater whose check exits 0; a registry the gate refuses, an
 `--only` that names no updater and a `--where` other than `ci` or `local` run nothing and exit 1.
 
-**Evidence:** `scripts/updaters/run.mjs:417-436`, `scripts/updaters/run.mjs:443-463`
+**Evidence:** `scripts/updaters/run.mjs:332-351`, `scripts/updaters/run.mjs:355-376`, `scripts/updaters/run.mjs:407-416`
 
 #### Scenario: an updater that is current
 
@@ -206,7 +206,7 @@ the change with a Conventional Commit that carries no attribution, push it to `u
 only, open one pull request from it or update the one already open, and return to the ref it
 started on; an update that changes nothing commits nothing and opens nothing.
 
-**Evidence:** `scripts/updaters/run.mjs:194-240`, `scripts/updaters/run.mjs:242-305`, `scripts/updaters/run.mjs:309-389`, `scripts/updaters/branch.mjs:40-89`
+**Evidence:** `scripts/updaters/run.mjs:123-169`, `scripts/updaters/run.mjs:171-234`, `scripts/updaters/run.mjs:238-318`, `scripts/updaters/run.mjs:383-387`, `scripts/updaters/branch.mjs:40-89`
 
 #### Scenario: no pull request open yet
 
@@ -250,7 +250,7 @@ label current with no force option: read it with `gh label list`, then `gh label
 it is missing, or `gh label edit` it when its colour or description differs, and leave a current
 one alone.
 
-**Evidence:** `scripts/updaters/run.mjs:148-164`, `scripts/updaters/run.mjs:343-346`, `scripts/updaters/run.mjs:242-305`, `scripts/updaters/label.mjs:14-55`
+**Evidence:** `scripts/updaters/run.mjs:180-188`, `scripts/updaters/run.mjs:203`, `scripts/updaters/run.mjs:221`, `scripts/updaters/run.mjs:227-232`, `scripts/updaters/run.mjs:272-275`, `scripts/updaters/messages.mjs:55-76`, `scripts/updaters/label.mjs:14-55`
 
 #### Scenario: a diff that touches a rule file
 
@@ -289,7 +289,7 @@ one alone.
 going on to the next updater, or whose update or `verify` command fails, which commits nothing
 and stops the run with the tree left detached where the update ran, for a person to read.
 
-**Evidence:** `scripts/updaters/run.mjs:319-330`, `scripts/updaters/run.mjs:454-461`, `scripts/updaters/run.mjs:473-481`
+**Evidence:** `scripts/updaters/run.mjs:251-259`, `scripts/updaters/run.mjs:369-376`, `scripts/updaters/run.mjs:388-395`
 
 #### Scenario: a check that fails
 
@@ -314,7 +314,7 @@ push to the default branch, merge with git only the default branch into the deta
 (or abort that merge), and hand git, gh and the updaters the environment it was given,
 unchanged.
 
-**Evidence:** `scripts/updaters/run.mjs:360-367`, `scripts/updaters/run.mjs:405-415`, `scripts/updaters/branch.mjs:68-84`
+**Evidence:** `scripts/updaters/run.mjs:171-234`, `scripts/updaters/run.mjs:291-297`, `scripts/updaters/run.mjs:421-434`, `scripts/updaters/branch.mjs:68-84`
 
 #### Scenario: every run of the suite
 
@@ -330,7 +330,7 @@ unchanged.
 `pnpm updaters:run --dry-run` SHALL run the check of each updater it selects and print what it
 would do for each one out of date, and run no git and no gh command.
 
-**Evidence:** `scripts/updaters/run.mjs:391-403`, `scripts/updaters/run.mjs:464-467`
+**Evidence:** `scripts/updaters/run.mjs:379-382`, `scripts/updaters/run.mjs:403`
 
 #### Scenario: a dry run over an out-of-date updater
 
@@ -350,7 +350,7 @@ and the conflicting paths, go on to the next updater and exit 1. No git, gh or s
 SHALL force or skip a check, as the no-force hook reads one, or pass a `+` refspec, following the
 LAW "A check is never forced or skipped" of `AGENTS.md`.
 
-**Evidence:** `scripts/updaters/branch.mjs:40-89`, `scripts/updaters/run.mjs:360-367`, `scripts/updaters/run.mjs:473-481`, `scripts/updaters/label.mjs:14-55`
+**Evidence:** `scripts/updaters/branch.mjs:40-89`, `scripts/updaters/run.mjs:291-297`, `scripts/updaters/run.mjs:388-395`, `scripts/updaters/label.mjs:14-55`
 
 #### Scenario: the remote holds `updates/<id>`
 

@@ -3,7 +3,7 @@
 > **Governs:** `packages/i18n/src`
 > **ID prefix:** `I18N`
 > **Derived from:** `docs/code-standards.md`, `docs/architecture/shared.md`
-> **Verified against the code:** 2026-11-20 at `c324145`
+> **Verified against the code:** 2026-11-25 at `12d6b224`
 
 ## Purpose
 
@@ -156,8 +156,15 @@ TranslationValuesType.
 
 - **GIVEN** an app that depends on the i18n package
 - **WHEN** it imports from the package entry point
-- **THEN** those constants and types are available, and TranslationKeysType is not
+- **THEN** those constants and types are available
 - **Test:** `packages/i18n/src/__tests__/index.test.ts` › "the entry point exposes the language contract and the translator types"
+
+#### Scenario: the catalog shape stays inside the package
+
+- **GIVEN** the entry point, read through the TypeScript checker
+- **WHEN** its exported names are listed, types included
+- **THEN** they are exactly those constants and types, and TranslationKeysType is not among them
+- **Test:** `packages/i18n/src/__tests__/index.test.ts` › "the entry point exports no catalog shape, only the types above"
 
 <!-- region web-next -->
 ### Requirement: I18N-11 — The catalogs carry a message per sign-in failure
