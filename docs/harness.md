@@ -998,7 +998,11 @@ abbreviated `-Fo`; and Codex, OpenCode and Copilot, which run no adapter yet.
 ## Layer 4 — CI
 
 `.github/workflows/ci.yml` runs `pnpm install` then the same gate, with no
-variable set. CI runs no check that a developer cannot run locally.
+variable set. CI runs no check that a developer cannot run locally. Every job
+blocks: none carries `continue-on-error` (the LAW "A check is never forced or
+skipped"). `windows-process-trees` runs the Windows-only cases of the
+process-tree and bounded-child suites, and the whole reaper suite, on
+`windows-latest`; those cases skip on POSIX only because that job runs them.
 
 On a pull request, the `commitlint` job lints the commits of the pull request,
 from its base SHA to its head SHA, with `commitlint.config.js`, on a checkout

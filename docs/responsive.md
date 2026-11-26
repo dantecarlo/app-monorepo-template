@@ -75,7 +75,6 @@ runs all four viewport projects:
 responsive:
   needs: validate
   runs-on: ubuntu-latest
-  continue-on-error: ${{ vars.RESPONSIVE_BLOCKING != 'true' }}
   steps:
     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
     - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
@@ -98,17 +97,10 @@ responsive:
 
 ---
 
-## Advisory-to-blocking promotion
+## Blocking
 
-The `responsive` job ships as advisory: layout failures appear in the checks UI
-and in the uploaded report but do not block the PR while `RESPONSIVE_BLOCKING`
-is unset or `false`.
-
-To promote to blocking, set the repository (or organization) variable
-`RESPONSIVE_BLOCKING=true`. No code change or workflow edit is required — the
-`continue-on-error` expression reads the variable at runtime.
-
-A job is ready to promote after it has been green on the main branch for three
-consecutive runs with no false positives. See
-[docs/e2e.md](./e2e.md#promotion-to-blocking) for the shared promotion
-criterion that applies to all four runtime jobs.
+The `responsive` job blocks the pull request: a layout failure fails the check,
+and the uploaded report shows why. No variable makes it advisory, since that
+would skip the check its failure is (the LAW "A check is never forced or
+skipped", `AGENTS.md`). See [docs/e2e.md](./e2e.md#promotion-to-blocking) for
+the other runtime jobs, all blocking too.

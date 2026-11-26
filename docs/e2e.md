@@ -164,16 +164,16 @@ pnpm smoke:web      # next build + next start probe
 `commitlint`, which lints the commits of the pull request (not a message its
 default ignores pass: one with any line that starts `Merge pull request`,
 `Merge branch …` or `Merge tag …`, one whose first line starts with `Revert`,
-`Reapply`, `fixup!`, `squash!` or `amend!`, or a version alone), both blocking; and
-six runtime jobs that ship as advisory — `expo-health`, `mobile-export`,
-`web-render`, `e2e`, `responsive` and `mobile-web`, each with
-`continue-on-error: true` (for `responsive`, unless `RESPONSIVE_BLOCKING` is
-`'true'`). `expo-health`, `mobile-export` and `web-render` start alongside
-`validate`; `e2e`, `responsive` and `mobile-web` wait for it (`needs: validate`).
-A job is promoted to blocking in branch protection after it has been green on
-the main branch for three consecutive runs. This is a behavior-based criterion,
-not a calendar date. See [docs/responsive.md](./responsive.md) for the
-`RESPONSIVE_BLOCKING` variable that controls the responsive job independently.
+`Reapply`, `fixup!`, `squash!` or `amend!`, or a version alone), both blocking;
+six runtime jobs, `expo-health`, `mobile-export`, `web-render`, `e2e`,
+`responsive` and `mobile-web`; and `windows-process-trees`, which runs the
+Windows-only process-tree cases and the reaper suite on `windows-latest`. Every
+job blocks: none carries `continue-on-error`, which would skip the check its
+failure is (the LAW "A check is never forced or skipped", `AGENTS.md`). The six
+runtime jobs had passed in their last six runs when they became blocking.
+`expo-health`, `mobile-export`, `web-render` and `windows-process-trees` start
+alongside `validate`; `e2e`, `responsive` and `mobile-web` wait for it
+(`needs: validate`).
 
 ---
 

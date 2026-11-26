@@ -67,10 +67,35 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: pnpm exec commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
 
+  # The process-tree and bounded-child suites end a real process tree on
+  # Windows, where a killed parent leaves its children running. Their
+  # Windows-only cases skip on POSIX only because this job runs them on
+  # Windows, beside the whole process reaper suite.
+  windows-process-trees:
+    name: windows-process-trees
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run the process-tree suite
+        run: node --test packages/tooling/src/__tests__/process-tree.test.mjs
+
+      - name: Run the process reaper suite, bounded-child included
+        run: pnpm reap:test
+
   expo-health:
     name: expo-health
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
@@ -90,7 +115,6 @@ jobs:
   mobile-export:
     name: mobile-export
     runs-on: ubuntu-latest
-    continue-on-error: true
     env:
       CI: '1'
       EXPO_NO_TELEMETRY: '1'
@@ -116,7 +140,6 @@ jobs:
   web-render:
     name: web-render
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
@@ -140,7 +163,6 @@ jobs:
     name: e2e
     runs-on: ubuntu-latest
     needs: validate
-    continue-on-error: true
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
@@ -175,7 +197,6 @@ jobs:
     name: responsive
     runs-on: ubuntu-latest
     needs: validate
-    continue-on-error: ${{ vars.RESPONSIVE_BLOCKING != 'true' }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
@@ -209,7 +230,6 @@ jobs:
   mobile-web:
     name: mobile-web
     runs-on: ubuntu-latest
-    continue-on-error: true
     needs: validate
     env:
       CI: '1'
