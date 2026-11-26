@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
 // powershell — the force option a PowerShell command passes, for the LAW
-// "A force option is never used" (AGENTS.md). The write guard does not
+// "A check is never forced or skipped" (AGENTS.md). The write guard does not
 // parse PowerShell, so this is a small reader of its own: the statements of
 // a command, each the texts of its words, then forms.mjs on each one.
 //

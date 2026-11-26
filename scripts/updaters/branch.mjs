@@ -4,7 +4,7 @@
 // merged in by a normal merge, or the default branch when the remote holds
 // no `updates/<id>`. The update's commit then goes on top, so the branch is
 // appended to and never rewritten, and no call passes a force option or a
-// `+` refspec (the LAW "A force option is never used", AGENTS.md): a fetch
+// `+` refspec (the LAW "A check is never forced or skipped", AGENTS.md): a fetch
 // that would move a remote-tracking branch backwards is refused by git, a
 // finding for a person to read.
 //

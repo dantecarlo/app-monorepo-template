@@ -253,10 +253,9 @@ inherits as fact.
 The one exception is the request itself: when the owner asks for a rule, a
 gate, a LAW or a skill to change, that IS the work, and it is done in full.
 
-The escape hatches of `docs/code-standards.md` §20 stay what they are: a
-justified inline disable, or a `verify:english` allowlist entry, each with its
-written reason, records a false positive. Reaching for one to silence a finding
-that is true is what this LAW forbids.
+A false positive is no reason for an inline disable or a new allowlist entry,
+which the LAW "A check is never forced or skipped" forbids: it is a reason to
+tune the rule, which is a rule change and so the owner's to ask for.
 
 **Enforced by** the write guard (`docs/harness.md` §3f, `pnpm write-guard:test`):
 in Claude Code, an Edit, Write, NotebookEdit, Bash or PowerShell write of a rule
@@ -301,24 +300,34 @@ with time.
 
 **Enforced by review.**
 
-### A force option is never used — LAW
+### A check is never forced or skipped — LAW
 
-Applies to every agent, every command it runs, and every script, config or
-build file it writes. The owner decided it on 2026-11-25 (translated from
-Spanish): "force is never used for anything; that is how things break;
-record it as a law and tell the template too".
+Applies to every agent, every command it runs, and every script, config,
+build file, CI workflow, doc and skill it writes. The owner decided it on
+2026-11-25 (translated from Spanish): "force is never used for anything;
+that is how things break; record it as a law and tell the template too",
+then widened it the same day (translated from Spanish): "if something is
+used to skip it, it has to be fixed", and "to everything necessary, that
+is, to everything except what we already discussed about PostHog". That
+PostHog exception belongs to a downstream project, never to the template.
 
-**A force option overrides the refusal a tool raised to protect
-something.** That refusal is the finding: read why the tool refused and fix
-its cause, for example clean a worktree before `git worktree remove`. If the
-refusal looks wrong, say so and stop: the owner decides.
+**A force overrides the refusal a tool raised to protect something, and a
+skip jumps the check that would have raised one.** That refusal or check is
+the finding: read why and fix its cause, for example clean a worktree before
+`git worktree remove`. If it looks wrong, say so and stop: the owner decides.
 
 **What this forbids**: `--force`, `--force-with-lease` and every `--force-*`
 on any tool; git's short force options (`-f`, `branch -D`, `-M` and `-C`,
 `checkout -B`, `switch -C` and `--discard-changes`); PowerShell's `-Force`;
-`taskkill /F`; and any script, config or build file that passes one. A tool
-setting whose name merely starts with `force` and that overrides no refusal,
-such as Chromium's `--force-device-scale-factor`, is not a force option.
+`taskkill /F`; `rm -f`, `rm -rf` and `rmSync`'s `force: true`;
+`--no-verify`, `git commit -n` and `HUSKY=0`; an `|| true` that swallows a
+failure; an inline lint disable, `@ts-expect-error`, `@ts-ignore` or
+`@ts-nocheck`; a skipped or `todo` test; `continue-on-error` in CI; an
+allowlist entry or exemption that excuses a finding; a variable that
+switches a check off; and any script, config or build file that does one.
+A tool setting whose name merely starts with `force` and that overrides no
+refusal, such as Chromium's `--force-device-scale-factor`, is not a force
+option.
 
 **The one registered exception**: `taskkill /T /F` and `taskkill /F /PID …`
 in `scripts/agent-harness/reaper/**` and
@@ -328,16 +337,12 @@ request; that code ends only process trees it has verified (orphan, family,
 identity) or the bounded child it started itself. Only the owner registers
 another, here.
 
-**Outside this LAW, by the owner's ruling of 2026-11-25**: `rm -f`, `rm -rf`
-and `rmSync`'s `force: true`, whose `-f` only stops a missing file from being
-an error and overrides nothing a tool protects.
-
 **Enforced by** the no-force hook (`docs/harness.md` §3j,
 `pnpm no-force:test`): in Claude Code, a Bash or PowerShell command that
-passes a force option is refused, with a reason that names this LAW. It
-fails safe, and does not read a force in code or config, a short `-f`
-outside git and taskkill, `bash -c`, xargs or an alias, nor run in Codex,
-OpenCode or Copilot. Beyond that, review.
+forces or skips is refused, with a reason that names this LAW, and the hook
+fails closed. It does not read code or config, a short `-f` outside git,
+`rm` and taskkill, `bash -c`, xargs or an alias, nor run in Codex, OpenCode
+or Copilot. Beyond that, review.
 
 ### Reply shape — LAW
 

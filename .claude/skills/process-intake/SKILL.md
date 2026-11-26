@@ -125,7 +125,7 @@ only what the document did not answer:
    for every state and `type:<type>` for every type. Read them with
    `gh label list --json name,color,description`, then `gh label create <label>` for each one
    missing, and `gh label edit <label>` for one whose colour or description differs. Never
-   `--force` (the LAW "A force option is never used", `AGENTS.md`).
+   `--force` (the LAW "A check is never forced or skipped", `AGENTS.md`).
 4. Propose the row the project's `AGENTS.md` Key docs table gains for docs/process/ticket-flow.md,
    and the line each session's instructions gain naming the role it plays; write them on the
    team's yes.

@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
 // label — a pull-request label of `pnpm updaters:run` made current with no
-// force option (the LAW "A force option is never used", AGENTS.md):
+// force option (the LAW "A check is never forced or skipped", AGENTS.md):
 // `gh label list` reads it, then `gh label create` makes it when it is
 // missing, or `gh label edit` sets its colour and description when either
 // differs. A current label is left alone.

@@ -112,9 +112,34 @@ for (const [command, program] of [
   })
 }
 
+for (const [command, option, program] of [
+  ['rm -f build.log', '-f', 'rm'],
+  ['rm -rf dist', '-rf', 'rm'],
+  ['rm -Rf dist', '-Rf', 'rm'],
+  ['/bin/rm -r -f dist', '-f', 'rm'],
+  ['rm --force dist', '--force', 'rm'],
+  ['git commit --no-verify -m fix', '--no-verify', 'git commit'],
+  ['git push --no-verify', '--no-verify', 'git push'],
+  ['git commit -n -m fix', '-n', 'git commit'],
+  ['git commit -anm fix', '-anm', 'git commit'],
+  ['HUSKY=0 git commit -m fix', 'HUSKY=0', 'git commit'],
+  ['env HUSKY=0 git commit -m fix', 'HUSKY=0', 'git commit'],
+  ['export HUSKY=0', 'HUSKY=0', 'export']
+]) {
+  test(`\`${command}\` skips a check`, () => {
+    assert.deepEqual(found({ command }), { option, program })
+  })
+}
+
 for (const command of [
-  'rm -f build.log',
-  'rm -rf dist',
+  'rm build.log',
+  'rm -r dist',
+  'git commit -m -n',
+  'git commit -mn',
+  'git commit -F notes.txt',
+  'git push -n origin main',
+  'git log -n 5',
+  'HUSKY=1 git commit -m fix',
   'cp -f a b',
   'ln -sf a b',
   'docker rm -f web',

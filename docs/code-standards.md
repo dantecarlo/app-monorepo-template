@@ -709,18 +709,17 @@ rule mid-migration; the target for every rule is `error` under a
 regress. Never flip a rule to `error` over code that still violates it. Never
 leave a rule at `warn` forever.
 
-**Flexibility without weakening the gate** — three tiers, in order of preference:
+**Flexibility without weakening the gate** — two tiers, in order of preference:
 
 1. **Tune the rule** (options, selectors) so it never fires on the legitimate
    pattern. Zero noise. Best.
 2. **Scoped path override** — `off` for one glob, when the false positive is
    _systematic_ in one area, declared in `eslint.config.mjs`.
-3. **Justified inline disable** for one-offs, with a written reason, one rule
-   per line, and `reportUnusedDisableDirectives: 'error'` so a stale disable
-   becomes an error and auto-expires.
 
-That third tier is what keeps escape hatches **visible, greppable, and
-self-cleaning**.
+**No inline disable**: an `eslint-disable` comment, `@ts-expect-error`,
+`@ts-ignore` or `@ts-nocheck` skips a check, which the LAW "A check is never
+forced or skipped" (`AGENTS.md`) forbids. A vendor's signature the rules
+reject is met in one adapter that hands the code a shape they accept.
 
 > **No allowlist files.** A `*-allowlist.json` freezes a backlog into a file
 > nobody reads and the ratchet stops moving. A rule either passes clean here, or
@@ -815,7 +814,7 @@ This table exists so that difference is visible.
 | Harness settings in one file | script     | `verify:harness-config` (and `:test`) — `.agents/harness.config.json` holds only the sections and settings `.agents/contracts/harness-config.schema.json` declares, each a value it allows, every list item one its `items` allows, no text shorter than its `minLength`, and every required one there, the project's `identity` among them, and neither file gives a key twice in one object; the schema uses only keywords the gate reads, `additionalProperties` only as `true` or `false`, and every object outside an `if`, `then` or `else` sets it to `false`, so every key the config holds is one the schema declares; not whether a setting is the right one for the project, whether `identity` names this project rather than the template, or whether the tree agrees with it |
 | `AGENTS.md` LAWs            | review        | — no gate reads a LAW; the two below have an agent hook too         |
 | LAW: a rule is not edited to fit the work | agent hook + review | the write guard (`write-guard:test`, `docs/harness.md` §3f): in Claude Code, an Edit, Write, NotebookEdit, Bash or PowerShell write of a rule file of `.agents/contracts/write-guard.json` asks the human, the main session included, and a read-only agent is refused; Bash globs, braces, folders written by name, git subcommands that rewrite the tree and programs the guard does not know are read too, a command the guard cannot read asks only when it names a rule path, and a call past its 5 s deadline is refused or asked, never let through; not the inside of a script, a rule path a command builds, a command that rewrites rule files without naming one (`git reset --hard`, `rm -rf .`), perl, ruby and git writes the guard does not list, PowerShell writes other than its write cmdlets, Codex, OpenCode or Copilot, which run no adapter yet, or why a rule changed, which review reads |
-| LAW: a force option is never used | agent hook + review | the no-force hook (`no-force:test`, `docs/harness.md` §3j): in Claude Code, a Bash or PowerShell command that passes `--force`, `--force-with-lease`, any `--force-*` or `-Force` on any tool, `taskkill /F`, or a git short force option (`-f` of add, clean, fetch, mv, push, rm, tag and worktree, `branch -D`, `-M` and `-C`, `checkout -B`, `switch -C`, `--discard-changes`) is refused with a reason that names the LAW, through a wrapper, a group, a pipeline and a substitution too; it fails safe, letting a call run when it breaks; `updaters:run:test` proves no git, gh or shell call of the updaters' runner passes one, or a `+` refspec; not a force option in other code or config (a script, a config or a build file), which review reads; a short `-f` outside git and taskkill, or a git letter outside its table (`rebase -f`, `submodule -f`, `worktree add -B`); a `+refspec` push; `bash -c`, `cmd /c`, xargs, an alias, a variable or a PowerShell splat or abbreviated `-Fo`; Codex, OpenCode or Copilot, which run no adapter yet; `rm -f`, `rm -rf` and `rmSync`'s `force: true` are outside the LAW by the owner's ruling |
+| LAW: a check is never forced or skipped | agent hook + test + review | the no-force hook (`no-force:test`, `docs/harness.md` §3j): in Claude Code, a Bash or PowerShell command that passes `--force`, `--force-with-lease`, any `--force-*` or `-Force` on any tool, `--no-verify`, `taskkill /F`, `rm` with an `f` among its short options, `HUSKY=0`, or a git short option that forces or skips (`-f` of add, clean, fetch, mv, push, rm, tag and worktree, `commit -n`, `branch -D`, `-M` and `-C`, `checkout -B`, `switch -C`, `--discard-changes`) is refused with a reason that names the LAW, through a wrapper, a group, a pipeline and a substitution too; it fails closed, refusing every call while it is broken; `updaters:run:test` proves no git, gh or shell call of the updaters' runner forces or skips, or passes a `+` refspec; not a force or skip in other code, config, CI or docs, which review reads; a short `-f` outside git, `rm` and taskkill, or a git letter outside its table (`rebase -f`, `submodule -f`, `worktree add -B`); a `+refspec` push; `bash -c`, `cmd /c`, xargs, an alias, a variable or a PowerShell splat or abbreviated `-Fo`; Codex, OpenCode or Copilot, which run no adapter yet |
 | `AGENTS.md` Router          | script        | `verify:router-coverage` — every "Load skill" cell a shipped skill, every skill a row, every "Validated by" script one `package.json` defines; not whether a row routes the right requests, which review reads |
 | §22 Screens only position   | lint+script   | `local/style-positions-only` + `verify:allowlist-freshness`         |
 | §22 Values are tokens       | lint+script   | `local/style-token-values` + `verify:allowlist-freshness`           |

@@ -210,7 +210,7 @@ gate the run reaches is blinded by exactly one step, whose companion's exported
 | `pnpm agent-harness:projection-check` | Every projected agent file equals what its neutral source renders, and is committed (see 3e) |
 | `pnpm agent-harness:test`       | The projector's reader, adapters, hook projection, writer, checker and sync still behave |
 | `pnpm write-guard:test`         | The write guard decides every cell of its table, its errors and its switch-off, for the file tools, Bash and PowerShell; it reads every Windows spelling of a path (or refuses what it cannot read) and every checkout that holds it, and judges a 10,000-folder path and a pathological 30-item list in under a second. Every Bash case of Certifipago's guard is ported, every checkout rule glob matches a file, every module the hook loads is a rule file, and the real hook answers a payload on stdin end to end, through a junction too (see 3f) |
-| `pnpm no-force:test`            | The no-force hook refuses each force form, long, `taskkill /F` and every git letter of its table, through wrappers, groups, pipelines and substitutions in Bash and PowerShell; lets the nearest legitimate commands run (`rm -f`, `cp -f`, `docker rm -f`, `git tag -F`, a commit message, a here-doc's body, `echo`); names the LAW in its reason; and the real hook answers a payload end to end and fails safe (see 3j) |
+| `pnpm no-force:test`            | The no-force hook refuses each force form, long, `taskkill /F` and every git letter of its table, through wrappers, groups, pipelines and substitutions in Bash and PowerShell; refuses each skip (`--no-verify`, `git commit -n`, `rm -f` and `-rf`, `HUSKY=0`); lets the nearest legitimate commands run (`rm -r`, `cp -f`, `docker rm -f`, `git push -n`, `git tag -F`, a commit message, a here-doc's body, `echo`); names the LAW in its reason; and the real hook answers a payload end to end and fails closed (see 3j) |
 | `pnpm reap:test`               | The process reaper's core decides each rule over synthetic process tables (an orphan, a live parent, a reused pid, POSIX reparenting, the hour a clock falls back, unknown names, a family matched by executable and script and never by text in the arguments, persistent and watch work, node's watch flags, the wrappers, live Git for Windows shells and tmux, its own ancestry, the spared processes, the grace period); the adapter lists and ends on each platform through an injected spawn; the command's modes, lock, second listing, bound and exit codes; the lock's takeover under its guard, a dead guard and a release that leaves a later run's lock, with injected races and two real processes; the session hook's kill mode, its MCP check's line and its exit 0 on any failure; the MCP check over scratch trees; and `runBounded` ends a real child's tree on Windows (see 3g) |
 | `pnpm verify:agent-context:test` | The agent-context gate fails each defect it names, on synthetic entries and over a scratch tree |
 | `pnpm verify:agent-context`     | Every agent of `.agents/agents/` has an entry in `.agents/agent-context.json` whose `gradedBy` names the skills that grade it, each a folder of `.claude/skills/` holding a `SKILL.md`, whose `writes` is true or false, whose `surface`, if any, lists repository-relative folders beside `writes: true`, and which holds no other key; no entry names an agent that is gone (see 3e) |
@@ -931,8 +931,9 @@ variable it reaches; and the schedule and its token, which slice 2 adds.
 
 ### 3j. The no-force hook
 
-A Claude Code hook that refuses a Bash or PowerShell command passing a force option. It backs
-the LAW "A force option is never used" (`AGENTS.md`), which the owner asked for on 2026-11-25.
+A Claude Code hook that refuses a Bash or PowerShell command that forces or skips a check. It
+backs the LAW "A check is never forced or skipped" (`AGENTS.md`), which the owner asked for on
+2026-11-25 and widened the same day from forcing to skipping.
 
 | Piece                                          | What it is |
 | ---------------------------------------------- | ---------- |
@@ -944,17 +945,22 @@ the LAW "A force option is never used" (`AGENTS.md`), which the owner asked for 
 | `.agents/hooks.json`                           | Its entry, `no-force`, matcher `Bash\|PowerShell`, timeout 5 s; `.claude/settings.json` is generated from it (3e) |
 
 **What it refuses.** A long form on any tool, case-insensitive, with one dash or two:
-`--force`, `--force-with-lease`, every `--force-*` and `-Force`, with or without a value; an
-explicit off, `=false` or `:$false`, passes. `taskkill /F`, `-F` and Git Bash's `//F`. git's short
-force options, by the letters each subcommand gives that meaning, alone or in a cluster
-(`-xfd`), after git's own options (`-C`, `-c`, `--git-dir`):
+`--force`, `--force-with-lease`, every `--force-*` and `-Force`, with or without a value, and
+`--no-verify`; an explicit off, `=false` or `:$false`, passes. `taskkill /F`, `-F` and Git Bash's
+`//F`. `rm` with an `f` among its short options (`-f`, `-rf`). `HUSKY=0`, which skips every git
+hook: an assignment before a command, an `export`, an `env` argument, or PowerShell's
+`$env:HUSKY = 0`. git's short options that force or skip, by the letters each subcommand gives
+that meaning, alone or in a cluster (`-xfd`), after git's own options (`-C`, `-c`, `--git-dir`):
 
 | Subcommand                                        | Letters |
 | ------------------------------------------------- | ------- |
 | add, clean, fetch, mv, push, rm, tag, worktree    | `f`     |
 | branch                                            | `f`, `D`, `M`, `C` |
 | checkout                                          | `f`, `B` |
+| commit                                            | `n` (`--no-verify`) |
 | switch                                            | `f`, `C`, and `--discard-changes` |
+
+`git push -n` is `--dry-run`, which skips nothing, so it passes.
 
 A letter that takes a value ends its cluster and takes the next word (`git tag -mfix`,
 `git tag -F notes.txt`), and `--` ends git's options. A wrapper (`sudo`, `env`, `timeout`) is read
@@ -965,9 +971,9 @@ substitution is judged, in PowerShell a script block and a subexpression too.
 here-doc's or a here-string's body, a comment, and the words of `rg`, `grep`, `echo` and
 `printf`. A Bash command its tokenizer cannot parse is let through, for the write guard to judge.
 
-**It fails safe.** It is a lint-style hook for a LAW, not the security guard: when its engine
-cannot load or throws, it prints one line, a `systemMessage` saying the call runs unchecked, and
-the call runs. The write guard, which guards the rule files, fails the other way (3f).
+**It fails closed**, as the write guard does (3f): a broken hook would let every force and skip
+through unseen. When its engine cannot load or throws, it denies the call with one line naming
+the error and the one recovery, `"disableAllHooks": true` in `.claude/settings.local.json`.
 
 **The registered exception** is code, never a typed command: `taskkill /T /F` and
 `taskkill /F /PID …` in `scripts/agent-harness/reaper/**` (3g) and
@@ -977,11 +983,12 @@ nothing.
 **What is not a force option.** A tool setting whose name merely starts with `force` and that
 overrides no refusal, such as Chromium's `--force-device-scale-factor` in the vendored archify,
 is not one; the hook still refuses it when typed, since it stays conservative and the LAW decides
-the code. By the owner's ruling of 2026-11-25, `rm -f`, `rm -rf` and `rmSync`'s `force: true`
-are outside the LAW, since their `-f` only stops a missing file from being an error.
+the code. `rm -f`, `rm -rf` and `rmSync`'s `force: true` are inside the LAW, since the owner
+widened it to skipping: a path that may be missing goes through `removePath`
+(`packages/tooling/src/remove-path.mjs`), where only a path already gone counts as success.
 
-**Not covered:** a force option in code or config (a script, a config or a build file), which
-review reads; a short `-f` outside git and taskkill;
+**Not covered:** a force or skip in code, config, CI or docs, which review reads; a short `-f`
+outside git, `rm` and taskkill;
 a git letter outside the table (`rebase -f`, `submodule -f`, `worktree add -B`); a `+refspec`
 push; `bash -c`, `cmd /c`, xargs, an alias and a variable's value; a PowerShell splat or an
 abbreviated `-Fo`; and Codex, OpenCode and Copilot, which run no adapter yet.
@@ -1094,7 +1101,9 @@ Flexibility without weakening the gate, in order of preference (§20):
    systematic in one area — as with the vendored skill under
    `.claude/skills/archify/**`, which is pinned upstream and not ours to
    reformat.
-3. **A justified inline disable**, with a written reason, one rule per line.
+
+No inline disable, `@ts-expect-error` or test skip: each skips a check, which
+the LAW "A check is never forced or skipped" forbids (3j).
 
 **Never an allowlist file**, but for the three below. A list of blessed paths
 freezes a backlog into a file nobody reads. A ceiling — one number per scope that can only go down, with

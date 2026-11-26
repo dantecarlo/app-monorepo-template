@@ -60,7 +60,10 @@ for (const [command, option, program] of [
   ['taskkill /F /PID 4', '/F', 'taskkill'],
   ['Get-Item x | ForEach-Object { git clean -fd }', '-fd', 'git clean'],
   ['if ($x) { git checkout -B main }', '-B', 'git checkout'],
-  ['Write-Output "$(git push --force)"', '--force', 'git push']
+  ['Write-Output "$(git push --force)"', '--force', 'git push'],
+  ["$env:HUSKY = '0'; git commit -m x", 'HUSKY=0', '$env:husky'],
+  ['$env:husky=0', 'HUSKY=0', '$env:husky=0'],
+  ['git commit --no-verify -m x', '--no-verify', 'git commit']
 ]) {
   test(`\`${command}\` passes a force option`, () => {
     assert.deepEqual(powershellForce({ command }), { option, program })
@@ -75,6 +78,7 @@ for (const command of [
   'echo --force',
   "'{0}' -f 'x'",
   'git status # then git push --force',
+  "$env:HUSKY = '1'",
   'git push origin main'
 ]) {
   test(`\`${command}\` passes no force option`, () => {

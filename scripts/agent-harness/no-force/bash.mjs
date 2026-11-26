@@ -1,6 +1,7 @@
 // ---------------------------------------------------------------------------
-// bash — the force option a Bash command passes, for the LAW "A force
-// option is never used" (AGENTS.md). The command is read as the write guard
+// bash — the option a Bash command passes that forces or skips a check, for
+// the LAW "A check is never forced or skipped" (AGENTS.md). The command is
+// read as the write guard
 // reads it: its line continuations removed (continuations.mjs) and parsed
 // by its tokenizer (tokenizer.mjs), never matched as text. Every simple
 // command is judged by forms.mjs: those of a list, a pipeline, a group, a
@@ -22,7 +23,6 @@ import { forceOf } from './forms.mjs'
 // What a part the hook cannot know (a variable, a substitution) reads as,
 // so it never completes an option.
 const UNKNOWN_PART = '\u0000'
-const ASSIGNMENT = /^[A-Za-z_]\w*\+?=/u
 const TIME = 'time'
 const TIME_POSIX = '-p'
 
@@ -31,25 +31,14 @@ const textOf = ({ word }) =>
     .map((part) => ('lit' in part ? part.lit : UNKNOWN_PART))
     .join('')
 
-const isAssignment = ({ word }) => {
-  const first = word.parts[0]
-  return (
-    first !== undefined &&
-    'lit' in first &&
-    !first.quoted &&
-    ASSIGNMENT.test(first.lit)
-  )
-}
-
-// Where a command's own words start: past its keywords, `time -p`, and
-// the assignments before it.
+// Where a command's words start: past its keywords and `time -p`. The
+// assignments before it stay, for forms.mjs to read (`HUSKY=0`).
 const commandWords = ({ words }) => {
   let at = 0
   while (at < words.length && KEYWORDS.has(words[at].raw)) {
     at +=
       words[at].raw === TIME && words[at + 1]?.raw === TIME_POSIX ? 2 : 1
   }
-  while (at < words.length && isAssignment({ word: words[at] })) at += 1
   return words.slice(at)
 }
 

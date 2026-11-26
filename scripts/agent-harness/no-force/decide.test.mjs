@@ -23,7 +23,7 @@ test('a Bash force option is denied with a reason that names the LAW', () => {
     payload: payloadOf({ command: 'git push --force origin main' })
   })
   assert.equal(verdict?.decision, 'deny')
-  assert.equal(LAW, 'A force option is never used')
+  assert.equal(LAW, 'A check is never forced or skipped')
   for (const part of [
     `"${LAW}"`,
     'AGENTS.md',
@@ -47,9 +47,15 @@ test('a PowerShell force option is denied', () => {
   assert.ok(verdict.reason.includes('`-Force`'))
 })
 
+test('a skipped check is denied as a force is', () => {
+  const verdict = decide({ payload: payloadOf({ command: 'rm -rf dist' }) })
+  assert.equal(verdict?.decision, 'deny')
+  assert.ok(verdict.reason.includes('`rm` passes `-rf`'), verdict.reason)
+})
+
 for (const payload of [
   payloadOf({ command: 'git push origin main' }),
-  payloadOf({ command: 'rm -rf dist' }),
+  payloadOf({ command: 'rm -r dist' }),
   payloadOf({ command: 'Remove-Item dist', tool: 'PowerShell' }),
   payloadOf({ command: 'git push --force', tool: 'Edit' }),
   { tool_input: { file_path: 'a.md' }, tool_name: 'Write' },

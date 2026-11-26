@@ -1,21 +1,23 @@
 #!/usr/bin/env node
 // ---------------------------------------------------------------------------
 // claude-hook — the Claude Code adapter of the no-force hook, the agent
-// hook of the LAW "A force option is never used" (AGENTS.md): a PreToolUse
-// hook, wired by `.claude/settings.json`, which `pnpm agent-harness:generate`
-// renders from `.agents/hooks.json` (matcher `Bash|PowerShell`).
+// hook of the LAW "A check is never forced or skipped" (AGENTS.md): a
+// PreToolUse hook, wired by `.claude/settings.json`, which
+// `pnpm agent-harness:generate` renders from `.agents/hooks.json` (matcher
+// `Bash|PowerShell`).
 //
 // It reads the PreToolUse payload on stdin ({ tool_name, tool_input }),
 // asks `decide` and prints `hookSpecificOutput.permissionDecision: deny`
-// with its reason when the command passes a force option. It prints
+// with its reason when the command forces or skips a check. It prints
 // nothing for any other call, and never `allow`, so the session's own
 // permissions still apply. Stdin that is not a JSON object prints nothing.
 // It spawns nothing and reads no file but its own modules.
 //
-// It fails safe, unlike the write guard: it is a lint-style hook for a LAW,
-// not a security guard. When its engine cannot load or throws, it prints
-// one line, a `systemMessage` that says the call runs unchecked, and the
-// call runs.
+// It fails closed, as the write guard does: a hook that broke would let
+// every force and skip through unseen. When its engine cannot load or
+// throws, it denies the call with one line naming the error and the one
+// recovery, Claude Code's own `"disableAllHooks": true` in the git-ignored
+// `.claude/settings.local.json`.
 //
 // Usage (Claude Code runs it):
 //   node "${CLAUDE_PROJECT_DIR}/scripts/agent-harness/no-force/claude-hook.mjs"
@@ -45,11 +47,19 @@ const renderVerdict = ({ verdict }) =>
     }
   })
 
+// The crash path's verdict, spelled here because the engine that would
+// give it may be the module that failed to load.
+const CRASH_DENY = 'deny'
+
 const crashLine = ({ error }) =>
-  JSON.stringify({
-    systemMessage:
-      `The no-force hook failed (${String(error?.message ?? error)}), so ` +
-      'this call runs unchecked. Fix scripts/agent-harness/no-force/.'
+  renderVerdict({
+    verdict: {
+      decision: CRASH_DENY,
+      reason:
+        `The no-force hook failed (${String(error?.message ?? error)}), so ` +
+        'it refuses this call. Fix scripts/agent-harness/no-force/, or set ' +
+        '"disableAllHooks": true in .claude/settings.local.json.'
+    }
   })
 
 /**

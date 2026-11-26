@@ -32,7 +32,11 @@ for (const [command, option, program] of [
   ['echo `git push -f`', '-f', 'git push'],
   ['diff <(git push -f) b', '-f', 'git push'],
   ['git \\\n  push \\\n  --force', '--force', 'git push'],
-  ['taskkill //F //PID 4', '//F', 'taskkill']
+  ['taskkill //F //PID 4', '//F', 'taskkill'],
+  ['rm -rf dist && cp -f a b', '-rf', 'rm'],
+  ["HUSKY=0 git commit -m 'a b'", 'HUSKY=0', 'git commit'],
+  ['export HUSKY=0 && git commit -m x', 'HUSKY=0', 'export'],
+  ['git commit --no-verify -m "a b"', '--no-verify', 'git commit']
 ]) {
   test(`\`${command}\` passes a force option`, () => {
     assert.deepEqual(bashForce({ command }), { option, program })
@@ -48,7 +52,8 @@ for (const command of [
   'printf "%s\\n" --force',
   'grep -rn -- --force docs',
   'rg -n "git push --force" scripts',
-  'rm -rf dist && cp -f a b',
+  'git commit -m "$(cat <<\'EOF\'\nnever --no-verify or HUSKY=0\nEOF\n)"',
+  'rm -r dist && cp -f a b',
   'docker rm -f web',
   'git push origin main',
   'git push "unterminated'

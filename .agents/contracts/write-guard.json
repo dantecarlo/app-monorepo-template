@@ -55,7 +55,7 @@
     },
     {
       "glob": "scripts/agent-harness/no-force/**",
-      "what": "the code of the no-force hook, which holds the LAW that a force option is never used"
+      "what": "the code of the no-force hook, which holds the LAW that a check is never forced or skipped"
     },
     {
       "glob": "scripts/manifest.mjs",

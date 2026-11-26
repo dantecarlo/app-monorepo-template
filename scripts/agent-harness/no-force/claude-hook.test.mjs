@@ -47,7 +47,7 @@ test('the hook denies a force option, naming the LAW', () => {
   assert.equal(output.permissionDecision, 'deny')
   assert.match(
     output.permissionDecisionReason,
-    /A force option is never used/u
+    /A check is never forced or skipped/u
   )
 })
 
@@ -80,14 +80,15 @@ for (const [name, load] of [
     })
   ]
 ]) {
-  test(`${name} prints one line and lets the call run`, async () => {
+  test(`${name} fails closed: one line that denies, naming the error and the recovery`, async () => {
     const out = await answer({
       load,
-      text: payloadText({ command: 'git push --force' })
+      text: payloadText({ command: 'git status' })
     })
     assert.equal(out.split('\n').length, 1)
-    const parsed = JSON.parse(out)
-    assert.deepEqual(Object.keys(parsed), ['systemMessage'])
-    assert.match(parsed.systemMessage, /runs unchecked/u)
+    const output = JSON.parse(out).hookSpecificOutput
+    assert.equal(output.permissionDecision, 'deny')
+    assert.match(output.permissionDecisionReason, /cannot load|broke/u)
+    assert.match(output.permissionDecisionReason, /"disableAllHooks": true/u)
   })
 }

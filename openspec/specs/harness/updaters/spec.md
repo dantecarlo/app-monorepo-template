@@ -347,8 +347,8 @@ SHALL fetch it, check it out detached, merge the default branch into it with a n
 the update's commit on top and push it with no force option. When that merge conflicts, it SHALL
 abort the merge, return to the ref it started on, open nothing, print one line naming the branch
 and the conflicting paths, go on to the next updater and exit 1. No git, gh or shell call it makes
-SHALL pass a force option, as the no-force hook reads one, or a `+` refspec, following the LAW
-"A force option is never used" of `AGENTS.md`.
+SHALL force or skip a check, as the no-force hook reads one, or pass a `+` refspec, following the
+LAW "A check is never forced or skipped" of `AGENTS.md`.
 
 **Evidence:** `scripts/updaters/branch.mjs:40-89`, `scripts/updaters/run.mjs:360-367`, `scripts/updaters/run.mjs:473-481`, `scripts/updaters/label.mjs:14-55`
 
