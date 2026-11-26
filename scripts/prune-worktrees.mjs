@@ -112,6 +112,7 @@ import {
   failureLine,
   fetchSecondsFrom,
   hiddenOf,
+  holdsRegistered,
   installCommandOf,
   installOutcomeOf,
   installSecondsFrom,
@@ -506,6 +507,16 @@ export const removeWorktree = ({
     }
   }
   const leftover = removeLeftover({ fs, path: worktree.path, wait })
+  const branchKept = deleteBranch({ root, worktree })
+  return branchKept
+    ? { ...worktree, detail: branchKept, kept: null, leftover }
+    : { ...worktree, kept: null, leftover }
+}
+
+// Deletes `worktree.branch` only while its tip is still `worktree.sha`, and
+// its configuration with it, as `git branch -D` would. Undefined once it is
+// gone; otherwise the message git gave for keeping it.
+const deleteBranch = ({ root, worktree }) => {
   try {
     git({
       args: [
@@ -517,7 +528,7 @@ export const removeWorktree = ({
       cwd: root
     })
   } catch (error) {
-    return { ...worktree, detail: error.message, kept: null, leftover }
+    return error.message
   }
   try {
     git({
@@ -527,7 +538,62 @@ export const removeWorktree = ({
   } catch {
     // A branch with no configuration has no section to remove.
   }
-  return { ...worktree, kept: null, leftover }
+  return undefined
+}
+
+const FOLDER_STAYS = 'its folder is not gone yet'
+
+// The reason an orphan folder is kept at its delete, from the registered
+// worktrees read again then (`listRegistered`): git cannot read the list; a
+// registered worktree sits inside the folder; or the folder became a
+// worktree, registered at its own path or holding a `.git`, as
+// `git worktree add` into an empty folder makes it. Null for none.
+const recheckOrphan = ({ listRegistered, orphan, root }) => {
+  const registered = (() => {
+    try {
+      return [...listRegistered({ root })]
+    } catch {
+      return null
+    }
+  })()
+  if (registered === null) return REASON.UNREADABLE
+  if (holdsRegistered({ path: orphan.path, registered })) {
+    return REASON.HOLDS_WORKTREE
+  }
+  const own = samePath({ path: orphan.path })
+  if (
+    registered.some((other) => samePath({ path: other }) === own) ||
+    existsSync(join(orphan.path, '.git'))
+  ) {
+    return REASON.ORPHAN_BECAME_WORKTREE
+  }
+  return null
+}
+
+// Finishes one orphan folder after `announce` received its `removingLine`: a
+// folder `recheckOrphan` keeps is kept with nothing deleted; otherwise the
+// folder is removed as a leftover (`removeLeftover`, with `fs` and `wait`),
+// then its branch, only once the folder is gone, at the tip it was judged at.
+// A folder that stays is named on the removal, its branch kept.
+export const finishOrphan = ({
+  announce = nothing,
+  fs,
+  listRegistered = readRegistered,
+  orphan,
+  root,
+  wait
+}) => {
+  const kept = recheckOrphan({ listRegistered, orphan, root })
+  if (kept) return { ...orphan, kept }
+  announce({ line: removingLine({ worktree: orphan }) })
+  const leftover = removeLeftover({ fs, path: orphan.path, wait })
+  if (leftover) {
+    return { ...orphan, detail: FOLDER_STAYS, kept: null, leftover }
+  }
+  const branchKept = deleteBranch({ root, worktree: orphan })
+  return branchKept
+    ? { ...orphan, detail: branchKept, kept: null }
+    : { ...orphan, kept: null }
 }
 
 // A worktree judged removable, read again just before it goes, since the
@@ -871,6 +937,15 @@ const pruneUnderLock = async ({
     }),
     committedAt: commitTimes.get(worktree.head)
   }))
+  // Judged before any removal, as every other decision is.
+  const orphans = judgeOrphans({
+    finishing: finishOrphans,
+    merged,
+    registrations: readRegistered({ root }),
+    root,
+    upstreams,
+    worktrees
+  })
   // Each result is kept as it comes, so a step that fails after a removal,
   // the main checkout's included, returns with what was removed before it.
   const results = []
@@ -882,18 +957,7 @@ const pruneUnderLock = async ({
           : removeIfStillClean({ announce, root, worktree: one })
       )
     )
-    if (dryRun) {
-      results.push(
-        ...judgeOrphans({
-          finishing: finishOrphans,
-          merged,
-          registrations: readRegistered({ root }),
-          root,
-          upstreams,
-          worktrees
-        })
-      )
-    }
+    if (dryRun) results.push(...orphans)
     if (!dryRun) git({ args: ['worktree', 'prune'], cwd: root })
     const main = forwardMain({
       defaultBranch,
@@ -901,11 +965,17 @@ const pruneUnderLock = async ({
       root,
       worktree: worktrees[0]
     })
-    return {
-      install: await installAfter({ dryRun, env, main, root }),
-      main,
-      results
+    const install = await installAfter({ dryRun, env, main, root })
+    // Orphan folders last, after the fast-forward and the install, so a run
+    // ended inside a long delete has moved the main checkout.
+    if (!dryRun && finishOrphans) {
+      orphans.forEach((one) =>
+        results.push(
+          one.kept ? one : finishOrphan({ announce, orphan: one, root })
+        )
+      )
     }
+    return { install, main, results }
   } catch (error) {
     return { error, results }
   }

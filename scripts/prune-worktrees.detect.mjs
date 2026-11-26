@@ -180,6 +180,7 @@ export const REASON = {
   NO_UPSTREAM: 'its branch has no upstream',
   NOT_IN_DEFAULT: 'its HEAD is not in the default branch',
   ORPHAN_AMBIGUOUS: 'several local branches end in its name',
+  ORPHAN_BECAME_WORKTREE: 'it became a worktree after it was judged',
   ORPHAN_CHECKED_OUT: 'its branch is checked out in a registered worktree',
   ORPHAN_MANUAL: `orphan folders wait for a first manual run with ${OPTION.FINISH_ORPHANS}`,
   ORPHAN_NOT_MERGED: 'its branch is not in the default branch',
@@ -632,7 +633,8 @@ export const removingLine = ({ worktree }) => {
   const branch =
     worktree.branch === DETACHED_BRANCH ? 'detached' : worktree.branch
   const path = resolve(worktree.path).replaceAll('\\', '/')
-  return `${LABEL}: removing ${path} (${branch})`
+  const what = worktree.orphan ? `${ORPHAN} ` : ''
+  return `${LABEL}: removing ${what}${path} (${branch})`
 }
 
 // The line a failed run ends with, on stderr: git's message, then what the

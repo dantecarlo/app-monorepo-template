@@ -91,7 +91,13 @@ name (checked out nowhere, in the default branch, the folder written more than
 10 minutes ago, no registered worktree inside it) and prints every other one as
 kept, with its reason. Orphan folders wait for a first manual run with
 `--finish-orphans`: until then a folder it could finish is kept with that
-reason, and a dry run with the option names it as one it would remove. Last, it
+reason, and a dry run with the option names it as one it would remove. A real
+run with the option deletes each finishable folder last, after the fast-forward
+and the install, through `removePath` as a leftover is, announced as
+`removing orphan folder <path> (<branch>)`, then its branch at the tip it was
+judged at; right before a delete it reads the registered worktrees again and
+keeps a folder that holds a worktree, became one or whose list git cannot read.
+Nothing outside the worktree root is read or deleted as an orphan. Last, it
 fast-forwards
 the main checkout with `git merge --ff-only` when that checkout is on the
 default branch. Any tracked local change there, staged or not, a
