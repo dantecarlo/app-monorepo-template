@@ -341,8 +341,9 @@ another, here.
 `pnpm no-force:test`): in Claude Code, a Bash or PowerShell command that
 forces or skips is refused, with a reason that names this LAW, and so is
 one it cannot read: the hook fails closed. It reads through `eval`,
-`sh -c`, `pwsh -Command`, `find -exec`, `xargs` and a here-doc fed to a
-shell, and refuses `|| true` and a moved `core.hooksPath`. It does not read
+`sh -c`, `pwsh -Command`, `find -exec`, `xargs`, `trap` and a here-doc fed
+to a shell, and refuses `|| true`, `|| exit 0` and a moved
+`core.hooksPath`. It does not read
 code or config, a script a shell runs from a file, a short `-f` outside
 git, `rm` and taskkill, `cmd /c`, an alias or a variable's value, nor run
 in Codex, OpenCode or Copilot. Beyond that, review.

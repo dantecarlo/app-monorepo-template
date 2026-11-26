@@ -451,7 +451,10 @@ A Bash command is read by a shell parser ported from Certifipago's guard, not
 by a pattern. Line continuations go first, where Bash drops them; then come
 quotes, substitutions (`$(…)`, backticks, `$(( ))`), here-docs, groups,
 pipelines, loops, `case`, a function body in each of its forms (`f() { … }`,
-`function f { … }`, `function f() { … }`) and `coproc`. A word is expanded as Bash expands it: braces
+`function f { … }`, `function f() { … }`) and `coproc`, an arithmetic command (`(( … ))`,
+`for ((;;))`), whose `>` compares and whose substitutions run, a `[[ … ]]` condition with its
+`&&`, `||`, parentheses, `<`, `>` and the regex after `=~`, and an extended glob (`!(keep)`),
+one word. A word is expanded as Bash expands it: braces
 first (`AGENTS.md{,.bak}` is two words, and the empty word `{AGENTS.md,}`
 leaves is dropped), `$'…'` decoded, a NUL ending the
 word, and a backslash-escaped character read as quoted. A variable resolves
@@ -526,8 +529,9 @@ path; one that keeps to the index, the history or the branches (`add`,
 `commit`, `tag`, `push`) asks nothing.
 
 A command the guard cannot read is one it cannot parse: an unterminated
-quote, a here-doc with no end, a line continuation that splits `$(`,
-nesting past 32 levels. It also covers, for the main session, a writer or an
+quote, a here-doc with no end, a line continuation that splits `$(`, a
+substitution inside a `[[` regex or an extended glob, nesting past 32
+levels. It also covers, for the main session, a writer or an
 unlisted agent, one of the programs above. Such a command is refused to a
 policed agent. Anyone else is asked only when the command names a rule path:
 an unknown program by its own words, a value attached to a short option
@@ -959,8 +963,9 @@ backs the LAW "A check is never forced or skipped" (`AGENTS.md`), which the owne
 the option itself, from `--fo` and `--no-v` up (`--forc`, `--no-verif`), and in PowerShell from
 `-Fo` up, which is how PowerShell binds an abbreviated parameter; `--format` and `--follow` are
 no prefix of either, so they pass. `taskkill /F`, `-F` and Git Bash's `//F`. `rm` with an `f`
-among its short options (`-f`, `-rf`). A failure swallowed by `|| true` or `|| :`; `|| echo
-failed` and `|| exit 1` handle it, and pass. `HUSKY=0`, which skips every git hook, only where it
+among its short options (`-f`, `-rf`). A failure swallowed by `|| true`, `|| :`, `|| exit 0` or
+`|| return 0`; `|| echo failed`, `|| exit 1` and a bare `|| exit` handle it, and pass. `HUSKY=0`,
+which skips every git hook, only where it
 sets the environment: an assignment before a command or a wrapper's (`env`, `sudo`), an `export`
 or `declare` argument, and in PowerShell `$env:HUSKY = 0`, `${env:HUSKY} = 0`,
 `Set-Item env:HUSKY 0` and `[Environment]::SetEnvironmentVariable('HUSKY','0')`;
@@ -988,25 +993,34 @@ A letter that takes a value ends its cluster and takes the next word (`git tag -
 `git tag -F notes.txt`), and `--` ends the options of any program. A wrapper (`sudo`, `env`,
 `timeout`) is read through. Every simple command of a list, a pipeline, a group, a function body
 (`f() { … }`, `function f { … }`, `function f() { … }`), `coproc`, a compound command and a
-substitution is judged, in PowerShell a script block and a subexpression too. So is the command a
-wrapper runs, in its own language, as the outer one is: `eval`, an inner shell's `-c` (`sh`,
-`dash`, `zsh`, `bash -lc`), a here-doc or a pipe of `cat`, `echo` or `printf` fed to a shell,
-`find -exec`, `fd -x` and `xargs` (the write guard's own readers of them), PowerShell's
+substitution is judged, in PowerShell a script block and a subexpression too. The shared
+tokenizer (3f) reads an arithmetic command (`(( … ))`, `for ((i=0;i<3;i++))`), whose
+substitutions still run, a `[[ … ]]` condition with its operators and the regex after `=~`
+(`^(main|master)$`), and an extended glob (`!(keep)`, `*.@(js|ts)`) whether or not
+`shopt -s extglob` is on. So is the command a wrapper runs, in its own language, as the outer one
+is: `eval`, an inner shell's `-c` (`sh`, `dash`, `zsh`, `bash -lc`), a here-doc or a pipe of
+`cat`, `echo` or `printf` fed to a shell, `find -exec`, `fd -x` and `xargs` (the write guard's own
+readers of them), the text `trap` runs on a signal (`trap 'rm -rf x' EXIT`), PowerShell's
 `-Command` (`-c`, any prefix) and `-EncodedCommand` (decoded), `powershell` with its command as
 its words, and `Invoke-Expression`. Bash runs every whole line before one it cannot parse
-(`bash -c $'touch m\necho "x'` creates `m`), so a command its tokenizer cannot parse is read as
-the longest prefix of its whole lines that parses; one line it cannot parse on its own is let
-through, since Bash refuses the whole line.
+(`bash -c $'touch m\necho "x'` creates `m`). When the tokenizer stops on an error bash raises on a
+lone line too, an unterminated quote or backtick or an unbalanced `)`, the command is read as the
+longest prefix of its whole lines that parses, and that one line alone is let through, since bash
+refuses it whole. Every other reader error is one bash may not raise, and the command is denied
+(below): bash runs a here-doc that never ends to the end of its input.
 
 **What it does not read as a command**: a multi-word quoted span (a commit message), a
-here-doc's or a here-string's body unless a shell reads it, a comment, and the words of `rg`,
-`grep`, `git grep`, `echo`, `printf`, `Write-Output`, `Write-Host` and `Select-String`.
+here-doc's or a here-string's body unless a shell reads it, a comment, the words of `rg`,
+`grep`, `git grep`, `echo`, `printf`, `Write-Output`, `Write-Host` and `Select-String`, and the
+operands of `[[`, `[` and `test`.
 
 **It fails closed**, as the write guard does (3f): a broken hook would let every force and skip
 through unseen. Stdin that is empty, is not JSON or is no JSON object, a Bash or PowerShell call
-whose `command` is no string, a command nested deeper than 16 levels of commands inside commands
-(or past the tokenizer's own cap of 32), one whose line prefixes would take more than about a
-second to try, an engine that cannot load and one that throws each get one line that denies,
+whose `command` is no string, a Bash command the tokenizer stops on with an error bash may not
+raise (a here-doc that never ends, `ls apps/(group)/x.tsx`, a substitution inside a regex or an
+extended glob), a command nested deeper than 16 levels of commands inside commands (or past the
+tokenizer's own cap of 32), one whose line prefixes would take more than about a second to try,
+an engine that cannot load and one that throws each get one line that denies,
 naming the problem and the one recovery, `"disableAllHooks": true` in
 `.claude/settings.local.json`. A tool it does not judge gets nothing: the matcher already keeps
 the hook to Bash and PowerShell.
