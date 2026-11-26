@@ -124,6 +124,7 @@ import {
   REASON,
   refusalOf,
   REMOTE,
+  removingLine,
   reportLines,
   samePath,
   skippedLines,
@@ -139,6 +140,7 @@ const NO_REMOTE_LINE = `prune-worktrees: no ${REMOTE} remote, so nothing to prun
 // 64 MiB of git output.
 const GIT_OUTPUT_BYTES = 67_108_864
 const INT32_BYTES = 4
+const nothing = () => {}
 const MS_PER_SECOND = 1000
 // `git merge-base --is-ancestor` exits 1 when the first commit is not an
 // ancestor of the second; any other failure is an error.
@@ -440,12 +442,14 @@ const isRegistered = ({ listRegistered, root, worktree }) => {
 // branch that moved since keeps the commits it gained. `fs`, `wait` reach
 // `removeLeftover`; `listRegistered` reads the registered worktrees.
 export const removeWorktree = ({
+  announce = nothing,
   fs,
   listRegistered = readRegistered,
   root,
   wait,
   worktree
 }) => {
+  announce({ line: removingLine({ worktree }) })
   try {
     git({
       args: [
@@ -496,9 +500,9 @@ export const removeWorktree = ({
 // one that gained a change in the meantime, an ignored file nothing writes
 // again included, is kept with that reason, and the rest is removed as
 // `removeWorktree` removes it.
-export const removeIfStillClean = ({ root, worktree }) => {
+export const removeIfStillClean = ({ announce, root, worktree }) => {
   const again = contentReason({ worktree })
-  return again.kept ? again : removeWorktree({ root, worktree })
+  return again.kept ? again : removeWorktree({ announce, root, worktree })
 }
 
 // Every tracked path with a local change in `root`, staged or not, a
@@ -702,7 +706,13 @@ const forwardMain = ({ defaultBranch, dryRun, root, worktree }) => {
 // default branch or a list git cannot read throws before anything is
 // removed; a step that fails after the decisions returns its `error` with
 // the results gathered before it, every removal made included.
-const pruneWorktrees = async ({ cwd, dryRun, env, fetchSeconds }) => {
+const pruneWorktrees = async ({
+  announce,
+  cwd,
+  dryRun,
+  env,
+  fetchSeconds
+}) => {
   const current = samePath({
     path: git({ args: ['rev-parse', '--show-toplevel'], cwd })
   })
@@ -738,7 +748,7 @@ const pruneWorktrees = async ({ cwd, dryRun, env, fetchSeconds }) => {
       results.push(
         dryRun || one.kept
           ? one
-          : removeIfStillClean({ root, worktree: one })
+          : removeIfStillClean({ announce, root, worktree: one })
       )
     )
     if (!dryRun) git({ args: ['worktree', 'prune'], cwd: root })
@@ -766,10 +776,17 @@ const pruneWorktrees = async ({ cwd, dryRun, env, fetchSeconds }) => {
 // fast-forward fires, does nothing and prints nothing.
 const main = async () => {
   if (process.env[NESTED_RUN_VARIABLE]) return
+  const progress = { started: false }
+  // Each removal is printed as it starts, `--quiet` or not.
+  const announce = ({ line }) => {
+    progress.started = true
+    console.log(line)
+  }
   try {
     const { dryRun, quiet } = optionsFrom({ argv: process.argv })
     const fetchSeconds = fetchSecondsFrom({ env: process.env })
     const outcome = await pruneWorktrees({
+      announce,
       cwd: process.cwd(),
       dryRun,
       env: process.env,
@@ -792,13 +809,16 @@ const main = async () => {
         failureLine({
           dryRun,
           message: outcome.error.message,
-          results: outcome.results
+          results: outcome.results,
+          started: progress.started
         })
       )
       process.exitCode = 1
     }
   } catch (error) {
-    console.error(failureLine({ message: error.message }))
+    console.error(
+      failureLine({ message: error.message, started: progress.started })
+    )
     process.exitCode = 1
   }
 }

@@ -74,7 +74,10 @@ fails after git deleted the worktree's `.git` file and its registration, as at a
 file another process holds on Windows, counts as removed once git no longer
 lists it: the folder git left is removed through `removePath` in four tries,
 250, 500 and 750 ms apart, and one that stays is named, with the last error, on
-the removal line. Last, it fast-forwards
+the removal line. A real run prints `removing <path> (<branch>)` before each
+removal, `--quiet` included, so a run ended inside one leaves it as its last
+line, and a failure after one says a removal had started where it would say
+nothing was removed. Last, it fast-forwards
 the main checkout with `git merge --ff-only` when that checkout is on the
 default branch. Any tracked local change there, staged or not, a
 line-ending-only one included, blocks it, and so does whatever git refuses

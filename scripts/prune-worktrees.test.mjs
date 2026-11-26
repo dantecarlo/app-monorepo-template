@@ -45,6 +45,7 @@ import { withHookGitDir } from './hook-git-dir.mjs'
 import {
   DIVERGED,
   FETCH_SECONDS_VARIABLE,
+  failureLine,
   fetchSecondsFrom,
   INSTALL_SECONDS_VARIABLE,
   installSecondsFrom,
@@ -2320,4 +2321,65 @@ test('a held directory released between tries goes whole, with its branch', asyn
   } finally {
     hold.release()
   }
+})
+
+// ---------------------------------------------------------------------------
+// Each removal is announced before it starts (PRUNE-07).
+// ---------------------------------------------------------------------------
+
+test('each removal is announced before git removes it', () => {
+  const path = forward({ path: fixture.paths['feat/merged'] })
+  const lines = fixture.real.stdout.split(/\r?\n/u)
+  const announced = lines.indexOf(
+    `prune-worktrees: removing ${path} (feat/merged)`
+  )
+  const removed = lines.indexOf(
+    `prune-worktrees: removed ${path} (feat/merged)`
+  )
+  assert.ok(announced >= 0, fixture.real.stdout)
+  assert.ok(announced < removed, fixture.real.stdout)
+})
+
+test('a removal git refuses is announced before it is tried', () => {
+  const { main, path, worktree } = heldRepository()
+  writeFileSync(join(path, UNSAVED_FILE), 'unsaved\n')
+  const announced = []
+  const result = removeWorktree({
+    announce: ({ line }) =>
+      announced.push({
+        line,
+        listed: git({ args: ['worktree', 'list', '--porcelain'], cwd: main })
+      }),
+    root: main,
+    worktree
+  })
+  assert.equal(result.kept, REASON.REMOVE_FAILED)
+  assert.equal(announced.length, 1)
+  assert.equal(
+    announced[0].line,
+    `prune-worktrees: removing ${forward({ path })} (feat/held)`
+  )
+  assert.ok(announced[0].listed.includes('feat/held'), 'it was gone already')
+})
+
+test('a dry run announces no removal', () => {
+  assert.ok(!fixture.dryRun.stdout.includes('removing '), fixture.dryRun.stdout)
+})
+
+test('a failure after a removal started does not say nothing was removed', () => {
+  const started = failureLine({
+    message: 'git worktree prune failed',
+    results: [],
+    started: true
+  })
+  assert.ok(!started.includes('nothing was removed'), started)
+  assert.match(started, /a removal had started; the last "removing" line above names it/u)
+  const idle = failureLine({ message: 'git worktree prune failed', results: [] })
+  assert.match(idle, /nothing was removed/u)
+  const done = failureLine({
+    message: 'x',
+    results: [{ kept: null }],
+    started: true
+  })
+  assert.match(done, /1 worktree was removed before it failed/u)
 })

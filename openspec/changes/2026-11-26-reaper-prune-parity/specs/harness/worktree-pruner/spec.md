@@ -336,7 +336,7 @@ line above names it` in the place of `nothing was removed`.
 - **GIVEN** a run that announced a removal and then fails with none completed
 - **WHEN** it builds its failure line
 - **THEN** the line says a removal had started and points at the `removing` line, never that
-  nothing was removed, and the run exits 1
+  nothing was removed
 - **Test:** `scripts/prune-worktrees.test.mjs` › "a failure after a removal started does not say nothing was removed"
 
 ### Requirement: PRUNE-08 — The worktrees it kept are listed by age

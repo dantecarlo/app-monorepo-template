@@ -508,11 +508,32 @@ export const reportLines = ({ dryRun, install, main, quiet, results }) => [
   ...notCovered({ dryRun, install })
 ]
 
+// The line printed before a removal starts, `removing <path> (<branch>)`:
+// a run ended inside the removal leaves it as its last line.
+export const removingLine = ({ worktree }) => {
+  const branch =
+    worktree.branch === DETACHED_BRANCH ? 'detached' : worktree.branch
+  const path = resolve(worktree.path).replaceAll('\\', '/')
+  return `${LABEL}: removing ${path} (${branch})`
+}
+
 // The line a failed run ends with, on stderr: git's message, then what the
-// run had removed before it failed, the worktrees its report listed above,
-// or that nothing was removed. A dry run removes nothing.
-export const failureLine = ({ dryRun = false, message, results = [] }) => {
+// run had removed before it failed, the worktrees its report listed above;
+// when it removed none, that a removal had started if one was announced, else
+// that nothing was removed. A dry run removes nothing.
+export const failureLine = ({
+  dryRun = false,
+  message,
+  results = [],
+  started = false
+}) => {
   const removed = dryRun ? 0 : results.filter(({ kept }) => !kept).length
+  if (removed === 0 && started) {
+    return (
+      `${LABEL}: ${message} — a removal had started; the last "removing" ` +
+      'line above names it.'
+    )
+  }
   if (removed === 0) return `${LABEL}: ${message} — nothing was removed.`
   const worktrees =
     removed === 1 ? '1 worktree was' : `${removed} worktrees were`
