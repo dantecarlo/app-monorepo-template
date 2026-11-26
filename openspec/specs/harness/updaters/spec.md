@@ -1,6 +1,6 @@
 # harness/updaters — living spec
 
-> **Governs:** `.agents/contracts/updaters.json`, `scripts/verify-updaters.mjs`, `scripts/updaters/run.mjs`, `scripts/updaters/branch.mjs`, `scripts/updaters/label.mjs`, `scripts/updaters/steps.mjs`
+> **Governs:** `.agents/contracts/updaters.json`, `scripts/verify-updaters.mjs`, `scripts/updaters/run.mjs`, `scripts/updaters/branch.mjs`, `scripts/updaters/label.mjs`, `scripts/updaters/messages.mjs`, `scripts/updaters/steps.mjs`
 > **ID prefix:** `UPDATERS`
 > **Derived from:** `docs/harness.md`, `docs/INIT_AND_HARNESS_PLAN.md`
 > **Verified against the code:** 2026-11-25 at `1539a3f`

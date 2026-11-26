@@ -32,7 +32,8 @@ import { forceOf } from '../agent-harness/no-force/forms.mjs'
 import { POLICY_FILE } from '../agent-harness/write-guard/policy.mjs'
 import { withScratchTree } from '../gate/scratch.mjs'
 import { UPDATERS_FILE } from '../verify-updaters.mjs'
-import { RULE_PROPOSAL_LABEL, runUpdaters } from './run.mjs'
+import { RULE_PROPOSAL_LABEL } from './messages.mjs'
+import { runUpdaters } from './run.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(HERE, '../..')

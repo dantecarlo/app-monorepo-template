@@ -830,7 +830,7 @@ updater that runs periodically".
 | `.agents/contracts/updaters.json`  | The registry: one entry per updater. A contract, so the write guard asks before an edit (3f) |
 | `scripts/verify-updaters.mjs`      | `pnpm verify:updaters`, the gate that holds the registry, inside `pnpm validate` |
 | `scripts/updaters/run.mjs`         | `pnpm updaters:run`, the runner, never inside `pnpm validate`               |
-| `scripts/updaters/branch.mjs`, `label.mjs`, `steps.mjs` | Where an update starts (the remote's `updates/<id>` with the default branch merged in, or the default branch), the `rule-proposal` label made current, and the steps they share; no call passes a force option |
+| `scripts/updaters/branch.mjs`, `label.mjs`, `messages.mjs`, `steps.mjs` | Where an update starts (the remote's `updates/<id>` with the default branch merged in, or the default branch), the `rule-proposal` label made current, the commit, pull request and dry-run texts, and the steps they share; no call forces or skips a check |
 
 **The entry.** Each declares every key, and no other:
 
