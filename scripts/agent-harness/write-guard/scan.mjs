@@ -60,10 +60,16 @@ export const decodeAnsi = ({ text }) =>
 
 /**
  * Throws the error of a command the guard cannot read. `deep` marks one
- * past the nesting cap, which would cost more than the hook's timeout.
+ * past the nesting cap, which would cost more than the hook's timeout;
+ * `bashRefuses` one bash raises on a lone line too, so that nothing on the
+ * line runs (an unterminated quote or backtick, an unbalanced `)`).
  */
-export const unreadable = ({ deep = false, problem }) => {
-  throw Object.assign(new Error(problem), { deep, unreadable: true })
+export const unreadable = ({ bashRefuses = false, deep = false, problem }) => {
+  throw Object.assign(new Error(problem), {
+    bashRefuses,
+    deep,
+    unreadable: true
+  })
 }
 
 // Runs `step` until it returns false. Each step consumes at least one

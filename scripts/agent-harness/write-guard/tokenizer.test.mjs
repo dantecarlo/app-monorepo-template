@@ -182,21 +182,86 @@ test('a comment is skipped', () => {
   )
 })
 
-for (const [source, problem] of [
-  ['echo "unterminated', /an unterminated quote/],
-  ['cat <<EOF\nno end', /an unterminated here-doc/],
-  ['echo $(ls', /an unterminated \$\( or \(/],
-  ['echo `ls', /an unterminated backtick/],
-  ['echo ${X', /an unterminated \$\{/],
-  ['echo $(( 1 + 2', /an unterminated \$\(\(/],
-  ['ls apps/(group)/x.tsx', /an unexpected parenthesis/],
-  ['ls )', /an unbalanced \)/],
-  ['echo >', /a > with no target/]
+// bashRefuses marks the errors bash raises on a lone line too, so nothing
+// on that line runs: an unterminated quote or backtick and an unbalanced
+// `)`. Bash runs a here-doc that never ends, to the end of its input.
+for (const [source, problem, bashRefuses] of [
+  ['echo "unterminated', /an unterminated quote/, true],
+  ["echo 'unterminated", /an unterminated quote/, true],
+  ["echo $'unterminated", /an unterminated quote/, true],
+  ['cat <<EOF\nno end', /an unterminated here-doc/, false],
+  ['echo $(ls', /an unterminated \$\( or \(/, false],
+  ['echo `ls', /an unterminated backtick/, true],
+  ['echo ${X', /an unterminated \$\{/, false],
+  ['echo $(( 1 + 2', /an unterminated \$\(\(/, false],
+  ['ls apps/(group)/x.tsx', /an unexpected parenthesis/, false],
+  ['ls )', /an unbalanced \)/, true],
+  ['echo >', /a > with no target/, false],
+  ['rm !(keep', /an unterminated extended glob/, false],
+  ['[[ $x =~ (a ]]', /an unterminated regex/, false]
 ]) {
   test(`what cannot be read throws, naming why: ${JSON.stringify(source)}`, () => {
     const error = problemOf({ source })
     assert.match(error.message, problem)
     assert.equal(error.deep, false)
+    assert.equal(error.bashRefuses, bashRefuses)
+  })
+}
+
+// `((…))` and `for ((…;…;…))` are arithmetic, whose substitutions still
+// run; `((cmd); cmd)`, whose `((` closes no `))`, is two subshells.
+for (const [source, commands] of [
+  ['(( i++ ))', []],
+  ['(( x > 5 )) && touch a', ['touch a']],
+  ['for ((i=0;i<3;i++)); do touch x$i; done', ['do touch x$i', 'done']],
+  ['if (( $(touch a) > 1 )); then ls; fi', ['touch a', 'then ls', 'fi']],
+  ['((echo a); echo b)', ['echo a', 'echo b']],
+  ['echo $(( (1 + 2) * 3 ))', ['echo $(( (1 + 2) * 3 ))']]
+]) {
+  test(`an arithmetic command is read: ${source}`, () => {
+    assert.deepEqual(commandsOf({ script: parse({ source }) }), commands)
+  })
+}
+
+test('an arithmetic command writes no file: its > compares', () => {
+  const [group] = parse({ source: '(( x > 5 ))' })
+  assert.equal(group.type, 'group')
+  assert.deepEqual(group.redirects, [])
+})
+
+// `[[ … ]]` holds a condition: its `&&`, `||`, `(`, `)`, `<` and `>` are
+// operators, and the word after `=~` a regex whose parentheses, `|` and
+// spaces inside parentheses are its own.
+for (const [source, commands] of [
+  ['[[ a < b && c > d ]]', ['[[ a < b && c > d ]]']],
+  ['[[ ( -f a ) || -d b ]] && touch c', ['[[ ( -f a ) || -d b ]]', 'touch c']],
+  [
+    '[[ $b =~ ^(main|master)$ ]] && touch y',
+    ['[[ $b =~ ^(main|master)$ ]]', 'touch y']
+  ],
+  ['[[ "a b" =~ (a b) ]]', ['[[ "a b" =~ (a b) ]]']],
+  ['[[ $(touch a) == b ]]', ['[[ $(touch a) == b ]]', 'touch a']],
+  ['[[ x == @(a|b) ]] || ls', ['[[ x == @(a|b) ]]', 'ls']]
+]) {
+  test(`a [[ condition is one command: ${source}`, () => {
+    const script = parse({ source })
+    assert.deepEqual(commandsOf({ script }), commands)
+    assert.deepEqual(script[0].redirects, [])
+  })
+}
+
+// An extended glob, `!( @( *( +( ?(`, is part of its word.
+for (const [source, words] of [
+  ['rm -rf !(keep)', ['rm', '-rf', '!(keep)']],
+  ['ls *.@(js|ts) +(a) ?(b) *(c)', ['ls', '*.@(js|ts)', '+(a)', '?(b)', '*(c)']],
+  ['ls !(a|!(b))', ['ls', '!(a|!(b))']]
+]) {
+  test(`an extended glob is one word: ${source}`, () => {
+    const [command] = parse({ source })
+    assert.deepEqual(
+      command.words.map((word) => word.raw),
+      words
+    )
   })
 }
 
