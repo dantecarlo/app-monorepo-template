@@ -1,6 +1,6 @@
 # Proposal: the reaper and the worktree pruner take the downstream project's fixes
 
-> **Status:** open
+> **Status:** archived — 2026-11-26
 
 ## Why
 

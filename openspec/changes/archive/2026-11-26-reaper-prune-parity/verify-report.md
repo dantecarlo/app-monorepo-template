@@ -133,7 +133,7 @@ rest were written red first, task by task.
 
 ## Gate
 
-- `pnpm validate`: not run yet: it runs on the archived tree, and its exit code is written in the archive commit.
+- `pnpm validate`: exit 0, 2026-11-26, on the archived tree (71 steps, 370 s).
 
 ## Not verified
 
