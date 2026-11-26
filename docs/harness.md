@@ -80,7 +80,10 @@ line, and a failure after one says a removal had started where it would say
 nothing was removed. Outside `--quiet` it then lists every worktree it kept, the main
 checkout and the one it runs in aside, by the age of its last commit, oldest
 first (whole days, path, branch, reason), from one `git log --no-walk` over their
-HEADs. Last, it fast-forwards
+HEADs. A real run holds `prune-worktrees.lock` in the repository's common git
+directory, through the reaper's `takeLock` (section 3g), from before the fetch to
+its end; a run that finds it held prints one line, removes nothing and exits 0,
+and a dry run takes none. Last, it fast-forwards
 the main checkout with `git merge --ff-only` when that checkout is on the
 default branch. Any tracked local change there, staged or not, a
 line-ending-only one included, blocks it, and so does whatever git refuses

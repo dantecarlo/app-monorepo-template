@@ -2454,3 +2454,54 @@ test('a real run lists each kept worktree by its age, and --quiet does not', () 
   assert.equal(quiet.status, EXIT_OK, quiet.stderr)
   assert.ok(!quiet.stdout.includes(AGE_HEADING), quiet.stdout)
 })
+
+// ---------------------------------------------------------------------------
+// One real prune at a time (PRUNE-12).
+// ---------------------------------------------------------------------------
+
+const PRUNE_LOCK = 'prune-worktrees.lock'
+
+// A lock of another prune in the common git directory of `main`, held by
+// this test's own process, which runs for as long as the prune does.
+const holdPruneLock = ({ main }) => {
+  const path = join(main, '.git', PRUNE_LOCK)
+  writeFileSync(path, `${process.pid}\nanother-prune\n`)
+  return path
+}
+
+test('a run that finds another prune holding the lock prints one line, exits 0 and removes nothing', () => {
+  const branch = 'feat/locked-out'
+  const { main, paths } = mergedWorktrees({ branches: [branch], hook: false })
+  const lock = holdPruneLock({ main })
+  const run = prune({ cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.equal(
+    run.stdout.trim(),
+    `prune-worktrees: another prune of ${forward({ path: main })} holds ` +
+      `${forward({ path: lock })}; this run removes nothing.`
+  )
+  assert.ok(existsSync(paths[branch]), `${paths[branch]} was removed`)
+  assert.ok(existsSync(lock), 'the other prune keeps its lock')
+})
+
+test('a real run releases the lock it took', () => {
+  const branch = 'feat/releases-lock'
+  const { main, paths } = mergedWorktrees({ branches: [branch], hook: false })
+  const run = prune({ cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.ok(!existsSync(paths[branch]), run.stdout)
+  assert.ok(!existsSync(join(main, '.git', PRUNE_LOCK)), 'the lock stays')
+})
+
+test('a dry run while another prune holds the lock still prints its plan', () => {
+  const branch = 'feat/dry-while-locked'
+  const { main, paths } = mergedWorktrees({ branches: [branch], hook: false })
+  const lock = holdPruneLock({ main })
+  const run = prune({ args: ['--dry-run'], cwd: main })
+  assert.equal(run.status, EXIT_OK, run.stderr)
+  assert.ok(
+    run.stdout.includes(`would remove ${forward({ path: paths[branch] })}`),
+    run.stdout
+  )
+  assert.ok(existsSync(lock), 'the other prune keeps its lock')
+})

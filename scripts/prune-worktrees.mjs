@@ -99,6 +99,7 @@ import { fileURLToPath } from 'node:url'
 import { removePath } from '@app/tooling/remove-path'
 
 import { runBounded } from './agent-harness/reaper/bounded-child.mjs'
+import { takeLock } from './agent-harness/reaper/lock.mjs'
 import { gitFreeEnv } from './git-free-env.mjs'
 import {
   AGENT_TOOLING_DIR,
@@ -112,6 +113,7 @@ import {
   installOutcomeOf,
   installSecondsFrom,
   isSkillRegistry,
+  LABEL,
   listDetail,
   LOCAL_CHANGES,
   localChangesOf,
@@ -136,6 +138,7 @@ import {
 const HERE = dirname(fileURLToPath(import.meta.url))
 
 const REMOTE_HEAD = `refs/remotes/${REMOTE}/HEAD`
+const LOCK_NAME = 'prune-worktrees.lock'
 const NO_REMOTE_LINE = `prune-worktrees: no ${REMOTE} remote, so nothing to prune`
 // 64 MiB of git output.
 const GIT_OUTPUT_BYTES = 67_108_864
@@ -750,6 +753,37 @@ const pruneWorktrees = async ({
   // A repository with no origin has no merged branch to read: nothing to do.
   const remotes = git({ args: ['remote'], cwd: root }).split(/\r?\n/u)
   if (!remotes.includes(REMOTE)) return { noRemote: true }
+  const run = { announce, current, dryRun, env, fetchSeconds, root, worktrees }
+  if (dryRun) return pruneUnderLock(run)
+  const path = lockPathOf({ root })
+  const lock = takeLock({ path })
+  if (!lock) return { busy: path, root }
+  try {
+    return await pruneUnderLock(run)
+  } finally {
+    lock.release()
+  }
+}
+
+// The lock that serializes the real runs of one repository, in the common git
+// directory every worktree of it shares.
+const lockPathOf = ({ root }) =>
+  join(
+    resolve(root, git({ args: ['rev-parse', '--git-common-dir'], cwd: root })),
+    LOCK_NAME
+  )
+
+// What `pruneWorktrees` does once a real run holds the lock, or at once for a
+// dry run, from the fetch on.
+const pruneUnderLock = async ({
+  announce,
+  current,
+  dryRun,
+  env,
+  fetchSeconds,
+  root,
+  worktrees
+}) => {
   if (!(await fetchOrigin({ root, seconds: fetchSeconds })))
     return { timedOut: true }
   const defaultBranch = readDefaultBranch({ root })
@@ -803,6 +837,11 @@ const pruneWorktrees = async ({
   }
 }
 
+// The line a real run prints when another prune holds the lock.
+const busyLine = ({ busy, root }) =>
+  `${LABEL}: another prune of ${forwardPath({ path: root })} holds ` +
+  `${forwardPath({ path: busy })}; this run removes nothing.`
+
 // A read that fails before anything is removed prints the reason and exits
 // 1, saying nothing was removed; a step that fails after a removal prints
 // the report of what was done, then the reason and how many worktrees were
@@ -827,7 +866,9 @@ const main = async () => {
       env: process.env,
       fetchSeconds
     })
-    const lines = outcome.noRemote
+    const lines = outcome.busy
+      ? [busyLine(outcome)]
+      : outcome.noRemote
       ? [NO_REMOTE_LINE]
       : outcome.timedOut
         ? skippedLines({ dryRun, seconds: fetchSeconds })
